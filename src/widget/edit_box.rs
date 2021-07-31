@@ -2,8 +2,9 @@ use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Key::Enter;
 use crate::widget::edit_box::EditBoxWidgetMsg::Letter;
-use crate::widget::widget::Widget;
+use crate::widget::widget::{Widget, MsgConstraints};
 use unicode_segmentation::UnicodeSegmentation;
+use crate::io::keys::Key;
 
 pub struct EditBoxWidget<ParentMsg: MsgConstraints> {
     enabled: bool,
@@ -14,17 +15,17 @@ pub struct EditBoxWidget<ParentMsg: MsgConstraints> {
 }
 
 impl<ParentMsg: MsgConstraints> EditBoxWidget<ParentMsg> {
-    fn new() -> Self {
+    pub fn new() -> Self {
         EditBoxWidget {
             cursor: 0,
             enabled: true,
             text: "".into(),
             on_hit: None,
-            on_change: None,
+            on_change: None
         }
     }
 
-    fn with_on_hit(self, on_hit: fn(&Self) -> Option<ParentMsg>) -> Self {
+    pub fn with_on_hit(self, on_hit: fn(&Self) -> Option<ParentMsg>) -> Self {
         EditBoxWidget {
             enabled: self.enabled,
             on_hit: Some(on_hit),
@@ -34,7 +35,17 @@ impl<ParentMsg: MsgConstraints> EditBoxWidget<ParentMsg> {
         }
     }
 
-    fn with_enabled(self, enabled: bool) -> Self {
+    pub fn with_on_change(self, on_change: fn(&Self) -> Option<ParentMsg>) -> Self {
+        EditBoxWidget {
+            enabled: self.enabled,
+            on_hit: self.on_hit,
+            on_change: Some(on_change),
+            cursor: self.cursor,
+            text: self.text,
+        }
+    }
+
+    pub fn with_enabled(self, enabled: bool) -> Self {
         EditBoxWidget {
             enabled,
             on_hit: self.on_hit,
@@ -43,20 +54,24 @@ impl<ParentMsg: MsgConstraints> EditBoxWidget<ParentMsg> {
             on_change: self.on_change,
         }
     }
+
+    pub fn get_text(&self) -> &String {
+        &self.text
+    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-enum EditBoxWidgetMsg {
+pub enum EditBoxWidgetMsg {
     Hit,
     Letter(char),
 }
 
-impl Widget<ParentMsg> for EditBoxWidget<ParentMsg> {
+impl<ParentMsg : MsgConstraints> Widget<ParentMsg> for EditBoxWidget<ParentMsg> {
     type LocalMsg = EditBoxWidgetMsg;
 
-    fn update(&mut self, msg: LocalMsg) -> Option<ParentMsg> {
+    fn update(&mut self, msg: EditBoxWidgetMsg) -> Option<ParentMsg> {
         match msg {
-            ButtonWidgetMsg::Hit => {
+            EditBoxWidgetMsg::Hit => {
                 if self.on_hit.is_none() {
                     None
                 } else {
@@ -64,22 +79,28 @@ impl Widget<ParentMsg> for EditBoxWidget<ParentMsg> {
                 }
             }
             EditBoxWidgetMsg::Letter(ch) => {
-                let mut iter = self.text.unicode_words().into_iter();
+                let mut iter = self.text.graphemes(true);
                 let mut new_text = String::new();
 
                 for _ in 0..self.cursor {
-                    new_text += *iter;
+                    new_text += iter.as_str();
                     iter.next();
                 }
 
-                new_text += ch.into();
+                new_text += ch.to_string().as_str(); //TODO: make this conversion better?
 
                 for _ in self.cursor..self.text.len() {
-                    new_text += *iter;
-                    iter.next()
+                    new_text += iter.as_str();
+                    iter.next();
                 }
 
-                self.text = new_text
+                self.text = new_text;
+
+                if self.on_change.is_some() {
+                    self.on_change.unwrap()(self)
+                } else {
+                    None
+                }
             }
             _ => None,
         }
@@ -97,7 +118,7 @@ impl Widget<ParentMsg> for EditBoxWidget<ParentMsg> {
 
         match input_event {
             KeyInput(Enter) => Some(EditBoxWidgetMsg::Hit),
-            KeyInput(Letter(ch)) => Some(EditBoxWidgetMsg::Letter(ch)),
+            KeyInput(Key::Letter(ch)) => Some(EditBoxWidgetMsg::Letter(ch)),
             _ => None,
         }
     }

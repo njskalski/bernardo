@@ -1,7 +1,7 @@
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Key::Enter;
-use crate::widget::widget::Widget;
+use crate::widget::widget::{Widget, MsgConstraints};
 
 pub struct ButtonWidget<ParentMsg: MsgConstraints> {
     enabled: bool,
@@ -9,39 +9,43 @@ pub struct ButtonWidget<ParentMsg: MsgConstraints> {
 }
 
 impl<ParentMsg: MsgConstraints> ButtonWidget<ParentMsg> {
-    fn new() -> Self {
+    pub fn new() -> Self {
         ButtonWidget {
             enabled: true,
             on_hit: None,
         }
     }
 
-    fn with_on_hit(self, on_hit: fn(&Self) -> Option<ParentMsg>) -> Self {
+    pub fn with_on_hit(self, on_hit: fn(&Self) -> Option<ParentMsg>) -> Self {
         ButtonWidget {
             enabled: self.enabled,
             on_hit: Some(on_hit),
         }
     }
 
-    fn with_enabled(self, enabled: bool) -> Self {
+    pub fn with_enabled(self, enabled: bool) -> Self {
         ButtonWidget {
             enabled,
             on_hit: self.on_hit,
         }
     }
+
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled
+    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-enum ButtonWidgetMsg {
+pub enum ButtonWidgetMsg {
     Hit,
     // Focus,
     // LostFocus
 }
 
-impl Widget<ParentMsg> for ButtonWidget<ParentMsg> {
+impl <ParentMsg : MsgConstraints> Widget<ParentMsg> for ButtonWidget<ParentMsg> {
     type LocalMsg = ButtonWidgetMsg;
 
-    fn update(&mut self, msg: LocalMsg) -> Option<ParentMsg> {
+    fn update(&mut self, msg: ButtonWidgetMsg) -> Option<ParentMsg> {
         match msg {
             ButtonWidgetMsg::Hit => {
                 if self.on_hit.is_none() {

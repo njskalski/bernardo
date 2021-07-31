@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use log::debug;
 
-use crate::primitives::colour::Colour;
+use crate::primitives::color::Color;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Effect {
@@ -14,13 +14,13 @@ pub enum Effect {
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct TextStyle {
-    pub foreground: Colour,
-    pub background: Colour,
+    pub foreground: Color,
+    pub background: Color,
     pub effect: Effect,
 }
 
 impl TextStyle {
-    pub fn new(foreground: Colour, background: Colour, effect: Effect) -> Self {
+    pub fn new(foreground: Color, background: Color, effect: Effect) -> Self {
         TextStyle {
             foreground,
             background,
@@ -28,7 +28,7 @@ impl TextStyle {
         }
     }
 
-    pub fn simple(foreground: Colour, background: Colour) -> Self {
+    pub fn simple(foreground: Color, background: Color) -> Self {
         TextStyle {
             foreground,
             background,

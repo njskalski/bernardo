@@ -1,12 +1,12 @@
 use crate::io::input_event::InputEvent;
 use std::fmt::Debug;
 
-pub trait MsgConstraints = Copy + Clone + Debug;
+pub trait MsgConstraints : Copy + Clone + Debug {}
 
 pub trait Widget<ParentMsg: MsgConstraints> {
     type LocalMsg;
 
-    fn update(&mut self, msg: LocalMsg) -> Option<ParentMsg>;
+    fn update(&mut self, msg: Self::LocalMsg) -> Option<ParentMsg>;
 
     fn focusable(&self) -> bool;
 
@@ -14,5 +14,5 @@ pub trait Widget<ParentMsg: MsgConstraints> {
     returns Some() if event was consumed.
     separated from update, so the InputEvent can get escalated.
      */
-    fn on_input(&self, input_event: InputEvent) -> Option<LocalMsg>;
+    fn on_input(&self, input_event: InputEvent) -> Option<Self::LocalMsg>;
 }
