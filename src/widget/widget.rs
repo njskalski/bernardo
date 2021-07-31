@@ -3,10 +3,10 @@ use std::fmt::Debug;
 
 pub trait MsgConstraints = Copy + Clone + Debug;
 
-pub trait Widget<ParentMsg : MsgConstraints> {
+pub trait Widget<ParentMsg: MsgConstraints> {
     type LocalMsg;
 
-    fn update(&mut self, msg : LocalMsg) -> Option<ParentMsg>;
+    fn update(&mut self, msg: LocalMsg) -> Option<ParentMsg>;
 
     fn focusable(&self) -> bool;
 
@@ -14,5 +14,5 @@ pub trait Widget<ParentMsg : MsgConstraints> {
     returns Some() if event was consumed.
     separated from update, so the InputEvent can get escalated.
      */
-    fn on_input(&self, input_event : InputEvent) -> Option<LocalMsg>;
+    fn on_input(&self, input_event: InputEvent) -> Option<LocalMsg>;
 }

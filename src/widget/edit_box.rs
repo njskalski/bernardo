@@ -1,48 +1,46 @@
-use crate::widget::widget::Widget;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Key::Enter;
 use crate::widget::edit_box::EditBoxWidgetMsg::Letter;
+use crate::widget::widget::Widget;
 use unicode_segmentation::UnicodeSegmentation;
 
-
-
-pub struct EditBoxWidget<ParentMsg : MsgConstraints> {
-    enabled : bool,
-    on_hit : Option<fn(&Self) -> Option<ParentMsg>>,
-    on_change : Option<fn(&Self) -> Option<ParentMsg>>,
+pub struct EditBoxWidget<ParentMsg: MsgConstraints> {
+    enabled: bool,
+    on_hit: Option<fn(&Self) -> Option<ParentMsg>>,
+    on_change: Option<fn(&Self) -> Option<ParentMsg>>,
     text: String,
     cursor: usize,
 }
 
-impl <ParentMsg : MsgConstraints> EditBoxWidget<ParentMsg> {
+impl<ParentMsg: MsgConstraints> EditBoxWidget<ParentMsg> {
     fn new() -> Self {
         EditBoxWidget {
-            cursor : 0,
-            enabled : true,
-            text : "".into(),
-            on_hit : None,
-            on_change : None,
+            cursor: 0,
+            enabled: true,
+            text: "".into(),
+            on_hit: None,
+            on_change: None,
         }
     }
 
-    fn with_on_hit(self, on_hit : fn(&Self) -> Option<ParentMsg>) -> Self {
+    fn with_on_hit(self, on_hit: fn(&Self) -> Option<ParentMsg>) -> Self {
         EditBoxWidget {
-            enabled : self.enabled,
-            on_hit : Some(on_hit),
-            on_change : self.on_change,
-            cursor : self.cursor,
-            text : self.text,
+            enabled: self.enabled,
+            on_hit: Some(on_hit),
+            on_change: self.on_change,
+            cursor: self.cursor,
+            text: self.text,
         }
     }
 
-    fn with_enabled(self, enabled : bool) -> Self {
+    fn with_enabled(self, enabled: bool) -> Self {
         EditBoxWidget {
             enabled,
-            on_hit : self.on_hit,
-            cursor : self.cursor,
-            text : self.text,
-            on_change : self.on_change,
+            on_hit: self.on_hit,
+            cursor: self.cursor,
+            text: self.text,
+            on_change: self.on_change,
         }
     }
 }
@@ -83,7 +81,7 @@ impl Widget<ParentMsg> for EditBoxWidget<ParentMsg> {
 
                 self.text = new_text
             }
-            _ => None
+            _ => None,
         }
     }
 
@@ -92,12 +90,15 @@ impl Widget<ParentMsg> for EditBoxWidget<ParentMsg> {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<EditBoxWidgetMsg> {
-        debug_assert!(self.enabled, "EditBoxWidgetMsg: received input to disabled component!");
+        debug_assert!(
+            self.enabled,
+            "EditBoxWidgetMsg: received input to disabled component!"
+        );
 
         match input_event {
             KeyInput(Enter) => Some(EditBoxWidgetMsg::Hit),
             KeyInput(Letter(ch)) => Some(EditBoxWidgetMsg::Letter(ch)),
-            _ => None
+            _ => None,
         }
     }
 }

@@ -1,3 +1,1 @@
-enum InputEvent {
-
-}
+enum InputEvent {}
