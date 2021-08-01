@@ -65,6 +65,13 @@ impl Rect {
             }
         }
     }
+
+    pub fn shift(&self, vec : XY) -> Rect {
+        Rect {
+            pos : self.pos + vec,
+            size : self.size
+        }
+    }
 }
 
 impl From<(XY, XY)> for Rect {

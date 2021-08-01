@@ -17,4 +17,8 @@ pub trait Layout {
     fn update_focus(&mut self, focus_update : FocusUpdate) -> bool;
 
     fn get_rect(&self, output_size: XY, widget_id: usize) -> Option<Rect>;
+
+    fn is_leaf(&self) -> bool;
+
+    fn has_id(&self, widget_id: usize) -> bool;
 }

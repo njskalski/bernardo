@@ -3,14 +3,14 @@ use crate::layout::layout::{Layout, FocusUpdate};
 use crate::primitives::rect::Rect;
 
 pub struct SplitLayout {
-    children : Vec<usize>,
+    children : Vec<Box<dyn Layout>>,
     focused : usize,
     split_directions : XY,
 }
 
 impl SplitLayout {
 
-    pub fn new(children : Vec<usize>, split_directions : XY) -> Option<Self> {
+    pub fn new(children : Vec<Box<dyn Layout>>, split_directions : XY) -> Option<Self> {
         if children.is_empty() {
             return None
         }
@@ -26,9 +26,9 @@ impl SplitLayout {
         })
     }
 
-    fn id_to_idx(&self, id : usize) -> Option<usize> {
+    fn id_to_idx(&self, widget_id : usize) -> Option<usize> {
         for i in 0..self.children.len() {
-            if self.children[i] == id {
+            if self.children[i].has_id(widget_id) {
                 return Some(i)
             }
         }
@@ -40,8 +40,8 @@ impl SplitLayout {
     fn idx_to_coords(&self, idx : usize) -> XY {
         assert!(idx < self.children.len());
 
-        let y = self.children.len() / self.split_directions.x;
-        let x = self.children.len() % self.split_directions.x;
+        let y = self.children.len() / self.split_directions.x as usize;
+        let x = self.children.len() % self.split_directions.x as usize;
 
         (x, y).into()
     }
@@ -77,7 +77,25 @@ impl Layout for SplitLayout {
         let y_unit = output_size.y / self.split_directions.y;
 
         let upper_left = XY::new(x_unit * pos.x, y_unit * pos.y);
-        Some(Rect::new(upper_left, (x_unit, y_unit).into()))
+        let child_size = XY::new(x_unit, y_unit);
+
+        let sub_rect = self.children[idx].get_rect(child_size, widget_id).unwrap();
+
+        Some(sub_rect.shift(upper_left))
+    }
+
+    fn is_leaf(&self) -> bool {
+        false
+    }
+
+    fn has_id(&self, widget_id: usize) -> bool {
+        for layout in self.children.iter() {
+            if layout.has_id(widget_id) {
+                return true
+            }
+        }
+
+        false
     }
 }
 

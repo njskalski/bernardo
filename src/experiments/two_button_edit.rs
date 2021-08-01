@@ -13,6 +13,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use std::fs::read;
 use crate::layout::split_layout::SplitLayout;
+use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::xy::XY;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -30,9 +31,7 @@ pub struct TwoButtonEdit  {
     ok_button : ButtonWidget<TBEMsg>,
     cancel_button : ButtonWidget<TBEMsg>,
     edit_box : EditBoxWidget<TBEMsg>,
-
-    vertical_split : SplitLayout,
-    button_horizontal_split : SplitLayout,
+    layout : SplitLayout,
 }
 
 impl TwoButtonEdit {
@@ -51,11 +50,19 @@ impl TwoButtonEdit {
            }
         });
 
-        let button_horizontal_split = SplitLayout::new(vec![ok_button.id(), cancel_button.id()], XY::new(2, 1)).unwrap();
+        let button_horizontal_split =
+            SplitLayout::new(
+                vec![Box::new(LeafLayout::from_widget(&cancel_button)), Box::new(LeafLayout::from_widget(&ok_button))],
+                XY::new(2, 1)).unwrap();
+
+        let vertical_split =
+            SplitLayout::new(
+                vec![Box::new(LeafLayout::from_widget(&edit_box)), Box::new(button_horizontal_split)],
+                XY::new(1, 2)).unwrap();
 
         TwoButtonEdit{
             id : get_new_widget_id(),
-            button_horizontal_split,
+            layout : vertical_split,
             ok_button,
             cancel_button,
             edit_box,
