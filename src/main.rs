@@ -11,6 +11,7 @@ mod primitives;
 mod view;
 mod widget;
 mod experiments;
+mod layout;
 
 
 fn main() {

@@ -26,3 +26,5 @@ pub fn get_new_widget_id() -> usize {
     static COUNTER:AtomicUsize = AtomicUsize::new(1);
     COUNTER.fetch_add(1, Ordering::Relaxed)
 }
+
+pub const WIDGET_NONE: usize = 0;

@@ -12,6 +12,8 @@ use crate::experiments::two_button_edit::TBEMsg::{TextValid, TextInvalid, Cancel
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use std::fs::read;
+use crate::layout::split_layout::SplitLayout;
+use crate::primitives::xy::XY;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum TBEMsg {
@@ -28,6 +30,9 @@ pub struct TwoButtonEdit  {
     ok_button : ButtonWidget<TBEMsg>,
     cancel_button : ButtonWidget<TBEMsg>,
     edit_box : EditBoxWidget<TBEMsg>,
+
+    vertical_split : SplitLayout,
+    button_horizontal_split : SplitLayout,
 }
 
 impl TwoButtonEdit {
@@ -46,11 +51,14 @@ impl TwoButtonEdit {
            }
         });
 
+        let button_horizontal_split = SplitLayout::new(vec![ok_button.id(), cancel_button.id()], XY::new(2, 1)).unwrap();
+
         TwoButtonEdit{
             id : get_new_widget_id(),
+            button_horizontal_split,
             ok_button,
             cancel_button,
-            edit_box
+            edit_box,
         }
     }
 }
