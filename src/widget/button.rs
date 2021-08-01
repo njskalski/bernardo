@@ -1,16 +1,24 @@
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Key::Enter;
-use crate::widget::widget::{Widget, MsgConstraints};
+use crate::widget::widget::{Widget, MsgConstraints, BaseWidget, get_new_widget_id};
 
 pub struct ButtonWidget<ParentMsg: MsgConstraints> {
+    id : usize,
     enabled: bool,
     on_hit: Option<fn(&Self) -> Option<ParentMsg>>,
+}
+
+impl<ParentMsg: MsgConstraints> BaseWidget for ButtonWidget<ParentMsg> {
+    fn id(&self) -> usize {
+        self.id()
+    }
 }
 
 impl<ParentMsg: MsgConstraints> ButtonWidget<ParentMsg> {
     pub fn new() -> Self {
         ButtonWidget {
+            id: get_new_widget_id(),
             enabled: true,
             on_hit: None,
         }
@@ -18,6 +26,7 @@ impl<ParentMsg: MsgConstraints> ButtonWidget<ParentMsg> {
 
     pub fn with_on_hit(self, on_hit: fn(&Self) -> Option<ParentMsg>) -> Self {
         ButtonWidget {
+            id: self.id,
             enabled: self.enabled,
             on_hit: Some(on_hit),
         }
@@ -25,6 +34,7 @@ impl<ParentMsg: MsgConstraints> ButtonWidget<ParentMsg> {
 
     pub fn with_enabled(self, enabled: bool) -> Self {
         ButtonWidget {
+            id: self.id,
             enabled,
             on_hit: self.on_hit,
         }

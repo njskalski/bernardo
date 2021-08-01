@@ -7,10 +7,11 @@ just an experiment to see if the design works.
 
 use crate::widget::button::ButtonWidget;
 use crate::widget::edit_box::EditBoxWidget;
-use crate::widget::widget::{Widget, MsgConstraints};
+use crate::widget::widget::{Widget, MsgConstraints, get_new_widget_id, BaseWidget};
 use crate::experiments::two_button_edit::TBEMsg::{TextValid, TextInvalid, Cancel};
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
+use std::fs::read;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum TBEMsg {
@@ -23,6 +24,7 @@ pub enum TBEMsg {
 impl MsgConstraints for TBEMsg {}
 
 pub struct TwoButtonEdit  {
+    id : usize,
     ok_button : ButtonWidget<TBEMsg>,
     cancel_button : ButtonWidget<TBEMsg>,
     edit_box : EditBoxWidget<TBEMsg>,
@@ -45,10 +47,17 @@ impl TwoButtonEdit {
         });
 
         TwoButtonEdit{
+            id : get_new_widget_id(),
             ok_button,
             cancel_button,
             edit_box
         }
+    }
+}
+
+impl BaseWidget for TwoButtonEdit {
+    fn id(&self) -> usize {
+        self.id
     }
 }
 

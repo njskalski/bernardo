@@ -2,11 +2,12 @@ use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Key::Enter;
 use crate::widget::edit_box::EditBoxWidgetMsg::Letter;
-use crate::widget::widget::{Widget, MsgConstraints};
+use crate::widget::widget::{Widget, MsgConstraints, get_new_widget_id, BaseWidget};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::io::keys::Key;
 
 pub struct EditBoxWidget<ParentMsg: MsgConstraints> {
+    id: usize,
     enabled: bool,
     on_hit: Option<fn(&Self) -> Option<ParentMsg>>,
     on_change: Option<fn(&Self) -> Option<ParentMsg>>,
@@ -17,6 +18,7 @@ pub struct EditBoxWidget<ParentMsg: MsgConstraints> {
 impl<ParentMsg: MsgConstraints> EditBoxWidget<ParentMsg> {
     pub fn new() -> Self {
         EditBoxWidget {
+            id: get_new_widget_id(),
             cursor: 0,
             enabled: true,
             text: "".into(),
@@ -27,6 +29,7 @@ impl<ParentMsg: MsgConstraints> EditBoxWidget<ParentMsg> {
 
     pub fn with_on_hit(self, on_hit: fn(&Self) -> Option<ParentMsg>) -> Self {
         EditBoxWidget {
+            id: self.id,
             enabled: self.enabled,
             on_hit: Some(on_hit),
             on_change: self.on_change,
@@ -37,6 +40,7 @@ impl<ParentMsg: MsgConstraints> EditBoxWidget<ParentMsg> {
 
     pub fn with_on_change(self, on_change: fn(&Self) -> Option<ParentMsg>) -> Self {
         EditBoxWidget {
+            id: self.id,
             enabled: self.enabled,
             on_hit: self.on_hit,
             on_change: Some(on_change),
@@ -47,6 +51,7 @@ impl<ParentMsg: MsgConstraints> EditBoxWidget<ParentMsg> {
 
     pub fn with_enabled(self, enabled: bool) -> Self {
         EditBoxWidget {
+            id : self.id,
             enabled,
             on_hit: self.on_hit,
             cursor: self.cursor,
@@ -57,6 +62,12 @@ impl<ParentMsg: MsgConstraints> EditBoxWidget<ParentMsg> {
 
     pub fn get_text(&self) -> &String {
         &self.text
+    }
+}
+
+impl <ParentMsg: MsgConstraints> BaseWidget for EditBoxWidget<ParentMsg> {
+    fn id(&self) -> usize {
+        self.id
     }
 }
 
