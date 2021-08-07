@@ -3,7 +3,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::output::Output;
-use crate::io::style::TextStyle;
+use crate::io::style::{TextStyle, TextStyle_WhiteOnBlack};
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
@@ -37,7 +37,7 @@ impl Output for SubOutput<'_> {
     }
 
     fn clear(&mut self) {
-        let style = TextStyle::black_and_white();
+        let style = TextStyle_WhiteOnBlack;
 
         for x in 0..self.frame.size.x {
             for y in 0..self.frame.size.y {

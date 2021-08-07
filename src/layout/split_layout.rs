@@ -40,8 +40,8 @@ impl SplitLayout {
     fn idx_to_coords(&self, idx : usize) -> XY {
         assert!(idx < self.children.len());
 
-        let y = self.children.len() / self.split_directions.x as usize;
-        let x = self.children.len() % self.split_directions.x as usize;
+        let x = idx % self.split_directions.x as usize;
+        let y = idx / self.split_directions.x as usize;
 
         (x, y).into()
     }

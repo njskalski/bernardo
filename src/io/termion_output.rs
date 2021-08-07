@@ -137,6 +137,8 @@ impl<W: Write> Output for TermionOutput<W> {
             &mut self.back_buffer
         };
 
+        debug!("printing {} at {}", text, pos);
+
         buffer.print_at(pos, style, text)
     }
 

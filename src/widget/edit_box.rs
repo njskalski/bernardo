@@ -163,7 +163,7 @@ impl<ParentMsg : MsgConstraints> Widget<ParentMsg> for EditBoxWidget<ParentMsg> 
             // .enumerate()
             .take(self.cursor)
             .map(|g| g.into())
-            .fold("", |a, b| a + b);
+            .fold("".to_string(), |a, b| a + b);
 
         let cursor_pos = self.text.graphemes(true)
             .map(|g| g.width())
@@ -177,12 +177,12 @@ impl<ParentMsg : MsgConstraints> Widget<ParentMsg> for EditBoxWidget<ParentMsg> 
         let after_cursor = self.text.graphemes(true)
             .skip(self.cursor + 1)
             .map(|g| g.into())
-            .fold("", |a, b| a + b);
+            .fold("".to_string(), |a, b| a + b);
 
-        output.print_at((0, 0).into(), primary_style, befor_cursor);
+        output.print_at((0, 0).into(), primary_style, befor_cursor.as_str());
         output.print_at((cursor_pos, 0).into(), cursor_style, at_cursor);
-        if len(after_cursor) > 0 {
-            output.print_at((cursor_pos + 1, 0).into(), primary_style, after_cursor);
+        if after_cursor.len() > 0 {
+            output.print_at((cursor_pos + 1, 0).into(), primary_style, after_cursor.as_str());
         }
     }
 }

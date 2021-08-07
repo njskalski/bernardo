@@ -16,7 +16,7 @@ pub struct ButtonWidget<ParentMsg: MsgConstraints> {
 
 impl<ParentMsg: MsgConstraints> BaseWidget for ButtonWidget<ParentMsg> {
     fn id(&self) -> usize {
-        self.id()
+        self.id
     }
 
     fn min_size(&self) -> XY {
@@ -98,7 +98,7 @@ impl <ParentMsg : MsgConstraints> Widget<ParentMsg> for ButtonWidget<ParentMsg> 
     }
 
     fn render(&self, focused : bool, output: &mut Output) {
-        let mut full_text = "[" + &self.text + "]";
+        let mut full_text = "[".to_string() + &self.text + "]";
 
         let mut style = if self.enabled {
             TextStyle_WhiteOnBlue
@@ -108,9 +108,9 @@ impl <ParentMsg : MsgConstraints> Widget<ParentMsg> for ButtonWidget<ParentMsg> 
 
         if focused {
             style.effect = Effect::Underline;
-            full_text = ">" + &self.text + "<"
+            full_text = ">".to_string() + &self.text + "<"
         }
 
-        output.print_at((0,0).into(), style, full_text);
+        output.print_at((0,0).into(), style, full_text.as_str());
     }
 }

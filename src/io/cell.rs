@@ -1,4 +1,4 @@
-use crate::io::style::TextStyle;
+use crate::io::style::{TextStyle, TextStyle_WhiteOnBlack};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Cell {
@@ -9,7 +9,7 @@ pub enum Cell {
 impl Cell {
     pub fn empty() -> Cell {
         Cell::Begin {
-            style: TextStyle::black_and_white(),
+            style: TextStyle_WhiteOnBlack,
             grapheme: ' '.into(),
         }
     }

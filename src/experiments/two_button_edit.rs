@@ -27,7 +27,12 @@ pub enum TBEMsg {
     TextInvalid,
 }
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+pub enum NoMsg {}
+
 impl MsgConstraints for TBEMsg {}
+
+impl MsgConstraints for NoMsg {}
 
 pub struct TwoButtonEdit  {
     id : usize,
@@ -38,12 +43,12 @@ pub struct TwoButtonEdit  {
 }
 
 impl TwoButtonEdit {
-    fn new() -> Self {
-        let ok_button = ButtonWidget::<TBEMsg>::new()
+    pub fn new() -> Self {
+        let ok_button = ButtonWidget::<TBEMsg>::new("OK".into())
             .with_on_hit(|_| Some(TBEMsg::OK))
             .with_enabled(false);
 
-        let cancel_button = ButtonWidget::<TBEMsg>::new().with_on_hit(|_| Some(TBEMsg::Cancel));
+        let cancel_button = ButtonWidget::<TBEMsg>::new("Cancel".into()).with_on_hit(|_| Some(TBEMsg::Cancel));
 
         let edit_box = EditBoxWidget::<TBEMsg>::new().with_on_change(|eb| {
            if eb.get_text().len() > 4 {
@@ -87,10 +92,10 @@ impl BaseWidget for TwoButtonEdit {
     }
 }
 
-impl<ParentMsg : MsgConstraints> Widget<ParentMsg> for TwoButtonEdit {
+impl Widget<NoMsg> for TwoButtonEdit {
     type LocalMsg = TBEMsg;
 
-    fn update(&mut self, msg: TBEMsg) -> Option<ParentMsg> {
+    fn update(&mut self, msg: TBEMsg) -> Option<NoMsg> {
         match msg {
             TBEMsg::TextValid => {
                 self.ok_button.set_enabled(true);
@@ -124,8 +129,8 @@ impl<ParentMsg : MsgConstraints> Widget<ParentMsg> for TwoButtonEdit {
             .get_rect(output.size(), self.edit_box.id())
             .unwrap();
 
-        self.ok_button.render(false, &mut SubOutput::new(output.into(), ok_button_rect));
-        self.cancel_button.render(false, &mut SubOutput::new(output.into(), cancel_button_rect));
-        self.edit_box.render(false,&mut SubOutput::new(output.into(), edit_rect));
+        self.ok_button.render(false, &mut SubOutput::new(Box::new(output), ok_button_rect));
+        self.cancel_button.render(false, &mut SubOutput::new(Box::new(output), cancel_button_rect));
+        self.edit_box.render(false,&mut SubOutput::new(Box::new(output), edit_rect));
     }
 }

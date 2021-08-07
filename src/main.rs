@@ -5,6 +5,12 @@ use termion::{async_stdin, clear, color, cursor, style};
 use crate::io::termion_output::TermionOutput;
 use crate::io::termion_input::TermionInput;
 use crate::io::output::Output;
+use crate::io::input_event::InputEvent;
+use crate::io::keys::Key;
+use crate::experiments::two_button_edit::{TwoButtonEdit, TBEMsg};
+use crate::widget::widget::Widget;
+
+use log::debug;
 
 mod io;
 mod primitives;
@@ -29,37 +35,30 @@ fn main() {
     let input = TermionInput::new(stdin);
     let mut output = TermionOutput::new(stdout);
 
-    // loop {
-    //     switchboard.borrow_mut().exhaust_ticks(None);
-    //
-    //     output
-    //         .update_size()
-    //         .map(|new_size| root_view.set_size(new_size));
-    //
-    //     output.clear();
-    //
-    //     root_view.render(&style_provider, FocusType::Hovered, &mut output);
-    //
-    //     output.end_frame();
-    //
-    //     match input.source().recv() {
-    //         // Ok(ie) => {
-    //         //     debug!("{:?}", ie);
-    //         //     match ie {
-    //         //         InputEvent::Tick => {}
-    //         //         InputEvent::KeyInput(key) => match key {
-    //         //             Key::CtrlLetter('q') => break,
-    //         //             _ => {
-    //         //                 root_view.consume_input(key);
-    //         //             }
-    //         //         },
-    //         //         _ => {}
-    //         //     }
-    //         // }
-    //         Err(e) => {
-    //             debug!("Err {:?}", e);
-    //         }
-    //     }
-    // }
+    let mut view = TwoButtonEdit::new();
 
+    loop {
+        output.clear();
+
+        match input.source().recv() {
+            Ok(ie) => {
+                debug!("{:?}", ie);
+                match ie {
+                    InputEvent::Tick => {}
+                    InputEvent::KeyInput(key) => match key {
+                        Key::CtrlLetter('q') => break,
+                        _ => {
+                            view.render(true, &mut output);
+                        }
+                    },
+                    _ => {}
+                }
+            }
+            Err(e) => {
+                debug!("Err {:?}", e);
+            }
+        }
+
+        output.end_frame();
+    }
 }
