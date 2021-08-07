@@ -5,6 +5,10 @@ use crate::widget::edit_box::EditBoxWidgetMsg::Letter;
 use crate::widget::widget::{Widget, MsgConstraints, get_new_widget_id, BaseWidget};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::io::keys::Key;
+use crate::primitives::xy::XY;
+use crate::io::output::Output;
+use crate::io::style::{TextStyle_WhiteOnBlue, TextStyle_WhiteOnBlack, TextStyle_WhiteOnYellow, TextStyle_WhiteOnBrightYellow, TextStyle_WhiteOnRedish};
+use unicode_width::UnicodeWidthStr;
 
 pub struct EditBoxWidget<ParentMsg: MsgConstraints> {
     id: usize,
@@ -69,6 +73,14 @@ impl <ParentMsg: MsgConstraints> BaseWidget for EditBoxWidget<ParentMsg> {
     fn id(&self) -> usize {
         self.id
     }
+
+    fn min_size(&self) -> XY {
+        XY::new(12, 1)
+    }
+
+    fn size(&self, max_size: XY) -> XY {
+        self.min_size()
+    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -117,10 +129,6 @@ impl<ParentMsg : MsgConstraints> Widget<ParentMsg> for EditBoxWidget<ParentMsg> 
         }
     }
 
-    fn focusable(&self) -> bool {
-        self.enabled
-    }
-
     fn on_input(&self, input_event: InputEvent) -> Option<EditBoxWidgetMsg> {
         debug_assert!(
             self.enabled,
@@ -131,6 +139,50 @@ impl<ParentMsg : MsgConstraints> Widget<ParentMsg> for EditBoxWidget<ParentMsg> 
             KeyInput(Enter) => Some(EditBoxWidgetMsg::Hit),
             KeyInput(Key::Letter(ch)) => Some(EditBoxWidgetMsg::Letter(ch)),
             _ => None,
+        }
+    }
+
+    fn render(&self, focused: bool, output: &mut Output) {
+        let mut primary_style = if self.enabled {
+            if focused {
+                TextStyle_WhiteOnBrightYellow
+            } else {
+                TextStyle_WhiteOnYellow
+            }
+        } else {
+            TextStyle_WhiteOnBlack
+        };
+
+        let cursor_style = if self.enabled && focused {
+            TextStyle_WhiteOnRedish
+        } else {
+            primary_style
+        };
+
+        let befor_cursor = self.text.graphemes(true)
+            // .enumerate()
+            .take(self.cursor)
+            .map(|g| g.into())
+            .fold("", |a, b| a + b);
+
+        let cursor_pos = self.text.graphemes(true)
+            .map(|g| g.width())
+            .fold(0, |a, b| a + b);
+
+        let at_cursor = self.text.graphemes(true)
+            .skip(self.cursor)
+            .next()
+            .unwrap_or(" ");
+
+        let after_cursor = self.text.graphemes(true)
+            .skip(self.cursor + 1)
+            .map(|g| g.into())
+            .fold("", |a, b| a + b);
+
+        output.print_at((0, 0).into(), primary_style, befor_cursor);
+        output.print_at((cursor_pos, 0).into(), cursor_style, at_cursor);
+        if len(after_cursor) > 0 {
+            output.print_at((cursor_pos + 1, 0).into(), primary_style, after_cursor);
         }
     }
 }

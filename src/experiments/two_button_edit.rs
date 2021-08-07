@@ -15,6 +15,9 @@ use std::fs::read;
 use crate::layout::split_layout::SplitLayout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::xy::XY;
+use crate::io::output::Output;
+use crate::layout::layout::Layout;
+use crate::io::sub_output::SubOutput;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum TBEMsg {
@@ -74,6 +77,14 @@ impl BaseWidget for TwoButtonEdit {
     fn id(&self) -> usize {
         self.id
     }
+
+    fn min_size(&self) -> XY {
+        XY::new(32,10)
+    }
+
+    fn size(&self, max_size: XY) -> XY {
+        self.min_size()
+    }
 }
 
 impl<ParentMsg : MsgConstraints> Widget<ParentMsg> for TwoButtonEdit {
@@ -93,14 +104,28 @@ impl<ParentMsg : MsgConstraints> Widget<ParentMsg> for TwoButtonEdit {
         }
     }
 
-    fn focusable(&self) -> bool {
-        true
-    }
-
     fn on_input(&self, input_event: InputEvent) -> Option<TBEMsg> {
         match input_event {
             InputEvent::KeyInput(Key::Esc) => Some(Cancel),
             _ => None
         }
+    }
+
+    fn render(&self, focused: bool, output: &mut Output) {
+        let ok_button_rect = self.layout
+            .get_rect(output.size(), self.ok_button.id())
+            .unwrap();
+
+        let cancel_button_rect = self.layout
+            .get_rect(output.size(), self.cancel_button.id())
+            .unwrap();
+
+        let edit_rect = self.layout
+            .get_rect(output.size(), self.edit_box.id())
+            .unwrap();
+
+        self.ok_button.render(false, &mut SubOutput::new(output.into(), ok_button_rect));
+        self.cancel_button.render(false, &mut SubOutput::new(output.into(), cancel_button_rect));
+        self.edit_box.render(false,&mut SubOutput::new(output.into(), edit_rect));
     }
 }
