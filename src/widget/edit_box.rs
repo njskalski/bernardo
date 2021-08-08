@@ -64,6 +64,17 @@ impl<ParentMsg: MsgConstraints> EditBoxWidget<ParentMsg> {
         }
     }
 
+    pub fn with_text(self, text : String) -> Self {
+        EditBoxWidget {
+            id: self.id,
+            enabled: self.enabled,
+            on_hit: self.on_hit,
+            on_change: self.on_change,
+            text,
+            cursor: self.cursor,
+        }
+    }
+
     pub fn get_text(&self) -> &String {
         &self.text
     }
@@ -166,6 +177,7 @@ impl<ParentMsg : MsgConstraints> Widget<ParentMsg> for EditBoxWidget<ParentMsg> 
             .fold("".to_string(), |a, b| a + b);
 
         let cursor_pos = self.text.graphemes(true)
+            .take(self.cursor)
             .map(|g| g.width())
             .fold(0, |a, b| a + b);
 

@@ -12,7 +12,7 @@ use crate::experiments::two_button_edit::TBEMsg::{TextValid, TextInvalid, Cancel
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use std::fs::read;
-use crate::layout::split_layout::SplitLayout;
+use crate::layout::split_layout::{SplitLayout, SplitDirection, SplitRule};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::xy::XY;
 use crate::io::output::Output;
@@ -56,17 +56,20 @@ impl TwoButtonEdit {
            } else {
                Some(TextInvalid)
            }
-        });
+        }).with_text("some text".into());
 
         let button_horizontal_split =
             SplitLayout::new(
                 vec![Box::new(LeafLayout::from_widget(&cancel_button)), Box::new(LeafLayout::from_widget(&ok_button))],
-                XY::new(2, 1)).unwrap();
+                SplitDirection::Horizontal,
+                vec![SplitRule::Proportional(1.0), SplitRule::Proportional(1.0)]
+            ).unwrap();
 
         let vertical_split =
             SplitLayout::new(
                 vec![Box::new(LeafLayout::from_widget(&edit_box)), Box::new(button_horizontal_split)],
-                XY::new(1, 2)).unwrap();
+                SplitDirection::Vertical,
+                vec![SplitRule::Fixed(1), SplitRule::Fixed(1)]).unwrap();
 
         TwoButtonEdit{
             id : get_new_widget_id(),

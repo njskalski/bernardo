@@ -2,27 +2,54 @@ use crate::primitives::xy::XY;
 use crate::layout::layout::{Layout, FocusUpdate};
 use crate::primitives::rect::Rect;
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+pub enum SplitDirection {
+    Horizontal,
+    Vertical
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum SplitRule {
+    Fixed(usize),
+    Proportional(f32), // TODO change to float
+}
+
 pub struct SplitLayout {
     children : Vec<Box<dyn Layout>>,
     focused : usize,
-    split_directions : XY,
+    split_direction : SplitDirection,
+    split_params : Vec<SplitRule>
 }
 
 impl SplitLayout {
-
-    pub fn new(children : Vec<Box<dyn Layout>>, split_directions : XY) -> Option<Self> {
+    pub fn new(children : Vec<Box<dyn Layout>>,
+               split_direction : SplitDirection,
+               split_params : Vec<SplitRule>,
+    ) -> Option<Self> {
         if children.is_empty() {
             return None
         }
 
-        if split_directions.x * split_directions.y != children.len() as u16 {
+        if children.len() != split_params.len() {
             return None
+        }
+
+        for p in split_params.iter() {
+            match p {
+                SplitRule::Fixed(_) => {}
+                SplitRule::Proportional(p) => {
+                    if *p <= 0.0 {
+                        return None
+                    }
+                }
+            }
         }
 
         Some(SplitLayout {
             children,
             focused: 0,
-            split_directions
+            split_direction,
+            split_params,
         })
     }
 
@@ -35,17 +62,69 @@ impl SplitLayout {
         None
     }
 
-    // we calculate 1,2,3,4
-    //              5,6,7,8...
-    fn idx_to_coords(&self, idx : usize) -> XY {
-        assert!(idx < self.children.len());
+    fn get_rects(&self, size: XY) -> Option<Vec<Rect>> {
+        let free_axis = if self.split_direction == SplitDirection::Vertical {
+            size.y as usize
+        } else {
+            size.x as usize
+        };
 
-        let x = idx % self.split_directions.x as usize;
-        let y = idx / self.split_directions.x as usize;
+        let fixed_amount = self.split_params.iter().fold(0,
+        |acc, item| acc + match item {
+            SplitRule::Fixed(i) => *i,
+            SplitRule::Proportional(_) => 0,
+        });
 
-        (x, y).into()
+        if fixed_amount > free_axis {
+            return None
+        }
+
+        let leftover = free_axis - fixed_amount;
+        let mut amounts : Vec<usize> = vec![0; self.split_params.len()];
+
+        let mut sum_props = 0.0f32;
+
+        for (idx, rule) in self.split_params.iter().enumerate() {
+            match rule {
+                SplitRule::Fixed(f) => {
+                    amounts[idx] = *f;
+                }
+                SplitRule::Proportional(prop) => {
+                    sum_props += prop;
+                }
+            }
+        }
+
+        let unit = leftover as f32 / sum_props;
+
+        for (idx, rule) in self.split_params.iter().enumerate() {
+            if let SplitRule::Proportional(p) = rule {
+                amounts[idx] = (unit * p) as usize;
+            }
+        }
+
+        let mut res : Vec<Rect> = Vec::new();
+        res.reserve(amounts.len());
+
+        let mut upper_left = XY::new(0, 0);
+
+        for s in amounts.iter() {
+            let new_size: XY = if self.split_direction == SplitDirection::Vertical {
+                (size.x, *s as u16).into()
+            } else {
+                (*s as u16, size.y).into()
+            };
+
+            res.push(Rect::new(upper_left, new_size));
+
+            upper_left = upper_left + if self.split_direction == SplitDirection::Vertical {
+                XY::new(0, *s as u16)
+            } else {
+                XY::new(*s as u16, 0).into()
+            };
+        };
+        Some(res)
     }
-
 }
 
 impl Layout for SplitLayout {
@@ -64,24 +143,19 @@ impl Layout for SplitLayout {
      */
     fn get_rect(&self, output_size: XY, widget_id: usize) -> Option<Rect> {
         let idx_op = self.id_to_idx(widget_id);
-
         if idx_op.is_none() {
             return None
         }
-
         let idx = idx_op.unwrap();
 
-        let pos = self.idx_to_coords(idx);
+        let rects_op = self.get_rects(output_size);
+        if rects_op.is_none() {
+            return None
+        }
+        let rects = rects_op.unwrap();
 
-        let x_unit = output_size.x / self.split_directions.x;
-        let y_unit = output_size.y / self.split_directions.y;
-
-        let upper_left = XY::new(x_unit * pos.x, y_unit * pos.y);
-        let child_size = XY::new(x_unit, y_unit);
-
-        let sub_rect = self.children[idx].get_rect(child_size, widget_id).unwrap();
-
-        Some(sub_rect.shift(upper_left))
+        let child_rec = self.children[idx].get_rect(rects[idx].size, widget_id);
+        child_rec.map(|r| r.shift(rects[idx].pos))
     }
 
     fn is_leaf(&self) -> bool {

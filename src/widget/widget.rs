@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use crate::io::output::Output;
 use crate::primitives::xy::XY;
+use crate::primitives::sized_xy::SizedXY;
 
 pub trait MsgConstraints : Copy + Clone + Debug {}
 

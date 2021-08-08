@@ -6,6 +6,7 @@ use crate::primitives::xy::XY;
 use unicode_segmentation::UnicodeSegmentation;
 use crate::io::output::Output;
 use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, Effect};
+use crate::primitives::sized_xy::SizedXY;
 
 pub struct ButtonWidget<ParentMsg: MsgConstraints> {
     id : usize,
