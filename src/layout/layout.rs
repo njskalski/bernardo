@@ -1,15 +1,6 @@
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 
-pub enum FocusUpdate {
-    Left,
-    Right,
-    Up,
-    Down,
-    Next,
-    Prev,
-}
-
 pub trait Layout {
     fn get_focused(&self) -> usize;
 
