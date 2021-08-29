@@ -22,3 +22,9 @@ impl <T: AnyMsg> AsAny for T {
         self
     }
 }
+
+impl dyn AnyMsg {
+    pub fn as_msg<T : AnyMsg>(&self) -> Option<&T> {
+        self.as_any().downcast_ref::<T>()
+    }
+}

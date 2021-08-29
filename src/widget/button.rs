@@ -9,6 +9,7 @@ use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, Effect};
 use crate::primitives::sized_xy::SizedXY;
 use crate::widget::any_msg::AnyMsg;
 use std::borrow::Borrow;
+use log::warn;
 
 pub struct ButtonWidget {
     id : usize,
@@ -31,19 +32,6 @@ impl BaseWidget for ButtonWidget {
         self.min_size()
     }
 
-    fn update_any(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        match msg {
-            Hit => {
-                if self.on_hit.is_none() {
-                    None
-                } else {
-                    self.on_hit.unwrap()(&self)
-                }
-            }
-            _ => None,
-        }
-    }
-
     fn on_input_any(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         debug_assert!(
             self.enabled,
@@ -52,6 +40,25 @@ impl BaseWidget for ButtonWidget {
 
         match input_event {
             KeyInput(Enter) => Some(Box::new(ButtonWidgetMsg::Hit)),
+            _ => None,
+        }
+    }
+
+    fn update_any(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+        let our_msg = msg.as_msg::<ButtonWidgetMsg>();
+        if our_msg.is_none() {
+            warn!("expecetd ButtonWidgetMsg, got {:?}", msg);
+            return None
+        }
+
+        match our_msg.unwrap() {
+            ButtonWidgetMsg::Hit => {
+                if self.on_hit.is_none() {
+                    None
+                } else {
+                    self.on_hit.unwrap()(&self)
+                }
+            }
             _ => None,
         }
     }

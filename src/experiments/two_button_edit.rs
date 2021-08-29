@@ -40,13 +40,13 @@ pub enum NoMsg {}
 
 impl AnyMsg for NoMsg {}
 
-pub struct TwoButtonEdit  {
-    id : usize,
-    ok_button : ButtonWidget,
-    cancel_button : ButtonWidget,
-    edit_box : EditBoxWidget,
-    layout : SplitLayout,
-    focus_group : FocusGroupImpl,
+pub struct TwoButtonEdit {
+    id: usize,
+    ok_button: ButtonWidget,
+    cancel_button: ButtonWidget,
+    edit_box: EditBoxWidget,
+    layout: SplitLayout,
+    focus_group: FocusGroupImpl,
 }
 
 impl TwoButtonEdit {
@@ -58,18 +58,18 @@ impl TwoButtonEdit {
         let cancel_button = ButtonWidget::new("Cancel".into()).with_on_hit(|_| Some(Box::new(TBEMsg::Cancel)));
 
         let edit_box = EditBoxWidget::new().with_on_change(|eb| {
-           if eb.get_text().len() > 4 {
-               Some(Box::new(TextValid))
-           } else {
-               Some(Box::new(TextInvalid))
-           }
+            if eb.get_text().len() > 4 {
+                Some(Box::new(TextValid))
+            } else {
+                Some(Box::new(TextInvalid))
+            }
         }).with_text("some text".into());
 
         let button_horizontal_split =
             SplitLayout::new(
                 vec![Box::new(LeafLayout::from_widget(&ok_button)), Box::new(LeafLayout::from_widget(&cancel_button))],
                 SplitDirection::Horizontal,
-                vec![SplitRule::Proportional(1.0), SplitRule::Proportional(1.0)]
+                vec![SplitRule::Proportional(1.0), SplitRule::Proportional(1.0)],
             ).unwrap();
 
         let vertical_split =
@@ -91,7 +91,7 @@ impl TwoButtonEdit {
             vec![
                 (FocusUpdate::Down, ok_button.id()),
                 (FocusUpdate::Next, ok_button.id()),
-            ]
+            ],
         );
 
         focus_group.override_edges(
@@ -101,7 +101,7 @@ impl TwoButtonEdit {
                 (FocusUpdate::Next, cancel_button.id()),
                 (FocusUpdate::Prev, edit_box.id()),
                 (FocusUpdate::Right, cancel_button.id()),
-            ]
+            ],
         );
 
         focus_group.override_edges(
@@ -110,12 +110,12 @@ impl TwoButtonEdit {
                 (FocusUpdate::Up, edit_box.id()),
                 (FocusUpdate::Prev, ok_button.id()),
                 (FocusUpdate::Left, ok_button.id()),
-            ]
+            ],
         );
 
-        TwoButtonEdit{
-            id : get_new_widget_id(),
-            layout : vertical_split,
+        TwoButtonEdit {
+            id: get_new_widget_id(),
+            layout: vertical_split,
             ok_button,
             cancel_button,
             edit_box,
@@ -130,7 +130,7 @@ impl BaseWidget for TwoButtonEdit {
     }
 
     fn min_size(&self) -> XY {
-        XY::new(32,10)
+        XY::new(32, 10)
     }
 
     fn size(&self, max_size: XY) -> XY {
@@ -157,27 +157,23 @@ impl BaseWidget for TwoButtonEdit {
     }
 
     fn update_any(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        let our_msg = msg.deref().as_any().downcast_ref::<TBEMsg>();
-
-        match our_msg {
-            Some(msg) => match msg {
-                TBEMsg::TextValid => {
-                    self.ok_button.set_enabled(true);
-                    None
-                }
-                TBEMsg::TextInvalid => {
-                    self.ok_button.set_enabled(false);
-                    None
-                }
-                _ => None
-            }
-            None => {
-                warn!("expecetd TBEMsg, got {:?}", msg);
-                None
-            }
+        let our_msg = msg.as_msg::<TBEMsg>();
+        if our_msg.is_none() {
+            warn!("expecetd TBEMsg, got {:?}", msg);
+            return None;
         }
 
-
+        match our_msg.unwrap() {
+            TBEMsg::TextValid => {
+                self.ok_button.set_enabled(true);
+                None
+            }
+            TBEMsg::TextInvalid => {
+                self.ok_button.set_enabled(false);
+                None
+            }
+            _ => None
+        }
     }
 
     fn render(&self, focused: bool, output: &mut Output) {
@@ -199,6 +195,6 @@ impl BaseWidget for TwoButtonEdit {
 
         self.ok_button.render(ok_focused, &mut SubOutput::new(Box::new(output), ok_button_rect));
         self.cancel_button.render(cancel_focused, &mut SubOutput::new(Box::new(output), cancel_button_rect));
-        self.edit_box.render(edit_focused,&mut SubOutput::new(Box::new(output), edit_rect));
+        self.edit_box.render(edit_focused, &mut SubOutput::new(Box::new(output), edit_rect));
     }
 }

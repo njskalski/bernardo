@@ -13,6 +13,7 @@ use crate::widget::any_msg::AnyMsg;
 use std::any::Any;
 use std::borrow::Borrow;
 use std::ops::Deref;
+use log::warn;
 
 pub struct EditBoxWidget {
     id: usize,
@@ -82,40 +83,44 @@ impl BaseWidget for EditBoxWidget {
     }
 
     fn update_any(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        // let internal_msg = msg.downcast_ref::<EditBoxWidgetMsg>();
+        let our_msg = msg.as_msg::<EditBoxWidgetMsg>();
+        if our_msg.is_none() {
+            warn!("expecetd EditBoxWidgetMsg, got {:?}", msg);
+            return None
+        }
 
-        match msg {
-            // EditBoxWidgetMsg::Hit => {
-            //     if self.on_hit.is_none() {
-            //         None
-            //     } else {
-            //         self.on_hit.unwrap()(&self)
-            //     }
-            // }
-            // EditBoxWidgetMsg::Letter(ch) => {
-            //     let mut iter = self.text.graphemes(true);
-            //     let mut new_text = String::new();
-            //
-            //     for _ in 0..self.cursor {
-            //         new_text += iter.as_str();
-            //         iter.next();
-            //     }
-            //
-            //     new_text += ch.to_string().as_str(); //TODO: make this conversion better?
-            //
-            //     for _ in self.cursor..self.text.len() {
-            //         new_text += iter.as_str();
-            //         iter.next();
-            //     }
-            //
-            //     self.text = new_text;
-            //
-            //     if self.on_change.is_some() {
-            //         self.on_change.unwrap()(self)
-            //     } else {
-            //         None
-            //     }
-            // }
+        match our_msg.unwrap() {
+            EditBoxWidgetMsg::Hit => {
+                if self.on_hit.is_none() {
+                    None
+                } else {
+                    self.on_hit.unwrap()(&self)
+                }
+            }
+            EditBoxWidgetMsg::Letter(ch) => {
+                let mut iter = self.text.graphemes(true);
+                let mut new_text = String::new();
+
+                for _ in 0..self.cursor {
+                    new_text += iter.as_str();
+                    iter.next();
+                }
+
+                new_text += ch.to_string().as_str(); //TODO: make this conversion better?
+
+                for _ in self.cursor..self.text.len() {
+                    new_text += iter.as_str();
+                    iter.next();
+                }
+
+                self.text = new_text;
+
+                if self.on_change.is_some() {
+                    self.on_change.unwrap()(self)
+                } else {
+                    None
+                }
+            }
             _ => None,
         }
     }
