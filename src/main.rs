@@ -8,7 +8,7 @@ use crate::io::output::Output;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use crate::experiments::two_button_edit::{TwoButtonEdit, TBEMsg};
-use crate::widget::widget::Widget;
+use crate::widget::widget::BaseWidget;
 
 use log::debug;
 
@@ -48,8 +48,8 @@ fn main() {
                     InputEvent::KeyInput(key) => match key {
                         Key::CtrlLetter('q') => break,
                         _ => {
-                            let msg = view.on_input(ie);
-                            msg.map(|msg| view.update(msg));
+                            let msg = view.on_input_any(ie);
+                            msg.map(|msg| view.update_any(msg));
 
                             view.render(true, &mut output);
                         }

@@ -1,21 +1,23 @@
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Key::Enter;
-use crate::widget::widget::{Widget, MsgConstraints, BaseWidget, get_new_widget_id};
+use crate::widget::widget::{BaseWidget, get_new_widget_id, WidgetAction};
 use crate::primitives::xy::XY;
 use unicode_segmentation::UnicodeSegmentation;
 use crate::io::output::Output;
 use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, Effect};
 use crate::primitives::sized_xy::SizedXY;
+use crate::widget::any_msg::AnyMsg;
+use std::borrow::Borrow;
 
-pub struct ButtonWidget<ParentMsg: MsgConstraints> {
+pub struct ButtonWidget {
     id : usize,
     enabled: bool,
     text : String,
-    on_hit: Option<fn(&Self) -> Option<ParentMsg>>,
+    on_hit: Option<WidgetAction<ButtonWidget>>,
 }
 
-impl<ParentMsg: MsgConstraints> BaseWidget for ButtonWidget<ParentMsg> {
+impl BaseWidget for ButtonWidget {
     fn id(&self) -> usize {
         self.id
     }
@@ -29,12 +31,50 @@ impl<ParentMsg: MsgConstraints> BaseWidget for ButtonWidget<ParentMsg> {
         self.min_size()
     }
 
-    fn on_input_any(&self, input_event : InputEvent) -> Option<Box<dyn MsgConstraints>> {
-        self.on_input(input_event).map(|msg| Box::<dyn MsgConstraints>::new(msg as MsgConstraints))
+    fn update_any(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+        match msg {
+            Hit => {
+                if self.on_hit.is_none() {
+                    None
+                } else {
+                    self.on_hit.unwrap()(&self)
+                }
+            }
+            _ => None,
+        }
+    }
+
+    fn on_input_any(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        debug_assert!(
+            self.enabled,
+            "ButtonWidget: received input to disabled component!"
+        );
+
+        match input_event {
+            KeyInput(Enter) => Some(Box::new(ButtonWidgetMsg::Hit)),
+            _ => None,
+        }
+    }
+
+    fn render(&self, focused : bool, output: &mut Output) {
+        let mut full_text = "[".to_string() + &self.text + "]";
+
+        let mut style = if self.enabled {
+            TextStyle_WhiteOnBlue
+        } else {
+            TextStyle_WhiteOnBlack
+        };
+
+        if focused {
+            style.effect = Effect::Underline;
+            full_text = ">".to_string() + &self.text + "<"
+        }
+
+        output.print_at((0,0).into(), style, full_text.as_str());
     }
 }
 
-impl<ParentMsg: MsgConstraints> ButtonWidget<ParentMsg> {
+impl ButtonWidget {
     pub fn new(text : String) -> Self {
         ButtonWidget {
             id: get_new_widget_id(),
@@ -44,12 +84,10 @@ impl<ParentMsg: MsgConstraints> ButtonWidget<ParentMsg> {
         }
     }
 
-    pub fn with_on_hit(self, on_hit: fn(&Self) -> Option<ParentMsg>) -> Self {
+    pub fn with_on_hit(self, on_hit: WidgetAction<ButtonWidget>) -> Self {
         ButtonWidget {
-            id: self.id,
-            enabled: self.enabled,
             on_hit: Some(on_hit),
-            text : self.text
+            ..self
         }
     }
 
@@ -74,50 +112,4 @@ pub enum ButtonWidgetMsg {
     // LostFocus
 }
 
-impl MsgConstraints for ButtonWidgetMsg {}
-
-impl <ParentMsg : MsgConstraints> Widget<ParentMsg> for ButtonWidget<ParentMsg> {
-    type LocalMsg = ButtonWidgetMsg;
-
-    fn update(&mut self, msg: ButtonWidgetMsg) -> Option<ParentMsg> {
-        match msg {
-            ButtonWidgetMsg::Hit => {
-                if self.on_hit.is_none() {
-                    None
-                } else {
-                    self.on_hit.unwrap()(&self)
-                }
-            }
-            _ => None,
-        }
-    }
-
-    fn on_input(&self, input_event: InputEvent) -> Option<ButtonWidgetMsg> {
-        debug_assert!(
-            self.enabled,
-            "ButtonWidget: received input to disabled component!"
-        );
-
-        match input_event {
-            KeyInput(Enter) => Some(ButtonWidgetMsg::Hit),
-            _ => None,
-        }
-    }
-
-    fn render(&self, focused : bool, output: &mut Output) {
-        let mut full_text = "[".to_string() + &self.text + "]";
-
-        let mut style = if self.enabled {
-            TextStyle_WhiteOnBlue
-        } else {
-            TextStyle_WhiteOnBlack
-        };
-
-        if focused {
-            style.effect = Effect::Underline;
-            full_text = ">".to_string() + &self.text + "<"
-        }
-
-        output.print_at((0,0).into(), style, full_text.as_str());
-    }
-}
+impl AnyMsg for ButtonWidgetMsg {}

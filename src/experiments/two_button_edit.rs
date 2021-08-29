@@ -7,7 +7,7 @@ just an experiment to see if the design works.
 
 use crate::widget::button::ButtonWidget;
 use crate::widget::edit_box::EditBoxWidget;
-use crate::widget::widget::{Widget, MsgConstraints, get_new_widget_id, BaseWidget};
+use crate::widget::widget::{get_new_widget_id, BaseWidget};
 use crate::experiments::two_button_edit::TBEMsg::{TextValid, TextInvalid, Cancel};
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
@@ -19,6 +19,11 @@ use crate::io::output::Output;
 use crate::layout::layout::Layout;
 use crate::io::sub_output::SubOutput;
 use crate::experiments::focus_group::{FocusGroupImpl, FocusGroup, FocusUpdate};
+use crate::widget::any_msg::{AnyMsg, AsAny};
+use std::borrow::Borrow;
+use std::any::Any;
+use log::warn;
+use std::ops::Deref;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum TBEMsg {
@@ -28,35 +33,35 @@ pub enum TBEMsg {
     TextInvalid,
 }
 
+impl AnyMsg for TBEMsg {}
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum NoMsg {}
 
-impl MsgConstraints for TBEMsg {}
-
-impl MsgConstraints for NoMsg {}
+impl AnyMsg for NoMsg {}
 
 pub struct TwoButtonEdit  {
     id : usize,
-    ok_button : ButtonWidget<TBEMsg>,
-    cancel_button : ButtonWidget<TBEMsg>,
-    edit_box : EditBoxWidget<TBEMsg>,
+    ok_button : ButtonWidget,
+    cancel_button : ButtonWidget,
+    edit_box : EditBoxWidget,
     layout : SplitLayout,
     focus_group : FocusGroupImpl,
 }
 
 impl TwoButtonEdit {
     pub fn new() -> Self {
-        let ok_button = ButtonWidget::<TBEMsg>::new("OK".into())
-            .with_on_hit(|_| Some(TBEMsg::OK))
+        let ok_button = ButtonWidget::new("OK".into())
+            .with_on_hit(|_| Some(Box::new(TBEMsg::OK)))
             .with_enabled(false);
 
-        let cancel_button = ButtonWidget::<TBEMsg>::new("Cancel".into()).with_on_hit(|_| Some(TBEMsg::Cancel));
+        let cancel_button = ButtonWidget::new("Cancel".into()).with_on_hit(|_| Some(Box::new(TBEMsg::Cancel)));
 
-        let edit_box = EditBoxWidget::<TBEMsg>::new().with_on_change(|eb| {
+        let edit_box = EditBoxWidget::new().with_on_change(|eb| {
            if eb.get_text().len() > 4 {
-               Some(TextValid)
+               Some(Box::new(TextValid))
            } else {
-               Some(TextInvalid)
+               Some(Box::new(TextInvalid))
            }
         }).with_text("some text".into());
 
@@ -132,29 +137,7 @@ impl BaseWidget for TwoButtonEdit {
         self.min_size()
     }
 
-    fn on_input_any(&self, input_event : InputEvent) -> Option<Box<dyn MsgConstraints>> {
-        self.on_input(input_event).map(|msg| Box::new(msg))
-    }
-}
-
-impl Widget<NoMsg> for TwoButtonEdit {
-    type LocalMsg = TBEMsg;
-
-    fn update(&mut self, msg: TBEMsg) -> Option<NoMsg> {
-        match msg {
-            TBEMsg::TextValid => {
-                self.ok_button.set_enabled(true);
-                None
-            }
-            TBEMsg::TextInvalid => {
-                self.ok_button.set_enabled(false);
-                None
-            }
-            _ => None
-        }
-    }
-
-    fn on_input(&self, input_event: InputEvent) -> Option<TBEMsg> {
+    fn on_input_any(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         let focused_id = self.focus_group.get_focused();
 
         let focused_view: Option<&dyn BaseWidget> = if focused_id == self.ok_button.id() {
@@ -168,9 +151,33 @@ impl Widget<NoMsg> for TwoButtonEdit {
         // focused_view.map(|fw|)
 
         match input_event {
-            InputEvent::KeyInput(Key::Esc) => Some(Cancel),
+            InputEvent::KeyInput(Key::Esc) => Some(Box::new(Cancel)),
             _ => None
         }
+    }
+
+    fn update_any(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+        let our_msg = msg.deref().as_any().downcast_ref::<TBEMsg>();
+
+        match our_msg {
+            Some(msg) => match msg {
+                TBEMsg::TextValid => {
+                    self.ok_button.set_enabled(true);
+                    None
+                }
+                TBEMsg::TextInvalid => {
+                    self.ok_button.set_enabled(false);
+                    None
+                }
+                _ => None
+            }
+            None => {
+                warn!("expecetd TBEMsg, got {:?}", msg);
+                None
+            }
+        }
+
+
     }
 
     fn render(&self, focused: bool, output: &mut Output) {

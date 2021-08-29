@@ -4,8 +4,10 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use crate::io::output::Output;
 use crate::primitives::xy::XY;
 use crate::primitives::sized_xy::SizedXY;
+use crate::widget::any_msg::AnyMsg;
 
-pub trait MsgConstraints : Debug {}
+// this corresponds to message to Parent.
+pub type WidgetAction<W> = fn(&W) -> Option<Box<dyn AnyMsg>>;
 
 pub trait BaseWidget {
     fn id(&self) -> usize;
@@ -13,19 +15,9 @@ pub trait BaseWidget {
     fn min_size(&self) -> XY;
     fn size(&self, max_size : XY) -> XY;
 
-    fn on_input_any(&self, input_event : InputEvent) -> Option<Box<dyn MsgConstraints>>;
-}
+    fn on_input_any(&self, input_event : InputEvent) -> Option<Box<dyn AnyMsg>>;
 
-pub trait Widget<ParentMsg: MsgConstraints> : BaseWidget {
-    type LocalMsg;
-
-    fn update(&mut self, msg: Self::LocalMsg) -> Option<ParentMsg>;
-
-    /*
-    returns Some() if event was consumed.
-    separated from update, so the InputEvent can get escalated.
-     */
-    fn on_input(&self, input_event: InputEvent) -> Option<Self::LocalMsg>;
+    fn update_any(&mut self, msg : Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>>;
 
     fn render(&self, focused : bool, output : &mut Output);
 }

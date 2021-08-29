@@ -2,24 +2,28 @@ use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Key::Enter;
 use crate::widget::edit_box::EditBoxWidgetMsg::Letter;
-use crate::widget::widget::{Widget, MsgConstraints, get_new_widget_id, BaseWidget};
+use crate::widget::widget::{get_new_widget_id, BaseWidget, WidgetAction};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::io::keys::Key;
 use crate::primitives::xy::XY;
 use crate::io::output::Output;
 use crate::io::style::{TextStyle_WhiteOnBlue, TextStyle_WhiteOnBlack, TextStyle_WhiteOnYellow, TextStyle_WhiteOnBrightYellow, TextStyle_WhiteOnRedish};
 use unicode_width::UnicodeWidthStr;
+use crate::widget::any_msg::AnyMsg;
+use std::any::Any;
+use std::borrow::Borrow;
+use std::ops::Deref;
 
-pub struct EditBoxWidget<ParentMsg: MsgConstraints> {
+pub struct EditBoxWidget {
     id: usize,
     enabled: bool,
-    on_hit: Option<fn(&Self) -> Option<ParentMsg>>,
-    on_change: Option<fn(&Self) -> Option<ParentMsg>>,
+    on_hit: Option<WidgetAction<EditBoxWidget>>,
+    on_change: Option<WidgetAction<EditBoxWidget>>,
     text: String,
     cursor: usize,
 }
 
-impl<ParentMsg: MsgConstraints> EditBoxWidget<ParentMsg> {
+impl EditBoxWidget {
     pub fn new() -> Self {
         EditBoxWidget {
             id: get_new_widget_id(),
@@ -31,47 +35,31 @@ impl<ParentMsg: MsgConstraints> EditBoxWidget<ParentMsg> {
         }
     }
 
-    pub fn with_on_hit(self, on_hit: fn(&Self) -> Option<ParentMsg>) -> Self {
+    pub fn with_on_hit(self, on_hit: WidgetAction<EditBoxWidget>) -> Self {
         EditBoxWidget {
-            id: self.id,
-            enabled: self.enabled,
             on_hit: Some(on_hit),
-            on_change: self.on_change,
-            cursor: self.cursor,
-            text: self.text,
+            ..self
         }
     }
 
-    pub fn with_on_change(self, on_change: fn(&Self) -> Option<ParentMsg>) -> Self {
+    pub fn with_on_change(self, on_change: WidgetAction<EditBoxWidget>) -> Self {
         EditBoxWidget {
-            id: self.id,
-            enabled: self.enabled,
-            on_hit: self.on_hit,
             on_change: Some(on_change),
-            cursor: self.cursor,
-            text: self.text,
+            ..self
         }
     }
 
     pub fn with_enabled(self, enabled: bool) -> Self {
         EditBoxWidget {
-            id : self.id,
             enabled,
-            on_hit: self.on_hit,
-            cursor: self.cursor,
-            text: self.text,
-            on_change: self.on_change,
+            ..self
         }
     }
 
     pub fn with_text(self, text : String) -> Self {
         EditBoxWidget {
-            id: self.id,
-            enabled: self.enabled,
-            on_hit: self.on_hit,
-            on_change: self.on_change,
             text,
-            cursor: self.cursor,
+            ..self
         }
     }
 
@@ -80,7 +68,7 @@ impl<ParentMsg: MsgConstraints> EditBoxWidget<ParentMsg> {
     }
 }
 
-impl <ParentMsg: MsgConstraints> BaseWidget for EditBoxWidget<ParentMsg> {
+impl BaseWidget for EditBoxWidget {
     fn id(&self) -> usize {
         self.id
     }
@@ -93,66 +81,54 @@ impl <ParentMsg: MsgConstraints> BaseWidget for EditBoxWidget<ParentMsg> {
         self.min_size()
     }
 
-    fn on_input_any(&self, input_event : InputEvent) -> Option<Box<dyn MsgConstraints>> {
-        self.on_input(input_event).map(|msg| Box::new(msg))
-    }
-}
+    fn update_any(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+        // let internal_msg = msg.downcast_ref::<EditBoxWidgetMsg>();
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub enum EditBoxWidgetMsg {
-    Hit,
-    Letter(char),
-}
-
-impl<ParentMsg : MsgConstraints> Widget<ParentMsg> for EditBoxWidget<ParentMsg> {
-    type LocalMsg = EditBoxWidgetMsg;
-
-    fn update(&mut self, msg: EditBoxWidgetMsg) -> Option<ParentMsg> {
         match msg {
-            EditBoxWidgetMsg::Hit => {
-                if self.on_hit.is_none() {
-                    None
-                } else {
-                    self.on_hit.unwrap()(&self)
-                }
-            }
-            EditBoxWidgetMsg::Letter(ch) => {
-                let mut iter = self.text.graphemes(true);
-                let mut new_text = String::new();
-
-                for _ in 0..self.cursor {
-                    new_text += iter.as_str();
-                    iter.next();
-                }
-
-                new_text += ch.to_string().as_str(); //TODO: make this conversion better?
-
-                for _ in self.cursor..self.text.len() {
-                    new_text += iter.as_str();
-                    iter.next();
-                }
-
-                self.text = new_text;
-
-                if self.on_change.is_some() {
-                    self.on_change.unwrap()(self)
-                } else {
-                    None
-                }
-            }
+            // EditBoxWidgetMsg::Hit => {
+            //     if self.on_hit.is_none() {
+            //         None
+            //     } else {
+            //         self.on_hit.unwrap()(&self)
+            //     }
+            // }
+            // EditBoxWidgetMsg::Letter(ch) => {
+            //     let mut iter = self.text.graphemes(true);
+            //     let mut new_text = String::new();
+            //
+            //     for _ in 0..self.cursor {
+            //         new_text += iter.as_str();
+            //         iter.next();
+            //     }
+            //
+            //     new_text += ch.to_string().as_str(); //TODO: make this conversion better?
+            //
+            //     for _ in self.cursor..self.text.len() {
+            //         new_text += iter.as_str();
+            //         iter.next();
+            //     }
+            //
+            //     self.text = new_text;
+            //
+            //     if self.on_change.is_some() {
+            //         self.on_change.unwrap()(self)
+            //     } else {
+            //         None
+            //     }
+            // }
             _ => None,
         }
     }
 
-    fn on_input(&self, input_event: InputEvent) -> Option<EditBoxWidgetMsg> {
+    fn on_input_any(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         debug_assert!(
             self.enabled,
             "EditBoxWidgetMsg: received input to disabled component!"
         );
 
         match input_event {
-            KeyInput(Enter) => Some(EditBoxWidgetMsg::Hit),
-            KeyInput(Key::Letter(ch)) => Some(EditBoxWidgetMsg::Letter(ch)),
+            KeyInput(Enter) => Some(Box::new(EditBoxWidgetMsg::Hit)),
+            KeyInput(Key::Letter(ch)) => Some(Box::new(EditBoxWidgetMsg::Letter(ch))),
             _ => None,
         }
     }
@@ -202,3 +178,11 @@ impl<ParentMsg : MsgConstraints> Widget<ParentMsg> for EditBoxWidget<ParentMsg> 
         }
     }
 }
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+pub enum EditBoxWidgetMsg {
+    Hit,
+    Letter(char),
+}
+
+impl AnyMsg for EditBoxWidgetMsg {}

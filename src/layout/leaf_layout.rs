@@ -15,7 +15,7 @@ impl LeafLayout {
         }
     }
 
-    pub fn from_widget(base_widget : &BaseWidget) -> Self {
+    pub fn from_widget(base_widget : &dyn BaseWidget) -> Self {
         LeafLayout {
             widget_id : base_widget.id()
         }
