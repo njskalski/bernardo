@@ -1,0 +1,13 @@
+Here is some quick note:
+    
+    I had a temptation to merge methods on_input() and update() on widget. This way I could hide type argument of internal Msg away from trait
+    definition. Now I think it's not a good idea, and I think I recall why I introduced the division:
+        The use-case comes from situation, when we need to refresh a widget based on input different than user input/time input. The widget
+        can get modified by the Parent widget, or by some watchdog in code.
+        
+        Hmm, but then Parent widget literally owns the child widget. So the first argument is gone, but the second one makes sense.
+        There is no way I can define a common type for messages that abstract widget can receive for other-than-input updates.
+        
+        Like SaveFileDialog or TreeView can receive message "filesystem updated" or "connection to ftp broken".
+
+    This however violates golden rule no-input no-action.

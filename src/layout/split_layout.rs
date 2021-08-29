@@ -1,6 +1,7 @@
 use crate::primitives::xy::XY;
-use crate::layout::layout::{Layout, FocusUpdate};
+use crate::layout::layout::{Layout};
 use crate::primitives::rect::Rect;
+use crate::experiments::focus_group::FocusUpdate;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SplitDirection {

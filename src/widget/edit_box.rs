@@ -92,6 +92,10 @@ impl <ParentMsg: MsgConstraints> BaseWidget for EditBoxWidget<ParentMsg> {
     fn size(&self, max_size: XY) -> XY {
         self.min_size()
     }
+
+    fn on_input_any(&self, input_event : InputEvent) -> Option<Box<dyn MsgConstraints>> {
+        self.on_input(input_event).map(|msg| Box::new(msg))
+    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]

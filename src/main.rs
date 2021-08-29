@@ -48,6 +48,9 @@ fn main() {
                     InputEvent::KeyInput(key) => match key {
                         Key::CtrlLetter('q') => break,
                         _ => {
+                            let msg = view.on_input(ie);
+                            msg.map(|msg| view.update(msg));
+
                             view.render(true, &mut output);
                         }
                     },

@@ -1,5 +1,6 @@
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
+use crate::experiments::focus_group::FocusUpdate;
 
 pub trait Layout {
     fn get_focused(&self) -> usize;

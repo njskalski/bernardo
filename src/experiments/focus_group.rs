@@ -10,7 +10,10 @@ get merged with some other component.
 use std::iter::Map;
 use crate::primitives::rect::Rect;
 use std::collections::HashMap;
+use crate::io::keys::Key;
+use crate::io::input_event::InputEvent;
 
+#[derive(Hash, Eq, PartialEq)]
 pub enum FocusUpdate {
     Left,
     Right,
@@ -18,6 +21,18 @@ pub enum FocusUpdate {
     Down,
     Next,
     Prev,
+}
+
+pub fn default_key_to_focus_update(key_input : InputEvent) -> Option<FocusUpdate> {
+    match key_input {
+        InputEvent::KeyInput(Key::ArrowLeft) => Some(FocusUpdate::Left),
+        InputEvent::KeyInput(Key::ArrowRight) => Some(FocusUpdate::Right),
+        InputEvent::KeyInput(Key::ArrowUp) => Some(FocusUpdate::Up),
+        InputEvent::KeyInput(Key::ArrowDown) => Some(FocusUpdate::Down),
+        InputEvent::KeyInput(Key::Tab) => Some(FocusUpdate::Next),
+        // TODO handle shift tab somehow
+        _ => None,
+    }
 }
 
 pub trait FocusGroup {
@@ -54,16 +69,16 @@ pub struct FocusGroupImpl {
 }
 
 impl FocusGroupImpl {
-    fn new(widgets_and_positions : Vec<(usize, Rect)>) -> Self {
+    pub fn new(widgets_and_positions : Vec<usize>) -> Self {
         let mut nodes = HashMap::<usize, FocusGraphNode>::new();
         
-        for (widget_id, widget_rect) in widgets_and_positions.iter() {
+        for widget_id in widgets_and_positions.iter() {
             let node = FocusGraphNode::new(*widget_id);
             
             nodes.insert(*widget_id, node);
         };
 
-        let (selected, _)  = widgets_and_positions.first().unwrap();
+        let selected  = widgets_and_positions.first().unwrap();
 
         FocusGroupImpl {
             nodes,
@@ -90,9 +105,7 @@ impl FocusGroup for FocusGroupImpl {
     }
 
     fn update_focus(&mut self, focus_update: FocusUpdate) -> bool {
-        let current_idx = self.nodes.get(&self.selected).unwrap();
-        let curr = &self.nodes[current_idx];
-
+        let curr = self.nodes.get(&self.selected).unwrap();
         let next_op = curr.neighbours.get(&focus_update);
 
         match next_op {
@@ -111,7 +124,7 @@ impl FocusGroup for FocusGroupImpl {
             Some(node) => {
                 node.neighbours.clear();
                 for (e, v)  in edges {
-                    node.neighbours[e] = v;
+                    node.neighbours.insert(e, v);
                 }
                 true
             }

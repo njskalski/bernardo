@@ -5,13 +5,15 @@ use crate::io::output::Output;
 use crate::primitives::xy::XY;
 use crate::primitives::sized_xy::SizedXY;
 
-pub trait MsgConstraints : Copy + Clone + Debug {}
+pub trait MsgConstraints : Debug {}
 
 pub trait BaseWidget {
     fn id(&self) -> usize;
 
     fn min_size(&self) -> XY;
     fn size(&self, max_size : XY) -> XY;
+
+    fn on_input_any(&self, input_event : InputEvent) -> Option<Box<dyn MsgConstraints>>;
 }
 
 pub trait Widget<ParentMsg: MsgConstraints> : BaseWidget {

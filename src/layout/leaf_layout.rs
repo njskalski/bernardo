@@ -1,7 +1,8 @@
-use crate::layout::layout::{Layout, FocusUpdate};
+use crate::layout::layout::{Layout};
 use crate::primitives::xy::XY;
 use crate::primitives::rect::Rect;
 use crate::widget::widget::BaseWidget;
+use crate::experiments::focus_group::FocusUpdate;
 
 pub struct LeafLayout {
     widget_id : usize,

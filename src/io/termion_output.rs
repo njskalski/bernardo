@@ -99,7 +99,12 @@ impl<W: Write> TermionOutput<W> {
                         ));
 
                         match style.effect {
-                            Effect::None => {}
+                            //TODO
+                            Effect::None => {
+                                write!(self.stdout, "{}", style::NoBold);
+                                write!(self.stdout, "{}", style::NoItalic);
+                                write!(self.stdout, "{}", style::NoUnderline);
+                            }
                             Effect::Bold => {
                                 write!(self.stdout, "{}", style::Bold);
                             }

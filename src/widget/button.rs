@@ -28,6 +28,10 @@ impl<ParentMsg: MsgConstraints> BaseWidget for ButtonWidget<ParentMsg> {
     fn size(&self, max_size: XY) -> XY {
         self.min_size()
     }
+
+    fn on_input_any(&self, input_event : InputEvent) -> Option<Box<dyn MsgConstraints>> {
+        self.on_input(input_event).map(|msg| Box::<dyn MsgConstraints>::new(msg as MsgConstraints))
+    }
 }
 
 impl<ParentMsg: MsgConstraints> ButtonWidget<ParentMsg> {
@@ -69,6 +73,8 @@ pub enum ButtonWidgetMsg {
     // Focus,
     // LostFocus
 }
+
+impl MsgConstraints for ButtonWidgetMsg {}
 
 impl <ParentMsg : MsgConstraints> Widget<ParentMsg> for ButtonWidget<ParentMsg> {
     type LocalMsg = ButtonWidgetMsg;

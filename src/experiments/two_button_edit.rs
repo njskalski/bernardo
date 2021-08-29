@@ -18,6 +18,7 @@ use crate::primitives::xy::XY;
 use crate::io::output::Output;
 use crate::layout::layout::Layout;
 use crate::io::sub_output::SubOutput;
+use crate::experiments::focus_group::{FocusGroupImpl, FocusGroup, FocusUpdate};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum TBEMsg {
@@ -40,6 +41,7 @@ pub struct TwoButtonEdit  {
     cancel_button : ButtonWidget<TBEMsg>,
     edit_box : EditBoxWidget<TBEMsg>,
     layout : SplitLayout,
+    focus_group : FocusGroupImpl,
 }
 
 impl TwoButtonEdit {
@@ -60,7 +62,7 @@ impl TwoButtonEdit {
 
         let button_horizontal_split =
             SplitLayout::new(
-                vec![Box::new(LeafLayout::from_widget(&cancel_button)), Box::new(LeafLayout::from_widget(&ok_button))],
+                vec![Box::new(LeafLayout::from_widget(&ok_button)), Box::new(LeafLayout::from_widget(&cancel_button))],
                 SplitDirection::Horizontal,
                 vec![SplitRule::Proportional(1.0), SplitRule::Proportional(1.0)]
             ).unwrap();
@@ -71,12 +73,48 @@ impl TwoButtonEdit {
                 SplitDirection::Vertical,
                 vec![SplitRule::Fixed(1), SplitRule::Fixed(1)]).unwrap();
 
+        let mut focus_group = FocusGroupImpl::new(
+            vec![
+                ok_button.id(),
+                cancel_button.id(),
+                edit_box.id(),
+            ]
+        );
+
+        focus_group.override_edges(
+            edit_box.id(),
+            vec![
+                (FocusUpdate::Down, ok_button.id()),
+                (FocusUpdate::Next, ok_button.id()),
+            ]
+        );
+
+        focus_group.override_edges(
+            ok_button.id(),
+            vec![
+                (FocusUpdate::Up, edit_box.id()),
+                (FocusUpdate::Next, cancel_button.id()),
+                (FocusUpdate::Prev, edit_box.id()),
+                (FocusUpdate::Right, cancel_button.id()),
+            ]
+        );
+
+        focus_group.override_edges(
+            cancel_button.id(),
+            vec![
+                (FocusUpdate::Up, edit_box.id()),
+                (FocusUpdate::Prev, ok_button.id()),
+                (FocusUpdate::Left, ok_button.id()),
+            ]
+        );
+
         TwoButtonEdit{
             id : get_new_widget_id(),
             layout : vertical_split,
             ok_button,
             cancel_button,
             edit_box,
+            focus_group,
         }
     }
 }
@@ -92,6 +130,10 @@ impl BaseWidget for TwoButtonEdit {
 
     fn size(&self, max_size: XY) -> XY {
         self.min_size()
+    }
+
+    fn on_input_any(&self, input_event : InputEvent) -> Option<Box<dyn MsgConstraints>> {
+        self.on_input(input_event).map(|msg| Box::new(msg))
     }
 }
 
@@ -113,6 +155,18 @@ impl Widget<NoMsg> for TwoButtonEdit {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<TBEMsg> {
+        let focused_id = self.focus_group.get_focused();
+
+        let focused_view: Option<&dyn BaseWidget> = if focused_id == self.ok_button.id() {
+            Some(&self.ok_button)
+        } else if focused_id == self.cancel_button.id() {
+            Some(&self.cancel_button)
+        } else if focused_id == self.edit_box.id() {
+            Some(&self.edit_box)
+        } else { None };
+
+        // focused_view.map(|fw|)
+
         match input_event {
             InputEvent::KeyInput(Key::Esc) => Some(Cancel),
             _ => None
@@ -132,8 +186,12 @@ impl Widget<NoMsg> for TwoButtonEdit {
             .get_rect(output.size(), self.edit_box.id())
             .unwrap();
 
-        self.ok_button.render(false, &mut SubOutput::new(Box::new(output), ok_button_rect));
-        self.cancel_button.render(false, &mut SubOutput::new(Box::new(output), cancel_button_rect));
-        self.edit_box.render(false,&mut SubOutput::new(Box::new(output), edit_rect));
+        let ok_focused = focused && self.focus_group.get_focused() == self.ok_button.id();
+        let cancel_focused = focused && self.focus_group.get_focused() == self.cancel_button.id();
+        let edit_focused = focused && self.focus_group.get_focused() == self.edit_box.id();
+
+        self.ok_button.render(ok_focused, &mut SubOutput::new(Box::new(output), ok_button_rect));
+        self.cancel_button.render(cancel_focused, &mut SubOutput::new(Box::new(output), cancel_button_rect));
+        self.edit_box.render(edit_focused,&mut SubOutput::new(Box::new(output), edit_rect));
     }
 }
