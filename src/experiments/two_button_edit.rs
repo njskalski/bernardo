@@ -8,7 +8,7 @@ just an experiment to see if the design works.
 use crate::widget::button::ButtonWidget;
 use crate::widget::edit_box::EditBoxWidget;
 use crate::widget::widget::{get_new_widget_id, BaseWidget};
-use crate::experiments::two_button_edit::TBEMsg::{TextValid, TextInvalid, Cancel};
+use crate::experiments::two_button_edit::TBEMsg::{TextValid, TextInvalid, Cancel, FocusUpdateMsg};
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use std::fs::read;
@@ -24,6 +24,7 @@ use std::borrow::Borrow;
 use std::any::Any;
 use log::warn;
 use std::ops::Deref;
+use crate::experiments::util::default_key_to_focus_update;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum TBEMsg {
@@ -31,6 +32,7 @@ pub enum TBEMsg {
     Cancel,
     TextValid,
     TextInvalid,
+    FocusUpdateMsg(FocusUpdate)
 }
 
 impl AnyMsg for TBEMsg {}
@@ -137,18 +139,14 @@ impl BaseWidget for TwoButtonEdit {
         self.min_size()
     }
 
-    fn on_input_any(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        let focused_id = self.focus_group.get_focused();
+    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        let focus_update_op = default_key_to_focus_update(input_event);
+        if focus_update_op.is_some() {
+            return Some(Box::new(FocusUpdateMsg(focus_update_op.unwrap())))
+        }
 
-        let focused_view: Option<&dyn BaseWidget> = if focused_id == self.ok_button.id() {
-            Some(&self.ok_button)
-        } else if focused_id == self.cancel_button.id() {
-            Some(&self.cancel_button)
-        } else if focused_id == self.edit_box.id() {
-            Some(&self.edit_box)
-        } else { None };
+        //if we got here, it was NOT an focus update.
 
-        // focused_view.map(|fw|)
 
         match input_event {
             InputEvent::KeyInput(Key::Esc) => Some(Box::new(Cancel)),
@@ -156,7 +154,7 @@ impl BaseWidget for TwoButtonEdit {
         }
     }
 
-    fn update_any(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         let our_msg = msg.as_msg::<TBEMsg>();
         if our_msg.is_none() {
             warn!("expecetd TBEMsg, got {:?}", msg);
@@ -164,6 +162,11 @@ impl BaseWidget for TwoButtonEdit {
         }
 
         match our_msg.unwrap() {
+            TBEMsg::FocusUpdateMsg(focus_update) => {
+                self.focus_group.update_focus(*focus_update);
+                None
+            }
+
             TBEMsg::TextValid => {
                 self.ok_button.set_enabled(true);
                 None
@@ -174,6 +177,41 @@ impl BaseWidget for TwoButtonEdit {
             }
             _ => None
         }
+    }
+
+    fn get_focused(&self) -> &dyn BaseWidget {
+        let focused_id = self.focus_group.get_focused();
+
+        let focused_view: Option<&dyn BaseWidget> = if focused_id == self.ok_button.id() {
+            Some(&self.ok_button)
+        } else if focused_id == self.cancel_button.id() {
+            Some(&self.cancel_button)
+        } else if focused_id == self.edit_box.id() {
+            Some(&self.edit_box)
+        } else { None };
+
+        if focused_view.is_none() {
+            warn!("failed getting focused_view in two_button_edit");
+            return &self.cancel_button
+        };
+
+        focused_view.unwrap()
+    }
+
+    fn get_focused_mut(&mut self) -> &mut dyn BaseWidget {
+        let focused_id = self.focus_group.get_focused();
+
+        let focused_view: Option<&mut dyn BaseWidget> = if focused_id == self.ok_button.id() {
+            Some(&mut self.ok_button)
+        } else if focused_id == self.cancel_button.id() {
+            Some(&mut self.cancel_button)
+        } else if focused_id == self.edit_box.id() {
+            Some(&mut self.edit_box)
+        } else { None };
+
+        //TODO this will panic if some id is wrong
+
+        focused_view.unwrap()
     }
 
     fn render(&self, focused: bool, output: &mut Output) {

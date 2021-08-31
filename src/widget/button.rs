@@ -32,11 +32,10 @@ impl BaseWidget for ButtonWidget {
         self.min_size()
     }
 
-    fn on_input_any(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        debug_assert!(
-            self.enabled,
-            "ButtonWidget: received input to disabled component!"
-        );
+    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        if !self.enabled {
+            warn!("ButtonWidget: received input to disabled component!");
+        }
 
         match input_event {
             KeyInput(Enter) => Some(Box::new(ButtonWidgetMsg::Hit)),
@@ -44,7 +43,7 @@ impl BaseWidget for ButtonWidget {
         }
     }
 
-    fn update_any(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         let our_msg = msg.as_msg::<ButtonWidgetMsg>();
         if our_msg.is_none() {
             warn!("expecetd ButtonWidgetMsg, got {:?}", msg);
@@ -61,6 +60,14 @@ impl BaseWidget for ButtonWidget {
             }
             _ => None,
         }
+    }
+
+    fn get_focused(&self) -> &dyn BaseWidget {
+        self
+    }
+
+    fn get_focused_mut(&mut self) -> &mut dyn BaseWidget {
+        self
     }
 
     fn render(&self, focused : bool, output: &mut Output) {

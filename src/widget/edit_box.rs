@@ -82,7 +82,20 @@ impl BaseWidget for EditBoxWidget {
         self.min_size()
     }
 
-    fn update_any(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        debug_assert!(
+            self.enabled,
+            "EditBoxWidgetMsg: received input to disabled component!"
+        );
+
+        match input_event {
+            KeyInput(Enter) => Some(Box::new(EditBoxWidgetMsg::Hit)),
+            KeyInput(Key::Letter(ch)) => Some(Box::new(EditBoxWidgetMsg::Letter(ch))),
+            _ => None,
+        }
+    }
+
+    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         let our_msg = msg.as_msg::<EditBoxWidgetMsg>();
         if our_msg.is_none() {
             warn!("expecetd EditBoxWidgetMsg, got {:?}", msg);
@@ -125,17 +138,12 @@ impl BaseWidget for EditBoxWidget {
         }
     }
 
-    fn on_input_any(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        debug_assert!(
-            self.enabled,
-            "EditBoxWidgetMsg: received input to disabled component!"
-        );
+    fn get_focused(&self) -> &dyn BaseWidget {
+        self
+    }
 
-        match input_event {
-            KeyInput(Enter) => Some(Box::new(EditBoxWidgetMsg::Hit)),
-            KeyInput(Key::Letter(ch)) => Some(Box::new(EditBoxWidgetMsg::Letter(ch))),
-            _ => None,
-        }
+    fn get_focused_mut(&mut self) -> &mut dyn BaseWidget {
+        self
     }
 
     fn render(&self, focused: bool, output: &mut Output) {

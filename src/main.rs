@@ -11,6 +11,7 @@ use crate::experiments::two_button_edit::{TwoButtonEdit, TBEMsg};
 use crate::widget::widget::BaseWidget;
 
 use log::debug;
+use crate::widget::any_msg::AnyMsg;
 
 mod io;
 mod primitives;
@@ -35,27 +36,59 @@ fn main() {
     let input = TermionInput::new(stdin);
     let mut output = TermionOutput::new(stdout);
 
-    let mut view = TwoButtonEdit::new();
+    let mut main_view = TwoButtonEdit::new();
+
+    fn recursive_treat_views(view : &mut dyn BaseWidget, ie : InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
+        let my_id = view.id();
+        let active_child_id = view.get_focused().id();
+
+        // this is my turn
+        let (child_have_consumed, message_from_child_op) = if my_id != active_child_id {
+            recursive_treat_views(view.get_focused_mut(), ie.clone())
+        } else {
+            (false, None)
+        };
+
+        if child_have_consumed {
+            match message_from_child_op {
+                None => {
+                    return (true, None)
+                }
+                Some(message_from_child) => {
+                    let my_message_to_parent = view.update(message_from_child);
+                    return (true, my_message_to_parent)
+                }
+            }
+        };
+
+        // Either child did not consume, or we're on the bottom of path.
+        // We're here to consume the Input.
+        match view.on_input(ie) {
+            None => {
+                // we did not see this input as useful, unfolding the recursion:
+                // no consume, no message.
+                (false, None)
+            }
+            Some(internal_message) => {
+                let message_to_parent = view.update(internal_message);
+                (true, message_to_parent)
+            }
+        }
+    };
 
     loop {
-        output.clear();
+        // at this point we have path and
 
         match input.source().recv() {
             Ok(ie) => {
                 debug!("{:?}", ie);
+                // early exit
                 match ie {
-                    InputEvent::Tick => {}
-                    InputEvent::KeyInput(key) => match key {
-                        Key::CtrlLetter('q') => break,
-                        _ => {
-                            let msg = view.on_input_any(ie);
-                            msg.map(|msg| view.update_any(msg));
-
-                            view.render(true, &mut output);
-                        }
-                    },
+                    InputEvent::KeyInput(Key::CtrlLetter(q)) => break,
                     _ => {}
                 }
+                recursive_treat_views(&mut main_view, ie);
+                main_view.render(true, &mut output);
             }
             Err(e) => {
                 debug!("Err {:?}", e);

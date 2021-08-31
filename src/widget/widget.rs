@@ -15,9 +15,15 @@ pub trait BaseWidget {
     fn min_size(&self) -> XY;
     fn size(&self, max_size : XY) -> XY;
 
-    fn on_input_any(&self, input_event : InputEvent) -> Option<Box<dyn AnyMsg>>;
+    // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.
+    fn on_input(&self, input_event : InputEvent) -> Option<Box<dyn AnyMsg>>;
 
-    fn update_any(&mut self, msg : Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>>;
+    // This is called when an input got consumed and internal message is created.
+    // The output is a message to parent.
+    fn update(&mut self, msg : Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>>;
+
+    fn get_focused(&self) -> &dyn BaseWidget;
+    fn get_focused_mut(&mut self) -> &mut dyn BaseWidget;
 
     fn render(&self, focused : bool, output : &mut Output);
 }
