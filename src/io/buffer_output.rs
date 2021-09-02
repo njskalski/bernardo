@@ -96,12 +96,14 @@ impl Output for BufferOutput {
                 grapheme: grapheme.to_string(),
             };
 
-            for _ in 0..grapheme.width() - 1 {
-                offset += 1;
-                let cont_shift_x = (idx as u16) + offset;
-                let xy2 = pos + XY::new(cont_shift_x as u16, 0 as u16);
+            if grapheme.width() > 0 {
+                for _ in 0..grapheme.width() - 1 {
+                    offset += 1;
+                    let cont_shift_x = (idx as u16) + offset;
+                    let xy2 = pos + XY::new(cont_shift_x as u16, 0 as u16);
 
-                self[xy2] = Cell::continuation();
+                    self[xy2] = Cell::continuation();
+                }
             }
         }
     }

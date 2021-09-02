@@ -111,22 +111,18 @@ impl BaseWidget for EditBoxWidget {
                 }
             }
             EditBoxWidgetMsg::Letter(ch) => {
-                let mut iter = self.text.graphemes(true);
-                let mut new_text = String::new();
-
-                for _ in 0..self.cursor {
-                    new_text += iter.as_str();
-                    iter.next();
-                }
+                let mut iter = self.text.graphemes(true).into_iter();
+                let mut new_text = self.text.graphemes(true)
+                    .take(self.cursor)
+                    .fold("".to_owned(), |a, b| a + b);
 
                 new_text += ch.to_string().as_str(); //TODO: make this conversion better?
 
-                for _ in self.cursor..self.text.len() {
-                    new_text += iter.as_str();
-                    iter.next();
-                }
+                new_text += self.text.graphemes(true).skip(self.cursor)
+                    .fold("".to_owned(), |a, b| a + b).as_str();
 
-                self.text = new_text;
+                self.text = new_text.to_owned();
+                self.cursor += 1;
 
                 if self.on_change.is_some() {
                     self.on_change.unwrap()(self)

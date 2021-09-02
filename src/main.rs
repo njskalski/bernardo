@@ -88,13 +88,14 @@ fn main() {
                     _ => {}
                 }
                 recursive_treat_views(&mut main_view, ie);
-                main_view.render(true, &mut output);
             }
             Err(e) => {
                 debug!("Err {:?}", e);
             }
         }
 
+        output.clear();
+        main_view.render(true, &mut output);
         output.end_frame();
     }
 }
