@@ -18,8 +18,11 @@ use log::warn;
 pub struct EditBoxWidget {
     id: usize,
     enabled: bool,
+    // hit is basically pressing enter.
     on_hit: Option<WidgetAction<EditBoxWidget>>,
     on_change: Option<WidgetAction<EditBoxWidget>>,
+    // miss is trying to make illegal move. Like backspace on empty, left on leftmost etc.
+    on_miss: Option<WidgetAction<EditBoxWidget>>,
     text: String,
     cursor: usize,
 }
@@ -32,7 +35,8 @@ impl EditBoxWidget {
             enabled: true,
             text: "".into(),
             on_hit: None,
-            on_change: None
+            on_change: None,
+            on_miss: None,
         }
     }
 
@@ -46,6 +50,13 @@ impl EditBoxWidget {
     pub fn with_on_change(self, on_change: WidgetAction<EditBoxWidget>) -> Self {
         EditBoxWidget {
             on_change: Some(on_change),
+            ..self
+        }
+    }
+
+    pub fn with_on_miss(self, on_miss: WidgetAction<EditBoxWidget>) -> Self {
+        EditBoxWidget {
+            on_miss: Some(on_miss),
             ..self
         }
     }
@@ -66,6 +77,30 @@ impl EditBoxWidget {
 
     pub fn get_text(&self) -> &String {
         &self.text
+    }
+
+    fn event_changed(&self) -> Option<Box<AnyMsg>> {
+        if self.on_change.is_some() {
+            self.on_change.unwrap()(self)
+        } else {
+            None
+        }
+    }
+
+    fn event_miss(&self) -> Option<Box<AnyMsg>> {
+        if self.on_miss.is_some() {
+            self.on_miss.unwrap()(self)
+        } else {
+            None
+        }
+    }
+
+    fn event_hit(&self) -> Option<Box<AnyMsg>> {
+        if self.on_hit.is_some() {
+            self.on_hit.unwrap()(self)
+        } else {
+            None
+        }
     }
 }
 
@@ -89,8 +124,11 @@ impl BaseWidget for EditBoxWidget {
         );
 
         match input_event {
-            KeyInput(Enter) => Some(Box::new(EditBoxWidgetMsg::Hit)),
+            KeyInput(Key::Enter) => Some(Box::new(EditBoxWidgetMsg::Hit)),
             KeyInput(Key::Letter(ch)) => Some(Box::new(EditBoxWidgetMsg::Letter(ch))),
+            KeyInput(Key::Backspace) => Some(Box::new(EditBoxWidgetMsg::Backspace)),
+            KeyInput(Key::ArrowLeft) => Some(Box::new(EditBoxWidgetMsg::ArrowLeft)),
+            KeyInput(Key::ArrowRight) => Some(Box::new(EditBoxWidgetMsg::ArrowRight)),
             _ => None,
         }
     }
@@ -102,31 +140,54 @@ impl BaseWidget for EditBoxWidget {
             return None
         }
 
-        match our_msg.unwrap() {
-            EditBoxWidgetMsg::Hit => {
-                if self.on_hit.is_none() {
-                    None
-                } else {
-                    self.on_hit.unwrap()(&self)
-                }
-            }
+        return match our_msg.unwrap() {
+            EditBoxWidgetMsg::Hit => self.event_hit(),
             EditBoxWidgetMsg::Letter(ch) => {
-                let mut iter = self.text.graphemes(true).into_iter();
                 let mut new_text = self.text.graphemes(true)
                     .take(self.cursor)
                     .fold("".to_owned(), |a, b| a + b);
 
                 new_text += ch.to_string().as_str(); //TODO: make this conversion better?
 
-                new_text += self.text.graphemes(true).skip(self.cursor)
-                    .fold("".to_owned(), |a, b| a + b).as_str();
+                new_text += self.text.graphemes(true)
+                    .skip(self.cursor)
+                    .fold("".to_owned(), |a, b| a + b)
+                    .as_str();
 
-                self.text = new_text.to_owned();
+                self.text = new_text;
                 self.cursor += 1;
 
-                if self.on_change.is_some() {
-                    self.on_change.unwrap()(self)
+                self.event_changed()
+            }
+            EditBoxWidgetMsg::Backspace => {
+                if self.cursor == 0 {
+                    self.event_miss()
                 } else {
+                    self.cursor -= 1;
+                    let mut new_text = self.text.graphemes(true)
+                        .take(self.cursor)
+                        .fold("".to_owned(), |a, b| a + b);
+                    new_text += self.text.graphemes(true)
+                        .skip(self.cursor + 1)
+                        .fold("".to_owned(), |a, b| a + b)
+                        .as_str();
+                    self.text = new_text;
+                    self.event_changed()
+                }
+            }
+            EditBoxWidgetMsg::ArrowLeft => {
+                if self.cursor == 0 {
+                    self.event_miss()
+                } else {
+                    self.cursor -= 1;
+                    None
+                }
+            }
+            EditBoxWidgetMsg::ArrowRight => {
+                if self.cursor >= self.text.len() {
+                    self.event_miss()
+                } else {
+                    self.cursor += 1;
                     None
                 }
             }
@@ -192,6 +253,9 @@ impl BaseWidget for EditBoxWidget {
 pub enum EditBoxWidgetMsg {
     Hit,
     Letter(char),
+    Backspace,
+    ArrowLeft,
+    ArrowRight,
 }
 
 impl AnyMsg for EditBoxWidgetMsg {}

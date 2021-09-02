@@ -149,6 +149,14 @@ impl<W: Write> Output for TermionOutput<W> {
 
     fn clear(&mut self) {
         write!(self.stdout, "{}", clear::All);
+
+        self.current_buffer = !self.current_buffer;
+        let buffer = if self.current_buffer == false {
+            &mut self.front_buffer
+        } else {
+            &mut self.back_buffer
+        };
+        buffer.clear();
     }
 }
 
