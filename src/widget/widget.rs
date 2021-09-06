@@ -9,10 +9,10 @@ use crate::widget::any_msg::AnyMsg;
 // this corresponds to message to Parent.
 pub type WidgetAction<W> = fn(&W) -> Option<Box<dyn AnyMsg>>;
 
-pub type wid = usize;
+pub type WID = usize;
 
 pub trait BaseWidget {
-    fn id(&self) -> wid;
+    fn id(&self) -> WID;
 
     // Minimal size of the view. If the output cannot satisfy it, a replacement is drawn instead,
     // and the view cannot be focused (TODO or input will be ignored, haven't decided that yet).
@@ -35,9 +35,9 @@ pub trait BaseWidget {
     fn render(&self, focused : bool, output : &mut Output);
 }
 
-pub fn get_new_widget_id() -> wid {
+pub fn get_new_widget_id() -> WID {
     static COUNTER:AtomicUsize = AtomicUsize::new(1);
-    COUNTER.fetch_add(1, Ordering::Relaxed) as wid
+    COUNTER.fetch_add(1, Ordering::Relaxed) as WID
 }
 
 pub const WIDGET_NONE: usize = 0;

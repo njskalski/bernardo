@@ -1,7 +1,7 @@
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Key::Enter;
-use crate::widget::widget::{BaseWidget, get_new_widget_id, WidgetAction, wid};
+use crate::widget::widget::{BaseWidget, get_new_widget_id, WidgetAction, WID};
 use crate::primitives::xy::XY;
 use unicode_segmentation::UnicodeSegmentation;
 use crate::io::output::Output;
@@ -19,7 +19,7 @@ pub struct ButtonWidget {
 }
 
 impl BaseWidget for ButtonWidget {
-    fn id(&self) -> wid {
+    fn id(&self) -> WID {
         self.id
     }
 

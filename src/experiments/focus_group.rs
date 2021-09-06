@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use crate::io::keys::Key;
 use crate::io::input_event::InputEvent;
 use log::debug;
+use crate::widget::widget::WID;
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum FocusUpdate {
@@ -25,7 +26,7 @@ pub enum FocusUpdate {
 }
 
 pub trait FocusGroup {
-    fn has_view(&self, widget_id : usize) -> bool;
+    fn has_view(&self, widget_id : WID) -> bool;
     fn get_focused(&self) -> usize;
 
     /*
@@ -35,16 +36,16 @@ pub trait FocusGroup {
     fn update_focus(&mut self, focus_update : FocusUpdate) -> bool;
 
     //TODO proper error reporting
-    fn override_edges(&mut self, widget_id : usize, edges : Vec<(FocusUpdate, usize)>) -> bool;
+    fn override_edges(&mut self, widget_id : WID, edges : Vec<(FocusUpdate, WID)>) -> bool;
 }
 
 struct FocusGraphNode {
-    widget_id : usize,
-    neighbours : HashMap<FocusUpdate, usize>
+    widget_id : WID,
+    neighbours : HashMap<FocusUpdate, WID>
 }
 
 impl FocusGraphNode {
-    fn new(widget_id : usize) -> Self {
+    fn new(widget_id : WID) -> Self {
         FocusGraphNode {
             widget_id,
             neighbours: HashMap::new(),
@@ -53,43 +54,35 @@ impl FocusGraphNode {
 }
 
 pub struct FocusGroupImpl {
-    nodes : HashMap<usize, FocusGraphNode>,
+    nodes : HashMap<WID, FocusGraphNode>,
     selected : usize
 }
 
 impl FocusGroupImpl {
-    pub fn new(widgets_and_positions : Vec<usize>) -> Self {
-        let mut nodes = HashMap::<usize, FocusGraphNode>::new();
+    pub fn new(widget_ids : Vec<WID>) -> Self {
+        let mut nodes = HashMap::<WID, FocusGraphNode>::new();
         
-        for widget_id in widgets_and_positions.iter() {
+        for widget_id in widget_ids.iter() {
             let node = FocusGraphNode::new(*widget_id);
             
             nodes.insert(*widget_id, node);
         };
 
-        let selected  = widgets_and_positions.first().unwrap();
+        let selected  = widget_ids.first().unwrap();
 
         FocusGroupImpl {
             nodes,
             selected : *selected,
         }
     }
-
-    /*
-    Takes a collection of pairs widget_id - rect and builds a directed graph, where nodes correspond
-    to widgets, and edges A-e->B correspond to "which widget gets focus from A on input e".
-
-    The graph is built using basic geometry.
-     */
-    //fn from_geometry(widgets_and_positions : Vec<(usize, Rect)>) -> Self {
 }
 
 impl FocusGroup for FocusGroupImpl {
-    fn has_view(&self, widget_id: usize) -> bool {
+    fn has_view(&self, widget_id: WID) -> bool {
         self.nodes.contains_key(&widget_id)
     }
 
-    fn get_focused(&self) -> usize {
+    fn get_focused(&self) -> WID {
         debug!("get_focused : {}", self.selected);
         self.selected
     }
@@ -108,7 +101,7 @@ impl FocusGroup for FocusGroupImpl {
         }
     }
 
-    fn override_edges(&mut self, widget_id: usize, edges: Vec<(FocusUpdate, usize)>) -> bool {
+    fn override_edges(&mut self, widget_id: WID, edges: Vec<(FocusUpdate, WID)>) -> bool {
         match self.nodes.get_mut(&widget_id) {
             None => false,
             Some(node) => {
