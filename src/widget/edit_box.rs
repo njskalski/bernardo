@@ -2,7 +2,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Key::Enter;
 use crate::widget::edit_box::EditBoxWidgetMsg::Letter;
-use crate::widget::widget::{get_new_widget_id, BaseWidget, WidgetAction};
+use crate::widget::widget::{get_new_widget_id, BaseWidget, WidgetAction, wid};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::io::keys::Key;
 use crate::primitives::xy::XY;
@@ -16,7 +16,7 @@ use std::ops::Deref;
 use log::warn;
 
 pub struct EditBoxWidget {
-    id: usize,
+    id: wid,
     enabled: bool,
     // hit is basically pressing enter.
     on_hit: Option<WidgetAction<EditBoxWidget>>,
@@ -105,7 +105,7 @@ impl EditBoxWidget {
 }
 
 impl BaseWidget for EditBoxWidget {
-    fn id(&self) -> usize {
+    fn id(&self) -> wid {
         self.id
     }
 
