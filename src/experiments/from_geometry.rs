@@ -7,11 +7,16 @@ The graph is built using basic geometry.
 use crate::experiments::focus_group::FocusGroupImpl;
 use crate::primitives::rect::Rect;
 use crate::widget::widget::WID;
+use crate::primitives::xy::XY;
 
-
-pub fn from_geometry(widgets_and_positions : Vec<(usize, Option<Rect>)>) -> FocusGroupImpl {
+pub fn from_geometry(widgets_and_positions : Vec<(usize, Option<Rect>)>, output_size : XY) -> FocusGroupImpl {
     let ids: Vec<WID> = widgets_and_positions.iter().map(|(wid, _)| *wid).collect();
     let fgi = FocusGroupImpl::new(ids);
+
+
+
+
+
 
     fgi
 }
