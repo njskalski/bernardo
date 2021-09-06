@@ -7,18 +7,20 @@ pub enum Cell {
 }
 
 impl Cell {
-    pub fn empty() -> Cell {
-        Cell::Begin {
-            style: TextStyle_WhiteOnBlack,
-            grapheme: ' '.into(),
-        }
-    }
-
     pub fn new(style: TextStyle, grapheme: String) -> Cell {
         Cell::Begin { style, grapheme }
     }
 
     pub fn continuation() -> Cell {
         Cell::Continuation
+    }
+}
+
+impl Default for Cell {
+    fn default() -> Self {
+        Cell::Begin {
+            style: TextStyle_WhiteOnBlack,
+            grapheme: ' '.into(),
+        }
     }
 }
