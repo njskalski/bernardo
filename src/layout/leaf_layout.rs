@@ -1,11 +1,12 @@
 use crate::layout::layout::{Layout};
 use crate::primitives::xy::XY;
 use crate::primitives::rect::Rect;
-use crate::widget::widget::BaseWidget;
+use crate::widget::widget::{BaseWidget, wid};
 use crate::experiments::focus_group::FocusUpdate;
+use std::slice::Iter;
 
 pub struct LeafLayout {
-    widget_id : usize,
+    widget_id : wid,
 }
 
 impl LeafLayout {
@@ -31,7 +32,7 @@ impl Layout for LeafLayout {
         false
     }
 
-    fn get_rect(&self, output_size: XY, widget_id: usize) -> Option<Rect> {
+    fn get_rect(&self, output_size: XY, widget_id: wid) -> Option<Rect> {
         if self.widget_id == widget_id {
             Some(Rect::new(XY::new(0,0), output_size))
         } else {
@@ -43,7 +44,11 @@ impl Layout for LeafLayout {
         true
     }
 
-    fn has_id(&self, widget_id: usize) -> bool {
+    fn has_id(&self, widget_id: wid) -> bool {
         self.widget_id == widget_id
+    }
+
+    fn get_ids(&self) -> Vec<wid> {
+        vec![self.widget_id]
     }
 }

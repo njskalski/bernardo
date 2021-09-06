@@ -2,6 +2,8 @@ use crate::primitives::xy::XY;
 use crate::layout::layout::{Layout};
 use crate::primitives::rect::Rect;
 use crate::experiments::focus_group::FocusUpdate;
+use std::slice::Iter;
+use crate::widget::widget::wid;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SplitDirection {
@@ -54,7 +56,7 @@ impl SplitLayout {
         })
     }
 
-    fn id_to_idx(&self, widget_id : usize) -> Option<usize> {
+    fn id_to_idx(&self, widget_id : wid) -> Option<usize> {
         for i in 0..self.children.len() {
             if self.children[i].has_id(widget_id) {
                 return Some(i)
@@ -142,7 +144,7 @@ impl Layout for SplitLayout {
     /*
     output_size: tells how big output we have. This is used by Layouts that adjust to output size.
      */
-    fn get_rect(&self, output_size: XY, widget_id: usize) -> Option<Rect> {
+    fn get_rect(&self, output_size: XY, widget_id: wid) -> Option<Rect> {
         let idx_op = self.id_to_idx(widget_id);
         if idx_op.is_none() {
             return None
@@ -163,7 +165,7 @@ impl Layout for SplitLayout {
         false
     }
 
-    fn has_id(&self, widget_id: usize) -> bool {
+    fn has_id(&self, widget_id: wid) -> bool {
         for layout in self.children.iter() {
             if layout.has_id(widget_id) {
                 return true
@@ -171,6 +173,10 @@ impl Layout for SplitLayout {
         }
 
         false
+    }
+
+    fn get_ids(&self) -> Vec<wid> {
+        self.children.iter().flat_map(|c| c.get_ids()).collect()
     }
 }
 
