@@ -9,10 +9,16 @@ use crate::widget::any_msg::AnyMsg;
 // this corresponds to message to Parent.
 pub type WidgetAction<W> = fn(&W) -> Option<Box<dyn AnyMsg>>;
 
+pub type ID = usize;
+
 pub trait BaseWidget {
     fn id(&self) -> usize;
 
+    // Minimal size of the view. If the output cannot satisfy it, a replacement is drawn instead,
+    // and the view cannot be focused (TODO or input will be ignored, haven't decided that yet).
     fn min_size(&self) -> XY;
+
+    // Size is to be guaranteed to be called with max_size >= min_size.
     fn size(&self, max_size : XY) -> XY;
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.
@@ -20,6 +26,7 @@ pub trait BaseWidget {
 
     // This is called when an input got consumed and internal message is created.
     // The output is a message to parent.
+    // No message will NOT stop redraw.
     fn update(&mut self, msg : Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>>;
 
     fn get_focused(&self) -> &dyn BaseWidget;

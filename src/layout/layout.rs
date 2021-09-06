@@ -13,4 +13,6 @@ pub trait Layout {
     fn is_leaf(&self) -> bool;
 
     fn has_id(&self, widget_id: usize) -> bool;
+
+    // fn get_ids(&self) -> Vec<usize>;
 }
