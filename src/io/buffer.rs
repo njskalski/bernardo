@@ -30,6 +30,10 @@ impl <T: Default + Clone> Buffer<T> {
 
     pub fn cells(&self) -> &Vec<T> { &self.cells }
     pub fn cells_mut(&mut self) -> &mut Vec<T> { &mut self.cells }
+
+    pub fn within(&self, index: XY) -> bool {
+        self.size.x < index.x && self.size.y < index.y
+    }
 }
 
 impl <T: Default + Clone> SizedXY for Buffer<T> {
