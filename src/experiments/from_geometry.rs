@@ -27,9 +27,8 @@ fn fill(b : &mut Buffer<WID>, wid : WID, rect : &Rect) {
     }
 }
 
-fn walk_to_first_hit(buffer : &Buffer<WID>, step : XY, output_size : XY) -> Option<WID> {
+fn walk_to_first_hit(buffer : &Buffer<WID>, step : XY) -> Option<WID> {
     // right wall
-    let step = XY::new(1, 0);
     let mut walkers : Vec<XY> = Vec::new();
 
     if step == XY::new(-1, 0) {
@@ -109,19 +108,19 @@ pub fn from_geometry(widgets_and_positions : Vec<(WID, Option<Rect>)>, output_si
     for (wid, rect_op) in widgets_and_positions {
         let mut edges: Vec<(FocusUpdate, WID)> = Vec::new();
         if rect_op.is_some() {
-            match walk_to_first_hit(&buffer, XY::new(-1, 0), output_size) {
+            match walk_to_first_hit(&buffer, XY::new(-1, 0)) {
                 Some(left) => edges.push((FocusUpdate::Left, left)),
                 None => {}
             };
-            match walk_to_first_hit(&buffer, XY::new(1, 0), output_size) {
+            match walk_to_first_hit(&buffer, XY::new(1, 0)) {
                 Some(right) => edges.push((FocusUpdate::Right, right)),
                 None => {}
             };
-            match walk_to_first_hit(&buffer, XY::new(0, 1), output_size) {
+            match walk_to_first_hit(&buffer, XY::new(0, 1)) {
                 Some(up) => edges.push((FocusUpdate::Up, up)),
                 None => {}
             };
-            match walk_to_first_hit(&buffer, XY::new(0, -1), output_size) {
+            match walk_to_first_hit(&buffer, XY::new(0, -1)) {
                 Some(down) => edges.push((FocusUpdate::Down, down)),
                 None => {}
             };
@@ -129,6 +128,25 @@ pub fn from_geometry(widgets_and_positions : Vec<(WID, Option<Rect>)>, output_si
 
         fgi.override_edges(wid, edges);
     }
-    
+
     fgi
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::experiments::from_geometry::from_geometry;
+
+    #[test]
+    fn sometest() {
+        // let ss = simple_styled_string("hello world");
+        //
+        // assert_eq!(ss.is_flat(), true);
+        // assert_eq!(ss.len(), 11);
+        // assert_eq!(ss.size(), XY::new(11,1));
+
+
+
+
+    }
+
 }
