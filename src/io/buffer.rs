@@ -32,7 +32,7 @@ impl <T: Default + Clone> Buffer<T> {
     pub fn cells_mut(&mut self) -> &mut Vec<T> { &mut self.cells }
 
     pub fn within(&self, index: XY) -> bool {
-        self.size.x < index.x && self.size.y < index.y
+        index.x < self.size.x && index.y < self.size.y
     }
 }
 
