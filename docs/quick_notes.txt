@@ -1,13 +1,32 @@
-Here is some quick note:
-    
-    I had a temptation to merge methods on_input() and update() on widget. This way I could hide type argument of internal Msg away from trait
-    definition. Now I think it's not a good idea, and I think I recall why I introduced the division:
-        The use-case comes from situation, when we need to refresh a widget based on input different than user input/time input. The widget
-        can get modified by the Parent widget, or by some watchdog in code.
-        
-        Hmm, but then Parent widget literally owns the child widget. So the first argument is gone, but the second one makes sense.
-        There is no way I can define a common type for messages that abstract widget can receive for other-than-input updates.
-        
-        Like SaveFileDialog or TreeView can receive message "filesystem updated" or "connection to ftp broken".
+Why on_input() is different from update():
 
-    This however violates golden rule no-input no-action.
+    The reason for it is that a widget can be updated not only by input, but these 3 scenarios:
+    1) user input
+    2) out-of-user input (filesystem change on SaveFileDialog or sth like this)
+    3) in reaction to Msg emitted by child widget (result escalation akin to unwinding the stack).
+
+Another temptation is to merge Widget and Layout.
+
+I honestly cannot recall why they are separated at this point. Originally the problem was that Msg types were
+type arguments to Widgets, but I gave up on this, introducing a boxed trait instead.
+
+Ah, now I recall. I wanted the widget.update() to have immediate access to child widgets via mut ref, without any
+Rc<RefCell> thing.
+
+The most desired way out of this mess would be something alike html/json define a tree of widgets/layouts, but with
+possibility to access directly the members.
+
+So our TwoButtonEdit would have something like
+
+Window::new(30,20).with(
+    Frame::new(Style::Double)
+    .with(EditBox::new(some parameters))
+    .with(separator)
+    .with(Line::new(Dir::Horizontal)
+        .with(Button::new(OK, ....
+        .with(separator)
+        .with(Button::new(Cancel, ...
+)
+
+One way to make get the editbox and buttons as members would be to pass them as functions:
+&mut Widget -> &mut Widget, that will be called with Self as argument.

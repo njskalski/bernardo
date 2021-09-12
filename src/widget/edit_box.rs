@@ -2,7 +2,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Key::Enter;
 use crate::widget::edit_box::EditBoxWidgetMsg::Letter;
-use crate::widget::widget::{get_new_widget_id, BaseWidget, WidgetAction, WID};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::io::keys::Key;
 use crate::primitives::xy::XY;
@@ -104,7 +104,7 @@ impl EditBoxWidget {
     }
 }
 
-impl BaseWidget for EditBoxWidget {
+impl Widget for EditBoxWidget {
     fn id(&self) -> WID {
         self.id
     }
@@ -195,11 +195,11 @@ impl BaseWidget for EditBoxWidget {
         }
     }
 
-    fn get_focused(&self) -> &dyn BaseWidget {
+    fn get_focused(&self) -> &dyn Widget {
         self
     }
 
-    fn get_focused_mut(&mut self) -> &mut dyn BaseWidget {
+    fn get_focused_mut(&mut self) -> &mut dyn Widget {
         self
     }
 

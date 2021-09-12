@@ -7,7 +7,7 @@ just an experiment to see if the design works.
 
 use crate::widget::button::ButtonWidget;
 use crate::widget::edit_box::EditBoxWidget;
-use crate::widget::widget::{get_new_widget_id, BaseWidget, WID};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::experiments::two_button_edit::TwoButtonEditMsg::{TextValid, TextInvalid, Cancel, FocusUpdateMsg};
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
@@ -96,7 +96,7 @@ impl TwoButtonEdit {
     }
 }
 
-impl BaseWidget for TwoButtonEdit {
+impl Widget for TwoButtonEdit {
     fn id(&self) -> usize {
         self.id
     }
@@ -149,10 +149,10 @@ impl BaseWidget for TwoButtonEdit {
         }
     }
 
-    fn get_focused(&self) -> &dyn BaseWidget {
+    fn get_focused(&self) -> &dyn Widget {
         let focused_id = self.focus_group.get_focused();
 
-        let focused_view: Option<&dyn BaseWidget> = if focused_id == self.ok_button.id() {
+        let focused_view: Option<&dyn Widget> = if focused_id == self.ok_button.id() {
             Some(&self.ok_button)
         } else if focused_id == self.cancel_button.id() {
             Some(&self.cancel_button)
@@ -168,10 +168,10 @@ impl BaseWidget for TwoButtonEdit {
         focused_view.unwrap()
     }
 
-    fn get_focused_mut(&mut self) -> &mut dyn BaseWidget {
+    fn get_focused_mut(&mut self) -> &mut dyn Widget {
         let focused_id = self.focus_group.get_focused();
 
-        let focused_view: Option<&mut dyn BaseWidget> = if focused_id == self.ok_button.id() {
+        let focused_view: Option<&mut dyn Widget> = if focused_id == self.ok_button.id() {
             Some(&mut self.ok_button)
         } else if focused_id == self.cancel_button.id() {
             Some(&mut self.cancel_button)

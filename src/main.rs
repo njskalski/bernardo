@@ -8,7 +8,7 @@ use crate::io::output::Output;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use crate::experiments::two_button_edit::{TwoButtonEdit, TwoButtonEditMsg};
-use crate::widget::widget::BaseWidget;
+use crate::widget::widget::Widget;
 
 use log::debug;
 use crate::widget::any_msg::AnyMsg;
@@ -38,7 +38,7 @@ fn main() {
 
     let mut main_view = TwoButtonEdit::new();
 
-    fn recursive_treat_views(view : &mut dyn BaseWidget, ie : InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
+    fn recursive_treat_views(view : &mut dyn Widget, ie : InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
         let my_id = view.id();
         let active_child_id = view.get_focused().id();
 

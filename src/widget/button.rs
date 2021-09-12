@@ -1,7 +1,7 @@
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Key::Enter;
-use crate::widget::widget::{BaseWidget, get_new_widget_id, WidgetAction, WID};
+use crate::widget::widget::{Widget, get_new_widget_id, WidgetAction, WID};
 use crate::primitives::xy::XY;
 use unicode_segmentation::UnicodeSegmentation;
 use crate::io::output::Output;
@@ -18,7 +18,7 @@ pub struct ButtonWidget {
     on_hit: Option<WidgetAction<ButtonWidget>>,
 }
 
-impl BaseWidget for ButtonWidget {
+impl Widget for ButtonWidget {
     fn id(&self) -> WID {
         self.id
     }
@@ -62,11 +62,11 @@ impl BaseWidget for ButtonWidget {
         }
     }
 
-    fn get_focused(&self) -> &dyn BaseWidget {
+    fn get_focused(&self) -> &dyn Widget {
         self
     }
 
-    fn get_focused_mut(&mut self) -> &mut dyn BaseWidget {
+    fn get_focused_mut(&mut self) -> &mut dyn Widget {
         self
     }
 

@@ -11,7 +11,7 @@ pub type WidgetAction<W> = fn(&W) -> Option<Box<dyn AnyMsg>>;
 
 pub type WID = usize;
 
-pub trait BaseWidget {
+pub trait Widget {
     fn id(&self) -> WID;
 
     // Minimal size of the view. If the output cannot satisfy it, a replacement is drawn instead,
@@ -29,8 +29,8 @@ pub trait BaseWidget {
     // No message will NOT stop redraw.
     fn update(&mut self, msg : Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>>;
 
-    fn get_focused(&self) -> &dyn BaseWidget;
-    fn get_focused_mut(&mut self) -> &mut dyn BaseWidget;
+    fn get_focused(&self) -> &dyn Widget;
+    fn get_focused_mut(&mut self) -> &mut dyn Widget;
 
     fn render(&self, focused : bool, output : &mut Output);
 }

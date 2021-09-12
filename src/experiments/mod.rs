@@ -1,4 +1,4 @@
-use crate::widget::widget::BaseWidget;
+use crate::widget::widget::Widget;
 
 pub mod two_button_edit;
 pub mod focus_group;

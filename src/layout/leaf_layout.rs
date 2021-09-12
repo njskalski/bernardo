@@ -1,7 +1,7 @@
 use crate::layout::layout::{Layout};
 use crate::primitives::xy::XY;
 use crate::primitives::rect::Rect;
-use crate::widget::widget::{BaseWidget, WID};
+use crate::widget::widget::{Widget, WID};
 use crate::experiments::focus_group::FocusUpdate;
 use std::slice::Iter;
 
@@ -16,7 +16,7 @@ impl LeafLayout {
         }
     }
 
-    pub fn from_widget(base_widget : &dyn BaseWidget) -> Self {
+    pub fn from_widget(base_widget : &dyn Widget) -> Self {
         LeafLayout {
             widget_id : base_widget.id()
         }

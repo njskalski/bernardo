@@ -59,7 +59,7 @@ impl Layout for FixedLayout {
             Some(right_item) => match right_item.layout.get_rect(right_item.rect.size, widget_id) {
                 None => None,
                 Some(mut rect) => {
-                    rect.pos = rect.pos + right_item.rect.pos;
+                    rect.pos = right_item.rect.pos;
                     if rect.max_xy() <= output_size {
                         Some(rect)
                     } else {
