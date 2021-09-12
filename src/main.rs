@@ -7,7 +7,7 @@ use crate::io::termion_input::TermionInput;
 use crate::io::output::Output;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
-use crate::experiments::two_button_edit::{TwoButtonEdit, TBEMsg};
+use crate::experiments::two_button_edit::{TwoButtonEdit, TwoButtonEditMsg};
 use crate::widget::widget::BaseWidget;
 
 use log::debug;

@@ -11,6 +11,15 @@ pub struct FixedItem {
     pub rect : Rect
 }
 
+impl FixedItem {
+    pub fn new(layout : Box<dyn Layout>, rect : Rect) -> Self {
+        FixedItem {
+            layout,
+            rect,
+        }
+    }
+}
+
 pub struct FixedLayout {
     size : XY,
     items : Vec<FixedItem>,
@@ -19,7 +28,7 @@ pub struct FixedLayout {
 }
 
 impl FixedLayout {
-    fn new(size : XY, items : Vec<FixedItem>) -> Self {
+    pub fn new(size : XY, items : Vec<FixedItem>) -> Self {
 
         let all_items : Vec<(WID, Option<Rect>)> = items.iter()
             .flat_map(|f| f.layout.get_all(size)).collect();
@@ -45,13 +54,17 @@ impl Layout for FixedLayout {
     }
 
     fn get_rect(&self, output_size: XY, widget_id: WID) -> Option<Rect> {
-        match self.items.get(widget_id) {
+        match self.items.iter().find(|item| item.layout.has_id(widget_id)) {
             None => None,
-            Some(fixed_item) => {
-                if fixed_item.rect.max_xy() <= output_size {
-                    Some(fixed_item.rect)
-                } else {
-                    None
+            Some(right_item) => match right_item.layout.get_rect(right_item.rect.size, widget_id) {
+                None => None,
+                Some(mut rect) => {
+                    rect.pos = rect.pos + right_item.rect.pos;
+                    if rect.max_xy() <= output_size {
+                        Some(rect)
+                    } else {
+                        None
+                    }
                 }
             }
         }

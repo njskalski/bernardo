@@ -7,8 +7,8 @@ just an experiment to see if the design works.
 
 use crate::widget::button::ButtonWidget;
 use crate::widget::edit_box::EditBoxWidget;
-use crate::widget::widget::{get_new_widget_id, BaseWidget};
-use crate::experiments::two_button_edit::TBEMsg::{TextValid, TextInvalid, Cancel, FocusUpdateMsg};
+use crate::widget::widget::{get_new_widget_id, BaseWidget, WID};
+use crate::experiments::two_button_edit::TwoButtonEditMsg::{TextValid, TextInvalid, Cancel, FocusUpdateMsg};
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use std::fs::read;
@@ -25,9 +25,12 @@ use std::any::Any;
 use log::warn;
 use std::ops::Deref;
 use crate::experiments::util::default_key_to_focus_update;
+use crate::layout::fixed_layout::{FixedLayout, FixedItem};
+use crate::primitives::rect::Rect;
+use crate::experiments::from_geometry::from_geometry;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub enum TBEMsg {
+pub enum TwoButtonEditMsg {
     OK,
     Cancel,
     TextValid,
@@ -35,29 +38,26 @@ pub enum TBEMsg {
     FocusUpdateMsg(FocusUpdate)
 }
 
-impl AnyMsg for TBEMsg {}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub enum NoMsg {}
-
-impl AnyMsg for NoMsg {}
+impl AnyMsg for TwoButtonEditMsg {}
 
 pub struct TwoButtonEdit {
     id: usize,
     ok_button: ButtonWidget,
     cancel_button: ButtonWidget,
     edit_box: EditBoxWidget,
-    layout: SplitLayout,
+    layout: Box<dyn Layout>,
     focus_group: FocusGroupImpl,
 }
 
 impl TwoButtonEdit {
     pub fn new() -> Self {
+        let size = XY::new(30, 8);
+
         let ok_button = ButtonWidget::new("OK".into())
-            .with_on_hit(|_| Some(Box::new(TBEMsg::OK)))
+            .with_on_hit(|_| Some(Box::new(TwoButtonEditMsg::OK)))
             .with_enabled(false);
 
-        let cancel_button = ButtonWidget::new("Cancel".into()).with_on_hit(|_| Some(Box::new(TBEMsg::Cancel)));
+        let cancel_button = ButtonWidget::new("Cancel".into()).with_on_hit(|_| Some(Box::new(TwoButtonEditMsg::Cancel)));
 
         let edit_box = EditBoxWidget::new().with_on_change(|eb| {
             if eb.get_text().len() > 4 {
@@ -67,57 +67,27 @@ impl TwoButtonEdit {
             }
         }).with_text("some text".into());
 
-        let button_horizontal_split =
-            SplitLayout::new(
-                vec![Box::new(LeafLayout::from_widget(&ok_button)), Box::new(LeafLayout::from_widget(&cancel_button))],
-                SplitDirection::Horizontal,
-                vec![SplitRule::Proportional(1.0), SplitRule::Proportional(1.0)],
-            ).unwrap();
+        let fixed_items : Vec<FixedItem> = vec![
+            FixedItem::new(
+                Box::new(LeafLayout::new(edit_box.id())),
+                Rect::new(XY::new(1,1), XY::new(20, 1)),
+            ),
+            FixedItem::new(
+                Box::new(LeafLayout::new(ok_button.id())),
+                Rect::new(XY::new(3,3), XY::new(8, 1)),
+            ),
+            FixedItem::new(
+                Box::new(LeafLayout::new(cancel_button.id())),
+                Rect::new(XY::new(14,3), XY::new(8, 1)),
+            ),
+        ];
 
-        let vertical_split =
-            SplitLayout::new(
-                vec![Box::new(LeafLayout::from_widget(&edit_box)), Box::new(button_horizontal_split)],
-                SplitDirection::Vertical,
-                vec![SplitRule::Fixed(1), SplitRule::Fixed(1)]).unwrap();
-
-        let mut focus_group = FocusGroupImpl::new(
-            vec![
-                ok_button.id(),
-                cancel_button.id(),
-                edit_box.id(),
-            ]
-        );
-
-        focus_group.override_edges(
-            edit_box.id(),
-            vec![
-                (FocusUpdate::Down, ok_button.id()),
-                (FocusUpdate::Next, ok_button.id()),
-            ],
-        );
-
-        focus_group.override_edges(
-            ok_button.id(),
-            vec![
-                (FocusUpdate::Up, edit_box.id()),
-                (FocusUpdate::Next, cancel_button.id()),
-                (FocusUpdate::Prev, edit_box.id()),
-                (FocusUpdate::Right, cancel_button.id()),
-            ],
-        );
-
-        focus_group.override_edges(
-            cancel_button.id(),
-            vec![
-                (FocusUpdate::Up, edit_box.id()),
-                (FocusUpdate::Prev, ok_button.id()),
-                (FocusUpdate::Left, ok_button.id()),
-            ],
-        );
+        let layout = FixedLayout::new(size, fixed_items);
+        let focus_group = from_geometry(&layout.get_all(size), Some(size));
 
         TwoButtonEdit {
             id: get_new_widget_id(),
-            layout: vertical_split,
+            layout: Box::new(layout),
             ok_button,
             cancel_button,
             edit_box,
@@ -155,23 +125,23 @@ impl BaseWidget for TwoButtonEdit {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        let our_msg = msg.as_msg::<TBEMsg>();
+        let our_msg = msg.as_msg::<TwoButtonEditMsg>();
         if our_msg.is_none() {
             warn!("expecetd TBEMsg, got {:?}", msg);
             return None;
         }
 
         match our_msg.unwrap() {
-            TBEMsg::FocusUpdateMsg(focus_update) => {
+            TwoButtonEditMsg::FocusUpdateMsg(focus_update) => {
                 self.focus_group.update_focus(*focus_update);
                 None
             }
 
-            TBEMsg::TextValid => {
+            TwoButtonEditMsg::TextValid => {
                 self.ok_button.set_enabled(true);
                 None
             }
-            TBEMsg::TextInvalid => {
+            TwoButtonEditMsg::TextInvalid => {
                 self.ok_button.set_enabled(false);
                 None
             }
