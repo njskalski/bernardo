@@ -26,6 +26,8 @@ impl Rect {
     pub fn min_y(&self) -> u16 { self.pos.y }
     pub fn max_y(&self) -> u16 { self.pos.y + self.size.y }
 
+    pub fn max_xy(&self) -> XY { XY::new(self.pos.x + self.size.x, self.pos.y + self.size.y) }
+
     pub fn is_deformed(&self) -> bool {
         self.size.x == 0 || self.size.y == 0
     }

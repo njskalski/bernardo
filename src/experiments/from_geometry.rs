@@ -105,9 +105,32 @@ fn walk_to_first_hit(buffer : &Buffer<WID>, wid : WID, rect : &Rect, step : (i16
     None
 }
 
-pub fn from_geometry(widgets_and_positions : &Vec<(WID, Option<Rect>)>, output_size : XY) -> FocusGroupImpl {
+pub fn get_full_size(widgets_and_positions : &Vec<(WID, Option<Rect>)>) -> XY {
+    let mut full_size = XY::new(0,0);
+
+    for (_, rect_op) in widgets_and_positions {
+        match rect_op {
+            None => {},
+            Some(rect) => {
+                if full_size.x < rect.max_x() {
+                    full_size.x = rect.max_x();
+                }
+                if full_size.y < rect.max_y() {
+                    full_size.y = rect.max_y();
+                }
+            }
+        }
+    }
+
+    full_size
+}
+
+pub fn from_geometry(widgets_and_positions : &Vec<(WID, Option<Rect>)>,
+    output_size_op : Option<XY>) -> FocusGroupImpl {
     let ids: Vec<WID> = widgets_and_positions.iter().map(|(wid, _)| *wid).collect();
     let mut fgi = FocusGroupImpl::new(ids);
+
+    let output_size = output_size_op.unwrap_or(get_full_size(widgets_and_positions));
 
     let mut buffer : Buffer<WID> = Buffer::new(output_size);
 
@@ -150,11 +173,35 @@ pub fn from_geometry(widgets_and_positions : &Vec<(WID, Option<Rect>)>, output_s
 
 #[cfg(test)]
 mod tests {
-    use crate::experiments::from_geometry::from_geometry;
+    use crate::experiments::from_geometry::{from_geometry, get_full_size};
     use crate::primitives::rect::Rect;
     use crate::widget::widget::WID;
     use crate::primitives::xy::XY;
     use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
+
+    #[test]
+    fn full_size_test() {
+        /*
+            ##1##
+            #####
+            2#3#4
+            #####
+            ##555
+         */
+
+        //widgets_and_positions : Vec<(WID, Option<Rect>)>, output_size : XY
+        let widgets_and_positions : Vec<(WID, Option<Rect>)> = vec![
+            (1, Some(Rect::new((2,0).into(), (1,1).into()))),
+            (2, Some(Rect::new((0,2).into(), (1,1).into()))),
+            (3, Some(Rect::new((2,2).into(), (1,1).into()))),
+            (4, Some(Rect::new((4,2).into(), (1,1).into()))),
+            (5, Some(Rect::new((2,4).into(), (3,1).into()))),
+        ];
+
+        let full_size = get_full_size(&widgets_and_positions);
+
+        assert_eq!(full_size, XY::new(5,5));
+    }
 
     #[test]
     fn from_geometry_test() {
@@ -175,7 +222,7 @@ mod tests {
             (5, Some(Rect::new((2,4).into(), (3,1).into()))),
         ];
 
-        let mut focus_group = from_geometry(&widgets_and_positions, XY::new(5,5));
+        let mut focus_group = from_geometry(&widgets_and_positions, None);
 
         assert_eq!(focus_group.get_focused(), 1);
         assert_eq!(focus_group.update_focus(FocusUpdate::Left), false);

@@ -135,7 +135,7 @@ impl Layout for SplitLayout {
         self.focused
     }
 
-    fn update_focus(&mut self, focus_update: &FocusUpdate) -> bool {
+    fn update_focus(&mut self, focus_update: FocusUpdate) -> bool {
         //TODO
         self.focused = self.focused % self.children.len();
         true

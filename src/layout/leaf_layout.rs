@@ -28,7 +28,7 @@ impl Layout for LeafLayout {
         self.widget_id
     }
 
-    fn update_focus(&mut self, focus_update: &FocusUpdate) -> bool {
+    fn update_focus(&mut self, focus_update: FocusUpdate) -> bool {
         false
     }
 
