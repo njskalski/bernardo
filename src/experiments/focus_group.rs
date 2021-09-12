@@ -26,17 +26,18 @@ pub enum FocusUpdate {
 }
 
 pub trait FocusGroup {
-    fn has_view(&self, widget_id : WID) -> bool;
+    fn has_view(&self, widget_id: WID) -> bool;
     fn get_focused(&self) -> usize;
 
     /*
     returns whether focus got updated or not. It is designed to give a sound feedback, not for
     the purpose of escalation. There will be no "focus escalation".
      */
-    fn update_focus(&mut self, focus_update : FocusUpdate) -> bool;
+    fn update_focus(&mut self, focus_update: FocusUpdate) -> bool;
 
     //TODO proper error reporting
-    fn override_edges(&mut self, widget_id : WID, edges : Vec<(FocusUpdate, WID)>) -> bool;
+    fn override_edges(&mut self, widget_id: WID, edges: Vec<(FocusUpdate, WID)>) -> bool;
+    fn add_edge(&mut self, src_widget: WID, edge: FocusUpdate, target_widget: WID) -> bool;
 }
 
 struct FocusGraphNode {
@@ -109,6 +110,16 @@ impl FocusGroup for FocusGroupImpl {
                 for (e, v)  in edges {
                     node.neighbours.insert(e, v);
                 }
+                true
+            }
+        }
+    }
+
+    fn add_edge(&mut self, src_widget: WID, edge: FocusUpdate, target_widget: WID) -> bool {
+        match self.nodes.get_mut(&src_widget) {
+            None => false,
+            Some(src_node) => {
+                src_node.neighbours.insert(edge, target_widget);
                 true
             }
         }
