@@ -8,6 +8,11 @@ use std::iter::Iterator;
 pub type WidgetGetter<T: Widget> = Box<dyn Fn(&'_ T) -> &'_ dyn Widget>;
 pub type WidgetGetterMut<T: Widget> = Box<dyn Fn(&'_ mut T) -> &'_ mut dyn Widget>;
 
+pub struct WidgetIdRect {
+    pub wid: WID,
+    pub rect: Rect,
+}
+
 pub trait Layout<W: Widget> {
     fn get_focused<'a>(&self, parent: &'a W) -> &'a dyn Widget;
     fn get_focused_mut<'a>(&self, parent: &'a mut W) -> &'a mut dyn Widget;
@@ -21,5 +26,7 @@ pub trait Layout<W: Widget> {
 
     fn min_size(&self, owner: &W) -> XY;
 
+    // this two can be merged later.
+    fn get_rects(&self, owner: &W, output_size: XY) -> Vec<WidgetIdRect>;
     fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output);
 }

@@ -1,9 +1,10 @@
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::output::Output;
-use crate::layout::layout::{Layout, WidgetGetter, WidgetGetterMut};
+use crate::layout::layout::{Layout, WidgetGetter, WidgetGetterMut, WidgetIdRect};
 use crate::primitives::rect::Rect;
-use crate::primitives::xy::XY;
+use crate::primitives::xy::{Zero, XY};
 use crate::widget::widget::{Widget, WID};
+use log::warn;
 use std::slice::Iter;
 
 /*
@@ -34,13 +35,6 @@ impl<W: Widget> LeafLayout<W> {
     pub fn new(wg: WidgetGetter<W>, wgmut: WidgetGetterMut<W>) -> Self {
         LeafLayout { wg, wgmut }
     }
-
-    // pub fn with_fixed_size(self, fixed_size : XY) -> Self {
-    //     LeafLayout {
-    //         fixed_size: Some(fixed_size),
-    //         ..self
-    //     }
-    // }
 }
 
 impl<W: Widget> Layout<W> for LeafLayout<W> {
@@ -65,9 +59,28 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
         widget.min_size()
     }
 
-    fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output) {
-        // todo!()
+    fn get_rects(&self, owner: &W, output_size: XY) -> Vec<WidgetIdRect> {
         let widget: &dyn Widget = (self.wg)(owner);
-        widget.render(focused_id == Some(widget.id()), output)
+        let size = widget.size(output_size);
+
+        vec![WidgetIdRect {
+            wid: widget.id(),
+            rect: Rect::new(XY::new(0, 0), size),
+        }]
+    }
+
+    fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output) {
+        let widget: &dyn Widget = (self.wg)(owner);
+
+        if output.size() >= widget.min_size() {
+            widget.render(focused_id == Some(widget.id()), output);
+        } else {
+            warn!(
+                "output.size() smaller than widget.min_size() for widget {} ({:?} < {:?})",
+                widget.id(),
+                output.size(),
+                widget.min_size(),
+            );
+        }
     }
 }

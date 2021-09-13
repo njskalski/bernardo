@@ -29,7 +29,7 @@ use std::borrow::Borrow;
 use std::ops::Deref;
 // use crate::layout::fixed_layout::{FixedLayout, FixedItem};
 use crate::experiments::from_geometry::from_geometry;
-use crate::layout::split_layout::{SplitDirection, SplitLayout};
+use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::rect::Rect;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -71,48 +71,47 @@ impl TwoButtonEdit {
             })
             .with_text("some text".into());
 
-        // let fixed_items : Vec<FixedItem<TwoButtonEdit>> = vec![
-        //     FixedItem::new(
-        //         Box::new(LeafLayout::new(
-        //             Box::new(|tbe : &Self| {&tbe.edit_box}),
-        //             Box::new(|tbe: &mut Self| {&mut tbe.edit_box})
-        //         )),
-        //         Rect::new(XY::new(1,1), XY::new(20, 1)),
-        //     ),
-        //     FixedItem::new(
-        //         Box::new(LeafLayout::new(
-        //             Box::new(|tbe: &Self| {&tbe.ok_button}),
-        //             Box::new(|tbe: &mut Self| {&mut tbe.ok_button})
-        //         )),
-        //         Rect::new(XY::new(3,3), XY::new(8, 1)),
-        //     ),
-        //     FixedItem::new(
-        //         Box::new(LeafLayout::new(
-        //             Box::new(|tbe: &Self| {&tbe.cancel_button}),
-        //             Box::new(|tbe: &mut Self| {&mut tbe.cancel_button})
-        //         )),
-        //         Rect::new(XY::new(14,3), XY::new(8, 1)),
-        //     ),
-        // ];
-
-        // let layout = FixedLayout::new(size, fixed_items);
-
-        let layout = SplitLayout::new(SplitDirection::Vertical);
+        let layout = SplitLayout::new(SplitDirection::Vertical)
+            .with(
+                SplitRule::Fixed(1),
+                Box::new(LeafLayout::new(
+                    Box::new(|w: &TwoButtonEdit| &w.edit_box),
+                    Box::new(|w: &mut TwoButtonEdit| &mut w.edit_box),
+                )),
+            )
+            .with(
+                SplitRule::Fixed(1),
+                Box::new(LeafLayout::new(
+                    Box::new(|w: &TwoButtonEdit| &w.ok_button),
+                    Box::new(|w: &mut TwoButtonEdit| &mut w.ok_button),
+                )),
+            )
+            .with(
+                SplitRule::Fixed(1),
+                Box::new(LeafLayout::new(
+                    Box::new(|w: &TwoButtonEdit| &w.cancel_button),
+                    Box::new(|w: &mut TwoButtonEdit| &mut w.cancel_button),
+                )),
+            );
 
         let size = XY::new(30, 8);
 
-        // let focus_group = from_geometry(&layout.get_all(size), Some(size));
-
-        let focus_group = FocusGroupImpl::new(vec![]);
-
-        TwoButtonEdit {
+        let mut res = TwoButtonEdit {
             id: get_new_widget_id(),
             layout: Box::new(layout),
             ok_button,
             cancel_button,
             edit_box,
-            focus_group,
-        }
+            focus_group: FocusGroupImpl::dummy(),
+        };
+
+        let rects = res.layout.get_rects(&res, size);
+        let id_and_pos: Vec<(WID, Option<Rect>)> =
+            rects.iter().map(|f| (f.wid, Some(f.rect))).collect();
+        let focus_group_2 = from_geometry(&id_and_pos, Some(size));
+        res.focus_group = focus_group_2;
+
+        res
     }
 }
 

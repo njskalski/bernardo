@@ -1,11 +1,13 @@
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::output::Output;
-use crate::layout::layout::{Layout, WidgetGetterMut};
+use crate::io::sub_output::SubOutput;
+use crate::layout::layout::{Layout, WidgetGetterMut, WidgetIdRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::{Widget, WID};
 use log::debug;
 use log::warn;
+use std::cmp::min;
 use std::net::Shutdown::Read;
 use std::slice::Iter;
 
@@ -41,39 +43,17 @@ impl<W: Widget> SplitLayout<W> {
         }
     }
 
-    // pub fn with(self,
-    // ) -> Self {
-    //
-    // }
+    pub fn with(self, split_rule: SplitRule, child: Box<dyn Layout<W>>) -> Self {
+        let mut children = self.children;
+        let child = SplitLayoutChild {
+            layout: child,
+            split_rule,
+        };
 
-    // pub fn old_new(children : Vec<Box<dyn Layout<W>>>,
-    //            split_direction : SplitDirection,
-    //            split_params : Vec<SplitRule>) -> Option<Self> {
-    //     if children.is_empty() {
-    //         return None
-    //     }
-    //
-    //     if children.len() != split_params.len() {
-    //         return None
-    //     }
-    //
-    //     for p in split_params.iter() {
-    //         match p {
-    //             SplitRule::Fixed(_) => {}
-    //             SplitRule::Proportional(p) => {
-    //                 if *p <= 0.0 {
-    //                     return None
-    //                 }
-    //             }
-    //         }
-    //     }
-    //
-    //     Some(SplitLayout {
-    //         children,
-    //         focused: 0,
-    //         split_direction,
-    //     })
-    // }
+        children.push(child);
+
+        SplitLayout { children, ..self }
+    }
 
     fn get_rects(&self, size: XY) -> Option<Vec<Rect>> {
         let free_axis = if self.split_direction == SplitDirection::Vertical {
@@ -138,6 +118,9 @@ impl<W: Widget> SplitLayout<W> {
                     XY::new(*s as u16, 0).into()
                 };
         }
+
+        debug_assert!(res.len() == self.children.len());
+
         Some(res)
     }
 }
@@ -157,7 +140,82 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
         true
     }
 
-    fn min_size(&self, owner: &W) -> XY {}
+    fn min_size(&self, owner: &W) -> XY {
+        let mut minxy = XY::new(0, 0);
+
+        for child in self.children.iter() {
+            let min_size = child.layout.min_size(owner);
+            match child.split_rule {
+                SplitRule::Fixed(iusize) => {
+                    if iusize > u16::MAX as usize {
+                        warn!("found too big SplitRule::Fixed to process");
+                        continue;
+                    }
+
+                    let i = iusize as u16;
+                    if self.split_direction == SplitDirection::Vertical {
+                        if min_size.y > i {
+                            warn!("SplitRule::Fixed limits y below min_size.y");
+                        }
+
+                        if minxy.y < i {
+                            minxy.y = i;
+                        }
+                        if minxy.x < min_size.x {
+                            minxy.x = min_size.x;
+                        }
+                    } else {
+                        if min_size.x > i {
+                            warn!("SplitRule::Fixed limits x below min_size.x");
+                        }
+
+                        if minxy.x < i {
+                            minxy.x = i;
+                        }
+                        if minxy.y < min_size.y {
+                            minxy.y = min_size.y;
+                        }
+                    }
+                }
+                SplitRule::Proportional(_) => {
+                    if minxy.x < min_size.x {
+                        minxy.x = min_size.x;
+                    }
+                    if minxy.y < min_size.y {
+                        minxy.y = min_size.y;
+                    }
+                }
+            };
+        }
+
+        minxy
+    }
+
+    fn get_rects(&self, owner: &W, output_size: XY) -> Vec<WidgetIdRect> {
+        let rects_op = self.get_rects(output_size);
+        if rects_op.is_none() {
+            warn!(
+                "not enough space to get_rects split_layout: {:?}",
+                output_size
+            );
+            return vec![];
+        };
+
+        let rects = rects_op.unwrap();
+        let mut res: Vec<WidgetIdRect> = vec![];
+        for (idx, ch) in self.children.iter().enumerate() {
+            let rect = &rects[idx];
+            let wirs = ch.layout.get_rects(owner, rects[idx].size);
+            for wir in wirs.iter() {
+                res.push(WidgetIdRect {
+                    wid: wir.wid,
+                    rect: wir.rect.shifted(rect.pos),
+                });
+            }
+        }
+
+        res
+    }
 
     fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output) {
         let rects_op = self.get_rects(output.size());
@@ -176,13 +234,14 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
             let rect = &rects[idx];
 
             if visible_rect.intersect(rect).is_some() {
-                child.layout.render(owner, focused_id, output);
+                let mut suboutput = SubOutput::new(Box::new(output), *rect);
+                child.layout.render(owner, focused_id, &mut suboutput);
             } else {
                 debug!(
                     "skipping drawing split_layout item {:} {:?} beause it's outside view {:?}",
                     idx, rect, visible_rect
                 );
-            }
+            };
         }
     }
 }

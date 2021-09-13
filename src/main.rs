@@ -79,7 +79,9 @@ fn main() {
     };
 
     loop {
-        // at this point we have path and
+        output.clear();
+        main_view.render(true, &mut output);
+        output.end_frame();
 
         match input.source().recv() {
             Ok(ie) => {
@@ -95,9 +97,5 @@ fn main() {
                 debug!("Err {:?}", e);
             }
         }
-
-        output.clear();
-        main_view.render(true, &mut output);
-        output.end_frame();
     }
 }

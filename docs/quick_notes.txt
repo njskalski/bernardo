@@ -34,3 +34,5 @@ One way to make get the editbox and buttons as members would be to pass them as 
 Or I can do it the other way around. That I put Widgets in Layouts (ownership) and borrow them from
 layouts via methods on Self. So method on Self.ButtonOK() would extract a say "OK button" from the proper layout.
 That's way easier in terms of ownership, but looks like shit in code.
+
+//TODO scrolling is now limited to u16 number of lines!
