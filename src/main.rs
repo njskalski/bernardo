@@ -97,7 +97,7 @@ fn main() {
         }
 
         output.clear();
-        main_view.render(true, xy::Zero, &mut output);
+        main_view.render(true, &mut output);
         output.end_frame();
     }
 }

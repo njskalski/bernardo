@@ -11,6 +11,9 @@ This is the leaf of Layout tree. It corresponds to a single widget.
 
 To understand the docs below, see Widget::render docs first.
 
+// the stuff below is not implemented yet, may be moved to scroll layout cause I might
+want scrolling over split layout or sth like this.
+
 If a fixed size is declared, the widget is drawn *as if given output of that size*.
 The frame_offset remains unchanged.
 This is to facilitate scrolling.
@@ -25,7 +28,6 @@ just draw a placeholder indicating that without more space it's not drawing itse
 pub struct LeafLayout<W : Widget> {
     wg : WidgetGetter<W>,
     wgmut: WidgetGetterMut<W>,
-    fixed_size: Option<XY>,
 }
 
 impl <W: Widget> LeafLayout<W> {
@@ -33,16 +35,15 @@ impl <W: Widget> LeafLayout<W> {
         LeafLayout{
             wg,
             wgmut,
-            fixed_size: None,
         }
     }
 
-    pub fn with_fixed_size(self, fixed_size : XY) -> Self {
-        LeafLayout {
-            fixed_size: Some(fixed_size),
-            ..self
-        }
-    }
+    // pub fn with_fixed_size(self, fixed_size : XY) -> Self {
+    //     LeafLayout {
+    //         fixed_size: Some(fixed_size),
+    //         ..self
+    //     }
+    // }
 }
 
 impl <W: Widget> Layout<W> for LeafLayout<W> {
@@ -74,11 +75,16 @@ impl <W: Widget> Layout<W> for LeafLayout<W> {
     //     self.widget_id == widget_id
     // }
 
-    fn get_ids(&self) -> Vec<WID> {
-        vec![self.widget_id]
-    }
+    // fn get_ids(&self) -> Vec<WID> {
+    //     todo!()
+    // }
 
-    fn render(&self, focused_id: Option<WID>, frame_offset: XY, output: &mut Output) {
-        todo!()
+    fn render(&self, owner : &W, focused_id: Option<WID>, output: &mut Output) {
+        // todo!()
+        let widget : &dyn Widget = (self.wg)(owner);
+        widget.render(
+            focused_id == Some(widget.id()),
+            output,
+        )
     }
 }

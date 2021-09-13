@@ -37,6 +37,8 @@ impl Output for SubOutput<'_> {
     }
 
     fn clear(&mut self) {
+        // DO NOT clear the wider output, clear only your part.
+
         let style = TextStyle_WhiteOnBlack;
 
         for x in 0..self.frame.size.x {
@@ -46,26 +48,4 @@ impl Output for SubOutput<'_> {
             }
         }
     }
-}
-
-struct DeformedOutput {}
-
-impl DeformedOutput {
-    pub fn new() -> Self {
-        DeformedOutput {}
-    }
-}
-
-impl SizedXY for DeformedOutput {
-    fn size(&self) -> XY {
-        XY::new(0, 0)
-    }
-}
-
-impl Output for DeformedOutput {
-    fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
-        error!("Attempting to print on deformed output.")
-    }
-
-    fn clear(&mut self) {}
 }

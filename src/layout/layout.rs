@@ -24,11 +24,12 @@ pub trait Layout<W : Widget> {
     // fn has_id(&self, widget_id: WID) -> bool;
 
     //TODO this should not be a vec, should be iter.
-    fn get_ids(&self) -> Vec<WID>;
+    // fn get_ids(&self) -> Vec<WID>;
 
-    fn get_all(&self, output_size: XY) -> Vec<(WID, Option<Rect>)> {
-        self.get_ids().iter().map(|wid| (*wid, self.get_rect( output_size, *wid))).collect()
-    }
+    // fn get_all(&self, output_size: XY) -> Vec<(WID, Option<Rect>)> {
+    //     // self.get_ids().iter().map(|wid| (*wid, self.get_rect( output_size, *wid))).collect()
+    //     vec![]
+    // }
 
-    fn render(&self, focused_id : Option<WID>, frame_offset : XY, output : &mut Output);
+    fn render(&self, owner : &W, focused_id : Option<WID>, output : &mut Output);
 }

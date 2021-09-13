@@ -203,7 +203,7 @@ impl Widget for EditBoxWidget {
         self
     }
 
-    fn render(&self, focused: bool, frame_offset : XY, output: &mut Output) {
+    fn render(&self, focused: bool, output: &mut Output) {
         let mut primary_style = if self.enabled {
             if focused {
                 TextStyle_WhiteOnBrightYellow

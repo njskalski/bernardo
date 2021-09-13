@@ -5,6 +5,9 @@ use crate::experiments::focus_group::FocusUpdate;
 use std::slice::Iter;
 use crate::widget::widget::{WID, Widget};
 use crate::io::output::Output;
+use std::net::Shutdown::Read;
+use log::debug;
+use log::warn;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SplitDirection {
@@ -15,7 +18,7 @@ pub enum SplitDirection {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum SplitRule {
     Fixed(usize),
-    Proportional(f32), // TODO change to float
+    Proportional(f32),
 }
 
 pub struct SplitLayout<W : Widget> {
@@ -80,6 +83,8 @@ impl <W: Widget> SplitLayout<W> {
     // }
 
     fn get_rects(&self, size: XY) -> Option<Vec<Rect>> {
+        debug_assert!(self.children.len() == self.split_params.len());
+
         let free_axis = if self.split_direction == SplitDirection::Vertical {
             size.y as usize
         } else {
@@ -193,12 +198,33 @@ impl <W: Widget> Layout<W> for SplitLayout<W> {
     //     false
     // }
 
-    fn get_ids(&self) -> Vec<WID> {
-        self.children.iter().flat_map(|c| c.get_ids()).collect()
-    }
+    // fn get_ids(&self) -> Vec<WID> {
+    //     self.children.iter().flat_map(|c| c.get_ids()).collect()
+    // }
 
-    fn render(&self, focused_id: Option<WID>, frame_offset: XY, output: &mut Output) {
-        todo!()
+    fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output) {
+        let rects_op = self.get_rects(output.size());
+
+        if rects_op.is_none() {
+            warn!("not enough space to draw split_layout: {:?}", output.size());
+            return;
+        }
+
+        let rects = rects_op.unwrap();
+
+        let visible_rect = output.get_visible_rect();
+
+        for idx in 0..rects.len() {
+            let child = &self.children[idx];
+            let rect = &rects[idx];
+
+            if visible_rect.intersect(rect).is_some() {
+                child.render(owner, focused_id, output);
+            } else {
+                debug!("skipping drawing split_layout item {:} {:?} beause it's outside view {:?}",
+                    idx, rect, visible_rect);
+            }
+        }
     }
 }
 

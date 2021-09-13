@@ -51,6 +51,7 @@ impl Output for BufferOutput {
                 grapheme: grapheme.to_string(),
             };
 
+            // TODO this can go outside the line or even cause a panic.
             if grapheme.width() > 0 {
                 for _ in 0..grapheme.width() - 1 {
                     offset += 1;

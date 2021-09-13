@@ -96,7 +96,9 @@ impl TwoButtonEdit {
 
         let size = XY::new(30, 8);
 
-        let focus_group = from_geometry(&layout.get_all(size), Some(size));
+        // let focus_group = from_geometry(&layout.get_all(size), Some(size));
+
+        let focus_group = FocusGroupImpl::new(vec![]);
 
         TwoButtonEdit {
             id: get_new_widget_id(),
@@ -197,12 +199,12 @@ impl Widget for TwoButtonEdit {
         focused_view.unwrap()
     }
 
-    fn render(&self, focused: bool, frame_offset: XY, output: &mut Output) {
+    fn render(&self, focused: bool, output: &mut Output) {
         let focused_op = if focused { None } else {
             Some(self.layout.get_focused(self).id())
         };
 
-        self.layout.render(focused_op, frame_offset, output);
+        self.layout.render(self, focused_op, output);
 
         // let frame = Rect::new(frame_offset, output.size());
         //

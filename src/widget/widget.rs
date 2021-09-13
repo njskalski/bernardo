@@ -33,30 +33,7 @@ pub trait Widget {
     fn get_focused(&self) -> &dyn Widget;
     fn get_focused_mut(&mut self) -> &mut dyn Widget;
 
-    /*
-    Each widget has it's widget space, based (0, 0) and sized XY.
-    Each output has it's output space, based (0, 0) and sized XY.
-
-    Frame is a Rect based in View's space. But (0,0) of Frame corresponds to (0,0) in output.
-    To "simplify" things, I don't pass frame as Rect, I just pass it's beginning, and size
-    is deduced from ouput.size().
-    Hence the parameter frame_offset, which is frame.pos (2) - view.pos (1) in any space.
-    To calculate Frame in widget space, just take Rect::new(frame_offset, output.size()).
-
-    view
-    1───────┐
-    │       │ frame
-    │   2───┼────┐
-    │   │   │    │
-    │   │   │    │
-    │   └───┼────┘
-    │       │
-    │       │
-    └───────┘
-
-
-     */
-    fn render(&self, focused : bool, frame_offset : XY, output : &mut Output);
+    fn render(&self, focused : bool, output : &mut Output);
 }
 
 pub fn get_new_widget_id() -> WID {
