@@ -3,6 +3,8 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::ops::Add;
 
+pub const Zero: XY = XY::new(0, 0);
+
 #[derive(Clone, Copy, Debug)]
 pub struct XY {
     pub x: u16,

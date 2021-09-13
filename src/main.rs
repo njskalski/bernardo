@@ -9,9 +9,11 @@ use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use crate::experiments::two_button_edit::{TwoButtonEdit, TwoButtonEditMsg};
 use crate::widget::widget::Widget;
+use crate::primitives::xy::XY;
 
 use log::debug;
 use crate::widget::any_msg::AnyMsg;
+use crate::primitives::xy;
 
 mod io;
 mod primitives;
@@ -95,7 +97,7 @@ fn main() {
         }
 
         output.clear();
-        main_view.render(true, &mut output);
+        main_view.render(true, xy::Zero, &mut output);
         output.end_frame();
     }
 }

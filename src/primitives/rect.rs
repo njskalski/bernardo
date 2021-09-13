@@ -32,7 +32,7 @@ impl Rect {
         self.size.x == 0 || self.size.y == 0
     }
 
-    pub fn intersect(&self, other: Rect) -> Rect {
+    pub fn intersect(&self, other: &Rect) -> Option<Rect> {
         //TODO write tests
 
         /*
@@ -61,15 +61,12 @@ impl Rect {
         ys.sort();
 
         if xs[0].1 == true && xs[1].1 == true && ys[0].1 == true && ys[1].1 == true {
-            Rect {
+            Some(Rect {
                 pos: XY::new(xs[1].0, ys[1].0),
                 size: XY::new(xs[2].0 - xs[1].0, ys[2].0 - ys[1].0),
-            }
+            })
         } else {
-            Rect {
-                pos: XY::new(0 as u16, 0 as u16),
-                size: XY::new(0 as u16, 0 as u16),
-            }
+            None
         }
     }
 

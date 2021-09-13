@@ -70,7 +70,7 @@ impl Widget for ButtonWidget {
         self
     }
 
-    fn render(&self, focused : bool, output: &mut Output) {
+    fn render(&self, focused : bool, frame_offset: XY, output: &mut Output) {
         let mut full_text = "[".to_string() + &self.text + "]";
 
         let mut style = if self.enabled {
