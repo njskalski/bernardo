@@ -14,12 +14,6 @@ pub struct WidgetIdRect {
 }
 
 pub trait Layout<W: Widget> {
-    fn get_focused<'a>(&self, parent: &'a W) -> &'a dyn Widget;
-    fn get_focused_mut<'a>(&self, parent: &'a mut W) -> &'a mut dyn Widget;
-
-    // result == true if focus got changed, false otherwise. It's for sound or visualization.
-    fn update_focus(&mut self, focus_update: FocusUpdate) -> bool;
-
     fn is_leaf(&self) -> bool {
         false
     }

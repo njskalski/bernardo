@@ -55,7 +55,7 @@ impl<W: Widget> SplitLayout<W> {
         SplitLayout { children, ..self }
     }
 
-    fn get_rects(&self, size: XY) -> Option<Vec<Rect>> {
+    fn get_just_rects(&self, size: XY) -> Option<Vec<Rect>> {
         let free_axis = if self.split_direction == SplitDirection::Vertical {
             size.y as usize
         } else {
@@ -126,20 +126,6 @@ impl<W: Widget> SplitLayout<W> {
 }
 
 impl<W: Widget> Layout<W> for SplitLayout<W> {
-    fn get_focused<'a>(&self, parent: &'a W) -> &'a dyn Widget {
-        self.children[self.focused].layout.get_focused(parent)
-    }
-
-    fn get_focused_mut<'a>(&self, parent: &'a mut W) -> &'a mut dyn Widget {
-        self.children[self.focused].layout.get_focused_mut(parent)
-    }
-
-    fn update_focus(&mut self, focus_update: FocusUpdate) -> bool {
-        //TODO
-        self.focused = self.focused % self.children.len();
-        true
-    }
-
     fn min_size(&self, owner: &W) -> XY {
         let mut minxy = XY::new(0, 0);
 
@@ -192,7 +178,7 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
     }
 
     fn get_rects(&self, owner: &W, output_size: XY) -> Vec<WidgetIdRect> {
-        let rects_op = self.get_rects(output_size);
+        let rects_op = self.get_just_rects(output_size);
         if rects_op.is_none() {
             warn!(
                 "not enough space to get_rects split_layout: {:?}",
@@ -218,7 +204,7 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
     }
 
     fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output) {
-        let rects_op = self.get_rects(output.size());
+        let rects_op = self.get_just_rects(output.size());
 
         if rects_op.is_none() {
             warn!("not enough space to draw split_layout: {:?}", output.size());

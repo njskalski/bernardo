@@ -108,7 +108,7 @@ impl TwoButtonEdit {
         let rects = res.layout.get_rects(&res, size);
         let id_and_pos: Vec<(WID, Option<Rect>)> =
             rects.iter().map(|f| (f.wid, Some(f.rect))).collect();
-        let focus_group_2 = from_geometry(&id_and_pos, Some(size));
+        let focus_group_2 = from_geometry(id_and_pos, Some(size));
         res.focus_group = focus_group_2;
 
         res
@@ -208,39 +208,11 @@ impl Widget for TwoButtonEdit {
 
     fn render(&self, focused: bool, output: &mut Output) {
         let focused_op = if focused {
-            None
+            Some(self.focus_group.get_focused())
         } else {
-            Some(self.layout.get_focused(self).id())
+            None
         };
 
         self.layout.render(self, focused_op, output);
-
-        // let frame = Rect::new(frame_offset, output.size());
-        //
-        // let ok_button_rect = self.layout
-        //     .get_rect(output.size(), self.ok_button.id())
-        //     .unwrap();
-        //
-        // let cancel_button_rect = self.layout
-        //     .get_rect(output.size(), self.cancel_button.id())
-        //     .unwrap();
-        //
-        // let edit_rect = self.layout
-        //     .get_rect(output.size(), self.edit_box.id())
-        //     .unwrap();
-        //
-        // let ok_focused = focused && self.focus_group.get_focused() == self.ok_button.id();
-        // let cancel_focused = focused && self.focus_group.get_focused() == self.cancel_button.id();
-        // let edit_focused = focused && self.focus_group.get_focused() == self.edit_box.id();
-        //
-        // if ok_button_rect.intersect(&frame).is_some() {
-        //     self.ok_button.render(ok_focused, frame_offset, &mut SubOutput::new(Box::new(output), ok_button_rect));
-        // }
-        // if cancel_button_rect.intersect(&frame).is_some() {
-        //     self.cancel_button.render(cancel_focused,  frame_offset, &mut SubOutput::new(Box::new(output), cancel_button_rect));
-        // }
-        // if edit_rect.intersect(&frame).is_some() {
-        //     self.edit_box.render(edit_focused, frame_offset, &mut SubOutput::new(Box::new(output), edit_rect));
-        // }
     }
 }

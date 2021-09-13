@@ -78,9 +78,9 @@ impl FocusGroupImpl {
     }
 
     pub fn dummy() -> Self {
-        FocusGroupImpl {
-            nodes: HashMap::new(),
-            selected: 0,
+        FocusGroupImpl{
+            nodes : HashMap::new(),
+            selected : 0,
         }
     }
 }

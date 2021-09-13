@@ -10,6 +10,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::WID;
 use std::collections::HashMap;
+use crate::layout::layout::WidgetIdRect;
 
 fn fill(b: &mut Buffer<WID>, wid: WID, rect: &Rect) {
     for x in rect.min_x()..rect.max_x() {
@@ -125,25 +126,35 @@ pub fn get_full_size(widgets_and_positions: &Vec<(WID, Option<Rect>)>) -> XY {
     full_size
 }
 
+pub fn from_wirs(wirs : &Vec<WidgetIdRect>, output_size_op : Option<XY>) -> FocusGroupImpl {
+    let mut widgets_and_positions : Vec<(WID, Option<Rect>)> = vec![];
+    for wir in wirs {
+        widgets_and_positions.push(
+            (wir.wid, Some(wir.rect))
+        )
+    };
+    from_geometry(widgets_and_positions, output_size_op)
+}
+
 pub fn from_geometry(
-    widgets_and_positions: &Vec<(WID, Option<Rect>)>,
+    widgets_and_positions: Vec<(WID, Option<Rect>)>,
     output_size_op: Option<XY>,
 ) -> FocusGroupImpl {
     let ids: Vec<WID> = widgets_and_positions.iter().map(|(wid, _)| *wid).collect();
     let mut fgi = FocusGroupImpl::new(ids);
 
-    let output_size = output_size_op.unwrap_or(get_full_size(widgets_and_positions));
+    let output_size = output_size_op.unwrap_or(get_full_size(&widgets_and_positions));
 
     let mut buffer: Buffer<WID> = Buffer::new(output_size);
 
-    for (wid, rect_op) in widgets_and_positions {
+    for (wid, rect_op) in &widgets_and_positions {
         match rect_op {
             None => {}
             Some(rect) => fill(&mut buffer, *wid, &rect),
         }
     }
 
-    for (wid, rect_op) in widgets_and_positions {
+    for (wid, rect_op) in &widgets_and_positions {
         let mut edges: Vec<(FocusUpdate, WID)> = Vec::new();
         match rect_op {
             None => {}
