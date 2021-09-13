@@ -1,20 +1,20 @@
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Key::Enter;
-use crate::widget::widget::{Widget, get_new_widget_id, WidgetAction, WID};
-use crate::primitives::xy::XY;
-use unicode_segmentation::UnicodeSegmentation;
 use crate::io::output::Output;
-use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, Effect};
+use crate::io::style::{Effect, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue};
 use crate::primitives::sized_xy::SizedXY;
+use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
-use std::borrow::Borrow;
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use log::warn;
+use std::borrow::Borrow;
+use unicode_segmentation::UnicodeSegmentation;
 
 pub struct ButtonWidget {
-    id : usize,
+    id: usize,
     enabled: bool,
-    text : String,
+    text: String,
     on_hit: Option<WidgetAction<ButtonWidget>>,
 }
 
@@ -47,7 +47,7 @@ impl Widget for ButtonWidget {
         let our_msg = msg.as_msg::<ButtonWidgetMsg>();
         if our_msg.is_none() {
             warn!("expecetd ButtonWidgetMsg, got {:?}", msg);
-            return None
+            return None;
         }
 
         match our_msg.unwrap() {
@@ -70,7 +70,7 @@ impl Widget for ButtonWidget {
         self
     }
 
-    fn render(&self, focused : bool,  output: &mut Output) {
+    fn render(&self, focused: bool, output: &mut Output) {
         let mut full_text = "[".to_string() + &self.text + "]";
 
         let mut style = if self.enabled {
@@ -84,12 +84,12 @@ impl Widget for ButtonWidget {
             full_text = ">".to_string() + &self.text + "<"
         }
 
-        output.print_at((0,0).into(), style, full_text.as_str());
+        output.print_at((0, 0).into(), style, full_text.as_str());
     }
 }
 
 impl ButtonWidget {
-    pub fn new(text : String) -> Self {
+    pub fn new(text: String) -> Self {
         ButtonWidget {
             id: get_new_widget_id(),
             enabled: true,
@@ -110,7 +110,7 @@ impl ButtonWidget {
             id: self.id,
             enabled,
             on_hit: self.on_hit,
-            text : self.text
+            text: self.text,
         }
     }
 

@@ -1,10 +1,10 @@
-use crate::layout::layout::{Layout, WidgetGetterMut, WidgetGetter};
-use crate::primitives::xy::XY;
-use crate::primitives::rect::Rect;
-use crate::widget::widget::{Widget, WID};
 use crate::experiments::focus_group::FocusUpdate;
-use std::slice::Iter;
 use crate::io::output::Output;
+use crate::layout::layout::{Layout, WidgetGetter, WidgetGetterMut};
+use crate::primitives::rect::Rect;
+use crate::primitives::xy::XY;
+use crate::widget::widget::{Widget, WID};
+use std::slice::Iter;
 
 /*
 This is the leaf of Layout tree. It corresponds to a single widget.
@@ -25,17 +25,14 @@ Now a widget when given a size can decide whether to draw itself, draw itself pa
 just draw a placeholder indicating that without more space it's not drawing itself properly.
  */
 
-pub struct LeafLayout<W : Widget> {
-    wg : WidgetGetter<W>,
+pub struct LeafLayout<W: Widget> {
+    wg: WidgetGetter<W>,
     wgmut: WidgetGetterMut<W>,
 }
 
-impl <W: Widget> LeafLayout<W> {
-    pub fn new(wg : WidgetGetter<W>, wgmut : WidgetGetterMut<W>) -> Self {
-        LeafLayout{
-            wg,
-            wgmut,
-        }
+impl<W: Widget> LeafLayout<W> {
+    pub fn new(wg: WidgetGetter<W>, wgmut: WidgetGetterMut<W>) -> Self {
+        LeafLayout { wg, wgmut }
     }
 
     // pub fn with_fixed_size(self, fixed_size : XY) -> Self {
@@ -46,7 +43,7 @@ impl <W: Widget> LeafLayout<W> {
     // }
 }
 
-impl <W: Widget> Layout<W> for LeafLayout<W> {
+impl<W: Widget> Layout<W> for LeafLayout<W> {
     fn get_focused<'a>(&self, parent: &'a W) -> &'a dyn Widget {
         (self.wg)(parent)
     }
@@ -59,32 +56,18 @@ impl <W: Widget> Layout<W> for LeafLayout<W> {
         false
     }
 
-    // fn get_rect(&self, output_size: XY, widget_id: WID) -> Option<Rect> {
-    //     if self.widget_id == widget_id {
-    //         Some(Rect::new(XY::new(0,0), output_size))
-    //     } else {
-    //         None
-    //     }
-    // }
-
     fn is_leaf(&self) -> bool {
         true
     }
 
-    // fn has_id(&self, widget_id: WID) -> bool {
-    //     self.widget_id == widget_id
-    // }
+    fn min_size(&self, owner: &W) -> XY {
+        let widget: &dyn Widget = (self.wg)(owner);
+        widget.min_size()
+    }
 
-    // fn get_ids(&self) -> Vec<WID> {
-    //     todo!()
-    // }
-
-    fn render(&self, owner : &W, focused_id: Option<WID>, output: &mut Output) {
+    fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output) {
         // todo!()
-        let widget : &dyn Widget = (self.wg)(owner);
-        widget.render(
-            focused_id == Some(widget.id()),
-            output,
-        )
+        let widget: &dyn Widget = (self.wg)(owner);
+        widget.render(focused_id == Some(widget.id()), output)
     }
 }

@@ -1,11 +1,11 @@
 use crate::io::input_event::InputEvent;
+use crate::io::output::Output;
+use crate::layout::leaf_layout::LeafLayout;
+use crate::primitives::sized_xy::SizedXY;
+use crate::primitives::xy::XY;
+use crate::widget::any_msg::AnyMsg;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use crate::io::output::Output;
-use crate::primitives::xy::XY;
-use crate::primitives::sized_xy::SizedXY;
-use crate::widget::any_msg::AnyMsg;
-use crate::layout::leaf_layout::LeafLayout;
 
 // this corresponds to message to Parent.
 pub type WidgetAction<W> = fn(&W) -> Option<Box<dyn AnyMsg>>;
@@ -20,24 +20,24 @@ pub trait Widget {
     fn min_size(&self) -> XY;
 
     // Size is to be guaranteed to be called with max_size >= min_size.
-    fn size(&self, max_size : XY) -> XY;
+    fn size(&self, max_size: XY) -> XY;
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.
-    fn on_input(&self, input_event : InputEvent) -> Option<Box<dyn AnyMsg>>;
+    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>>;
 
     // This is called when an input got consumed and internal message is created.
     // The output is a message to parent.
     // No message will NOT stop redraw.
-    fn update(&mut self, msg : Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>>;
+    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>>;
 
     fn get_focused(&self) -> &dyn Widget;
     fn get_focused_mut(&mut self) -> &mut dyn Widget;
 
-    fn render(&self, focused : bool, output : &mut Output);
+    fn render(&self, focused: bool, output: &mut Output);
 }
 
 pub fn get_new_widget_id() -> WID {
-    static COUNTER:AtomicUsize = AtomicUsize::new(1);
+    static COUNTER: AtomicUsize = AtomicUsize::new(1);
     COUNTER.fetch_add(1, Ordering::Relaxed) as WID
 }
 

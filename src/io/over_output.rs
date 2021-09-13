@@ -17,9 +17,22 @@ pub struct OverOutput<'a> {
 }
 
 impl<'a> OverOutput<'a> {
-    pub fn new(output: Box<&'a mut dyn Output>, upper_left_offset: XY, bottom_right_margin: XY) -> Self {
-        debug!("making overoutput {:?} {:?} {:?}", upper_left_offset, output.size(), bottom_right_margin);
-        OverOutput { output, upper_left_offset, bottom_right_margin }
+    pub fn new(
+        output: Box<&'a mut dyn Output>,
+        upper_left_offset: XY,
+        bottom_right_margin: XY,
+    ) -> Self {
+        debug!(
+            "making overoutput {:?} {:?} {:?}",
+            upper_left_offset,
+            output.size(),
+            bottom_right_margin
+        );
+        OverOutput {
+            output,
+            upper_left_offset,
+            bottom_right_margin,
+        }
     }
 }
 
@@ -43,7 +56,7 @@ impl Output for OverOutput<'_> {
             return; // below frame
         }
 
-        let mut x_offset : i32 = 0;
+        let mut x_offset: i32 = 0;
         for grapheme in text.graphemes(true).into_iter() {
             let x = 0 as i32 + pos.x as i32 - self.upper_left_offset.x as i32 + x_offset;
             if x < 0 {

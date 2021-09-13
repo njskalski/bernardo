@@ -5,12 +5,12 @@ use log::debug;
 use termion::{clear, cursor, style, terminal_size};
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
-use crate::io::buffer_output::BufferOutput;
 
 pub struct TermionOutput<W: Write> {
     stdout: W,

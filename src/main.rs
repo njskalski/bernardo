@@ -1,27 +1,26 @@
+use crate::experiments::two_button_edit::{TwoButtonEdit, TwoButtonEditMsg};
+use crate::io::input_event::InputEvent;
+use crate::io::keys::Key;
+use crate::io::output::Output;
+use crate::io::termion_input::TermionInput;
+use crate::io::termion_output::TermionOutput;
+use crate::primitives::xy::XY;
+use crate::widget::widget::Widget;
 use log::LevelFilter;
 use std::io::{stdin, stdout, Read, Write};
 use termion::raw::IntoRawMode;
 use termion::{async_stdin, clear, color, cursor, style};
-use crate::io::termion_output::TermionOutput;
-use crate::io::termion_input::TermionInput;
-use crate::io::output::Output;
-use crate::io::input_event::InputEvent;
-use crate::io::keys::Key;
-use crate::experiments::two_button_edit::{TwoButtonEdit, TwoButtonEditMsg};
-use crate::widget::widget::Widget;
-use crate::primitives::xy::XY;
 
-use log::debug;
-use crate::widget::any_msg::AnyMsg;
 use crate::primitives::xy;
+use crate::widget::any_msg::AnyMsg;
+use log::debug;
 
+mod experiments;
 mod io;
+mod layout;
 mod primitives;
 mod view;
 mod widget;
-mod experiments;
-mod layout;
-
 
 fn main() {
     env_logger::builder()
@@ -40,7 +39,10 @@ fn main() {
 
     let mut main_view = TwoButtonEdit::new();
 
-    fn recursive_treat_views(view : &mut dyn Widget, ie : InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
+    fn recursive_treat_views(
+        view: &mut dyn Widget,
+        ie: InputEvent,
+    ) -> (bool, Option<Box<dyn AnyMsg>>) {
         let my_id = view.id();
         let active_child_id = view.get_focused().id();
 
@@ -53,12 +55,10 @@ fn main() {
 
         if child_have_consumed {
             match message_from_child_op {
-                None => {
-                    return (true, None)
-                }
+                None => return (true, None),
                 Some(message_from_child) => {
                     let my_message_to_parent = view.update(message_from_child);
-                    return (true, my_message_to_parent)
+                    return (true, my_message_to_parent);
                 }
             }
         };

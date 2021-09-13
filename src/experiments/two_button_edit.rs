@@ -5,30 +5,32 @@ and OK is enabled ONLY if text TextBox content length > 4.
 just an experiment to see if the design works.
  */
 
+use crate::experiments::two_button_edit::TwoButtonEditMsg::{
+    Cancel, FocusUpdateMsg, TextInvalid, TextValid,
+};
+use crate::io::input_event::InputEvent;
+use crate::io::keys::Key;
 use crate::widget::button::ButtonWidget;
 use crate::widget::edit_box::EditBoxWidget;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
-use crate::experiments::two_button_edit::TwoButtonEditMsg::{TextValid, TextInvalid, Cancel, FocusUpdateMsg};
-use crate::io::input_event::InputEvent;
-use crate::io::keys::Key;
 use std::fs::read;
 // use crate::layout::split_layout::{SplitLayout, SplitDirection, SplitRule};
+use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl, FocusUpdate};
+use crate::experiments::util::default_key_to_focus_update;
+use crate::io::output::Output;
+use crate::io::sub_output::SubOutput;
+use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::xy::XY;
-use crate::io::output::Output;
-use crate::layout::layout::Layout;
-use crate::io::sub_output::SubOutput;
-use crate::experiments::focus_group::{FocusGroupImpl, FocusGroup, FocusUpdate};
 use crate::widget::any_msg::{AnyMsg, AsAny};
-use std::borrow::Borrow;
-use std::any::Any;
 use log::warn;
+use std::any::Any;
+use std::borrow::Borrow;
 use std::ops::Deref;
-use crate::experiments::util::default_key_to_focus_update;
 // use crate::layout::fixed_layout::{FixedLayout, FixedItem};
-use crate::primitives::rect::Rect;
 use crate::experiments::from_geometry::from_geometry;
-use crate::layout::split_layout::{SplitLayout, SplitDirection};
+use crate::layout::split_layout::{SplitDirection, SplitLayout};
+use crate::primitives::rect::Rect;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum TwoButtonEditMsg {
@@ -36,7 +38,7 @@ pub enum TwoButtonEditMsg {
     Cancel,
     TextValid,
     TextInvalid,
-    FocusUpdateMsg(FocusUpdate)
+    FocusUpdateMsg(FocusUpdate),
 }
 
 impl AnyMsg for TwoButtonEditMsg {}
@@ -56,15 +58,18 @@ impl TwoButtonEdit {
             .with_on_hit(|_| Some(Box::new(TwoButtonEditMsg::OK)))
             .with_enabled(false);
 
-        let cancel_button = ButtonWidget::new("Cancel".into()).with_on_hit(|_| Some(Box::new(TwoButtonEditMsg::Cancel)));
+        let cancel_button = ButtonWidget::new("Cancel".into())
+            .with_on_hit(|_| Some(Box::new(TwoButtonEditMsg::Cancel)));
 
-        let edit_box = EditBoxWidget::new().with_on_change(|eb| {
-            if eb.get_text().len() > 4 {
-                Some(Box::new(TextValid))
-            } else {
-                Some(Box::new(TextInvalid))
-            }
-        }).with_text("some text".into());
+        let edit_box = EditBoxWidget::new()
+            .with_on_change(|eb| {
+                if eb.get_text().len() > 4 {
+                    Some(Box::new(TextValid))
+                } else {
+                    Some(Box::new(TextInvalid))
+                }
+            })
+            .with_text("some text".into());
 
         // let fixed_items : Vec<FixedItem<TwoButtonEdit>> = vec![
         //     FixedItem::new(
@@ -127,15 +132,14 @@ impl Widget for TwoButtonEdit {
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         let focus_update_op = default_key_to_focus_update(input_event);
         if focus_update_op.is_some() {
-            return Some(Box::new(FocusUpdateMsg(focus_update_op.unwrap())))
+            return Some(Box::new(FocusUpdateMsg(focus_update_op.unwrap())));
         }
 
         //if we got here, it was NOT an focus update.
 
-
         match input_event {
             InputEvent::KeyInput(Key::Esc) => Some(Box::new(Cancel)),
-            _ => None
+            _ => None,
         }
     }
 
@@ -160,7 +164,7 @@ impl Widget for TwoButtonEdit {
                 self.ok_button.set_enabled(false);
                 None
             }
-            _ => None
+            _ => None,
         }
     }
 
@@ -173,11 +177,13 @@ impl Widget for TwoButtonEdit {
             Some(&self.cancel_button)
         } else if focused_id == self.edit_box.id() {
             Some(&self.edit_box)
-        } else { None };
+        } else {
+            None
+        };
 
         if focused_view.is_none() {
             warn!("failed getting focused_view in two_button_edit");
-            return &self.cancel_button
+            return &self.cancel_button;
         };
 
         focused_view.unwrap()
@@ -192,7 +198,9 @@ impl Widget for TwoButtonEdit {
             Some(&mut self.cancel_button)
         } else if focused_id == self.edit_box.id() {
             Some(&mut self.edit_box)
-        } else { None };
+        } else {
+            None
+        };
 
         //TODO this will panic if some id is wrong
 
@@ -200,7 +208,9 @@ impl Widget for TwoButtonEdit {
     }
 
     fn render(&self, focused: bool, output: &mut Output) {
-        let focused_op = if focused { None } else {
+        let focused_op = if focused {
+            None
+        } else {
             Some(self.layout.get_focused(self).id())
         };
 

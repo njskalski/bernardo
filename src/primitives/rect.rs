@@ -21,12 +21,22 @@ impl Rect {
         self.pos
     }
 
-    pub fn min_x(&self) -> u16 { self.pos.x }
-    pub fn max_x(&self) -> u16 { self.pos.x + self.size.x }
-    pub fn min_y(&self) -> u16 { self.pos.y }
-    pub fn max_y(&self) -> u16 { self.pos.y + self.size.y }
+    pub fn min_x(&self) -> u16 {
+        self.pos.x
+    }
+    pub fn max_x(&self) -> u16 {
+        self.pos.x + self.size.x
+    }
+    pub fn min_y(&self) -> u16 {
+        self.pos.y
+    }
+    pub fn max_y(&self) -> u16 {
+        self.pos.y + self.size.y
+    }
 
-    pub fn max_xy(&self) -> XY { XY::new(self.pos.x + self.size.x, self.pos.y + self.size.y) }
+    pub fn max_xy(&self) -> XY {
+        XY::new(self.pos.x + self.size.x, self.pos.y + self.size.y)
+    }
 
     pub fn is_deformed(&self) -> bool {
         self.size.x == 0 || self.size.y == 0
@@ -70,10 +80,10 @@ impl Rect {
         }
     }
 
-    pub fn shift(&self, vec : XY) -> Rect {
+    pub fn shift(&self, vec: XY) -> Rect {
         Rect {
-            pos : self.pos + vec,
-            size : self.size
+            pos: self.pos + vec,
+            size: self.size,
         }
     }
 }

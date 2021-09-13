@@ -4,25 +4,25 @@ to widgets, and edges A-e->B correspond to "which widget gets focus from A on in
 
 The graph is built using basic geometry.
  */
-use crate::experiments::focus_group::{FocusGroupImpl, FocusUpdate, FocusGroup};
-use crate::primitives::rect::Rect;
-use crate::widget::widget::WID;
-use crate::primitives::xy::XY;
+use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl, FocusUpdate};
 use crate::io::buffer::Buffer;
+use crate::primitives::rect::Rect;
+use crate::primitives::xy::XY;
+use crate::widget::widget::WID;
 use std::collections::HashMap;
 
-fn fill(b : &mut Buffer<WID>, wid : WID, rect : &Rect) {
+fn fill(b: &mut Buffer<WID>, wid: WID, rect: &Rect) {
     for x in rect.min_x()..rect.max_x() {
         for y in rect.min_y()..rect.max_y() {
-            let xy = XY::new(x,y);
+            let xy = XY::new(x, y);
             b[xy] = wid;
         }
     }
 }
 
-fn walk_to_first_hit(buffer : &Buffer<WID>, wid : WID, rect : &Rect, step : (i16, i16)) -> Option<WID> {
+fn walk_to_first_hit(buffer: &Buffer<WID>, wid: WID, rect: &Rect, step: (i16, i16)) -> Option<WID> {
     // right wall
-    let mut walkers : Vec<XY> = Vec::new();
+    let mut walkers: Vec<XY> = Vec::new();
 
     if step == (-1, 0) {
         for y in rect.min_y()..rect.max_y() {
@@ -31,7 +31,7 @@ fn walk_to_first_hit(buffer : &Buffer<WID>, wid : WID, rect : &Rect, step : (i16
     }
     if step == (1, 0) && rect.max_x() > 0 {
         for y in rect.min_y()..rect.max_y() {
-            walkers.push(XY::new(rect.max_x()-1, y))
+            walkers.push(XY::new(rect.max_x() - 1, y))
         }
     }
     if step == (0, -1) {
@@ -41,27 +41,27 @@ fn walk_to_first_hit(buffer : &Buffer<WID>, wid : WID, rect : &Rect, step : (i16
     }
     if step == (0, 1) && rect.max_y() > 0 {
         for x in rect.min_x()..rect.max_x() {
-            walkers.push(XY::new(x, rect.max_y()-1))
+            walkers.push(XY::new(x, rect.max_y() - 1))
         }
     }
 
-    'outer : loop {
+    'outer: loop {
         // WID -> overlap, lowest_index is overlap > 0 or maxint
-        let mut hits : HashMap<WID, (usize, u16)> = HashMap::new();
+        let mut hits: HashMap<WID, (usize, u16)> = HashMap::new();
 
         for mut w in &mut walkers {
             if step.0 == -1 && w.x == 0 {
-                break 'outer
+                break 'outer;
             }
             if step.1 == -1 && w.y == 0 {
-                break 'outer
+                break 'outer;
             }
 
             w.x = (w.x as i16 + step.0) as u16;
             w.y = (w.y as i16 + step.1) as u16;
 
             if !buffer.within(*w) {
-                break 'outer
+                break 'outer;
             }
 
             let dst = buffer[*w];
@@ -84,7 +84,7 @@ fn walk_to_first_hit(buffer : &Buffer<WID>, wid : WID, rect : &Rect, step : (i16
         }
 
         let mut best_owid: usize = 0;
-        let mut best_hit : (usize, u16) = (0, u16::MAX);
+        let mut best_hit: (usize, u16) = (0, u16::MAX);
 
         for (owid, hit) in &hits {
             if *owid == wid {
@@ -98,19 +98,19 @@ fn walk_to_first_hit(buffer : &Buffer<WID>, wid : WID, rect : &Rect, step : (i16
         }
 
         if best_owid != 0 {
-            return Some(best_owid)
+            return Some(best_owid);
         }
     }
 
     None
 }
 
-pub fn get_full_size(widgets_and_positions : &Vec<(WID, Option<Rect>)>) -> XY {
-    let mut full_size = XY::new(0,0);
+pub fn get_full_size(widgets_and_positions: &Vec<(WID, Option<Rect>)>) -> XY {
+    let mut full_size = XY::new(0, 0);
 
     for (_, rect_op) in widgets_and_positions {
         match rect_op {
-            None => {},
+            None => {}
             Some(rect) => {
                 if full_size.x < rect.max_x() {
                     full_size.x = rect.max_x();
@@ -125,18 +125,20 @@ pub fn get_full_size(widgets_and_positions : &Vec<(WID, Option<Rect>)>) -> XY {
     full_size
 }
 
-pub fn from_geometry(widgets_and_positions : &Vec<(WID, Option<Rect>)>,
-    output_size_op : Option<XY>) -> FocusGroupImpl {
+pub fn from_geometry(
+    widgets_and_positions: &Vec<(WID, Option<Rect>)>,
+    output_size_op: Option<XY>,
+) -> FocusGroupImpl {
     let ids: Vec<WID> = widgets_and_positions.iter().map(|(wid, _)| *wid).collect();
     let mut fgi = FocusGroupImpl::new(ids);
 
     let output_size = output_size_op.unwrap_or(get_full_size(widgets_and_positions));
 
-    let mut buffer : Buffer<WID> = Buffer::new(output_size);
+    let mut buffer: Buffer<WID> = Buffer::new(output_size);
 
     for (wid, rect_op) in widgets_and_positions {
         match rect_op {
-            None => {},
+            None => {}
             Some(rect) => fill(&mut buffer, *wid, &rect),
         }
     }
@@ -144,7 +146,7 @@ pub fn from_geometry(widgets_and_positions : &Vec<(WID, Option<Rect>)>,
     for (wid, rect_op) in widgets_and_positions {
         let mut edges: Vec<(FocusUpdate, WID)> = Vec::new();
         match rect_op {
-            None => {},
+            None => {}
             Some(rect) => {
                 match walk_to_first_hit(&buffer, *wid, rect, (-1, 0)) {
                     Some(left) => edges.push((FocusUpdate::Left, left)),
@@ -154,7 +156,7 @@ pub fn from_geometry(widgets_and_positions : &Vec<(WID, Option<Rect>)>,
                     Some(right) => edges.push((FocusUpdate::Right, right)),
                     None => {}
                 };
-                match walk_to_first_hit(&buffer, *wid, rect,(0, 1)) {
+                match walk_to_first_hit(&buffer, *wid, rect, (0, 1)) {
                     Some(down) => edges.push((FocusUpdate::Down, down)),
                     None => {}
                 };
@@ -173,53 +175,53 @@ pub fn from_geometry(widgets_and_positions : &Vec<(WID, Option<Rect>)>,
 
 #[cfg(test)]
 mod tests {
+    use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
     use crate::experiments::from_geometry::{from_geometry, get_full_size};
     use crate::primitives::rect::Rect;
-    use crate::widget::widget::WID;
     use crate::primitives::xy::XY;
-    use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
+    use crate::widget::widget::WID;
 
     #[test]
     fn full_size_test() {
         /*
-            ##1##
-            #####
-            2#3#4
-            #####
-            ##555
-         */
+           ##1##
+           #####
+           2#3#4
+           #####
+           ##555
+        */
 
         //widgets_and_positions : Vec<(WID, Option<Rect>)>, output_size : XY
-        let widgets_and_positions : Vec<(WID, Option<Rect>)> = vec![
-            (1, Some(Rect::new((2,0).into(), (1,1).into()))),
-            (2, Some(Rect::new((0,2).into(), (1,1).into()))),
-            (3, Some(Rect::new((2,2).into(), (1,1).into()))),
-            (4, Some(Rect::new((4,2).into(), (1,1).into()))),
-            (5, Some(Rect::new((2,4).into(), (3,1).into()))),
+        let widgets_and_positions: Vec<(WID, Option<Rect>)> = vec![
+            (1, Some(Rect::new((2, 0).into(), (1, 1).into()))),
+            (2, Some(Rect::new((0, 2).into(), (1, 1).into()))),
+            (3, Some(Rect::new((2, 2).into(), (1, 1).into()))),
+            (4, Some(Rect::new((4, 2).into(), (1, 1).into()))),
+            (5, Some(Rect::new((2, 4).into(), (3, 1).into()))),
         ];
 
         let full_size = get_full_size(&widgets_and_positions);
 
-        assert_eq!(full_size, XY::new(5,5));
+        assert_eq!(full_size, XY::new(5, 5));
     }
 
     #[test]
     fn from_geometry_test() {
         /*
-            ##1##
-            #####
-            2#3#4
-            #####
-            ##555
-         */
+           ##1##
+           #####
+           2#3#4
+           #####
+           ##555
+        */
 
         //widgets_and_positions : Vec<(WID, Option<Rect>)>, output_size : XY
-        let widgets_and_positions : Vec<(WID, Option<Rect>)> = vec![
-            (1, Some(Rect::new((2,0).into(), (1,1).into()))),
-            (2, Some(Rect::new((0,2).into(), (1,1).into()))),
-            (3, Some(Rect::new((2,2).into(), (1,1).into()))),
-            (4, Some(Rect::new((4,2).into(), (1,1).into()))),
-            (5, Some(Rect::new((2,4).into(), (3,1).into()))),
+        let widgets_and_positions: Vec<(WID, Option<Rect>)> = vec![
+            (1, Some(Rect::new((2, 0).into(), (1, 1).into()))),
+            (2, Some(Rect::new((0, 2).into(), (1, 1).into()))),
+            (3, Some(Rect::new((2, 2).into(), (1, 1).into()))),
+            (4, Some(Rect::new((4, 2).into(), (1, 1).into()))),
+            (5, Some(Rect::new((2, 4).into(), (3, 1).into()))),
         ];
 
         let mut focus_group = from_geometry(&widgets_and_positions, None);
@@ -252,7 +254,5 @@ mod tests {
 
         assert_eq!(focus_group.update_focus(FocusUpdate::Up), true);
         assert_eq!(focus_group.get_focused(), 3);
-
     }
-
 }

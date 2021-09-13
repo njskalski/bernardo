@@ -7,13 +7,13 @@ in a separate component. When it's working the way I like it, I will then see if
 get merged with some other component.
  */
 
-use std::iter::Map;
-use crate::primitives::rect::Rect;
-use std::collections::HashMap;
-use crate::io::keys::Key;
 use crate::io::input_event::InputEvent;
-use log::debug;
+use crate::io::keys::Key;
+use crate::primitives::rect::Rect;
 use crate::widget::widget::WID;
+use log::debug;
+use std::collections::HashMap;
+use std::iter::Map;
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum FocusUpdate {
@@ -41,12 +41,12 @@ pub trait FocusGroup {
 }
 
 struct FocusGraphNode {
-    widget_id : WID,
-    neighbours : HashMap<FocusUpdate, WID>
+    widget_id: WID,
+    neighbours: HashMap<FocusUpdate, WID>,
 }
 
 impl FocusGraphNode {
-    fn new(widget_id : WID) -> Self {
+    fn new(widget_id: WID) -> Self {
         FocusGraphNode {
             widget_id,
             neighbours: HashMap::new(),
@@ -55,25 +55,25 @@ impl FocusGraphNode {
 }
 
 pub struct FocusGroupImpl {
-    nodes : HashMap<WID, FocusGraphNode>,
-    selected : usize
+    nodes: HashMap<WID, FocusGraphNode>,
+    selected: usize,
 }
 
 impl FocusGroupImpl {
-    pub fn new(widget_ids : Vec<WID>) -> Self {
+    pub fn new(widget_ids: Vec<WID>) -> Self {
         let mut nodes = HashMap::<WID, FocusGraphNode>::new();
-        
+
         for widget_id in widget_ids.iter() {
             let node = FocusGraphNode::new(*widget_id);
-            
-            nodes.insert(*widget_id, node);
-        };
 
-        let selected  = widget_ids.first().unwrap();
+            nodes.insert(*widget_id, node);
+        }
+
+        let selected = widget_ids.first().unwrap();
 
         FocusGroupImpl {
             nodes,
-            selected : *selected,
+            selected: *selected,
         }
     }
 }
@@ -107,7 +107,7 @@ impl FocusGroup for FocusGroupImpl {
             None => false,
             Some(node) => {
                 node.neighbours.clear();
-                for (e, v)  in edges {
+                for (e, v) in edges {
                     node.neighbours.insert(e, v);
                 }
                 true

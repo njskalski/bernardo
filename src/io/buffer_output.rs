@@ -5,13 +5,13 @@ use log::debug;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use crate::io::buffer::Buffer;
 use crate::io::cell::Cell;
 use crate::io::output::Output;
 use crate::io::style::TextStyle;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use std::default::Default;
-use crate::io::buffer::Buffer;
 
 pub type BufferOutput = Buffer<Cell>;
 

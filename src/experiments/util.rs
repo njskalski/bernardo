@@ -1,8 +1,8 @@
+use crate::experiments::focus_group::FocusUpdate;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
-use crate::experiments::focus_group::FocusUpdate;
 
-pub fn default_key_to_focus_update(key_input : InputEvent) -> Option<FocusUpdate> {
+pub fn default_key_to_focus_update(key_input: InputEvent) -> Option<FocusUpdate> {
     match key_input {
         InputEvent::KeyInput(Key::ArrowLeft) => Some(FocusUpdate::Left),
         InputEvent::KeyInput(Key::ArrowRight) => Some(FocusUpdate::Right),

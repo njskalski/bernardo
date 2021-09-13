@@ -8,6 +8,6 @@ pub trait Output: SizedXY {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str);
     fn clear(&mut self);
     fn get_visible_rect(&self) -> Rect {
-        Rect::new(XY::new(0,0), self.size())
+        Rect::new(XY::new(0, 0), self.size())
     }
 }
