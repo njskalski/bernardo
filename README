@@ -1,0 +1,25 @@
+This project is of a commandline, keyboard-only widget library called Bernardo TUI.
+
+The priorities are:
+- Unparalleled user experience
+- Practical, non restrictive API
+
+Secondary priorities: (to be targeted later)
+- Performance
+- Zero/almost zero panics
+
+It's primary use case against which it will be tested is another approach to code editor (I try to write one since 2018).
+
+Inspiration for name:
+
+https://en.wikipedia.org/wiki/Bernard_Gui
+
+Bernardo Gui, an inquisitor, historian and for a period of time, Bishop of Tui :D. Portrayed as violent, unfair man in
+"The Name of the Rose" novel by Umberto Eco. Some sources claim that this image is overly negative.
+
+I consider using mouse for programming a heresy, so I figured I need a help from professional inquisition that no one
+expects.
+
+Presently it compiles to a binary, where I test any widget I currently work on.
+
+I will write more docs, when the library matures a little more.

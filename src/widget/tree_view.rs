@@ -14,11 +14,13 @@ trait TreeViewNode<Key : Hash + Eq> {
     fn children(&self) -> Box<Iterator<Item=Box<&dyn TreeViewNode<Key>>>>;
 }
 
-fn some<'a, Key : Hash + Eq>(root : Box<&'a dyn TreeViewNode<Key>>, expanded : &HashSet<Key>) -> Box<Iterator<Item=Box<&'a dyn TreeViewNode<Key>>> + 'a>{ // eee makarena!
+fn tree_it<'a, Key : Hash + Eq>(root : Box<&'a dyn TreeViewNode<Key>>, expanded : &'a HashSet<Key>) -> Box<Iterator<Item=Box<&'a dyn TreeViewNode<Key>>> + 'a>{ // eee makarena!
     if expanded.contains(&root.id()) {
-        Box::new(std::iter::once(root))
-
-        
+        let children = Box::new(
+            root.children().flat_map(move |child|
+                tree_it(child, &expanded))
+        );
+        Box::new(std::iter::once(root).chain(children))
     } else {
         Box::new(std::iter::once(root))
     }
@@ -91,6 +93,27 @@ impl <Key : Hash + Eq> Widget for TreeView<Key> {
 
 #[cfg(test)]
 mod tests {
+    use crate::widget::tree_view::TreeViewNode;
+
+    impl TreeViewNode<usize> for usize {
+        fn id(&self) -> usize {
+            *self
+        }
+
+        fn label(&self) -> String {
+            sprint!("label {}", self)
+        }
+
+        fn children(&self) -> Box<Iterator<Item=Box<&dyn TreeViewNode<usize>>>> {
+            if *self >= 0 && *self <= 3 {
+                let children: Vec<usize> = vec![1,2];
+                Box::new(children.iter().map(|f| Box::new( &f)))
+            } else {
+                Box::new(std::iter::empty())
+            }
+
+        }
+    }
 
 }
 
