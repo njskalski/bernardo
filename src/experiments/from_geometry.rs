@@ -6,11 +6,11 @@ The graph is built using basic geometry.
  */
 use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl, FocusUpdate};
 use crate::io::buffer::Buffer;
+use crate::layout::layout::WidgetIdRect;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::WID;
 use std::collections::HashMap;
-use crate::layout::layout::WidgetIdRect;
 
 fn fill(b: &mut Buffer<WID>, wid: WID, rect: &Rect) {
     for x in rect.min_x()..rect.max_x() {
@@ -126,13 +126,11 @@ pub fn get_full_size(widgets_and_positions: &Vec<(WID, Option<Rect>)>) -> XY {
     full_size
 }
 
-pub fn from_wirs(wirs : &Vec<WidgetIdRect>, output_size_op : Option<XY>) -> FocusGroupImpl {
-    let mut widgets_and_positions : Vec<(WID, Option<Rect>)> = vec![];
+pub fn from_wirs(wirs: &Vec<WidgetIdRect>, output_size_op: Option<XY>) -> FocusGroupImpl {
+    let mut widgets_and_positions: Vec<(WID, Option<Rect>)> = vec![];
     for wir in wirs {
-        widgets_and_positions.push(
-            (wir.wid, Some(wir.rect))
-        )
-    };
+        widgets_and_positions.push((wir.wid, Some(wir.rect)))
+    }
     from_geometry(&widgets_and_positions, output_size_op)
 }
 
