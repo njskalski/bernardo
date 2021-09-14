@@ -1,7 +1,7 @@
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use crate::io::output::Output;
-use crate::primitives::xy::XY;
+use crate::primitives::xy::{Zero, XY};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use std::borrow::Borrow;
@@ -9,6 +9,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt::{Debug, Formatter, Pointer};
 use std::hash::Hash;
 use std::ptr::write_bytes;
+use unicode_width::UnicodeWidthStr;
 
 trait TreeViewNode<Key: Hash + Eq + Debug> {
     fn id(&self) -> &Key;
@@ -66,6 +67,22 @@ impl<Key: Hash + Eq + Debug> TreeView<Key> {
             ..self
         }
     }
+
+    fn get_is_expanded(&self) -> Box<dyn Fn(&Key) -> bool + '_> {
+        Box::new(move |key: &Key| self.expanded.contains(key))
+    }
+
+    fn size_from_items(&self) -> XY {
+        let is_expanded = self.get_is_expanded();
+        let items = tree_it(&*self.root_node, &is_expanded);
+
+        items.fold(Zero, |old_size, item| {
+            XY::new(
+                old_size.x.max(item.label().width() as u16), // TODO fight overflow here.
+                old_size.y + 1,
+            )
+        })
+    }
 }
 
 impl<Key: Hash + Eq + Debug> Widget for TreeView<Key> {
@@ -74,7 +91,16 @@ impl<Key: Hash + Eq + Debug> Widget for TreeView<Key> {
     }
 
     fn min_size(&self) -> XY {
-        XY::new(3, 10)
+        let mut from_items = self.size_from_items();
+
+        if from_items.x < 5 {
+            from_items.x = 5;
+        };
+        if from_items.y < 1 {
+            from_items.y = 1;
+        };
+
+        from_items
     }
 
     fn size(&self, max_size: XY) -> XY {
