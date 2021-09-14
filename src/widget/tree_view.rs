@@ -151,10 +151,32 @@ mod tests {
         expanded.insert(0);
         expanded.insert(1);
 
-        let x = Box::new(|key : &usize| { expanded.contains(key) });
-        
-        let items : Vec<String> = tree_it(&root, &x).map(|f| format!("{:?}", f.id())).collect();
+        {
+            let is_expanded = Box::new(|key : &usize| { expanded.contains(key) });
+            let items: Vec<String> = tree_it(&root, &is_expanded).map(|f| format!("{:?}", f.id())).collect();
+            let max_len = items.iter().fold(0, |acc, item| if acc > item.len() { acc } else { item.len() });
+            assert_eq!(items.len(), 5);
+            assert_eq!(max_len, 5);
+        }
 
-        print!("{:?}", items)
+        expanded.insert(2);
+
+        {
+            let is_expanded = Box::new(|key : &usize| { expanded.contains(key) });
+            let items: Vec<String> = tree_it(&root, &is_expanded).map(|f| format!("{:?}", f.id())).collect();
+            let max_len = items.iter().fold(0, |acc, item| if acc > item.len() { acc } else { item.len() });
+            assert_eq!(items.len(), 8);
+            assert_eq!(max_len, 5);
+        }
+
+        expanded.insert(20003);
+
+        {
+            let is_expanded = Box::new(|key : &usize| { expanded.contains(key) });
+            let items: Vec<String> = tree_it(&root, &is_expanded).map(|f| format!("{:?}", f.id())).collect();
+            let max_len = items.iter().fold(0, |acc, item| if acc > item.len() { acc } else { item.len() });
+            assert_eq!(items.len(), 9);
+            assert_eq!(max_len, 7);
+        }
     }
 }
