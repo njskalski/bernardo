@@ -3,30 +3,43 @@ use crate::primitives::xy::XY;
 use crate::io::input_event::InputEvent;
 use crate::widget::any_msg::AnyMsg;
 use crate::io::output::Output;
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashSet, HashMap, VecDeque};
 use std::hash::Hash;
 use std::borrow::Borrow;
 use crate::io::keys::Key;
+use std::fmt::{Debug, Formatter, Pointer};
+use std::ptr::write_bytes;
 
-trait TreeViewNode<Key : Hash + Eq> {
-    fn id(&self) -> Key;
+trait TreeViewNode<Key : Hash + Eq + Debug> {
+    fn id(&self) -> &Key;
     fn label(&self) -> String;
-    fn children(&self) -> Box<Iterator<Item=Box<&dyn TreeViewNode<Key>>>>;
+    fn children(&self) -> Box<dyn std::iter::Iterator<Item=&dyn TreeViewNode<Key>> + '_>;
 }
 
-fn tree_it<'a, Key : Hash + Eq>(root : Box<&'a dyn TreeViewNode<Key>>, expanded : &'a HashSet<Key>) -> Box<Iterator<Item=Box<&'a dyn TreeViewNode<Key>>> + 'a>{ // eee makarena!
-    if expanded.contains(&root.id()) {
-        let children = Box::new(
-            root.children().flat_map(move |child|
-                tree_it(child, &expanded))
-        );
-        Box::new(std::iter::once(root).chain(children))
-    } else {
-        Box::new(std::iter::once(root))
+impl <Key : Hash + Eq + Debug> std::fmt::Debug for TreeViewNode<Key> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TreeViewNode({:?})", self.id())
     }
 }
 
-struct TreeView<Key : Hash + Eq>  {
+fn tree_it<'a, Key : Hash + Eq + Debug>(root : &'a dyn TreeViewNode<Key>, expanded : &'a Box<dyn Fn(&Key) -> bool>)
+    -> Box<dyn std::iter::Iterator<Item=&'a dyn TreeViewNode<Key>> + 'a> {
+
+    if !expanded(root.id()) {
+        Box::new(std::iter::once(root))
+    } else {
+        Box::new(
+            std::iter::once(root).chain(
+                root.children().flat_map(move |child|{
+                    tree_it(child, expanded)
+                })
+            )
+        )
+    }
+}
+
+#[derive(Debug)]
+struct TreeView<Key : Hash + Eq + Debug>  {
     id : WID,
     filter : String,
     filter_enabled : bool,
@@ -35,7 +48,7 @@ struct TreeView<Key : Hash + Eq>  {
     expanded : HashSet<Key>,
 }
 
-impl <Key : Hash + Eq> TreeView<Key> {
+impl <Key : Hash + Eq + Debug> TreeView<Key> {
     pub fn new(root_node : Box<dyn TreeViewNode<Key>>) -> Self {
         Self {
             id : get_new_widget_id(),
@@ -55,7 +68,7 @@ impl <Key : Hash + Eq> TreeView<Key> {
     }
 }
 
-impl <Key : Hash + Eq> Widget for TreeView<Key> {
+impl <Key : Hash + Eq + Debug> Widget for TreeView<Key> {
     fn id(&self) -> WID {
         self.id
     }
@@ -93,27 +106,51 @@ impl <Key : Hash + Eq> Widget for TreeView<Key> {
 
 #[cfg(test)]
 mod tests {
-    use crate::widget::tree_view::TreeViewNode;
+    use crate::widget::tree_view::{TreeViewNode, tree_it};
+    use std::collections::HashSet;
 
-    impl TreeViewNode<usize> for usize {
-        fn id(&self) -> usize {
-            *self
+    struct StupidTree {
+        id : usize,
+        children : Vec<StupidTree>
+    }
+
+    impl TreeViewNode<usize> for StupidTree {
+        fn id(&self) -> &usize {
+            &self.id
         }
 
         fn label(&self) -> String {
-            sprint!("label {}", self)
+            format!("StupidTree {}", self.id)
         }
 
-        fn children(&self) -> Box<Iterator<Item=Box<&dyn TreeViewNode<usize>>>> {
-            if *self >= 0 && *self <= 3 {
-                let children: Vec<usize> = vec![1,2];
-                Box::new(children.iter().map(|f| Box::new( &f)))
-            } else {
-                Box::new(std::iter::empty())
-            }
-
+        fn children(&self) -> Box<dyn std::iter::Iterator<Item=&dyn TreeViewNode<usize>> + '_> {
+            Box::new(self.children.iter().map(|f| f as &dyn TreeViewNode<usize>))
         }
     }
 
-}
 
+    #[test]
+    fn tree_it_test_1() {
+        let root = StupidTree{ id : 0, children : vec![
+           StupidTree{ id : 1, children : vec![
+               StupidTree { id : 10001, children : vec![]},
+               StupidTree { id : 10002, children : vec![]}
+           ]},
+           StupidTree{ id : 2, children : vec![
+               StupidTree { id : 20001, children : vec![]},
+               StupidTree { id : 20002, children : vec![]},
+               StupidTree { id : 20003, children : vec![
+                   StupidTree { id : 2000301, children : vec![]}
+               ]}
+           ]}
+        ]};
+
+
+        let mut expanded : HashSet<usize> = HashSet::new();
+        expanded.insert(0);
+        expanded.insert(1);
+
+        let items = tree_it(&root, &Box::new(|key| {expanded.contains(key)}));
+
+    }
+}

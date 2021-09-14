@@ -108,7 +108,7 @@ impl TwoButtonEdit {
         let rects = res.layout.get_rects(&res, size);
         let id_and_pos: Vec<(WID, Option<Rect>)> =
             rects.iter().map(|f| (f.wid, Some(f.rect))).collect();
-        let focus_group_2 = from_geometry(id_and_pos, Some(size));
+        let focus_group_2 = from_geometry(&id_and_pos, Some(size));
         res.focus_group = focus_group_2;
 
         res

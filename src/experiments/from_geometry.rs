@@ -133,11 +133,11 @@ pub fn from_wirs(wirs : &Vec<WidgetIdRect>, output_size_op : Option<XY>) -> Focu
             (wir.wid, Some(wir.rect))
         )
     };
-    from_geometry(widgets_and_positions, output_size_op)
+    from_geometry(&widgets_and_positions, output_size_op)
 }
 
 pub fn from_geometry(
-    widgets_and_positions: Vec<(WID, Option<Rect>)>,
+    widgets_and_positions: &Vec<(WID, Option<Rect>)>,
     output_size_op: Option<XY>,
 ) -> FocusGroupImpl {
     let ids: Vec<WID> = widgets_and_positions.iter().map(|(wid, _)| *wid).collect();
@@ -147,14 +147,14 @@ pub fn from_geometry(
 
     let mut buffer: Buffer<WID> = Buffer::new(output_size);
 
-    for (wid, rect_op) in &widgets_and_positions {
+    for (wid, rect_op) in widgets_and_positions {
         match rect_op {
             None => {}
             Some(rect) => fill(&mut buffer, *wid, &rect),
         }
     }
 
-    for (wid, rect_op) in &widgets_and_positions {
+    for (wid, rect_op) in widgets_and_positions {
         let mut edges: Vec<(FocusUpdate, WID)> = Vec::new();
         match rect_op {
             None => {}
