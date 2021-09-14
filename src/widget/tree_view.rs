@@ -16,13 +16,13 @@ trait TreeViewNode<Key : Hash + Eq + Debug> {
     fn children(&self) -> Box<dyn std::iter::Iterator<Item=&dyn TreeViewNode<Key>> + '_>;
 }
 
-impl <Key : Hash + Eq + Debug> std::fmt::Debug for TreeViewNode<Key> {
+impl <Key : Hash + Eq + Debug> std::fmt::Debug for dyn TreeViewNode<Key> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "TreeViewNode({:?})", self.id())
     }
 }
 
-fn tree_it<'a, Key : Hash + Eq + Debug>(root : &'a dyn TreeViewNode<Key>, expanded : &'a Box<dyn Fn(&Key) -> bool>)
+fn tree_it<'a, Key : Hash + Eq + Debug>(root : &'a dyn TreeViewNode<Key>, expanded : &'a dyn Fn(&Key) -> bool)
     -> Box<dyn std::iter::Iterator<Item=&'a dyn TreeViewNode<Key>> + 'a> {
 
     if !expanded(root.id()) {
@@ -108,6 +108,7 @@ impl <Key : Hash + Eq + Debug> Widget for TreeView<Key> {
 mod tests {
     use crate::widget::tree_view::{TreeViewNode, tree_it};
     use std::collections::HashSet;
+    use crate::io::keys::Key;
 
     struct StupidTree {
         id : usize,
@@ -150,7 +151,10 @@ mod tests {
         expanded.insert(0);
         expanded.insert(1);
 
-        let items = tree_it(&root, &Box::new(|key| {expanded.contains(key)}));
+        let x = Box::new(|key : &usize| { expanded.contains(key) });
+        
+        let items : Vec<String> = tree_it(&root, &x).map(|f| format!("{:?}", f.id())).collect();
 
+        print!("{:?}", items)
     }
 }
