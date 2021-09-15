@@ -6,7 +6,8 @@ use crate::primitives::arrow::Arrow;
 use crate::primitives::xy::{Zero, XY};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::edit_box::EditBoxWidget;
-use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::widget::tree_view_node::TreeViewNode;
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use log::warn;
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -14,7 +15,6 @@ use std::fmt::{Debug, Formatter, Pointer};
 use std::hash::Hash;
 use std::ptr::write_bytes;
 use unicode_width::UnicodeWidthStr;
-use crate::widget::tree_view_node::TreeViewNode;
 
 // fn tree_it_2<'a, Key: Hash + Eq + Debug + Clone>(
 //     root: &'a dyn TreeViewNode<Key>,
@@ -60,6 +60,10 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
     highlighted: usize,
 
     items_num: usize,
+
+    //events
+    on_miss: Option<WidgetAction<TreeViewWidget<Key>>>,
+    on_highlighted_changed: Option<WidgetAction<TreeViewWidget<Key>>>,
 }
 
 #[derive(Debug)]
@@ -80,6 +84,8 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
             expanded: HashSet::new(),
             highlighted: 0,
             items_num: 1,
+            on_miss: None,
+            on_highlighted_changed: None,
         }
     }
 
@@ -107,18 +113,23 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
     }
 
     fn event_highlighted_changed(&self) -> Option<Box<dyn AnyMsg>> {
-        None
+        if self.on_highlighted_changed.is_some() {
+            self.on_highlighted_changed.unwrap()(self)
+        } else {
+            None
+        }
     }
 
     fn event_miss(&self) -> Option<Box<dyn AnyMsg>> {
-        None
+        if self.on_miss.is_some() {
+            self.on_miss.unwrap()(self)
+        } else {
+            None
+        }
     }
 
     fn get_highlighted_node(&self) -> Option<&dyn TreeViewNode<Key>> {
-        self.items()
-            .skip(self.highlighted)
-            .next()
-            .map(|p| p.1)
+        self.items().skip(self.highlighted).next().map(|p| p.1)
     }
 
     // returns new value
@@ -132,7 +143,7 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         }
     }
 
-    fn items(&self) -> Box<dyn Iterator<Item=(u16, &dyn TreeViewNode<Key>)> + '_> {
+    fn items(&self) -> Box<dyn Iterator<Item = (u16, &dyn TreeViewNode<Key>)> + '_> {
         tree_it(&*self.root_node, &self.expanded)
     }
 }
@@ -281,10 +292,10 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
 #[cfg(test)]
 mod tests {
     use crate::io::keys::Key;
-    use crate::widget::stupid_tree::{StupidTree, get_stupid_tree};
+    use crate::widget::stupid_tree::{get_stupid_tree, StupidTree};
     use crate::widget::tree_view::{tree_it, TreeViewNode};
-    use std::collections::HashSet;
     use crate::widget::widget::get_new_widget_id;
+    use std::collections::HashSet;
 
     #[test]
     fn tree_it_test_1() {

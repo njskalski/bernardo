@@ -13,9 +13,9 @@ use termion::{async_stdin, clear, color, cursor, style};
 
 use crate::primitives::xy;
 use crate::widget::any_msg::AnyMsg;
-use log::debug;
 use crate::widget::stupid_tree::get_stupid_tree;
 use crate::widget::tree_view::TreeViewWidget;
+use log::debug;
 
 mod experiments;
 mod io;
