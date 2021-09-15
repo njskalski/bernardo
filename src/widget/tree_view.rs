@@ -27,6 +27,16 @@ impl<Key: Hash + Eq + Debug> std::fmt::Debug for dyn TreeViewNode<Key> {
     }
 }
 
+// fn tree_it_2<'a, Key: Hash + Eq + Debug + Clone>(
+//     root: &'a dyn TreeViewNode<Key>,
+//     expanded: &'a HashSet<Key>,
+// ) -> Vec<(u16, &'a dyn TreeViewNode<Key>)> {
+//     let is_expanded = move |key : &Key| {expanded.contains(key)};
+//
+//     let x : Vec<_> = tree_it_rec(root, &is_expanded, 0).collect();
+//     x.clone()
+// }
+
 fn tree_it<'a, Key: Hash + Eq + Debug + Clone>(
     root: &'a dyn TreeViewNode<Key>,
     expanded: &'a dyn Fn(&Key) -> bool,
@@ -46,6 +56,23 @@ fn tree_it_rec<'a, Key: Hash + Eq + Debug + Clone>(
             std::iter::once((depth, root) ).chain(
                 root.children()
                     .flat_map(move |child| tree_it_rec(child, expanded, depth+1)),
+            ),
+        )
+    }
+}
+
+fn tree_it_rec2<'a, Key: Hash + Eq + Debug + Clone>(
+    root: &'a dyn TreeViewNode<Key>,
+    expanded: &'a HashSet<Key>,
+    depth : u16,
+) -> Box<dyn std::iter::Iterator<Item = (u16, &'a dyn TreeViewNode<Key>)> + 'a> {
+    if !expanded.contains(root.id()) {
+        Box::new(std::iter::once((depth, root)))
+    } else {
+        Box::new(
+            std::iter::once((depth, root) ).chain(
+                root.children()
+                    .flat_map(move |child| tree_it_rec2(child, expanded, depth+1)),
             ),
         )
     }
@@ -116,7 +143,7 @@ impl<Key: Hash + Eq + Debug + Clone> TreeView<Key> {
     }
 
     fn get_highlighted_node(&self) -> &dyn TreeViewNode<Key> {
-        tree_it(&*self.root_node, &self.get_is_expanded() ).skip(self.highlighted).next().unwrap().1
+        tree_it_rec2(&*self.root_node, &self.expanded, 0 ).skip(self.highlighted).next().unwrap().1
     }
 }
 
