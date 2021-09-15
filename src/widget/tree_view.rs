@@ -12,11 +12,13 @@ use std::ptr::write_bytes;
 use unicode_width::UnicodeWidthStr;
 use crate::widget::edit_box::EditBoxWidget;
 use crate::primitives::arrow::Arrow;
+use log::warn;
 
 trait TreeViewNode<Key: Hash + Eq + Debug> {
     fn id(&self) -> &Key;
     fn label(&self) -> String;
     fn children(&self) -> Box<dyn std::iter::Iterator<Item = &dyn TreeViewNode<Key>> + '_>;
+    fn is_leaf(&self) -> bool;
 }
 
 impl<Key: Hash + Eq + Debug> std::fmt::Debug for dyn TreeViewNode<Key> {
@@ -25,24 +27,31 @@ impl<Key: Hash + Eq + Debug> std::fmt::Debug for dyn TreeViewNode<Key> {
     }
 }
 
-fn tree_it<'a, Key: Hash + Eq + Debug>(
+fn tree_it<'a, Key: Hash + Eq + Debug + Clone>(
     root: &'a dyn TreeViewNode<Key>,
     expanded: &'a dyn Fn(&Key) -> bool,
-) -> Box<dyn std::iter::Iterator<Item = &'a dyn TreeViewNode<Key>> + 'a> {
+) -> Box<dyn std::iter::Iterator<Item = (u16, &'a dyn TreeViewNode<Key>)> + 'a> {
+    tree_it_rec(root, expanded, 0)
+}
+
+fn tree_it_rec<'a, Key: Hash + Eq + Debug + Clone>(
+    root: &'a dyn TreeViewNode<Key>,
+    expanded: &'a dyn Fn(&Key) -> bool,
+    depth : u16,
+) -> Box<dyn std::iter::Iterator<Item = (u16, &'a dyn TreeViewNode<Key>)> + 'a> {
     if !expanded(root.id()) {
-        Box::new(std::iter::once(root))
+        Box::new(std::iter::once((depth, root)))
     } else {
         Box::new(
-            std::iter::once(root).chain(
+            std::iter::once((depth, root) ).chain(
                 root.children()
-                    .flat_map(move |child| tree_it(child, expanded)),
+                    .flat_map(move |child| tree_it_rec(child, expanded, depth+1)),
             ),
         )
     }
 }
 
-#[derive(Debug)]
-struct TreeView<Key: Hash + Eq + Debug> {
+struct TreeView<Key: Hash + Eq + Debug + Clone> {
     id: WID,
     filter: String,
     filter_enabled: bool,
@@ -51,23 +60,19 @@ struct TreeView<Key: Hash + Eq + Debug> {
     expanded: HashSet<Key>,
     highlighted: usize,
 
-    editbox : EditBoxWidget,
+    items_num: usize,
 }
 
+#[derive(Debug)]
 enum TreeViewMsg {
-    EditboxUpdated,
-    Letter(char),
     Arrow(Arrow),
     FlipExpansion,
-
 }
 
-impl<Key: Hash + Eq + Debug> TreeView<Key> {
-    pub fn new(root_node: Box<dyn TreeViewNode<Key>>) -> Self {
-        let editbox = EditBoxWidget::new().with_on_change(
-            |_ : &EditBoxWidget| Some(Box::new(TreeViewMsg::EditboxUpdated))
-        );
+impl AnyMsg for TreeViewMsg {}
 
+impl<Key: Hash + Eq + Debug + Clone> TreeView<Key> {
+    pub fn new(root_node: Box<dyn TreeViewNode<Key>>) -> Self {
         Self {
             id: get_new_widget_id(),
             root_node,
@@ -75,7 +80,7 @@ impl<Key: Hash + Eq + Debug> TreeView<Key> {
             filter: "".to_owned(),
             expanded: HashSet::new(),
             highlighted: 0,
-            editbox,
+            items_num: 1,
         }
     }
 
@@ -96,14 +101,26 @@ impl<Key: Hash + Eq + Debug> TreeView<Key> {
 
         items.fold(Zero, |old_size, item| {
             XY::new(
-                old_size.x.max(item.label().width() as u16), // TODO fight overflow here.
+                old_size.x.max(item.1.label().width() as u16), // TODO fight overflow here.
                 old_size.y + 1,
             )
         })
     }
+
+    fn event_highlighted_changed(&self) -> Option<Box<dyn AnyMsg>> {
+        None
+    }
+
+    fn event_miss(&self) -> Option<Box<dyn AnyMsg>> {
+        None
+    }
+
+    fn get_highlighted_node(&self) -> &dyn TreeViewNode<Key> {
+        tree_it(&*self.root_node, &self.get_is_expanded() ).skip(self.highlighted).next().unwrap().1
+    }
 }
 
-impl<Key: Hash + Eq + Debug> Widget for TreeView<Key> {
+impl<K: Hash + Eq + Debug + Clone> Widget for TreeView<K> {
     fn id(&self) -> WID {
         self.id
     }
@@ -129,19 +146,19 @@ impl<Key: Hash + Eq + Debug> Widget for TreeView<Key> {
         match input_event {
             InputEvent::KeyInput(key) => {
                 match key {
-                    Key::Letter(letter) => Some(Box::new(TreeViewMsg::Letter(letter))),
+                    // Key::Letter(letter) => Some(Box::new(TreeViewMsg::Letter(letter))),
                     Key::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
                     Key::ArrowDown => Some(Box::new(TreeViewMsg::Arrow(Arrow::Down))),
                     Key::ArrowLeft => Some(Box::new(TreeViewMsg::Arrow(Arrow::Left))),
                     Key::ArrowRight => Some(Box::new(TreeViewMsg::Arrow(Arrow::Right))),
                     Key::Enter => Some(Box::new(TreeViewMsg::FlipExpansion)),
-                    Key::Space => {}
-                    Key::Backspace => {}
-                    Key::Home => {}
-                    Key::End => {}
-                    Key::PageUp => {}
-                    Key::PageDown => {}
-                    Key::Delete => {}
+                    // Key::Space => {}
+                    // Key::Backspace => {}
+                    // Key::Home => {}
+                    // Key::End => {}
+                    // Key::PageUp => {}
+                    // Key::PageDown => {}
+                    // Key::Delete => {}
                     _ => None,
                 }
             },
@@ -150,15 +167,47 @@ impl<Key: Hash + Eq + Debug> Widget for TreeView<Key> {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        todo!()
+        let our_msg = msg.as_msg::<TreeViewMsg>();
+        if our_msg.is_none() {
+            warn!("expecetd TreeViewMsg, got {:?}", msg);
+            return None;
+        }
+
+        return match our_msg.unwrap() {
+            TreeViewMsg::Arrow(arrow) => match arrow {
+                Arrow::Up => {
+                    if self.highlighted > 0 {
+                        self.highlighted -= 1;
+                        self.event_highlighted_changed()
+                    } else {
+                        self.event_miss()
+                    }
+                }
+                Arrow::Down => {
+                    if self.highlighted < self.items_num {
+                        self.highlighted += 1;
+                        self.event_highlighted_changed()
+                    } else {
+                        self.event_miss()
+                    }
+                }
+                _ => None,
+                // Arrow::Left => {}
+                // Arrow::Right => {}
+            }
+            TreeViewMsg::FlipExpansion => {
+                // if self.
+                None
+            }
+        }
     }
 
     fn get_focused(&self) -> &dyn Widget {
-        todo!()
+        self
     }
 
     fn get_focused_mut(&mut self) -> &mut dyn Widget {
-        todo!()
+        self
     }
 
     fn render(&self, focused: bool, output: &mut Output) {
@@ -188,6 +237,10 @@ mod tests {
 
         fn children(&self) -> Box<dyn std::iter::Iterator<Item = &dyn TreeViewNode<usize>> + '_> {
             Box::new(self.children.iter().map(|f| f as &dyn TreeViewNode<usize>))
+        }
+
+        fn is_leaf(&self) -> bool {
+            self.children.is_empty()
         }
     }
 
@@ -236,15 +289,20 @@ mod tests {
         expanded.insert(0);
         expanded.insert(1);
 
-        {
-            let is_expanded = Box::new(|key: &usize| expanded.contains(key));
-            let items: Vec<String> = tree_it(&root, &is_expanded)
-                .map(|f| format!("{:?}", f.id()))
+        let try_out = |expanded_ref : &HashSet<usize>| {
+            let is_expanded = Box::new(|key: &usize| expanded_ref.contains(key));
+            let items: Vec<(u16, String)> = tree_it(&root, &is_expanded)
+                .map(|(d, f)| (d, format!("{:?}", f.id())))
                 .collect();
             let max_len = items.iter().fold(
                 0,
-                |acc, item| if acc > item.len() { acc } else { item.len() },
+                |acc, (_, item)| if acc > item.len() { acc } else { item.len() },
             );
+            (items, max_len)
+        };
+
+        {
+            let (items, max_len) = try_out(&expanded);
             assert_eq!(items.len(), 5);
             assert_eq!(max_len, 5);
         }
@@ -252,14 +310,7 @@ mod tests {
         expanded.insert(2);
 
         {
-            let is_expanded = Box::new(|key: &usize| expanded.contains(key));
-            let items: Vec<String> = tree_it(&root, &is_expanded)
-                .map(|f| format!("{:?}", f.id()))
-                .collect();
-            let max_len = items.iter().fold(
-                0,
-                |acc, item| if acc > item.len() { acc } else { item.len() },
-            );
+            let (items, max_len) = try_out(&expanded);
             assert_eq!(items.len(), 8);
             assert_eq!(max_len, 5);
         }
@@ -267,14 +318,7 @@ mod tests {
         expanded.insert(20003);
 
         {
-            let is_expanded = Box::new(|key: &usize| expanded.contains(key));
-            let items: Vec<String> = tree_it(&root, &is_expanded)
-                .map(|f| format!("{:?}", f.id()))
-                .collect();
-            let max_len = items.iter().fold(
-                0,
-                |acc, item| if acc > item.len() { acc } else { item.len() },
-            );
+            let (items, max_len) = try_out(&expanded);
             assert_eq!(items.len(), 9);
             assert_eq!(max_len, 7);
         }
