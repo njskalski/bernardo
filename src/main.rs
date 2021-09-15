@@ -14,6 +14,8 @@ use termion::{async_stdin, clear, color, cursor, style};
 use crate::primitives::xy;
 use crate::widget::any_msg::AnyMsg;
 use log::debug;
+use crate::widget::stupid_tree::get_stupid_tree;
+use crate::widget::tree_view::TreeViewWidget;
 
 mod experiments;
 mod io;
@@ -37,7 +39,10 @@ fn main() {
     let input = TermionInput::new(stdin);
     let mut output = TermionOutput::new(stdout);
 
-    let mut main_view = TwoButtonEdit::new();
+    // let mut main_view = TwoButtonEdit::new();
+
+    let stupid_tree = get_stupid_tree();
+    let mut main_view = TreeViewWidget::new(Box::new(stupid_tree));
 
     fn recursive_treat_views(
         view: &mut dyn Widget,
