@@ -10,6 +10,8 @@ use std::fmt::{Debug, Formatter, Pointer};
 use std::hash::Hash;
 use std::ptr::write_bytes;
 use unicode_width::UnicodeWidthStr;
+use crate::widget::edit_box::EditBoxWidget;
+use crate::primitives::arrow::Arrow;
 
 trait TreeViewNode<Key: Hash + Eq + Debug> {
     fn id(&self) -> &Key;
@@ -47,17 +49,33 @@ struct TreeView<Key: Hash + Eq + Debug> {
     root_node: Box<dyn TreeViewNode<Key>>,
 
     expanded: HashSet<Key>,
+    highlighted: usize,
+
+    editbox : EditBoxWidget,
+}
+
+enum TreeViewMsg {
+    EditboxUpdated,
+    Letter(char),
+    Arrow(Arrow),
+    FlipExpansion,
+
 }
 
 impl<Key: Hash + Eq + Debug> TreeView<Key> {
     pub fn new(root_node: Box<dyn TreeViewNode<Key>>) -> Self {
+        let editbox = EditBoxWidget::new().with_on_change(
+            |_ : &EditBoxWidget| Some(Box::new(TreeViewMsg::EditboxUpdated))
+        );
+
         Self {
             id: get_new_widget_id(),
             root_node,
             filter_enabled: false,
             filter: "".to_owned(),
-
             expanded: HashSet::new(),
+            highlighted: 0,
+            editbox,
         }
     }
 
@@ -104,13 +122,31 @@ impl<Key: Hash + Eq + Debug> Widget for TreeView<Key> {
     }
 
     fn size(&self, max_size: XY) -> XY {
-        todo!()
-
-        // max_size
+        self.min_size()
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        todo!()
+        match input_event {
+            InputEvent::KeyInput(key) => {
+                match key {
+                    Key::Letter(letter) => Some(Box::new(TreeViewMsg::Letter(letter))),
+                    Key::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
+                    Key::ArrowDown => Some(Box::new(TreeViewMsg::Arrow(Arrow::Down))),
+                    Key::ArrowLeft => Some(Box::new(TreeViewMsg::Arrow(Arrow::Left))),
+                    Key::ArrowRight => Some(Box::new(TreeViewMsg::Arrow(Arrow::Right))),
+                    Key::Enter => Some(Box::new(TreeViewMsg::FlipExpansion)),
+                    Key::Space => {}
+                    Key::Backspace => {}
+                    Key::Home => {}
+                    Key::End => {}
+                    Key::PageUp => {}
+                    Key::PageDown => {}
+                    Key::Delete => {}
+                    _ => None,
+                }
+            },
+            _ => None
+        }
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {

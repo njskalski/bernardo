@@ -5,3 +5,4 @@ pub mod rect;
 pub mod sized_xy;
 pub mod styled_string;
 pub mod xy;
+pub mod arrow;
