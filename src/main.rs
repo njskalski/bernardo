@@ -16,6 +16,7 @@ use crate::widget::any_msg::AnyMsg;
 use crate::widget::stupid_tree::get_stupid_tree;
 use crate::widget::tree_view::TreeViewWidget;
 use log::debug;
+use crate::widget::text_editor::TextEditorWidget;
 
 mod experiments;
 mod io;
@@ -23,6 +24,7 @@ mod layout;
 mod primitives;
 mod view;
 mod widget;
+mod text;
 
 fn main() {
     env_logger::builder()
@@ -41,8 +43,10 @@ fn main() {
 
     // let mut main_view = TwoButtonEdit::new();
 
-    let stupid_tree = get_stupid_tree();
-    let mut main_view = TreeViewWidget::new(Box::new(stupid_tree));
+    // let stupid_tree = get_stupid_tree();
+    // let mut main_view = TreeViewWidget::new(Box::new(stupid_tree));
+
+    let mut main_view = TextEditorWidget::new();
 
     fn recursive_treat_views(
         view: &mut dyn Widget,

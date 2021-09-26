@@ -6,3 +6,4 @@ pub mod stupid_tree;
 pub mod tree_view;
 pub mod tree_view_node;
 pub mod widget;
+pub mod text_editor;
