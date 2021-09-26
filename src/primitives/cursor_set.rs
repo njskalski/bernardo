@@ -1,8 +1,7 @@
 // Copyright 2018 Google LLC, 2021 Andrzej J Skalski
-// original file was part of sly-editor, at
+// This version of the file (2021+) is licensed with GNU GPLv3 License.
+// For older version of file (licensed under Apache 2 license), see sly-editor, at
 // https://github.com/njskalski/sly-editor/blob/master/src/cursor_set.rs
-// it's copyrighted by Google LLC at Apache 2 license.
-// This version is updated by Andrzej J Skalski, and licensed GPLv3.
 
 // Cursor == (Selection, Anchor), thanks Kakoune!
 // both positions and anchor are counted in CHARS not offsets.
@@ -16,22 +15,38 @@
 
 // Newline is always an end of previous line, not a beginning of new.
 
-use ropey::Rope;
 use std::borrow::Borrow;
 use std::collections::HashSet;
+use crate::text::buffer::Buffer;
 
 const NEWLINE_LENGTH: usize = 1; // TODO(njskalski): add support for multisymbol newlines?
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CursorStatus {
+    None,
+    WithinSelection,
+    UnderCursor,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Selection {
-    pub b: usize, //begin inclusive
+    pub b: usize,
+    //begin inclusive
     pub e: usize, //end EXCLUSIVE (as *everywhere*)
+}
+
+impl Selection {
+    pub fn within(self, char_idx: usize) -> bool {
+        char_idx >= self.b && char_idx < self.e
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Cursor {
-    pub s: Option<Selection>, // selection
-    pub a: usize,             //anchor
+    pub s: Option<Selection>,
+    // selection
+    pub a: usize,
+    //anchor
     pub preferred_column: Option<usize>,
 }
 
@@ -56,6 +71,20 @@ impl Cursor {
             a: 0,
             preferred_column: None,
         }
+    }
+
+    pub fn get_cursor_status_for_char(&self, char_idx: usize) -> CursorStatus {
+        if char_idx == self.a {
+            return CursorStatus::UnderCursor;
+        }
+
+        if self.s.is_some() {
+            if self.s.unwrap().within(char_idx) {
+                return CursorStatus::WithinSelection;
+            }
+        }
+
+        CursorStatus::None
     }
 }
 
@@ -117,11 +146,11 @@ impl CursorSet {
         }
     }
 
-    pub fn move_right(&mut self, rope: &Rope) {
+    pub fn move_right(&mut self, rope: &dyn Buffer) {
         self.move_right_by(rope, 1);
     }
 
-    pub fn move_right_by(&mut self, rope: &Rope, l: usize) {
+    pub fn move_right_by(&mut self, rope: &dyn Buffer, l: usize) {
         let len = rope.len_chars();
 
         for mut c in &mut self.set {
@@ -133,12 +162,10 @@ impl CursorSet {
         }
     }
 
-    pub fn move_vertically_by(&mut self, rope: &Rope, l: isize) {
+    pub fn move_vertically_by(&mut self, rope: &dyn Buffer, l: isize) {
         if l == 0 {
             return;
         }
-
-        let string = rope.to_string();
 
         let last_line_idx = rope.len_lines() - 1;
 
@@ -237,5 +264,24 @@ impl CursorSet {
 
         //        self.set.sort();
         //        self.set.dedup();
+    }
+
+    pub fn get_cursor_status_for_char(&self, char_idx: usize) -> CursorStatus {
+        let mut current_status = CursorStatus::None;
+
+        for i in self.set.iter() {
+            let new_status = i.get_cursor_status_for_char(char_idx);
+
+            if new_status == CursorStatus::WithinSelection && current_status == CursorStatus::None {
+                current_status = new_status;
+            }
+
+            if new_status == CursorStatus::UnderCursor {
+                current_status = new_status;
+                break;
+            }
+        }
+
+        current_status
     }
 }
