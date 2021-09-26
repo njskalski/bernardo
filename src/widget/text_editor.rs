@@ -147,11 +147,15 @@ impl Widget for TextEditorWidget {
                 output.print_at(
                     XY::new((x_offset + x) as u16, line_idx as u16),
                     style,
-                    gh,
+                    if gh.starts_with('\n') { "\\" } else { gh },
                 );
 
                 x += gh.width();
             }
+
+            //after the last character, we still need to draw a cursor.
+
+            if line_idx == self.buffer.len_lines()
         }
     }
 }
