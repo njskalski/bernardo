@@ -1,18 +1,20 @@
-use crate::widget::widget::{Widget, WID, get_new_widget_id};
-use crate::primitives::xy::XY;
-use crate::io::input_event::InputEvent;
-use crate::widget::any_msg::AnyMsg;
-use crate::io::output::Output;
-use crate::text::buffer_state::BufferState;
-use crate::io::style::{TextStyle, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBlack, TextStyle_WhiteOnRedish, TextStyle_WhiteOnBrightYellow};
-use crate::text::buffer::Buffer;
-use crate::primitives::cursor_set::{CursorSet, CursorStatus};
-use crate::io::keys::Key;
-use crate::primitives::arrow::Arrow;
-use log::warn;
 use std::borrow::Borrow;
+
+use log::warn;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
+
+use crate::io::input_event::InputEvent;
+use crate::io::keys::Key;
+use crate::io::output::Output;
+use crate::io::style::{TextStyle, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow, TextStyle_WhiteOnRedish};
+use crate::primitives::arrow::Arrow;
+use crate::primitives::cursor_set::{CursorSet, CursorStatus};
+use crate::primitives::xy::XY;
+use crate::text::buffer::Buffer;
+use crate::text::buffer_state::BufferState;
+use crate::widget::any_msg::AnyMsg;
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
 #[derive(Debug)]
 enum TextEditorMsg {
@@ -138,16 +140,20 @@ impl Widget for TextEditorWidget {
             for (gi, gh) in line.graphemes(true).enumerate() {
                 let char_idx = line_offset + gi;
 
-                let style = match self.cursor_set.get_cursor_status_for_char(char_idx) {
+                let mut style = match self.cursor_set.get_cursor_status_for_char(char_idx) {
                     CursorStatus::None => TextStyle_WhiteOnBlack,
                     CursorStatus::WithinSelection => TextStyle_WhiteOnBrightYellow,
                     CursorStatus::UnderCursor => TextStyle_WhiteOnRedish,
                 };
 
+                if gh.starts_with("\n") {
+                    style.foreground = style.foreground.half();
+                }
+
                 output.print_at(
                     XY::new((x_offset + x) as u16, line_idx as u16),
                     style,
-                    if gh.starts_with('\n') { "\\" } else { gh },
+                    if gh.starts_with("\n") { "\\" } else { gh },
                 );
 
                 x += gh.width();
@@ -155,7 +161,23 @@ impl Widget for TextEditorWidget {
 
             //after the last character, we still need to draw a cursor.
 
-            if line_idx == self.buffer.len_lines()
+            if line_idx == self.buffer.len_lines() - 1 {
+                let char_idx = line_offset + line.len();
+
+                let mut style = match self.cursor_set.get_cursor_status_for_char(char_idx) {
+                    CursorStatus::None => TextStyle_WhiteOnBlack,
+                    CursorStatus::WithinSelection => TextStyle_WhiteOnBrightYellow,
+                    CursorStatus::UnderCursor => TextStyle_WhiteOnRedish,
+                };
+
+                style.foreground = style.foreground.half();
+
+                output.print_at(
+                    XY::new((x_offset + x) as u16, line_idx as u16),
+                    style,
+                    ".",
+                );
+            }
         }
     }
 }

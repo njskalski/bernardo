@@ -38,31 +38,31 @@ impl TextStyle {
 }
 
 pub const TextStyle_WhiteOnBlack: TextStyle = TextStyle {
-    foreground: (255, 255, 255),
-    background: (0, 0, 0),
+    foreground: Color { R: 255, G: 255, B: 255 },
+    background: Color { R: 0, G: 0, B: 0 },
     effect: Effect::None,
 };
 
 pub const TextStyle_WhiteOnBlue: TextStyle = TextStyle {
-    foreground: (255, 255, 255),
-    background: (100, 102, 237),
+    foreground: Color { R: 255, G: 255, B: 255 },
+    background: Color { R: 100, G: 102, B: 237 },
     effect: Effect::None,
 };
 
 pub const TextStyle_WhiteOnYellow: TextStyle = TextStyle {
-    foreground: (255, 255, 255),
-    background: (237, 207, 126),
+    foreground: Color { R: 255, G: 255, B: 255 },
+    background: Color { R: 237, G: 207, B: 126 },
     effect: Effect::None,
 };
 
 pub const TextStyle_WhiteOnBrightYellow: TextStyle = TextStyle {
-    foreground: (255, 255, 255),
-    background: (237, 226, 164),
+    foreground: Color { R: 255, G: 255, B: 255 },
+    background: Color { R: 237, G: 226, B: 164 },
     effect: Effect::None,
 };
 
 pub const TextStyle_WhiteOnRedish: TextStyle = TextStyle {
-    foreground: (255, 255, 255),
-    background: (201, 81, 73),
+    foreground: Color { R: 255, G: 255, B: 255 },
+    background: Color { R: 201, G: 81, B: 73 },
     effect: Effect::None,
 };
