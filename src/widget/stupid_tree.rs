@@ -20,7 +20,7 @@ impl TreeViewNode<usize> for StupidTree {
         format!("StupidTree {}", self.id)
     }
 
-    fn children(&self) -> Box<dyn std::iter::Iterator<Item = &dyn TreeViewNode<usize>> + '_> {
+    fn children(&self) -> Box<dyn std::iter::Iterator<Item=&dyn TreeViewNode<usize>> + '_> {
         Box::new(self.children.iter().map(|f| f as &dyn TreeViewNode<usize>))
     }
 
@@ -30,6 +30,14 @@ impl TreeViewNode<usize> for StupidTree {
 }
 
 pub fn get_stupid_tree() -> StupidTree {
+    let mut stupid_subtree: Vec<StupidTree> = vec![];
+
+    for i in 0..100 {
+        stupid_subtree.push(
+            StupidTree::new(40000 + i, vec![])
+        );
+    }
+
     StupidTree::new(
         0,
         vec![
@@ -48,6 +56,7 @@ pub fn get_stupid_tree() -> StupidTree {
                     StupidTree::new(20003, vec![StupidTree::new(2000301, vec![])]),
                 ],
             ),
+            StupidTree::new(4, stupid_subtree),
         ],
     )
 }

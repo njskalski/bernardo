@@ -43,10 +43,10 @@ fn main() {
 
     // let mut main_view = TwoButtonEdit::new();
 
-    // let stupid_tree = get_stupid_tree();
-    // let mut main_view = TreeViewWidget::new(Box::new(stupid_tree));
+    let stupid_tree = get_stupid_tree();
+    let mut main_view = TreeViewWidget::new(Box::new(stupid_tree));
 
-    let mut main_view = TextEditorWidget::new();
+    // let mut main_view = TextEditorWidget::new();
 
     fn recursive_treat_views(
         view: &mut dyn Widget,
@@ -85,7 +85,8 @@ fn main() {
                 (true, message_to_parent)
             }
         }
-    };
+    }
+    ;
 
     loop {
         output.clear();
