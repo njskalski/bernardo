@@ -15,10 +15,10 @@ use crate::widget::stupid_tree::StupidTree;
 use crate::widget::tree_view::TreeViewWidget;
 
 pub struct SaveFileDialogWidget {
-    layout: Layout<SaveFileDialogWidget>,
+    layout: Box<Layout<SaveFileDialogWidget>>,
     mock_file_tree: StupidTree,
     tree_widget: TreeViewWidget<StupidTree>,
-    
+
 }
 
 #[derive(Clone, Copy, Debug)]

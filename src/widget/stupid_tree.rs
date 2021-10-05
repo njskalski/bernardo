@@ -1,5 +1,6 @@
 use crate::widget::tree_view_node::TreeViewNode;
 
+#[derive(Hash, Debug, PartialEq, Eq, Clone)]
 pub struct StupidTree {
     id: usize,
     children: Vec<StupidTree>,

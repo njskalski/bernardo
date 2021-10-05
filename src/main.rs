@@ -17,6 +17,8 @@ use crate::widget::stupid_tree::get_stupid_tree;
 use crate::widget::tree_view::TreeViewWidget;
 use log::debug;
 use crate::widget::text_editor::TextEditorWidget;
+use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
+use crate::widget::list_widget::ListWidget;
 
 mod experiments;
 mod io;
@@ -43,8 +45,12 @@ fn main() {
 
     // let mut main_view = TwoButtonEdit::new();
 
-    let stupid_tree = get_stupid_tree();
-    let mut main_view = TreeViewWidget::new(Box::new(stupid_tree));
+    // let stupid_tree = get_stupid_tree();
+    // let mut main_view = TreeViewWidget::new(Box::new(stupid_tree));
+
+    let mut mock_list = get_mock_file_list();
+    let mut main_view = ListWidget::<MockFile>::new().with_items(mock_list)
+        .with_selection();
 
     // let mut main_view = TextEditorWidget::new();
 

@@ -20,6 +20,16 @@ pub trait ListWidgetItem {
     fn get(&self, idx: usize) -> ListWidgetCell;
 }
 
+pub struct ListWidget<Item: ListWidgetItem> {
+    id: WID,
+    // later probably change into some provider
+    items: Vec<Item>,
+    highlighted: Option<usize>,
+    show_column_names: bool,
+}
+
+pub enum ListWidgetMsg {}
+
 impl<Item: ListWidgetItem> ListWidget<Item> {
     pub fn new() -> Self {
         ListWidget {
@@ -36,15 +46,15 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
             ..self
         }
     }
+
+    pub fn with_selection(self) -> Self {
+        ListWidget {
+            highlighted: Some(0),
+            ..self
+        }
+    }
 }
 
-pub struct ListWidget<Item: ListWidgetItem> {
-    id: WID,
-    // later probably change into some provider
-    items: Vec<Item>,
-    highlighted: Option<usize>,
-    show_column_names: bool,
-}
 
 impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
     fn id(&self) -> WID {
@@ -107,6 +117,8 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         }
 
         for (idx, item) in self.items.iter().enumerate() {
+            let mut x_offset: u16 = 0;
+
             let style = if self.highlighted == Some(idx) {
                 highlighted_style
             } else {
@@ -122,10 +134,12 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
 
                 output.print_at(
                     // TODO possible u16 overflow
-                    XY::new(x_offset + idx as u16, y_offset),
+                    XY::new(x_offset, y_offset + idx as u16),
                     style,
                     text.as_str(),
                 );
+
+                x_offset += Item::get_min_column_width(c_idx);
             }
         }
     }
