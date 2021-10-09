@@ -1,0 +1,11 @@
+In order to handle page-up, page-down events in say List widget, I need to know the part of list that is displayed.
+This is tricky, because Size is not part of the widgets right now. The quickest solution would be to add Cell<XY>
+to widget.size(max_size : XY) and be gone with it, or make "size(&mut self)", but that's storing last frame
+state in widgets.
+
+Much clearer way was suggested by React library (and followed by tui-react) is to separate widget state (state)
+from parent arguments (props?). I don't implement props as such, but output size definitely seems like one.
+
+I think I will extend the InputEvent with information about output size, and maybe focus path, though I can hardly
+think of a reason why a widget should care. But whether it was focused or not (in case we're handling tick)? Now
+I am assuming that a non-focused widget cannot receive input.

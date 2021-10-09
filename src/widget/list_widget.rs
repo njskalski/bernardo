@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::fmt::{Debug, Formatter};
 
 use log::warn;
+use unicode_width::UnicodeWidthStr;
 
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
@@ -258,12 +259,27 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
                     ListWidgetCell::Ready(s) => s,
                 };
 
+                let column_width = Item::get_min_column_width(c_idx);
+
                 output.print_at(
                     // TODO possible u16 overflow
+                    // TODO handle overflow of column length
                     XY::new(x_offset, y_offset + idx as u16),
                     style,
                     text.as_str(),
                 );
+
+                if text.width() < column_width as usize {
+                    // since text.width() is < column_width, it's safe to cast to u16.
+                    for x_stride in (text.width() as u16)..column_width {
+                        output.print_at(
+                            // TODO possible u16 oveflow
+                            XY::new(x_offset + x_stride, y_offset + idx as u16),
+                            style,
+                            " ",
+                        );
+                    }
+                }
 
                 x_offset += Item::get_min_column_width(c_idx);
             }
