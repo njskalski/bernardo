@@ -1,10 +1,17 @@
-use crate::widget::widget::{Widget, WID, get_new_widget_id};
-use crate::primitives::xy::XY;
-use crate::io::input_event::InputEvent;
-use crate::widget::any_msg::AnyMsg;
-use crate::io::output::Output;
-use crate::io::style::{TextStyle_WhiteOnBlue, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBrightYellow};
 use std::borrow::Borrow;
+use std::fmt::{Debug, Formatter};
+
+use log::warn;
+
+use crate::io::input_event::InputEvent;
+use crate::io::keys::Key;
+use crate::io::output::Output;
+use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow};
+use crate::primitives::arrow::Arrow;
+use crate::primitives::xy::XY;
+use crate::widget::any_msg::AnyMsg;
+use crate::widget::list_widget::ListWidgetMsg::Hit;
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
 pub enum ListWidgetCell {
     NotAvailable,
@@ -26,9 +33,24 @@ pub struct ListWidget<Item: ListWidgetItem> {
     items: Vec<Item>,
     highlighted: Option<usize>,
     show_column_names: bool,
+
+    on_hit: Option<WidgetAction<Self>>,
+    on_change: Option<WidgetAction<Self>>,
+    // miss is trying to make illegal move. Like backspace on empty, left on leftmost etc.
+    on_miss: Option<WidgetAction<Self>>,
 }
 
-pub enum ListWidgetMsg {}
+#[derive(Clone, Copy, Debug)]
+pub enum ListWidgetMsg {
+    Arrow(Arrow),
+    Hit,
+    Home,
+    End,
+    PageUp,
+    PageDown,
+}
+
+impl AnyMsg for ListWidgetMsg {}
 
 impl<Item: ListWidgetItem> ListWidget<Item> {
     pub fn new() -> Self {
@@ -37,6 +59,9 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
             items: vec![],
             highlighted: None,
             show_column_names: true,
+            on_miss: None,
+            on_hit: None,
+            on_change: None,
         }
     }
 
@@ -51,6 +76,30 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         ListWidget {
             highlighted: Some(0),
             ..self
+        }
+    }
+
+    fn on_miss(&self) -> Option<Box<AnyMsg>> {
+        if self.on_miss.is_some() {
+            self.on_miss.unwrap()(self)
+        } else {
+            None
+        }
+    }
+
+    fn on_hit(&self) -> Option<Box<AnyMsg>> {
+        if self.on_hit.is_some() {
+            self.on_hit.unwrap()(self)
+        } else {
+            None
+        }
+    }
+
+    fn on_change(&self) -> Option<Box<AnyMsg>> {
+        if self.on_change.is_some() {
+            self.on_change.unwrap()(self)
+        } else {
+            None
         }
     }
 }
@@ -79,11 +128,88 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        todo!()
+        return match input_event {
+            InputEvent::KeyInput(key) => {
+                let msg: Option<ListWidgetMsg> = match key {
+                    Key::ArrowUp => {
+                        Some(ListWidgetMsg::Arrow(Arrow::Up))
+                    }
+                    Key::ArrowDown => {
+                        Some(ListWidgetMsg::Arrow(Arrow::Down))
+                    }
+                    Key::ArrowLeft => {
+                        Some(ListWidgetMsg::Arrow(Arrow::Left))
+                    }
+                    Key::ArrowRight => {
+                        Some(ListWidgetMsg::Arrow(Arrow::Right))
+                    }
+                    Key::Enter => {
+                        Some(ListWidgetMsg::Hit)
+                    }
+                    Key::Home => {
+                        Some(ListWidgetMsg::Home)
+                    }
+                    Key::End => {
+                        Some(ListWidgetMsg::End)
+                    }
+                    Key::PageUp => {
+                        Some(ListWidgetMsg::PageUp)
+                    }
+                    Key::PageDown => {
+                        Some(ListWidgetMsg::PageDown)
+                    }
+                    _ => None
+                };
+
+                msg.map(|m| Box::new(m) as Box<dyn AnyMsg>)
+            },
+            _ => None,
+        }
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        todo!()
+        let our_msg = msg.as_msg::<ListWidgetMsg>();
+        if our_msg.is_none() {
+            warn!("expecetd ListWidgetMsg, got {:?}", msg);
+            return None;
+        }
+
+        return match our_msg.unwrap() {
+            ListWidgetMsg::Arrow(arrow) => {
+                match self.highlighted {
+                    None => None,
+                    Some(old_highlighted) => {
+                        match arrow {
+                            Arrow::Up => {
+                                if old_highlighted > 0 {
+                                    self.highlighted = Some(old_highlighted - 1);
+                                    self.on_change()
+                                } else {
+                                    self.on_miss()
+                                }
+                            },
+                            Arrow::Down => {
+                                if old_highlighted < self.items.len() - 1 {
+                                    self.highlighted = Some(old_highlighted + 1);
+                                    self.on_change()
+                                } else {
+                                    self.on_miss()
+                                }
+                            }
+                            Arrow::Left => { None }
+                            Arrow::Right => { None }
+                        }
+                    }
+                }
+            }
+            ListWidgetMsg::Hit => {
+                self.on_hit()
+            }
+            ListWidgetMsg::Home => { None }
+            ListWidgetMsg::End => { None }
+            ListWidgetMsg::PageUp => { None }
+            ListWidgetMsg::PageDown => { None }
+        }
     }
 
     fn get_focused(&self) -> &dyn Widget {
