@@ -10,6 +10,10 @@ use crate::primitives::xy::XY;
 use log::debug;
 use log::warn;
 
+// Over output (maybe I'll rename it as super output) is an output that is bigger than original,
+// physical or in-memory display. All write operations targeting lines/columns beyond it's borders
+// are to be silently disregarded.
+
 pub struct OverOutput<'a> {
     output: Box<&'a mut dyn Output>,
     upper_left_offset: XY,
