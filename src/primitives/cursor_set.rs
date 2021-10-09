@@ -17,6 +17,8 @@
 
 use std::borrow::Borrow;
 use std::collections::HashSet;
+use std::slice::Iter;
+
 use crate::text::buffer::Buffer;
 
 const NEWLINE_LENGTH: usize = 1; // TODO(njskalski): add support for multisymbol newlines?
@@ -171,7 +173,11 @@ impl CursorSet {
 
         for mut c in &mut self.set {
             //getting data
-            let cur_line_idx = rope.char_to_line(c.a);
+            let cur_line_idx = if c.a > rope.len_chars() {
+                rope.len_lines()
+            } else {
+                rope.char_to_line(c.a)
+            };
             let cur_line_begin_char_idx = rope.line_to_char(cur_line_idx);
             let current_char_idx = c.a - cur_line_begin_char_idx;
 
@@ -284,4 +290,32 @@ impl CursorSet {
 
         current_status
     }
+
+
+    pub fn iter(&self) -> Iter<'_, Cursor> {
+        self.set.iter()
+    }
 }
+
+/*
+thread 'main' panicked at 'assertion failed: preferred_column >= current_char_idx', src/primitives/cursor_set.rs:219:17
+stack backtrace:
+   0: rust_begin_unwind
+             at /rustc/53cb7b09b00cbea8754ffb78e7e3cb521cb8af4b/library/std/src/panicking.rs:493:5
+   1: core::panicking::panic_fmt
+             at /rustc/53cb7b09b00cbea8754ffb78e7e3cb521cb8af4b/library/core/src/panicking.rs:92:14
+   2: core::panicking::panic
+             at /rustc/53cb7b09b00cbea8754ffb78e7e3cb521cb8af4b/library/core/src/panicking.rs:50:5
+   3: bernardo::primitives::cursor_set::CursorSet::move_vertically_by
+             at ./src/primitives/cursor_set.rs:219:17
+   4: <bernardo::widget::text_editor::TextEditorWidget as bernardo::widget::widget::Widget>::update
+             at ./src/widget/text_editor.rs:90:21
+   5: bernardo::main::recursive_treat_views
+             at ./src/main.rs:84:41
+   6: bernardo::main
+             at ./src/main.rs:103:17
+   7: core::ops::function::FnOnce::call_once
+             at /home/andrzej/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ops/function.rs:227:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+ */

@@ -1,4 +1,5 @@
 use ropey::Rope;
+
 use crate::text::buffer::Buffer;
 
 pub struct BufferState {
@@ -46,5 +47,17 @@ impl Buffer for BufferState {
 
     fn line_to_char(&self, line_idx: usize) -> usize {
         self.text.line_to_char(line_idx)
+    }
+
+    fn insert(&mut self, char_idx: usize, text: &str) -> bool {
+        if char_idx > self.text.len_chars() {
+            false
+            // } else if self.text.len_chars() == char_idx {
+            //     self.text.append(Rope::from_str(text));
+            //     true
+        } else {
+            self.text.insert(char_idx, text);
+            true
+        }
     }
 }

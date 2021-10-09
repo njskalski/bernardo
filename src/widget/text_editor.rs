@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::iter::Iterator;
 
 use log::warn;
 use unicode_segmentation::UnicodeSegmentation;
@@ -18,7 +19,8 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
 #[derive(Debug)]
 enum TextEditorMsg {
-    Arrow(Arrow)
+    Arrow(Arrow),
+    Letter(char),
 }
 
 impl AnyMsg for TextEditorMsg {}
@@ -60,6 +62,7 @@ impl Widget for TextEditorWidget {
                     Key::ArrowDown => Some(Box::new(TextEditorMsg::Arrow(Arrow::Down))),
                     Key::ArrowLeft => Some(Box::new(TextEditorMsg::Arrow(Arrow::Left))),
                     Key::ArrowRight => Some(Box::new(TextEditorMsg::Arrow(Arrow::Right))),
+                    Key::Letter(letter) => Some(Box::new(TextEditorMsg::Letter(letter))),
                     // Key::Space => {}
                     // Key::Backspace => {}
                     // Key::Home => {}
@@ -99,6 +102,14 @@ impl Widget for TextEditorWidget {
                     self.cursor_set.move_right(self.buffer.borrow());
                     None
                 }
+            },
+            TextEditorMsg::Letter(letter) => {
+                let mut all_good = true; //TODO send the sound of lost message
+                for c in self.cursor_set.iter().rev() {
+                    all_good &= self.buffer.insert(c.a, letter.to_string().as_str());
+                }
+                self.cursor_set.move_right(self.buffer.borrow());
+                None
             }
         };
     }
@@ -116,7 +127,6 @@ impl Widget for TextEditorWidget {
         let len_lines_cols = format!("{}", len_lines).len();
 
         let numbers_style = TextStyle_WhiteOnBlue;
-        let text_style = TextStyle_WhiteOnBlack;
 
         for (line_idx, line) in self.buffer.lines().enumerate() {
             let local_len = format!("{}", line_idx).len();

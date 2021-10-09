@@ -9,4 +9,6 @@ pub trait Buffer {
     fn len_chars(&self) -> usize;
     fn char_to_line(&self, char_idx: usize) -> usize;
     fn line_to_char(&self, line_idx: usize) -> usize;
+
+    fn insert(&mut self, char_idx: usize, text: &str) -> bool;
 }
