@@ -8,17 +8,32 @@ this widget is supposed to offer:
 I hope I will discover most of functional constraints while implementing it.
  */
 
-use crate::widget::any_msg::AnyMsg;
 use std::fmt::{Debug, Formatter};
+
+use crate::io::input_event::InputEvent;
+use crate::io::output::Output;
 use crate::layout::layout::Layout;
-use crate::widget::stupid_tree::StupidTree;
+use crate::layout::leaf_layout::LeafLayout;
+use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::xy::XY;
+use crate::widget::any_msg::AnyMsg;
+use crate::widget::button::ButtonWidget;
+use crate::widget::edit_box::EditBoxWidget;
+use crate::widget::list_widget::ListWidget;
+use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
+use crate::widget::stupid_tree::{get_stupid_tree, StupidTree};
 use crate::widget::tree_view::TreeViewWidget;
+use crate::widget::widget::{WID, Widget};
 
 pub struct SaveFileDialogWidget {
-    layout: Box<Layout<SaveFileDialogWidget>>,
-    mock_file_tree: StupidTree,
-    tree_widget: TreeViewWidget<StupidTree>,
+    layout: Box<dyn Layout<SaveFileDialogWidget>>,
+    tree: StupidTree,
+    tree_widget: TreeViewWidget<usize>,
+    list_widget: ListWidget<MockFile>,
+    edit_box: EditBoxWidget,
 
+    ok_button: ButtonWidget,
+    cancel_button: ButtonWidget,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -26,5 +41,84 @@ pub enum SaveFileDialogMsg {}
 
 impl AnyMsg for SaveFileDialogMsg {}
 
-impl SaveFileDialogWidget {}
+impl SaveFileDialogWidget {
+    pub fn new() -> Self {
+        let layout = Box::new(
+            SplitLayout::new(SplitDirection::Vertical)
+                .with(SplitRule::Proportional(1.0),
+                      Box::new(LeafLayout::<SaveFileDialogWidget>::new(
+                          Box::new(|s| &s.tree_widget),
+                          Box::new(|s| &mut s.tree_widget),
+                      )),
+                )
+                .with(SplitRule::Proportional(4.0),
+                      Box::new(SplitLayout::new(SplitDirection::Vertical)
+                          .with(SplitRule::Proportional(1.0),
+                                Box::new(LeafLayout::<SaveFileDialogWidget>::new(
+                                    Box::new(|s| &s.list_widget),
+                                    Box::new(|s| &mut s.list_widget),
+                                )))
+                          .with(SplitRule::Fixed(1),
+                                Box::new(LeafLayout::<SaveFileDialogWidget>::new(
+                                    Box::new(|s| &s.list_widget),
+                                    Box::new(|s| &mut s.list_widget),
+                                )))
+                      ),
+                )
+        );
 
+        let file_list = get_mock_file_list();
+        let tree = get_stupid_tree();
+        let tree_widget = TreeViewWidget::<usize>::new(Box::new(tree));
+        let list_widget = ListWidget::new().with_items(file_list);
+        let edit_box = EditBoxWidget::new();
+
+        let ok_button = ButtonWidget::new("OK".to_owned());
+        let cancel_button = ButtonWidget::new("Cancel".to_owned());
+
+        SaveFileDialogWidget {
+            layout,
+            tree: get_stupid_tree(),
+            tree_widget,
+            list_widget,
+            edit_box,
+
+            ok_button,
+            cancel_button,
+        }
+    }
+}
+
+impl Widget for SaveFileDialogWidget {
+    fn id(&self) -> WID {
+        todo!()
+    }
+
+    fn min_size(&self) -> XY {
+        todo!()
+    }
+
+    fn size(&self, max_size: XY) -> XY {
+        todo!()
+    }
+
+    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        todo!()
+    }
+
+    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+        todo!()
+    }
+
+    fn get_focused(&self) -> &dyn Widget {
+        todo!()
+    }
+
+    fn get_focused_mut(&mut self) -> &mut dyn Widget {
+        todo!()
+    }
+
+    fn render(&self, focused: bool, output: &mut Output) {
+        todo!()
+    }
+}

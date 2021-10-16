@@ -1,3 +1,8 @@
+use std::borrow::Borrow;
+
+use log::warn;
+use unicode_segmentation::UnicodeSegmentation;
+
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Key::Enter;
@@ -6,10 +11,7 @@ use crate::io::style::{Effect, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue};
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
-use log::warn;
-use std::borrow::Borrow;
-use unicode_segmentation::UnicodeSegmentation;
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
 pub struct ButtonWidget {
     id: usize,

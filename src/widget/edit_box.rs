@@ -1,3 +1,11 @@
+use std::any::Any;
+use std::borrow::Borrow;
+use std::ops::Deref;
+
+use log::warn;
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
+
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Key;
@@ -10,13 +18,7 @@ use crate::io::style::{
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::edit_box::EditBoxWidgetMsg::Letter;
-use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
-use log::warn;
-use std::any::Any;
-use std::borrow::Borrow;
-use std::ops::Deref;
-use unicode_segmentation::UnicodeSegmentation;
-use unicode_width::UnicodeWidthStr;
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
 pub struct EditBoxWidget {
     id: WID,
@@ -76,7 +78,7 @@ impl EditBoxWidget {
         &self.text
     }
 
-    fn event_changed(&self) -> Option<Box<AnyMsg>> {
+    fn event_changed(&self) -> Option<Box<dyn AnyMsg>> {
         if self.on_change.is_some() {
             self.on_change.unwrap()(self)
         } else {

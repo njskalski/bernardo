@@ -1,11 +1,12 @@
+use std::fmt::Debug;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
-use std::fmt::Debug;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 // this corresponds to message to Parent.
 pub type WidgetAction<W> = fn(&W) -> Option<Box<dyn AnyMsg>>;

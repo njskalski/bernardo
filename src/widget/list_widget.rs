@@ -28,6 +28,21 @@ pub trait ListWidgetItem {
     fn get(&self, idx: usize) -> ListWidgetCell;
 }
 
+pub trait ListWidgetProvider<Item: ListWidgetItem> {
+    fn len(&self) -> usize;
+    fn get(&self, idx: usize) -> &Item;
+}
+
+impl<Item: ListWidgetItem> ListWidgetProvider<Item> for Vec<Item> {
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn get(&self, idx: usize) -> &Item {
+        &self[idx]
+    }
+}
+
 pub struct ListWidget<Item: ListWidgetItem> {
     id: WID,
     // later probably change into some provider
