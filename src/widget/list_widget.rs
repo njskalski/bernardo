@@ -20,7 +20,7 @@ pub enum ListWidgetCell {
     Ready(String),
 }
 
-pub trait ListWidgetItem {
+pub trait ListWidgetItem: Clone {
     //TODO change to static str?
     fn get_column_name(idx: usize) -> String;
     fn get_min_column_width(idx: usize) -> u16;
@@ -30,7 +30,7 @@ pub trait ListWidgetItem {
 
 pub trait ListWidgetProvider<Item: ListWidgetItem> {
     fn len(&self) -> usize;
-    fn get(&self, idx: usize) -> &Item;
+    fn get(&self, idx: usize) -> Option<Item>;
 }
 
 impl<Item: ListWidgetItem> ListWidgetProvider<Item> for Vec<Item> {
@@ -38,8 +38,8 @@ impl<Item: ListWidgetItem> ListWidgetProvider<Item> for Vec<Item> {
         self.len()
     }
 
-    fn get(&self, idx: usize) -> &Item {
-        &self[idx]
+    fn get(&self, idx: usize) -> Option<Item> {
+        self.get(idx).clone()
     }
 }
 
@@ -95,7 +95,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
-    fn on_miss(&self) -> Option<Box<AnyMsg>> {
+    fn on_miss(&self) -> Option<Box<dyn AnyMsg>> {
         if self.on_miss.is_some() {
             self.on_miss.unwrap()(self)
         } else {
@@ -103,7 +103,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
-    fn on_hit(&self) -> Option<Box<AnyMsg>> {
+    fn on_hit(&self) -> Option<Box<dyn AnyMsg>> {
         if self.on_hit.is_some() {
             self.on_hit.unwrap()(self)
         } else {
@@ -111,11 +111,23 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
-    fn on_change(&self) -> Option<Box<AnyMsg>> {
+    fn on_change(&self) -> Option<Box<dyn AnyMsg>> {
         if self.on_change.is_some() {
             self.on_change.unwrap()(self)
         } else {
             None
+        }
+    }
+
+    pub fn set_items(&mut self, provider: &mut dyn ListWidgetProvider<Item>) {
+        self.items.clear();
+        for i in 0..provider.len() {
+            match provider.get(idx) {
+                Some(item) => self.items.push(item),
+                None => {
+                    warn!("ListWidget: failed unpacking provider item #{}", idx);
+                }
+            }
         }
     }
 }
@@ -236,7 +248,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         self
     }
 
-    fn render(&self, focused: bool, output: &mut Output) {
+    fn render(&self, focused: bool, output: &mut dyn Output) {
         // TODO add columns expansion
         // it's the same as in layouts, probably we should move that calc to primitives
         let mut y_offset: u16 = 0;

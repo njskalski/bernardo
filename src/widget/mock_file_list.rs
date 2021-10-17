@@ -1,9 +1,11 @@
 use std::os::unix::raw::time_t;
-use crate::widget::list_widget::{ListWidgetItem, ListWidgetCell};
+
+use crate::widget::list_widget::{ListWidgetCell, ListWidgetItem};
 
 pub mod mock {
-    use crate::widget::list_widget::{ListWidgetItem, ListWidgetCell};
+    use crate::widget::list_widget::{ListWidgetCell, ListWidgetItem};
 
+    #[derive(Clone, Debug)]
     pub struct MockFile {
         name: String,
         size: usize,
