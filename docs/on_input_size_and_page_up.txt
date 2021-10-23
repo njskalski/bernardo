@@ -9,3 +9,5 @@ from parent arguments (props?). I don't implement props as such, but output size
 I think I will extend the InputEvent with information about output size, and maybe focus path, though I can hardly
 think of a reason why a widget should care. But whether it was focused or not (in case we're handling tick)? Now
 I am assuming that a non-focused widget cannot receive input.
+
+In a way, input is always in context of most recently drawn frame (currently presented to user).

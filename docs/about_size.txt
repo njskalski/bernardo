@@ -1,0 +1,2 @@
+The size is needed to extract FocusGroup from Layout.
+I can imagine that Layout might get modified based on size as well.

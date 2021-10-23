@@ -10,6 +10,8 @@ I hope I will discover most of functional constraints while implementing it.
 
 use std::fmt::{Debug, Formatter};
 
+use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl};
+use crate::experiments::from_geometry::from_geometry;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::layout::layout::Layout;
@@ -23,10 +25,13 @@ use crate::widget::list_widget::ListWidget;
 use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
 use crate::widget::stupid_tree::{get_stupid_tree, StupidTree};
 use crate::widget::tree_view::TreeViewWidget;
-use crate::widget::widget::{WID, Widget};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
 pub struct SaveFileDialogWidget {
+    id: WID,
+
     layout: Box<dyn Layout<SaveFileDialogWidget>>,
+    focus_group: FocusGroupImpl,
     tree: StupidTree,
     tree_widget: TreeViewWidget<usize>,
     list_widget: ListWidget<MockFile>,
@@ -76,7 +81,9 @@ impl SaveFileDialogWidget {
         let ok_button = ButtonWidget::new("OK".to_owned());
         let cancel_button = ButtonWidget::new("Cancel".to_owned());
 
-        SaveFileDialogWidget {
+        let mut res = SaveFileDialogWidget {
+            id: get_new_widget_id(),
+
             layout,
             tree: get_stupid_tree(),
             tree_widget,
@@ -85,21 +92,24 @@ impl SaveFileDialogWidget {
 
             ok_button,
             cancel_button,
-        }
+        };
+
+        let arbitrary_size = XY::new(80, 30);
+        let focus_group = from_geometry(res, arbitrary_size);
     }
 }
 
 impl Widget for SaveFileDialogWidget {
     fn id(&self) -> WID {
-        todo!()
+        self.id
     }
 
     fn min_size(&self) -> XY {
-        todo!()
+        self.layout.min_size(self)
     }
 
     fn size(&self, max_size: XY) -> XY {
-        todo!()
+        max_size
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -119,6 +129,12 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn render(&self, focused: bool, output: &mut Output) {
-        todo!()
+        let focused_op = if focused {
+            Some(self..get_focused())
+        } else {
+            None
+        };
+
+        self.layout.render(self, focused_op, output)
     }
 }

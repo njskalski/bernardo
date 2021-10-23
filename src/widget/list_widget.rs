@@ -20,6 +20,11 @@ pub enum ListWidgetCell {
     Ready(String),
 }
 
+/*
+    Items are held in Widget state itself, and overwritten with set_items when necessary. Therefore
+    keep them lightweight as they are being cloned on update. Treat ListWidgetItem as "sub widget",
+    a cached projection on actual data, and not the data itself. Do not store data in widgets!
+ */
 pub trait ListWidgetItem: Clone {
     //TODO change to static str?
     fn get_column_name(idx: usize) -> String;
@@ -121,7 +126,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
 
     pub fn set_items(&mut self, provider: &mut dyn ListWidgetProvider<Item>) {
         self.items.clear();
-        for i in 0..provider.len() {
+        for idx in 0..provider.len() {
             match provider.get(idx) {
                 Some(item) => self.items.push(item),
                 None => {
