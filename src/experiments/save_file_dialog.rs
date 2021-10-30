@@ -31,7 +31,7 @@ pub struct SaveFileDialogWidget {
     id: WID,
 
     layout: Box<dyn Layout<SaveFileDialogWidget>>,
-    focus_group: FocusGroupImpl,
+
     tree: StupidTree,
     tree_widget: TreeViewWidget<usize>,
     list_widget: ListWidget<MockFile>,
@@ -92,10 +92,11 @@ impl SaveFileDialogWidget {
 
             ok_button,
             cancel_button,
+
         };
 
-        let arbitrary_size = XY::new(80, 30);
-        let focus_group = from_geometry(res, arbitrary_size);
+
+        res
     }
 }
 
@@ -130,7 +131,7 @@ impl Widget for SaveFileDialogWidget {
 
     fn render(&self, focused: bool, output: &mut Output) {
         let focused_op = if focused {
-            Some(self..get_focused())
+            Some(self.get_focused().id())
         } else {
             None
         };
