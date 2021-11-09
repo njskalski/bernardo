@@ -9,6 +9,8 @@ use crate::widget::widget::{WID, Widget};
 pub type WidgetGetter<T: Widget> = Box<dyn Fn(&'_ T) -> &'_ dyn Widget>;
 pub type WidgetGetterMut<T: Widget> = Box<dyn Fn(&'_ mut T) -> &'_ mut dyn Widget>;
 
+
+#[derive(Clone, Copy, Debug)]
 pub struct WidgetIdRect {
     pub wid: WID,
     pub rect: Rect,
@@ -22,9 +24,10 @@ pub trait Layout<W: Widget> {
     fn min_size(&self, owner: &W) -> XY;
 
     /*
-    This is guaranteed to be called before render.
+    This only calculates the rects under current constraints. The widgets themselves should
+    receive information about their new sizes before render.
      */
-    fn sizes(&mut self, owner_mut: &mut W, output_size: XY) -> Vec<WidgetIdRect>;
+    fn calc_sizes(&self, owner: &W, output_size: XY) -> Vec<WidgetIdRect>;
 
 
     // fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output);

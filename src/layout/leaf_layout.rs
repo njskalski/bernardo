@@ -34,8 +34,8 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
         widget.min_size()
     }
 
-    fn sizes(&mut self, owner_mut: &mut W, output_size: XY) -> Vec<WidgetIdRect> {
-        let widget: &mut dyn Widget = (self.wgmut)(owner_mut);
+    fn calc_sizes(&self, owner: &W, output_size: XY) -> Vec<WidgetIdRect> {
+        let widget: &dyn Widget = (self.wg)(owner);
         let size = widget.layout(output_size);
 
 

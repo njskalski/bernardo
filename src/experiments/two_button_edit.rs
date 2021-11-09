@@ -133,7 +133,7 @@ impl Widget for TwoButtonEdit {
         XY::new(32, 10)
     }
 
-    fn layout(&mut self, max_size: XY) -> XY {
+    fn layout(&self, max_size: XY) -> XY {
         self.min_size()
     }
 

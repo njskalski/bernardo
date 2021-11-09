@@ -168,7 +168,7 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
         from_items
     }
 
-    fn layout(&mut self, max_size: XY) -> XY {
+    fn layout(&self, max_size: XY) -> XY {
         self.min_size()
     }
 

@@ -20,8 +20,11 @@ pub trait Widget {
     // and the view cannot be focused (TODO or input will be ignored, haven't decided that yet).
     fn min_size(&self) -> XY;
 
-    // Size is to be guaranteed to be called with max_size >= min_size.
-    fn layout(&mut self, max_size: XY) -> XY;
+    // Description of widget type
+    // fn desc() -> &'static str;
+
+    // This is guaranteed to be called before render.
+    fn layout(&self, max_size: XY) -> XY;
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>>;

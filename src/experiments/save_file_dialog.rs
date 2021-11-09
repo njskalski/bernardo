@@ -8,6 +8,8 @@ this widget is supposed to offer:
 I hope I will discover most of functional constraints while implementing it.
  */
 
+use std::borrow::Borrow;
+use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
 
 use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl};
@@ -16,7 +18,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::cached_sizes::CachedSizes;
-use crate::layout::layout::Layout;
+use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::xy::XY;
@@ -34,7 +36,7 @@ pub struct SaveFileDialogWidget {
     id: WID,
 
     layout : Box<dyn Layout<Self>>,
-    cached_sizes: Option<CachedSizes>,
+    cached_sizes: RefCell<Option<CachedSizes>>,
 
     tree_widget: TreeViewWidget<usize>,
     list_widget: ListWidget<MockFile>,
@@ -87,7 +89,7 @@ impl SaveFileDialogWidget {
         SaveFileDialogWidget {
             id: get_new_widget_id(),
             layout,
-            cached_sizes : None,
+            cached_sizes : RefCell::new(None),
             tree_widget,
             list_widget,
             edit_box,
@@ -126,13 +128,13 @@ impl Widget for SaveFileDialogWidget {
         self.layout.min_size(self)
     }
 
-    fn layout(&mut self, max_size: XY) -> XY {
-        if self.cached_sizes.map(|cs| cs.for_size) == Some(max_size) {
+    fn layout(&self, max_size: XY) -> XY {
+        if self.cached_sizes.borrow().as_ref().map(|x| x.for_size == max_size) == Some(true) {
             return max_size
         }
 
-        let sizes = self.layout.sizes(&mut self, max_size);
-        self.cached_sizes = Some(CachedSizes::new(max_size, sizes));
+        let res_sizes = self.layout.calc_sizes(self, max_size);
+        self.cached_sizes.swap(&RefCell::new(Some(CachedSizes::new(max_size, res_sizes))));
 
         max_size
     }
@@ -160,10 +162,10 @@ impl Widget for SaveFileDialogWidget {
             None
         };
 
-        match &self.cached_sizes {
+        match self.cached_sizes.borrow().as_ref() {
             None => warn!("failed rendering save_file_dialog without cached_sizes"),
             Some(cached_sizes) => {
-                for wir in cached_sizes.widget_sizes {
+                for wir in &cached_sizes.widget_sizes {
                     match self.todo_wid_to_widget(wir.wid) {
                         None => warn!("failed to match WID {} to sub-widget in save_file_dialog {}", wir.wid, self.id()),
                         Some(widget) => {
