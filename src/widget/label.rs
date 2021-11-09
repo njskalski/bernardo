@@ -32,7 +32,7 @@
 //         self.styled_text.size()
 //     }
 //
-//     fn size(&self, max_size: XY) -> XY {
+//     fn size(&mut self, max_size: XY) -> XY {
 //         self.min_size()
 //     }
 //

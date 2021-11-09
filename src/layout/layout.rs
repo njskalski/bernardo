@@ -21,8 +21,12 @@ pub trait Layout<W: Widget> {
 
     fn min_size(&self, owner: &W) -> XY;
 
-    // this two can be merged later.
-    fn get_rects(&self, owner: &W, output_size: XY) -> Vec<WidgetIdRect>;
+    /*
+    This is guaranteed to be called before render.
+     */
+    fn sizes(&mut self, owner: &W, output_size: XY) -> Vec<WidgetIdRect>;
+
+
     fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output);
     //
     // fn boxed(self) -> Box<dyn Layout<W>> where Self: Sized {

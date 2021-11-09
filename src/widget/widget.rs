@@ -21,7 +21,7 @@ pub trait Widget {
     fn min_size(&self) -> XY;
 
     // Size is to be guaranteed to be called with max_size >= min_size.
-    fn size(&self, max_size: XY) -> XY;
+    fn layout(&mut self, max_size: XY) -> XY;
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>>;

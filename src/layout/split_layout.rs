@@ -1,15 +1,17 @@
+use std::cmp::min;
+use std::net::Shutdown::Read;
+use std::slice::Iter;
+
+use log::debug;
+use log::warn;
+
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::layout::{Layout, WidgetGetterMut, WidgetIdRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
-use crate::widget::widget::{Widget, WID};
-use log::debug;
-use log::warn;
-use std::cmp::min;
-use std::net::Shutdown::Read;
-use std::slice::Iter;
+use crate::widget::widget::{WID, Widget};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SplitDirection {
@@ -177,7 +179,7 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
         minxy
     }
 
-    fn get_rects(&self, owner: &W, output_size: XY) -> Vec<WidgetIdRect> {
+    fn sizes(&mut self, owner: &W, output_size: XY) -> Vec<WidgetIdRect> {
         let rects_op = self.get_just_rects(output_size);
         if rects_op.is_none() {
             warn!(

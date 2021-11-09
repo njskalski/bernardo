@@ -112,7 +112,7 @@ impl Widget for EditBoxWidget {
         XY::new(12, 1)
     }
 
-    fn size(&self, max_size: XY) -> XY {
+    fn layout(&mut self, max_size: XY) -> XY {
         self.min_size()
     }
 

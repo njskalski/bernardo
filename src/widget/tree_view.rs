@@ -1,20 +1,22 @@
-use crate::io::input_event::InputEvent;
-use crate::io::keys::Key;
-use crate::io::output::Output;
-use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBrightYellow};
-use crate::primitives::arrow::Arrow;
-use crate::primitives::xy::{Zero, XY};
-use crate::widget::any_msg::AnyMsg;
-use crate::widget::edit_box::EditBoxWidget;
-use crate::widget::tree_view_node::TreeViewNode;
-use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
-use log::warn;
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt::{Debug, Formatter, Pointer};
 use std::hash::Hash;
 use std::ptr::write_bytes;
+
+use log::warn;
 use unicode_width::UnicodeWidthStr;
+
+use crate::io::input_event::InputEvent;
+use crate::io::keys::Key;
+use crate::io::output::Output;
+use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBrightYellow};
+use crate::primitives::arrow::Arrow;
+use crate::primitives::xy::{XY, Zero};
+use crate::widget::any_msg::AnyMsg;
+use crate::widget::edit_box::EditBoxWidget;
+use crate::widget::tree_view_node::TreeViewNode;
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
 // fn tree_it_2<'a, Key: Hash + Eq + Debug + Clone>(
 //     root: &'a dyn TreeViewNode<Key>,
@@ -166,7 +168,7 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
         from_items
     }
 
-    fn size(&self, max_size: XY) -> XY {
+    fn layout(&mut self, max_size: XY) -> XY {
         self.min_size()
     }
 
@@ -291,11 +293,12 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use crate::io::keys::Key;
     use crate::widget::stupid_tree::{get_stupid_tree, StupidTree};
     use crate::widget::tree_view::{tree_it, TreeViewNode};
     use crate::widget::widget::get_new_widget_id;
-    use std::collections::HashSet;
 
     #[test]
     fn tree_it_test_1() {

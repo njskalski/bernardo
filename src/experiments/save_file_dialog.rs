@@ -109,7 +109,7 @@ impl Widget for SaveFileDialogWidget {
         self.layout.min_size(self)
     }
 
-    fn size(&self, max_size: XY) -> XY {
+    fn layout(&mut self, max_size: XY) -> XY {
         max_size
     }
 

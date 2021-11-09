@@ -156,7 +156,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         XY::new(rows, cols)
     }
 
-    fn size(&self, max_size: XY) -> XY {
+    fn layout(&mut self, max_size: XY) -> XY {
         self.min_size()
     }
 

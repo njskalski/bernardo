@@ -1,11 +1,13 @@
+use std::slice::Iter;
+
+use log::warn;
+
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::output::Output;
 use crate::layout::layout::{Layout, WidgetGetter, WidgetGetterMut, WidgetIdRect};
 use crate::primitives::rect::Rect;
-use crate::primitives::xy::{Zero, XY};
-use crate::widget::widget::{Widget, WID};
-use log::warn;
-use std::slice::Iter;
+use crate::primitives::xy::{XY, Zero};
+use crate::widget::widget::{WID, Widget};
 
 /*
 This is the leaf of Layout tree. It corresponds to a single widget.
@@ -32,9 +34,9 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
         widget.min_size()
     }
 
-    fn get_rects(&self, owner: &W, output_size: XY) -> Vec<WidgetIdRect> {
+    fn sizes(&mut self, owner: &W, output_size: XY) -> Vec<WidgetIdRect> {
         let widget: &dyn Widget = (self.wg)(owner);
-        let size = widget.size(output_size);
+        let size = widget.layout(output_size);
 
         vec![WidgetIdRect {
             wid: widget.id(),

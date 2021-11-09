@@ -5,32 +5,34 @@ and OK is enabled ONLY if text TextBox content length > 4.
 just an experiment to see if the design works.
  */
 
+use std::any::Any;
+use std::borrow::Borrow;
+use std::fs::read;
+use std::ops::Deref;
+
+use log::warn;
+
+// use crate::layout::split_layout::{SplitLayout, SplitDirection, SplitRule};
+use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl, FocusUpdate};
+// use crate::layout::fixed_layout::{FixedLayout, FixedItem};
+use crate::experiments::from_geometry::from_geometry;
 use crate::experiments::two_button_edit::TwoButtonEditMsg::{
     Cancel, FocusUpdateMsg, TextInvalid, TextValid,
 };
+use crate::experiments::util::default_key_to_focus_update;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
-use crate::widget::button::ButtonWidget;
-use crate::widget::edit_box::EditBoxWidget;
-use crate::widget::widget::{get_new_widget_id, Widget, WID};
-use std::fs::read;
-// use crate::layout::split_layout::{SplitLayout, SplitDirection, SplitRule};
-use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl, FocusUpdate};
-use crate::experiments::util::default_key_to_focus_update;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
-use crate::primitives::xy::XY;
-use crate::widget::any_msg::{AnyMsg, AsAny};
-use log::warn;
-use std::any::Any;
-use std::borrow::Borrow;
-use std::ops::Deref;
-// use crate::layout::fixed_layout::{FixedLayout, FixedItem};
-use crate::experiments::from_geometry::from_geometry;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::rect::Rect;
+use crate::primitives::xy::XY;
+use crate::widget::any_msg::{AnyMsg, AsAny};
+use crate::widget::button::ButtonWidget;
+use crate::widget::edit_box::EditBoxWidget;
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum TwoButtonEditMsg {
@@ -48,7 +50,7 @@ pub struct TwoButtonEdit {
     ok_button: ButtonWidget,
     cancel_button: ButtonWidget,
     edit_box: EditBoxWidget,
-    layout: Box<dyn Layout<TwoButtonEdit>>,
+    layout: Option<Box<dyn Layout<TwoButtonEdit>>>,
     focus_group: FocusGroupImpl,
 }
 
@@ -124,7 +126,7 @@ impl Widget for TwoButtonEdit {
         XY::new(32, 10)
     }
 
-    fn size(&self, max_size: XY) -> XY {
+    fn layout(&mut self, max_size: XY) -> XY {
         self.min_size()
     }
 
