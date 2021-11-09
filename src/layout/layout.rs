@@ -24,7 +24,7 @@ pub trait Layout<W: Widget> {
     /*
     This is guaranteed to be called before render.
      */
-    fn sizes(&mut self, owner: &W, output_size: XY) -> Vec<WidgetIdRect>;
+    fn sizes(&mut self, owner_mut: &mut W, output_size: XY) -> Vec<WidgetIdRect>;
 
 
     fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output);

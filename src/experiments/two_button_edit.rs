@@ -100,18 +100,18 @@ impl TwoButtonEdit {
 
         let mut res = TwoButtonEdit {
             id: get_new_widget_id(),
-            layout: Box::new(layout),
+            layout: None,
             ok_button,
             cancel_button,
             edit_box,
             focus_group: FocusGroupImpl::dummy(),
         };
 
-        let rects = res.layout.get_rects(&res, size);
-        let id_and_pos: Vec<(WID, Option<Rect>)> =
-            rects.iter().map(|f| (f.wid, Some(f.rect))).collect();
-        let focus_group_2 = from_geometry(&id_and_pos, Some(size));
-        res.focus_group = focus_group_2;
+        // let rects = res.layout.get_rects(&res, size);
+        // let id_and_pos: Vec<(WID, Option<Rect>)> =
+        //     rects.iter().map(|f| (f.wid, Some(f.rect))).collect();
+        // let focus_group_2 = from_geometry(&id_and_pos, Some(size));
+        // res.focus_group = focus_group_2;
 
         res
     }
@@ -215,6 +215,9 @@ impl Widget for TwoButtonEdit {
             None
         };
 
-        self.layout.render(self, focused_op, output);
+        match &self.layout {
+            Some(layout) => layout.render(self, focused_op, output),
+            None => warn!("render with no layout for {}", self.id())
+        }
     }
 }

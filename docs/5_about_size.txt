@@ -18,3 +18,10 @@ So lifetime of widget is as follows:
 4) Render
 5) Maybe input.
 6) Maybe message from a child.
+
+It is in code like this
+
+2 -> widget.min_size
+3 -> widget.layout.
+    if widget delegates recalculation of sub-widgets to Layout helper trait, it calls Layout.sizes().
+    Since Layout is a mut call, sizes() must access "owner" mutably.

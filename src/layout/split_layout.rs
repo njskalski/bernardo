@@ -179,7 +179,7 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
         minxy
     }
 
-    fn sizes(&mut self, owner: &W, output_size: XY) -> Vec<WidgetIdRect> {
+    fn sizes(&mut self, owner_mut: &mut W, output_size: XY) -> Vec<WidgetIdRect> {
         let rects_op = self.get_just_rects(output_size);
         if rects_op.is_none() {
             warn!(
@@ -191,9 +191,9 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
 
         let rects = rects_op.unwrap();
         let mut res: Vec<WidgetIdRect> = vec![];
-        for (idx, ch) in self.children.iter().enumerate() {
+        for (idx, child_layout) in self.children.iter_mut().enumerate() {
             let rect = &rects[idx];
-            let wirs = ch.layout.get_rects(owner, rects[idx].size);
+            let wirs = child_layout.layout.sizes(owner_mut, rects[idx].size);
             for wir in wirs.iter() {
                 res.push(WidgetIdRect {
                     wid: wir.wid,
