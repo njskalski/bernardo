@@ -13,6 +13,7 @@ use crate::primitives::rect::Rect;
 use crate::widget::widget::WID;
 use log::debug;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::iter::Map;
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -25,8 +26,9 @@ pub enum FocusUpdate {
     Prev,
 }
 
-pub trait FocusGroup {
+pub trait FocusGroup : Debug {
     fn has_view(&self, widget_id: WID) -> bool;
+
     fn get_focused(&self) -> usize;
 
     /*
@@ -40,6 +42,7 @@ pub trait FocusGroup {
     fn add_edge(&mut self, src_widget: WID, edge: FocusUpdate, target_widget: WID) -> bool;
 }
 
+#[derive(Debug)]
 struct FocusGraphNode {
     widget_id: WID,
     neighbours: HashMap<FocusUpdate, WID>,
@@ -54,6 +57,7 @@ impl FocusGraphNode {
     }
 }
 
+#[derive(Debug)]
 pub struct FocusGroupImpl {
     nodes: HashMap<WID, FocusGraphNode>,
     selected: usize,

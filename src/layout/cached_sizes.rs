@@ -7,7 +7,7 @@ use crate::widget::widget::Widget;
 //TODO: more advanced option would store references to widgets instead of their WIDs.
 // I'll consider that in a next step.
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct CachedSizes {
     pub for_size : XY,
     pub widget_sizes : Vec<WidgetIdRect>,
