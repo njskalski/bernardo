@@ -29,7 +29,7 @@ pub enum FocusUpdate {
 pub trait FocusGroup : Debug {
     fn has_view(&self, widget_id: WID) -> bool;
 
-    fn get_focused(&self) -> usize;
+    fn get_focused(&self) -> WID;
 
     /*
     returns whether focus got updated or not. It is designed to give a sound feedback, not for

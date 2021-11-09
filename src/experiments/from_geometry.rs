@@ -11,11 +11,14 @@ use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::WID;
 use std::collections::HashMap;
+use crate::primitives::sized_xy::SizedXY;
+// use log::debug;
 
 fn fill(b: &mut Buffer<WID>, wid: WID, rect: &Rect) {
-    for x in rect.min_x()..rect.max_x() {
-        for y in rect.min_y()..rect.max_y() {
+    for x in rect.min_x()..u16::min(rect.max_x(), b.size().x) {
+        for y in rect.min_y()..u16::min(rect.max_y(), b.size().y) {
             let xy = XY::new(x, y);
+            // debug!("xy {}, rect {}", xy, rect);
             b[xy] = wid;
         }
     }

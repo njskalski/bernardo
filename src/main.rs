@@ -15,8 +15,9 @@ use crate::primitives::xy;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::stupid_tree::get_stupid_tree;
 use crate::widget::tree_view::TreeViewWidget;
-use log::debug;
+use log::{debug, warn};
 use crate::experiments::save_file_dialog::SaveFileDialogWidget;
+use crate::primitives::sized_xy::SizedXY;
 use crate::widget::text_editor::TextEditorWidget;
 use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
 use crate::widget::list_widget::ListWidget;
@@ -95,10 +96,10 @@ fn main() {
             }
         }
     }
-    ;
 
     loop {
         output.clear();
+        main_view.layout(output.size());
         main_view.render(true, &mut output);
         output.end_frame();
 

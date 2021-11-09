@@ -11,6 +11,7 @@ I hope I will discover most of functional constraints while implementing it.
 use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
+use std::ops::DerefMut;
 
 use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl};
 use crate::experiments::from_geometry::from_geometry;
@@ -117,6 +118,26 @@ impl SaveFileDialogWidget {
 
         None
     }
+
+    fn todo_wid_to_widget_mut(&mut self, wid : WID) -> Option<&mut dyn Widget> {
+        if self.ok_button.id() == wid {
+            return Some(&mut self.ok_button)
+        }
+        if self.cancel_button.id() == wid {
+            return Some(&mut self.cancel_button)
+        }
+        if self.edit_box.id() == wid {
+            return Some(&mut self.edit_box)
+        }
+        if self.tree_widget.id() == wid {
+            return Some(&mut self.tree_widget)
+        }
+        if self.list_widget.id() == wid {
+            return Some(&mut self.list_widget)
+        }
+
+        None
+    }
 }
 
 impl Widget for SaveFileDialogWidget {
@@ -140,7 +161,7 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        todo!()
+        None
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
@@ -148,11 +169,41 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn get_focused(&self) -> &dyn Widget {
-        todo!()
+        return match self.cached_sizes.borrow().as_ref() {
+            Some(cached_sizes) => {
+                let focused_wid = cached_sizes.focus_group.get_focused();
+                let widget = self.todo_wid_to_widget(focused_wid);
+
+                match widget {
+                    Some(w) => w,
+                    None => {
+                        warn!("get_focused on {} failed - widget {} not found. Returning self.", focused_wid, self.id());
+                        self
+                    }
+                }
+            }
+            None => {
+                warn!("get_focused on {} failed - no cached_sizes. Returning self.", self.id());
+                self
+            }
+        }
     }
 
     fn get_focused_mut(&mut self) -> &mut dyn Widget {
-        todo!()
+        let wid_op : Option<WID> = match self.cached_sizes.borrow_mut().as_ref() {
+            Some(cached_sizes) => {
+                Some(cached_sizes.focus_group.get_focused())
+            }
+            None => {
+                warn!("get_focused on {} failed - no cached_sizes.", self.id());
+                None
+            }
+        };
+
+        return match wid_op {
+            None => self,
+            Some(wid) => self.todo_wid_to_widget_mut(wid).unwrap() // TODO problem
+        }
     }
 
     fn render(&self, focused: bool, output: &mut Output) {
@@ -173,8 +224,6 @@ impl Widget for SaveFileDialogWidget {
                                           &mut SubOutput::new(Box::new(output), wir.rect));
                         }
                     }
-
-
                 }
             }
         }

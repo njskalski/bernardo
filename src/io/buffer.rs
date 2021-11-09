@@ -15,8 +15,8 @@ impl<T: Default + Clone> Buffer<T> {
     }
 
     fn flatten_index(&self, index: XY) -> usize {
-        assert!(index.x < self.size.x);
-        assert!(index.y < self.size.y);
+        assert!(index.x < self.size.x, "{}, {}", index, self.size);
+        assert!(index.y < self.size.y, "{}, {}", index, self.size);
 
         (index.y * self.size.x + index.x) as usize
     }

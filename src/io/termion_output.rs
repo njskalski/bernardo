@@ -163,6 +163,7 @@ impl<W: Write> Output for TermionOutput<W> {
 impl<W: Write> SizedXY for TermionOutput<W> {
     fn size(&self) -> XY {
         let (x, y) = termion::terminal_size().unwrap();
+        debug!("termion size: {},{}",x,y);
         XY::new(x, y)
     }
 }
