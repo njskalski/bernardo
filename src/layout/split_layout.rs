@@ -204,32 +204,4 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
 
         res
     }
-
-    fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output) {
-        let rects_op = self.get_just_rects(output.size());
-
-        if rects_op.is_none() {
-            warn!("not enough space to draw split_layout: {:?}", output.size());
-            return;
-        }
-
-        let rects = rects_op.unwrap();
-
-        let visible_rect = output.get_visible_rect();
-
-        for idx in 0..rects.len() {
-            let child = &self.children[idx];
-            let rect = &rects[idx];
-
-            if visible_rect.intersect(rect).is_some() {
-                let mut suboutput = SubOutput::new(Box::new(output), *rect);
-                child.layout.render(owner, focused_id, &mut suboutput);
-            } else {
-                debug!(
-                    "skipping drawing split_layout item {:} {:?} beause it's outside view {:?}",
-                    idx, rect, visible_rect
-                );
-            };
-        }
-    }
 }

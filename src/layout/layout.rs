@@ -27,7 +27,7 @@ pub trait Layout<W: Widget> {
     fn sizes(&mut self, owner_mut: &mut W, output_size: XY) -> Vec<WidgetIdRect>;
 
 
-    fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output);
+    // fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output);
     //
     // fn boxed(self) -> Box<dyn Layout<W>> where Self: Sized {
     //     Box::new(self)

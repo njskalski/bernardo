@@ -44,19 +44,4 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
             rect: Rect::new(XY::new(0, 0), size),
         }]
     }
-
-    fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output) {
-        let widget: &dyn Widget = (self.wg)(owner);
-
-        if output.size() >= widget.min_size() {
-            widget.render(focused_id == Some(widget.id()), output);
-        } else {
-            warn!(
-                "output.size() smaller than widget.min_size() for widget {} ({:?} < {:?})",
-                widget.id(),
-                output.size(),
-                widget.min_size(),
-            );
-        }
-    }
 }

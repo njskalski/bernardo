@@ -16,6 +16,7 @@ use crate::widget::any_msg::AnyMsg;
 use crate::widget::stupid_tree::get_stupid_tree;
 use crate::widget::tree_view::TreeViewWidget;
 use log::debug;
+use crate::experiments::save_file_dialog::SaveFileDialogWidget;
 use crate::widget::text_editor::TextEditorWidget;
 use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
 use crate::widget::list_widget::ListWidget;
@@ -48,11 +49,13 @@ fn main() {
     // let stupid_tree = get_stupid_tree();
     // let mut main_view = TreeViewWidget::new(Box::new(stupid_tree));
 
-    let mut mock_list = get_mock_file_list();
-    let mut main_view = ListWidget::<MockFile>::new().with_items(mock_list)
-        .with_selection();
+    // let mut mock_list = get_mock_file_list();
+    // let mut main_view = ListWidget::<MockFile>::new().with_items(mock_list)
+    //     .with_selection();
 
     // let mut main_view = TextEditorWidget::new();
+
+    let mut main_view = SaveFileDialogWidget::new();
 
     fn recursive_treat_views(
         view: &mut dyn Widget,

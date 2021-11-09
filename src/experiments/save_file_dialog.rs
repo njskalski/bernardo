@@ -14,6 +14,7 @@ use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl};
 use crate::experiments::from_geometry::from_geometry;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
+use crate::layout::cached_sizes::CachedSizes;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
@@ -30,9 +31,9 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget};
 pub struct SaveFileDialogWidget {
     id: WID,
 
-    layout: Box<dyn Layout<SaveFileDialogWidget>>,
+    layout : Box<dyn Layout<Self>>,
+    cached_sizes: Option<CachedSizes>,
 
-    tree: StupidTree,
     tree_widget: TreeViewWidget<usize>,
     list_widget: ListWidget<MockFile>,
     edit_box: EditBoxWidget,
@@ -81,22 +82,16 @@ impl SaveFileDialogWidget {
         let ok_button = ButtonWidget::new("OK".to_owned());
         let cancel_button = ButtonWidget::new("Cancel".to_owned());
 
-        let mut res = SaveFileDialogWidget {
+        SaveFileDialogWidget {
             id: get_new_widget_id(),
-
             layout,
-            tree: get_stupid_tree(),
+            cached_sizes : None,
             tree_widget,
             list_widget,
             edit_box,
-
             ok_button,
             cancel_button,
-
-        };
-
-
-        res
+        }
     }
 }
 
@@ -110,6 +105,13 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn layout(&mut self, max_size: XY) -> XY {
+        if self.cached_sizes.map(|cs| cs.for_size) == Some(max_size) {
+            return max_size
+        }
+
+        let sizes = self.layout.sizes(&mut self, max_size);
+        self.cached_sizes = Some(CachedSizes::new(max_size, sizes));
+
         max_size
     }
 
