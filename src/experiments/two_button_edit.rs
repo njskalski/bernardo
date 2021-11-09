@@ -6,7 +6,7 @@ just an experiment to see if the design works.
  */
 
 use std::any::Any;
-use std::borrow::Borrow;
+use std::borrow::{Borrow, BorrowMut};
 use std::fs::read;
 use std::ops::Deref;
 
@@ -24,6 +24,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
+use crate::layout::cached_sizes::CachedSizes;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
@@ -50,7 +51,8 @@ pub struct TwoButtonEdit {
     ok_button: ButtonWidget,
     cancel_button: ButtonWidget,
     edit_box: EditBoxWidget,
-    layout: Option<Box<dyn Layout<TwoButtonEdit>>>,
+    layout: Box<dyn Layout<TwoButtonEdit>>,
+    cached_sizes : Option<CachedSizes>,
     focus_group: FocusGroupImpl,
 }
 
@@ -96,24 +98,29 @@ impl TwoButtonEdit {
                 )),
             );
 
-        let size = XY::new(30, 8);
-
-        let mut res = TwoButtonEdit {
+        TwoButtonEdit {
             id: get_new_widget_id(),
-            layout: None,
+            layout: Box::new(layout),
+            cached_sizes : None,
             ok_button,
             cancel_button,
             edit_box,
             focus_group: FocusGroupImpl::dummy(),
-        };
+        }
+    }
 
-        // let rects = res.layout.get_rects(&res, size);
-        // let id_and_pos: Vec<(WID, Option<Rect>)> =
-        //     rects.iter().map(|f| (f.wid, Some(f.rect))).collect();
-        // let focus_group_2 = from_geometry(&id_and_pos, Some(size));
-        // res.focus_group = focus_group_2;
+    fn todo_wid_to_widget(&self, wid : WID) -> Option<&dyn Widget> {
+        if self.ok_button.id() == wid {
+            return Some(&self.ok_button)
+        }
+        if self.cancel_button.id() == wid {
+            return Some(&self.cancel_button)
+        }
+        if self.edit_box.id() == wid {
+            return Some(&self.edit_box)
+        }
 
-        res
+        None
     }
 }
 
@@ -172,15 +179,7 @@ impl Widget for TwoButtonEdit {
     fn get_focused(&self) -> &dyn Widget {
         let focused_id = self.focus_group.get_focused();
 
-        let focused_view: Option<&dyn Widget> = if focused_id == self.ok_button.id() {
-            Some(&self.ok_button)
-        } else if focused_id == self.cancel_button.id() {
-            Some(&self.cancel_button)
-        } else if focused_id == self.edit_box.id() {
-            Some(&self.edit_box)
-        } else {
-            None
-        };
+        let focused_view: Option<&dyn Widget> = self.todo_wid_to_widget(focused_id);
 
         if focused_view.is_none() {
             warn!("failed getting focused_view in two_button_edit");
@@ -208,16 +207,28 @@ impl Widget for TwoButtonEdit {
         focused_view.unwrap()
     }
 
-    fn render(&self, focused: bool, output: &mut Output) {
+    fn render(&self, focused: bool, output: &mut dyn Output) {
         let focused_op = if focused {
             Some(self.focus_group.get_focused())
         } else {
             None
         };
 
-        match &self.layout {
-            Some(layout) => layout.render(self, focused_op, output),
-            None => warn!("render with no layout for {}", self.id())
+        match &self.cached_sizes {
+            None => warn!("failed rendering two_button_edit without cached_sizes"),
+            Some(cached_sizes) => {
+               for wir in &cached_sizes.widget_sizes {
+                   match self.todo_wid_to_widget(wir.wid) {
+                       None => warn!("failed to match WID {} to sub-widget in two_button_edit {}", wir.wid, self.id()),
+                       Some(widget) => {
+                           widget.render(focused_op == Some(widget.id()),
+                            &mut SubOutput::new(Box::new(output), wir.rect));
+                       }
+                   }
+
+
+               }
+            }
         }
     }
 }

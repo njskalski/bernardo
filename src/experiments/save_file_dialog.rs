@@ -14,6 +14,7 @@ use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl};
 use crate::experiments::from_geometry::from_geometry;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
+use crate::io::sub_output::SubOutput;
 use crate::layout::cached_sizes::CachedSizes;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
@@ -27,6 +28,7 @@ use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
 use crate::widget::stupid_tree::{get_stupid_tree, StupidTree};
 use crate::widget::tree_view::TreeViewWidget;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use log::warn;
 
 pub struct SaveFileDialogWidget {
     id: WID,
@@ -93,6 +95,26 @@ impl SaveFileDialogWidget {
             cancel_button,
         }
     }
+
+    fn todo_wid_to_widget(&self, wid : WID) -> Option<&dyn Widget> {
+        if self.ok_button.id() == wid {
+            return Some(&self.ok_button)
+        }
+        if self.cancel_button.id() == wid {
+            return Some(&self.cancel_button)
+        }
+        if self.edit_box.id() == wid {
+            return Some(&self.edit_box)
+        }
+        if self.tree_widget.id() == wid {
+            return Some(&self.tree_widget)
+        }
+        if self.list_widget.id() == wid {
+            return Some(&self.list_widget)
+        }
+
+        None
+    }
 }
 
 impl Widget for SaveFileDialogWidget {
@@ -138,6 +160,21 @@ impl Widget for SaveFileDialogWidget {
             None
         };
 
-        self.layout.render(self, focused_op, output)
+        match &self.cached_sizes {
+            None => warn!("failed rendering save_file_dialog without cached_sizes"),
+            Some(cached_sizes) => {
+                for wir in cached_sizes.widget_sizes {
+                    match self.todo_wid_to_widget(wir.wid) {
+                        None => warn!("failed to match WID {} to sub-widget in save_file_dialog {}", wir.wid, self.id()),
+                        Some(widget) => {
+                            widget.render(focused_op == Some(widget.id()),
+                                          &mut SubOutput::new(Box::new(output), wir.rect));
+                        }
+                    }
+
+
+                }
+            }
+        }
     }
 }
