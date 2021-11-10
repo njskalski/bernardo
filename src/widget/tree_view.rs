@@ -155,7 +155,7 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
         self.id
     }
 
-    fn typename() -> &'static str {
+    fn typename(&self) -> &'static str {
         "TreeView"
     }
 

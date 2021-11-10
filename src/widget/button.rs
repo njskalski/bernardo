@@ -25,7 +25,7 @@ impl Widget for ButtonWidget {
         self.id
     }
 
-    fn typename() -> &'static str {
+    fn typename(&self) -> &'static str {
         "Button"
     }
 

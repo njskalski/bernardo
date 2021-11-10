@@ -77,7 +77,9 @@ fn main() {
             return match message_from_child_op {
                 None => (true, None),
                 Some(message_from_child) => {
+                    debug!("pushing {:?} to {}", message_from_child, view.typename());
                     let my_message_to_parent = view.update(message_from_child);
+                    debug!("resp {:?}", my_message_to_parent);
                     (true, my_message_to_parent)
                 }
             }
@@ -92,7 +94,9 @@ fn main() {
                 (false, None)
             }
             Some(internal_message) => {
+                debug!("pushing {:?} to {}", internal_message, view.typename());
                 let message_to_parent = view.update(internal_message);
+                debug!("resp {:?}", message_to_parent);
                 (true, message_to_parent)
             }
         }

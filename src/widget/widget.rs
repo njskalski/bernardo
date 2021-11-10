@@ -16,7 +16,7 @@ pub type WID = usize;
 pub trait Widget {
     fn id(&self) -> WID;
 
-    fn typename() -> &'static str where Self: Sized;
+    fn typename(&self) -> &'static str;
 
     // Minimal size of the view. If the output cannot satisfy it, a replacement is drawn instead,
     // and the view cannot be focused (TODO or input will be ignored, haven't decided that yet).

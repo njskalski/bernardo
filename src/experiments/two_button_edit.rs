@@ -129,7 +129,7 @@ impl Widget for TwoButtonEdit {
         self.id
     }
 
-    fn typename() -> &'static str {
+    fn typename(&self) -> &'static str {
         "TwoButtonEdit"
     }
 

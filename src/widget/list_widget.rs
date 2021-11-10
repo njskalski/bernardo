@@ -143,7 +143,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         self.id
     }
 
-    fn typename() -> &'static str {
+    fn typename(&self) -> &'static str {
         "List"
     }
 

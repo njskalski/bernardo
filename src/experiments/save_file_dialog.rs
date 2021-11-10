@@ -149,7 +149,7 @@ impl Widget for SaveFileDialogWidget {
         self.id
     }
 
-    fn typename() -> &'static str {
+    fn typename(&self) -> &'static str {
         "SaveFileDialog"
     }
 

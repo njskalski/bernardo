@@ -1,4 +1,5 @@
 use core::fmt::Alignment::Center;
+use std::default::Default;
 use std::ops::{Index, IndexMut};
 
 use log::debug;
@@ -11,7 +12,6 @@ use crate::io::output::Output;
 use crate::io::style::TextStyle;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
-use std::default::Default;
 
 pub type BufferOutput = Buffer<Cell>;
 
@@ -19,11 +19,11 @@ impl Output for BufferOutput {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
         if pos.x >= self.size().x || pos.y >= self.size().y {
             //TODO
-            debug!(
-                "early exit on drawing beyond border (req {}, border {})",
-                pos,
-                self.size()
-            );
+            // debug!(
+            //     "early exit on drawing beyond border (req {}, border {})",
+            //     pos,
+            //     self.size()
+            // );
             return;
         }
 
