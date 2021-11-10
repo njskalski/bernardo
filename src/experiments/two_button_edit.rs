@@ -129,6 +129,10 @@ impl Widget for TwoButtonEdit {
         self.id
     }
 
+    fn typename() -> &'static str {
+        "TwoButtonEdit"
+    }
+
     fn min_size(&self) -> XY {
         XY::new(32, 10)
     }

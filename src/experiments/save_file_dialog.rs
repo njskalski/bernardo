@@ -13,9 +13,12 @@ use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
 use std::ops::DerefMut;
 
-use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl};
+use log::warn;
+
+use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl, FocusUpdate};
 use crate::experiments::from_geometry::from_geometry;
 use crate::io::input_event::InputEvent;
+use crate::io::keys::Key;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::cached_sizes::CachedSizes;
@@ -31,7 +34,6 @@ use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
 use crate::widget::stupid_tree::{get_stupid_tree, StupidTree};
 use crate::widget::tree_view::TreeViewWidget;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
-use log::warn;
 
 pub struct SaveFileDialogWidget {
     id: WID,
@@ -48,7 +50,9 @@ pub struct SaveFileDialogWidget {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum SaveFileDialogMsg {}
+pub enum SaveFileDialogMsg {
+    FocusUpdate(FocusUpdate)
+}
 
 impl AnyMsg for SaveFileDialogMsg {}
 
@@ -145,6 +149,10 @@ impl Widget for SaveFileDialogWidget {
         self.id
     }
 
+    fn typename() -> &'static str {
+        "SaveFileDialog"
+    }
+
     fn min_size(&self) -> XY {
         self.layout.min_size(self)
     }
@@ -161,7 +169,21 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        None
+        return match input_event {
+            InputEvent::KeyInput(key) => match key {
+                key if key.is_arrow() => {
+                    match key.as_focus_update() {
+                        None => {
+                            warn!("failed expected cast to FocusUpdate of {}", key);
+                            None
+                        }
+                        Some(event) => Some(Box::new(SaveFileDialogMsg::FocusUpdate(event)))
+                    }
+                }
+                _ => None
+            }
+            InputEvent::Tick => None
+        }
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {

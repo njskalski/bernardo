@@ -7,14 +7,17 @@ in a separate component. When it's working the way I like it, I will then see if
 get merged with some other component.
  */
 
+use std::collections::HashMap;
+use std::convert::TryFrom;
+use std::fmt::Debug;
+use std::iter::Map;
+
+use log::debug;
+
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use crate::primitives::rect::Rect;
 use crate::widget::widget::WID;
-use log::debug;
-use std::collections::HashMap;
-use std::fmt::Debug;
-use std::iter::Map;
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum FocusUpdate {
@@ -26,7 +29,7 @@ pub enum FocusUpdate {
     Prev,
 }
 
-pub trait FocusGroup : Debug {
+pub trait FocusGroup: Debug {
     fn has_view(&self, widget_id: WID) -> bool;
 
     fn get_focused(&self) -> WID;

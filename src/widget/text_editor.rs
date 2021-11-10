@@ -46,6 +46,10 @@ impl Widget for TextEditorWidget {
         self.id
     }
 
+    fn typename() -> &'static str {
+        "TextEditor"
+    }
+
     fn min_size(&self) -> XY {
         XY::new(12, 7)
     }

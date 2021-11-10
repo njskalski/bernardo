@@ -25,6 +25,10 @@ impl Widget for ButtonWidget {
         self.id
     }
 
+    fn typename() -> &'static str {
+        "Button"
+    }
+
     fn min_size(&self) -> XY {
         // TODO: count grapheme width
         XY::new((self.text.len() + 2) as u16, 1)

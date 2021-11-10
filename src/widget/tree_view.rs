@@ -155,6 +155,10 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
         self.id
     }
 
+    fn typename() -> &'static str {
+        "TreeView"
+    }
+
     fn min_size(&self) -> XY {
         let mut from_items = self.size_from_items();
 

@@ -1,26 +1,27 @@
+use std::io::{Read, stdin, stdout, Write};
+
+use log::{debug, warn};
+use log::LevelFilter;
+use termion::{async_stdin, clear, color, cursor, style};
+use termion::raw::IntoRawMode;
+
+use crate::experiments::save_file_dialog::SaveFileDialogWidget;
 use crate::experiments::two_button_edit::{TwoButtonEdit, TwoButtonEditMsg};
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use crate::io::output::Output;
 use crate::io::termion_input::TermionInput;
 use crate::io::termion_output::TermionOutput;
-use crate::primitives::xy::XY;
-use crate::widget::widget::Widget;
-use log::LevelFilter;
-use std::io::{stdin, stdout, Read, Write};
-use termion::raw::IntoRawMode;
-use termion::{async_stdin, clear, color, cursor, style};
-
-use crate::primitives::xy;
-use crate::widget::any_msg::AnyMsg;
-use crate::widget::stupid_tree::get_stupid_tree;
-use crate::widget::tree_view::TreeViewWidget;
-use log::{debug, warn};
-use crate::experiments::save_file_dialog::SaveFileDialogWidget;
 use crate::primitives::sized_xy::SizedXY;
-use crate::widget::text_editor::TextEditorWidget;
-use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
+use crate::primitives::xy;
+use crate::primitives::xy::XY;
+use crate::widget::any_msg::AnyMsg;
 use crate::widget::list_widget::ListWidget;
+use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
+use crate::widget::stupid_tree::get_stupid_tree;
+use crate::widget::text_editor::TextEditorWidget;
+use crate::widget::tree_view::TreeViewWidget;
+use crate::widget::widget::Widget;
 
 mod experiments;
 mod io;
@@ -65,7 +66,7 @@ fn main() {
         let my_id = view.id();
         let active_child_id = view.get_focused().id();
 
-        // this is my turn
+        // first, dig as deep as possible.
         let (child_have_consumed, message_from_child_op) = if my_id != active_child_id {
             recursive_treat_views(view.get_focused_mut(), ie.clone())
         } else {
@@ -73,16 +74,16 @@ fn main() {
         };
 
         if child_have_consumed {
-            match message_from_child_op {
-                None => return (true, None),
+            return match message_from_child_op {
+                None => (true, None),
                 Some(message_from_child) => {
                     let my_message_to_parent = view.update(message_from_child);
-                    return (true, my_message_to_parent);
+                    (true, my_message_to_parent)
                 }
             }
         };
 
-        // Either child did not consume, or we're on the bottom of path.
+        // Either child did not consume (unwinding), or we're on the bottom of path.
         // We're here to consume the Input.
         match view.on_input(ie) {
             None => {

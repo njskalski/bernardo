@@ -108,6 +108,10 @@ impl Widget for EditBoxWidget {
         self.id
     }
 
+    fn typename() -> &'static str {
+        "EditBox"
+    }
+
     fn min_size(&self) -> XY {
         XY::new(12, 1)
     }

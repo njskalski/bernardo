@@ -1,8 +1,12 @@
-use crate::io::keys::Key::ArrowLeft;
+use std::fmt::{Display, Formatter};
+
 use log::debug;
 use termion::event::Key as TKey;
 
-#[derive(Debug, Clone, Copy)]
+use crate::experiments::focus_group::FocusUpdate;
+use crate::io::keys::Key::ArrowLeft;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Key {
     Letter(char),
     CtrlLetter(char),
@@ -29,6 +33,31 @@ pub enum Key {
     Null,
     Esc,
     Unhandled,
+}
+
+impl Key {
+    pub fn is_arrow(&self) -> bool {
+        return *self == Key::ArrowRight ||
+            *self == Key::ArrowLeft ||
+            *self == Key::ArrowUp ||
+            *self == Key::ArrowRight
+    }
+
+    pub fn as_focus_update(&self) -> Option<FocusUpdate> {
+        return match self {
+            Key::ArrowUp => Some(FocusUpdate::Up),
+            Key::ArrowDown => Some(FocusUpdate::Down),
+            Key::ArrowLeft => Some(FocusUpdate::Left),
+            Key::ArrowRight => Some(FocusUpdate::Right),
+            _ => None
+        }
+    }
+}
+
+impl Display for Key {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl From<TKey> for Key {

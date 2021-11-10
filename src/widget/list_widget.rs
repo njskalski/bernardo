@@ -143,6 +143,10 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         self.id
     }
 
+    fn typename() -> &'static str {
+        "List"
+    }
+
     fn min_size(&self) -> XY {
         // completely arbitrary
 
