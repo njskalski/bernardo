@@ -38,7 +38,6 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget};
 pub struct SaveFileDialogWidget {
     id: WID,
 
-    layout: Box<dyn Layout<Self>>,
     display_state: Option<DisplayState>,
 
     tree_widget: TreeViewWidget<usize>,
@@ -58,30 +57,6 @@ impl AnyMsg for SaveFileDialogMsg {}
 
 impl SaveFileDialogWidget {
     pub fn new() -> Self {
-        let layout = Box::new(
-            SplitLayout::new(SplitDirection::Vertical)
-                .with(SplitRule::Proportional(1.0),
-                      Box::new(LeafLayout::<SaveFileDialogWidget>::new(
-                          Box::new(|s| &s.tree_widget),
-                          Box::new(|s| &mut s.tree_widget),
-                      )),
-                )
-                .with(SplitRule::Proportional(4.0),
-                      Box::new(SplitLayout::new(SplitDirection::Vertical)
-                          .with(SplitRule::Proportional(1.0),
-                                Box::new(LeafLayout::<SaveFileDialogWidget>::new(
-                                    Box::new(|s| &s.list_widget),
-                                    Box::new(|s| &mut s.list_widget),
-                                )))
-                          .with(SplitRule::Fixed(1),
-                                Box::new(LeafLayout::<SaveFileDialogWidget>::new(
-                                    Box::new(|s| &s.list_widget),
-                                    Box::new(|s| &mut s.list_widget),
-                                )))
-                      ),
-                )
-        );
-
         let file_list = get_mock_file_list();
         let tree = get_stupid_tree();
         let tree_widget = TreeViewWidget::<usize>::new(Box::new(tree));
@@ -93,7 +68,6 @@ impl SaveFileDialogWidget {
 
         SaveFileDialogWidget {
             id: get_new_widget_id(),
-            layout,
             display_state: None,
             tree_widget,
             list_widget,
@@ -146,6 +120,21 @@ impl SaveFileDialogWidget {
 
         self
     }
+
+    fn todo_internal_layout<'a>(&'a self) -> SplitLayout<'a> {
+        SplitLayout::new(SplitDirection::Vertical)
+            .with(SplitRule::Proportional(1.0),
+                  Box::new(LeafLayout::new(&self.tree_widget)))
+            .with(SplitRule::Proportional(4.0),
+                  Box::new(SplitLayout::new(SplitDirection::Vertical)
+                               .with(SplitRule::Proportional(1.0),
+                                     Box::new(LeafLayout::new(&self.list_widget)))
+                               .with(SplitRule::Fixed(1),
+                                     Box::new(LeafLayout::new(&self.edit_box)),
+                               ),
+                  ),
+            )
+    }
 }
 
 impl Widget for SaveFileDialogWidget {
@@ -158,7 +147,7 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn min_size(&self) -> XY {
-        self.layout.min_size(self)
+        XY::new(4, 4)
     }
 
     fn layout(&mut self, max_size: XY) -> XY {
@@ -166,8 +155,10 @@ impl Widget for SaveFileDialogWidget {
             return max_size
         }
 
-        let res_sizes = self.layout.calc_sizes(self, max_size);
-        self.display_state = Some(DisplayState::new(max_size, res_sizes));
+        let res_sizes = self.todo_internal_layout().calc_sizes(max_size);
+
+        // let res_sizes = self.layout.calc_sizes(self, max_size);
+        self.display_state = Some(DisplayState::new2(max_size, res_sizes));
 
         max_size
     }

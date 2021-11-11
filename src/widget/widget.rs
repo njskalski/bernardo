@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::io::input_event::InputEvent;
@@ -40,6 +40,12 @@ pub trait Widget {
     fn get_focused_mut(&mut self) -> &mut dyn Widget;
 
     fn render(&self, focused: bool, output: &mut Output);
+}
+
+impl Debug for dyn Widget {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "W{}:{}", self.typename(), self.id())
+    }
 }
 
 pub fn get_new_widget_id() -> WID {

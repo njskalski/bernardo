@@ -4,44 +4,39 @@ use log::warn;
 
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::output::Output;
-use crate::layout::layout::{Layout, WidgetGetter, WidgetGetterMut, WidgetIdRect};
+use crate::layout::layout::{Layout, WidgetGetter, WidgetGetterMut, WidgetIdRect, WidgetRect};
 use crate::primitives::rect::Rect;
-use crate::primitives::xy::{XY, Zero};
+use crate::primitives::xy::{XY, ZERO};
 use crate::widget::widget::{WID, Widget};
 
-/*
-This is the leaf of Layout tree. It corresponds to a single widget.
- */
-
-pub struct LeafLayout<W: Widget> {
-    wg: WidgetGetter<W>,
-    wgmut: WidgetGetterMut<W>,
+pub struct LeafLayout<'a> {
+    widget: &'a dyn Widget,
 }
 
-impl<W: Widget> LeafLayout<W> {
-    pub fn new(wg: WidgetGetter<W>, wgmut: WidgetGetterMut<W>) -> Self {
-        LeafLayout { wg, wgmut }
+impl<'a> LeafLayout<'a> {
+    pub fn new(widget: &'a dyn Widget) -> Self {
+        LeafLayout { widget }
     }
 }
 
-impl<W: Widget> Layout<W> for LeafLayout<W> {
+impl<'a> Layout<'a> for LeafLayout<'a> {
     fn is_leaf(&self) -> bool {
         true
     }
 
-    fn min_size(&self, owner: &W) -> XY {
-        let widget: &dyn Widget = (self.wg)(owner);
-        widget.min_size()
+    fn min_size(&self) -> XY {
+        self.widget.min_size()
     }
 
-    fn calc_sizes(&self, owner: &mut W, output_size: XY) -> Vec<WidgetIdRect> {
-        let widget: &mut dyn Widget = (self.wgmut)(owner);
-        let size = widget.layout(output_size);
+    fn calc_sizes(&mut self, output_size: XY) -> Vec<WidgetRect> {
+        let widget = self.widget.clone();
 
+        let size = self.widget.layout(output_size);
+        let rect = Rect::new(ZERO, size);
 
-        vec![WidgetIdRect {
-            wid: widget.id(),
-            rect: Rect::new(XY::new(0, 0), size),
-        }]
+        vec![WidgetRect::new(
+            widget,
+            rect,
+        )]
     }
 }

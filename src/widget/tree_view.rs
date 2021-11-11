@@ -12,7 +12,7 @@ use crate::io::keys::Key;
 use crate::io::output::Output;
 use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBrightYellow};
 use crate::primitives::arrow::Arrow;
-use crate::primitives::xy::{XY, Zero};
+use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::edit_box::EditBoxWidget;
 use crate::widget::tree_view_node::TreeViewNode;
@@ -103,7 +103,7 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
     }
 
     fn size_from_items(&self) -> XY {
-        self.items().fold(Zero, |old_size, item| {
+        self.items().fold(ZERO, |old_size, item| {
             XY::new(
                 // depth * 2 + 1 + label_length
                 old_size
