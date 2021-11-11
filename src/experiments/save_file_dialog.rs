@@ -201,13 +201,19 @@ impl Widget for SaveFileDialogWidget {
             return None;
         }
 
-        // match our_msg.unwrap() {
-        //     // SaveFileDialogMsg::FocusUpdateMsg(focus_update) => {
-        //     //     let cs = self.cached_sizes.borrow_mut();
-        //     //     let x = cs.unwrap();
-        //     // }
-        // }
-        None
+        return match our_msg.unwrap() {
+            SaveFileDialogMsg::FocusUpdateMsg(focus_update) => {
+                let fc = *focus_update;
+                let mut ds: &mut DisplayState = self.display_state.as_mut().unwrap();
+                let fg = &mut ds.focus_group;
+                let msg = fg.update_focus(fc);
+                None
+            }
+            unknown_msg => {
+                warn!("SaveFileDialog.update : unknown message {:?}", unknown_msg);
+                None
+            }
+        };
     }
 
     fn get_focused(&self) -> &dyn Widget {
