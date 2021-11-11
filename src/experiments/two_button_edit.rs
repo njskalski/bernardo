@@ -24,7 +24,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
-use crate::layout::cached_sizes::CachedSizes;
+use crate::layout::cached_sizes::DisplayState;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
@@ -52,7 +52,7 @@ pub struct TwoButtonEdit {
     cancel_button: ButtonWidget,
     edit_box: EditBoxWidget,
     layout: Box<dyn Layout<TwoButtonEdit>>,
-    cached_sizes : Option<CachedSizes>,
+    cached_sizes: Option<DisplayState>,
     focus_group: FocusGroupImpl,
 }
 
@@ -137,7 +137,7 @@ impl Widget for TwoButtonEdit {
         XY::new(32, 10)
     }
 
-    fn layout(&self, max_size: XY) -> XY {
+    fn layout(&mut self, max_size: XY) -> XY {
         self.min_size()
     }
 
@@ -158,7 +158,7 @@ impl Widget for TwoButtonEdit {
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         let our_msg = msg.as_msg::<TwoButtonEditMsg>();
         if our_msg.is_none() {
-            warn!("expecetd TBEMsg, got {:?}", msg);
+            warn!("expecetd TwoButtonEditMsg, got {:?}", msg);
             return None;
         }
 

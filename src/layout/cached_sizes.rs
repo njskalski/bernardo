@@ -8,16 +8,16 @@ use crate::widget::widget::Widget;
 // I'll consider that in a next step.
 
 #[derive(Debug)]
-pub struct CachedSizes {
+pub struct DisplayState {
     pub for_size : XY,
     pub widget_sizes : Vec<WidgetIdRect>,
     pub focus_group : Box<dyn FocusGroup>
 }
 
-impl CachedSizes {
+impl DisplayState {
     pub fn new(for_size : XY, widget_sizes : Vec<WidgetIdRect>) -> Self {
         let focus_group = from_wirs(&widget_sizes, Some(for_size));
-        CachedSizes {
+        DisplayState {
             for_size,
             widget_sizes,
             focus_group: Box::new(focus_group),

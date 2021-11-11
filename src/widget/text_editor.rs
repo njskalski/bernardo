@@ -54,7 +54,7 @@ impl Widget for TextEditorWidget {
         XY::new(12, 7)
     }
 
-    fn layout(&self, max_size: XY) -> XY {
+    fn layout(&mut self, max_size: XY) -> XY {
         self.min_size()
     }
 

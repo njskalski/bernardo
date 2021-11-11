@@ -32,7 +32,6 @@ struct SplitLayoutChild<W: Widget> {
 
 pub struct SplitLayout<W: Widget> {
     children: Vec<SplitLayoutChild<W>>,
-    focused: usize,
     split_direction: SplitDirection,
 }
 
@@ -40,7 +39,6 @@ impl<W: Widget> SplitLayout<W> {
     pub fn new(split_direction: SplitDirection) -> Self {
         SplitLayout {
             children: vec![],
-            focused: 0,
             split_direction,
         }
     }
@@ -179,7 +177,7 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
         minxy
     }
 
-    fn calc_sizes(&self, owner: &W, output_size: XY) -> Vec<WidgetIdRect> {
+    fn calc_sizes(&self, owner: &mut W, output_size: XY) -> Vec<WidgetIdRect> {
         let rects_op = self.get_just_rects(output_size);
         if rects_op.is_none() {
             warn!(

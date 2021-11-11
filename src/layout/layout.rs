@@ -27,7 +27,7 @@ pub trait Layout<W: Widget> {
     This only calculates the rects under current constraints. The widgets themselves should
     receive information about their new sizes before render.
      */
-    fn calc_sizes(&self, owner: &W, output_size: XY) -> Vec<WidgetIdRect>;
+    fn calc_sizes(&self, owner: &mut W, output_size: XY) -> Vec<WidgetIdRect>;
 
 
     // fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output);

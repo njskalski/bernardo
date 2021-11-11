@@ -11,7 +11,7 @@ I hope I will discover most of functional constraints while implementing it.
 use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
 
 use log::warn;
 
@@ -21,7 +21,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
-use crate::layout::cached_sizes::CachedSizes;
+use crate::layout::cached_sizes::DisplayState;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
@@ -38,8 +38,8 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget};
 pub struct SaveFileDialogWidget {
     id: WID,
 
-    layout : Box<dyn Layout<Self>>,
-    cached_sizes: RefCell<Option<CachedSizes>>,
+    layout: Box<dyn Layout<Self>>,
+    display_state: Option<DisplayState>,
 
     tree_widget: TreeViewWidget<usize>,
     list_widget: ListWidget<MockFile>,
@@ -51,7 +51,7 @@ pub struct SaveFileDialogWidget {
 
 #[derive(Clone, Copy, Debug)]
 pub enum SaveFileDialogMsg {
-    FocusUpdate(FocusUpdate)
+    FocusUpdateMsg(FocusUpdate)
 }
 
 impl AnyMsg for SaveFileDialogMsg {}
@@ -94,7 +94,7 @@ impl SaveFileDialogWidget {
         SaveFileDialogWidget {
             id: get_new_widget_id(),
             layout,
-            cached_sizes : RefCell::new(None),
+            display_state: None,
             tree_widget,
             list_widget,
             edit_box,
@@ -103,44 +103,48 @@ impl SaveFileDialogWidget {
         }
     }
 
-    fn todo_wid_to_widget(&self, wid : WID) -> Option<&dyn Widget> {
+    fn todo_wid_to_widget_or_self(&self, wid: WID) -> &dyn Widget {
         if self.ok_button.id() == wid {
-            return Some(&self.ok_button)
+            return &self.ok_button
         }
         if self.cancel_button.id() == wid {
-            return Some(&self.cancel_button)
+            return &self.cancel_button
         }
         if self.edit_box.id() == wid {
-            return Some(&self.edit_box)
+            return &self.edit_box
         }
         if self.tree_widget.id() == wid {
-            return Some(&self.tree_widget)
+            return &self.tree_widget
         }
         if self.list_widget.id() == wid {
-            return Some(&self.list_widget)
+            return &self.list_widget
         }
 
-        None
+        warn!("todo_wid_to_widget_or_self on {} failed - widget {} not found. Returning self.", wid, self.id());
+
+        self
     }
 
-    fn todo_wid_to_widget_mut(&mut self, wid : WID) -> Option<&mut dyn Widget> {
+    fn todo_wid_to_widget_or_self_mut(&mut self, wid: WID) -> &mut dyn Widget {
         if self.ok_button.id() == wid {
-            return Some(&mut self.ok_button)
+            return &mut self.ok_button
         }
         if self.cancel_button.id() == wid {
-            return Some(&mut self.cancel_button)
+            return &mut self.cancel_button
         }
         if self.edit_box.id() == wid {
-            return Some(&mut self.edit_box)
+            return &mut self.edit_box
         }
         if self.tree_widget.id() == wid {
-            return Some(&mut self.tree_widget)
+            return &mut self.tree_widget
         }
         if self.list_widget.id() == wid {
-            return Some(&mut self.list_widget)
+            return &mut self.list_widget
         }
 
-        None
+        warn!("todo_wid_to_widget_mut_or_self on {} failed - widget {} not found. Returning self.", wid, self.id());
+
+        self
     }
 }
 
@@ -157,13 +161,13 @@ impl Widget for SaveFileDialogWidget {
         self.layout.min_size(self)
     }
 
-    fn layout(&self, max_size: XY) -> XY {
-        if self.cached_sizes.borrow().as_ref().map(|x| x.for_size == max_size) == Some(true) {
+    fn layout(&mut self, max_size: XY) -> XY {
+        if self.display_state.as_ref().map(|x| x.for_size == max_size) == Some(true) {
             return max_size
         }
 
         let res_sizes = self.layout.calc_sizes(self, max_size);
-        self.cached_sizes.swap(&RefCell::new(Some(CachedSizes::new(max_size, res_sizes))));
+        self.display_state = Some(DisplayState::new(max_size, res_sizes));
 
         max_size
     }
@@ -177,7 +181,7 @@ impl Widget for SaveFileDialogWidget {
                             warn!("failed expected cast to FocusUpdate of {}", key);
                             None
                         }
-                        Some(event) => Some(Box::new(SaveFileDialogMsg::FocusUpdate(event)))
+                        Some(event) => Some(Box::new(SaveFileDialogMsg::FocusUpdateMsg(event)))
                     }
                 }
                 _ => None
@@ -187,22 +191,26 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        todo!()
+        let our_msg = msg.as_msg::<SaveFileDialogMsg>();
+        if our_msg.is_none() {
+            warn!("expecetd SaveFileDialogMsg, got {:?}", msg);
+            return None;
+        }
+
+        // match our_msg.unwrap() {
+        //     // SaveFileDialogMsg::FocusUpdateMsg(focus_update) => {
+        //     //     let cs = self.cached_sizes.borrow_mut();
+        //     //     let x = cs.unwrap();
+        //     // }
+        // }
+        None
     }
 
     fn get_focused(&self) -> &dyn Widget {
-        return match self.cached_sizes.borrow().as_ref() {
+        return match self.display_state.borrow().as_ref() {
             Some(cached_sizes) => {
                 let focused_wid = cached_sizes.focus_group.get_focused();
-                let widget = self.todo_wid_to_widget(focused_wid);
-
-                match widget {
-                    Some(w) => w,
-                    None => {
-                        warn!("get_focused on {} failed - widget {} not found. Returning self.", focused_wid, self.id());
-                        self
-                    }
-                }
+                self.todo_wid_to_widget_or_self(focused_wid)
             }
             None => {
                 warn!("get_focused on {} failed - no cached_sizes. Returning self.", self.id());
@@ -212,7 +220,7 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn get_focused_mut(&mut self) -> &mut dyn Widget {
-        let wid_op : Option<WID> = match self.cached_sizes.borrow_mut().as_ref() {
+        let wid_op: Option<WID> = match &self.display_state {
             Some(cached_sizes) => {
                 Some(cached_sizes.focus_group.get_focused())
             }
@@ -224,7 +232,7 @@ impl Widget for SaveFileDialogWidget {
 
         return match wid_op {
             None => self,
-            Some(wid) => self.todo_wid_to_widget_mut(wid).unwrap() // TODO problem
+            Some(wid) => self.todo_wid_to_widget_or_self_mut(wid)
         }
     }
 
@@ -235,17 +243,18 @@ impl Widget for SaveFileDialogWidget {
             None
         };
 
-        match self.cached_sizes.borrow().as_ref() {
+        match self.display_state.borrow().as_ref() {
             None => warn!("failed rendering save_file_dialog without cached_sizes"),
             Some(cached_sizes) => {
                 for wir in &cached_sizes.widget_sizes {
-                    match self.todo_wid_to_widget(wir.wid) {
-                        None => warn!("failed to match WID {} to sub-widget in save_file_dialog {}", wir.wid, self.id()),
-                        Some(widget) => {
-                            widget.render(focused_op == Some(widget.id()),
-                                          &mut SubOutput::new(Box::new(output), wir.rect));
-                        }
+                    let widget = self.todo_wid_to_widget_or_self(wir.wid);
+
+                    if widget.id() == self.id() {
+                        warn!("render: failed to match WID {} to sub-widget in save_file_dialog {}", wir.wid, self.id());
+                        continue;
                     }
+
+                    widget.render(focused_op == Some(widget.id()), &mut SubOutput::new(Box::new(output), wir.rect));
                 }
             }
         }

@@ -34,7 +34,7 @@ impl Widget for ButtonWidget {
         XY::new((self.text.len() + 2) as u16, 1)
     }
 
-    fn layout(&self, max_size: XY) -> XY {
+    fn layout(&mut self, max_size: XY) -> XY {
         self.min_size()
     }
 
