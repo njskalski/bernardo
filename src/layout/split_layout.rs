@@ -26,7 +26,7 @@ pub enum SplitRule {
 }
 
 struct SplitLayoutChild<'a> {
-    layout: Box<dyn Layout<'a>>,
+    layout: &'a dyn Layout<'a>,
     split_rule: SplitRule,
 }
 
@@ -43,7 +43,7 @@ impl<'a> SplitLayout<'a> {
         }
     }
 
-    pub fn with(self, split_rule: SplitRule, child: Box<dyn Layout<'a>>) -> Self {
+    pub fn with(self, split_rule: SplitRule, child: &'a dyn Layout<'a>) -> Self {
         let mut children = self.children;
         let child = SplitLayoutChild {
             layout: child,

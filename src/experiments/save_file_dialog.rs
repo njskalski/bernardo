@@ -22,7 +22,7 @@ use crate::io::keys::Key;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::cached_sizes::DisplayState;
-use crate::layout::layout::{Layout, WidgetIdRect};
+use crate::layout::layout::{Layout, WidgetIdRect, WidgetRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::xy::XY;
@@ -121,19 +121,32 @@ impl SaveFileDialogWidget {
         self
     }
 
-    fn todo_internal_layout<'a>(&'a self) -> SplitLayout<'a> {
-        SplitLayout::new(SplitDirection::Vertical)
+    fn todo_internal_layout(&self, max_size: XY) -> Vec<WidgetIdRect> {
+        let tree_widget = &self.tree_widget;
+        let list_widget = &self.list_widget;
+        let edit_box = &self.edit_box;
+
+        let left_column = LeafLayout::new(tree_widget);
+
+        let list = LeafLayout::new(list_widget);
+        let edit = LeafLayout::new(edit_box);
+        let right_column = SplitLayout::new(SplitDirection::Vertical)
             .with(SplitRule::Proportional(1.0),
-                  Box::new(LeafLayout::new(&self.tree_widget)))
+                  &list)
+            .with(SplitRule::Fixed(1),
+                  &edit,
+            );
+
+        let mut layout = SplitLayout::new(SplitDirection::Vertical)
+            .with(SplitRule::Proportional(1.0),
+                  &left_column)
             .with(SplitRule::Proportional(4.0),
-                  Box::new(SplitLayout::new(SplitDirection::Vertical)
-                               .with(SplitRule::Proportional(1.0),
-                                     Box::new(LeafLayout::new(&self.list_widget)))
-                               .with(SplitRule::Fixed(1),
-                                     Box::new(LeafLayout::new(&self.edit_box)),
-                               ),
-                  ),
-            )
+                  &right_column,
+            );
+
+        let res = layout.calc_sizes(max_size);
+
+        res.iter().map(|f| f.flatten()).collect()
     }
 }
 
@@ -155,10 +168,10 @@ impl Widget for SaveFileDialogWidget {
             return max_size
         }
 
-        let res_sizes = self.todo_internal_layout().calc_sizes(max_size);
+        let res_sizes = self.todo_internal_layout(max_size);
 
         // let res_sizes = self.layout.calc_sizes(self, max_size);
-        self.display_state = Some(DisplayState::new2(max_size, res_sizes));
+        self.display_state = Some(DisplayState::new(max_size, res_sizes));
 
         max_size
     }

@@ -23,6 +23,15 @@ pub struct WidgetRect<'a> {
 }
 
 impl<'a> WidgetRect<'a> {
+    pub fn flatten(&self) -> WidgetIdRect {
+        WidgetIdRect {
+            wid: self.widget.id(),
+            rect: self.rect,
+        }
+    }
+}
+
+impl<'a> WidgetRect<'a> {
     pub fn new(widget: &'a dyn Widget, rect: Rect) -> Self {
         WidgetRect { widget, rect }
     }
