@@ -40,7 +40,7 @@ impl Key {
         return *self == Key::ArrowRight ||
             *self == Key::ArrowLeft ||
             *self == Key::ArrowUp ||
-            *self == Key::ArrowRight
+            *self == Key::ArrowDown
     }
 
     pub fn as_focus_update(&self) -> Option<FocusUpdate> {

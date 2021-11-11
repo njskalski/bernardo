@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::io::{Read, stdin, stdout, Write};
 
 use log::{debug, warn};
@@ -59,12 +60,16 @@ fn main() {
 
     let mut main_view = SaveFileDialogWidget::new();
 
+    // returns (consumed, message_to_parent)
     fn recursive_treat_views(
         view: &mut dyn Widget,
         ie: InputEvent,
     ) -> (bool, Option<Box<dyn AnyMsg>>) {
         let my_id = view.id();
         let active_child_id = view.get_focused().id();
+
+
+        debug!("recursive_treat_views my_id {} aci {}", my_id, active_child_id);
 
         // first, dig as deep as possible.
         let (child_have_consumed, message_from_child_op) = if my_id != active_child_id {
@@ -74,29 +79,34 @@ fn main() {
         };
 
         if child_have_consumed {
+            debug!("child {} consumed", active_child_id);
+
             return match message_from_child_op {
                 None => (true, None),
                 Some(message_from_child) => {
-                    debug!("pushing {:?} to {}", message_from_child, view.typename());
+                    debug!("cs pushing {:?} to {}", message_from_child, view.typename());
                     let my_message_to_parent = view.update(message_from_child);
-                    debug!("resp {:?}", my_message_to_parent);
+                    debug!("cs resp {:?}", my_message_to_parent);
                     (true, my_message_to_parent)
                 }
             }
         };
 
+        debug!("child {} did not consume", active_child_id);
+
         // Either child did not consume (unwinding), or we're on the bottom of path.
         // We're here to consume the Input.
         match view.on_input(ie) {
             None => {
+                debug!("{} did not consume either.", my_id);
                 // we did not see this input as useful, unfolding the recursion:
                 // no consume, no message.
                 (false, None)
             }
             Some(internal_message) => {
-                debug!("pushing {:?} to {}", internal_message, view.typename());
+                debug!("uw pushing {:?} to {}", internal_message, view.typename());
                 let message_to_parent = view.update(internal_message);
-                debug!("resp {:?}", message_to_parent);
+                debug!("uw resp {:?}", message_to_parent);
                 (message_to_parent.is_some(), message_to_parent)
             }
         }

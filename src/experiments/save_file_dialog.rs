@@ -13,7 +13,7 @@ use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
 use std::ops::{Deref, DerefMut};
 
-use log::warn;
+use log::{debug, warn};
 
 use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl, FocusUpdate};
 use crate::experiments::from_geometry::from_geometry;
@@ -177,24 +177,36 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        debug!("save_file_dialog.on_input {:?}", input_event);
+
         return match input_event {
             InputEvent::KeyInput(key) => match key {
                 key if key.is_arrow() => {
+                    debug!("arrow {:?}", key);
                     match key.as_focus_update() {
                         None => {
                             warn!("failed expected cast to FocusUpdate of {}", key);
                             None
                         }
-                        Some(event) => Some(Box::new(SaveFileDialogMsg::FocusUpdateMsg(event)))
+                        Some(event) => {
+                            let msg = SaveFileDialogMsg::FocusUpdateMsg(event);
+                            debug!("sending {:?}", msg);
+                            Some(Box::new(msg))
+                        }
                     }
                 }
-                _ => None
+                unknown_key => {
+                    debug!("unknown_key {}", unknown_key);
+                    None
+                }
             }
             InputEvent::Tick => None
         }
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+        debug!("save_file_dialog.update {:?}", msg);
+
         let our_msg = msg.as_msg::<SaveFileDialogMsg>();
         if our_msg.is_none() {
             warn!("expecetd SaveFileDialogMsg, got {:?}", msg);
@@ -203,10 +215,12 @@ impl Widget for SaveFileDialogWidget {
 
         return match our_msg.unwrap() {
             SaveFileDialogMsg::FocusUpdateMsg(focus_update) => {
+                warn!("updating focus");
                 let fc = *focus_update;
                 let mut ds: &mut DisplayState = self.display_state.as_mut().unwrap();
                 let fg = &mut ds.focus_group;
                 let msg = fg.update_focus(fc);
+                warn!("focus updated {}", msg);
                 None
             }
             unknown_msg => {

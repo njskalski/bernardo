@@ -4,7 +4,7 @@ use std::fmt::{Debug, Formatter, Pointer};
 use std::hash::Hash;
 use std::ptr::write_bytes;
 
-use log::warn;
+use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::input_event::InputEvent;
@@ -17,16 +17,6 @@ use crate::widget::any_msg::AnyMsg;
 use crate::widget::edit_box::EditBoxWidget;
 use crate::widget::tree_view_node::TreeViewNode;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
-
-// fn tree_it_2<'a, Key: Hash + Eq + Debug + Clone>(
-//     root: &'a dyn TreeViewNode<Key>,
-//     expanded: &'a HashSet<Key>,
-// ) -> Vec<(u16, &'a dyn TreeViewNode<Key>)> {
-//     let is_expanded = move |key : &Key| {expanded.contains(key)};
-//
-//     let x : Vec<_> = tree_it_rec(root, &is_expanded, 0).collect();
-//     x.clone()
-// }
 
 fn tree_it<'a, Key: Hash + Eq + Debug + Clone>(
     root: &'a dyn TreeViewNode<Key>,
@@ -177,12 +167,18 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        debug!("tree_view.on_input {:?}", input_event);
+
         match input_event {
             InputEvent::KeyInput(key) => {
                 match key {
                     Key::Letter('a') => Some(Box::new(TreeViewMsg::FlipExpansion)),
                     Key::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
-                    Key::ArrowDown => Some(Box::new(TreeViewMsg::Arrow(Arrow::Down))),
+                    Key::ArrowDown => {
+                        if self.highlighted < self.items_num - 1 {
+                            Some(Box::new(TreeViewMsg::Arrow(Arrow::Down)))
+                        } else { None }
+                    },
                     Key::ArrowLeft => Some(Box::new(TreeViewMsg::Arrow(Arrow::Left))),
                     Key::ArrowRight => Some(Box::new(TreeViewMsg::Arrow(Arrow::Right))),
                     Key::Enter => Some(Box::new(TreeViewMsg::FlipExpansion)),
