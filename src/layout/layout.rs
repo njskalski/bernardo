@@ -16,28 +16,7 @@ pub struct WidgetIdRect {
     pub rect: Rect,
 }
 
-#[derive(Clone, Copy)]
-pub struct WidgetRect<'a> {
-    pub widget: &'a dyn Widget,
-    pub rect: Rect,
-}
-
-impl<'a> WidgetRect<'a> {
-    pub fn flatten(&self) -> WidgetIdRect {
-        WidgetIdRect {
-            wid: self.widget.id(),
-            rect: self.rect,
-        }
-    }
-}
-
-impl<'a> WidgetRect<'a> {
-    pub fn new(widget: &'a dyn Widget, rect: Rect) -> Self {
-        WidgetRect { widget, rect }
-    }
-}
-
-pub trait Layout<'a> {
+pub trait Layout {
     fn is_leaf(&self) -> bool {
         false
     }
@@ -48,7 +27,7 @@ pub trait Layout<'a> {
     This only calculates the rects under current constraints. The widgets themselves should
     receive information about their new sizes before render.
      */
-    fn calc_sizes(&'a mut self, output_size: XY) -> Vec<WidgetRect<'a>>;
+    fn calc_sizes(&mut self, output_size: XY) -> Vec<WidgetIdRect>;
 
 
     // fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output);

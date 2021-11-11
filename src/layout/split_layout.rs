@@ -8,7 +8,7 @@ use log::warn;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
-use crate::layout::layout::{Layout, WidgetGetterMut, WidgetIdRect, WidgetRect};
+use crate::layout::layout::{Layout, WidgetGetterMut, WidgetIdRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::{WID, Widget};
@@ -26,7 +26,7 @@ pub enum SplitRule {
 }
 
 struct SplitLayoutChild<'a> {
-    layout: &'a dyn Layout<'a>,
+    layout: &'a mut dyn Layout,
     split_rule: SplitRule,
 }
 
@@ -43,7 +43,7 @@ impl<'a> SplitLayout<'a> {
         }
     }
 
-    pub fn with(self, split_rule: SplitRule, child: &'a dyn Layout<'a>) -> Self {
+    pub fn with(self, split_rule: SplitRule, child: &'a mut dyn Layout) -> Self {
         let mut children = self.children;
         let child = SplitLayoutChild {
             layout: child,
@@ -125,7 +125,7 @@ impl<'a> SplitLayout<'a> {
     }
 }
 
-impl<'a> Layout<'a> for SplitLayout<'a> {
+impl<'a> Layout for SplitLayout<'a> {
     fn min_size(&self) -> XY {
         let mut minxy = XY::new(0, 0);
 
@@ -177,7 +177,7 @@ impl<'a> Layout<'a> for SplitLayout<'a> {
         minxy
     }
 
-    fn calc_sizes(&mut self, output_size: XY) -> Vec<WidgetRect> {
+    fn calc_sizes(&mut self, output_size: XY) -> Vec<WidgetIdRect> {
         let rects_op = self.get_just_rects(output_size);
         if rects_op.is_none() {
             warn!(
@@ -188,7 +188,7 @@ impl<'a> Layout<'a> for SplitLayout<'a> {
         };
 
         let rects = rects_op.unwrap();
-        let mut res: Vec<WidgetRect> = vec![];
+        let mut res: Vec<WidgetIdRect> = vec![];
         for (idx, child_layout) in self.children.iter_mut().enumerate() {
             let rect = &rects[idx];
             let wirs = child_layout.layout.calc_sizes(rects[idx].size);
@@ -196,12 +196,13 @@ impl<'a> Layout<'a> for SplitLayout<'a> {
             //TODO add intersection checks
 
             for wir in wirs.iter() {
+                let wid = wir.wid;
                 let new_rect = wir.rect.shifted(rect.pos);
 
-                res.push(WidgetRect::new(
-                    wir.widget,
-                    new_rect,
-                ));
+                res.push(WidgetIdRect {
+                    wid,
+                    rect: new_rect,
+                });
             }
         }
 

@@ -22,7 +22,7 @@ use crate::io::keys::Key;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::cached_sizes::DisplayState;
-use crate::layout::layout::{Layout, WidgetIdRect, WidgetRect};
+use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::xy::XY;
@@ -121,32 +121,32 @@ impl SaveFileDialogWidget {
         self
     }
 
-    fn todo_internal_layout(&self, max_size: XY) -> Vec<WidgetIdRect> {
-        let tree_widget = &self.tree_widget;
-        let list_widget = &self.list_widget;
-        let edit_box = &self.edit_box;
+    fn todo_internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {
+        let tree_widget = &mut self.tree_widget;
+        let list_widget = &mut self.list_widget;
+        let edit_box = &mut self.edit_box;
 
-        let left_column = LeafLayout::new(tree_widget);
+        let mut left_column = LeafLayout::new(tree_widget);
 
-        let list = LeafLayout::new(list_widget);
-        let edit = LeafLayout::new(edit_box);
-        let right_column = SplitLayout::new(SplitDirection::Vertical)
+        let mut list = LeafLayout::new(list_widget);
+        let mut edit = LeafLayout::new(edit_box);
+        let mut right_column = SplitLayout::new(SplitDirection::Vertical)
             .with(SplitRule::Proportional(1.0),
-                  &list)
+                  &mut list)
             .with(SplitRule::Fixed(1),
-                  &edit,
+                  &mut edit,
             );
 
         let mut layout = SplitLayout::new(SplitDirection::Vertical)
             .with(SplitRule::Proportional(1.0),
-                  &left_column)
+                  &mut left_column)
             .with(SplitRule::Proportional(4.0),
-                  &right_column,
+                  &mut right_column,
             );
 
         let res = layout.calc_sizes(max_size);
 
-        res.iter().map(|f| f.flatten()).collect()
+        res
     }
 }
 
