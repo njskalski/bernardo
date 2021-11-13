@@ -137,7 +137,7 @@ impl SaveFileDialogWidget {
                   &mut edit,
             );
 
-        let mut layout = SplitLayout::new(SplitDirection::Vertical)
+        let mut layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0),
                   &mut left_column)
             .with(SplitRule::Proportional(4.0),

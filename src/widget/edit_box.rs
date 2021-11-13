@@ -15,10 +15,17 @@ use crate::io::style::{
     TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow,
     TextStyle_WhiteOnRedish, TextStyle_WhiteOnYellow,
 };
+use crate::primitives::xy;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::edit_box::EditBoxWidgetMsg::Letter;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+
+const MIN_WIDTH: u16 = 12;
+
+struct EditBoxDisplayState {
+    width: u16,
+}
 
 pub struct EditBoxWidget {
     id: WID,
@@ -30,6 +37,9 @@ pub struct EditBoxWidget {
     on_miss: Option<WidgetAction<EditBoxWidget>>,
     text: String,
     cursor: usize,
+
+    //display state
+    display_state: EditBoxDisplayState,
 }
 
 impl EditBoxWidget {
@@ -42,6 +52,9 @@ impl EditBoxWidget {
             on_hit: None,
             on_change: None,
             on_miss: None,
+            display_state: EditBoxDisplayState {
+                width: MIN_WIDTH
+            },
         }
     }
 
@@ -113,11 +126,13 @@ impl Widget for EditBoxWidget {
     }
 
     fn min_size(&self) -> XY {
-        XY::new(12, 1)
+        XY::new(MIN_WIDTH, 1)
     }
 
     fn layout(&mut self, max_size: XY) -> XY {
-        self.min_size()
+        debug_assert!(max_size.x >= MIN_WIDTH);
+
+        XY::new(max_size.x, 1)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -268,6 +283,20 @@ impl Widget for EditBoxWidget {
                 primary_style,
                 after_cursor.as_str(),
             );
+        }
+
+        // background after the text
+        if self.display_state.width as usize > self.text.width() {
+            let background_length = self.display_state.width - self.text.width() as u16;
+            let begin_pos: XY = XY::new(self.text.width() as u16, 0);
+            for i in 0..background_length {
+                let pos = begin_pos + XY::new(i, 0);
+                output.print_at(
+                    pos,
+                    primary_style,
+                    " ",
+                );
+            }
         }
     }
 }
