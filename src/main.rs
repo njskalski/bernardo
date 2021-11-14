@@ -7,9 +7,9 @@ use termion::{async_stdin, clear, color, cursor, style};
 use termion::raw::IntoRawMode;
 
 use crate::experiments::save_file_dialog::SaveFileDialogWidget;
-// use crate::experiments::two_button_edit::{TwoButtonEdit, TwoButtonEditMsg};
+use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Key;
+use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::termion_input::TermionInput;
 use crate::io::termion_output::TermionOutput;
@@ -123,7 +123,7 @@ fn main() {
                 debug!("{:?}", ie);
                 // early exit
                 match ie {
-                    InputEvent::KeyInput(Key::CtrlLetter(q)) => break,
+                    InputEvent::KeyInput(Keycode::CtrlLetter(q)) => break,
                     _ => {}
                 }
                 recursive_treat_views(&mut main_view, ie);

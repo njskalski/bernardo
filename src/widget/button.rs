@@ -5,7 +5,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
-use crate::io::keys::Key::Enter;
+use crate::io::keys::Keycode::Enter;
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue};
 use crate::primitives::sized_xy::SizedXY;

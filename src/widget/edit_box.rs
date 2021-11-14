@@ -8,8 +8,8 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
-use crate::io::keys::Key;
-use crate::io::keys::Key::Enter;
+use crate::io::keys::Keycode;
+use crate::io::keys::Keycode::Enter;
 use crate::io::output::Output;
 use crate::io::style::{
     TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow,
@@ -127,11 +127,11 @@ impl Widget for EditBoxWidget {
         );
 
         match input_event {
-            KeyInput(Key::Enter) => Some(Box::new(EditBoxWidgetMsg::Hit)),
-            KeyInput(Key::Letter(ch)) => Some(Box::new(EditBoxWidgetMsg::Letter(ch))),
-            KeyInput(Key::Backspace) => Some(Box::new(EditBoxWidgetMsg::Backspace)),
-            KeyInput(Key::ArrowLeft) => Some(Box::new(EditBoxWidgetMsg::ArrowLeft)),
-            KeyInput(Key::ArrowRight) => Some(Box::new(EditBoxWidgetMsg::ArrowRight)),
+            KeyInput(Keycode::Enter) => Some(Box::new(EditBoxWidgetMsg::Hit)),
+            KeyInput(Keycode::Letter(ch)) => Some(Box::new(EditBoxWidgetMsg::Letter(ch))),
+            KeyInput(Keycode::Backspace) => Some(Box::new(EditBoxWidgetMsg::Backspace)),
+            KeyInput(Keycode::ArrowLeft) => Some(Box::new(EditBoxWidgetMsg::ArrowLeft)),
+            KeyInput(Keycode::ArrowRight) => Some(Box::new(EditBoxWidgetMsg::ArrowRight)),
             _ => None,
         }
     }

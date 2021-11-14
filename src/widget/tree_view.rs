@@ -8,7 +8,7 @@ use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Key;
+use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBrightYellow};
 use crate::primitives::arrow::Arrow;
@@ -172,16 +172,16 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
         match input_event {
             InputEvent::KeyInput(key) => {
                 match key {
-                    Key::Letter('a') => Some(Box::new(TreeViewMsg::FlipExpansion)),
-                    Key::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
-                    Key::ArrowDown => {
+                    Keycode::Letter('a') => Some(Box::new(TreeViewMsg::FlipExpansion)),
+                    Keycode::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
+                    Keycode::ArrowDown => {
                         if self.highlighted < self.items_num - 1 {
                             Some(Box::new(TreeViewMsg::Arrow(Arrow::Down)))
                         } else { None }
                     },
-                    Key::ArrowLeft => Some(Box::new(TreeViewMsg::Arrow(Arrow::Left))),
-                    Key::ArrowRight => Some(Box::new(TreeViewMsg::Arrow(Arrow::Right))),
-                    Key::Enter => Some(Box::new(TreeViewMsg::FlipExpansion)),
+                    Keycode::ArrowLeft => Some(Box::new(TreeViewMsg::Arrow(Arrow::Left))),
+                    Keycode::ArrowRight => Some(Box::new(TreeViewMsg::Arrow(Arrow::Right))),
+                    Keycode::Enter => Some(Box::new(TreeViewMsg::FlipExpansion)),
                     // Key::Space => {}
                     // Key::Backspace => {}
                     // Key::Home => {}
@@ -295,7 +295,7 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
 mod tests {
     use std::collections::HashSet;
 
-    use crate::io::keys::Key;
+    use crate::io::keys::Keycode;
     use crate::widget::stupid_tree::{get_stupid_tree, StupidTree};
     use crate::widget::tree_view::{tree_it, TreeViewNode};
     use crate::widget::widget::get_new_widget_id;

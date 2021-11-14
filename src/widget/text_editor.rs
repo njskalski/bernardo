@@ -6,7 +6,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Key;
+use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::style::{TextStyle, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow, TextStyle_WhiteOnRedish};
 use crate::primitives::arrow::Arrow;
@@ -62,11 +62,11 @@ impl Widget for TextEditorWidget {
         return match input_event {
             InputEvent::KeyInput(key) => {
                 return match key {
-                    Key::ArrowUp => Some(Box::new(TextEditorMsg::Arrow(Arrow::Up))),
-                    Key::ArrowDown => Some(Box::new(TextEditorMsg::Arrow(Arrow::Down))),
-                    Key::ArrowLeft => Some(Box::new(TextEditorMsg::Arrow(Arrow::Left))),
-                    Key::ArrowRight => Some(Box::new(TextEditorMsg::Arrow(Arrow::Right))),
-                    Key::Letter(letter) => Some(Box::new(TextEditorMsg::Letter(letter))),
+                    Keycode::ArrowUp => Some(Box::new(TextEditorMsg::Arrow(Arrow::Up))),
+                    Keycode::ArrowDown => Some(Box::new(TextEditorMsg::Arrow(Arrow::Down))),
+                    Keycode::ArrowLeft => Some(Box::new(TextEditorMsg::Arrow(Arrow::Left))),
+                    Keycode::ArrowRight => Some(Box::new(TextEditorMsg::Arrow(Arrow::Right))),
+                    Keycode::Letter(letter) => Some(Box::new(TextEditorMsg::Letter(letter))),
                     // Key::Space => {}
                     // Key::Backspace => {}
                     // Key::Home => {}

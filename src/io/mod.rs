@@ -10,3 +10,7 @@ pub mod style;
 pub mod sub_output;
 pub mod termion_input;
 pub mod termion_output;
+pub mod input;
+pub mod crossterm_input;
+pub mod termion_keys;
+pub mod crossterm_keys;

@@ -1,19 +1,18 @@
-use crate::io::input_event::InputEvent;
-use crate::io::input_source::InputSource;
-use crossbeam_channel::Receiver;
 use std::io::{Error, Read};
-
-use log::debug;
-
 use std::thread;
 
+use crossbeam_channel::Receiver;
+use log::debug;
+use termion::AsyncReader;
+use termion::event::Event;
 use termion::input::{TermRead, TermReadEventsAndRaw};
 use termion::raw::IntoRawMode;
-use termion::AsyncReader;
+
+use crate::io::input::Input;
+use crate::io::input_event::InputEvent;
+use crate::io::input_source::InputSource;
 // use termion::event::Event::Key as TKey;
-use crate::io::keys::Key;
-use crate::io::keys::Key::Letter;
-use termion::event::Event;
+use crate::io::keys::Keycode;
 
 pub struct TermionInput {
     receiver: Receiver<InputEvent>,
@@ -31,7 +30,7 @@ impl TermionInput {
                 match c {
                     Ok((event, data)) => match event {
                         Event::Key(key) => {
-                            let my_key: Key = key.into();
+                            let my_key: Keycode = key.into();
                             sender.send(InputEvent::KeyInput(my_key));
                         }
                         Event::Mouse(me) => {
@@ -52,7 +51,10 @@ impl TermionInput {
         TermionInput { receiver }
     }
 
-    pub fn source(&self) -> &InputSource {
+}
+
+impl Input for TermionInput {
+    fn source(&self) -> &InputSource {
         &self.receiver
     }
 }

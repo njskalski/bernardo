@@ -5,7 +5,7 @@ use log::warn;
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Key;
+use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow};
 use crate::primitives::arrow::Arrow;
@@ -168,31 +168,31 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         return match input_event {
             InputEvent::KeyInput(key) => {
                 let msg: Option<ListWidgetMsg> = match key {
-                    Key::ArrowUp => {
+                    Keycode::ArrowUp => {
                         Some(ListWidgetMsg::Arrow(Arrow::Up))
                     }
-                    Key::ArrowDown => {
+                    Keycode::ArrowDown => {
                         Some(ListWidgetMsg::Arrow(Arrow::Down))
                     }
-                    Key::ArrowLeft => {
+                    Keycode::ArrowLeft => {
                         Some(ListWidgetMsg::Arrow(Arrow::Left))
                     }
-                    Key::ArrowRight => {
+                    Keycode::ArrowRight => {
                         Some(ListWidgetMsg::Arrow(Arrow::Right))
                     }
-                    Key::Enter => {
+                    Keycode::Enter => {
                         Some(ListWidgetMsg::Hit)
                     }
-                    Key::Home => {
+                    Keycode::Home => {
                         Some(ListWidgetMsg::Home)
                     }
-                    Key::End => {
+                    Keycode::End => {
                         Some(ListWidgetMsg::End)
                     }
-                    Key::PageUp => {
+                    Keycode::PageUp => {
                         Some(ListWidgetMsg::PageUp)
                     }
-                    Key::PageDown => {
+                    Keycode::PageDown => {
                         Some(ListWidgetMsg::PageDown)
                     }
                     _ => None
