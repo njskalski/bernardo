@@ -12,7 +12,7 @@ use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::input_source::InputSource;
 // use termion::event::Event::Key as TKey;
-use crate::io::keys::Keycode;
+use crate::io::keys::{Key, Keycode};
 
 pub struct TermionInput {
     receiver: Receiver<InputEvent>,
@@ -30,7 +30,7 @@ impl TermionInput {
                 match c {
                     Ok((event, data)) => match event {
                         Event::Key(key) => {
-                            let my_key: Keycode = key.into();
+                            let my_key: Key = key.into();
                             sender.send(InputEvent::KeyInput(my_key));
                         }
                         Event::Mouse(me) => {

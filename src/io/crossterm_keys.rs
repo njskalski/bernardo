@@ -1,4 +1,5 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::KeyEvent as CKey;
 
 use crate::io::keys::{Key, Keycode, Modifiers};
 
@@ -28,9 +29,9 @@ impl From<CKey> for Key {
                 };
 
                 let md: Modifiers = Modifiers::new(
-                    modifiers & KeyModifiers::ALT != 0,
-                    modifiers & KeyModifiers::CONTROL != 0,
-                    modifiers & KeyModifiers::SHIFT != 0,
+                    modifiers.contains(KeyModifiers::ALT),
+                    modifiers.contains(KeyModifiers::CONTROL),
+                    modifiers.contains(KeyModifiers::SHIFT),
                 );
 
                 Key {

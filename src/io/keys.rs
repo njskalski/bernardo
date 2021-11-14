@@ -33,6 +33,7 @@ pub enum Keycode {
     Unhandled,
 }
 
+#[derive(Copy, Clone, Debug)]
 pub struct Modifiers {
     pub ALT: bool,
     pub CTRL: bool,
@@ -49,6 +50,7 @@ impl Modifiers {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
 pub struct Key {
     pub keycode: Keycode,
     pub modifiers: Modifiers,

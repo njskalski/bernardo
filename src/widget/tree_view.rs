@@ -169,31 +169,20 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         debug!("tree_view.on_input {:?}", input_event);
 
-        match input_event {
+        return match input_event {
             InputEvent::KeyInput(key) => {
-                match key {
-                    Keycode::Letter('a') => Some(Box::new(TreeViewMsg::FlipExpansion)),
+                match key.keycode {
+                    Keycode::Char('a') => Some(Box::new(TreeViewMsg::FlipExpansion)),
                     Keycode::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
-                    Keycode::ArrowDown => {
-                        if self.highlighted < self.items_num - 1 {
-                            Some(Box::new(TreeViewMsg::Arrow(Arrow::Down)))
-                        } else { None }
-                    },
+                    Keycode::ArrowDown => Some(Box::new(TreeViewMsg::Arrow(Arrow::Down))),
                     Keycode::ArrowLeft => Some(Box::new(TreeViewMsg::Arrow(Arrow::Left))),
                     Keycode::ArrowRight => Some(Box::new(TreeViewMsg::Arrow(Arrow::Right))),
                     Keycode::Enter => Some(Box::new(TreeViewMsg::FlipExpansion)),
-                    // Key::Space => {}
-                    // Key::Backspace => {}
-                    // Key::Home => {}
-                    // Key::End => {}
-                    // Key::PageUp => {}
-                    // Key::PageDown => {}
-                    // Key::Delete => {}
                     _ => None,
                 }
             }
             _ => None,
-        }
+        };
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {

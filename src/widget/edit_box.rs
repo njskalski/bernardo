@@ -126,14 +126,17 @@ impl Widget for EditBoxWidget {
             "EditBoxWidgetMsg: received input to disabled component!"
         );
 
-        match input_event {
-            KeyInput(Keycode::Enter) => Some(Box::new(EditBoxWidgetMsg::Hit)),
-            KeyInput(Keycode::Letter(ch)) => Some(Box::new(EditBoxWidgetMsg::Letter(ch))),
-            KeyInput(Keycode::Backspace) => Some(Box::new(EditBoxWidgetMsg::Backspace)),
-            KeyInput(Keycode::ArrowLeft) => Some(Box::new(EditBoxWidgetMsg::ArrowLeft)),
-            KeyInput(Keycode::ArrowRight) => Some(Box::new(EditBoxWidgetMsg::ArrowRight)),
+        return match input_event {
+            KeyInput(key_event) => match key_event.keycode {
+                Keycode::Enter => Some(Box::new(EditBoxWidgetMsg::Hit)),
+                Keycode::Char(ch) => Some(Box::new(EditBoxWidgetMsg::Letter(ch))),
+                Keycode::Backspace => Some(Box::new(EditBoxWidgetMsg::Backspace)),
+                Keycode::ArrowLeft => Some(Box::new(EditBoxWidgetMsg::ArrowLeft)),
+                Keycode::ArrowRight => Some(Box::new(EditBoxWidgetMsg::ArrowRight)),
+                _ => None
+            }
             _ => None,
-        }
+        };
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {

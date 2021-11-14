@@ -167,7 +167,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         return match input_event {
             InputEvent::KeyInput(key) => {
-                let msg: Option<ListWidgetMsg> = match key {
+                match key.keycode {
                     Keycode::ArrowUp => {
                         Some(ListWidgetMsg::Arrow(Arrow::Up))
                     }
@@ -196,13 +196,12 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
                         Some(ListWidgetMsg::PageDown)
                     }
                     _ => None
-                };
-
-                msg.map(|m| Box::new(m) as Box<dyn AnyMsg>)
-            },
-            _ => None,
-        }
+                }
+            }
+            _ => None
+        }.map(|m| Box::new(m) as Box<dyn AnyMsg>)
     }
+
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         let our_msg = msg.as_msg::<ListWidgetMsg>();

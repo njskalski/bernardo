@@ -61,22 +61,15 @@ impl Widget for TextEditorWidget {
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         return match input_event {
             InputEvent::KeyInput(key) => {
-                return match key {
+                match key.keycode {
                     Keycode::ArrowUp => Some(Box::new(TextEditorMsg::Arrow(Arrow::Up))),
                     Keycode::ArrowDown => Some(Box::new(TextEditorMsg::Arrow(Arrow::Down))),
                     Keycode::ArrowLeft => Some(Box::new(TextEditorMsg::Arrow(Arrow::Left))),
                     Keycode::ArrowRight => Some(Box::new(TextEditorMsg::Arrow(Arrow::Right))),
-                    Keycode::Letter(letter) => Some(Box::new(TextEditorMsg::Letter(letter))),
-                    // Key::Space => {}
-                    // Key::Backspace => {}
-                    // Key::Home => {}
-                    // Key::End => {}
-                    // Key::PageUp => {}
-                    // Key::PageDown => {}
-                    // Key::Delete => {}
+                    Keycode::Char(letter) => Some(Box::new(TextEditorMsg::Letter(letter))),
                     _ => None,
-                };
-            }
+                }
+            },
             _ => None,
         };
     }

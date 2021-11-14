@@ -123,7 +123,14 @@ fn main() {
                 debug!("{:?}", ie);
                 // early exit
                 match ie {
-                    InputEvent::KeyInput(Keycode::CtrlLetter(q)) => break,
+                    InputEvent::KeyInput(key) => {
+                        match key.keycode {
+                            Keycode::Char('q') if key.modifiers.CTRL => {
+                                break;
+                            }
+                            _ => {}
+                        }
+                    }
                     _ => {}
                 }
                 recursive_treat_views(&mut main_view, ie);

@@ -181,11 +181,11 @@ impl Widget for SaveFileDialogWidget {
 
         return match input_event {
             InputEvent::KeyInput(key) => match key {
-                key if key.is_arrow() => {
+                key if key.keycode.is_arrow() => {
                     debug!("arrow {:?}", key);
-                    match key.as_focus_update() {
+                    match key.keycode.as_focus_update() {
                         None => {
-                            warn!("failed expected cast to FocusUpdate of {}", key);
+                            warn!("failed expected cast to FocusUpdate of {:?}", key);
                             None
                         }
                         Some(event) => {
@@ -196,7 +196,7 @@ impl Widget for SaveFileDialogWidget {
                     }
                 }
                 unknown_key => {
-                    debug!("unknown_key {}", unknown_key);
+                    debug!("unknown_key {:?}", unknown_key);
                     None
                 }
             }

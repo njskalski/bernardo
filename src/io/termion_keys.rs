@@ -23,17 +23,15 @@ impl From<TKey> for Key {
             TKey::Null => Keycode::Null,
             TKey::Esc => Keycode::Esc,
             _ => {
-                debug!(
-                    "Faild Termion event conversion unsupported symbol [{:?}]",
-                    tk
-                );
+                debug!("Failed Termion event conversion unsupported symbol [{:?}]",tk);
                 Keycode::Unhandled
             }
         };
 
         let mut md: Modifiers = match tk {
-            Key::Alt(_) => Modifiers::new(true, false, false),
-            Key::Ctrl(_) => Modifiers::new(false, true, false),
+            TKey::Alt(_) => Modifiers::new(true, false, false),
+            TKey::Ctrl(_) => Modifiers::new(false, true, false),
+            _ => Modifiers::new(false, false, false),
         };
 
         if let Keycode::Char(c) = kc {
@@ -42,9 +40,10 @@ impl From<TKey> for Key {
                 let lowercase_str = c.to_lowercase().to_string();
                 if lowercase_str.len() != 1 {
                     warn!("Unsupported lowercase mapping {}", lowercase_str);
-                    kc = Keycode::Unhandled
+                    kc = Keycode::Unhandled;
                 } else {
-                    kc = Keycode::Char(lowercase_str[0])
+                    let c = lowercase_str.chars().nth(0).unwrap();
+                    kc = Keycode::Char(c);
                 }
             }
         }
