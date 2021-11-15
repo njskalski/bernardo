@@ -1,4 +1,4 @@
-use std::io::{stdout, Write};
+use std::io::{ErrorKind, stdout, Write};
 use std::mem::swap;
 
 use log::debug;
@@ -156,7 +156,8 @@ impl<W: Write> Output for TermionOutput<W> {
         } else {
             &mut self.back_buffer
         };
-        buffer.clear();
+
+        buffer.clear()
     }
 }
 

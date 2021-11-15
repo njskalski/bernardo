@@ -1,5 +1,6 @@
 use core::fmt::Alignment::Center;
 use std::default::Default;
+use std::io::ErrorKind;
 use std::ops::{Index, IndexMut};
 
 use log::debug;
@@ -24,7 +25,6 @@ impl Output for BufferOutput {
             //     pos,
             //     self.size()
             // );
-            return;
         }
 
         debug_assert!(pos.x < self.size().x);
