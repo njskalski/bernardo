@@ -15,8 +15,8 @@ use crate::io::style::{
     TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow,
     TextStyle_WhiteOnRedish, TextStyle_WhiteOnYellow,
 };
+use crate::primitives::{helpers, xy};
 use crate::primitives::theme::Theme;
-use crate::primitives::xy;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::edit_box::EditBoxWidgetMsg::Letter;
@@ -234,6 +234,14 @@ impl Widget for EditBoxWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
+        let bgcolor = if focused {
+            theme.active_edit().background
+        } else {
+            theme.inactive_edit().background
+        };
+
+        helpers::fill_background(bgcolor, output);
+
         let primary_style = if self.enabled && focused {
             theme.active_edit()
         } else {

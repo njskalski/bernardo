@@ -15,6 +15,9 @@ pub struct Theme {
 
     active_cursor_background: Color,
     inactive_cursor_background: Color,
+
+    noninteractive_text_focused: Color,
+    noninteractive_text: Color,
 }
 
 impl Theme {
@@ -22,6 +25,10 @@ impl Theme {
         Theme {
             active_background: colors::COLOR_BRIGHT_BACKGROUND,
             inactive_background: colors::COLOR_DARK_BACKGROUND,
+
+            noninteractive_text_focused: colors::COLOR_NONINTERACTIVE_TEXT_FOCUSED,
+            noninteractive_text: colors::COLOR_NONINTERACTIVE_TEXT_NOT_FOCUSED,
+
             active_input_background: colors::COLOR_ACTIVE_INPUT_BACKGROUND,
             inactive_input_background: colors::COLOR_INACTIVE_INPUT_BACKGROUND,
             active_input_foreground: colors::COLOR_PINK_SAND,
@@ -45,5 +52,13 @@ impl Theme {
 
     pub fn header(&self) -> TextStyle {
         TextStyle::new(self.inactive_input_foreground, self.inactive_input_background, Effect::Underline)
+    }
+
+    pub fn non_interactive_text(&self, focused: bool) -> TextStyle {
+        if focused {
+            TextStyle::new(self.noninteractive_text_focused, self.active_background, Effect::Underline)
+        } else {
+            TextStyle::new(self.noninteractive_text, self.inactive_background, Effect::None)
+        }
     }
 }

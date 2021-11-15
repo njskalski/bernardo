@@ -12,6 +12,7 @@ use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBrightYellow};
 use crate::primitives::arrow::Arrow;
+use crate::primitives::helpers;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
@@ -260,6 +261,14 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
+        let bgcolor = if focused {
+            theme.active_edit().background
+        } else {
+            theme.inactive_edit().background
+        };
+
+        helpers::fill_background(bgcolor, output);
+
         for (idx, (depth, node)) in self.items().enumerate() {
             if idx >= output.size().y as usize {
                 debug!("idx {}, output.size().y {}", idx, output.size());

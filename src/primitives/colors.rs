@@ -12,6 +12,9 @@ pub const COLOR_INACTIVE_INPUT_BACKGROUND: Color = Color::new(14, 14, 27);
 pub const COLOR_ACTIVE_INPUT_FOREGROUND: Color = Color::new(70, 81, 90);
 pub const COLOR_ACTIVE_INPUT_BACKGROUND: Color = Color::new(35, 39, 68);
 
+pub const COLOR_NONINTERACTIVE_TEXT_FOCUSED: Color = Color::new(33, 53, 79);
+pub const COLOR_NONINTERACTIVE_TEXT_NOT_FOCUSED: Color = Color::new(16, 26, 39);
+
 pub const COLOR_VIOLET: Color = Color::new(110, 106, 134);
 pub const COLOR_BRIGHT_VIOLET: Color = Color::new(196, 167, 231);
 pub const COLOR_WATER: Color = Color::new(49, 116, 143);

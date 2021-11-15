@@ -8,3 +8,4 @@ pub mod styled_string;
 pub mod xy;
 pub mod colors;
 pub mod theme;
+pub mod helpers;

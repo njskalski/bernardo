@@ -9,6 +9,7 @@ use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow};
 use crate::primitives::arrow::Arrow;
+use crate::primitives::helpers;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
@@ -261,13 +262,19 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
+        let bgcolor = if focused {
+            theme.active_edit().background
+        } else {
+            theme.inactive_edit().background
+        };
+
+        helpers::fill_background(bgcolor, output);
+
         // TODO add columns expansion
         // it's the same as in layouts, probably we should move that calc to primitives
         let mut y_offset: u16 = 0;
 
         let header_style = theme.header();
-        let non_highlighted_style = theme.inactive_edit();
-        let highlighted_style = theme.active_edit();
 
         if self.show_column_names {
             let mut x_offset: u16 = 0;
@@ -291,9 +298,13 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
             let mut x_offset: u16 = 0;
 
             let style = if self.highlighted == Some(idx) {
-                highlighted_style
+                if focused {
+                    theme.active_cursor()
+                } else {
+                    theme.inactive_edit()
+                }
             } else {
-                non_highlighted_style
+                theme.non_interactive_text(focused)
             };
 
             for c_idx in 0..Item::len_columns() {
