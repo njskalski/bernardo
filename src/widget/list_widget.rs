@@ -9,6 +9,7 @@ use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow};
 use crate::primitives::arrow::Arrow;
+use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::list_widget::ListWidgetMsg::Hit;
@@ -259,7 +260,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         self
     }
 
-    fn render(&self, focused: bool, output: &mut dyn Output) {
+    fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
         // TODO add columns expansion
         // it's the same as in layouts, probably we should move that calc to primitives
         let mut y_offset: u16 = 0;

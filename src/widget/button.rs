@@ -10,6 +10,7 @@ use crate::io::keys::Keycode::Enter;
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue};
 use crate::primitives::sized_xy::SizedXY;
+use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
@@ -80,7 +81,7 @@ impl Widget for ButtonWidget {
         self
     }
 
-    fn render(&self, focused: bool, output: &mut Output) {
+    fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
         let mut full_text = "[".to_string() + &self.text + "]";
 
         let mut style = if self.enabled {

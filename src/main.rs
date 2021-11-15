@@ -16,6 +16,7 @@ use crate::io::output::Output;
 use crate::io::termion_input::TermionInput;
 use crate::io::termion_output::TermionOutput;
 use crate::primitives::sized_xy::SizedXY;
+use crate::primitives::theme::Theme;
 use crate::primitives::xy;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
@@ -64,6 +65,8 @@ fn main() {
     // let mut main_view = TextEditorWidget::new();
 
     let mut main_view = SaveFileDialogWidget::new();
+
+    let theme = Theme::default();
 
     // returns (consumed, message_to_parent)
     fn recursive_treat_views(
@@ -120,7 +123,7 @@ fn main() {
     loop {
         output.clear();
         main_view.layout(output.size());
-        main_view.render(true, &mut output);
+        main_view.render(&theme, true, &mut output);
         output.end_frame();
 
         match input.source().recv() {

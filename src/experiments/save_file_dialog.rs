@@ -25,6 +25,7 @@ use crate::layout::cached_sizes::DisplayState;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::button::ButtonWidget;
@@ -260,7 +261,7 @@ impl Widget for SaveFileDialogWidget {
         }
     }
 
-    fn render(&self, focused: bool, output: &mut Output) {
+    fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
         let focused_op = if focused {
             Some(self.get_focused().id())
         } else {
@@ -279,7 +280,7 @@ impl Widget for SaveFileDialogWidget {
                         continue;
                     }
 
-                    widget.render(focused_op == Some(widget.id()), &mut SubOutput::new(Box::new(output), wir.rect));
+                    widget.render(theme, focused_op == Some(widget.id()), &mut SubOutput::new(Box::new(output), wir.rect));
                 }
             }
         }

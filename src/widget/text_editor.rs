@@ -11,6 +11,7 @@ use crate::io::output::Output;
 use crate::io::style::{TextStyle, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow, TextStyle_WhiteOnRedish};
 use crate::primitives::arrow::Arrow;
 use crate::primitives::cursor_set::{CursorSet, CursorStatus};
+use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
@@ -119,7 +120,7 @@ impl Widget for TextEditorWidget {
         self
     }
 
-    fn render(&self, focused: bool, output: &mut Output) {
+    fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
         let len_lines = self.buffer.len_lines();
         let len_lines_cols = format!("{}", len_lines).len();
 
