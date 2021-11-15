@@ -2,11 +2,19 @@
 
 use crate::primitives::color::Color;
 
-const COLOR_TUNA: Color = Color::new(235, 111, 146);
-const COLOR_BRIGHT_BACKGROUND: Color = Color::new(25, 23, 36);
-const COLOR_VIOLET: Color = Color::new(110, 106, 134);
-const COLOR_BRIGHT_VIOLET: Color = Color::new(196, 167, 231);
-const COLOR_WATER: Color = Color::new(49, 116, 143);
-const COLOR_SCRAMBLED_EGGS: Color = Color::new(246, 193, 119);
-const COLOR_SKY: Color = Color::new(156, 207, 216);
-const COLOR_PINK_SAND: Color = Color::new(235, 188, 186);
+pub const COLOR_TUNA: Color = Color::new(235, 111, 146);
+pub const COLOR_BRIGHT_BACKGROUND: Color = Color::new(25, 23, 36);
+pub const COLOR_DARK_BACKGROUND: Color = Color::new(12, 11, 18);
+
+pub const COLOR_ACTIVE_INPUT_FOREGROUND: Color = Color::new(76, 54, 90);
+pub const COLOR_ACTIVE_INPUT_BACKGROUND: Color = Color::new(16, 5, 11);
+
+pub const COLOR_INACTIVE_INPUT_FOREGROUND: Color = Color::new(65, 37, 51);
+pub const COLOR_INACTIVE_INPUT_BACKGROUND: Color = Color::new(21, 10, 14);
+
+pub const COLOR_VIOLET: Color = Color::new(110, 106, 134);
+pub const COLOR_BRIGHT_VIOLET: Color = Color::new(196, 167, 231);
+pub const COLOR_WATER: Color = Color::new(49, 116, 143);
+pub const COLOR_SCRAMBLED_EGGS: Color = Color::new(246, 193, 119);
+pub const COLOR_SKY: Color = Color::new(156, 207, 216);
+pub const COLOR_PINK_SAND: Color = Color::new(235, 188, 186);
