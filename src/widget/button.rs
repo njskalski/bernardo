@@ -5,7 +5,8 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
-use crate::io::keys::Key::Enter;
+use crate::io::keys::Keycode;
+use crate::io::keys::Keycode::Enter;
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue};
 use crate::primitives::sized_xy::SizedXY;
@@ -43,9 +44,12 @@ impl Widget for ButtonWidget {
             warn!("ButtonWidget: received input to disabled component!");
         }
 
-        match input_event {
-            KeyInput(Enter) => Some(Box::new(ButtonWidgetMsg::Hit)),
-            _ => None,
+        return match input_event {
+            KeyInput(key_event) => match key_event.keycode {
+                Keycode::Enter => Some(Box::new(ButtonWidgetMsg::Hit)),
+                _ => None
+            }
+            _ => None
         }
     }
 

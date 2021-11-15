@@ -1,4 +1,8 @@
+use std::io::ErrorKind;
+
+use log::debug;
 use log::error;
+use log::warn;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -7,8 +11,6 @@ use crate::io::style::{TextStyle, TextStyle_WhiteOnBlack};
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
-use log::debug;
-use log::warn;
 
 // Over output (maybe I'll rename it as super output) is an output that is bigger than original,
 // physical or in-memory display. All write operations targeting lines/columns beyond it's borders
@@ -54,10 +56,10 @@ impl Output for OverOutput<'_> {
         }
 
         if pos.y < self.upper_left_offset.y {
-            return; // above frame
+            return;
         }
         if pos.y > self.upper_left_offset.y + self.output.size().y {
-            return; // below frame
+            return;
         }
 
         let mut x_offset: i32 = 0;
@@ -83,6 +85,6 @@ impl Output for OverOutput<'_> {
     }
 
     fn clear(&mut self) {
-        self.output.clear();
+        self.output.clear()
     }
 }

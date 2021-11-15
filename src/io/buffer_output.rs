@@ -1,5 +1,6 @@
 use core::fmt::Alignment::Center;
 use std::default::Default;
+use std::io::ErrorKind;
 use std::ops::{Index, IndexMut};
 
 use log::debug;
@@ -24,11 +25,10 @@ impl Output for BufferOutput {
             //     pos,
             //     self.size()
             // );
-            return;
         }
 
-        debug_assert!(pos.x < self.size().x);
-        debug_assert!(pos.y < self.size().y);
+        debug_assert!(pos.x < self.size().x, "pos {}, size {}", pos, self.size());
+        debug_assert!(pos.y < self.size().y, "pos {}, size {}", pos, self.size());
         debug_assert!(text.len() < (u16::max_value() as usize));
 
         let mut offset: u16 = 0;

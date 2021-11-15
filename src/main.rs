@@ -7,9 +7,11 @@ use termion::{async_stdin, clear, color, cursor, style};
 use termion::raw::IntoRawMode;
 
 use crate::experiments::save_file_dialog::SaveFileDialogWidget;
-// use crate::experiments::two_button_edit::{TwoButtonEdit, TwoButtonEditMsg};
+use crate::io::crossterm_input::CrosstermInput;
+use crate::io::crossterm_output::CrosstermOutput;
+use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Key;
+use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::termion_input::TermionInput;
 use crate::io::termion_output::TermionOutput;
@@ -39,13 +41,16 @@ fn main() {
 
     let stdout = stdout();
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
-    let stdin = stdin();
+    // let stdin = stdin();
 
-    write!(stdout, "{}{}", clear::All, cursor::Goto(1, 1)).unwrap();
-    stdout.flush().unwrap();
+    // write!(stdout, "{}{}", clear::All, cursor::Goto(1, 1)).unwrap();
+    // stdout.flush().unwrap();
 
-    let input = TermionInput::new(stdin);
-    let mut output = TermionOutput::new(stdout);
+    let input = CrosstermInput::new();
+    let mut output = CrosstermOutput::new(stdout);
+
+    // let input = TermionInput::new(stdin);
+    // let mut output = TermionOutput::new(stdout);
 
     // let mut main_view = TwoButtonEdit::new();
 
@@ -123,7 +128,14 @@ fn main() {
                 debug!("{:?}", ie);
                 // early exit
                 match ie {
-                    InputEvent::KeyInput(Key::CtrlLetter(q)) => break,
+                    InputEvent::KeyInput(key) => {
+                        match key.keycode {
+                            Keycode::Char('q') if key.modifiers.CTRL => {
+                                break;
+                            }
+                            _ => {}
+                        }
+                    }
                     _ => {}
                 }
                 recursive_treat_views(&mut main_view, ie);

@@ -15,7 +15,7 @@ use std::iter::Map;
 use log::debug;
 
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Key;
+use crate::io::keys::Keycode;
 use crate::primitives::rect::Rect;
 use crate::widget::widget::WID;
 

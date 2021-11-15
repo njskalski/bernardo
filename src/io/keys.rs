@@ -1,16 +1,14 @@
 use std::fmt::{Display, Formatter};
 
+use crossterm::event::{KeyEvent as CKey, KeyEvent};
 use log::debug;
-use termion::event::Key as TKey;
 
 use crate::experiments::focus_group::FocusUpdate;
-use crate::io::keys::Key::ArrowLeft;
+use crate::io::keys::Keycode::ArrowLeft;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Key {
-    Letter(char),
-    CtrlLetter(char),
-    AltLetter(char),
+pub enum Keycode {
+    Char(char),
     F(u8),
     ArrowUp,
     ArrowDown,
@@ -35,59 +33,51 @@ pub enum Key {
     Unhandled,
 }
 
-impl Key {
+#[derive(Copy, Clone, Debug)]
+pub struct Modifiers {
+    pub ALT: bool,
+    pub CTRL: bool,
+    pub SHIFT: bool,
+}
+
+impl Modifiers {
+    pub fn new(alt: bool, ctrl: bool, shift: bool) -> Modifiers {
+        Modifiers {
+            ALT: alt,
+            CTRL: ctrl,
+            SHIFT: shift,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct Key {
+    pub keycode: Keycode,
+    pub modifiers: Modifiers,
+}
+
+impl Keycode {
     pub fn is_arrow(&self) -> bool {
-        return *self == Key::ArrowRight ||
-            *self == Key::ArrowLeft ||
-            *self == Key::ArrowUp ||
-            *self == Key::ArrowDown
+        return *self == Keycode::ArrowRight ||
+            *self == Keycode::ArrowLeft ||
+            *self == Keycode::ArrowUp ||
+            *self == Keycode::ArrowDown
     }
 
     pub fn as_focus_update(&self) -> Option<FocusUpdate> {
         return match self {
-            Key::ArrowUp => Some(FocusUpdate::Up),
-            Key::ArrowDown => Some(FocusUpdate::Down),
-            Key::ArrowLeft => Some(FocusUpdate::Left),
-            Key::ArrowRight => Some(FocusUpdate::Right),
+            Keycode::ArrowUp => Some(FocusUpdate::Up),
+            Keycode::ArrowDown => Some(FocusUpdate::Down),
+            Keycode::ArrowLeft => Some(FocusUpdate::Left),
+            Keycode::ArrowRight => Some(FocusUpdate::Right),
             _ => None
         }
     }
 }
 
-impl Display for Key {
+impl Display for Keycode {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl From<TKey> for Key {
-    fn from(tk: TKey) -> Self {
-        match tk {
-            TKey::Backspace => Key::Backspace,
-            TKey::Left => Key::ArrowLeft,
-            TKey::Right => Key::ArrowRight,
-            TKey::Up => Key::ArrowUp,
-            TKey::Down => Key::ArrowDown,
-            TKey::Home => Key::Home,
-            TKey::End => Key::End,
-            TKey::PageUp => Key::PageUp,
-            TKey::PageDown => Key::PageDown,
-            TKey::BackTab => Key::Tab,
-            TKey::Delete => Key::Delete,
-            TKey::Insert => Key::Insert,
-            TKey::F(u) => Key::F(u),
-            TKey::Char(c) => Key::Letter(c),
-            TKey::Alt(c) => Key::AltLetter(c),
-            TKey::Ctrl(c) => Key::CtrlLetter(c),
-            TKey::Null => Key::Null,
-            TKey::Esc => Key::Esc,
-            _ => {
-                debug!(
-                    "Faild Termion event conversion nsupported symbol [{:?}]",
-                    tk
-                );
-                Key::Unhandled
-            }
-        }
-    }
-}

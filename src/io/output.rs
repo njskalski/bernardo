@@ -1,3 +1,5 @@
+use std::io::ErrorKind;
+
 use crate::io::style::TextStyle;
 use crate::io::sub_output::SubOutput;
 use crate::primitives::rect::Rect;

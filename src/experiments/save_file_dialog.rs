@@ -18,7 +18,7 @@ use log::{debug, warn};
 use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl, FocusUpdate};
 use crate::experiments::from_geometry::from_geometry;
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Key;
+use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::cached_sizes::DisplayState;
@@ -170,7 +170,7 @@ impl Widget for SaveFileDialogWidget {
 
         let res_sizes = self.todo_internal_layout(max_size);
 
-        // let res_sizes = self.layout.calc_sizes(self, max_size);
+        debug!("size {}, res_sizes {:?}", max_size, res_sizes);
         self.display_state = Some(DisplayState::new(max_size, res_sizes));
 
         max_size
@@ -181,11 +181,11 @@ impl Widget for SaveFileDialogWidget {
 
         return match input_event {
             InputEvent::KeyInput(key) => match key {
-                key if key.is_arrow() => {
+                key if key.keycode.is_arrow() => {
                     debug!("arrow {:?}", key);
-                    match key.as_focus_update() {
+                    match key.keycode.as_focus_update() {
                         None => {
-                            warn!("failed expected cast to FocusUpdate of {}", key);
+                            warn!("failed expected cast to FocusUpdate of {:?}", key);
                             None
                         }
                         Some(event) => {
@@ -196,7 +196,7 @@ impl Widget for SaveFileDialogWidget {
                     }
                 }
                 unknown_key => {
-                    debug!("unknown_key {}", unknown_key);
+                    debug!("unknown_key {:?}", unknown_key);
                     None
                 }
             }
@@ -270,6 +270,7 @@ impl Widget for SaveFileDialogWidget {
         match self.display_state.borrow().as_ref() {
             None => warn!("failed rendering save_file_dialog without cached_sizes"),
             Some(cached_sizes) => {
+                debug!("widget_sizes : {:?}", cached_sizes.widget_sizes);
                 for wir in &cached_sizes.widget_sizes {
                     let widget = self.todo_wid_to_widget_or_self(wir.wid);
 

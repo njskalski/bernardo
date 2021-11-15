@@ -8,7 +8,7 @@ use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Key;
+use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBrightYellow};
 use crate::primitives::arrow::Arrow;
@@ -169,31 +169,20 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         debug!("tree_view.on_input {:?}", input_event);
 
-        match input_event {
+        return match input_event {
             InputEvent::KeyInput(key) => {
-                match key {
-                    Key::Letter('a') => Some(Box::new(TreeViewMsg::FlipExpansion)),
-                    Key::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
-                    Key::ArrowDown => {
-                        if self.highlighted < self.items_num - 1 {
-                            Some(Box::new(TreeViewMsg::Arrow(Arrow::Down)))
-                        } else { None }
-                    },
-                    Key::ArrowLeft => Some(Box::new(TreeViewMsg::Arrow(Arrow::Left))),
-                    Key::ArrowRight => Some(Box::new(TreeViewMsg::Arrow(Arrow::Right))),
-                    Key::Enter => Some(Box::new(TreeViewMsg::FlipExpansion)),
-                    // Key::Space => {}
-                    // Key::Backspace => {}
-                    // Key::Home => {}
-                    // Key::End => {}
-                    // Key::PageUp => {}
-                    // Key::PageDown => {}
-                    // Key::Delete => {}
+                match key.keycode {
+                    Keycode::Char('a') => Some(Box::new(TreeViewMsg::FlipExpansion)),
+                    Keycode::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
+                    Keycode::ArrowDown => Some(Box::new(TreeViewMsg::Arrow(Arrow::Down))),
+                    Keycode::ArrowLeft => Some(Box::new(TreeViewMsg::Arrow(Arrow::Left))),
+                    Keycode::ArrowRight => Some(Box::new(TreeViewMsg::Arrow(Arrow::Right))),
+                    Keycode::Enter => Some(Box::new(TreeViewMsg::FlipExpansion)),
                     _ => None,
                 }
             }
             _ => None,
-        }
+        };
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
@@ -295,7 +284,7 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
 mod tests {
     use std::collections::HashSet;
 
-    use crate::io::keys::Key;
+    use crate::io::keys::Keycode;
     use crate::widget::stupid_tree::{get_stupid_tree, StupidTree};
     use crate::widget::tree_view::{tree_it, TreeViewNode};
     use crate::widget::widget::get_new_widget_id;

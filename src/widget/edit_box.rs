@@ -8,8 +8,8 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
-use crate::io::keys::Key;
-use crate::io::keys::Key::Enter;
+use crate::io::keys::Keycode;
+use crate::io::keys::Keycode::Enter;
 use crate::io::output::Output;
 use crate::io::style::{
     TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow,
@@ -141,14 +141,17 @@ impl Widget for EditBoxWidget {
             "EditBoxWidgetMsg: received input to disabled component!"
         );
 
-        match input_event {
-            KeyInput(Key::Enter) => Some(Box::new(EditBoxWidgetMsg::Hit)),
-            KeyInput(Key::Letter(ch)) => Some(Box::new(EditBoxWidgetMsg::Letter(ch))),
-            KeyInput(Key::Backspace) => Some(Box::new(EditBoxWidgetMsg::Backspace)),
-            KeyInput(Key::ArrowLeft) => Some(Box::new(EditBoxWidgetMsg::ArrowLeft)),
-            KeyInput(Key::ArrowRight) => Some(Box::new(EditBoxWidgetMsg::ArrowRight)),
+        return match input_event {
+            KeyInput(key_event) => match key_event.keycode {
+                Keycode::Enter => Some(Box::new(EditBoxWidgetMsg::Hit)),
+                Keycode::Char(ch) => Some(Box::new(EditBoxWidgetMsg::Letter(ch))),
+                Keycode::Backspace => Some(Box::new(EditBoxWidgetMsg::Backspace)),
+                Keycode::ArrowLeft => Some(Box::new(EditBoxWidgetMsg::ArrowLeft)),
+                Keycode::ArrowRight => Some(Box::new(EditBoxWidgetMsg::ArrowRight)),
+                _ => None
+            }
             _ => None,
-        }
+        };
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {

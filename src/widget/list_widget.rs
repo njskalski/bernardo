@@ -1,11 +1,11 @@
 use std::borrow::Borrow;
 use std::fmt::{Debug, Formatter};
 
-use log::warn;
+use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Key;
+use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow};
 use crate::primitives::arrow::Arrow;
@@ -157,52 +157,54 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
             cols += Item::get_min_column_width(i);
         }
 
-        XY::new(rows, cols)
+        XY::new(cols, rows)
     }
 
     fn layout(&mut self, max_size: XY) -> XY {
+        debug_assert!(self.min_size().x <= max_size.x, "min_size {} max_size {}", self.min_size(), max_size);
+        debug_assert!(self.min_size().y <= max_size.y, "min_size {} max_size {}", self.min_size(), max_size);
+
         self.min_size()
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         return match input_event {
             InputEvent::KeyInput(key) => {
-                let msg: Option<ListWidgetMsg> = match key {
-                    Key::ArrowUp => {
+                match key.keycode {
+                    Keycode::ArrowUp => {
                         Some(ListWidgetMsg::Arrow(Arrow::Up))
                     }
-                    Key::ArrowDown => {
+                    Keycode::ArrowDown => {
                         Some(ListWidgetMsg::Arrow(Arrow::Down))
                     }
-                    Key::ArrowLeft => {
+                    Keycode::ArrowLeft => {
                         Some(ListWidgetMsg::Arrow(Arrow::Left))
                     }
-                    Key::ArrowRight => {
+                    Keycode::ArrowRight => {
                         Some(ListWidgetMsg::Arrow(Arrow::Right))
                     }
-                    Key::Enter => {
+                    Keycode::Enter => {
                         Some(ListWidgetMsg::Hit)
                     }
-                    Key::Home => {
+                    Keycode::Home => {
                         Some(ListWidgetMsg::Home)
                     }
-                    Key::End => {
+                    Keycode::End => {
                         Some(ListWidgetMsg::End)
                     }
-                    Key::PageUp => {
+                    Keycode::PageUp => {
                         Some(ListWidgetMsg::PageUp)
                     }
-                    Key::PageDown => {
+                    Keycode::PageDown => {
                         Some(ListWidgetMsg::PageDown)
                     }
                     _ => None
-                };
-
-                msg.map(|m| Box::new(m) as Box<dyn AnyMsg>)
-            },
-            _ => None,
-        }
+                }
+            }
+            _ => None
+        }.map(|m| Box::new(m) as Box<dyn AnyMsg>)
     }
+
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         let our_msg = msg.as_msg::<ListWidgetMsg>();
@@ -280,6 +282,11 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         }
 
         for (idx, item) in self.items.iter().enumerate() {
+            debug!("y+idx = {}, osy = {}", y_offset as usize + idx, output.size().y);
+            if y_offset as usize + idx >= output.size().y as usize {
+                break;
+            }
+
             let mut x_offset: u16 = 0;
 
             let style = if self.highlighted == Some(idx) {
@@ -308,9 +315,11 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
                 if text.width() < column_width as usize {
                     // since text.width() is < column_width, it's safe to cast to u16.
                     for x_stride in (text.width() as u16)..column_width {
+                        let pos = XY::new(x_offset + x_stride, y_offset + idx as u16);
+                        // debug!("printing at pos {} size {}", pos, output.size());
                         output.print_at(
                             // TODO possible u16 oveflow
-                            XY::new(x_offset + x_stride, y_offset + idx as u16),
+                            pos,
                             style,
                             " ",
                         );
