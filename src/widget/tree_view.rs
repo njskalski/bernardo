@@ -268,9 +268,13 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
 
 
             let style = if idx == self.highlighted {
-                TextStyle_WhiteOnBrightYellow
+                theme.active_cursor()
             } else {
-                TextStyle_WhiteOnBlack
+                if focused {
+                    theme.active_edit()
+                } else {
+                    theme.inactive_edit()
+                }
             };
 
             let prefix = if node.is_leaf() {

@@ -265,9 +265,9 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         // it's the same as in layouts, probably we should move that calc to primitives
         let mut y_offset: u16 = 0;
 
-        let header_style = TextStyle_WhiteOnBlue;
-        let non_highlighted_style = TextStyle_WhiteOnBlack;
-        let highlighted_style = TextStyle_WhiteOnBrightYellow;
+        let header_style = theme.header();
+        let non_highlighted_style = theme.inactive_edit();
+        let highlighted_style = theme.active_edit();
 
         if self.show_column_names {
             let mut x_offset: u16 = 0;

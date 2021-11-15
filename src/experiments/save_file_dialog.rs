@@ -61,8 +61,8 @@ impl SaveFileDialogWidget {
         let file_list = get_mock_file_list();
         let tree = get_stupid_tree();
         let tree_widget = TreeViewWidget::<usize>::new(Box::new(tree));
-        let list_widget = ListWidget::new().with_items(file_list);
-        let edit_box = EditBoxWidget::new();
+        let list_widget = ListWidget::new().with_items(file_list).with_selection();
+        let edit_box = EditBoxWidget::new().with_enabled(true);
 
         let ok_button = ButtonWidget::new("OK".to_owned());
         let cancel_button = ButtonWidget::new("Cancel".to_owned());
@@ -182,7 +182,7 @@ impl Widget for SaveFileDialogWidget {
 
         return match input_event {
             InputEvent::KeyInput(key) => match key {
-                key if key.keycode.is_arrow() => {
+                key if key.keycode.is_arrow() && key.modifiers.ALT => {
                     debug!("arrow {:?}", key);
                     match key.keycode.as_focus_update() {
                         None => {

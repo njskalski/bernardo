@@ -234,23 +234,20 @@ impl Widget for EditBoxWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
-        let mut primary_style = if self.enabled {
-            if focused {
-                TextStyle_WhiteOnBrightYellow
-            } else {
-                TextStyle_WhiteOnYellow
-            }
+        let primary_style = if self.enabled && focused {
+            theme.active_edit()
         } else {
-            TextStyle_WhiteOnBlack
+            theme.inactive_edit()
         };
 
-        let cursor_style = if self.enabled && focused {
-            TextStyle_WhiteOnRedish
-        } else {
-            primary_style
-        };
 
-        let befor_cursor = self
+        let cursor_style =
+            theme.active_cursor();
+        // } else {
+        //     primary_style
+        // };
+
+        let before_cursor = self
             .text
             .graphemes(true)
             // .enumerate()
@@ -279,7 +276,7 @@ impl Widget for EditBoxWidget {
             .map(|g| g.into())
             .fold("".to_string(), |a, b| a + b);
 
-        output.print_at((0, 0).into(), primary_style, befor_cursor.as_str());
+        output.print_at((0, 0).into(), primary_style, before_cursor.as_str());
         output.print_at((cursor_pos, 0).into(), cursor_style, at_cursor);
         if after_cursor.len() > 0 {
             output.print_at(
