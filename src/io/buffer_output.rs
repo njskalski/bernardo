@@ -3,7 +3,7 @@ use std::default::Default;
 use std::io::ErrorKind;
 use std::ops::{Index, IndexMut};
 
-use log::debug;
+use log::{debug, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -20,11 +20,12 @@ impl Output for BufferOutput {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
         if pos.x >= self.size().x || pos.y >= self.size().y {
             //TODO
-            // debug!(
-            //     "early exit on drawing beyond border (req {}, border {})",
-            //     pos,
-            //     self.size()
-            // );
+            warn!(
+                "early exit on drawing beyond border (req {}, border {})",
+                pos,
+                self.size()
+            );
+            return;
         }
 
         debug_assert!(pos.x < self.size().x, "pos {}, size {}", pos, self.size());

@@ -282,7 +282,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         }
 
         for (idx, item) in self.items.iter().enumerate() {
-            debug!("y+idx = {}, osy = {}", y_offset as usize + idx, output.size().y);
+            // debug!("y+idx = {}, osy = {}", y_offset as usize + idx, output.size().y);
             if y_offset as usize + idx >= output.size().y as usize {
                 break;
             }

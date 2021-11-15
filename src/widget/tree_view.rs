@@ -163,7 +163,14 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
     }
 
     fn layout(&mut self, max_size: XY) -> XY {
-        self.min_size()
+        // let mut from_items = self.size_from_items();
+        //
+        // debug!("would like {} limits to {}", from_items, max_size);
+        // from_items = from_items.cut(max_size);
+        // debug!("results {}", from_items);
+        //
+        // from_items
+        max_size
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -253,6 +260,12 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
 
     fn render(&self, focused: bool, output: &mut Output) {
         for (idx, (depth, node)) in self.items().enumerate() {
+            if idx >= output.size().y as usize {
+                debug!("idx {}, output.size().y {}", idx, output.size());
+                break;
+            }
+
+
             let style = if idx == self.highlighted {
                 TextStyle_WhiteOnBrightYellow
             } else {

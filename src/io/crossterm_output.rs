@@ -178,7 +178,7 @@ impl<W: Write> Output for CrosstermOutput<W> {
 impl<W: Write> SizedXY for CrosstermOutput<W> {
     fn size(&self) -> XY {
         let (x, y) = termion::terminal_size().unwrap();
-        debug!("termion size: {},{}",x,y);
+        // debug!("termion size: {},{}",x,y);
         XY::new(x, y)
     }
 }

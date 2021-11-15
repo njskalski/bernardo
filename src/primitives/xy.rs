@@ -15,6 +15,13 @@ impl XY {
     pub const fn new(x: u16, y: u16) -> Self {
         XY { x, y }
     }
+
+    pub fn cut(&self, other: XY) -> XY {
+        let minx = u16::min(self.x, other.x);
+        let miny = u16::min(self.y, other.y);
+
+        XY::new(minx, miny)
+    }
 }
 
 impl From<(u16, u16)> for XY {

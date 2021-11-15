@@ -142,7 +142,7 @@ impl Widget for EditBoxWidget {
         );
 
         return match input_event {
-            KeyInput(key_event) => match key_event.keycode {
+            KeyInput(key_event) if key_event.no_modifiers() => match key_event.keycode {
                 Keycode::Enter => Some(Box::new(EditBoxWidgetMsg::Hit)),
                 Keycode::Char(ch) => Some(Box::new(EditBoxWidgetMsg::Letter(ch))),
                 Keycode::Backspace => Some(Box::new(EditBoxWidgetMsg::Backspace)),

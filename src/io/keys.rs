@@ -56,6 +56,12 @@ pub struct Key {
     pub modifiers: Modifiers,
 }
 
+impl Key {
+    pub fn no_modifiers(&self) -> bool {
+        !(self.modifiers.ALT || self.modifiers.CTRL || self.modifiers.SHIFT)
+    }
+}
+
 impl Keycode {
     pub fn is_arrow(&self) -> bool {
         return *self == Keycode::ArrowRight ||

@@ -198,14 +198,14 @@ impl<'a> Layout for SplitLayout<'a> {
             let rect = &rects[idx];
             let wirs = child_layout.layout.calc_sizes(rect.size);
 
-            debug!("A{} output_size {} parent {} children {:?}", wirs.len(), output_size, rect, wirs);
+            // debug!("A{} output_size {} parent {} children {:?}", wirs.len(), output_size, rect, wirs);
             //TODO add intersection checks
 
             for wir in wirs.iter() {
                 let wid = wir.wid;
                 let new_rect = wir.rect.shifted(rect.pos);
 
-                debug!("output_size {} parent {} child {} res {}", output_size, rect, wir.rect, new_rect);
+                // debug!("output_size {} parent {} child {} res {}", output_size, rect, wir.rect, new_rect);
                 debug_assert!(output_size.x >= new_rect.lower_right().x);
                 debug_assert!(output_size.y >= new_rect.lower_right().y);
 
