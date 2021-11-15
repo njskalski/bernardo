@@ -40,7 +40,7 @@ fn main() {
         .init();
 
     let stdout = stdout();
-    // let mut stdout = stdout.lock().into_raw_mode().unwrap();
+    let mut stdout = stdout.lock().into_raw_mode().unwrap();
     // let stdin = stdin();
 
     // write!(stdout, "{}{}", clear::All, cursor::Goto(1, 1)).unwrap();
