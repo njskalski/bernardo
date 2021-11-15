@@ -170,7 +170,7 @@ impl Widget for SaveFileDialogWidget {
 
         let res_sizes = self.todo_internal_layout(max_size);
 
-        // let res_sizes = self.layout.calc_sizes(self, max_size);
+        debug!("size {}, res_sizes {:?}", max_size, res_sizes);
         self.display_state = Some(DisplayState::new(max_size, res_sizes));
 
         max_size
@@ -270,6 +270,7 @@ impl Widget for SaveFileDialogWidget {
         match self.display_state.borrow().as_ref() {
             None => warn!("failed rendering save_file_dialog without cached_sizes"),
             Some(cached_sizes) => {
+                debug!("widget_sizes : {:?}", cached_sizes.widget_sizes);
                 for wir in &cached_sizes.widget_sizes {
                     let widget = self.todo_wid_to_widget_or_self(wir.wid);
 

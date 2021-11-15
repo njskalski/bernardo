@@ -9,7 +9,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::input_source::InputSource;
 use crate::io::keys::Key;
 
-struct CrosstermInput {
+pub struct CrosstermInput {
     receiver: Receiver<InputEvent>,
 }
 

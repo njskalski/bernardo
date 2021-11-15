@@ -113,11 +113,13 @@ impl<'a> SplitLayout<'a> {
 
             upper_left = upper_left
                 + if self.split_direction == SplitDirection::Vertical {
-                    XY::new(0, *s as u16)
-                } else {
-                    XY::new(*s as u16, 0).into()
-                };
+                XY::new(0, *s as u16)
+            } else {
+                XY::new(*s as u16, 0).into()
+            };
         }
+
+        debug!("split {:?} size {} rects {:?}", self.split_direction, size, res);
 
         debug_assert!(res.len() == self.children.len());
 
@@ -189,15 +191,23 @@ impl<'a> Layout for SplitLayout<'a> {
 
         let rects = rects_op.unwrap();
         let mut res: Vec<WidgetIdRect> = vec![];
+
+        debug_assert!(rects.len() == self.children.len());
+
         for (idx, child_layout) in self.children.iter_mut().enumerate() {
             let rect = &rects[idx];
-            let wirs = child_layout.layout.calc_sizes(rects[idx].size);
+            let wirs = child_layout.layout.calc_sizes(rect.size);
 
+            debug!("A{} output_size {} parent {} children {:?}", wirs.len(), output_size, rect, wirs);
             //TODO add intersection checks
 
             for wir in wirs.iter() {
                 let wid = wir.wid;
                 let new_rect = wir.rect.shifted(rect.pos);
+
+                debug!("output_size {} parent {} child {} res {}", output_size, rect, wir.rect, new_rect);
+                debug_assert!(output_size.x >= new_rect.lower_right().x);
+                debug_assert!(output_size.y >= new_rect.lower_right().y);
 
                 res.push(WidgetIdRect {
                     wid,

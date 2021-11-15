@@ -27,8 +27,8 @@ impl Output for BufferOutput {
             // );
         }
 
-        debug_assert!(pos.x < self.size().x);
-        debug_assert!(pos.y < self.size().y);
+        debug_assert!(pos.x < self.size().x, "pos {}, size {}", pos, self.size());
+        debug_assert!(pos.y < self.size().y, "pos {}, size {}", pos, self.size());
         debug_assert!(text.len() < (u16::max_value() as usize));
 
         let mut offset: u16 = 0;
