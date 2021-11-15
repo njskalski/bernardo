@@ -35,6 +35,22 @@ impl TextStyle {
             effect: Effect::None,
         }
     }
+
+    pub fn half(&self) -> Self {
+        TextStyle {
+            foreground: self.foreground.half(),
+            background: self.background.half(),
+            effect: self.effect,
+        }
+    }
+
+    pub fn maybe_half(&self, focused: bool) -> Self {
+        if focused {
+            *self
+        } else {
+            self.half()
+        }
+    }
 }
 
 pub const TextStyle_WhiteOnBlack: TextStyle = TextStyle {

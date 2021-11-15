@@ -4,61 +4,46 @@
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::color::Color;
 use crate::primitives::colors;
+use crate::primitives::colors::{COLOR_CURSOR_BACKGROUND, COLOR_CURSOR_FOREGROUND};
 
 pub struct Theme {
-    active_background: Color,
-    inactive_background: Color,
-    active_input_background: Color,
-    inactive_input_background: Color,
-    active_input_foreground: Color,
-    inactive_input_foreground: Color,
-
-    active_cursor_background: Color,
-    inactive_cursor_background: Color,
-
-    noninteractive_text_focused: Color,
-    noninteractive_text: Color,
+    cursor_background: Color,
+    cursor_foreground: Color,
+    default_text_bg: Color,
+    default_text_fg: Color,
+    edit_background: Color,
+    edit_foreground: Color,
+    header_background: Color,
+    header_foreground: Color,
 }
 
 impl Theme {
     pub const fn default() -> Self {
         Theme {
-            active_background: colors::COLOR_BRIGHT_BACKGROUND,
-            inactive_background: colors::COLOR_DARK_BACKGROUND,
-
-            noninteractive_text_focused: colors::COLOR_NONINTERACTIVE_TEXT_FOCUSED,
-            noninteractive_text: colors::COLOR_NONINTERACTIVE_TEXT_NOT_FOCUSED,
-
-            active_input_background: colors::COLOR_ACTIVE_INPUT_BACKGROUND,
-            inactive_input_background: colors::COLOR_INACTIVE_INPUT_BACKGROUND,
-            active_input_foreground: colors::COLOR_PINK_SAND,
-            inactive_input_foreground: colors::COLOR_INACTIVE_INPUT_FOREGROUND,
-            active_cursor_background: colors::COLOR_SKY,
-            inactive_cursor_background: colors::COLOR_INACTIVE_INPUT_BACKGROUND,
+            cursor_background: colors::COLOR_CURSOR_BACKGROUND,
+            cursor_foreground: colors::COLOR_CURSOR_FOREGROUND,
+            default_text_bg: colors::DEFAULT_TEXT_BACKGROUND,
+            default_text_fg: colors::DEFAULT_TEXT_FOREGROUND,
+            edit_background: colors::EDIT_BACKGROUND,
+            edit_foreground: colors::EDIT_FOREGROUND,
+            header_background: colors::HEADER_BACKGROUND,
+            header_foreground: colors::HEADER_FOREGROUND,
         }
     }
 
-    pub fn active_edit(&self) -> TextStyle {
-        TextStyle::new(self.active_input_foreground, self.active_input_background, Effect::None)
-    }
-
-    pub fn inactive_edit(&self) -> TextStyle {
-        TextStyle::new(self.inactive_input_foreground, self.inactive_input_background, Effect::None)
-    }
-
-    pub fn active_cursor(&self) -> TextStyle {
-        TextStyle::new(self.active_input_foreground, self.active_cursor_background, Effect::None)
+    pub fn cursor(&self) -> TextStyle {
+        TextStyle::new(self.cursor_foreground, self.cursor_background, Effect::None)
     }
 
     pub fn header(&self) -> TextStyle {
-        TextStyle::new(self.inactive_input_foreground, self.inactive_input_background, Effect::Underline)
+        TextStyle::new(self.header_foreground, self.header_background, Effect::Underline)
     }
 
-    pub fn non_interactive_text(&self, focused: bool) -> TextStyle {
-        if focused {
-            TextStyle::new(self.noninteractive_text_focused, self.active_background, Effect::Underline)
-        } else {
-            TextStyle::new(self.noninteractive_text, self.inactive_background, Effect::None)
-        }
+    pub fn default_text(&self) -> TextStyle {
+        TextStyle::new(self.default_text_fg, self.default_text_bg, Effect::None)
+    }
+
+    pub fn editable_field(&self) -> TextStyle {
+        TextStyle::new(self.edit_foreground, self.edit_background, Effect::None)
     }
 }

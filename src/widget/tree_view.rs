@@ -261,13 +261,9 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
-        let bgcolor = if focused {
-            theme.active_edit().background
-        } else {
-            theme.inactive_edit().background
-        };
-
-        helpers::fill_background(bgcolor, output);
+        let primary_style = theme.default_text().maybe_half(focused);
+        helpers::fill_background(primary_style.background, output);
+        let cursor_style = theme.cursor().maybe_half(focused);
 
         for (idx, (depth, node)) in self.items().enumerate() {
             if idx >= output.size().y as usize {
@@ -277,13 +273,9 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
 
 
             let style = if idx == self.highlighted {
-                theme.active_cursor()
+                cursor_style
             } else {
-                if focused {
-                    theme.active_edit()
-                } else {
-                    theme.inactive_edit()
-                }
+                primary_style
             };
 
             let prefix = if node.is_leaf() {

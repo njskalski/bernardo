@@ -234,26 +234,10 @@ impl Widget for EditBoxWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
-        let bgcolor = if focused {
-            theme.active_edit().background
-        } else {
-            theme.inactive_edit().background
-        };
+        let primary_style = theme.editable_field().maybe_half(focused);
 
-        helpers::fill_background(bgcolor, output);
-
-        let primary_style = if self.enabled && focused {
-            theme.active_edit()
-        } else {
-            theme.inactive_edit()
-        };
-
-
-        let cursor_style =
-            theme.active_cursor();
-        // } else {
-        //     primary_style
-        // };
+        helpers::fill_background(primary_style.background, output);
+        let cursor_style = theme.cursor().maybe_half(focused);
 
         let before_cursor = self
             .text

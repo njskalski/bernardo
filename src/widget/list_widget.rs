@@ -262,19 +262,14 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
-        let bgcolor = if focused {
-            theme.active_edit().background
-        } else {
-            theme.inactive_edit().background
-        };
-
-        helpers::fill_background(bgcolor, output);
+        let primary_style = theme.default_text().maybe_half(focused);
+        helpers::fill_background(primary_style.background, output);
+        let cursor_style = theme.cursor().maybe_half(focused);
+        let header_style = theme.header().maybe_half(focused);
 
         // TODO add columns expansion
         // it's the same as in layouts, probably we should move that calc to primitives
         let mut y_offset: u16 = 0;
-
-        let header_style = theme.header();
 
         if self.show_column_names {
             let mut x_offset: u16 = 0;
@@ -298,13 +293,9 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
             let mut x_offset: u16 = 0;
 
             let style = if self.highlighted == Some(idx) {
-                if focused {
-                    theme.active_cursor()
-                } else {
-                    theme.inactive_edit()
-                }
+                cursor_style
             } else {
-                theme.non_interactive_text(focused)
+                primary_style
             };
 
             for c_idx in 0..Item::len_columns() {
