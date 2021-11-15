@@ -286,10 +286,14 @@ impl Widget for EditBoxWidget {
             );
         }
 
+        // if cursor is after the text, we need to add an offset, so the background does not
+        // overwrite cursor style.
+        let cursor_offset: u16 = if cursor_pos == self.text.len() { 1 } else { 0 };
+
         // background after the text
         if self.display_state.width as usize > self.text.width() {
-            let background_length = self.display_state.width - self.text.width() as u16;
-            let begin_pos: XY = XY::new(self.text.width() as u16, 0);
+            let background_length = self.display_state.width - (cursor_offset + self.text.width() as u16);
+            let begin_pos: XY = XY::new(cursor_offset + self.text.width() as u16, 0);
             for i in 0..background_length {
                 let pos = begin_pos + XY::new(i, 0);
                 output.print_at(

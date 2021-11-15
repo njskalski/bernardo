@@ -6,11 +6,11 @@ pub const COLOR_TUNA: Color = Color::new(235, 111, 146);
 pub const COLOR_BRIGHT_BACKGROUND: Color = Color::new(25, 23, 36);
 pub const COLOR_DARK_BACKGROUND: Color = Color::new(12, 11, 18);
 
-pub const COLOR_ACTIVE_INPUT_FOREGROUND: Color = Color::new(76, 54, 90);
-pub const COLOR_ACTIVE_INPUT_BACKGROUND: Color = Color::new(16, 5, 11);
+pub const COLOR_INACTIVE_INPUT_FOREGROUND: Color = Color::new(44, 34, 55);
+pub const COLOR_INACTIVE_INPUT_BACKGROUND: Color = Color::new(14, 14, 27);
 
-pub const COLOR_INACTIVE_INPUT_FOREGROUND: Color = Color::new(65, 37, 51);
-pub const COLOR_INACTIVE_INPUT_BACKGROUND: Color = Color::new(21, 10, 14);
+pub const COLOR_ACTIVE_INPUT_FOREGROUND: Color = Color::new(70, 81, 90);
+pub const COLOR_ACTIVE_INPUT_BACKGROUND: Color = Color::new(35, 39, 68);
 
 pub const COLOR_VIOLET: Color = Color::new(110, 106, 134);
 pub const COLOR_BRIGHT_VIOLET: Color = Color::new(196, 167, 231);
