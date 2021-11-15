@@ -71,6 +71,7 @@ pub enum ListWidgetMsg {
     End,
     PageUp,
     PageDown,
+    Noop
 }
 
 impl AnyMsg for ListWidgetMsg {}
@@ -166,7 +167,17 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         debug_assert!(self.min_size().x <= max_size.x, "min_size {} max_size {}", self.min_size(), max_size);
         debug_assert!(self.min_size().y <= max_size.y, "min_size {} max_size {}", self.min_size(), max_size);
 
-        self.min_size()
+        // TODO check if items < max_u16
+        let rows = (self.items.len() + if self.show_column_names { 1 } else { 0 }) as u16;
+        let mut cols = 0;
+
+        for i in 0..Item::len_columns() {
+            cols += Item::get_min_column_width(i);
+        }
+
+        let desired = XY::new(cols, rows);
+
+        desired.cut(max_size)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -230,6 +241,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
                                 }
                             },
                             Arrow::Down => {
+                                debug!("items {}, old_high {}", self.items.len(), old_highlighted);
                                 if old_highlighted < self.items.len() - 1 {
                                     self.highlighted = Some(old_highlighted + 1);
                                     self.on_change()
@@ -250,6 +262,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
             ListWidgetMsg::End => { None }
             ListWidgetMsg::PageUp => { None }
             ListWidgetMsg::PageDown => { None }
+            ListWidgetMsg::Noop => { None }
         }
     }
 
