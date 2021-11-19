@@ -17,6 +17,22 @@ pub struct WidgetIdRect {
     pub rect: Rect,
 }
 
+impl WidgetIdRect {
+    pub fn new(wid: WID, rect: Rect) -> Self {
+        WidgetIdRect {
+            wid,
+            rect,
+        }
+    }
+
+    pub fn shifted(self, pos: XY) -> Self {
+        WidgetIdRect {
+            wid: self.wid,
+            rect: self.rect.shifted(pos),
+        }
+    }
+}
+
 pub trait Layout {
     fn is_leaf(&self) -> bool {
         false
@@ -29,6 +45,4 @@ pub trait Layout {
     receive information about their new sizes before render.
      */
     fn calc_sizes(&mut self, output_size: XY) -> Vec<WidgetIdRect>;
-
-    fn draw_border(&self, theme: &Theme, focused: bool, output: &mut Output);
 }

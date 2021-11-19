@@ -42,7 +42,7 @@ impl<'a> Layout for LeafLayout<'a> {
 
         if self.with_border {
             if output_size > (2, 2).into() {
-                let limited_output = output_size - (2.2).into();
+                let limited_output = XY::new(output_size.x - 2, output_size.y - 2);
                 let size = self.widget.layout(limited_output);
                 let rect = Rect::new(XY::new(1, 1), size);
 
@@ -63,11 +63,5 @@ impl<'a> Layout for LeafLayout<'a> {
                 rect,
             }]
         }
-    }
-
-    fn draw_border(&self, theme: &Theme, focused: bool, output: &mut Output) {
-        border::draw_full_rect(theme.default_text(),
-                               &SingleBorderStyle,
-                               output);
     }
 }

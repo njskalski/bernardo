@@ -1,11 +1,12 @@
 use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Formatter;
+use std::hash::{Hash, Hasher};
 use std::ops::Add;
 
 pub const ZERO: XY = XY::new(0, 0);
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Hash)]
 pub struct XY {
     pub x: u16,
     pub y: u16,
