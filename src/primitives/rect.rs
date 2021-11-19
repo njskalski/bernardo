@@ -86,7 +86,58 @@ impl Rect {
             size: self.size,
         }
     }
+
+    pub fn corners(&self) -> CornersIterator {
+        CornersIterator::new(*self)
+    }
 }
+
+pub struct CornersIterator {
+    of: Rect,
+    item: u8, // 0 is UpperLeft, 1 is UpperRight (clockwise). After 3 there is nothing.
+}
+
+impl CornersIterator {
+    pub fn new(of: Rect) -> Self {
+        CornersIterator {
+            of,
+            item: 0,
+        }
+    }
+}
+
+impl Iterator for CornersIterator {
+    type Item = XY;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // Upper Left
+        if self.item == 0 {
+            self.item += 1;
+            return Some(self.of.pos);
+        };
+
+        // Upper Right
+        if self.item == 1 {
+            self.item += 1;
+            return Some(XY::new(self.of.pos.x + self.of.size.y - 1, self.of.pos.y));
+        };
+
+        // Bottom Right
+        if self.item == 2 {
+            self.item += 1;
+            return Some(XY::new(self.of.pos.x + self.of.size.y - 1, self.of.pos.y + self.of.size.y - 1));
+        };
+
+        // Bottom Left
+        if self.item == 3 {
+            self.item += 1;
+            return Some(XY::new(self.of.pos.x, self.of.pos.y + self.of.size.y - 1));
+        };
+
+        None
+    }
+}
+
 
 impl From<(XY, XY)> for Rect {
     fn from(pair: (XY, XY)) -> Self {

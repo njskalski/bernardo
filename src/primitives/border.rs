@@ -1,5 +1,8 @@
+use std::collections::HashSet;
+
 use crate::io::output::Output;
 use crate::io::style::TextStyle;
+use crate::layout::layout::WidgetIdRect;
 use crate::primitives::rect::Rect;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
@@ -78,67 +81,40 @@ pub fn draw_full_rect(style: TextStyle, border_style: &BorderStyle, output: &mut
     }
 }
 
-enum WallState {
-    // Don't draw that wall at all. Draw connecting pieces instead of corners.
-    Skip,
-    // Draw this wall as independent one, including corners.
-    Lone,
-    // Draw this wall as one that will be connected from beyond the given rectangle.
-    // Instead of freestanding corners, draw double-corners.
-    Connecting,
-}
+pub fn draw_some(wirs: &Vec<WidgetIdRect>, text_style: TextStyle, border_style: &BorderStyle, output: &mut Output) {
+    if output.size() > XY::new(2, 2) {
+        let mut corner_neighbours = HashSet::<XY>::new();
+        let mut corners = HashSet::<XY>::new();
 
-struct WallStates {
-    pub Left: WallState,
-    pub Top: WallState,
-    pub Right: WallState,
-    pub Bottom: WallState,
-}
+        for wir in wirs {
+            let rect = &wir.rect;
 
-impl WallStates {
-    pub fn get_corner_top_left(wall_states: &WallStates, border_style: &BorderStyle) -> Option<&'static str> {
-        match (&wall_states.Left, &wall_states.Top) {
-            (WallState::Skip, WallState::Skip) => None,
-            (WallState::Lone, WallState::Skip) => Some(border_style.VerticalLine),
-            (WallState::Skip, WallState::Lone) => Some(border_style.HorizontalLine),
-            (WallState::Lone, WallState::Lone) => Some(border_style.UpperLeft),
-            (WallState::Lone, WallState::Connecting) => Some(border_style.CrossNoLeft),
-            (WallState::Connecting, WallState::Lone) =>
-        }
-    }
-}
+            for x in rect.pos.x..rect.lower_right().x {
+                output.print_at(XY::new(x, rect.pos.y),
+                                text_style,
+                                border_style.VerticalLine);
+                output.print_at(XY::new(x, rect.lower_right().y - 1),
+                                text_style,
+                                border_style.VerticalLine);
+            }
 
-pub fn draw_some(rect: Rect, wall_states: WallStates, text_style: TextStyle, border_style: &BorderStyle, output: &mut Output) {
-    if output.size() > XY::new(1, 1) {
-        output.print_at(ZERO,
-                        style,
-                        border_style.UpperLeft);
-        output.print_at(XY::new(0, output.size().y - 1),
-                        style,
-                        border_style.BottomLeft);
-        output.print_at(XY::new(output.size().x - 1, 0),
-                        style,
-                        border_style.UpperRight);
-        output.print_at(XY::new(output.size().x - 1, output.size().y - 1),
-                        style,
-                        border_style.BottomRight);
+            for y in 0..output.size().y {
+                output.print_at(XY::new(rect.pos.x, y),
+                                text_style,
+                                border_style.HorizontalLine);
+                output.print_at(XY::new(rect.lower_right().x - 1, y),
+                                text_style,
+                                border_style.HorizontalLine);
+            }
 
-        for x in 0..output.size().x {
-            output.print_at(XY::new(x, 0),
-                            style,
-                            border_style.VerticalLine);
-            output.print_at(XY::new(x, output.size().y - 1),
-                            style,
-                            border_style.VerticalLine);
-        }
-
-        for y in 0..output.size().y {
-            output.print_at(XY::new(0, y),
-                            style,
-                            border_style.HorizontalLine);
-            output.print_at(XY::new(output.size().x - 1, y),
-                            style,
-                            border_style.HorizontalLine);
+            for c in rect.corners() {
+                corners.insert(c);
+                for n in c.neighbours() {
+                    if n < output.size() {
+                        corner_neighbours.insert(n);
+                    }
+                }
+            }
         }
     } else {
         for x in rect.pos.x..rect.lower_right().x {

@@ -22,7 +22,66 @@ impl XY {
 
         XY::new(minx, miny)
     }
+
+    pub fn neighbours(&self) -> NeighboursIterator {
+        NeighboursIterator::new(*self)
+    }
 }
+
+pub struct NeighboursIterator {
+    of: XY,
+    item: u8, // 0 is North, 1 is Right (clockwise). After 3 there is nothing.
+}
+
+impl NeighboursIterator {
+    pub fn new(of: XY) -> Self {
+        NeighboursIterator {
+            of,
+            item: 0,
+        }
+    }
+}
+
+impl Iterator for NeighboursIterator {
+    type Item = XY;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // neighbour above.
+        if self.item == 0 {
+            if self.of.y > 0 {
+                self.item += 1;
+                return Some(XY::new(self.of.x, self.of.y - 1));
+            } else {
+                self.item += 1;
+            }
+        };
+
+        //neighbour on the right.
+        if self.item == 1 {
+            self.item += 1;
+            return Some(XY::new(self.of.x + 1, self.of.y));
+        };
+
+        //neighbour below.
+        if self.item == 2 {
+            self.item += 1;
+            return Some(XY::new(self.of.x + 1, self.of.y));
+        };
+
+        //neighbour on the left.
+        if self.item == 3 {
+            if self.of.x > 0 {
+                self.item += 1;
+                return Some(XY::new(self.of.x - 1, self.of.y));
+            } else {
+                self.item += 1;
+            }
+        };
+
+        None
+    }
+}
+
 
 impl From<(u16, u16)> for XY {
     fn from(pair: (u16, u16)) -> Self {
