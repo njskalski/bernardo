@@ -3,6 +3,7 @@ use std::iter::Iterator;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::output::Output;
 use crate::primitives::rect::Rect;
+use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::widget::{WID, Widget};
 
@@ -29,10 +30,5 @@ pub trait Layout {
      */
     fn calc_sizes(&mut self, output_size: XY) -> Vec<WidgetIdRect>;
 
-
-    // fn render(&self, owner: &W, focused_id: Option<WID>, output: &mut Output);
-    //
-    // fn boxed(self) -> Box<dyn Layout<W>> where Self: Sized {
-    //     Box::new(self)
-    // }
+    fn draw_border(&self, theme: &Theme, focused: bool, output: &mut Output);
 }
