@@ -21,8 +21,9 @@ impl TreeViewNode<usize> for StupidTree {
         format!("StupidTree {}", self.id)
     }
 
-    fn children(&self) -> Box<dyn std::iter::Iterator<Item=&dyn TreeViewNode<usize>> + '_> {
-        Box::new(self.children.iter().map(|f| f as &dyn TreeViewNode<usize>))
+    fn children(&self) -> Box<dyn std::iter::Iterator<Item=Box<dyn TreeViewNode<usize>>> + '_> {
+        Box::new(self.children.iter().map(|f| Box::new(f.clone()) as Box<dyn TreeViewNode<usize>>))
+            as Box<dyn std::iter::Iterator<Item=Box<dyn TreeViewNode<usize>>> + '_>
     }
 
     fn is_leaf(&self) -> bool {

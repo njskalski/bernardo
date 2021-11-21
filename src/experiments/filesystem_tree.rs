@@ -10,13 +10,13 @@ struct FilesystemNode {
     path: PathBuf,
 }
 
-struct FilesystemChildrenIterator<'a> {
-    path: &'a Path,
+struct FilesystemChildrenIterator {
+    path: PathBuf,
     readdir_op: Option<ReadDir>,
 }
 
-impl<'a> Iterator for FilesystemChildrenIterator<'a> {
-    type Item = &'a dyn TreeViewNode<PathBuf>;
+impl Iterator for FilesystemChildrenIterator {
+    type Item = Box<dyn TreeViewNode<PathBuf>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.readdir_op {
@@ -46,9 +46,9 @@ impl<'a> Iterator for FilesystemChildrenIterator<'a> {
                             }
                             Ok(direntry) => {
                                 Some(
-                                    &FilesystemNode {
+                                    Box::new(FilesystemNode {
                                         path: direntry.path()
-                                    }
+                                    })
                                 )
                             }
                         }
@@ -68,9 +68,9 @@ impl TreeViewNode<PathBuf> for FilesystemNode {
         "whatever".to_string()
     }
 
-    fn children(&self) -> Box<dyn Iterator<Item=&dyn TreeViewNode<PathBuf>> + '_> {
+    fn children(&self) -> Box<dyn Iterator<Item=Box<dyn TreeViewNode<PathBuf>>>> {
         Box::new(FilesystemChildrenIterator {
-            path: self.path.borrow(),
+            path: self.path.clone(),
             readdir_op: None,
         })
     }

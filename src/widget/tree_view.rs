@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use std::borrow::{Borrow, BorrowMut};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt::{Debug, Formatter, Pointer};
 use std::hash::Hash;
@@ -20,29 +20,64 @@ use crate::widget::edit_box::EditBoxWidget;
 use crate::widget::tree_view_node::TreeViewNode;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
-fn tree_it<'a, Key: Hash + Eq + Debug + Clone>(
-    root: &'a dyn TreeViewNode<Key>,
+/*
+This iterator implements depth-first-order using a double ended queue to emulate recursion,
+so I don't have to fight borrow-checker, that seem hard to marry with lazy instantiation.
+
+I got this idea in Zurich Operahouse, watching some ballet. Creativity sprouts from boredom.
+ */
+struct TreeIt<'a, Key: Hash + Eq + Debug + Clone> {
+    depth: usize,
+    queue: VecDeque<(u16, Box<dyn std::iter::Iterator<Item=Box<dyn TreeViewNode<Key>>> + 'a>)>,
     expanded: &'a HashSet<Key>,
-) -> Box<dyn std::iter::Iterator<Item = (u16, &'a dyn TreeViewNode<Key>)> + 'a> {
-    tree_it_rec(root, expanded, 0)
+    item: Option<Box<dyn TreeViewNode<Key>>>,
 }
 
-fn tree_it_rec<'a, Key: Hash + Eq + Debug + Clone>(
-    root: &'a dyn TreeViewNode<Key>,
-    expanded: &'a HashSet<Key>,
-    depth: u16,
-) -> Box<dyn std::iter::Iterator<Item = (u16, &'a dyn TreeViewNode<Key>)> + 'a> {
-    if !expanded.contains(root.id()) {
-        Box::new(std::iter::once((depth, root)))
-    } else {
-        Box::new(
-            std::iter::once((depth, root)).chain(
-                root.children()
-                    .flat_map(move |child| tree_it_rec(child, expanded, depth + 1)),
-            ),
-        )
+impl<'a, Key: Hash + Eq + Debug + Clone> TreeIt<'a, Key> {
+    pub fn new(root: Box<dyn TreeViewNode<Key>>, expanded: &'a HashSet<Key>) -> TreeIt<'a, Key> {
+        let mut queue: VecDeque<(u16, Box<dyn Iterator<Item=Box<dyn TreeViewNode<Key>>>>)> = VecDeque::new();
+        let root_iter = Some(root).into_iter();
+        queue.push_front((0, Box::new(root_iter)));
+
+        TreeIt {
+            depth: 0,
+            queue,
+            expanded,
+            item: None,
+        }
     }
 }
+
+impl<'a, Key: Hash + Eq + Debug + Clone> Iterator for TreeIt<'a, Key> {
+    type Item = (u16, Box<dyn TreeViewNode<Key>>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.queue.is_empty() == false {
+            let head = self.queue.front_mut().unwrap();
+
+
+            let (depth, iterator) = head;
+            match iterator.next() {
+                None => {
+                    self.queue.pop_front();
+                    continue;
+                },
+                Some(item) => {
+                    self.item = Some(item);
+
+                    if self.expanded.contains(item.id()) {
+                        self.queue.push_front((*depth + 1, self.item.unwrap().children()));
+                    }
+
+                    return Some((*depth, item))
+                }
+            }
+        }
+
+        None
+    }
+}
+
 
 pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
     id: WID,
@@ -122,7 +157,7 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         }
     }
 
-    fn get_highlighted_node(&self) -> Option<&dyn TreeViewNode<Key>> {
+    fn get_highlighted_node(&self) -> Option<&Box<dyn TreeViewNode<Key>>> {
         self.items().skip(self.highlighted).next().map(|p| p.1)
     }
 
@@ -137,8 +172,8 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         }
     }
 
-    fn items(&self) -> Box<dyn Iterator<Item = (u16, &dyn TreeViewNode<Key>)> + '_> {
-        tree_it(&*self.root_node, &self.expanded)
+    fn items(&self) -> Box<dyn Iterator<Item=(u16, &Box<dyn TreeViewNode<Key>>)> + '_> {
+        Box::new(TreeIt::new(self.root_node.clone(), &self.expanded))
     }
 }
 
