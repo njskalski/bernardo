@@ -4,5 +4,5 @@ terminal:
   before_script:
     - apt update
   script: sleep 60
-  variables:
-    RUST_BACKTRACE: 1
+  # variables:
+  #   RUST_BACKTRACE: 1
