@@ -1,10 +1,11 @@
+use std::borrow::Borrow;
 use std::fmt::{Debug, Formatter};
 use std::hash::Hash;
 
 pub trait TreeViewNode<Key: Hash + Eq + Debug> {
     fn id(&self) -> &Key;
     fn label(&self) -> String;
-    fn children(&self) -> Box<dyn std::iter::Iterator<Item=Box<dyn TreeViewNode<Key>>> + '_>;
+    fn children(&self) -> Box<dyn std::iter::Iterator<Item=Box<dyn Borrow<dyn TreeViewNode<Key>>>>>;
     fn is_leaf(&self) -> bool;
 }
 

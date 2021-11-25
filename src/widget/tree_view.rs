@@ -28,16 +28,16 @@ I got this idea in Zurich Operahouse, watching some ballet. Creativity sprouts f
  */
 struct TreeIt<'a, Key: Hash + Eq + Debug + Clone> {
     depth: usize,
-    queue: VecDeque<(u16, Box<dyn std::iter::Iterator<Item=Box<dyn TreeViewNode<Key>>> + 'a>)>,
+    queue: VecDeque<(u16, Box<dyn std::iter::Iterator<Item=&'a Box<dyn TreeViewNode<Key>>> + 'a>)>,
     expanded: &'a HashSet<Key>,
-    item: Option<Box<dyn TreeViewNode<Key>>>,
+    item: Option<&'a Box<dyn TreeViewNode<Key>>>,
 }
 
 impl<'a, Key: Hash + Eq + Debug + Clone> TreeIt<'a, Key> {
-    pub fn new(root: Box<dyn TreeViewNode<Key>>, expanded: &'a HashSet<Key>) -> TreeIt<'a, Key> {
-        let mut queue: VecDeque<(u16, Box<dyn Iterator<Item=Box<dyn TreeViewNode<Key>>>>)> = VecDeque::new();
-        let root_iter = Some(root).into_iter();
-        queue.push_front((0, Box::new(root_iter)));
+    pub fn new(root: &'a Box<dyn TreeViewNode<Key>>, expanded: &'a HashSet<Key>) -> TreeIt<'a, Key> {
+        let mut queue: VecDeque<(u16, Box<dyn Iterator<Item=&'a Box<dyn TreeViewNode<Key>>>>)> = VecDeque::new();
+
+        queue.push_front((0, Box::new(std::iter::once(root))));
 
         TreeIt {
             depth: 0,

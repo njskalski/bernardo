@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use crate::widget::tree_view_node::TreeViewNode;
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone)]
@@ -21,9 +23,8 @@ impl TreeViewNode<usize> for StupidTree {
         format!("StupidTree {}", self.id)
     }
 
-    fn children(&self) -> Box<dyn std::iter::Iterator<Item=Box<dyn TreeViewNode<usize>>> + '_> {
+    fn children(&self) -> Box<dyn Iterator<Item=Box<dyn Borrow<dyn TreeViewNode<usize>>>>> {
         Box::new(self.children.iter().map(|f| Box::new(f.clone()) as Box<dyn TreeViewNode<usize>>))
-            as Box<dyn std::iter::Iterator<Item=Box<dyn TreeViewNode<usize>>> + '_>
     }
 
     fn is_leaf(&self) -> bool {
