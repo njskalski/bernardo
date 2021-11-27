@@ -1,5 +1,5 @@
 use std::borrow::{Borrow, BorrowMut};
-use std::cell::RefCell;
+use std::cell::{Cell, Ref, RefCell};
 use std::fs::ReadDir;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
@@ -36,7 +36,7 @@ struct ReadCache {
 
 impl ReadCache {
     fn items_as_ref(&self) -> impl Iterator<Item=&dyn TreeViewNode<PathBuf>> {
-        self.children.iter().map(|c| c.as_generic())
+        self.children.iter().map(|c| c.as_generic().into())
     }
 }
 
@@ -68,6 +68,11 @@ impl FilesystemNode {
             }
         }
     }
+
+    fn items(&self) -> impl Iterator<Item=&dyn TreeViewNode<PathBuf>> + '_ {
+        self.cache.borrow_mut().as_ref().unwrap().items_as_ref()
+        self.cache.try_borrow_unguarded()
+    }
 }
 
 impl TreeViewNode<PathBuf> for FilesystemNode {
@@ -79,10 +84,9 @@ impl TreeViewNode<PathBuf> for FilesystemNode {
         "whatever".to_string()
     }
 
-    fn children<'a>(&'a self) -> Box<(dyn Iterator<Item=&'a (dyn TreeViewNode<PathBuf> + 'a)> + 'a)> {
+    fn children(&self) -> Box<(dyn Iterator<Item=Borrow<dyn TreeViewNode<PathBuf>>> + '_)> {
         self.update_cache(); // TODO this should be lazy
-        Box::new(self.cache.borrow().map(|x| x.items_as_ref()).unwrap()
-        ) // TODO this can fail
+        Box::new(self.items())
     }
 
     fn is_leaf(&self) -> bool {

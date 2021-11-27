@@ -5,10 +5,10 @@ use std::hash::Hash;
 pub trait TreeViewNode<Key: Hash + Eq + Debug> {
     fn id(&self) -> &Key;
     fn label(&self) -> String;
-    fn children<'a>(&'a self) -> Box<(dyn Iterator<Item=&'a (dyn TreeViewNode<Key> + 'a)> + 'a)>;
+    fn children(&self) -> Box<(dyn Iterator<Item=Borrow<dyn TreeViewNode<Key>>> + '_)>;
     fn is_leaf(&self) -> bool;
 
-    fn as_generic(&self) -> &dyn TreeViewNode<Key> where Self: Sized {
+    fn as_generic(&self) -> &dyn TreeViewNode<Key> {
         self
     }
 }

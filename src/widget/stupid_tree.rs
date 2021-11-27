@@ -29,13 +29,11 @@ impl TreeViewNode<usize> for StupidTree {
         format!("StupidTree {}", self.id)
     }
 
-    // fn children(&self) -> Box<dyn std::iter::Iterator<Item=&(dyn TreeViewNode<usize> + '_)> + '_> {
-    //     Box::new(self.children.iter().map(|c| c as &(dyn TreeViewNode<usize>  )))
-    // }
+    fn children(&self) -> Box<(dyn Iterator<Item=Borrow<dyn TreeViewNode<usize>>> + '_)> {
+        let vecbox: Vec<Box<StupidTree>> = self.children.iter().map(|b| Box::new(*b)).collect();
 
-    fn children<'a>(&'a self) -> Box<(dyn Iterator<Item=&'a (dyn TreeViewNode<usize> + 'a)> + 'a)> {
         Box::new(self.children.iter()
-            .map(|i| i as &dyn TreeViewNode<usize>)
+            .map(|i| Box::new(i))
         ) // TODO this can fail
     }
 
