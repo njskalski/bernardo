@@ -12,22 +12,20 @@ use either::Either;
 
 use crate::widget::tree_view_node::TreeViewNode;
 
-type QueueType<'a, Key> = &'a dyn AsRef<TreeViewNode<Key>>;
+type QueueType<'a, Key> = &'a dyn TreeViewNode<Key>;
 
 pub struct TreeIt<'a, Key: Hash + Eq + Debug> {
-    depth: usize,
     queue: Vec<(u16, QueueType<'a, Key>)>,
     expanded: &'a HashSet<Key>,
 }
 
 impl<'a, Key: Hash + Eq + Debug + Clone> TreeIt<'a, Key> {
-    pub fn new(root: &'a Box<dyn TreeViewNode<Key>>, expanded: &'a HashSet<Key>) -> TreeIt<'a, Key> {
+    pub fn new(root: &'a dyn TreeViewNode<Key>, expanded: &'a HashSet<Key>) -> TreeIt<'a, Key> {
         let mut queue: Vec<(u16, QueueType<'a, Key>)> = Vec::new();
 
-        queue.push_front((0, Box::new(std::iter::once(root))));
+        queue.push((0, root));
 
         TreeIt {
-            depth: 0,
             queue,
             expanded,
         }
@@ -39,23 +37,17 @@ impl<'a, Key: Hash + Eq + Debug + Clone> Iterator for TreeIt<'a, Key> {
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.queue.is_empty() == false {
-            let head = self.queue.front_mut().unwrap();
+            let head = self.queue.pop().unwrap();
+            let (depth, node_ref) = head;
 
-
-            let (depth, iterator) = head;
-            match iterator.next() {
-                None => {
-                    self.queue.pop_front();
-                    continue;
-                },
-                Some(item) => {
-                    self.item = Some(item);
-
-                    if self.expanded.contains(item.id()) {
-                        self.queue.push_front((*depth + 1, self.item.unwrap().children()));
-                    }
-
-                    return Some((*depth, item))
+            // If it's expanded, I have to throw all children on the stack.
+            if self.expanded.contains(node_ref.id()) {
+                let children: Vec<_> = node_ref.children().collect();
+                for idx in (children.len() - 1)..0 {
+                    let item = children[idx];
+                    self.queue.push(
+                        (depth + 1, item)
+                    );
                 }
             }
         }

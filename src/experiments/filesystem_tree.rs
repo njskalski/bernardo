@@ -81,7 +81,7 @@ impl TreeViewNode<PathBuf> for FilesystemNode {
 
     fn children<'a>(&'a self) -> Box<(dyn Iterator<Item=&'a (dyn TreeViewNode<PathBuf> + 'a)> + 'a)> {
         self.update_cache(); // TODO this should be lazy
-        Box::new(self.cache.borrow().unwrap().items_as_ref()
+        Box::new(self.cache.borrow().map(|x| x.items_as_ref()).unwrap()
         ) // TODO this can fail
     }
 

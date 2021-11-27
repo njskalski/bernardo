@@ -99,8 +99,8 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         }
     }
 
-    fn get_highlighted_node(&self) -> Option<&Box<dyn TreeViewNode<Key>>> {
-        self.items().skip(self.highlighted).next().map(|p| p.1)
+    fn get_highlighted_node(&self) -> Option<&Box<(dyn TreeViewNode<Key> + 'static)>> {
+        self.items().skip(self.highlighted).next().map(|p| &p.1)
     }
 
     // returns new value
@@ -115,7 +115,7 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
     }
 
     fn items(&self) -> TreeIt<Key> {
-        TreeIt::new(self.root_node.clone(), &self.expanded)
+        TreeIt::new(self.root_node.as_ref(), &self.expanded)
     }
 }
 

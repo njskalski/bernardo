@@ -8,7 +8,7 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug> {
     fn children<'a>(&'a self) -> Box<(dyn Iterator<Item=&'a (dyn TreeViewNode<Key> + 'a)> + 'a)>;
     fn is_leaf(&self) -> bool;
 
-    fn as_generic(&self) -> &dyn TreeViewNode<Key> {
+    fn as_generic(&self) -> &dyn TreeViewNode<Key> where Self: Sized {
         self
     }
 }
