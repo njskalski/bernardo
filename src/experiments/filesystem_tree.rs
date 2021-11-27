@@ -1,67 +1,72 @@
 use std::borrow::{Borrow, BorrowMut};
+use std::cell::RefCell;
 use std::fs::ReadDir;
+use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 
 use log::warn;
 
+use crate::widget::tree_it::TreeIt;
 use crate::widget::tree_view_node::TreeViewNode;
 
 struct FilesystemNode {
     path: PathBuf,
+    cache: RefCell<Option<ReadCache>>,
 }
 
-struct FilesystemChildrenIterator {
-    path: PathBuf,
-    readdir_op: Option<ReadDir>,
+impl FilesystemNode {
+    pub fn new(path: PathBuf) -> FilesystemNode {
+        FilesystemNode {
+            path,
+            cache: RefCell::new(None),
+        }
+    }
 }
 
-impl Borrow<dyn TreeViewNode<PathBuf>> for FilesystemNode {
-    fn borrow(&self) -> &(dyn TreeViewNode<PathBuf> + 'static) {
+impl AsRef<dyn TreeViewNode<PathBuf>> for FilesystemNode {
+    fn as_ref(&self) -> &(dyn TreeViewNode<PathBuf> + 'static) {
         self
     }
 }
 
-impl Iterator for FilesystemChildrenIterator {
-    type Item = Box<dyn Borrow<dyn TreeViewNode<PathBuf>>>;
+struct ReadCache {
+    read_dir: ReadDir,
+    children: Vec<FilesystemNode>,
+}
 
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.readdir_op {
-            None => {
-                match self.path.read_dir() {
-                    Ok(readdir) => {
-                        self.readdir_op = Some(readdir);
-                    }
-                    Err(err) => {
-                        warn!("failed reading directory {:?}, {}", self.path, err);
-                    }
-                }
+impl ReadCache {
+    fn items_as_ref(&self) -> impl Iterator<Item=&dyn TreeViewNode<PathBuf>> {
+        self.children.iter().map(|c| c.as_generic())
+    }
+}
+
+struct FilesystemChildrenIterator<'a> {
+    path: PathBuf,
+    _marker: PhantomData<&'a ()>,
+    cache: RefCell<Option<ReadCache>>,
+}
+
+impl FilesystemNode {
+    fn update_cache(&self) {
+        match self.path.read_dir() {
+            Err(err) => {
+                warn!("failed to read dir {:?}, {}", self.path, err);
             }
-            _ => {}
-        };
-
-        return match self.readdir_op.borrow_mut() {
-            None => None,
-            Some(readdir) => {
-                match readdir.next() {
-                    None => None,
-                    Some(res_direntry) => {
-                        match res_direntry {
-                            Err(err) => {
-                                warn!("error reading direntry within {:?}, {}", self.path, err);
-                                None
-                            }
-                            Ok(direntry) => {
-                                Some(
-                                    Box::new(FilesystemNode {
-                                        path: direntry.path()
-                                    }) as Box<dyn Borrow<dyn TreeViewNode<PathBuf>>>
-                                )
-                            }
+            Ok(readdir) => {
+                let mut items = vec![];
+                for dir_entry_op in readdir {
+                    match dir_entry_op {
+                        Err(err) => {
+                            warn!("failed to get dir_entry in {:?}, {}", self.path, err);
+                            // TODO add error item?
+                        }
+                        Ok(dir_entry) => {
+                            items.push(FilesystemNode::new(dir_entry.path()));
                         }
                     }
                 }
             }
-        };
+        }
     }
 }
 
@@ -74,11 +79,10 @@ impl TreeViewNode<PathBuf> for FilesystemNode {
         "whatever".to_string()
     }
 
-    fn children(&self) -> Box<dyn Iterator<Item=Box<dyn Borrow<dyn TreeViewNode<PathBuf>>>>> {
-        Box::new(FilesystemChildrenIterator {
-            path: self.path.clone(),
-            readdir_op: None,
-        })
+    fn children<'a>(&'a self) -> Box<(dyn Iterator<Item=&'a (dyn TreeViewNode<PathBuf> + 'a)> + 'a)> {
+        self.update_cache(); // TODO this should be lazy
+        Box::new(self.cache.borrow().unwrap().items_as_ref()
+        ) // TODO this can fail
     }
 
     fn is_leaf(&self) -> bool {

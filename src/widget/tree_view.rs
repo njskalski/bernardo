@@ -17,67 +17,9 @@ use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::edit_box::EditBoxWidget;
+use crate::widget::tree_it::TreeIt;
 use crate::widget::tree_view_node::TreeViewNode;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
-
-/*
-This iterator implements depth-first-order using a double ended queue to emulate recursion,
-so I don't have to fight borrow-checker, that seem hard to marry with lazy instantiation.
-
-I got this idea in Zurich Operahouse, watching some ballet. Creativity sprouts from boredom.
- */
-struct TreeIt<'a, Key: Hash + Eq + Debug + Clone> {
-    depth: usize,
-    queue: VecDeque<(u16, Box<dyn std::iter::Iterator<Item=&'a Box<dyn TreeViewNode<Key>>> + 'a>)>,
-    expanded: &'a HashSet<Key>,
-    item: Option<&'a Box<dyn TreeViewNode<Key>>>,
-}
-
-impl<'a, Key: Hash + Eq + Debug + Clone> TreeIt<'a, Key> {
-    pub fn new(root: &'a Box<dyn TreeViewNode<Key>>, expanded: &'a HashSet<Key>) -> TreeIt<'a, Key> {
-        let mut queue: VecDeque<(u16, Box<dyn Iterator<Item=&'a Box<dyn TreeViewNode<Key>>>>)> = VecDeque::new();
-
-        queue.push_front((0, Box::new(std::iter::once(root))));
-
-        TreeIt {
-            depth: 0,
-            queue,
-            expanded,
-            item: None,
-        }
-    }
-}
-
-impl<'a, Key: Hash + Eq + Debug + Clone> Iterator for TreeIt<'a, Key> {
-    type Item = (u16, Box<dyn TreeViewNode<Key>>);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while self.queue.is_empty() == false {
-            let head = self.queue.front_mut().unwrap();
-
-
-            let (depth, iterator) = head;
-            match iterator.next() {
-                None => {
-                    self.queue.pop_front();
-                    continue;
-                },
-                Some(item) => {
-                    self.item = Some(item);
-
-                    if self.expanded.contains(item.id()) {
-                        self.queue.push_front((*depth + 1, self.item.unwrap().children()));
-                    }
-
-                    return Some((*depth, item))
-                }
-            }
-        }
-
-        None
-    }
-}
-
 
 pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
     id: WID,
@@ -172,8 +114,8 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         }
     }
 
-    fn items(&self) -> Box<dyn Iterator<Item=(u16, &Box<dyn TreeViewNode<Key>>)> + '_> {
-        Box::new(TreeIt::new(self.root_node.clone(), &self.expanded))
+    fn items(&self) -> TreeIt<Key> {
+        TreeIt::new(self.root_node.clone(), &self.expanded)
     }
 }
 

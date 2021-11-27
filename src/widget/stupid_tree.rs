@@ -14,6 +14,12 @@ impl StupidTree {
     }
 }
 
+impl AsRef<StupidTree> for StupidTree {
+    fn as_ref(&self) -> &StupidTree {
+        self
+    }
+}
+
 impl TreeViewNode<usize> for StupidTree {
     fn id(&self) -> &usize {
         &self.id
@@ -23,8 +29,14 @@ impl TreeViewNode<usize> for StupidTree {
         format!("StupidTree {}", self.id)
     }
 
-    fn children(&self) -> Box<dyn Iterator<Item=Box<dyn Borrow<dyn TreeViewNode<usize>>>>> {
-        Box::new(self.children.iter().map(|f| Box::new(f.clone()) as Box<dyn TreeViewNode<usize>>))
+    // fn children(&self) -> Box<dyn std::iter::Iterator<Item=&(dyn TreeViewNode<usize> + '_)> + '_> {
+    //     Box::new(self.children.iter().map(|c| c as &(dyn TreeViewNode<usize>  )))
+    // }
+
+    fn children<'a>(&'a self) -> Box<(dyn Iterator<Item=&'a (dyn TreeViewNode<usize> + 'a)> + 'a)> {
+        Box::new(self.children.iter()
+            .map(|i| i as &dyn TreeViewNode<usize>)
+        ) // TODO this can fail
     }
 
     fn is_leaf(&self) -> bool {
