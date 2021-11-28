@@ -63,12 +63,11 @@ impl TreeViewNode<PathBuf> for FilesystemNode {
     }
 
     fn label(&self) -> String {
-        "whatever".to_string()
+        self.path.file_name().map(|f| f.to_string_lossy().to_string()).unwrap_or("error".to_string())
     }
-    
 
     fn is_leaf(&self) -> bool {
-        false
+        !self.path.is_dir()
     }
 
     fn num_child(&self) -> usize {
