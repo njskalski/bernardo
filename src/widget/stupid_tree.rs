@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 
-use crate::widget::tree_view_node::TreeViewNode;
+use crate::widget::tree_view_node::{ChildrenIt, TreeViewNode};
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone)]
 pub struct StupidTree {
@@ -29,9 +29,7 @@ impl TreeViewNode<usize> for StupidTree {
         format!("StupidTree {}", self.id)
     }
 
-    fn children(&self) -> Box<(dyn Iterator<Item=Borrow<dyn TreeViewNode<usize>>> + '_)> {
-        let vecbox: Vec<Box<StupidTree>> = self.children.iter().map(|b| Box::new(*b)).collect();
-
+    fn children(&mut self) -> ChildrenIt<usize> {
         Box::new(self.children.iter()
             .map(|i| Box::new(i))
         ) // TODO this can fail

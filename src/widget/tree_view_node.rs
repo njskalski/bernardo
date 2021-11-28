@@ -1,15 +1,18 @@
 use std::borrow::Borrow;
 use std::fmt::{Debug, Formatter};
 use std::hash::Hash;
+use std::ops::Deref;
+
+pub type ChildrenIt<Key> = Box<(dyn Iterator<Item=Box<dyn Borrow<dyn TreeViewNode<Key>>>>)>;
 
 pub trait TreeViewNode<Key: Hash + Eq + Debug> {
     fn id(&self) -> &Key;
     fn label(&self) -> String;
-    fn children(&self) -> Box<(dyn Iterator<Item=Borrow<dyn TreeViewNode<Key>>> + '_)>;
+    fn children(&mut self) -> ChildrenIt<Key>;
     fn is_leaf(&self) -> bool;
 
-    fn as_generic(&self) -> &dyn TreeViewNode<Key> {
-        self
+    fn as_generic(&self) -> Box<dyn Borrow<TreeViewNode<Key>>> {
+        Box::new(self)
     }
 }
 
