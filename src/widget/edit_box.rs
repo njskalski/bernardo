@@ -1,6 +1,6 @@
-use std::any::Any;
-use std::borrow::Borrow;
-use std::ops::Deref;
+
+
+
 
 use log::warn;
 use unicode_segmentation::UnicodeSegmentation;
@@ -9,17 +9,14 @@ use unicode_width::UnicodeWidthStr;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
-use crate::io::keys::Keycode::Enter;
+
 use crate::io::output::Output;
-use crate::io::style::{
-    TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow,
-    TextStyle_WhiteOnRedish, TextStyle_WhiteOnYellow,
-};
-use crate::primitives::{helpers, xy};
+
+use crate::primitives::{helpers};
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::edit_box::EditBoxWidgetMsg::Letter;
+
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
 const MIN_WIDTH: u16 = 12;
@@ -100,7 +97,7 @@ impl EditBoxWidget {
         }
     }
 
-    fn event_miss(&self) -> Option<Box<AnyMsg>> {
+    fn event_miss(&self) -> Option<Box<dyn AnyMsg>> {
         if self.on_miss.is_some() {
             self.on_miss.unwrap()(self)
         } else {
@@ -108,7 +105,7 @@ impl EditBoxWidget {
         }
     }
 
-    fn event_hit(&self) -> Option<Box<AnyMsg>> {
+    fn event_hit(&self) -> Option<Box<dyn AnyMsg>> {
         if self.on_hit.is_some() {
             self.on_hit.unwrap()(self)
         } else {
@@ -233,7 +230,7 @@ impl Widget for EditBoxWidget {
         self
     }
 
-    fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
+    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let primary_style = theme.editable_field().maybe_half(focused);
 
         helpers::fill_background(primary_style.background, output);

@@ -15,7 +15,7 @@
 
 // Newline is always an end of previous line, not a beginning of new.
 
-use std::borrow::Borrow;
+
 use std::collections::HashSet;
 use std::slice::Iter;
 
@@ -91,7 +91,7 @@ impl Cursor {
 }
 
 impl Into<Cursor> for (usize, usize, usize) {
-    fn into(self) -> (Cursor) {
+    fn into(self) -> Cursor {
         Cursor {
             s: Some(Selection {
                 b: self.0,
@@ -245,14 +245,14 @@ impl CursorSet {
     /// TODO(njskalski): it would make a sense not to reduce cursors that have identical .a but different .preferred_column.
     /// Yet we want not to put characters twice for overlapping cursors.
     pub fn reduce(&mut self) {
-        let mut curs: HashSet<usize> = HashSet::new();
+        let _curs: HashSet<usize> = HashSet::new();
 
         //        dbg!(&self.set);
 
         let mut old_curs: Vec<Cursor> = vec![];
         std::mem::swap(&mut old_curs, &mut self.set);
 
-        for mut c in &old_curs {
+        for c in &old_curs {
             let mut found = false;
             for oc in &self.set {
                 if c.a == oc.a {

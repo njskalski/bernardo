@@ -1,8 +1,8 @@
-use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl};
+use crate::experiments::focus_group::{FocusGroup};
 use crate::experiments::from_geometry::from_wirs;
-use crate::layout::layout::{Layout, WidgetIdRect};
+use crate::layout::layout::{WidgetIdRect};
 use crate::primitives::xy::XY;
-use crate::widget::widget::Widget;
+
 
 //TODO: more advanced option would store references to widgets instead of their WIDs.
 // I'll consider that in a next step.

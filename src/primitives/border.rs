@@ -1,12 +1,12 @@
-use std::collections::HashSet;
 
-use log::warn;
+
+
 
 use crate::io::output::Output;
 use crate::io::style::TextStyle;
-use crate::layout::layout::WidgetIdRect;
-use crate::primitives::rect::Rect;
-use crate::primitives::theme::Theme;
+
+
+
 use crate::primitives::xy::{XY, ZERO};
 
 pub struct BorderStyle {
@@ -38,7 +38,7 @@ pub const SingleBorderStyle: BorderStyle = BorderStyle {
 };
 
 
-pub fn draw_full_rect(style: TextStyle, border_style: &BorderStyle, output: &mut Output) {
+pub fn draw_full_rect(style: TextStyle, border_style: &BorderStyle, output: &mut dyn Output) {
     if output.size() > XY::new(1, 1) {
         output.print_at(ZERO,
                         style,

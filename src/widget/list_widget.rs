@@ -1,5 +1,5 @@
-use std::borrow::Borrow;
-use std::fmt::{Debug, Formatter};
+
+use std::fmt::{Debug};
 
 use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;
@@ -7,13 +7,13 @@ use unicode_width::UnicodeWidthStr;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
-use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow};
+
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::list_widget::ListWidgetMsg::Hit;
+
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
 pub enum ListWidgetCell {
@@ -274,7 +274,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         self
     }
 
-    fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
+    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let primary_style = theme.default_text().maybe_half(focused);
         helpers::fill_background(primary_style.background, output);
         let cursor_style = theme.cursor().maybe_half(focused);

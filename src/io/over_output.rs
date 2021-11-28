@@ -1,13 +1,13 @@
-use std::io::ErrorKind;
+
 
 use log::debug;
-use log::error;
+
 use log::warn;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::output::Output;
-use crate::io::style::{TextStyle, TextStyle_WhiteOnBlack};
+use crate::io::style::{TextStyle};
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
@@ -62,7 +62,7 @@ impl Output for OverOutput<'_> {
             return;
         }
 
-        let mut x_offset: i32 = 0;
+        let x_offset: i32 = 0;
         for grapheme in text.graphemes(true).into_iter() {
             let x = 0 as i32 + pos.x as i32 - self.upper_left_offset.x as i32 + x_offset;
             if x < 0 {

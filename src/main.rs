@@ -1,10 +1,10 @@
-use std::fmt::Debug;
-use std::io::{Read, stdin, stdout, Write};
+
+use std::io::{stdout};
 use std::path::PathBuf;
 
-use log::{debug, warn};
+use log::{debug};
 use log::LevelFilter;
-use termion::{async_stdin, clear, color, cursor, style};
+
 use termion::raw::IntoRawMode;
 
 use crate::io::crossterm_input::CrosstermInput;
@@ -13,21 +13,21 @@ use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
-use crate::io::termion_input::TermionInput;
-use crate::io::termion_output::TermionOutput;
+
+
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::theme::Theme;
-use crate::primitives::xy;
-use crate::primitives::xy::XY;
+
+
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::list_widget::ListWidget;
-use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
-use crate::widget::stupid_tree::get_stupid_tree;
-use crate::widget::text_editor::TextEditorWidget;
+
+
+
+
 use crate::widget::widget::Widget;
 use crate::widgets::save_file_dialog::local_filesystem_provider::LocalFilesystemProvider;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
-use crate::widgets::tree_view::tree_view::TreeViewWidget;
+
 
 mod experiments;
 mod io;
@@ -44,7 +44,7 @@ fn main() {
         .init();
 
     let stdout = stdout();
-    let mut stdout = stdout.lock().into_raw_mode().unwrap();
+    let stdout = stdout.lock().into_raw_mode().unwrap();
     // let stdin = stdin();
 
     // write!(stdout, "{}{}", clear::All, cursor::Goto(1, 1)).unwrap();

@@ -1,8 +1,8 @@
-use std::borrow::{Borrow, BorrowMut};
-use std::collections::{HashMap, HashSet, VecDeque};
-use std::fmt::{Debug, Formatter, Pointer};
+use std::borrow::{Borrow};
+use std::collections::{HashSet};
+use std::fmt::{Debug};
 use std::hash::Hash;
-use std::ptr::write_bytes;
+
 
 use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;
@@ -10,13 +10,13 @@ use unicode_width::UnicodeWidthStr;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
-use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBrightYellow};
+
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::edit_box::EditBoxWidget;
+
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::tree_view::tree_it::TreeIt;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
@@ -233,7 +233,7 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
         self
     }
 
-    fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
+    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let primary_style = theme.default_text().maybe_half(focused);
         helpers::fill_background(primary_style.background, output);
         let cursor_style = theme.cursor().maybe_half(focused);

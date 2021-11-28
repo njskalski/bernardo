@@ -1,9 +1,9 @@
-use std::io::{ErrorKind, stdout, Write};
-use std::mem::swap;
+use std::io::{Write};
+
 
 use log::debug;
 use termion::{clear, cursor, style, terminal_size};
-use unicode_segmentation::UnicodeSegmentation;
+
 
 use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;

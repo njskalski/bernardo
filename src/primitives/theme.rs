@@ -4,7 +4,7 @@
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::color::Color;
 use crate::primitives::colors;
-use crate::primitives::colors::{COLOR_CURSOR_BACKGROUND, COLOR_CURSOR_FOREGROUND};
+
 
 pub struct Theme {
     cursor_background: Color,

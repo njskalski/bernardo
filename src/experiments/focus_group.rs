@@ -8,15 +8,15 @@ get merged with some other component.
  */
 
 use std::collections::HashMap;
-use std::convert::TryFrom;
+
 use std::fmt::Debug;
-use std::iter::Map;
+
 
 use log::debug;
 
-use crate::io::input_event::InputEvent;
-use crate::io::keys::Keycode;
-use crate::primitives::rect::Rect;
+
+
+
 use crate::widget::widget::WID;
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]

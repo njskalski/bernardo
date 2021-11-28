@@ -1,12 +1,12 @@
-use std::io::{ErrorKind, stdout, Write};
-use std::mem::swap;
+use std::io::{Write};
+
 
 use crossterm::{cursor, ExecutableCommand, style, terminal};
 use crossterm::cursor::MoveTo;
-use crossterm::style::{Attribute, Color, Print, PrintStyledContent, SetAttribute, SetAttributes, SetBackgroundColor, SetForegroundColor, StyledContent};
+use crossterm::style::{Attribute, Color, PrintStyledContent, SetAttribute, SetBackgroundColor, SetForegroundColor, StyledContent};
 use crossterm::terminal::{Clear, ClearType};
-use log::{debug, warn};
-use unicode_segmentation::UnicodeSegmentation;
+use log::{warn};
+
 
 use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;

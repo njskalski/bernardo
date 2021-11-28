@@ -9,17 +9,17 @@ I hope I will discover most of functional constraints while implementing it.
  */
 
 use std::borrow::Borrow;
-use std::cell::RefCell;
-use std::fmt::{Debug, Formatter};
-use std::ops::{Deref, DerefMut};
+
+use std::fmt::{Debug};
+
 use std::path::PathBuf;
 
 use log::{debug, warn};
 
-use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl, FocusUpdate};
-use crate::experiments::from_geometry::from_geometry;
+use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
+
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Keycode;
+
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::cached_sizes::DisplayState;
@@ -33,7 +33,7 @@ use crate::widget::button::ButtonWidget;
 use crate::widget::edit_box::EditBoxWidget;
 use crate::widget::list_widget::ListWidget;
 use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
-use crate::widget::stupid_tree::{get_stupid_tree, StupidTree};
+
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::save_file_dialog::filesystem_provider::FilesystemProvider;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
@@ -226,7 +226,7 @@ impl Widget for SaveFileDialogWidget {
             SaveFileDialogMsg::FocusUpdateMsg(focus_update) => {
                 warn!("updating focus");
                 let fc = *focus_update;
-                let mut ds: &mut DisplayState = self.display_state.as_mut().unwrap();
+                let ds: &mut DisplayState = self.display_state.as_mut().unwrap();
                 let fg = &mut ds.focus_group;
                 let msg = fg.update_focus(fc);
                 warn!("focus updated {}", msg);
@@ -269,7 +269,7 @@ impl Widget for SaveFileDialogWidget {
         }
     }
 
-    fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
+    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let focused_op = if focused {
             Some(self.get_focused().id())
         } else {

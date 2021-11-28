@@ -46,11 +46,11 @@ impl Widget for EditorWidget {
         max_size
     }
 
-    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+    fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         todo!()
     }
 
-    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+    fn update(&mut self, _msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         todo!()
     }
 
@@ -63,7 +63,7 @@ impl Widget for EditorWidget {
         todo!()
     }
 
-    fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
+    fn render(&self, _theme: &Theme, _focused: bool, _output: &mut dyn Output) {
         todo!()
     }
 }

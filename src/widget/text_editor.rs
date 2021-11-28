@@ -8,7 +8,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
-use crate::io::style::{TextStyle, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow, TextStyle_WhiteOnRedish};
+use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_WhiteOnBrightYellow, TextStyle_WhiteOnRedish};
 use crate::primitives::arrow::Arrow;
 use crate::primitives::cursor_set::{CursorSet, CursorStatus};
 use crate::primitives::theme::Theme;
@@ -55,7 +55,7 @@ impl Widget for TextEditorWidget {
         XY::new(12, 7)
     }
 
-    fn layout(&mut self, max_size: XY) -> XY {
+    fn layout(&mut self, _max_size: XY) -> XY {
         self.min_size()
     }
 
@@ -120,7 +120,7 @@ impl Widget for TextEditorWidget {
         self
     }
 
-    fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
+    fn render(&self, _theme: &Theme, _focused: bool, output: &mut dyn Output) {
         let len_lines = self.buffer.len_lines();
         let len_lines_cols = format!("{}", len_lines).len();
 

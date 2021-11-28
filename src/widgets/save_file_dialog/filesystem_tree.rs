@@ -1,14 +1,14 @@
-use std::borrow::{Borrow, BorrowMut};
-use std::cell::{Cell, Ref, RefCell};
+use std::borrow::{Borrow};
+
 use std::fs::ReadDir;
-use std::marker::PhantomData;
-use std::ops::Deref;
-use std::path::{Path, PathBuf};
+
+
+use std::path::{PathBuf};
 use std::rc::Rc;
 
 use log::warn;
 
-use crate::widgets::tree_view::tree_it::TreeIt;
+
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 pub struct FilesystemNode {
@@ -74,7 +74,7 @@ impl TreeViewNode<PathBuf> for FilesystemNode {
         self.cache.len()
     }
 
-    fn get_child(&self, idx: usize) -> &dyn TreeViewNode<PathBuf> {
+    fn get_child(&self, _idx: usize) -> &dyn TreeViewNode<PathBuf> {
         todo!()
     }
 }

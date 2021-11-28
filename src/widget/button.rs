@@ -1,15 +1,15 @@
-use std::borrow::Borrow;
+
 
 use log::warn;
-use unicode_segmentation::UnicodeSegmentation;
+
 
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
-use crate::io::keys::Keycode::Enter;
+
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue};
-use crate::primitives::sized_xy::SizedXY;
+
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
@@ -36,7 +36,7 @@ impl Widget for ButtonWidget {
         XY::new((self.text.len() + 2) as u16, 1)
     }
 
-    fn layout(&mut self, max_size: XY) -> XY {
+    fn layout(&mut self, _max_size: XY) -> XY {
         self.min_size()
     }
 
@@ -81,7 +81,7 @@ impl Widget for ButtonWidget {
         self
     }
 
-    fn render(&self, theme: &Theme, focused: bool, output: &mut Output) {
+    fn render(&self, _theme: &Theme, focused: bool, output: &mut dyn Output) {
         let mut full_text = "[".to_string() + &self.text + "]";
 
         let mut style = if self.enabled {

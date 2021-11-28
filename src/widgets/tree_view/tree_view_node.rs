@@ -1,7 +1,7 @@
-use std::borrow::Borrow;
+
 use std::fmt::{Debug, Formatter};
 use std::hash::Hash;
-use std::ops::Deref;
+
 
 pub trait TreeViewNode<Key: Hash + Eq + Debug> {
     fn id(&self) -> &Key;

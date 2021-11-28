@@ -2,14 +2,14 @@
 // there's a background layout and foreground layout.
 // Background is visible but inactive, foreground is visible.
 
-use std::sync::mpsc::channel;
+
 
 use log::warn;
 
-use crate::io::output::Output;
+
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::primitives::rect::Rect;
-use crate::primitives::theme::Theme;
+
 use crate::primitives::xy::XY;
 
 pub struct HoverLayout<'a> {

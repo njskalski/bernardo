@@ -9,7 +9,7 @@ pub struct Buffer<T: Default + Clone> {
 
 impl<T: Default + Clone> Buffer<T> {
     pub fn new(size: XY) -> Self {
-        let mut cells = vec![T::default(); (size.x * size.y) as usize];
+        let cells = vec![T::default(); (size.x * size.y) as usize];
 
         Buffer { size, cells }
     }

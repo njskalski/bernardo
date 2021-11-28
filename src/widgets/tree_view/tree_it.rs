@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use either::Either;
+
 use log::warn;
 
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
