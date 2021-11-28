@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use log::warn;
 
-use crate::widgets::tree_view::tree_view_node::{ChildRef, TreeViewNode};
+use crate::widgets::tree_view::tree_view_node::{ChildRc, TreeViewNode};
 
 pub struct FilesystemNode {
     path: PathBuf,
@@ -69,7 +69,7 @@ impl TreeViewNode<PathBuf> for FilesystemNode {
         self.cache.borrow().len()
     }
 
-    fn get_child(&self, idx: usize) -> ChildRef<PathBuf> {
+    fn get_child(&self, idx: usize) -> ChildRc<PathBuf> {
         // TODO panic
         self.cache.borrow().get(idx).unwrap().clone()
     }

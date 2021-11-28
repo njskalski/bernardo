@@ -9,17 +9,13 @@ I hope I will discover most of functional constraints while implementing it.
  */
 
 use std::borrow::Borrow;
-
-use std::fmt::{Debug};
-
+use std::fmt::Debug;
 use std::path::PathBuf;
 
 use log::{debug, warn};
 
 use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
-
 use crate::io::input_event::InputEvent;
-
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::cached_sizes::DisplayState;
@@ -33,10 +29,10 @@ use crate::widget::button::ButtonWidget;
 use crate::widget::edit_box::EditBoxWidget;
 use crate::widget::list_widget::ListWidget;
 use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
-
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::save_file_dialog::filesystem_provider::FilesystemProvider;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
+use crate::widgets::tree_view::tree_view_node::ChildRc;
 
 pub struct SaveFileDialogWidget {
     id: WID,
@@ -54,9 +50,10 @@ pub struct SaveFileDialogWidget {
     filesystem_provider: Box<dyn FilesystemProvider>,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum SaveFileDialogMsg {
-    FocusUpdateMsg(FocusUpdate)
+    FocusUpdateMsg(FocusUpdate),
+    Expanded(ChildRc<PathBuf>),
 }
 
 impl AnyMsg for SaveFileDialogMsg {}
@@ -65,7 +62,14 @@ impl SaveFileDialogWidget {
     pub fn new(filesystem_provider: Box<dyn FilesystemProvider>) -> Self {
         let file_list = get_mock_file_list();
         let tree = filesystem_provider.get_root();
-        let tree_widget = TreeViewWidget::<PathBuf>::new(tree);
+        let tree_widget = TreeViewWidget::<PathBuf>::new(tree)
+            .with_on_flip_expand(|widget| {
+                let (_, item) = widget.get_highlighted();
+
+                Some(Box::new(SaveFileDialogMsg::Expanded(item)))
+            });
+
+
         let list_widget = ListWidget::new().with_items(file_list).with_selection();
         let edit_box = EditBoxWidget::new().with_enabled(true);
 

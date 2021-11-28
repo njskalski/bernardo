@@ -49,17 +49,6 @@ impl LocalFilesystemProvider {
             }
         }
 
-        // for depth in 0..path.components().count() {
-        //     let mut prefix = PathBuf::new();
-        //
-        //     for c in path.components().take(depth) {
-        //         prefix.push(c);
-        //     }
-        //
-        //
-        // }
-
-
         true
     }
 }

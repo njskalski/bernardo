@@ -4,7 +4,7 @@ use std::hash::Hash;
 use std::ops::Deref;
 use std::rc::Rc;
 
-pub type ChildRef<Key> = Rc<dyn TreeViewNode<Key>>;
+pub type ChildRc<Key> = Rc<dyn TreeViewNode<Key>>;
 
 pub trait TreeViewNode<Key: Hash + Eq + Debug> {
     fn id(&self) -> &Key;
@@ -12,7 +12,7 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug> {
     fn is_leaf(&self) -> bool;
 
     fn num_child(&self) -> usize;
-    fn get_child(&self, idx: usize) -> ChildRef<Key>;
+    fn get_child(&self, idx: usize) -> ChildRc<Key>;
 
     fn has_child(&self, key: &Key) -> bool;
 }

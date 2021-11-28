@@ -17,7 +17,7 @@ use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::tree_view::tree_it::TreeIt;
-use crate::widgets::tree_view::tree_view_node::TreeViewNode;
+use crate::widgets::tree_view::tree_view_node::{ChildRc, TreeViewNode};
 
 pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
     id: WID,
@@ -33,6 +33,7 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
     //events
     on_miss: Option<WidgetAction<TreeViewWidget<Key>>>,
     on_highlighted_changed: Option<WidgetAction<TreeViewWidget<Key>>>,
+    on_flip_expand: Option<WidgetAction<TreeViewWidget<Key>>>,
 }
 
 #[derive(Debug)]
@@ -43,6 +44,10 @@ enum TreeViewMsg {
 
 impl AnyMsg for TreeViewMsg {}
 
+/*
+Warranties:
+- (TODO double check) Highlighted always exists.
+ */
 impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
     pub fn new(root_node: Rc<dyn TreeViewNode<Key>>) -> Self {
         Self {
@@ -55,6 +60,7 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
             items_num: 1,
             on_miss: None,
             on_highlighted_changed: None,
+            on_flip_expand: None,
         }
     }
 
@@ -81,6 +87,13 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         })
     }
 
+    pub fn with_on_flip_expand(self, on_flip_expand: WidgetAction<TreeViewWidget<Key>>) -> Self {
+        Self {
+            on_flip_expand: Some(on_flip_expand),
+            ..self
+        }
+    }
+
     fn event_highlighted_changed(&self) -> Option<Box<dyn AnyMsg>> {
         if self.on_highlighted_changed.is_some() {
             self.on_highlighted_changed.unwrap()(self)
@@ -97,6 +110,10 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         }
     }
 
+    fn event_flip_expand(&self) -> Option<Box<dyn AnyMsg>> {
+        self.on_flip_expand.map(|f| f(self)).flatten()
+    }
+
     // returns new value
     fn flip_expanded(&mut self, id_to_flip: &Key) -> bool {
         if self.expanded.contains(id_to_flip) {
@@ -108,8 +125,12 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         }
     }
 
-    fn items(&self) -> TreeIt<Key> {
+    pub fn items(&self) -> TreeIt<Key> {
         TreeIt::new(self.root_node.clone(), &self.expanded)
+    }
+
+    pub fn get_highlighted(&self) -> (u16, ChildRc<Key>) {
+        self.items().nth(self.highlighted).unwrap()
     }
 }
 
@@ -214,10 +235,9 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
                     self.event_miss()
                 } else {
                     self.flip_expanded(&id);
-
                     self.items_num = self.items().count();
 
-                    None
+                    self.event_flip_expand()
                 }
             }
         };

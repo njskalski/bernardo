@@ -3,7 +3,7 @@ use std::ops::Deref;
 use std::process::id;
 use std::rc::Rc;
 
-use crate::widgets::tree_view::tree_view_node::{ChildRef, TreeViewNode};
+use crate::widgets::tree_view::tree_view_node::{ChildRc, TreeViewNode};
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone)]
 pub struct StupidTree {
@@ -44,7 +44,7 @@ impl TreeViewNode<usize> for StupidTree {
         self.children.len()
     }
 
-    fn get_child(&self, idx: usize) -> ChildRef<usize> {
+    fn get_child(&self, idx: usize) -> ChildRc<usize> {
         self.children[idx].clone()
     }
 
