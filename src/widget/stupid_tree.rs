@@ -35,11 +35,12 @@ impl TreeViewNode<usize> for StupidTree {
     }
 
     fn num_child(&self) -> usize {
-        todo!()
+        self.children.len()
     }
 
     fn get_child(&self, idx: usize) -> &dyn TreeViewNode<usize> {
-        todo!()
+        //TODO panic here
+        &self.children[idx]
     }
 }
 

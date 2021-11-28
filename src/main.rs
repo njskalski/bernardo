@@ -1,12 +1,12 @@
 use std::fmt::Debug;
 use std::io::{Read, stdin, stdout, Write};
+use std::path::PathBuf;
 
 use log::{debug, warn};
 use log::LevelFilter;
 use termion::{async_stdin, clear, color, cursor, style};
 use termion::raw::IntoRawMode;
 
-use crate::experiments::save_file_dialog::SaveFileDialogWidget;
 use crate::io::crossterm_input::CrosstermInput;
 use crate::io::crossterm_output::CrosstermOutput;
 use crate::io::input::Input;
@@ -26,6 +26,8 @@ use crate::widget::stupid_tree::get_stupid_tree;
 use crate::widget::text_editor::TextEditorWidget;
 use crate::widget::tree_view::TreeViewWidget;
 use crate::widget::widget::Widget;
+use crate::widgets::save_file_dialog::local_filesystem_provider::LocalFilesystemProvider;
+use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 
 mod experiments;
 mod io;
@@ -34,6 +36,7 @@ mod primitives;
 mod view;
 mod widget;
 mod text;
+mod widgets;
 
 fn main() {
     env_logger::builder()
@@ -64,7 +67,9 @@ fn main() {
 
     // let mut main_view = TextEditorWidget::new();
 
-    let mut main_view = SaveFileDialogWidget::new();
+    let fsp = LocalFilesystemProvider::new(PathBuf::from("/home/andrzej"));
+    let boxed = Box::new(fsp);
+    let mut main_view = SaveFileDialogWidget::new(boxed);
 
     let theme = Theme::default();
 

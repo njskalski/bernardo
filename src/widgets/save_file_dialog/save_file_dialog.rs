@@ -35,6 +35,7 @@ use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
 use crate::widget::stupid_tree::{get_stupid_tree, StupidTree};
 use crate::widget::tree_view::TreeViewWidget;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widgets::save_file_dialog::filesystem_provider::FilesystemProvider;
 
 pub struct SaveFileDialogWidget {
     id: WID,
@@ -47,6 +48,9 @@ pub struct SaveFileDialogWidget {
 
     ok_button: ButtonWidget,
     cancel_button: ButtonWidget,
+
+    // TODO this will probably get moved
+    filesystem_provider: Box<dyn FilesystemProvider>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -57,7 +61,7 @@ pub enum SaveFileDialogMsg {
 impl AnyMsg for SaveFileDialogMsg {}
 
 impl SaveFileDialogWidget {
-    pub fn new() -> Self {
+    pub fn new(filesystem_provider: Box<dyn FilesystemProvider>) -> Self {
         let file_list = get_mock_file_list();
         let tree = get_stupid_tree();
         let tree_widget = TreeViewWidget::<usize>::new(Box::new(tree));
@@ -75,6 +79,7 @@ impl SaveFileDialogWidget {
             edit_box,
             ok_button,
             cancel_button,
+            filesystem_provider
         }
     }
 
@@ -149,6 +154,8 @@ impl SaveFileDialogWidget {
 
         res
     }
+
+    fn todo_filesystem_updated(&mut self) {}
 }
 
 impl Widget for SaveFileDialogWidget {
