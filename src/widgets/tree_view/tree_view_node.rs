@@ -1,5 +1,10 @@
+use std::borrow::Borrow;
 use std::fmt::{Debug, Formatter};
 use std::hash::Hash;
+use std::ops::Deref;
+use std::rc::Rc;
+
+pub type ChildRef<Key> = Rc<dyn TreeViewNode<Key>>;
 
 pub trait TreeViewNode<Key: Hash + Eq + Debug> {
     fn id(&self) -> &Key;
@@ -7,7 +12,7 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug> {
     fn is_leaf(&self) -> bool;
 
     fn num_child(&self) -> usize;
-    fn get_child(&self, idx: usize) -> &dyn TreeViewNode<Key>;
+    fn get_child(&self, idx: usize) -> ChildRef<Key>;
 
     fn has_child(&self, key: &Key) -> bool;
 }

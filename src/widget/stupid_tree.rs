@@ -1,16 +1,22 @@
+use std::borrow::Borrow;
+use std::ops::Deref;
 use std::process::id;
+use std::rc::Rc;
 
-use crate::widgets::tree_view::tree_view_node::TreeViewNode;
+use crate::widgets::tree_view::tree_view_node::{ChildRef, TreeViewNode};
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone)]
 pub struct StupidTree {
     id: usize,
-    children: Vec<StupidTree>,
+    children: Vec<Rc<StupidTree>>,
 }
 
 impl StupidTree {
     pub fn new(id: usize, children: Vec<StupidTree>) -> Self {
-        StupidTree { id, children }
+        StupidTree {
+            id,
+            children: children.into_iter().map(|c| Rc::new(c)).collect(),
+        }
     }
 }
 
@@ -38,10 +44,15 @@ impl TreeViewNode<usize> for StupidTree {
         self.children.len()
     }
 
-    fn get_child(&self, idx: usize) -> &dyn TreeViewNode<usize> {
-        //TODO panic here
-        &self.children[idx]
+    fn get_child(&self, idx: usize) -> ChildRef<usize> {
+        self.children[idx].clone()
     }
+
+
+    // fn get_child(&self, idx: usize) -> &dyn TreeViewNode<usize> {
+    //     //TODO panic here
+    //     &self.children[idx]
+    // }
 
     fn has_child(&self, key: &usize) -> bool {
         for c in self.children.iter() {

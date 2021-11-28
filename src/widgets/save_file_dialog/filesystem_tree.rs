@@ -1,40 +1,37 @@
 use std::borrow::Borrow;
+use std::cell::RefCell;
 use std::fs::ReadDir;
+use std::ops::Deref;
 use std::path::PathBuf;
 use std::rc::Rc;
 
 use log::warn;
 
-use crate::widgets::tree_view::tree_view_node::TreeViewNode;
+use crate::widgets::tree_view::tree_view_node::{ChildRef, TreeViewNode};
 
 pub struct FilesystemNode {
     path: PathBuf,
-    cache: Vec<Rc<FilesystemNode>>,
+    cache: RefCell<Vec<Rc<FilesystemNode>>>,
 }
 
 impl FilesystemNode {
     pub fn new(path: PathBuf) -> FilesystemNode {
         FilesystemNode {
             path,
-            cache: vec![],
+            cache: RefCell::new(vec![]),
         }
     }
 }
 
-struct ReadCache {
-    read_dir: ReadDir,
-    children: Vec<FilesystemNode>,
-}
-
 
 impl FilesystemNode {
-    fn update_cache(&mut self) {
+    pub fn update_cache(&self) {
         match self.path.read_dir() {
             Err(err) => {
                 warn!("failed to read dir {:?}, {}", self.path, err);
             }
             Ok(readdir) => {
-                self.cache.clear();
+                let mut new_cache: Vec<Rc<FilesystemNode>> = vec![];
 
                 for dir_entry_op in readdir {
                     match dir_entry_op {
@@ -44,16 +41,18 @@ impl FilesystemNode {
                         }
                         Ok(dir_entry) => {
                             let item = Rc::new(FilesystemNode::new(dir_entry.path()));
-                            self.cache.push(item.clone());
+                            new_cache.push(item.clone());
                         }
                     }
                 }
+
+                self.cache.replace(new_cache);
             }
         }
     }
 }
 
-impl TreeViewNode<PathBuf> for Rc<FilesystemNode> {
+impl TreeViewNode<PathBuf> for FilesystemNode {
     fn id(&self) -> &PathBuf {
         self.path.borrow()
     }
@@ -67,15 +66,17 @@ impl TreeViewNode<PathBuf> for Rc<FilesystemNode> {
     }
 
     fn num_child(&self) -> usize {
-        self.cache.len()
+        self.cache.borrow().len()
     }
 
-    fn get_child(&self, _idx: usize) -> &dyn TreeViewNode<PathBuf> {
-        todo!()
+    fn get_child(&self, idx: usize) -> ChildRef<PathBuf> {
+        // TODO panic
+        self.cache.borrow().get(idx).unwrap().clone()
     }
+
 
     fn has_child(&self, key: &PathBuf) -> bool {
-        for c in self.cache.iter() {
+        for c in self.cache.borrow().iter() {
             if c.id() == key {
                 return true;
             }

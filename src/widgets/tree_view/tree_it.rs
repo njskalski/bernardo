@@ -7,21 +7,22 @@ I got this idea in Zurich Operahouse, watching some ballet. Creativity sprouts f
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::rc::Rc;
 
 use log::warn;
 
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
-type QueueType<'a, Key> = &'a dyn TreeViewNode<Key>;
+type QueueType<Key> = Rc<dyn TreeViewNode<Key>>;
 
 pub struct TreeIt<'a, Key: Hash + Eq + Debug> {
-    queue: Vec<(u16, QueueType<'a, Key>)>,
+    queue: Vec<(u16, QueueType<Key>)>,
     expanded: &'a HashSet<Key>,
 }
 
 impl<'a, Key: Hash + Eq + Debug + Clone> TreeIt<'a, Key> {
-    pub fn new(root: &'a dyn TreeViewNode<Key>, expanded: &'a HashSet<Key>) -> TreeIt<'a, Key> {
-        let mut queue: Vec<(u16, QueueType<'a, Key>)> = Vec::new();
+    pub fn new(root: Rc<dyn TreeViewNode<Key>>, expanded: &'a HashSet<Key>) -> TreeIt<'a, Key> {
+        let mut queue: Vec<(u16, QueueType<Key>)> = Vec::new();
 
         queue.push((0, root));
 
@@ -33,7 +34,7 @@ impl<'a, Key: Hash + Eq + Debug + Clone> TreeIt<'a, Key> {
 }
 
 impl<'a, Key: Hash + Eq + Debug + Clone> Iterator for TreeIt<'a, Key> {
-    type Item = (u16, &'a dyn TreeViewNode<Key>);
+    type Item = (u16, Rc<dyn TreeViewNode<Key>>);
 
     fn next(&mut self) -> Option<Self::Item> {
         warn!("expanded {:?}", self.expanded);

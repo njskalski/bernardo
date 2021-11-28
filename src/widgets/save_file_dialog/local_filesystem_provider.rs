@@ -1,3 +1,4 @@
+use std::borrow::BorrowMut;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
@@ -37,6 +38,7 @@ impl LocalFilesystemProvider {
 
             if last {
                 debug!("expanding {:?}", curr_prefix);
+                curr_node.borrow_mut().update_cache();
             } else {
                 curr_prefix.push(c);
 
@@ -63,7 +65,7 @@ impl LocalFilesystemProvider {
 }
 
 impl FilesystemProvider for LocalFilesystemProvider {
-    fn get_root(&self) -> Box<dyn TreeViewNode<PathBuf>> {
-        Box::new(self.root_node.clone())
+    fn get_root(&self) -> Rc<dyn TreeViewNode<PathBuf>> {
+        self.root_node.clone()
     }
 }

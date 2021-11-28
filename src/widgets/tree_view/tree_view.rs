@@ -1,8 +1,8 @@
-use std::borrow::{Borrow};
-use std::collections::{HashSet};
-use std::fmt::{Debug};
+use std::borrow::Borrow;
+use std::collections::HashSet;
+use std::fmt::Debug;
 use std::hash::Hash;
-
+use std::rc::Rc;
 
 use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;
@@ -10,13 +10,11 @@ use unicode_width::UnicodeWidthStr;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
-
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
-
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::tree_view::tree_it::TreeIt;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
@@ -25,7 +23,7 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
     id: WID,
     filter: String,
     filter_enabled: bool,
-    root_node: Box<dyn TreeViewNode<Key>>,
+    root_node: Rc<dyn TreeViewNode<Key>>,
 
     expanded: HashSet<Key>,
     highlighted: usize,
@@ -46,7 +44,7 @@ enum TreeViewMsg {
 impl AnyMsg for TreeViewMsg {}
 
 impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
-    pub fn new(root_node: Box<dyn TreeViewNode<Key>>) -> Self {
+    pub fn new(root_node: Rc<dyn TreeViewNode<Key>>) -> Self {
         Self {
             id: get_new_widget_id(),
             root_node,
@@ -111,7 +109,7 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
     }
 
     fn items(&self) -> TreeIt<Key> {
-        TreeIt::new((*self.root_node).borrow().borrow(), &self.expanded)
+        TreeIt::new(self.root_node.clone(), &self.expanded)
     }
 }
 
