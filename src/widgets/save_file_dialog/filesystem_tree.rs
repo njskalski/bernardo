@@ -8,8 +8,8 @@ use std::rc::Rc;
 
 use log::warn;
 
-use crate::widget::tree_it::TreeIt;
-use crate::widget::tree_view_node::TreeViewNode;
+use crate::widgets::tree_view::tree_it::TreeIt;
+use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 pub struct FilesystemNode {
     path: PathBuf,

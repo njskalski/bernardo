@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 
-use crate::widget::tree_view_node::TreeViewNode;
+use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone)]
 pub struct StupidTree {

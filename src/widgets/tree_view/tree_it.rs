@@ -11,7 +11,7 @@ use std::hash::Hash;
 use either::Either;
 use log::warn;
 
-use crate::widget::tree_view_node::TreeViewNode;
+use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 type QueueType<'a, Key> = &'a dyn TreeViewNode<Key>;
 

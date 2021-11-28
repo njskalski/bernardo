@@ -17,9 +17,9 @@ use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::edit_box::EditBoxWidget;
-use crate::widget::tree_it::TreeIt;
-use crate::widget::tree_view_node::TreeViewNode;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+use crate::widgets::tree_view::tree_it::TreeIt;
+use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
     id: WID,

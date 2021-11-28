@@ -34,9 +34,9 @@ use crate::widget::edit_box::EditBoxWidget;
 use crate::widget::list_widget::ListWidget;
 use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
 use crate::widget::stupid_tree::{get_stupid_tree, StupidTree};
-use crate::widget::tree_view::TreeViewWidget;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::save_file_dialog::filesystem_provider::FilesystemProvider;
+use crate::widgets::tree_view::tree_view::TreeViewWidget;
 
 pub struct SaveFileDialogWidget {
     id: WID,

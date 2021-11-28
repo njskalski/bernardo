@@ -24,10 +24,10 @@ use crate::widget::list_widget::ListWidget;
 use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
 use crate::widget::stupid_tree::get_stupid_tree;
 use crate::widget::text_editor::TextEditorWidget;
-use crate::widget::tree_view::TreeViewWidget;
 use crate::widget::widget::Widget;
 use crate::widgets::save_file_dialog::local_filesystem_provider::LocalFilesystemProvider;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
+use crate::widgets::tree_view::tree_view::TreeViewWidget;
 
 mod experiments;
 mod io;
