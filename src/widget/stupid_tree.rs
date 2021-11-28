@@ -42,6 +42,16 @@ impl TreeViewNode<usize> for StupidTree {
         //TODO panic here
         &self.children[idx]
     }
+
+    fn has_child(&self, key: &usize) -> bool {
+        for c in self.children.iter() {
+            if c.id() == key {
+                return true;
+            }
+        }
+
+        false
+    }
 }
 
 pub fn get_stupid_tree() -> StupidTree {

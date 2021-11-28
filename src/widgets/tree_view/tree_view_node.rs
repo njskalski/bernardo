@@ -8,6 +8,8 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug> {
 
     fn num_child(&self) -> usize;
     fn get_child(&self, idx: usize) -> &dyn TreeViewNode<Key>;
+
+    fn has_child(&self, key: &Key) -> bool;
 }
 
 impl<Key: Hash + Eq + Debug> std::fmt::Debug for dyn TreeViewNode<Key> {

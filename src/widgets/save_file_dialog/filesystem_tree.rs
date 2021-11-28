@@ -73,4 +73,13 @@ impl TreeViewNode<PathBuf> for Rc<FilesystemNode> {
     fn get_child(&self, _idx: usize) -> &dyn TreeViewNode<PathBuf> {
         todo!()
     }
+
+    fn has_child(&self, key: &PathBuf) -> bool {
+        for c in self.cache.iter() {
+            if c.id() == key {
+                return true;
+            }
+        }
+        false
+    }
 }
