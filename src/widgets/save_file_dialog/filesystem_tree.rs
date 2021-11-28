@@ -1,13 +1,9 @@
-use std::borrow::{Borrow};
-
+use std::borrow::Borrow;
 use std::fs::ReadDir;
-
-
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use log::warn;
-
 
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 

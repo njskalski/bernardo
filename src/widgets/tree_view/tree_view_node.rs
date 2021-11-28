@@ -1,7 +1,5 @@
-
 use std::fmt::{Debug, Formatter};
 use std::hash::Hash;
-
 
 pub trait TreeViewNode<Key: Hash + Eq + Debug> {
     fn id(&self) -> &Key;
