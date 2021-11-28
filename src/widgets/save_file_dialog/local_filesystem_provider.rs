@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+use crate::widget::tree_view_node::TreeViewNode;
 use crate::widgets::save_file_dialog::filesystem_provider::FilesystemProvider;
 use crate::widgets::save_file_dialog::filesystem_tree::FilesystemNode;
 
@@ -18,8 +19,8 @@ impl LocalFilesystemProvider {
 }
 
 impl FilesystemProvider for LocalFilesystemProvider {
-    fn get_root(&self) -> Box<dyn Borrow<FilesystemNode>> {
+    fn get_root(&self) -> Box<dyn TreeViewNode<PathBuf>> {
         let x = FilesystemNode::new(self.root.clone());
-        Box::new(Rc::new(x))
+        Box::new(x)
     }
 }

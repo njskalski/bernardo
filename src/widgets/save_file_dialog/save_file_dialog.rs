@@ -12,6 +12,7 @@ use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
 use std::ops::{Deref, DerefMut};
+use std::path::PathBuf;
 
 use log::{debug, warn};
 
@@ -42,7 +43,7 @@ pub struct SaveFileDialogWidget {
 
     display_state: Option<DisplayState>,
 
-    tree_widget: TreeViewWidget<usize>,
+    tree_widget: TreeViewWidget<PathBuf>,
     list_widget: ListWidget<MockFile>,
     edit_box: EditBoxWidget,
 
@@ -63,8 +64,8 @@ impl AnyMsg for SaveFileDialogMsg {}
 impl SaveFileDialogWidget {
     pub fn new(filesystem_provider: Box<dyn FilesystemProvider>) -> Self {
         let file_list = get_mock_file_list();
-        let tree = get_stupid_tree();
-        let tree_widget = TreeViewWidget::<usize>::new(Box::new(tree));
+        let tree = filesystem_provider.get_root();
+        let tree_widget = TreeViewWidget::<PathBuf>::new(tree);
         let list_widget = ListWidget::new().with_items(file_list).with_selection();
         let edit_box = EditBoxWidget::new().with_enabled(true);
 

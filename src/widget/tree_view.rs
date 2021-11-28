@@ -26,7 +26,6 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
     filter: String,
     filter_enabled: bool,
     root_node: Box<dyn TreeViewNode<Key>>,
-    // items_it: OwningTreeIt<Key>,
 
     expanded: HashSet<Key>,
     highlighted: usize,
@@ -112,7 +111,7 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
     }
 
     fn items(&self) -> TreeIt<Key> {
-        TreeIt::new(self.root_node.as_ref(), &self.expanded)
+        TreeIt::new((*self.root_node).borrow().borrow(), &self.expanded)
     }
 }
 
