@@ -53,7 +53,7 @@ impl FilesystemNode {
     }
 }
 
-impl TreeViewNode<PathBuf> for FilesystemNode {
+impl TreeViewNode<PathBuf> for Rc<FilesystemNode> {
     fn id(&self) -> &PathBuf {
         self.path.borrow()
     }
