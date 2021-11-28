@@ -42,9 +42,8 @@ impl<'a, Key: Hash + Eq + Debug + Clone> Iterator for TreeIt<'a, Key> {
 
             // If it's expanded, I have to throw all children on the stack.
             if self.expanded.contains(node_ref.id()) {
-                let children: Vec<_> = node_ref.children().collect();
-                for idx in (children.len() - 1)..0 {
-                    let item = children[idx];
+                for idx in (node_ref.num_child() - 1)..0 {
+                    let item = node_ref.get_child(idx);
                     self.queue.push(
                         (depth + 1, item)
                     );
@@ -56,3 +55,7 @@ impl<'a, Key: Hash + Eq + Debug + Clone> Iterator for TreeIt<'a, Key> {
     }
 }
 
+// pub struct OwningTreeIt<Key: Hash + Eq + Debug + Clone> {
+//     root: Box<dyn TreeViewNode<Key>>,
+//     tree_it: TreeIt<'_, Key>,
+// }

@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 
-use crate::widget::tree_view_node::{ChildrenIt, TreeViewNode};
+use crate::widget::tree_view_node::TreeViewNode;
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone)]
 pub struct StupidTree {
@@ -29,14 +29,17 @@ impl TreeViewNode<usize> for StupidTree {
         format!("StupidTree {}", self.id)
     }
 
-    fn children(&mut self) -> ChildrenIt<usize> {
-        Box::new(self.children.iter()
-            .map(|i| Box::new(i))
-        ) // TODO this can fail
-    }
 
     fn is_leaf(&self) -> bool {
         self.children.is_empty()
+    }
+
+    fn num_child(&self) -> usize {
+        todo!()
+    }
+
+    fn get_child(&self, idx: usize) -> &dyn TreeViewNode<usize> {
+        todo!()
     }
 }
 

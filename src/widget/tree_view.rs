@@ -26,6 +26,7 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
     filter: String,
     filter_enabled: bool,
     root_node: Box<dyn TreeViewNode<Key>>,
+    // items_it: OwningTreeIt<Key>,
 
     expanded: HashSet<Key>,
     highlighted: usize,
@@ -97,10 +98,6 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         } else {
             None
         }
-    }
-
-    fn get_highlighted_node(&self) -> Option<&Box<(dyn TreeViewNode<Key> + 'static)>> {
-        self.items().skip(self.highlighted).next().map(|p| &p.1)
     }
 
     // returns new value
@@ -202,9 +199,9 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
             },
             TreeViewMsg::FlipExpansion => {
                 let (id, is_leaf) = {
-                    let highlighted_node_op = self.get_highlighted_node();
+                    let highlighted_pair = self.items().skip(self.highlighted).next();
 
-                    if highlighted_node_op.is_none() {
+                    if highlighted_pair.is_none() {
                         warn!(
                             "TreeViewWidget #{} highlighted non-existent node {}!",
                             self.id(),
@@ -212,7 +209,7 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
                         );
                         return None;
                     }
-                    let highlighted_node = highlighted_node_op.unwrap();
+                    let (_, highlighted_node) = highlighted_pair.unwrap();
                     (highlighted_node.id().clone(), highlighted_node.is_leaf()) // TODO can we avoid the clone?
                 };
 
