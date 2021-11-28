@@ -11,7 +11,7 @@ use log::warn;
 use crate::widget::tree_it::TreeIt;
 use crate::widget::tree_view_node::TreeViewNode;
 
-struct FilesystemNode {
+pub struct FilesystemNode {
     path: PathBuf,
     cache: Vec<Rc<FilesystemNode>>,
 }
