@@ -236,6 +236,10 @@ impl Widget for SaveFileDialogWidget {
                 warn!("focus updated {}", msg);
                 None
             }
+            SaveFileDialogMsg::Expanded(child) => {
+                self.filesystem_provider.expand(child.id().as_path());
+                None
+            }
             unknown_msg => {
                 warn!("SaveFileDialog.update : unknown message {:?}", unknown_msg);
                 None

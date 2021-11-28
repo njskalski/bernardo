@@ -74,6 +74,15 @@ impl TreeViewNode<PathBuf> for FilesystemNode {
         self.cache.borrow().get(idx).unwrap().clone()
     }
 
+    fn get_child_by_key(&self, key: &PathBuf) -> Option<ChildRc<PathBuf>> {
+        for c in self.cache.borrow().iter() {
+            if c.id() == key {
+                return Some(c.clone());
+            }
+        }
+        None
+    }
+
 
     fn has_child(&self, key: &PathBuf) -> bool {
         for c in self.cache.borrow().iter() {
@@ -82,5 +91,9 @@ impl TreeViewNode<PathBuf> for FilesystemNode {
             }
         }
         false
+    }
+
+    fn todo_update_cache(&self) {
+        self.update_cache()
     }
 }

@@ -48,6 +48,15 @@ impl TreeViewNode<usize> for StupidTree {
         self.children[idx].clone()
     }
 
+    fn get_child_by_key(&self, key: &usize) -> Option<ChildRc<usize>> {
+        for child in self.children.iter() {
+            if child.id() == key {
+                return Some(child.clone());
+            };
+        };
+        return None
+    }
+
 
     // fn get_child(&self, idx: usize) -> &dyn TreeViewNode<usize> {
     //     //TODO panic here
@@ -63,6 +72,8 @@ impl TreeViewNode<usize> for StupidTree {
 
         false
     }
+
+    fn todo_update_cache(&self) {}
 }
 
 pub fn get_stupid_tree() -> StupidTree {

@@ -37,8 +37,6 @@ impl<'a, Key: Hash + Eq + Debug + Clone> Iterator for TreeIt<'a, Key> {
     type Item = (u16, Rc<dyn TreeViewNode<Key>>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        warn!("expanded {:?}", self.expanded);
-
         while self.queue.is_empty() == false {
             let mut head = self.queue.pop().unwrap();
             let (depth, node_ref) = head;
