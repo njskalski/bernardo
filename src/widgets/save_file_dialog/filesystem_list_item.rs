@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::widget::list_widget::{ListWidgetCell, ListWidgetItem};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct FilesystemListItem {
     path: PathBuf,
 }
@@ -30,7 +30,6 @@ impl ListWidgetItem for FilesystemListItem {
 
     fn get(&self, idx: usize) -> ListWidgetCell {
         // // TODO panic and looks like shit
-        // ListWidgetCell::Ready(self.path.file_name().unwrap().to_string_lossy().to_string())
-        ListWidgetCell::Loading
+        ListWidgetCell::Ready(self.path.file_name().unwrap().to_string_lossy().to_string())
     }
 }

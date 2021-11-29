@@ -8,7 +8,7 @@ this widget is supposed to offer:
 I hope I will discover most of functional constraints while implementing it.
  */
 
-use std::borrow::Borrow;
+use std::borrow::{Borrow, BorrowMut};
 use std::fmt::Debug;
 use std::path::PathBuf;
 
@@ -57,6 +57,7 @@ pub struct SaveFileDialogWidget {
 pub enum SaveFileDialogMsg {
     FocusUpdateMsg(FocusUpdate),
     Expanded(ChildRc<PathBuf>),
+    Highlighted(ChildRc<PathBuf>),
 }
 
 impl AnyMsg for SaveFileDialogMsg {}
@@ -67,8 +68,11 @@ impl SaveFileDialogWidget {
         let tree_widget = TreeViewWidget::<PathBuf>::new(tree)
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
-
                 Some(Box::new(SaveFileDialogMsg::Expanded(item)))
+            })
+            .with_on_highlighted_changed(|widget| {
+                let (_, item) = widget.get_highlighted();
+                Some(Box::new(SaveFileDialogMsg::Highlighted(item)))
             });
 
 
@@ -180,14 +184,27 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn layout(&mut self, max_size: XY) -> XY {
-        if self.display_state.as_ref().map(|x| x.for_size == max_size) == Some(true) {
-            return max_size
-        }
+        // TODO this lazy relayouting kills resizing on data change.
+        // if self.display_state.as_ref().map(|x| x.for_size == max_size) == Some(true) {
+        //     return max_size
+        // }
+
+        // TODO relayouting destroys focus selection.
 
         let res_sizes = self.todo_internal_layout(max_size);
 
         debug!("size {}, res_sizes {:?}", max_size, res_sizes);
+
+        // Retention of focus. Not sure if it should be here.
+        let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+
         self.display_state = Some(DisplayState::new(max_size, res_sizes));
+
+        // re-setting focus.
+        match (focus_op, &mut self.display_state) {
+            (Some(focus), Some(ds)) => { ds.focus_group.set_focused(focus); },
+            _ => {}
+        };
 
         max_size
     }
@@ -245,6 +262,12 @@ impl Widget for SaveFileDialogWidget {
                 self.curr_display_path = child.id().clone();
                 let mut items = self.filesystem_provider.get_files(self.curr_display_path.borrow()).collect::<Vec<_>>();
                 self.list_widget.set_items(&mut items);
+
+                None
+            }
+            SaveFileDialogMsg::Highlighted(child) => {
+                let items = self.filesystem_provider.get_files(child.id().as_path());
+                self.list_widget.set_items_it(items);
 
                 None
             }

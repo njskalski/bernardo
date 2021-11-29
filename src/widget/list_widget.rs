@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::iter::Iterator;
 use std::slice::SliceIndex;
 
 use log::{debug, warn};
@@ -25,7 +26,7 @@ pub enum ListWidgetCell {
     keep them lightweight as they are being cloned on update. Treat ListWidgetItem as "sub widget",
     a cached projection on actual data, and not the data itself. Do not store data in widgets!
  */
-pub trait ListWidgetItem: Clone {
+pub trait ListWidgetItem: Clone + Debug {
     //TODO change to static str?
     fn get_column_name(idx: usize) -> String;
     fn get_min_column_width(idx: usize) -> u16;
@@ -140,6 +141,14 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
             }
         }
     }
+
+    pub fn set_items_it<T: Iterator<Item=Item>>(&mut self, provider: T) {
+        self.items.clear();
+        for c in provider {
+            self.items.push(c);
+        }
+        debug!("new items {:?}", self.items)
+    }
 }
 
 
@@ -178,6 +187,8 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         }
 
         let desired = XY::new(cols, rows);
+
+        debug!("layout, items.len = {}", self.items.len());
 
         desired.cut(max_size)
     }
@@ -244,7 +255,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
                             },
                             Arrow::Down => {
                                 debug!("items {}, old_high {}", self.items.len(), old_highlighted);
-                                if old_highlighted < self.items.len() - 1 {
+                                if old_highlighted + 1 < self.items.len() {
                                     self.highlighted = Some(old_highlighted + 1);
                                     self.on_change()
                                 } else {
@@ -300,7 +311,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         }
 
         for (idx, item) in self.items.iter().enumerate() {
-            // debug!("y+idx = {}, osy = {}", y_offset as usize + idx, output.size().y);
+            debug!("y+idx = {}, osy = {}", y_offset as usize + idx, output.size().y);
             if y_offset as usize + idx >= output.size().y as usize {
                 break;
             }

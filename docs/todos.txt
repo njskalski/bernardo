@@ -11,3 +11,6 @@ make input handling reusable
     plugin.
 
 //TODO scrolling is now limited to u16 number of lines!
+
+//TODO
+     change every new_idx < sth.size() - 1  => to => new_idx + 1 < sth.size() to avoid underflow if sth.size is 0

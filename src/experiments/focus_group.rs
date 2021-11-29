@@ -8,14 +8,9 @@ get merged with some other component.
  */
 
 use std::collections::HashMap;
-
 use std::fmt::Debug;
 
-
 use log::debug;
-
-
-
 
 use crate::widget::widget::WID;
 
@@ -33,6 +28,7 @@ pub trait FocusGroup: Debug {
     fn has_view(&self, widget_id: WID) -> bool;
 
     fn get_focused(&self) -> WID;
+    fn set_focused(&mut self, wid: WID) -> bool;
 
     /*
     returns whether focus got updated or not. It is designed to give a sound feedback, not for
@@ -100,6 +96,16 @@ impl FocusGroup for FocusGroupImpl {
     fn get_focused(&self) -> WID {
         debug!("get_focused : {}", self.selected);
         self.selected
+    }
+
+    fn set_focused(&mut self, wid: WID) -> bool {
+        debug!("set_focused : {}", wid);
+        if self.has_view(wid) {
+            self.selected = wid;
+            true
+        } else {
+            false
+        }
     }
 
     fn update_focus(&mut self, focus_update: FocusUpdate) -> bool {

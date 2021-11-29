@@ -58,6 +58,7 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
             on_miss: None,
             on_highlighted_changed: None,
             on_flip_expand: None,
+
         }
     }
 
@@ -91,20 +92,19 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         }
     }
 
-    fn event_highlighted_changed(&self) -> Option<Box<dyn AnyMsg>> {
-        if self.on_highlighted_changed.is_some() {
-            self.on_highlighted_changed.unwrap()(self)
-        } else {
-            None
+    pub fn with_on_highlighted_changed(self, on_highlighted_changed: WidgetAction<TreeViewWidget<Key>>) -> Self {
+        Self {
+            on_highlighted_changed: Some(on_highlighted_changed),
+            ..self
         }
     }
 
+    fn event_highlighted_changed(&self) -> Option<Box<dyn AnyMsg>> {
+        self.on_highlighted_changed.map(|f| f(self)).flatten()
+    }
+
     fn event_miss(&self) -> Option<Box<dyn AnyMsg>> {
-        if self.on_miss.is_some() {
-            self.on_miss.unwrap()(self)
-        } else {
-            None
-        }
+        self.on_miss.map(|f| f(self)).flatten()
     }
 
     fn event_flip_expand(&self) -> Option<Box<dyn AnyMsg>> {
