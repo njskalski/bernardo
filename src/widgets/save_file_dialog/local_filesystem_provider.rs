@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use log::{debug, warn};
 
+use crate::widgets::save_file_dialog::filesystem_list_item::FilesystemListItem;
 use crate::widgets::save_file_dialog::filesystem_provider::FilesystemProvider;
 use crate::widgets::save_file_dialog::filesystem_tree::FilesystemNode;
 use crate::widgets::tree_view::tree_view_node::{ChildRc, TreeViewNode};
@@ -71,5 +72,35 @@ impl FilesystemProvider for LocalFilesystemProvider {
 
     fn expand(&mut self, path: &Path) -> bool {
         self.expand_last(path)
+    }
+
+    fn get_files(&self, path: &Path) -> Box<dyn Iterator<Item=FilesystemListItem>> {
+        if !path.is_dir() {
+            warn!("path {:?} is not directory.", path);
+        }
+
+        let mut res = vec![];
+
+        return match path.read_dir() {
+            Err(err) => {
+                warn!("failed to read {:?} because {}", path, err);
+                Box::new(std::iter::empty())
+            },
+            Ok(readdir) => {
+                for c in readdir {
+                    match c {
+                        Err(err) => {
+                            warn!("failed to read {}", err);
+                        }
+                        Ok(dir_entry) => {
+                            if dir_entry.path().is_file() {
+                                res.push(FilesystemListItem::new(dir_entry.path()))
+                            }
+                        }
+                    }
+                }
+                Box::new(res.into_iter())
+            }
+        }
     }
 }

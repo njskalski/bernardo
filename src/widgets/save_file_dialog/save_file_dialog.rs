@@ -30,6 +30,7 @@ use crate::widget::edit_box::EditBoxWidget;
 use crate::widget::list_widget::ListWidget;
 use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widgets::save_file_dialog::filesystem_list_item::FilesystemListItem;
 use crate::widgets::save_file_dialog::filesystem_provider::FilesystemProvider;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::tree_view::tree_view_node::ChildRc;
@@ -40,11 +41,13 @@ pub struct SaveFileDialogWidget {
     display_state: Option<DisplayState>,
 
     tree_widget: TreeViewWidget<PathBuf>,
-    list_widget: ListWidget<MockFile>,
+    list_widget: ListWidget<FilesystemListItem>,
     edit_box: EditBoxWidget,
 
     ok_button: ButtonWidget,
     cancel_button: ButtonWidget,
+
+    curr_display_path: PathBuf,
 
     // TODO this will probably get moved
     filesystem_provider: Box<dyn FilesystemProvider>,
@@ -60,7 +63,6 @@ impl AnyMsg for SaveFileDialogMsg {}
 
 impl SaveFileDialogWidget {
     pub fn new(filesystem_provider: Box<dyn FilesystemProvider>) -> Self {
-        let file_list = get_mock_file_list();
         let tree = filesystem_provider.get_root();
         let tree_widget = TreeViewWidget::<PathBuf>::new(tree)
             .with_on_flip_expand(|widget| {
@@ -70,7 +72,7 @@ impl SaveFileDialogWidget {
             });
 
 
-        let list_widget = ListWidget::new().with_items(file_list).with_selection();
+        let list_widget = ListWidget::new().with_selection();
         let edit_box = EditBoxWidget::new().with_enabled(true);
 
         let ok_button = ButtonWidget::new("OK".to_owned());
@@ -84,7 +86,8 @@ impl SaveFileDialogWidget {
             edit_box,
             ok_button,
             cancel_button,
-            filesystem_provider
+            curr_display_path: filesystem_provider.get_root().id().clone(),
+            filesystem_provider,
         }
     }
 
@@ -237,7 +240,12 @@ impl Widget for SaveFileDialogWidget {
                 None
             }
             SaveFileDialogMsg::Expanded(child) => {
+                // TODO this looks like shit
                 self.filesystem_provider.expand(child.id().as_path());
+                self.curr_display_path = child.id().clone();
+                let mut items = self.filesystem_provider.get_files(self.curr_display_path.borrow()).collect::<Vec<_>>();
+                self.list_widget.set_items(&mut items);
+
                 None
             }
             unknown_msg => {

@@ -1,5 +1,5 @@
-
-use std::fmt::{Debug};
+use std::fmt::Debug;
+use std::slice::SliceIndex;
 
 use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;
@@ -7,13 +7,11 @@ use unicode_width::UnicodeWidthStr;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
-
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
-
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
 pub enum ListWidgetCell {
@@ -37,16 +35,20 @@ pub trait ListWidgetItem: Clone {
 
 pub trait ListWidgetProvider<Item: ListWidgetItem> {
     fn len(&self) -> usize;
-    fn get(&self, idx: usize) -> Option<Item>;
+    fn get(&self, idx: usize) -> Option<&Item>;
 }
 
 impl<Item: ListWidgetItem> ListWidgetProvider<Item> for Vec<Item> {
     fn len(&self) -> usize {
-        self.len()
+        <[Item]>::len(self)
     }
 
-    fn get(&self, idx: usize) -> Option<Item> {
-        self.get(idx).clone()
+    fn get(&self, idx: usize) -> Option<&Item> {
+        // // Vec::get(self, idx)
+        // Some(self[idx].clone())
+        // let self_as_vec: &Vec<Item> = self as &Vec<Item>;
+        // self_as_vec.get(idx)
+        <[Item]>::get(self, idx)
     }
 }
 
@@ -131,7 +133,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         self.items.clear();
         for idx in 0..provider.len() {
             match provider.get(idx) {
-                Some(item) => self.items.push(item),
+                Some(item) => self.items.push(item.clone()),
                 None => {
                     warn!("ListWidget: failed unpacking provider item #{}", idx);
                 }
