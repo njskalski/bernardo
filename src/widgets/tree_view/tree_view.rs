@@ -28,8 +28,6 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
     expanded: HashSet<Key>,
     highlighted: usize,
 
-    items_num: usize,
-
     //events
     on_miss: Option<WidgetAction<TreeViewWidget<Key>>>,
     on_highlighted_changed: Option<WidgetAction<TreeViewWidget<Key>>>,
@@ -57,7 +55,6 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
             filter: "".to_owned(),
             expanded: HashSet::new(),
             highlighted: 0,
-            items_num: 1,
             on_miss: None,
             on_highlighted_changed: None,
             on_flip_expand: None,
@@ -204,7 +201,7 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
                     }
                 }
                 Arrow::Down => {
-                    if self.highlighted < self.items_num - 1 {
+                    if self.highlighted < self.items().count() - 1 {
                         self.highlighted += 1;
                         self.event_highlighted_changed()
                     } else {
@@ -235,8 +232,6 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
                     self.event_miss()
                 } else {
                     self.flip_expanded(&id);
-                    self.items_num = self.items().count();
-
                     self.event_flip_expand()
                 }
             }
