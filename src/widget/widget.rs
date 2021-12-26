@@ -6,7 +6,7 @@ use crate::io::output::Output;
 
 
 use crate::primitives::theme::Theme;
-use crate::primitives::xy::XY;
+use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 
 // this corresponds to message to Parent.
@@ -41,6 +41,8 @@ pub trait Widget {
     fn get_focused_mut(&mut self) -> &mut dyn Widget;
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output);
+
+    fn anchor(&self) -> XY;
 }
 
 impl Debug for dyn Widget {

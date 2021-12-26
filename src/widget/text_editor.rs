@@ -12,7 +12,7 @@ use crate::io::style::{TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue, TextStyle_
 use crate::primitives::arrow::Arrow;
 use crate::primitives::cursor_set::{CursorSet, CursorStatus};
 use crate::primitives::theme::Theme;
-use crate::primitives::xy::XY;
+use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
 use crate::widget::any_msg::AnyMsg;
@@ -187,5 +187,10 @@ impl Widget for TextEditorWidget {
                 );
             }
         }
+    }
+
+    fn anchor(&self) -> XY {
+        //TODO
+        ZERO
     }
 }

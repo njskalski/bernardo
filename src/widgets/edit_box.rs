@@ -14,7 +14,7 @@ use crate::io::output::Output;
 
 use crate::primitives::{helpers};
 use crate::primitives::theme::Theme;
-use crate::primitives::xy::XY;
+use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
@@ -113,6 +113,7 @@ impl EditBoxWidget {
         }
     }
 }
+
 
 impl Widget for EditBoxWidget {
     fn id(&self) -> WID {
@@ -292,6 +293,10 @@ impl Widget for EditBoxWidget {
                 );
             }
         }
+    }
+
+    fn anchor(&self) -> XY {
+        ZERO
     }
 }
 

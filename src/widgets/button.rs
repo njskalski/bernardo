@@ -11,7 +11,7 @@ use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue};
 
 use crate::primitives::theme::Theme;
-use crate::primitives::xy::XY;
+use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
@@ -96,6 +96,10 @@ impl Widget for ButtonWidget {
         }
 
         output.print_at((0, 0).into(), style, full_text.as_str());
+    }
+
+    fn anchor(&self) -> XY {
+        ZERO
     }
 }
 

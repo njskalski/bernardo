@@ -17,34 +17,34 @@ use crate::primitives::xy::XY;
 // are to be silently disregarded.
 
 pub struct OverOutput<'a> {
-    output: Box<&'a mut dyn Output>,
+    output: &'a mut dyn Output,
     upper_left_offset: XY,
-    bottom_right_margin: XY,
+    size: XY,
 }
 
 impl<'a> OverOutput<'a> {
     pub fn new(
-        output: Box<&'a mut dyn Output>,
+        output: &'a mut dyn Output,
         upper_left_offset: XY,
-        bottom_right_margin: XY,
+        size: XY,
     ) -> Self {
         debug!(
             "making overoutput {:?} {:?} {:?}",
             upper_left_offset,
             output.size(),
-            bottom_right_margin
+            size
         );
         OverOutput {
             output,
             upper_left_offset,
-            bottom_right_margin,
+            size,
         }
     }
 }
 
 impl SizedXY for OverOutput<'_> {
     fn size(&self) -> XY {
-        self.upper_left_offset + self.output.size() + self.bottom_right_margin
+        self.size
     }
 }
 
@@ -56,13 +56,17 @@ impl Output for OverOutput<'_> {
         }
 
         if pos.y < self.upper_left_offset.y {
+            debug!("early exit 1");
             return;
         }
-        if pos.y > self.upper_left_offset.y + self.output.size().y {
+        // no analogue exit on x, as something starting left from frame might still overlap with it.
+
+        if pos >= self.output.size() {
+            debug!("early exit 2");
             return;
         }
 
-        let x_offset: i32 = 0;
+        let mut x_offset: i32 = 0;
         for grapheme in text.graphemes(true).into_iter() {
             let x = 0 as i32 + pos.x as i32 - self.upper_left_offset.x as i32 + x_offset;
             if x < 0 {
@@ -77,6 +81,7 @@ impl Output for OverOutput<'_> {
             let local_pos = XY::new(x as u16, y);
 
             self.output.print_at(local_pos, style, grapheme);
+            x_offset += grapheme.width() as i32; //TODO
         }
     }
 

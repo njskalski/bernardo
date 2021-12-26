@@ -15,6 +15,7 @@ use std::path::PathBuf;
 use log::{debug, warn};
 
 use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
+use crate::experiments::scroll::Scroll;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
@@ -25,8 +26,8 @@ use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::button::ButtonWidget;
-use crate::widget::edit_box::EditBoxWidget;
+use crate::widgets::button::ButtonWidget;
+use crate::widgets::edit_box::EditBoxWidget;
 use crate::widget::list_widget::ListWidget;
 use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
@@ -48,6 +49,8 @@ pub struct SaveFileDialogWidget {
     cancel_button: ButtonWidget,
 
     curr_display_path: PathBuf,
+
+    tree_scroll : Scroll,
 
     // TODO this will probably get moved
     filesystem_provider: Box<dyn FilesystemProvider>,
@@ -92,6 +95,7 @@ impl SaveFileDialogWidget {
             cancel_button,
             curr_display_path: filesystem_provider.get_root().id().clone(),
             filesystem_provider,
+            tree_scroll : Scroll::new(XY::new(30, 1000)) //TODO completely arbitrary
         }
     }
 
@@ -327,7 +331,13 @@ impl Widget for SaveFileDialogWidget {
                         continue;
                     }
 
-                    widget.render(theme, focused_op == Some(widget.id()), &mut SubOutput::new(Box::new(output), wir.rect));
+                    if widget.id() != self.tree_widget.id() {
+                        widget.render(theme, focused_op == Some(widget.id()), &mut SubOutput::new(Box::new(output), wir.rect));
+                    }
+
+                    if widget.id() == self.tree_widget.id() {
+                        self.tree_scroll.render_within(output, &self.tree_widget, theme, focused_op == Some(widget.id()));
+                    }
                 }
             }
         }

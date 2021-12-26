@@ -1,7 +1,3 @@
-
-
-
-
 pub mod mock {
     use crate::widget::list_widget::{ListWidgetCell, ListWidgetItem};
 

@@ -283,6 +283,11 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
             );
         }
     }
+
+    fn anchor(&self) -> XY {
+        //TODO add x corresponding to depth
+        XY::new( 0, self.highlighted as u16) //TODO unsafe cast
+    }
 }
 
 #[cfg(test)]
