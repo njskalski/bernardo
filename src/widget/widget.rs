@@ -42,7 +42,9 @@ pub trait Widget {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output);
 
-    fn anchor(&self) -> XY;
+    fn anchor(&self) -> XY {
+        ZERO
+    }
 }
 
 impl Debug for dyn Widget {

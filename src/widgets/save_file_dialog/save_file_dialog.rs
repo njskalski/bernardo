@@ -197,6 +197,12 @@ impl Widget for SaveFileDialogWidget {
 
         let res_sizes = self.todo_internal_layout(max_size);
 
+        for wir in &res_sizes {
+            if wir.wid == self.tree_widget.id() {
+                self.tree_scroll.follow_anchor(wir.rect.size, self.tree_widget.anchor());
+            }
+        }
+
         debug!("size {}, res_sizes {:?}", max_size, res_sizes);
 
         // Retention of focus. Not sure if it should be here.
