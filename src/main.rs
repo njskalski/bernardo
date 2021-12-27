@@ -39,9 +39,10 @@ mod text;
 mod widgets;
 
 fn main() {
-    env_logger::builder()
-        .filter(None, LevelFilter::Debug)
-        .init();
+    stderrlog::new()
+        // .module(module_path!())
+        .init()
+        .unwrap();
 
     let stdout = stdout();
     let stdout = stdout.lock().into_raw_mode().unwrap();

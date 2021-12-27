@@ -1,8 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use env_logger::Target;
-
 use crate::widgets::save_file_dialog::filesystem_list_item::FilesystemListItem;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
