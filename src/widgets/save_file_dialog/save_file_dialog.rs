@@ -99,50 +99,6 @@ impl SaveFileDialogWidget {
         }
     }
 
-    fn todo_wid_to_widget_or_self(&self, wid: WID) -> &dyn Widget {
-        if self.ok_button.id() == wid {
-            return &self.ok_button
-        }
-        if self.cancel_button.id() == wid {
-            return &self.cancel_button
-        }
-        if self.edit_box.id() == wid {
-            return &self.edit_box
-        }
-        if self.tree_widget.id() == wid {
-            return &self.tree_widget
-        }
-        if self.list_widget.id() == wid {
-            return &self.list_widget
-        }
-
-        warn!("todo_wid_to_widget_or_self on {} failed - widget {} not found. Returning self.", wid, self.id());
-
-        self
-    }
-
-    fn todo_wid_to_widget_or_self_mut(&mut self, wid: WID) -> &mut dyn Widget {
-        if self.ok_button.id() == wid {
-            return &mut self.ok_button
-        }
-        if self.cancel_button.id() == wid {
-            return &mut self.cancel_button
-        }
-        if self.edit_box.id() == wid {
-            return &mut self.edit_box
-        }
-        if self.tree_widget.id() == wid {
-            return &mut self.tree_widget
-        }
-        if self.list_widget.id() == wid {
-            return &mut self.list_widget
-        }
-
-        warn!("todo_wid_to_widget_mut_or_self on {} failed - widget {} not found. Returning self.", wid, self.id());
-
-        self
-    }
-
     fn todo_internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {
         let tree_widget = &mut self.tree_widget;
         let list_widget = &mut self.list_widget;
@@ -288,63 +244,54 @@ impl Widget for SaveFileDialogWidget {
         };
     }
 
-    fn get_focused(&self) -> &dyn Widget {
-        return match self.display_state.borrow().as_ref() {
-            Some(cached_sizes) => {
-                let focused_wid = cached_sizes.focus_group.get_focused();
-                self.todo_wid_to_widget_or_self(focused_wid)
-            }
-            None => {
-                warn!("get_focused on {} failed - no cached_sizes. Returning self.", self.id());
-                self
-            }
-        }
+    fn subwidgets(&self) -> Box<dyn std::iter::Iterator<Item=&dyn Widget> + '_> {
+        debug!("call to save_file_dialog subwidget on {}", self.id());
+        Box::new(vec![&self.tree_widget as &dyn Widget, &self.list_widget, &self.edit_box].into_iter())
     }
 
-    fn get_focused_mut(&mut self) -> &mut dyn Widget {
-        let wid_op: Option<WID> = match &self.display_state {
-            Some(cached_sizes) => {
-                Some(cached_sizes.focus_group.get_focused())
-            }
-            None => {
-                warn!("get_focused on {} failed - no cached_sizes.", self.id());
-                None
-            }
-        };
+    fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> {
+        debug!("call to save_file_dialog subwidget_mut on {}", self.id());
+        Box::new(vec![&mut self.tree_widget as &mut dyn Widget, &mut self.list_widget, &mut self.edit_box].into_iter())
+    }
 
-        return match wid_op {
-            None => self,
-            Some(wid) => self.todo_wid_to_widget_or_self_mut(wid)
-        }
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+        wid_op.map(|wid| self.get_subwidget(wid)).flatten()
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let focused_op = if focused {
-            Some(self.get_focused().id())
-        } else {
-            None
-        };
-
         match self.display_state.borrow().as_ref() {
             None => warn!("failed rendering save_file_dialog without cached_sizes"),
             Some(cached_sizes) => {
                 debug!("widget_sizes : {:?}", cached_sizes.widget_sizes);
                 for wir in &cached_sizes.widget_sizes {
-                    let widget = self.todo_wid_to_widget_or_self(wir.wid);
+                    match self.get_subwidget(wir.wid) {
+                        Some(widget) => {
+                            let mut sub_output = &mut SubOutput::new(Box::new(output), wir.rect);
 
-                    if widget.id() == self.id() {
-                        warn!("render: failed to match WID {} to sub-widget in save_file_dialog {}", wir.wid, self.id());
-                        continue;
-                    }
+                            if widget.id() != self.tree_widget.id() {
+                                widget.render(theme,
+                                              cached_sizes.focus_group.get_focused() == widget.id(),
+                                              sub_output,
+                                );
+                            }
 
-                    let mut sub_output = &mut SubOutput::new(Box::new(output), wir.rect);
-
-                    if widget.id() != self.tree_widget.id() {
-                        widget.render(theme, focused_op == Some(widget.id()), sub_output);
-                    }
-
-                    if widget.id() == self.tree_widget.id() {
-                        self.tree_scroll.render_within(sub_output, &self.tree_widget, theme, focused_op == Some(widget.id()));
+                            if widget.id() == self.tree_widget.id() {
+                                self.tree_scroll.render_within(sub_output,
+                                                               &self.tree_widget,
+                                                               theme,
+                                                               cached_sizes.focus_group.get_focused() == widget.id(),
+                                );
+                            }
+                        },
+                        None => {
+                            warn!("subwidget {} not found!", wir.wid);
+                        }
                     }
                 }
             }

@@ -1,7 +1,3 @@
-
-
-
-
 use log::warn;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -9,14 +5,11 @@ use unicode_width::UnicodeWidthStr;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
-
 use crate::io::output::Output;
-
-use crate::primitives::{helpers};
+use crate::primitives::helpers;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
-
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
 const MIN_WIDTH: u16 = 12;
@@ -221,14 +214,6 @@ impl Widget for EditBoxWidget {
             }
             _ => None,
         };
-    }
-
-    fn get_focused(&self) -> &dyn Widget {
-        self
-    }
-
-    fn get_focused_mut(&mut self) -> &mut dyn Widget {
-        self
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {

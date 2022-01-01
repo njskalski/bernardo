@@ -1,15 +1,10 @@
-
-
 use log::warn;
-
 
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
-
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue};
-
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
@@ -71,14 +66,6 @@ impl Widget for ButtonWidget {
             }
             _ => None,
         }
-    }
-
-    fn get_focused(&self) -> &dyn Widget {
-        self
-    }
-
-    fn get_focused_mut(&mut self) -> &mut dyn Widget {
-        self
     }
 
     fn render(&self, _theme: &Theme, focused: bool, output: &mut dyn Output) {

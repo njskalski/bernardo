@@ -1,10 +1,10 @@
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use log::{debug, warn};
+
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
-
-
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
@@ -37,13 +37,45 @@ pub trait Widget {
     // No message will NOT stop redraw.
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>>;
 
-    fn get_focused(&self) -> &dyn Widget;
-    fn get_focused_mut(&mut self) -> &mut dyn Widget;
+    // If these return None, it means that it's not a complex widget - the input should be addressed
+    // directly to it.
+    fn get_focused(&self) -> Option<&dyn Widget> { None }
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> { None }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output);
 
     fn anchor(&self) -> XY {
         ZERO
+    }
+
+    fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
+        debug!("call to default subwidget_mut on {}", self.id());
+        Box::new(std::iter::empty())
+    }
+
+    fn subwidgets(&self) -> Box<dyn std::iter::Iterator<Item=&dyn Widget> + '_> where Self: Sized {
+        debug!("call to default subwidget on {}", self.id());
+        Box::new(std::iter::empty())
+    }
+
+    fn get_subwidget(&self, wid: WID) -> Option<&dyn Widget> where Self: Sized {
+        for widget in self.subwidgets() {
+            if widget.id() == wid {
+                return Some(widget)
+            }
+        }
+
+        None
+    }
+
+    fn get_subwidget_mut(&mut self, wid: WID) -> Option<&mut dyn Widget> where Self: Sized {
+        for widget in self.subwidgets_mut() {
+            if widget.id() == wid {
+                return Some(widget)
+            }
+        }
+
+        None
     }
 }
 

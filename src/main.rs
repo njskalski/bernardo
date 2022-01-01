@@ -70,20 +70,19 @@ fn main() {
         ie: InputEvent,
     ) -> (bool, Option<Box<dyn AnyMsg>>) {
         let my_id = view.id();
-        let active_child_id = view.get_focused().id();
+        let focused_child_op = view.get_focused_mut();
+        let active_child_id_op = focused_child_op.as_ref().map(|w| w.id());
 
-
-        debug!("recursive_treat_views my_id {} aci {}", my_id, active_child_id);
+        debug!("recursive_treat_views my_id {} aci {:?}", my_id, active_child_id_op);
 
         // first, dig as deep as possible.
-        let (child_have_consumed, message_from_child_op) = if my_id != active_child_id {
-            recursive_treat_views(view.get_focused_mut(), ie.clone())
-        } else {
-            (false, None)
+        let (child_have_consumed, message_from_child_op) = match focused_child_op {
+            Some(focused_child) => recursive_treat_views(focused_child, ie),
+            None => (false, None)
         };
 
         if child_have_consumed {
-            debug!("child {} consumed", active_child_id);
+            debug!("child {:?} consumed", active_child_id_op);
 
             return match message_from_child_op {
                 None => (true, None),
@@ -96,7 +95,7 @@ fn main() {
             }
         };
 
-        debug!("child {} did not consume", active_child_id);
+        debug!("child {:?} did not consume", active_child_id_op);
 
         // Either child did not consume (unwinding), or we're on the bottom of path.
         // We're here to consume the Input.

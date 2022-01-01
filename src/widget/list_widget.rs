@@ -279,14 +279,6 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         }
     }
 
-    fn get_focused(&self) -> &dyn Widget {
-        self
-    }
-
-    fn get_focused_mut(&mut self) -> &mut dyn Widget {
-        self
-    }
-
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let primary_style = theme.default_text(focused).maybe_half(focused);
         helpers::fill_background(primary_style.background, output);

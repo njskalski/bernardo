@@ -48,14 +48,6 @@ impl Widget for NoEditorWidget {
         None
     }
 
-    fn get_focused(&self) -> &dyn Widget {
-        self
-    }
-
-    fn get_focused_mut(&mut self) -> &mut dyn Widget {
-        self
-    }
-
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         fill_background(theme.default_background(focused), output);
 
