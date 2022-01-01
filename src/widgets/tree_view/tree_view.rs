@@ -58,7 +58,6 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
             on_miss: None,
             on_highlighted_changed: None,
             on_flip_expand: None,
-
         }
     }
 
@@ -247,7 +246,7 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let primary_style = theme.default_text().maybe_half(focused);
+        let primary_style = theme.default_text(focused);
         helpers::fill_background(primary_style.background, output);
         let cursor_style = theme.cursor().maybe_half(focused);
 

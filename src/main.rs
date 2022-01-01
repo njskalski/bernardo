@@ -1,33 +1,22 @@
-
-use std::io::{stdout};
+use std::io::stdout;
 use std::path::PathBuf;
 
-use log::{debug};
+use log::debug;
 use log::LevelFilter;
-
 use termion::raw::IntoRawMode;
 
 use crate::io::crossterm_input::CrosstermInput;
 use crate::io::crossterm_output::CrosstermOutput;
+use crate::io::filesystem_tree::local_filesystem_provider::LocalFilesystemProvider;
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
-
-
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::theme::Theme;
-
-
 use crate::widget::any_msg::AnyMsg;
-
-
-
-
 use crate::widget::widget::Widget;
-use crate::widgets::save_file_dialog::local_filesystem_provider::LocalFilesystemProvider;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
-
 
 mod experiments;
 mod io;

@@ -4,9 +4,9 @@ use std::rc::Rc;
 
 use log::{debug, warn};
 
-use crate::widgets::save_file_dialog::filesystem_list_item::FilesystemListItem;
-use crate::widgets::save_file_dialog::filesystem_provider::FilesystemProvider;
-use crate::widgets::save_file_dialog::filesystem_tree::FilesystemNode;
+use crate::io::filesystem_tree::filesystem_list_item::FilesystemListItem;
+use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
+use crate::io::filesystem_tree::filesystem_tree::FilesystemNode;
 use crate::widgets::tree_view::tree_view_node::{ChildRc, TreeViewNode};
 
 pub struct LocalFilesystemProvider {

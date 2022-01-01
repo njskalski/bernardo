@@ -16,6 +16,8 @@ use log::{debug, warn};
 
 use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
 use crate::experiments::scroll::Scroll;
+use crate::io::filesystem_tree::filesystem_list_item::FilesystemListItem;
+use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
@@ -26,13 +28,11 @@ use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
-use crate::widgets::button::ButtonWidget;
-use crate::widgets::edit_box::EditBoxWidget;
 use crate::widget::list_widget::ListWidget;
 use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
-use crate::widgets::save_file_dialog::filesystem_list_item::FilesystemListItem;
-use crate::widgets::save_file_dialog::filesystem_provider::FilesystemProvider;
+use crate::widgets::button::ButtonWidget;
+use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::tree_view::tree_view_node::ChildRc;
 
@@ -337,12 +337,14 @@ impl Widget for SaveFileDialogWidget {
                         continue;
                     }
 
+                    let mut sub_output = &mut SubOutput::new(Box::new(output), wir.rect);
+
                     if widget.id() != self.tree_widget.id() {
-                        widget.render(theme, focused_op == Some(widget.id()), &mut SubOutput::new(Box::new(output), wir.rect));
+                        widget.render(theme, focused_op == Some(widget.id()), sub_output);
                     }
 
                     if widget.id() == self.tree_widget.id() {
-                        self.tree_scroll.render_within(output, &self.tree_widget, theme, focused_op == Some(widget.id()));
+                        self.tree_scroll.render_within(sub_output, &self.tree_widget, theme, focused_op == Some(widget.id()));
                     }
                 }
             }

@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use crate::widgets::save_file_dialog::filesystem_list_item::FilesystemListItem;
+use crate::io::filesystem_tree::filesystem_list_item::FilesystemListItem;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 pub trait FilesystemProvider {

@@ -1,13 +1,10 @@
-
-
 use log::debug;
-
 use log::warn;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::output::Output;
-use crate::io::style::{TextStyle};
+use crate::io::style::TextStyle;
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
@@ -68,13 +65,17 @@ impl Output for OverOutput<'_> {
 
         let mut x_offset: i32 = 0;
         for grapheme in text.graphemes(true).into_iter() {
-            let x = 0 as i32 + pos.x as i32 - self.upper_left_offset.x as i32 + x_offset;
+            let x = x_offset + pos.x as i32 - self.upper_left_offset.x as i32;
             if x < 0 {
                 continue;
             }
             if x > u16::MAX as i32 {
                 warn!("got grapheme x position that would overflow u16::MAX, not drawing.");
                 continue;
+            }
+
+            if x as u16 >= self.output.size().x {
+                break;
             }
 
             let y = pos.y - self.upper_left_offset.y; // > 0, tested above and < u16::MAX since no addition.

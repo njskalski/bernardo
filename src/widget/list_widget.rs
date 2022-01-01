@@ -288,7 +288,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let primary_style = theme.default_text().maybe_half(focused);
+        let primary_style = theme.default_text(focused).maybe_half(focused);
         helpers::fill_background(primary_style.background, output);
         let cursor_style = theme.cursor().maybe_half(focused);
         let header_style = theme.header().maybe_half(focused);
