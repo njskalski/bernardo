@@ -1,12 +1,5 @@
-
-
-
-
 use crate::io::output::Output;
 use crate::io::style::TextStyle;
-
-
-
 use crate::primitives::xy::{XY, ZERO};
 
 pub struct BorderStyle {
@@ -38,50 +31,50 @@ pub const SingleBorderStyle: BorderStyle = BorderStyle {
 };
 
 
-pub fn draw_full_rect(style: TextStyle, border_style: &BorderStyle, output: &mut dyn Output) {
-    if output.size() > XY::new(1, 1) {
-        output.print_at(ZERO,
-                        style,
-                        border_style.UpperLeft);
-        output.print_at(XY::new(0, output.size().y - 1),
-                        style,
-                        border_style.BottomLeft);
-        output.print_at(XY::new(output.size().x - 1, 0),
-                        style,
-                        border_style.UpperRight);
-        output.print_at(XY::new(output.size().x - 1, output.size().y - 1),
-                        style,
-                        border_style.BottomRight);
-
-        for x in 0..output.size().x {
-            output.print_at(XY::new(x, 0),
-                            style,
-                            border_style.VerticalLine);
-            output.print_at(XY::new(x, output.size().y - 1),
-                            style,
-                            border_style.VerticalLine);
-        }
-
-        for y in 0..output.size().y {
-            output.print_at(XY::new(0, y),
-                            style,
-                            border_style.HorizontalLine);
-            output.print_at(XY::new(output.size().x - 1, y),
-                            style,
-                            border_style.HorizontalLine);
-        }
-    } else {
-        for x in 0..output.size().x {
-            for y in 0..output.size().y {
-                output.print_at(
-                    XY::new(x, y),
-                    style,
-                    "╳",
-                );
-            }
-        }
-    }
-}
+// pub fn draw_full_rect(style: TextStyle, border_style: &BorderStyle, output: &mut dyn Output) {
+//     if output.size_constraint() > XY::new(1, 1) {
+//         output.print_at(ZERO,
+//                         style,
+//                         border_style.UpperLeft);
+//         output.print_at(XY::new(0, output.size_constraint().y - 1),
+//                         style,
+//                         border_style.BottomLeft);
+//         output.print_at(XY::new(output.size_constraint().x - 1, 0),
+//                         style,
+//                         border_style.UpperRight);
+//         output.print_at(XY::new(output.size_constraint().x - 1, output.size_constraint().y - 1),
+//                         style,
+//                         border_style.BottomRight);
+//
+//         for x in 0..output.size_constraint().x {
+//             output.print_at(XY::new(x, 0),
+//                             style,
+//                             border_style.VerticalLine);
+//             output.print_at(XY::new(x, output.size_constraint().y - 1),
+//                             style,
+//                             border_style.VerticalLine);
+//         }
+//
+//         for y in 0..output.size_constraint().y {
+//             output.print_at(XY::new(0, y),
+//                             style,
+//                             border_style.HorizontalLine);
+//             output.print_at(XY::new(output.size_constraint().x - 1, y),
+//                             style,
+//                             border_style.HorizontalLine);
+//         }
+//     } else {
+//         for x in 0..output.size_constraint().x {
+//             for y in 0..output.size_constraint().y {
+//                 output.print_at(
+//                     XY::new(x, y),
+//                     style,
+//                     "╳",
+//                 );
+//             }
+//         }
+//     }
+// }
 //
 // pub fn draw_some(wirs: &Vec<WidgetIdRect>, text_style: TextStyle, border_style: &BorderStyle, output: &mut Output) {
 //     if output.size() > XY::new(2, 2) {

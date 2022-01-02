@@ -1,15 +1,11 @@
-
-
-use log::debug;
-
-
-
+use log::{debug, error};
 
 use crate::io::output::Output;
 use crate::io::style::{TextStyle, TextStyle_WhiteOnBlack};
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
+use crate::SizeConstraint;
 
 pub struct SubOutput<'a> {
     output: Box<&'a mut dyn Output>,
@@ -20,17 +16,11 @@ impl<'a> SubOutput<'a> {
     pub fn new(output: Box<&'a mut dyn Output>, frame: Rect) -> Self {
         // TODO add tests if frame is fully contained in Output and write errors to logs if its not.
 
-        debug_assert!(frame.lower_right().x <= output.size().x, "frame = {}, output.size() = {}", frame, output.size());
-        debug_assert!(frame.lower_right().y <= output.size().y, "frame = {}, output.size() = {}", frame, output.size());
-        debug!("making suboutput {:?} from {:?}", frame, output.size());
+        debug_assert!(output.size_constraint().bigger_equal_than(frame.lower_right()),
+                      "frame = {}, output.size_constraint() = {}",
+                      frame, output.size_constraint());
 
         SubOutput { output, frame }
-    }
-}
-
-impl SizedXY for SubOutput<'_> {
-    fn size(&self) -> XY {
-        self.frame.size
     }
 }
 
@@ -51,5 +41,9 @@ impl Output for SubOutput<'_> {
                     .print_at(self.frame.pos + XY::new(x, y), style, " ")
             }
         }
+    }
+
+    fn size_constraint(&self) -> SizeConstraint {
+        SizeConstraint::simple(self.frame.size)
     }
 }

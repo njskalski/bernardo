@@ -1,12 +1,10 @@
-use std::io::{Write};
-
+use std::io::Write;
 
 use crossterm::{cursor, ExecutableCommand, style, terminal};
 use crossterm::cursor::MoveTo;
 use crossterm::style::{Attribute, Color, PrintStyledContent, SetAttribute, SetBackgroundColor, SetForegroundColor, StyledContent};
 use crossterm::terminal::{Clear, ClearType};
-use log::{warn};
-
+use log::warn;
 
 use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
@@ -14,6 +12,7 @@ use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
+use crate::SizeConstraint;
 
 pub struct CrosstermOutput<W: Write> {
     stdout: W,
@@ -173,11 +172,9 @@ impl<W: Write> Output for CrosstermOutput<W> {
         };
         buffer.clear()
     }
-}
 
-impl<W: Write> SizedXY for CrosstermOutput<W> {
-    fn size(&self) -> XY {
-        self.size
+    fn size_constraint(&self) -> SizeConstraint {
+        SizeConstraint::simple(self.size)
     }
 }
 

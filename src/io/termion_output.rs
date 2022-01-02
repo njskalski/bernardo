@@ -1,9 +1,7 @@
-use std::io::{Write};
-
+use std::io::Write;
 
 use log::debug;
 use termion::{clear, cursor, style, terminal_size};
-
 
 use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
@@ -11,6 +9,7 @@ use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
+use crate::SizeConstraint;
 
 pub struct TermionOutput<W: Write> {
     stdout: W,
@@ -158,6 +157,10 @@ impl<W: Write> Output for TermionOutput<W> {
         };
 
         buffer.clear()
+    }
+
+    fn size_constraint(&self) -> SizeConstraint {
+        SizeConstraint::simple(self.size)
     }
 }
 

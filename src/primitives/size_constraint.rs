@@ -1,3 +1,5 @@
+use std::fmt::{Debug, Display, Formatter};
+
 use crate::primitives::xy::XY;
 
 //TODO find a shorter name
@@ -8,6 +10,7 @@ x >= hint.x || x == None,
 y >= hint.y || y == None,
 None means "no limit"
  */
+#[derive(Copy, Clone, Debug)]
 pub struct SizeConstraint {
     x: Option<u16>,
     y: Option<u16>,
@@ -16,6 +19,22 @@ pub struct SizeConstraint {
     // size constraint, but sometimes I want "widgets" that just fill the output without using
     // scroll - such widgets will use "hint" to get the size of display.
     hint: XY,
+}
+
+impl Display for SizeConstraint {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let x = match self.x {
+            Some(x) => format!("{} (hint {})", x, self.hint.x),
+            None => format!("unlimited (hint {})", self.hint.x),
+        };
+
+        let y = match self.y {
+            Some(y) => format!("{} (hint {})", y, self.hint.y),
+            None => format!("unlimited (hint {})", self.hint.y)
+        };
+
+        write!(f, "sc:[{}, {}]", x, y)
+    }
 }
 
 impl SizeConstraint {

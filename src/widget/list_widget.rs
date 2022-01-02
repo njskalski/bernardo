@@ -303,9 +303,13 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         }
 
         for (idx, item) in self.items.iter().enumerate() {
-            debug!("y+idx = {}, osy = {}", y_offset as usize + idx, output.size().y);
-            if y_offset as usize + idx >= output.size().y as usize {
-                break;
+            debug!("y+idx = {}, osy = {:?}", y_offset as usize + idx, output.size_constraint().y());
+
+            match output.size_constraint().y() {
+                Some(y) => if y_offset as usize + idx >= y as usize {
+                    break;
+                }
+                None => {}
             }
 
             let mut x_offset: u16 = 0;

@@ -10,8 +10,8 @@ pub fn fill_background(color: Color, output: &mut dyn Output) {
         Effect::None,
     );
 
-    for x in 0..output.size().x {
-        for y in 0..output.size().y {
+    for x in 0..output.size_constraint().hint().x {
+        for y in 0..output.size_constraint().hint().y {
             output.print_at(
                 XY::new(x, y),
                 style,

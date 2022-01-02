@@ -1,4 +1,6 @@
-use crate::{Output, Theme, Widget};
+use stderrlog::new;
+
+use crate::{Output, SizeConstraint, Theme, Widget};
 use crate::experiments::scroll::ScrollDirection::Vertical;
 use crate::io::over_output::OverOutput;
 use crate::primitives::xy::{XY, ZERO};
@@ -7,7 +9,7 @@ use crate::primitives::xy::{XY, ZERO};
 pub enum ScrollDirection {
     Horizontal,
     Vertical,
-    Both
+    Both,
 }
 
 pub struct Scroll {
@@ -31,7 +33,13 @@ impl Scroll {
     }
 
     pub fn render_within<W: Widget>(&self, output: &mut dyn Output, widget: &W, theme: &Theme, focused: bool) {
-        let mut over_output = OverOutput::new(output, self.offset, self.max_size);
+        let new_sc = match self.direction {
+            ScrollDirection::Horizontal => SizeConstraint::new(Some(output.size_constraint().hint().x), None, output.size_constraint().hint()),
+            Vertical => SizeConstraint::new(None, Some(output.size_constraint().hint().y), output.size_constraint().hint()),
+            ScrollDirection::Both => SizeConstraint::new(None, None, output.size_constraint().hint()),
+        };
+
+        let mut over_output = OverOutput::new(output, self.offset, new_sc);
         widget.render(theme, focused, &mut over_output)
     }
 

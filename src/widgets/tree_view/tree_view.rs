@@ -248,9 +248,12 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
         let cursor_style = theme.cursor().maybe_half(focused);
 
         for (idx, (depth, node)) in self.items().enumerate() {
-            if idx >= output.size().y as usize {
-                debug!("idx {}, output.size().y {}", idx, output.size());
-                break;
+            match output.size_constraint().y() {
+                Some(y) => if idx >= y as usize {
+                    debug!("idx {}, output.size().y {}", idx, output.size_constraint());
+                    break;
+                }
+                None => {}
             }
 
 

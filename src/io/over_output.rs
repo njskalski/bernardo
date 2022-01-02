@@ -8,6 +8,7 @@ use crate::io::style::TextStyle;
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
+use crate::SizeConstraint;
 
 // Over output (maybe I'll rename it as super output) is an output that is bigger than original,
 // physical or in-memory display. All write operations targeting lines/columns beyond it's borders
@@ -16,37 +17,36 @@ use crate::primitives::xy::XY;
 pub struct OverOutput<'a> {
     output: &'a mut dyn Output,
     upper_left_offset: XY,
-    size: XY,
+    size_constraint: SizeConstraint,
 }
 
 impl<'a> OverOutput<'a> {
     pub fn new(
         output: &'a mut dyn Output,
         upper_left_offset: XY,
-        size: XY,
+        size_constraint: SizeConstraint,
     ) -> Self {
         debug!(
-            "making overoutput {:?} {:?} {:?}",
+            "making overoutput {:?} {:?}",
             upper_left_offset,
-            output.size(),
-            size
+            size_constraint,
         );
         OverOutput {
             output,
             upper_left_offset,
-            size,
+            size_constraint,
         }
-    }
-}
-
-impl SizedXY for OverOutput<'_> {
-    fn size(&self) -> XY {
-        self.size
     }
 }
 
 impl Output for OverOutput<'_> {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
+        if !self.size_constraint.strictly_bigger_than(
+            self.size_constraint.hint() + self.upper_left_offset
+        ) {
+            warn!("hint (visible part) beyond output space. Most likely layouting error.");
+        }
+
         if text.width() > u16::MAX as usize {
             warn!("got text width that would overflow u16::MAX, not drawing.");
             return;
@@ -58,8 +58,8 @@ impl Output for OverOutput<'_> {
         }
         // no analogue exit on x, as something starting left from frame might still overlap with it.
 
-        if pos >= self.output.size() {
-            debug!("early exit 2");
+        if !self.output.size_constraint().strictly_bigger_than(pos) {
+            debug!("drawing beyond output, early exit.");
             return;
         }
 
@@ -74,8 +74,15 @@ impl Output for OverOutput<'_> {
                 continue;
             }
 
-            if x as u16 >= self.output.size().x {
-                break;
+            let x = x as u16;
+
+            match self.output.size_constraint().x() {
+                Some(max_x) => {
+                    if x >= max_x {
+                        break;
+                    }
+                }
+                None => {}
             }
 
             let y = pos.y - self.upper_left_offset.y; // > 0, tested above and < u16::MAX since no addition.
@@ -86,11 +93,11 @@ impl Output for OverOutput<'_> {
         }
     }
 
-    fn get_visible_rect(&self) -> Rect {
-        Rect::new(self.upper_left_offset, self.output.size())
-    }
-
     fn clear(&mut self) {
         self.output.clear()
+    }
+
+    fn size_constraint(&self) -> SizeConstraint {
+        self.size_constraint
     }
 }

@@ -118,7 +118,7 @@ fn main() {
 
     loop {
         output.clear();
-        main_view.layout(SizeConstraint::simple(output.size()));
+        main_view.layout(output.size_constraint());
         main_view.render(&theme, true, &mut output);
         output.end_frame();
 

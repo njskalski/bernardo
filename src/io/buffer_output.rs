@@ -1,9 +1,6 @@
-
 use std::default::Default;
 
-
-
-use log::{warn};
+use log::{debug, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -13,23 +10,21 @@ use crate::io::output::Output;
 use crate::io::style::TextStyle;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
+use crate::SizeConstraint;
 
 pub type BufferOutput = Buffer<Cell>;
 
 impl Output for BufferOutput {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
-        if pos.x >= self.size().x || pos.y >= self.size().y {
-            //TODO
+        if !self.size_constraint().strictly_bigger_than(pos) {
             warn!(
-                "early exit on drawing beyond border (req {}, border {})",
+                "early exit on drawing beyond border (req {}, border {:?})",
                 pos,
-                self.size()
+                self.size_constraint()
             );
             return;
         }
 
-        debug_assert!(pos.x < self.size().x, "pos {}, size {}", pos, self.size());
-        debug_assert!(pos.y < self.size().y, "pos {}, size {}", pos, self.size());
         debug_assert!(text.len() < (u16::max_value() as usize));
 
         let mut offset: u16 = 0;
@@ -37,14 +32,20 @@ impl Output for BufferOutput {
         for (idx, grapheme) in text.graphemes(true).enumerate() {
             let shift_x = (idx as u16) + offset;
 
-            if pos.x + shift_x >= self.size().x {
-                break;
+            match self.size_constraint().x() {
+                Some(max_x) => {
+                    if pos.x + shift_x >= max_x {
+                        break;
+                    }
+
+                    if (max_x as usize) - ((pos.x + shift_x) as usize) < grapheme.width() {
+                        debug!("early quit on wide char.");
+                        break;
+                    }
+                }
+                None => {}
             }
 
-            if (self.size().x as usize) - ((pos.x + shift_x) as usize) < grapheme.width() {
-                dbg!("early quit on wide char.");
-                break;
-            }
 
             let xy = pos + XY::new(shift_x as u16, 0);
             self[xy] = Cell::Begin {
@@ -69,5 +70,9 @@ impl Output for BufferOutput {
         for idx in 0..self.cells().len() {
             self.cells_mut()[idx] = Cell::default();
         }
+    }
+
+    fn size_constraint(&self) -> SizeConstraint {
+        SizeConstraint::simple(self.size())
     }
 }
