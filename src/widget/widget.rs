@@ -5,6 +5,7 @@ use log::{debug, warn};
 
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
@@ -27,7 +28,7 @@ pub trait Widget {
     // fn desc() -> &'static str;
 
     // This is guaranteed to be called before render.
-    fn layout(&mut self, max_size: XY) -> XY;
+    fn layout(&mut self, sc: SizeConstraint) -> XY;
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>>;

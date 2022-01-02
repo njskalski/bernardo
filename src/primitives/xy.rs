@@ -4,6 +4,8 @@ use std::fmt::Formatter;
 use std::hash::{Hash, Hasher};
 use std::ops::Add;
 
+use crate::primitives::size_constraint::SizeConstraint;
+
 pub const ZERO: XY = XY::new(0, 0);
 
 #[derive(Clone, Copy, Debug, Hash)]
@@ -17,9 +19,9 @@ impl XY {
         XY { x, y }
     }
 
-    pub fn cut(&self, other: XY) -> XY {
-        let minx = u16::min(self.x, other.x);
-        let miny = u16::min(self.y, other.y);
+    pub fn cut(&self, sc: SizeConstraint) -> XY {
+        let minx = sc.x.map(|other_x| u16::min(self.x, other_x)).unwrap_or(self.x);
+        let miny = sc.y.map(|other_y| u16::min(self.y, other_y)).unwrap_or(self.y);
 
         XY::new(minx, miny)
     }

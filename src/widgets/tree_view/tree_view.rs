@@ -12,6 +12,7 @@ use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
@@ -152,15 +153,19 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
         from_items
     }
 
-    fn layout(&mut self, max_size: XY) -> XY {
-        // let mut from_items = self.size_from_items();
-        //
-        // debug!("would like {} limits to {}", from_items, max_size);
-        // from_items = from_items.cut(max_size);
-        // debug!("results {}", from_items);
-        //
-        // from_items
-        max_size
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
+        let from_items = self.size_from_items();
+        let mut res = sc.hint();
+
+        if from_items.x > res.x && sc.x().is_none() {
+            res.x = from_items.x;
+        }
+
+        if from_items.y > res.y && sc.y().is_none() {
+            res.y = from_items.y;
+        }
+
+        res
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

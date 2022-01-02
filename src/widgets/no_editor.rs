@@ -1,6 +1,7 @@
 use crate::{AnyMsg, InputEvent, Output, Theme, Widget};
 use crate::io::style::TextStyle;
 use crate::primitives::helpers::fill_background;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::widget::{get_new_widget_id, WID};
 
@@ -33,13 +34,13 @@ impl Widget for NoEditorWidget {
         XY::new(5, 3)
     }
 
-    fn layout(&mut self, max_size: XY) -> XY {
-        let x = (max_size.x + (NO_EDIT_TEXT.len() as u16)) / 2;
-        let y = max_size.y / 2;
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
+        let x = (sc.hint().x + NO_EDIT_TEXT.len() as u16) / 2;
+        let y = sc.hint().y / 2;
 
         self.text_pos = XY::new(x, y);
 
-        max_size
+        sc.hint()
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> { None }

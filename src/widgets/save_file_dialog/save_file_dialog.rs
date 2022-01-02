@@ -25,6 +25,7 @@ use crate::layout::cached_sizes::DisplayState;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
@@ -143,7 +144,10 @@ impl Widget for SaveFileDialogWidget {
         XY::new(4, 4)
     }
 
-    fn layout(&mut self, max_size: XY) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
+        // TODO this entire function is a makeshift and experiment
+        let max_size = sc.hint();
+
         // TODO this lazy relayouting kills resizing on data change.
         // if self.display_state.as_ref().map(|x| x.for_size == max_size) == Some(true) {
         //     return max_size

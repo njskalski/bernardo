@@ -1,7 +1,7 @@
-use crate::primitives::xy::{XY, ZERO};
 use crate::{Output, Theme, Widget};
 use crate::experiments::scroll::ScrollDirection::Vertical;
 use crate::io::over_output::OverOutput;
+use crate::primitives::xy::{XY, ZERO};
 
 #[derive(PartialEq, Eq)]
 pub enum ScrollDirection {
@@ -17,20 +17,25 @@ pub struct Scroll {
 }
 
 impl Scroll {
-    pub fn new(max_size : XY) -> Self {
+    pub fn new(max_size: XY) -> Self {
         Scroll {
             max_size,
-            offset : ZERO,
-            direction : ScrollDirection::Vertical
+            offset: ZERO,
+            direction: ScrollDirection::Vertical,
         }
     }
 
-    pub fn render_within<W : Widget>(&self, output : &mut dyn Output, widget : &W, theme: &Theme, focused: bool) {
+    pub fn set_max_size(&mut self, new_max_size: XY) {
+        self.max_size = new_max_size;
+        // self.offset = self.offset.cut(new_max_size); //TODO it should be -1 -1 I guess
+    }
+
+    pub fn render_within<W: Widget>(&self, output: &mut dyn Output, widget: &W, theme: &Theme, focused: bool) {
         let mut over_output = OverOutput::new(output, self.offset, self.max_size);
         widget.render(theme, focused, &mut over_output)
     }
 
-    pub fn follow_anchor(&mut self, output_size :XY, anchor : XY) {
+    pub fn follow_anchor(&mut self, output_size: XY, anchor: XY) {
         let adjust_x = self.direction == ScrollDirection::Horizontal || self.direction == ScrollDirection::Both;
         let adjust_y = self.direction == ScrollDirection::Vertical || self.direction == ScrollDirection::Both;
 

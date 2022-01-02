@@ -10,6 +10,7 @@ use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
@@ -174,9 +175,8 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         XY::new(cols, rows)
     }
 
-    fn layout(&mut self, max_size: XY) -> XY {
-        debug_assert!(self.min_size().x <= max_size.x, "min_size {} max_size {}", self.min_size(), max_size);
-        debug_assert!(self.min_size().y <= max_size.y, "min_size {} max_size {}", self.min_size(), max_size);
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
+        debug_assert!(sc.bigger_equal_than(self.min_size()));
 
         // TODO check if items < max_u16
         let rows = (self.items.len() + if self.show_column_names { 1 } else { 0 }) as u16;
@@ -190,7 +190,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
 
         debug!("layout, items.len = {}", self.items.len());
 
-        desired.cut(max_size)
+        desired.cut(sc)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

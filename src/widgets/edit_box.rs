@@ -7,12 +7,14 @@ use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::helpers;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
 const MIN_WIDTH: u16 = 12;
+const MAX_WIDTH: u16 = 80; //completely arbitrary
 
 struct EditBoxDisplayState {
     width: u16,
@@ -29,6 +31,8 @@ pub struct EditBoxWidget {
     text: String,
     cursor: usize,
 
+    max_width_op: Option<u16>,
+
     //display state
     display_state: EditBoxDisplayState,
 }
@@ -43,9 +47,17 @@ impl EditBoxWidget {
             on_hit: None,
             on_change: None,
             on_miss: None,
+            max_width_op: None,
             display_state: EditBoxDisplayState {
                 width: MIN_WIDTH
             },
+        }
+    }
+
+    pub fn with_max_width(self, max_width: u16) -> Self {
+        EditBoxWidget {
+            max_width_op: Some(max_width),
+            ..self
         }
     }
 
@@ -121,10 +133,12 @@ impl Widget for EditBoxWidget {
         XY::new(MIN_WIDTH, 1)
     }
 
-    fn layout(&mut self, max_size: XY) -> XY {
-        debug_assert!(max_size.x >= MIN_WIDTH);
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
+        debug_assert!(sc.bigger_equal_than(self.min_size()));
 
-        XY::new(max_size.x, 1)
+        let x = sc.x().unwrap_or(self.max_width_op.unwrap_or(MAX_WIDTH));
+
+        XY::new(x, 1)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

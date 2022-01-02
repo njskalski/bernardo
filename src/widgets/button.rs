@@ -5,6 +5,7 @@ use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue};
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
@@ -31,7 +32,8 @@ impl Widget for ButtonWidget {
         XY::new((self.text.len() + 2) as u16, 1)
     }
 
-    fn layout(&mut self, _max_size: XY) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
+        debug_assert!(sc.bigger_equal_than(self.min_size()));
         self.min_size()
     }
 
