@@ -20,10 +20,19 @@ impl XY {
     }
 
     pub fn cut(&self, sc: SizeConstraint) -> XY {
-        let minx = sc.x.map(|other_x| u16::min(self.x, other_x)).unwrap_or(self.x);
-        let miny = sc.y.map(|other_y| u16::min(self.y, other_y)).unwrap_or(self.y);
+        let mut res = *self;
 
-        XY::new(minx, miny)
+        match sc.x() {
+            Some(x) => if x < res.x { res.x = x; },
+            _ => {}
+        }
+
+        match sc.y() {
+            Some(y) => if y < res.y { res.y = y; },
+            _ => {}
+        }
+
+        res
     }
 
     pub fn neighbours(&self) -> NeighboursIterator {

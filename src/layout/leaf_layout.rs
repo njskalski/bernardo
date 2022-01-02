@@ -1,14 +1,10 @@
 use log::warn;
 
-
-
 use crate::layout::layout::{Layout, WidgetIdRect};
-
-
 use crate::primitives::rect::Rect;
-
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::{XY, ZERO};
-use crate::widget::widget::{Widget};
+use crate::widget::widget::Widget;
 
 pub struct LeafLayout<'a> {
     widget: &'a mut dyn Widget,
@@ -43,7 +39,7 @@ impl<'a> Layout for LeafLayout<'a> {
         if self.with_border {
             if output_size > (2, 2).into() {
                 let limited_output = XY::new(output_size.x - 2, output_size.y - 2);
-                let size = self.widget.layout(limited_output);
+                let size = self.widget.layout(SizeConstraint::simple(limited_output));
                 let rect = Rect::new(XY::new(1, 1), size);
 
                 vec![WidgetIdRect {
@@ -55,7 +51,7 @@ impl<'a> Layout for LeafLayout<'a> {
                 vec![]
             }
         } else {
-            let size = self.widget.layout(output_size);
+            let size = self.widget.layout(SizeConstraint::simple(output_size));
             let rect = Rect::new(ZERO, size);
 
             vec![WidgetIdRect {

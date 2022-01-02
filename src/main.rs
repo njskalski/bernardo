@@ -12,6 +12,7 @@ use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::theme::Theme;
 use crate::widget::any_msg::AnyMsg;
@@ -117,7 +118,7 @@ fn main() {
 
     loop {
         output.clear();
-        main_view.layout(output.size());
+        main_view.layout(SizeConstraint::simple(output.size()));
         main_view.render(&theme, true, &mut output);
         output.end_frame();
 
