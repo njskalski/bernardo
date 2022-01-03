@@ -30,6 +30,7 @@ mod widgets;
 
 fn main() {
     stderrlog::new()
+        .verbosity(3 /* Debug */)
         // .module(module_path!())
         .init()
         .unwrap();

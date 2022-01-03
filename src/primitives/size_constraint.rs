@@ -15,10 +15,9 @@ pub struct SizeConstraint {
     x: Option<u16>,
     y: Option<u16>,
 
-    // this corresponds to actual screen size. The idea is that layout is supposed to fill the
-    // size constraint, but sometimes I want "widgets" that just fill the output without using
-    // scroll - such widgets will use "hint" to get the size of display.
+    // this corresponds to actual screen size.
     hint: XY,
+    
 }
 
 impl Display for SizeConstraint {

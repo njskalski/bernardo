@@ -1,6 +1,5 @@
 use crate::{AnyMsg, InputEvent, Output, Theme, Widget};
 use crate::io::style::TextStyle;
-use crate::primitives::helpers::fill_background;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::widget::{get_new_widget_id, WID};

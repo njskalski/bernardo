@@ -34,8 +34,8 @@ impl Scroll {
 
     pub fn render_within<W: Widget>(&self, output: &mut dyn Output, widget: &W, theme: &Theme, focused: bool) {
         let new_sc = match self.direction {
-            ScrollDirection::Horizontal => SizeConstraint::new(Some(output.size_constraint().hint().x), None, output.size_constraint().hint()),
-            Vertical => SizeConstraint::new(None, Some(output.size_constraint().hint().y), output.size_constraint().hint()),
+            ScrollDirection::Horizontal => SizeConstraint::new(None, Some(output.size_constraint().hint().y), output.size_constraint().hint()),
+            ScrollDirection::Vertical => SizeConstraint::new(Some(output.size_constraint().hint().x), None, output.size_constraint().hint()),
             ScrollDirection::Both => SizeConstraint::new(None, None, output.size_constraint().hint()),
         };
 

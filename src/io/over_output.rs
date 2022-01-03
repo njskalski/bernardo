@@ -58,8 +58,8 @@ impl Output for OverOutput<'_> {
         }
         // no analogue exit on x, as something starting left from frame might still overlap with it.
 
-        if !self.output.size_constraint().strictly_bigger_than(pos) {
-            debug!("drawing beyond output, early exit.");
+        if !self.size_constraint().strictly_bigger_than(pos) {
+            debug!("drawing beyond output, early exit. pos: {} sc: {}", pos, self.size_constraint());
             return;
         }
 

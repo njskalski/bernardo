@@ -244,7 +244,7 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let primary_style = theme.default_text(focused);
-        helpers::fill_background(primary_style.background, output);
+        // helpers::fill_background(primary_style.background, output);
         let cursor_style = theme.cursor().maybe_half(focused);
 
         for (idx, (depth, node)) in self.items().enumerate() {

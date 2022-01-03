@@ -10,9 +10,10 @@ use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
-use crate::primitives::xy::XY;
+use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
@@ -281,7 +282,9 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let primary_style = theme.default_text(focused).maybe_half(focused);
-        helpers::fill_background(primary_style.background, output);
+        helpers::fill_rect(primary_style.background,
+                           Rect::new(ZERO, output.size_constraint().hint()),
+                           output);
         let cursor_style = theme.cursor().maybe_half(focused);
         let header_style = theme.header().maybe_half(focused);
 
