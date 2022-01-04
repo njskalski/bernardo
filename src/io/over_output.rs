@@ -16,24 +16,20 @@ use crate::SizeConstraint;
 
 pub struct OverOutput<'a> {
     output: &'a mut dyn Output,
-    upper_left_offset: XY,
     size_constraint: SizeConstraint,
 }
 
 impl<'a> OverOutput<'a> {
     pub fn new(
         output: &'a mut dyn Output,
-        upper_left_offset: XY,
         size_constraint: SizeConstraint,
     ) -> Self {
         debug!(
-            "making overoutput {:?} {:?}",
-            upper_left_offset,
+            "making overoutput {:?}",
             size_constraint,
         );
         OverOutput {
             output,
-            upper_left_offset,
             size_constraint,
         }
     }
@@ -42,7 +38,7 @@ impl<'a> OverOutput<'a> {
 impl Output for OverOutput<'_> {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
         if !self.size_constraint.strictly_bigger_than(
-            self.size_constraint.hint() + self.upper_left_offset
+            self.size_constraint.hint().lower_right()
         ) {
             warn!("hint (visible part) beyond output space. Most likely layouting error.");
         }
@@ -52,7 +48,7 @@ impl Output for OverOutput<'_> {
             return;
         }
 
-        if pos.y < self.upper_left_offset.y {
+        if pos.y < self.size_constraint.hint().upper_left().y {
             debug!("early exit 1");
             return;
         }
@@ -65,7 +61,7 @@ impl Output for OverOutput<'_> {
 
         let mut x_offset: i32 = 0;
         for grapheme in text.graphemes(true).into_iter() {
-            let x = x_offset + pos.x as i32 - self.upper_left_offset.x as i32;
+            let x = x_offset + pos.x as i32 - self.size_constraint.hint().upper_left().x as i32;
             if x < 0 {
                 continue;
             }
@@ -85,7 +81,7 @@ impl Output for OverOutput<'_> {
                 None => {}
             }
 
-            let y = pos.y - self.upper_left_offset.y; // > 0, tested above and < u16::MAX since no addition.
+            let y = pos.y - self.size_constraint.hint().upper_left().y; // >= 0, tested above and < u16::MAX since no addition.
             let local_pos = XY::new(x as u16, y);
 
             self.output.print_at(local_pos, style, grapheme);

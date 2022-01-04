@@ -3,6 +3,7 @@ use stderrlog::new;
 use crate::{Output, SizeConstraint, Theme, Widget};
 use crate::experiments::scroll::ScrollDirection::Vertical;
 use crate::io::over_output::OverOutput;
+use crate::primitives::rect::Rect;
 use crate::primitives::xy::{XY, ZERO};
 
 #[derive(PartialEq, Eq)]
@@ -13,33 +14,38 @@ pub enum ScrollDirection {
 }
 
 pub struct Scroll {
-    max_size : XY,
     offset : XY,
     direction : ScrollDirection
 }
 
 impl Scroll {
-    pub fn new(max_size: XY) -> Self {
+    pub fn new(direction: ScrollDirection) -> Self {
         Scroll {
-            max_size,
             offset: ZERO,
-            direction: ScrollDirection::Vertical,
+            direction,
         }
-    }
-
-    pub fn set_max_size(&mut self, new_max_size: XY) {
-        self.max_size = new_max_size;
-        // self.offset = self.offset.cut(new_max_size); //TODO it should be -1 -1 I guess
     }
 
     pub fn render_within<W: Widget>(&self, output: &mut dyn Output, widget: &W, theme: &Theme, focused: bool) {
         let new_sc = match self.direction {
-            ScrollDirection::Horizontal => SizeConstraint::new(None, Some(output.size_constraint().hint().y), output.size_constraint().hint()),
-            ScrollDirection::Vertical => SizeConstraint::new(Some(output.size_constraint().hint().x), None, output.size_constraint().hint()),
-            ScrollDirection::Both => SizeConstraint::new(None, None, output.size_constraint().hint()),
+            ScrollDirection::Horizontal => SizeConstraint::new(
+                None,
+                Some(output.size_constraint().hint().size.y),
+                Rect::new(self.offset, output.size_constraint().hint().size),
+            ),
+            ScrollDirection::Vertical => SizeConstraint::new(
+                Some(output.size_constraint().hint().size.x),
+                None,
+                Rect::new(self.offset, output.size_constraint().hint().size),
+            ),
+            ScrollDirection::Both => SizeConstraint::new(
+                None,
+                None,
+                Rect::new(self.offset, output.size_constraint().hint().size),
+            ),
         };
 
-        let mut over_output = OverOutput::new(output, self.offset, new_sc);
+        let mut over_output = OverOutput::new(output, new_sc);
         widget.render(theme, focused, &mut over_output)
     }
 

@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use log::{debug, warn};
 
 use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
-use crate::experiments::scroll::Scroll;
+use crate::experiments::scroll::{Scroll, ScrollDirection};
 use crate::io::filesystem_tree::filesystem_list_item::FilesystemListItem;
 use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
 use crate::io::input_event::InputEvent;
@@ -96,7 +96,7 @@ impl SaveFileDialogWidget {
             cancel_button,
             curr_display_path: filesystem_provider.get_root().id().clone(),
             filesystem_provider,
-            tree_scroll : Scroll::new(XY::new(30, 1000)) //TODO completely arbitrary
+            tree_scroll: Scroll::new(ScrollDirection::Vertical)
         }
     }
 
@@ -146,7 +146,7 @@ impl Widget for SaveFileDialogWidget {
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         // TODO this entire function is a makeshift and experiment
-        let max_size = sc.hint();
+        let max_size = sc.hint().size;
 
         // TODO this lazy relayouting kills resizing on data change.
         // if self.display_state.as_ref().map(|x| x.for_size == max_size) == Some(true) {

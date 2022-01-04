@@ -233,7 +233,7 @@ impl Widget for EditBoxWidget {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let primary_style = theme.editable_field().maybe_half(focused);
 
-        helpers::fill_background(primary_style.background, output);
+        helpers::fill_output(primary_style.background, output);
         let cursor_style = theme.cursor().maybe_half(focused);
 
         let before_cursor = self

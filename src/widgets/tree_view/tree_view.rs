@@ -155,7 +155,7 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         let from_items = self.size_from_items();
-        let mut res = sc.hint();
+        let mut res = sc.hint().size;
 
         if from_items.x > res.x && sc.x().is_none() {
             res.x = from_items.x;
@@ -244,7 +244,7 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let primary_style = theme.default_text(focused);
-        // helpers::fill_background(primary_style.background, output);
+        helpers::fill_output(primary_style.background, output);
         let cursor_style = theme.cursor().maybe_half(focused);
 
         for (idx, (depth, node)) in self.items().enumerate() {

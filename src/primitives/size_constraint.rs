@@ -1,6 +1,7 @@
 use std::fmt::{Debug, Display, Formatter};
 
-use crate::primitives::xy::XY;
+use crate::primitives::rect::Rect;
+use crate::primitives::xy::{XY, ZERO};
 
 //TODO find a shorter name
 
@@ -15,33 +16,32 @@ pub struct SizeConstraint {
     x: Option<u16>,
     y: Option<u16>,
 
-    // this corresponds to actual screen size.
-    hint: XY,
-    
+    // this corresponds to actual screen pos and size (visible part).
+    rect: Rect,
 }
 
 impl Display for SizeConstraint {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let x = match self.x {
-            Some(x) => format!("{} (hint {})", x, self.hint.x),
-            None => format!("unlimited (hint {})", self.hint.x),
+            Some(x) => format!("{} (hint {})", x, self.rect.size.x),
+            None => format!("unlimited (hint {})", self.rect.size.x),
         };
 
         let y = match self.y {
-            Some(y) => format!("{} (hint {})", y, self.hint.y),
-            None => format!("unlimited (hint {})", self.hint.y)
+            Some(y) => format!("{} (hint {})", y, self.rect.size.y),
+            None => format!("unlimited (hint {})", self.rect.size.y)
         };
 
-        write!(f, "sc:[{}, {}]", x, y)
+        write!(f, "sc:[{}, {}][off {}]", x, y, self.rect.pos)
     }
 }
 
 impl SizeConstraint {
-    pub fn new(x: Option<u16>, y: Option<u16>, hint: XY) -> Self {
+    pub fn new(x: Option<u16>, y: Option<u16>, rect: Rect) -> Self {
         SizeConstraint {
             x,
             y,
-            hint,
+            rect,
         }
     }
 
@@ -49,7 +49,7 @@ impl SizeConstraint {
         SizeConstraint {
             x: Some(xy.x),
             y: Some(xy.y),
-            hint: xy,
+            rect: Rect::new(ZERO, xy),
         }
     }
 
@@ -61,8 +61,8 @@ impl SizeConstraint {
         self.y
     }
 
-    pub fn hint(&self) -> XY {
-        self.hint
+    pub fn hint(&self) -> &Rect {
+        &self.rect
     }
 
     pub fn bigger_equal_than(&self, xy: XY) -> bool {

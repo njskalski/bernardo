@@ -34,12 +34,12 @@ impl Widget for NoEditorWidget {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let x = (sc.hint().x + NO_EDIT_TEXT.len() as u16) / 2;
-        let y = sc.hint().y / 2;
+        let x = (sc.hint().size.x + NO_EDIT_TEXT.len() as u16) / 2;
+        let y = sc.hint().size.y / 2;
 
         self.text_pos = XY::new(x, y);
 
-        sc.hint()
+        sc.hint().size
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> { None }
@@ -49,7 +49,7 @@ impl Widget for NoEditorWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        fill_background(theme.default_background(focused), output);
+        // fill_background(theme.default_background(focused), output);
 
         output.print_at(self.text_pos,
                         theme.default_text(focused),
