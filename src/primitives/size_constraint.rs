@@ -7,8 +7,8 @@ use crate::primitives::xy::{XY, ZERO};
 
 /*
 Contracts:
-x >= hint.x || x == None,
-y >= hint.y || y == None,
+x >= hint.lower_right.x || x == None,
+y >= hint.lower_right.y || y == None,
 None means "no limit"
  */
 #[derive(Copy, Clone, Debug)]
@@ -61,6 +61,9 @@ impl SizeConstraint {
         self.y
     }
 
+    // This corresponds to VISIBLE PART of output. It is used for two things:
+    // - drawing optimisation
+    // - layouting views that want to "fill" the visible part.
     pub fn hint(&self) -> &Rect {
         &self.rect
     }

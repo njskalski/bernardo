@@ -16,6 +16,7 @@ use log::{debug, warn};
 
 use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
 use crate::experiments::scroll::{Scroll, ScrollDirection};
+use crate::experiments::with_scroll::WithScroll;
 use crate::io::filesystem_tree::filesystem_list_item::FilesystemListItem;
 use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
 use crate::io::input_event::InputEvent;
@@ -42,7 +43,7 @@ pub struct SaveFileDialogWidget {
 
     display_state: Option<DisplayState>,
 
-    tree_widget: TreeViewWidget<PathBuf>,
+    tree_widget: WithScroll<TreeViewWidget<PathBuf>>,
     list_widget: ListWidget<FilesystemListItem>,
     edit_box: EditBoxWidget,
 
@@ -51,7 +52,7 @@ pub struct SaveFileDialogWidget {
 
     curr_display_path: PathBuf,
 
-    tree_scroll : Scroll,
+    tree_scroll: Scroll,
 
     // TODO this will probably get moved
     filesystem_provider: Box<dyn FilesystemProvider>,
@@ -79,6 +80,7 @@ impl SaveFileDialogWidget {
                 Some(Box::new(SaveFileDialogMsg::Highlighted(item)))
             });
 
+        let scroll_tree_widget = WithScroll::new(tree_widget, ScrollDirection::Vertical);
 
         let list_widget = ListWidget::new().with_selection();
         let edit_box = EditBoxWidget::new().with_enabled(true);
@@ -89,14 +91,14 @@ impl SaveFileDialogWidget {
         SaveFileDialogWidget {
             id: get_new_widget_id(),
             display_state: None,
-            tree_widget,
+            tree_widget: scroll_tree_widget,
             list_widget,
             edit_box,
             ok_button,
             cancel_button,
             curr_display_path: filesystem_provider.get_root().id().clone(),
             filesystem_provider,
-            tree_scroll: Scroll::new(ScrollDirection::Vertical)
+            tree_scroll: Scroll::new(ScrollDirection::Vertical),
         }
     }
 
@@ -277,21 +279,10 @@ impl Widget for SaveFileDialogWidget {
                     match self.get_subwidget(wir.wid) {
                         Some(widget) => {
                             let mut sub_output = &mut SubOutput::new(Box::new(output), wir.rect);
-
-                            if widget.id() != self.tree_widget.id() {
-                                widget.render(theme,
-                                              cached_sizes.focus_group.get_focused() == widget.id(),
-                                              sub_output,
-                                );
-                            }
-
-                            if widget.id() == self.tree_widget.id() {
-                                self.tree_scroll.render_within(sub_output,
-                                                               &self.tree_widget,
-                                                               theme,
-                                                               cached_sizes.focus_group.get_focused() == widget.id(),
-                                );
-                            }
+                            widget.render(theme,
+                                          cached_sizes.focus_group.get_focused() == widget.id(),
+                                          sub_output,
+                            );
                         },
                         None => {
                             warn!("subwidget {} not found!", wir.wid);
