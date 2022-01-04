@@ -52,8 +52,6 @@ pub struct SaveFileDialogWidget {
 
     curr_display_path: PathBuf,
 
-    tree_scroll: Scroll,
-
     // TODO this will probably get moved
     filesystem_provider: Box<dyn FilesystemProvider>,
 }
@@ -98,7 +96,6 @@ impl SaveFileDialogWidget {
             cancel_button,
             curr_display_path: filesystem_provider.get_root().id().clone(),
             filesystem_provider,
-            tree_scroll: Scroll::new(ScrollDirection::Vertical),
         }
     }
 
@@ -158,12 +155,6 @@ impl Widget for SaveFileDialogWidget {
         // TODO relayouting destroys focus selection.
 
         let res_sizes = self.todo_internal_layout(max_size);
-
-        for wir in &res_sizes {
-            if wir.wid == self.tree_widget.id() {
-                self.tree_scroll.follow_anchor(wir.rect.size, self.tree_widget.anchor());
-            }
-        }
 
         debug!("size {}, res_sizes {:?}", max_size, res_sizes);
 
@@ -250,16 +241,6 @@ impl Widget for SaveFileDialogWidget {
         };
     }
 
-    fn subwidgets(&self) -> Box<dyn std::iter::Iterator<Item=&dyn Widget> + '_> {
-        debug!("call to save_file_dialog subwidget on {}", self.id());
-        Box::new(vec![&self.tree_widget as &dyn Widget, &self.list_widget, &self.edit_box].into_iter())
-    }
-
-    fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> {
-        debug!("call to save_file_dialog subwidget_mut on {}", self.id());
-        Box::new(vec![&mut self.tree_widget as &mut dyn Widget, &mut self.list_widget, &mut self.edit_box].into_iter())
-    }
-
     fn get_focused(&self) -> Option<&dyn Widget> {
         let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
         wid_op.map(|wid| self.get_subwidget(wid)).flatten()
@@ -291,5 +272,15 @@ impl Widget for SaveFileDialogWidget {
                 }
             }
         }
+    }
+
+    fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> {
+        debug!("call to save_file_dialog subwidget_mut on {}", self.id());
+        Box::new(vec![&mut self.tree_widget as &mut dyn Widget, &mut self.list_widget, &mut self.edit_box].into_iter())
+    }
+
+    fn subwidgets(&self) -> Box<dyn std::iter::Iterator<Item=&dyn Widget> + '_> {
+        debug!("call to save_file_dialog subwidget on {}", self.id());
+        Box::new(vec![&self.tree_widget as &dyn Widget, &self.list_widget, &self.edit_box].into_iter())
     }
 }
