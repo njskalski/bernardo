@@ -1,5 +1,5 @@
-// Copyright 2018 Google LLC, 2021 Andrzej J Skalski
-// This version of the file (2021+) is licensed with GNU GPLv3 License.
+// Copyright 2018-2020 Google LLC, 2021 Andrzej J Skalski
+// This version of the file (2021+) is licensed with GNU LGPLv3 License.
 // For older version of file (licensed under Apache 2 license), see sly-editor, at
 // https://github.com/njskalski/sly-editor/blob/master/src/cursor_set.rs
 
@@ -18,6 +18,8 @@
 
 use std::collections::HashSet;
 use std::slice::Iter;
+
+use ropey::Rope;
 
 use crate::text::buffer::Buffer;
 
@@ -53,6 +55,14 @@ pub struct Cursor {
 }
 
 impl Cursor {
+    pub fn single() -> Self {
+        Cursor {
+            s: None,
+            a: 0,
+            preferred_column: None,
+        }
+    }
+
     pub fn clear_selection(&mut self) {
         self.s = None;
     }
@@ -67,14 +77,6 @@ impl Cursor {
         self.preferred_column = None;
     }
 
-    pub fn single() -> Self {
-        Cursor {
-            s: None,
-            a: 0,
-            preferred_column: None,
-        }
-    }
-
     pub fn get_cursor_status_for_char(&self, char_idx: usize) -> CursorStatus {
         if char_idx == self.a {
             return CursorStatus::UnderCursor;
@@ -87,6 +89,46 @@ impl Cursor {
         }
 
         CursorStatus::None
+    }
+
+    // Returns FALSE if noop.
+    pub fn home(&mut self, rope: &dyn Buffer) -> bool {
+        let line = rope.char_to_line(self.a);
+        let char_idx = rope.line_to_char(line);
+
+
+        let res = if char_idx == self.a && self.s.is_none() {
+            false
+        } else {
+            true
+        };
+
+        // home DOES clear preferred column.
+        self.clear_both();
+
+        res
+    }
+
+    // Returns FALSE if noop.
+    pub fn end(&mut self, rope: &dyn Buffer) -> bool {
+        let next_line = rope.char_to_line(self.a) + 1;
+
+        let new_idx = if rope.len_lines() > next_line {
+            rope.line_to_char(next_line) - 1
+        } else {
+            rope.len_chars() // yes, one beyond num chars
+        };
+
+        let res = if new_idx == self.a && self.s.is_some() {
+            false
+        } else {
+            true
+        };
+
+        // end DOES clear preferred column
+        self.clear_both();
+
+        res
     }
 }
 
@@ -131,6 +173,15 @@ impl CursorSet {
 
     pub fn set(&self) -> &Vec<Cursor> {
         &self.set
+    }
+
+    // Returns only element OR None if the set is NOT a singleton.
+    pub fn as_single(&self) -> Option<&Cursor> {
+        if self.set.len() != 1 {
+            None
+        } else {
+            self.set.first()
+        }
     }
 }
 
@@ -291,9 +342,35 @@ impl CursorSet {
         current_status
     }
 
-
     pub fn iter(&self) -> Iter<'_, Cursor> {
         self.set.iter()
+    }
+
+    // Returns FALSE if results in no-op
+    // TODO test
+    pub fn home(&mut self, rope: &dyn Buffer) -> bool {
+        let mut res = false;
+
+        for c in self.set.iter_mut() {
+            res |= c.home(rope);
+        };
+
+        self.reduce();
+
+        res
+    }
+
+    // Returns FALSE if results in noop.
+    pub fn end(&mut self, rope: &dyn Buffer) -> bool {
+        let mut res = false;
+
+        for c in self.set.iter_mut() {
+            res |= c.end(rope);
+        };
+
+        self.reduce();
+
+        res
     }
 }
 

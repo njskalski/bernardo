@@ -17,6 +17,7 @@ use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::theme::Theme;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
+use crate::widgets::main_view::main_view::MainView;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 
 mod experiments;
@@ -59,10 +60,10 @@ fn main() {
 
     // let mut main_view = TextEditorWidget::new();
 
-    let fsp = LocalFilesystemProvider::new(PathBuf::from("/home/andrzej"));
-    let boxed = Box::new(fsp);
-    let mut main_view = SaveFileDialogWidget::new(boxed);
-    // let mut main_view = MainView::new(PathBuf::from("/home/andrzej"));
+    // let fsp = LocalFilesystemProvider::new(PathBuf::from("/home/andrzej"));
+    // let boxed = Box::new(fsp);
+    // let mut main_view = SaveFileDialogWidget::new(boxed);
+    let mut main_view = MainView::new(PathBuf::from("/home/andrzej"));
 
     let theme = Theme::default();
 

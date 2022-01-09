@@ -99,7 +99,7 @@ impl SaveFileDialogWidget {
         }
     }
 
-    fn todo_internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {
+    fn internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {
         let tree_widget = &mut self.tree_widget;
         let list_widget = &mut self.list_widget;
         let edit_box = &mut self.edit_box;
@@ -154,7 +154,7 @@ impl Widget for SaveFileDialogWidget {
 
         // TODO relayouting destroys focus selection.
 
-        let res_sizes = self.todo_internal_layout(max_size);
+        let res_sizes = self.internal_layout(max_size);
 
         debug!("size {}, res_sizes {:?}", max_size, res_sizes);
 

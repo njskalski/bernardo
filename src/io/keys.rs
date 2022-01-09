@@ -1,10 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-
-
-
 use crate::experiments::focus_group::FocusUpdate;
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Keycode {

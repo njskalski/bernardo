@@ -5,3 +5,5 @@ pub mod edit_box;
 pub mod no_editor;
 pub mod with_scroll;
 pub mod main_view;
+pub mod editor_view;
+pub mod common_edit_msgs;

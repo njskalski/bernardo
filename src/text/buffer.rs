@@ -1,4 +1,5 @@
 use std::iter;
+use std::ops::RangeBounds;
 
 pub trait Buffer {
     fn len_lines(&self) -> usize;
@@ -10,5 +11,6 @@ pub trait Buffer {
     fn char_to_line(&self, char_idx: usize) -> usize;
     fn line_to_char(&self, line_idx: usize) -> usize;
 
-    fn insert(&mut self, char_idx: usize, text: &str) -> bool;
+    fn insert_char(&mut self, char_idx: usize, ch: char) -> bool;
+    fn remove(&mut self, char_idx_begin: usize, char_idx_end: usize) -> bool;
 }
