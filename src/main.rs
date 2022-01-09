@@ -63,7 +63,7 @@ fn main() {
     // let fsp = LocalFilesystemProvider::new(PathBuf::from("/home/andrzej"));
     // let boxed = Box::new(fsp);
     // let mut main_view = SaveFileDialogWidget::new(boxed);
-    let mut main_view = MainView::new(PathBuf::from("/home/andrzej"));
+    let mut main_view = MainView::new(PathBuf::from("/home/andrzej")).with_empty_editor();
 
     let theme = Theme::default();
 

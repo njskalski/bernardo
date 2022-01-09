@@ -12,6 +12,7 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::xy::XY;
 use crate::widget::widget::{get_new_widget_id, WID};
+use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
@@ -24,6 +25,7 @@ pub struct MainView {
     fs: Box<dyn FilesystemProvider>,
     tree_widget: TreeViewWidget<PathBuf>,
     no_editor: NoEditorWidget,
+    editor: Option<EditorView>
 }
 
 impl MainView {
@@ -37,6 +39,14 @@ impl MainView {
             fs: Box::new(local),
             tree_widget: tree,
             no_editor: NoEditorWidget::new(),
+            editor: None,
+        }
+    }
+
+    pub fn with_empty_editor(self) -> Self {
+        MainView {
+            editor: Some(EditorView::new()),
+            ..self
         }
     }
 
@@ -45,7 +55,9 @@ impl MainView {
         let no_editor = &mut self.no_editor;
 
         let mut left_column = LeafLayout::new(tree_widget);
-        let mut right_column = LeafLayout::new(no_editor);
+        let mut right_column = self.editor.as_mut()
+            .map(|editor| LeafLayout::new(editor))
+            .unwrap_or(LeafLayout::new(&mut self.no_editor));
 
         let mut layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0),
@@ -185,10 +197,16 @@ impl Widget for MainView {
     }
 
     fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
-        Box::new(vec![&mut self.tree_widget as &mut dyn Widget, &mut self.no_editor].into_iter())
+        match &mut self.editor {
+            None => Box::new(vec![&mut self.tree_widget as &mut dyn Widget, &mut self.no_editor].into_iter()),
+            Some(editor) => Box::new(vec![&mut self.tree_widget as &mut dyn Widget, editor].into_iter())
+        }
     }
 
     fn subwidgets(&self) -> Box<dyn Iterator<Item=&dyn Widget> + '_> where Self: Sized {
-        Box::new(vec![&self.tree_widget as &dyn Widget, &self.no_editor].into_iter())
+        match &self.editor {
+            None => Box::new(vec![&self.tree_widget as &dyn Widget, &self.no_editor].into_iter()),
+            Some(editor) => Box::new(vec![&self.tree_widget as &dyn Widget, editor].into_iter())
+        }
     }
 }

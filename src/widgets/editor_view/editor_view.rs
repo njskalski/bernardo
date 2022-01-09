@@ -2,8 +2,9 @@ use log::warn;
 use ropey::Rope;
 
 use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, Widget};
-use crate::primitives::cursor_set::CursorSet;
+use crate::primitives::cursor_set::{CursorSet, CursorStatus};
 use crate::primitives::xy::XY;
+use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::common_edit_msgs::{apply_cme, CommonEditMsg, key_to_edit_msg};
@@ -11,7 +12,7 @@ use crate::widgets::editor_view::msg::EditorViewMsg;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
 
-struct EditorView {
+pub struct EditorView {
     wid: WID,
     cursors: CursorSet,
 
@@ -77,6 +78,42 @@ impl Widget for EditorView {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        todo!()
+        for (line_idx, line) in self.todo_text.lines().enumerate() {
+            for (c_idx, c) in line.chars().enumerate() {
+                let char_idx = self.todo_text.line_to_char(line_idx) + c_idx;
+                let cursor_status = self.cursors.get_cursor_status_for_char(char_idx);
+                let pos = XY::new(c_idx as u16, line_idx as u16);
+
+                // TODO optimise
+                let text = format!("{}", c);
+
+                match cursor_status {
+                    CursorStatus::None => {
+                        output.print_at(pos, theme.default_text(false), text.as_str());
+                    }
+                    CursorStatus::WithinSelection => {
+                        output.print_at(pos, theme.default_text(true), text.as_str());
+                    }
+                    CursorStatus::UnderCursor => {
+                        output.print_at(pos, theme.cursor(), text.as_str());
+                    }
+                }
+            }
+        }
+
+        let one_beyond_limit = self.todo_text.len_chars();
+        let last_line = self.todo_text.char_to_line(one_beyond_limit);
+        let x_beyond_last = one_beyond_limit - self.todo_text.line_to_char(last_line);
+
+        let one_beyond_last_pos = XY::new(x_beyond_last as u16, last_line as u16);
+        match self.cursors.get_cursor_status_for_char(one_beyond_limit) {
+            CursorStatus::None => {}
+            CursorStatus::WithinSelection => {
+                output.print_at(one_beyond_last_pos, theme.default_text(true), " ");
+            }
+            CursorStatus::UnderCursor => {
+                output.print_at(one_beyond_last_pos, theme.cursor(), " ");
+            }
+        }
     }
 }

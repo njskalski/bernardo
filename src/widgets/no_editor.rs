@@ -30,11 +30,15 @@ impl Widget for NoEditorWidget {
     }
 
     fn min_size(&self) -> XY {
-        XY::new(5, 3)
+        XY::new(NO_EDIT_TEXT.len() as u16, 3)
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let x = (sc.hint().size.x + NO_EDIT_TEXT.len() as u16) / 2;
+        let mut x = 0;
+        if sc.hint().size.x >= NO_EDIT_TEXT.len() as u16 {
+            x = (sc.hint().size.x - NO_EDIT_TEXT.len() as u16) / 2;
+        };
+
         let y = sc.hint().size.y / 2;
 
         self.text_pos = XY::new(x, y);
