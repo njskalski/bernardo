@@ -372,6 +372,33 @@ impl CursorSet {
 
         res
     }
+
+    pub fn backspace(&mut self, rope: &mut dyn Buffer) -> bool {
+        let mut res = false;
+
+        // this has to be reverse iterator, otherwise the indices are messed up.
+        for c in self.set.iter_mut().rev() {
+            let (b, e) = match c.s {
+                None => {
+                    if c.a == 0 {
+                        continue
+                    };
+
+                    (c.a - 1, c.a)
+                }
+                Some(sel) => (sel.b, sel.e),
+            };
+
+            res |= rope.remove(b, e);
+
+            c.clear_both();
+            c.a = b;
+        }
+
+        self.reduce();
+
+        res
+    }
 }
 
 /*

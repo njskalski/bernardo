@@ -110,7 +110,7 @@ impl Widget for MainView {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        debug!("save_file_dialog.on_input {:?}", input_event);
+        debug!("main_view.on_input {:?}", input_event);
 
         return match input_event {
             InputEvent::KeyInput(key) => match key {
@@ -175,7 +175,7 @@ impl Widget for MainView {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         match self.display_state.borrow().as_ref() {
-            None => warn!("failed rendering save_file_dialog without cached_sizes"),
+            None => warn!("failed rendering main_view without cached_sizes"),
             Some(cached_sizes) => {
                 debug!("widget_sizes : {:?}", cached_sizes.widget_sizes);
                 for wir in &cached_sizes.widget_sizes {

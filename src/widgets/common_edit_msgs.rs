@@ -92,10 +92,7 @@ pub fn apply_cme(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer) 
             true
         }
         CommonEditMsg::Backspace => {
-            for c in cs.iter().rev() {
-                rope.remove(c.a, c.a + 1);
-            }
-            true
+            cs.backspace(rope)
         }
         CommonEditMsg::LineBegin => {
             cs.home(rope)
