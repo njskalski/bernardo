@@ -12,6 +12,9 @@ use crate::widgets::editor_view::msg::EditorViewMsg;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
 
+const NEWLINE: &'static str = "⏎";
+const BEYOND: &'static str = "⇱";
+
 pub struct EditorView {
     wid: WID,
     cursors: CursorSet,
@@ -86,16 +89,17 @@ impl Widget for EditorView {
 
                 // TODO optimise
                 let text = format!("{}", c);
+                let tr = if c == '\n' { NEWLINE } else { text.as_str() };
 
                 match cursor_status {
                     CursorStatus::None => {
-                        output.print_at(pos, theme.default_text(false), text.as_str());
+                        output.print_at(pos, theme.default_text(false), tr);
                     }
                     CursorStatus::WithinSelection => {
-                        output.print_at(pos, theme.default_text(true), text.as_str());
+                        output.print_at(pos, theme.default_text(true), tr);
                     }
                     CursorStatus::UnderCursor => {
-                        output.print_at(pos, theme.cursor(), text.as_str());
+                        output.print_at(pos, theme.cursor(), tr);
                     }
                 }
             }
@@ -109,10 +113,10 @@ impl Widget for EditorView {
         match self.cursors.get_cursor_status_for_char(one_beyond_limit) {
             CursorStatus::None => {}
             CursorStatus::WithinSelection => {
-                output.print_at(one_beyond_last_pos, theme.default_text(true), " ");
+                output.print_at(one_beyond_last_pos, theme.default_text(true), BEYOND);
             }
             CursorStatus::UnderCursor => {
-                output.print_at(one_beyond_last_pos, theme.cursor(), " ");
+                output.print_at(one_beyond_last_pos, theme.cursor(), BEYOND);
             }
         }
     }
