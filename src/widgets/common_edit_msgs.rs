@@ -9,17 +9,17 @@ use crate::text::buffer::Buffer;
 #[derive(Debug, Clone, Copy)]
 pub enum CommonEditMsg {
     Char(char),
-    CursorUp,
-    CursorDown,
-    CursorLeft,
-    CursorRight,
+    CursorUp { selecting: bool },
+    CursorDown { selecting: bool },
+    CursorLeft { selecting: bool },
+    CursorRight { selecting: bool },
     Backspace,
-    LineBegin,
-    LineEnd,
-    WordBegin,
-    WordEnd,
-    PageUp,
-    PageDown,
+    LineBegin { selecting: bool },
+    LineEnd { selecting: bool },
+    WordBegin { selecting: bool },
+    WordEnd { selecting: bool },
+    PageUp { selecting: bool },
+    PageDown { selecting: bool },
     Delete,
 }
 
@@ -29,10 +29,10 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
         Key { keycode, modifiers } => {
             match keycode {
                 Keycode::Char(c) => Some(CommonEditMsg::Char(c)),
-                Keycode::ArrowUp => Some(CommonEditMsg::CursorUp),
-                Keycode::ArrowDown => Some(CommonEditMsg::CursorDown),
-                Keycode::ArrowLeft => Some(CommonEditMsg::CursorLeft),
-                Keycode::ArrowRight => Some(CommonEditMsg::CursorRight),
+                Keycode::ArrowUp => Some(CommonEditMsg::CursorUp { selecting: key.modifiers.SHIFT }),
+                Keycode::ArrowDown => Some(CommonEditMsg::CursorDown { selecting: key.modifiers.SHIFT }),
+                Keycode::ArrowLeft => Some(CommonEditMsg::CursorLeft { selecting: key.modifiers.SHIFT }),
+                Keycode::ArrowRight => Some(CommonEditMsg::CursorRight { selecting: key.modifiers.SHIFT }),
                 Keycode::Enter => {
                     debug!("mapping Keycode:Space to Char('\\n')");
                     Some(CommonEditMsg::Char('\n'))
@@ -42,10 +42,10 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
                     Some(CommonEditMsg::Char(' '))
                 }
                 Keycode::Backspace => Some(CommonEditMsg::Backspace),
-                Keycode::Home => Some(CommonEditMsg::LineBegin),
-                Keycode::End => Some(CommonEditMsg::LineEnd),
-                Keycode::PageUp => Some(CommonEditMsg::PageUp),
-                Keycode::PageDown => Some(CommonEditMsg::PageDown),
+                Keycode::Home => Some(CommonEditMsg::LineBegin { selecting: key.modifiers.SHIFT }),
+                Keycode::End => Some(CommonEditMsg::LineEnd { selecting: key.modifiers.SHIFT }),
+                Keycode::PageUp => Some(CommonEditMsg::PageUp { selecting: key.modifiers.SHIFT }),
+                Keycode::PageDown => Some(CommonEditMsg::PageDown { selecting: key.modifiers.SHIFT }),
                 Keycode::Tab => {
                     debug!("mapping Keycode:Space to Char('\\t')");
                     Some(CommonEditMsg::Char('\t'))
@@ -72,32 +72,32 @@ pub fn apply_cme(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer) 
                 rope.insert_char(c.a, char);
             };
 
-            cs.move_right_by(rope, 1);
+            cs.move_right_by(rope, 1, false);
             true //TODO single cursor should return false on impossible
         }
-        CommonEditMsg::CursorUp => {
+        CommonEditMsg::CursorUp { selecting } => {
             cs.move_vertically_by(rope, -1);
             true//TODO single cursor should return false on impossible
         }
-        CommonEditMsg::CursorDown => {
+        CommonEditMsg::CursorDown { selecting } => {
             cs.move_vertically_by(rope, 1);
             true//TODO single cursor should return false on impossible
         }
-        CommonEditMsg::CursorLeft => {
-            cs.move_left();
+        CommonEditMsg::CursorLeft { selecting } => {
+            cs.move_left(selecting);
             true//TODO single cursor should return false on impossible
         }
-        CommonEditMsg::CursorRight => {
-            cs.move_right(rope);
+        CommonEditMsg::CursorRight { selecting } => {
+            cs.move_right(rope, selecting);
             true
         }
         CommonEditMsg::Backspace => {
             cs.backspace(rope)
         }
-        CommonEditMsg::LineBegin => {
+        CommonEditMsg::LineBegin { selecting } => {
             cs.home(rope)
         }
-        CommonEditMsg::LineEnd => {
+        CommonEditMsg::LineEnd { selecting } => {
             cs.end(rope)
         }
         // CommonEditMsg::WordBegin => {}

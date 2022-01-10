@@ -40,6 +40,14 @@ pub struct Selection {
 }
 
 impl Selection {
+    pub fn new(b: usize, e: usize) -> Self {
+        debug_assert!(b < e);
+        Selection {
+            b,
+            e,
+        }
+    }
+
     pub fn within(self, char_idx: usize) -> bool {
         char_idx >= self.b && char_idx < self.e
     }
@@ -186,33 +194,63 @@ impl CursorSet {
 }
 
 impl CursorSet {
-    pub fn move_left(&mut self) {
-        self.move_left_by(1);
+    pub fn move_left(&mut self, selecting: bool) -> bool {
+        self.move_left_by(1, selecting)
     }
 
-    pub fn move_left_by(&mut self, l: usize) {
-        for mut c in &mut self.set {
-            c.clear_both();
+    pub fn move_left_by(&mut self, l: usize, selecting: bool) -> bool {
+        let mut res = false;
+
+        for c in self.set.iter_mut() {
             if c.a > 0 {
+                let old_pos = c.a;
                 c.a -= std::cmp::min(c.a, l);
-            };
+
+                if selecting {
+                    c.s = match c.s {
+                        None => Some(Selection::new(c.a, old_pos)),
+                        Some(old_sel) => Some(Selection::new(c.a, old_sel.e)),
+                    };
+                    c.preferred_column = None;
+                } else {
+                    c.clear_both();
+                };
+
+                res = true;
+            }
         }
+
+        res
     }
 
-    pub fn move_right(&mut self, rope: &dyn Buffer) {
-        self.move_right_by(rope, 1);
+    pub fn move_right(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
+        self.move_right_by(rope, 1, selecting)
     }
 
-    pub fn move_right_by(&mut self, rope: &dyn Buffer, l: usize) {
+    pub fn move_right_by(&mut self, rope: &dyn Buffer, l: usize, selecting: bool) -> bool {
         let len = rope.len_chars();
+        let mut res = false;
 
         for mut c in &mut self.set {
-            c.clear_both();
             //we allow anchor after last char (so you can backspace last char)
             if c.a < len {
+                let old_pos = c.a;
                 c.a = std::cmp::min(c.a + l, len);
+
+                if selecting {
+                    c.s = match c.s {
+                        None => Some(Selection::new(old_pos, c.a)),
+                        Some(old_sel) => Some(Selection::new(old_sel.b, c.a)),
+                    }
+                } else {
+                    c.clear_both();
+                }
+
+                res = true;
             };
         }
+
+        res
     }
 
     pub fn move_vertically_by(&mut self, rope: &dyn Buffer, l: isize) {
@@ -316,11 +354,6 @@ impl CursorSet {
                 self.set.push(c.clone());
             }
         }
-
-        //        dbg!(&self.set);
-
-        //        self.set.sort();
-        //        self.set.dedup();
     }
 
     pub fn get_cursor_status_for_char(&self, char_idx: usize) -> CursorStatus {
