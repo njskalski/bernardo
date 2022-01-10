@@ -31,8 +31,20 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
                 Keycode::Char(c) => Some(CommonEditMsg::Char(c)),
                 Keycode::ArrowUp => Some(CommonEditMsg::CursorUp { selecting: key.modifiers.SHIFT }),
                 Keycode::ArrowDown => Some(CommonEditMsg::CursorDown { selecting: key.modifiers.SHIFT }),
-                Keycode::ArrowLeft => Some(CommonEditMsg::CursorLeft { selecting: key.modifiers.SHIFT }),
-                Keycode::ArrowRight => Some(CommonEditMsg::CursorRight { selecting: key.modifiers.SHIFT }),
+                Keycode::ArrowLeft => {
+                    if key.modifiers.CTRL {
+                        Some(CommonEditMsg::WordBegin { selecting: key.modifiers.SHIFT })
+                    } else {
+                        Some(CommonEditMsg::CursorLeft { selecting: key.modifiers.SHIFT })
+                    }
+                },
+                Keycode::ArrowRight => {
+                    if key.modifiers.CTRL {
+                        Some(CommonEditMsg::WordEnd { selecting: key.modifiers.SHIFT })
+                    } else {
+                        Some(CommonEditMsg::CursorRight { selecting: key.modifiers.SHIFT })
+                    }
+                },
                 Keycode::Enter => {
                     debug!("mapping Keycode:Space to Char('\\n')");
                     Some(CommonEditMsg::Char('\n'))
@@ -95,13 +107,13 @@ pub fn apply_cme(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer) 
             cs.backspace(rope)
         }
         CommonEditMsg::LineBegin { selecting } => {
-            cs.home(rope)
+            cs.home(rope, selecting)
         }
         CommonEditMsg::LineEnd { selecting } => {
-            cs.end(rope)
+            cs.end(rope, selecting)
         }
-        // CommonEditMsg::WordBegin => {}
-        // CommonEditMsg::WordEnd => {}
+        // CommonEditMsg::WordBegin { selecting } => {}
+        // CommonEditMsg::WordEnd { selecting } => {}
         // CommonEditMsg::PageUp => {}
         // CommonEditMsg::PageDown => {}
         // CommonEditMsg::Delete => {}

@@ -129,7 +129,7 @@ impl Widget for MainView {
                     }
                 }
                 unknown_key => {
-                    debug!("unknown_key {:?}", unknown_key);
+                    debug!("main_view skipping unknown_key {:?}", unknown_key);
                     None
                 }
             }

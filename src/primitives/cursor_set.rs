@@ -16,7 +16,7 @@
 // Newline is always an end of previous line, not a beginning of new.
 
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::slice::Iter;
 
 use ropey::Rope;
@@ -53,7 +53,7 @@ impl Selection {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Cursor {
     pub s: Option<Selection>,
     // selection
@@ -100,41 +100,68 @@ impl Cursor {
     }
 
     // Returns FALSE if noop.
-    pub fn home(&mut self, rope: &dyn Buffer) -> bool {
+    pub fn home(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
+        let old_pos = self.a;
         let line = rope.char_to_line(self.a);
-        let char_idx = rope.line_to_char(line);
+        let new_pos = rope.line_to_char(line);
 
+        debug_assert!(new_pos <= old_pos);
 
-        let res = if char_idx == self.a && self.s.is_none() {
-            false
+        let res = if new_pos == self.a {
+            // in this variant we are just clearing the preferred column. Any selection is not
+            // important.
+            if self.preferred_column.is_some() {
+                self.preferred_column = None;
+
+                true
+            } else {
+                false
+            }
         } else {
+            self.a = new_pos;
+            if selecting {
+                self.s = Some(Selection::new(new_pos, old_pos));
+            }
+            self.preferred_column = None;
+
             true
         };
-
-        // home DOES clear preferred column.
-        self.clear_both();
 
         res
     }
 
     // Returns FALSE if noop.
-    pub fn end(&mut self, rope: &dyn Buffer) -> bool {
+    pub fn end(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
+        let old_pos = self.a;
         let next_line = rope.char_to_line(self.a) + 1;
 
-        let new_idx = if rope.len_lines() > next_line {
+        let new_pos = if rope.len_lines() > next_line {
             rope.line_to_char(next_line) - 1
         } else {
             rope.len_chars() // yes, one beyond num chars
         };
 
-        let res = if new_idx == self.a && self.s.is_some() {
-            false
+        debug_assert!(new_pos >= old_pos);
+
+        let res = if new_pos == self.a {
+            // in this variant we are just clearing the preferred column. Any selection is not
+            // important.
+            if self.preferred_column.is_some() {
+                self.preferred_column = None;
+
+                true
+            } else {
+                false
+            }
         } else {
+            self.a = new_pos;
+            if selecting {
+                self.s = Some(Selection::new(old_pos, new_pos))
+            }
+            self.preferred_column = None;
+
             true
         };
-
-        // end DOES clear preferred column
-        self.clear_both();
 
         res
     }
@@ -220,6 +247,31 @@ impl CursorSet {
             }
         }
 
+        // TODO test
+        if selecting {
+            // we will test for overlaps, and cut them. Since this is a move left, we cut a piece
+            // from right side.
+
+            for i in 0..self.set.len() - 1 {
+                let right = self.set[i + 1];
+                let left = &mut self.set[i];
+
+                match (&mut left.s, right.s) {
+                    (Some(left_s), Some(right_s)) => {
+                        // always remember: left index inclusive, right exclusive.
+                        if left_s.e > right_s.b {
+                            left_s.e = right_s.b;
+
+                            if left_s.b >= left_s.e {
+                                left.s = None;
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
         res
     }
 
@@ -248,6 +300,31 @@ impl CursorSet {
 
                 res = true;
             };
+        }
+
+        // TODO test
+        if selecting {
+            // we will test for overlaps, and cut them. Since this is a move right, we cut a piece
+            // from left side. I proceed in reverse order, so if setting selection to None I don't
+            // destroy data I need to use in next pair, introducing glittering.
+            for i in (0..self.set.len() - 1).rev() {
+                let left = self.set[i];
+                let right = &mut self.set[i + 1];
+
+                match (left.s, &mut right.s) {
+                    (Some(left_s), Some(right_s)) => {
+                        // always remember: left index inclusive, right exclusive.
+                        if left_s.e > right_s.b {
+                            right_s.b = left_s.e;
+
+                            if right_s.b >= right_s.e {
+                                right.s = None;
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
         }
 
         res
@@ -381,27 +458,81 @@ impl CursorSet {
 
     // Returns FALSE if results in no-op
     // TODO test
-    pub fn home(&mut self, rope: &dyn Buffer) -> bool {
+    // TODO there should be a reduction of overlapping. This case is easy - just pick the biggest.
+    pub fn home(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
         let mut res = false;
 
         for c in self.set.iter_mut() {
-            res |= c.home(rope);
+            res |= c.home(rope, selecting);
         };
 
-        self.reduce();
+        // reducing - we just pick ones that are furthest right
+        let mut new_set = HashMap::<usize, Cursor>::new();
+        for c in self.set.iter() {
+            match new_set.get(&c.a) {
+                None => { new_set.insert(c.a, c.clone()); },
+                Some(old_c) => {
+                    // we replace only if old one has shorter selection than new one.
+                    match (old_c.s, c.s) {
+                        (Some(old_sel), Some(new_sel)) => {
+                            if old_sel.e < new_sel.e {
+                                new_set.insert(c.a, c.clone());
+                            }
+                        },
+                        _ => {}
+                    }
+                }
+            }
+        }
+        debug_assert!(new_set.len() <= self.set.len()); //midnight paranoia
+        if new_set.len() < self.set.len() {
+            self.set.clear();
 
+            for (a, c) in new_set.iter() {
+                self.set.push(c.clone());
+            }
+
+            self.set.sort_by_key(|c| c.a);
+        }
         res
     }
 
     // Returns FALSE if results in noop.
-    pub fn end(&mut self, rope: &dyn Buffer) -> bool {
+    pub fn end(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
         let mut res = false;
 
         for c in self.set.iter_mut() {
-            res |= c.end(rope);
+            res |= c.end(rope, selecting);
         };
 
-        self.reduce();
+        // reducing - we just pick ones that are furthest left
+        let mut new_set = HashMap::<usize, Cursor>::new();
+        for c in self.set.iter() {
+            match new_set.get(&c.a) {
+                None => { new_set.insert(c.a, c.clone()); },
+                Some(old_c) => {
+                    // we replace only if old one has shorter selection than new one.
+                    match (old_c.s, c.s) {
+                        (Some(old_sel), Some(new_sel)) => {
+                            if new_sel.b < old_sel.b {
+                                new_set.insert(c.a, c.clone());
+                            }
+                        },
+                        _ => {}
+                    }
+                }
+            }
+        }
+        debug_assert!(new_set.len() <= self.set.len()); //midnight paranoia
+        if new_set.len() < self.set.len() {
+            self.set.clear();
+
+            for (a, c) in new_set.iter() {
+                self.set.push(c.clone());
+            }
+
+            self.set.sort_by_key(|c| c.a);
+        }
 
         res
     }
