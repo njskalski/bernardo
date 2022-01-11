@@ -1,5 +1,5 @@
 use log::warn;
-use ropey::Rope;
+
 
 use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, Widget};
 use crate::primitives::cursor_set::{CursorSet, CursorStatus};
@@ -7,7 +7,7 @@ use crate::primitives::xy::XY;
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
 use crate::widget::widget::{get_new_widget_id, WID};
-use crate::widgets::common_edit_msgs::{apply_cme, CommonEditMsg, key_to_edit_msg};
+use crate::widgets::common_edit_msgs::{apply_cme, key_to_edit_msg};
 use crate::widgets::editor_view::msg::EditorViewMsg;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
@@ -80,7 +80,7 @@ impl Widget for EditorView {
         };
     }
 
-    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+    fn render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
         for (line_idx, line) in self.todo_text.lines().enumerate() {
             for (c_idx, c) in line.chars().enumerate() {
                 let char_idx = self.todo_text.line_to_char(line_idx).unwrap() + c_idx; //TODO

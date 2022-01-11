@@ -1,4 +1,4 @@
-use std::borrow::{Borrow, BorrowMut};
+use std::borrow::{Borrow};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
@@ -7,7 +7,7 @@ use log::{debug, warn};
 use crate::io::filesystem_tree::filesystem_list_item::FilesystemListItem;
 use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
 use crate::io::filesystem_tree::filesystem_tree::FilesystemNode;
-use crate::widgets::tree_view::tree_view_node::{ChildRc, TreeViewNode};
+use crate::widgets::tree_view::tree_view_node::{TreeViewNode};
 
 pub struct LocalFilesystemProvider {
     root: PathBuf,
@@ -43,7 +43,7 @@ impl LocalFilesystemProvider {
         debug!("comp : {:?}", path.components());
 
         for (idx, c) in path.components().enumerate().skip(skip) {
-            let last = idx == num_components - 1;
+            let _last = idx == num_components - 1;
             curr_prefix.push(c);
 
             match curr_node.get_child_by_key(curr_prefix.borrow()) {

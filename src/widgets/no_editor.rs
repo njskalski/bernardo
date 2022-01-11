@@ -1,5 +1,5 @@
 use crate::{AnyMsg, InputEvent, Output, Theme, Widget};
-use crate::io::style::TextStyle;
+
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::widget::{get_new_widget_id, WID};
@@ -46,9 +46,9 @@ impl Widget for NoEditorWidget {
         sc.hint().size
     }
 
-    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> { None }
+    fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> { None }
 
-    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+    fn update(&mut self, _msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         None
     }
 

@@ -1,7 +1,7 @@
 // This is a basic structure holding drawing parameters for a widget.
 // It's not very well thought.
 
-use crate::experiments::focus_group::FocusGroup;
+
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::color::Color;
 use crate::primitives::colors;

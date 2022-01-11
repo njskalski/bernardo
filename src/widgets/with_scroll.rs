@@ -1,5 +1,5 @@
-use log::{debug, warn};
-use stderrlog::new;
+use log::{warn};
+
 
 use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, Widget};
 use crate::experiments::scroll::{Scroll, ScrollDirection};

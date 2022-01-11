@@ -19,7 +19,7 @@
 use std::collections::{HashMap, HashSet};
 use std::slice::Iter;
 
-use ropey::Rope;
+
 
 use crate::text::buffer::Buffer;
 
@@ -330,7 +330,7 @@ impl CursorSet {
         res
     }
 
-    pub fn move_vertically_by(&mut self, rope: &dyn Buffer, l: isize, selecting: bool) -> bool {
+    pub fn move_vertically_by(&mut self, rope: &dyn Buffer, l: isize, _selecting: bool) -> bool {
         if l == 0 {
             return false;
         }
@@ -494,7 +494,7 @@ impl CursorSet {
         if new_set.len() < self.set.len() {
             self.set.clear();
 
-            for (a, c) in new_set.iter() {
+            for (_a, c) in new_set.iter() {
                 self.set.push(c.clone());
             }
 
@@ -533,7 +533,7 @@ impl CursorSet {
         if new_set.len() < self.set.len() {
             self.set.clear();
 
-            for (a, c) in new_set.iter() {
+            for (_a, c) in new_set.iter() {
                 self.set.push(c.clone());
             }
 

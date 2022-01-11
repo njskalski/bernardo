@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use log::{debug, warn};
+use log::{debug};
 
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;

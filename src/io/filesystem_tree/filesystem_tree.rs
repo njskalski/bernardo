@@ -1,13 +1,13 @@
 use std::borrow::Borrow;
 use std::cell::RefCell;
-use std::fs::ReadDir;
-use std::ops::Deref;
+
+
 use std::path::PathBuf;
 use std::rc::Rc;
 
 use log::warn;
 
-use crate::widget::list_widget::{ListWidgetCell, ListWidgetItem};
+use crate::widget::list_widget::{ListWidgetItem};
 use crate::widgets::tree_view::tree_view_node::{ChildRc, TreeViewNode};
 
 pub struct FilesystemNode {

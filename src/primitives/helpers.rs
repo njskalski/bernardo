@@ -1,7 +1,7 @@
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::color::Color;
-use crate::primitives::rect::Rect;
+
 use crate::primitives::xy::XY;
 
 pub fn fill_output(color: Color, output: &mut dyn Output) {

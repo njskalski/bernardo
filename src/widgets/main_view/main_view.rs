@@ -52,7 +52,7 @@ impl MainView {
 
     fn internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {
         let tree_widget = &mut self.tree_widget;
-        let no_editor = &mut self.no_editor;
+        let _no_editor = &mut self.no_editor;
 
         let mut left_column = LeafLayout::new(tree_widget);
         let mut right_column = self.editor.as_mut()
@@ -173,7 +173,7 @@ impl Widget for MainView {
         wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
     }
 
-    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+    fn render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
         match self.display_state.borrow().as_ref() {
             None => warn!("failed rendering main_view without cached_sizes"),
             Some(cached_sizes) => {
@@ -181,7 +181,7 @@ impl Widget for MainView {
                 for wir in &cached_sizes.widget_sizes {
                     match self.get_subwidget(wir.wid) {
                         Some(widget) => {
-                            let mut sub_output = &mut SubOutput::new(Box::new(output), wir.rect);
+                            let sub_output = &mut SubOutput::new(Box::new(output), wir.rect);
                             widget.render(theme,
                                           cached_sizes.focus_group.get_focused() == widget.id(),
                                           sub_output,

@@ -1,9 +1,9 @@
-use stderrlog::new;
 
-use crate::{Output, SizeConstraint, Theme, Widget};
-use crate::experiments::scroll::ScrollDirection::{Both, Horizontal, Vertical};
-use crate::io::over_output::OverOutput;
-use crate::primitives::rect::Rect;
+
+
+use crate::experiments::scroll::ScrollDirection::{Both, Vertical};
+
+
 use crate::primitives::xy::{XY, ZERO};
 
 #[derive(PartialEq, Eq)]

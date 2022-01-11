@@ -1,11 +1,7 @@
 use std::collections::HashSet;
-use std::rc::Rc;
 
-use crate::io::keys::{Key, Keycode};
-use crate::widget::stupid_tree::{get_stupid_tree, StupidTree};
-use crate::widget::widget::get_new_widget_id;
+use crate::widget::stupid_tree::get_stupid_tree;
 use crate::widgets::tree_view::tree_it::TreeIt;
-use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 #[test]
 fn tree_it_test_1() {

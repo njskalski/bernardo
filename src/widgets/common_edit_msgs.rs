@@ -1,9 +1,9 @@
 use log::{debug, error};
-use ropey::Rope;
+
 
 use crate::io::keys::Key;
 use crate::Keycode;
-use crate::primitives::cursor_set::{Cursor, CursorSet};
+use crate::primitives::cursor_set::{CursorSet};
 use crate::text::buffer::Buffer;
 
 #[derive(Debug, Clone, Copy)]
@@ -26,7 +26,7 @@ pub enum CommonEditMsg {
 // This is where the mapping of keys to Msgs is
 pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
     match key {
-        Key { keycode, modifiers } => {
+        Key { keycode, modifiers: _ } => {
             match keycode {
                 Keycode::Char(c) => Some(CommonEditMsg::Char(c)),
                 Keycode::ArrowUp => Some(CommonEditMsg::CursorUp { selecting: key.modifiers.SHIFT }),

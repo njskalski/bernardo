@@ -8,14 +8,14 @@ this widget is supposed to offer:
 I hope I will discover most of functional constraints while implementing it.
  */
 
-use std::borrow::{Borrow, BorrowMut};
+use std::borrow::{Borrow};
 use std::fmt::Debug;
 use std::path::PathBuf;
 
 use log::{debug, warn};
 
 use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
-use crate::experiments::scroll::{Scroll, ScrollDirection};
+use crate::experiments::scroll::{ScrollDirection};
 use crate::io::filesystem_tree::filesystem_list_item::FilesystemListItem;
 use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
 use crate::io::input_event::InputEvent;
@@ -30,7 +30,7 @@ use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::list_widget::ListWidget;
-use crate::widget::mock_file_list::mock::{get_mock_file_list, MockFile};
+
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
@@ -251,7 +251,7 @@ impl Widget for SaveFileDialogWidget {
         wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
     }
 
-    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+    fn render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
         match self.display_state.borrow().as_ref() {
             None => warn!("failed rendering save_file_dialog without cached_sizes"),
             Some(cached_sizes) => {
@@ -259,7 +259,7 @@ impl Widget for SaveFileDialogWidget {
                 for wir in &cached_sizes.widget_sizes {
                     match self.get_subwidget(wir.wid) {
                         Some(widget) => {
-                            let mut sub_output = &mut SubOutput::new(Box::new(output), wir.rect);
+                            let sub_output = &mut SubOutput::new(Box::new(output), wir.rect);
                             widget.render(theme,
                                           cached_sizes.focus_group.get_focused() == widget.id(),
                                           sub_output,

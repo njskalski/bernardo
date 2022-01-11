@@ -9,7 +9,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::rc::Rc;
 
-use log::warn;
+
 
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
@@ -38,7 +38,7 @@ impl<'a, Key: Hash + Eq + Debug + Clone> Iterator for TreeIt<'a, Key> {
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.queue.is_empty() == false {
-            let mut head = self.queue.pop().unwrap();
+            let head = self.queue.pop().unwrap();
             let (depth, node_ref) = head;
 
             // If it's expanded, I have to throw all children on the stack.
