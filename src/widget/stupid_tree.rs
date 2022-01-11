@@ -57,12 +57,6 @@ impl TreeViewNode<usize> for StupidTree {
         return None
     }
 
-
-    // fn get_child(&self, idx: usize) -> &dyn TreeViewNode<usize> {
-    //     //TODO panic here
-    //     &self.children[idx]
-    // }
-
     fn has_child(&self, key: &usize) -> bool {
         for c in self.children.iter() {
             if c.id() == key {
@@ -76,7 +70,7 @@ impl TreeViewNode<usize> for StupidTree {
     fn todo_update_cache(&self) {}
 }
 
-pub fn get_stupid_tree() -> StupidTree {
+pub fn get_stupid_tree() -> Rc<dyn TreeViewNode<usize>> {
     let mut stupid_subtree: Vec<StupidTree> = vec![];
 
     for i in 0..100 {
@@ -85,7 +79,7 @@ pub fn get_stupid_tree() -> StupidTree {
         );
     }
 
-    StupidTree::new(
+    let res = StupidTree::new(
         0,
         vec![
             StupidTree::new(
@@ -105,5 +99,7 @@ pub fn get_stupid_tree() -> StupidTree {
             ),
             StupidTree::new(4, stupid_subtree),
         ],
-    )
+    );
+
+    Rc::new(res)
 }

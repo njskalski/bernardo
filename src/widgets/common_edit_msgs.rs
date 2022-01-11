@@ -88,11 +88,11 @@ pub fn apply_cme(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer) 
             true //TODO single cursor should return false on impossible
         }
         CommonEditMsg::CursorUp { selecting } => {
-            cs.move_vertically_by(rope, -1);
+            cs.move_vertically_by(rope, -1, selecting);
             true//TODO single cursor should return false on impossible
         }
         CommonEditMsg::CursorDown { selecting } => {
-            cs.move_vertically_by(rope, 1);
+            cs.move_vertically_by(rope, 1, selecting);
             true//TODO single cursor should return false on impossible
         }
         CommonEditMsg::CursorLeft { selecting } => {

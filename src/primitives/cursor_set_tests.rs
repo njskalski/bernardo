@@ -7,10 +7,12 @@
 // encoding # as cursor anchor
 // it points to a character that will be replaced/preceded, not succeeded
 
+use std::borrow::Borrow;
+
+use ropey::Rope;
+
 // use serde::de::Unexpected::Str;
 use crate::primitives::cursor_set::{Cursor, CursorSet};
-use ropey::Rope;
-use std::borrow::Borrow;
 
 fn text_to_buffer_cursors(s: &str) -> (Rope, CursorSet) {
     let mut cursors: Vec<usize> = vec![];
@@ -145,7 +147,7 @@ fn apply(input: &str, f: fn(&mut CursorSet, &Rope) -> ()) -> String {
 #[test]
 fn one_cursor_move_left() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, _| {
-        c.move_left();
+        c.move_left(false);
     };
 
     assert_eq!(apply("text", f), "text");
@@ -158,7 +160,7 @@ fn one_cursor_move_left() {
 #[test]
 fn one_cursor_move_left_some() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, _| {
-        c.move_left_by(3);
+        c.move_left_by(3, false);
     };
 
     assert_eq!(apply("text", f), "text");
@@ -171,7 +173,7 @@ fn one_cursor_move_left_some() {
 #[test]
 fn multiple_cursor_move_left() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, _| {
-        c.move_left();
+        c.move_left(false);
         c.reduce();
     };
 
@@ -183,7 +185,7 @@ fn multiple_cursor_move_left() {
 #[test]
 fn multiple_cursor_move_left_some() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, _| {
-        c.move_left_by(3);
+        c.move_left_by(3, false);
         c.reduce();
     };
 
@@ -195,7 +197,7 @@ fn multiple_cursor_move_left_some() {
 #[test]
 fn one_cursor_move_right() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
-        c.move_right(&bs);
+        c.move_right(bs, false);
         c.reduce();
     };
 
@@ -209,7 +211,7 @@ fn one_cursor_move_right() {
 #[test]
 fn one_cursor_move_right_some() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
-        c.move_right_by(bs, 3);
+        c.move_right_by(bs, 3, false);
         c.reduce();
     };
 
@@ -223,7 +225,7 @@ fn one_cursor_move_right_some() {
 #[test]
 fn multiple_cursor_move_right() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
-        c.move_right(&bs);
+        c.move_right(bs, false);
         c.reduce();
     };
 
@@ -236,7 +238,7 @@ fn multiple_cursor_move_right() {
 #[test]
 fn multiple_cursor_move_right_some() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
-        c.move_right_by(&bs, 3);
+        c.move_right_by(bs, 3, false);
         c.reduce();
     };
 
@@ -249,7 +251,7 @@ fn multiple_cursor_move_right_some() {
 #[test]
 fn single_cursor_move_down_by_1() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
-        c.move_vertically_by(&bs, 1);
+        c.move_vertically_by(bs, 1, false);
         c.reduce();
     };
 
@@ -279,7 +281,7 @@ fn single_cursor_move_down_by_1() {
 #[test]
 fn single_cursor_move_down_by_2() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
-        c.move_vertically_by(&bs, 2);
+        c.move_vertically_by(bs, 2, false);
         c.reduce();
     };
 
@@ -319,7 +321,7 @@ fn single_cursor_move_down_by_2() {
 #[test]
 fn single_cursor_move_down_by_some() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
-        c.move_vertically_by(&bs, 3);
+        c.move_vertically_by(bs, 3, false);
         c.reduce();
     };
 
@@ -375,7 +377,7 @@ fn single_cursor_move_down_by_some() {
 #[test]
 fn single_cursor_move_up_by_1() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
-        c.move_vertically_by(&bs, -1);
+        c.move_vertically_by(bs, -1, false);
         c.reduce();
     };
 
@@ -405,7 +407,7 @@ fn single_cursor_move_up_by_1() {
 #[test]
 fn single_cursor_move_up_by_2() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
-        c.move_vertically_by(&bs, -2);
+        c.move_vertically_by(bs, -2, false);
         c.reduce();
     };
 
@@ -443,7 +445,7 @@ fn single_cursor_move_up_by_2() {
 #[test]
 fn single_cursor_move_up_by_some() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
-        c.move_vertically_by(&bs, -3);
+        c.move_vertically_by(bs, -3, false);
         c.reduce();
     };
 

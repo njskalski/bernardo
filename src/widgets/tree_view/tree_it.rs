@@ -21,10 +21,10 @@ pub struct TreeIt<'a, Key: Hash + Eq + Debug> {
 }
 
 impl<'a, Key: Hash + Eq + Debug + Clone> TreeIt<'a, Key> {
-    pub fn new(root: Rc<dyn TreeViewNode<Key>>, expanded: &'a HashSet<Key>) -> TreeIt<'a, Key> {
+    pub fn new(root: &Rc<dyn TreeViewNode<Key>>, expanded: &'a HashSet<Key>) -> TreeIt<'a, Key> {
         let mut queue: Vec<(u16, QueueType<Key>)> = Vec::new();
 
-        queue.push((0, root));
+        queue.push((0, root.clone()));
 
         TreeIt {
             queue,
@@ -57,8 +57,3 @@ impl<'a, Key: Hash + Eq + Debug + Clone> Iterator for TreeIt<'a, Key> {
         None
     }
 }
-
-// pub struct OwningTreeIt<Key: Hash + Eq + Debug + Clone> {
-//     root: Box<dyn TreeViewNode<Key>>,
-//     tree_it: TreeIt<'_, Key>,
-// }

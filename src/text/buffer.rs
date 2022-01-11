@@ -8,8 +8,8 @@ pub trait Buffer {
     fn is_editable(&self) -> bool;
 
     fn len_chars(&self) -> usize;
-    fn char_to_line(&self, char_idx: usize) -> usize;
-    fn line_to_char(&self, line_idx: usize) -> usize;
+    fn char_to_line(&self, char_idx: usize) -> Option<usize>;
+    fn line_to_char(&self, line_idx: usize) -> Option<usize>;
 
     fn insert_char(&mut self, char_idx: usize, ch: char) -> bool;
     fn remove(&mut self, char_idx_begin: usize, char_idx_end: usize) -> bool;

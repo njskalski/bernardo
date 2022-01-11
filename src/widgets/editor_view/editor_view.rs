@@ -83,7 +83,7 @@ impl Widget for EditorView {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         for (line_idx, line) in self.todo_text.lines().enumerate() {
             for (c_idx, c) in line.chars().enumerate() {
-                let char_idx = self.todo_text.line_to_char(line_idx) + c_idx;
+                let char_idx = self.todo_text.line_to_char(line_idx).unwrap() + c_idx; //TODO
                 let cursor_status = self.cursors.get_cursor_status_for_char(char_idx);
                 let pos = XY::new(c_idx as u16, line_idx as u16);
 
@@ -106,8 +106,8 @@ impl Widget for EditorView {
         }
 
         let one_beyond_limit = self.todo_text.len_chars();
-        let last_line = self.todo_text.char_to_line(one_beyond_limit);
-        let x_beyond_last = one_beyond_limit - self.todo_text.line_to_char(last_line);
+        let last_line = self.todo_text.char_to_line(one_beyond_limit).unwrap();//TODO
+        let x_beyond_last = one_beyond_limit - self.todo_text.line_to_char(last_line).unwrap(); //TODO
 
         let one_beyond_last_pos = XY::new(x_beyond_last as u16, last_line as u16);
         match self.cursors.get_cursor_status_for_char(one_beyond_limit) {

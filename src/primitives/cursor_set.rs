@@ -102,8 +102,8 @@ impl Cursor {
     // Returns FALSE if noop.
     pub fn home(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
         let old_pos = self.a;
-        let line = rope.char_to_line(self.a);
-        let new_pos = rope.line_to_char(line);
+        let line = rope.char_to_line(self.a).unwrap(); //TODO
+        let new_pos = rope.line_to_char(line).unwrap(); //TODO
 
         debug_assert!(new_pos <= old_pos);
 
@@ -133,10 +133,10 @@ impl Cursor {
     // Returns FALSE if noop.
     pub fn end(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
         let old_pos = self.a;
-        let next_line = rope.char_to_line(self.a) + 1;
+        let next_line = rope.char_to_line(self.a).unwrap() + 1; // TODO
 
         let new_pos = if rope.len_lines() > next_line {
-            rope.line_to_char(next_line) - 1
+            rope.line_to_char(next_line).unwrap() - 1 //TODO
         } else {
             rope.len_chars() // yes, one beyond num chars
         };
@@ -330,21 +330,25 @@ impl CursorSet {
         res
     }
 
-    pub fn move_vertically_by(&mut self, rope: &dyn Buffer, l: isize) {
+    pub fn move_vertically_by(&mut self, rope: &dyn Buffer, l: isize, selecting: bool) -> bool {
         if l == 0 {
-            return;
+            return false;
         }
 
         let last_line_idx = rope.len_lines() - 1;
 
         for mut c in &mut self.set {
             //getting data
-            let cur_line_idx = if c.a > rope.len_chars() {
-                rope.len_lines()
-            } else {
-                rope.char_to_line(c.a)
+
+            let cur_line_idx = match rope.char_to_line(c.a) {
+                Some(line) => line,
+                None => {
+                    // now this gets fuzzy. So it's simple to
+                    0 //TODO
+                }
             };
-            let cur_line_begin_char_idx = rope.line_to_char(cur_line_idx);
+
+            let cur_line_begin_char_idx = rope.line_to_char(cur_line_idx).unwrap(); //TODO
             let current_char_idx = c.a - cur_line_begin_char_idx;
 
             if cur_line_idx as isize + l > last_line_idx as isize
@@ -371,10 +375,10 @@ impl CursorSet {
                 //this corresponds to a notion of "potential new character" beyond the buffer. It's a valid cursor position.
                 rope.len_chars()
             } else {
-                rope.line_to_char(new_line_idx + 1) - NEWLINE_LENGTH
+                rope.line_to_char(new_line_idx + 1).unwrap() - NEWLINE_LENGTH //TODO
             };
 
-            let new_line_begin = rope.line_to_char(new_line_idx);
+            let new_line_begin = rope.line_to_char(new_line_idx).unwrap(); //TODO
             let new_line_num_chars = last_char_idx_in_new_line + 1 - new_line_begin;
 
             //setting data
@@ -405,6 +409,8 @@ impl CursorSet {
                 }
             }
         }
+
+        false
     }
 
     /// TODO(njskalski): how to reduce selections? Overlapping selections?
@@ -564,26 +570,3 @@ impl CursorSet {
         res
     }
 }
-
-/*
-thread 'main' panicked at 'assertion failed: preferred_column >= current_char_idx', src/primitives/cursor_set.rs:219:17
-stack backtrace:
-   0: rust_begin_unwind
-             at /rustc/53cb7b09b00cbea8754ffb78e7e3cb521cb8af4b/library/std/src/panicking.rs:493:5
-   1: core::panicking::panic_fmt
-             at /rustc/53cb7b09b00cbea8754ffb78e7e3cb521cb8af4b/library/core/src/panicking.rs:92:14
-   2: core::panicking::panic
-             at /rustc/53cb7b09b00cbea8754ffb78e7e3cb521cb8af4b/library/core/src/panicking.rs:50:5
-   3: bernardo::primitives::cursor_set::CursorSet::move_vertically_by
-             at ./src/primitives/cursor_set.rs:219:17
-   4: <bernardo::widget::text_editor::TextEditorWidget as bernardo::widget::widget::Widget>::update
-             at ./src/widget/text_editor.rs:90:21
-   5: bernardo::main::recursive_treat_views
-             at ./src/main.rs:84:41
-   6: bernardo::main
-             at ./src/main.rs:103:17
-   7: core::ops::function::FnOnce::call_once
-             at /home/andrzej/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ops/function.rs:227:5
-note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
-
- */

@@ -77,12 +77,18 @@ impl Buffer for BufferState {
         self.text.len_chars()
     }
 
-    fn char_to_line(&self, char_idx: usize) -> usize {
-        self.text.char_to_line(char_idx)
+    fn char_to_line(&self, char_idx: usize) -> Option<usize> {
+        match self.text.try_char_to_line(char_idx) {
+            Ok(idx) => Some(idx),
+            Err(_) => None,
+        }
     }
 
-    fn line_to_char(&self, line_idx: usize) -> usize {
-        self.text.line_to_char(line_idx)
+    fn line_to_char(&self, line_idx: usize) -> Option<usize> {
+        match self.text.try_line_to_char(line_idx) {
+            Ok(idx) => Some(idx),
+            Err(_) => None,
+        }
     }
 
     fn insert_char(&mut self, char_idx: usize, ch: char) -> bool {

@@ -123,7 +123,7 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
     }
 
     pub fn items(&self) -> TreeIt<Key> {
-        TreeIt::new(self.root_node.clone(), &self.expanded)
+        TreeIt::new(&self.root_node, &self.expanded)
     }
 
     pub fn get_highlighted(&self) -> (u16, ChildRc<Key>) {
@@ -286,57 +286,5 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
     fn anchor(&self) -> XY {
         //TODO add x corresponding to depth
         XY::new( 0, self.highlighted as u16) //TODO unsafe cast
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::collections::HashSet;
-
-    use crate::io::keys::Keycode;
-    use crate::widget::stupid_tree::{get_stupid_tree, StupidTree};
-    use crate::widget::tree_view::{tree_it, TreeViewNode};
-    use crate::widget::widget::get_new_widget_id;
-
-    #[test]
-    fn tree_it_test_1() {
-        let root = get_stupid_tree();
-
-        let mut expanded: HashSet<usize> = HashSet::new();
-        expanded.insert(0);
-        expanded.insert(1);
-
-        let try_out = |expanded_ref: &HashSet<usize>| {
-            let items: Vec<(u16, String)> = tree_it(&root, expanded_ref)
-                .map(|(d, f)| (d, format!("{:?}", f.id())))
-                .collect();
-            let max_len = items.iter().fold(
-                0,
-                |acc, (_, item)| if acc > item.len() { acc } else { item.len() },
-            );
-            (items, max_len)
-        };
-
-        {
-            let (items, max_len) = try_out(&expanded);
-            assert_eq!(items.len(), 5);
-            assert_eq!(max_len, 5);
-        }
-
-        expanded.insert(2);
-
-        {
-            let (items, max_len) = try_out(&expanded);
-            assert_eq!(items.len(), 8);
-            assert_eq!(max_len, 5);
-        }
-
-        expanded.insert(20003);
-
-        {
-            let (items, max_len) = try_out(&expanded);
-            assert_eq!(items.len(), 9);
-            assert_eq!(max_len, 7);
-        }
     }
 }
