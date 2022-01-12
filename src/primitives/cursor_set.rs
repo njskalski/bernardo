@@ -19,7 +19,7 @@
 use std::collections::{HashMap, HashSet};
 use std::slice::Iter;
 
-
+use log::error;
 
 use crate::text::buffer::Buffer;
 
@@ -33,10 +33,15 @@ pub enum CursorStatus {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+/*
+    Describes a selection of text.
+    Invariant: anchor is at begin OR end, never in between.
+ */
 pub struct Selection {
-    pub b: usize,
     //begin inclusive
-    pub e: usize, //end EXCLUSIVE (as *everywhere*)
+    pub b: usize,
+    //end EXCLUSIVE (as *everywhere*)
+    pub e: usize,
 }
 
 impl Selection {
@@ -55,10 +60,10 @@ impl Selection {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Cursor {
+    // selection. Invariant: anchor is either at begin or end of selection, never inside.
     pub s: Option<Selection>,
-    // selection
+    // anchor (position)
     pub a: usize,
-    //anchor
     pub preferred_column: Option<usize>,
 }
 
@@ -68,6 +73,44 @@ impl Cursor {
             s: None,
             a: 0,
             preferred_column: None,
+        }
+    }
+
+    fn update_select(&mut self, old_pos: usize, new_pos: usize) {
+        if old_pos == new_pos {
+            self.s = None;
+            return;
+        }
+
+        match self.s {
+            None => { self.s = Some(Selection::new(old_pos, new_pos)); },
+            Some(sel) => {
+                /* and here'd be dragons:
+                   so I need to cover a following scenario:
+                   [   ]
+                    [  ]
+                      []
+                       |
+                       []
+                       [ ]
+                       [  ]
+                   So shift initially engaged at middle position, then user moved left while holding
+                   it, then decided to go right. In this scenario, selection shrinks.
+                   Here is where I use the invariant that
+                */
+
+                debug_assert!(old_pos == sel.b || old_pos == sel.e);
+
+                if sel.b == old_pos {
+                    self.s = Some(Selection::new(new_pos, sel.e));
+                    return;
+                }
+                if sel.e == old_pos + 1 {
+                    self.s = Some(Selection::new(sel.b, new_pos + 1));
+                    return;
+                }
+                error!("invariant that selection begins or ends with anchor broken.");
+            }
         }
     }
 
@@ -120,7 +163,7 @@ impl Cursor {
         } else {
             self.a = new_pos;
             if selecting {
-                self.s = Some(Selection::new(new_pos, old_pos));
+                self.update_select(new_pos, old_pos);
             }
             self.preferred_column = None;
 
@@ -156,7 +199,7 @@ impl Cursor {
         } else {
             self.a = new_pos;
             if selecting {
-                self.s = Some(Selection::new(old_pos, new_pos))
+                self.update_select(old_pos, new_pos);
             }
             self.preferred_column = None;
 
@@ -218,9 +261,22 @@ impl CursorSet {
             self.set.first()
         }
     }
-}
 
-impl CursorSet {
+    // Returns largest index either under the cursor or *within* selection.
+    pub fn max_cursor_pos(&self) -> usize {
+        let mut max: usize = 0;
+        for c in self.set.iter() {
+            max = usize::max(max, c.a);
+
+            c.s.map(|sel| {
+                debug_assert!(sel.b < sel.e);
+                max = usize::max(max, usize::max(sel.b, sel.e));
+            });
+        }
+
+        max
+    }
+
     pub fn move_left(&mut self, selecting: bool) -> bool {
         self.move_left_by(1, selecting)
     }
@@ -234,10 +290,7 @@ impl CursorSet {
                 c.a -= std::cmp::min(c.a, l);
 
                 if selecting {
-                    c.s = match c.s {
-                        None => Some(Selection::new(c.a, old_pos)),
-                        Some(old_sel) => Some(Selection::new(c.a, old_sel.e)),
-                    };
+                    c.update_select(old_pos, c.a);
                     c.preferred_column = None;
                 } else {
                     c.clear_both();
@@ -280,6 +333,11 @@ impl CursorSet {
     }
 
     pub fn move_right_by(&mut self, rope: &dyn Buffer, l: usize, selecting: bool) -> bool {
+        if self.max_cursor_pos() > rope.len_chars() {
+            error!("buffer shorter than cursor positions. Returning prematurely to avoid crash.");
+            return false;
+        }
+
         let len = rope.len_chars();
         let mut res = false;
 
@@ -290,10 +348,7 @@ impl CursorSet {
                 c.a = std::cmp::min(c.a + l, len);
 
                 if selecting {
-                    c.s = match c.s {
-                        None => Some(Selection::new(old_pos, c.a)),
-                        Some(old_sel) => Some(Selection::new(old_sel.b, c.a)),
-                    }
+                    c.update_select(old_pos, c.a);
                 } else {
                     c.clear_both();
                 }
@@ -330,10 +385,17 @@ impl CursorSet {
         res
     }
 
-    pub fn move_vertically_by(&mut self, rope: &dyn Buffer, l: isize, _selecting: bool) -> bool {
+    pub fn move_vertically_by(&mut self, rope: &dyn Buffer, l: isize, selecting: bool) -> bool {
+        if self.max_cursor_pos() > rope.len_chars() {
+            error!("buffer shorter than cursor positions. Returning prematurely to avoid crash.");
+            return false;
+        }
+
         if l == 0 {
             return false;
         }
+
+        let mut res = false;
 
         let last_line_idx = rope.len_lines() - 1;
 
@@ -343,25 +405,55 @@ impl CursorSet {
             let cur_line_idx = match rope.char_to_line(c.a) {
                 Some(line) => line,
                 None => {
-                    // now this gets fuzzy. So it's simple to
-                    0 //TODO
+                    // If c.a == rope.len_chars(), rope (which is underlying impl) does not fail
+                    // (see rope_tests.rs). Otherwise we would have to check whether last character
+                    // is in fact a newline or not, as this would affect the result.
+                    rope.len_lines()
                 }
             };
 
-            let cur_line_begin_char_idx = rope.line_to_char(cur_line_idx).unwrap(); //TODO
-            let current_char_idx = c.a - cur_line_begin_char_idx;
+            let cur_line_begin_char_idx = match rope.line_to_char(cur_line_idx) {
+                Some(idx) => idx,
+                None => {
+                    error!("rope.line_to_char failed unexpectedly (1), skipping cursor.");
+                    continue;
+                }
+            };
+            let current_col_idx = c.a - cur_line_begin_char_idx;
 
-            if cur_line_idx as isize + l > last_line_idx as isize
-            /* && l > 0, checked before */
-            {
-                c.preferred_column = Some(current_char_idx);
+            // line beyond the end of buffer
+            if cur_line_idx as isize + l > last_line_idx as isize {
+                if c.a == rope.len_chars() {
+                    continue;
+                }
+
+                c.preferred_column = Some(current_col_idx);
+                let old_pos = c.a;
                 c.a = rope.len_chars(); // pointing to index higher than last valid one.
+
+                if selecting {
+                    c.update_select(old_pos, c.a);
+                }
+
+                res = true;
                 continue;
             }
 
+            // can't scroll that much up, begin of file is best we can get.
             if cur_line_idx as isize + l < 0 {
-                c.preferred_column = Some(current_char_idx);
+                if c.a == 0 {
+                    continue;
+                }
+
+                c.preferred_column = Some(current_col_idx);
+                let old_pos = c.a;
                 c.a = 0;
+
+                if selecting {
+                    c.update_select(old_pos, c.a);
+                }
+
+                res = true;
                 continue;
             }
 
@@ -371,29 +463,55 @@ impl CursorSet {
             let new_line_idx = (cur_line_idx as isize + l) as usize;
 
             // This is actually right. Ropey counts '\n' as last character of current line.
-            let last_char_idx_in_new_line = if new_line_idx == last_line_idx {
+            let last_char_in_new_line_idx = if new_line_idx == last_line_idx {
                 //this corresponds to a notion of "potential new character" beyond the buffer. It's a valid cursor position.
                 rope.len_chars()
             } else {
-                rope.line_to_char(new_line_idx + 1).unwrap() - NEWLINE_LENGTH //TODO
+                match rope.line_to_char(new_line_idx + 1) {
+                    Some(char_idx) => char_idx - NEWLINE_LENGTH,
+                    None => {
+                        error!("rope.line_to_char failed unexpectedly (2), skipping cursor.");
+                        continue;
+                    }
+                }
             };
 
-            let new_line_begin = rope.line_to_char(new_line_idx).unwrap(); //TODO
-            let new_line_num_chars = last_char_idx_in_new_line + 1 - new_line_begin;
+            let new_line_begin = match rope.line_to_char(new_line_idx) {
+                Some(char_idx) => char_idx,
+                None => {
+                    error!("rope.line_to_char failed unexpectedly (3), skipping cursor.");
+                    continue;
+                }
+            };
+
+            let new_line_num_chars = last_char_in_new_line_idx + 1 - new_line_begin;
 
             //setting data
 
             c.clear_selection();
 
             if let Some(preferred_column) = c.preferred_column {
-                debug_assert!(preferred_column >= current_char_idx);
+                debug_assert!(preferred_column >= current_col_idx);
+
+                let old_pos = c.a;
+
                 if preferred_column <= new_line_num_chars {
                     c.clear_pc();
                     c.a = new_line_begin + preferred_column;
                 } else {
                     c.a = new_line_begin + new_line_num_chars;
                 }
+
+                if selecting {
+                    c.update_select(old_pos, c.a);
+                }
+
+                if old_pos != c.a {
+                    res = true;
+                }
             } else {
+                let old_pos = c.a;
+
                 let addon = if new_line_idx == last_line_idx { 1 } else { 0 };
                 // inequality below is interesting.
                 // The line with characters 012 is 3 characters long. So if current char idx is 3
@@ -401,16 +519,24 @@ impl CursorSet {
                 // "addon" is there to make sure that last line is counted as "one character longer"
                 // than it actually is, so we can position cursor one character behind buffer
                 // (appending).
-                if new_line_num_chars + addon <= current_char_idx {
+                if new_line_num_chars + addon <= current_col_idx {
                     c.a = new_line_begin + new_line_num_chars - 1; //this -1 is needed.
-                    c.preferred_column = Some(current_char_idx);
+                    c.preferred_column = Some(current_col_idx);
                 } else {
-                    c.a = new_line_begin + current_char_idx;
+                    c.a = new_line_begin + current_col_idx;
+                }
+
+                if selecting {
+                    c.update_select(old_pos, c.a);
+                }
+
+                if old_pos != c.a {
+                    res = true;
                 }
             }
         }
 
-        false
+        res
     }
 
     /// TODO(njskalski): how to reduce selections? Overlapping selections?
@@ -466,6 +592,11 @@ impl CursorSet {
     // TODO test
     // TODO there should be a reduction of overlapping. This case is easy - just pick the biggest.
     pub fn home(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
+        if self.max_cursor_pos() > rope.len_chars() {
+            error!("buffer shorter than cursor positions. Returning prematurely to avoid crash.");
+            return false;
+        }
+
         let mut res = false;
 
         for c in self.set.iter_mut() {
@@ -505,6 +636,11 @@ impl CursorSet {
 
     // Returns FALSE if results in noop.
     pub fn end(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
+        if self.max_cursor_pos() > rope.len_chars() {
+            error!("buffer shorter than cursor positions. Returning prematurely to avoid crash.");
+            return false;
+        }
+
         let mut res = false;
 
         for c in self.set.iter_mut() {
@@ -544,6 +680,11 @@ impl CursorSet {
     }
 
     pub fn backspace(&mut self, rope: &mut dyn Buffer) -> bool {
+        if self.max_cursor_pos() > rope.len_chars() {
+            error!("buffer shorter than cursor positions. Returning prematurely to avoid crash.");
+            return false;
+        }
+
         let mut res = false;
 
         // this has to be reverse iterator, otherwise the indices are messed up.
