@@ -20,12 +20,51 @@ fn text_to_buffer_cursors(s: &str) -> (Rope, CursorSet) {
 
     dbg!(s);
 
+    let mut sel_begin: Option<usize> = None;
+    let mut sel_end: Option<usize> = None;
+
     for c in s.chars() {
         if c == '#' {
             cursors.push(text.len());
-        } else {
-            text.push(c);
+            continue
         }
+
+        text.push(c);
+    }
+
+    dbg!(&cursors);
+
+    let cursors: Vec<Cursor> = cursors.iter().map(|a| (*a).into()).collect();
+
+    (Rope::from(text), CursorSet::new(cursors))
+}
+
+// cursors start with [ or # and end with ] or #, having exactly one #, and exactly one of {,}
+fn text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSet) {
+    let mut text = String::new();
+
+    let mut cursors: Vec<Cursor> = vec![];
+
+    dbg!(s);
+
+    let mut sel_begin: Option<usize> = None;
+    let mut sel_end: Option<usize> = None;
+    let mut anc: Option<usize> = None;
+
+    for c in s.chars() {
+        if c == '#' {
+            match (sel_begin, sel_end) {
+                (Some(begin), None) => {
+                    cursors.push(Cursor::new)
+                }
+            }
+
+
+            cursors.push(text.len());
+            continue
+        }
+
+        text.push(c);
     }
 
     dbg!(&cursors);

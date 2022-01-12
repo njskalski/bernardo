@@ -16,6 +16,8 @@
 // Newline is always an end of previous line, not a beginning of new.
 
 
+// TODO change the selection to Option<usize> to ENFORCE the invariant with data volume
+
 use std::collections::{HashMap, HashSet};
 use std::slice::Iter;
 
@@ -73,6 +75,14 @@ impl Cursor {
             s: None,
             a: 0,
             preferred_column: None,
+        }
+    }
+
+    pub fn new(anc: usize, sel: Option<Selection>, pref_col: Option<usize>) -> Self {
+        Cursor {
+            s: sel,
+            a: anc,
+            preferred_column: pref_col,
         }
     }
 
