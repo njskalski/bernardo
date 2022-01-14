@@ -801,9 +801,8 @@ impl CursorSet {
         let mut new_set = HashMap::<usize, Cursor>::new();
 
         self.set.sort_by_key(|c| c.a);
-        self.set.reverse();
 
-        for c in self.set.iter() {
+        for c in self.set.iter().rev() {
             match new_set.get(&c.a) {
                 None => { new_set.insert(c.a, c.clone()); },
                 Some(old_c) => {
@@ -837,14 +836,15 @@ impl CursorSet {
             let prev = self.set[i - 1].clone();
             let curr = &mut self.set[i];
 
-            match &mut curr.s {
-                Some(curr_s) => {
+            match (&mut curr.s, prev.s) {
+                (Some(curr_s), Some(prev_s)) => {
                     // it's a little easier because I know from above sorts, that curr.a < next.a
-                    if curr_s.b < prev.a {
-                        curr_s.b = prev.a;
+                    if curr_s.b < prev_s.e {
+                        curr_s.b = prev_s.e;
+                        curr.a = prev_s.e;
                     }
                 }
-                None => {},
+                _ => {}
             }
         }
     }
