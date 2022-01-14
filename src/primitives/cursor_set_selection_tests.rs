@@ -275,5 +275,5 @@ fn arrow_up_1() {
     assert_eq!(apply_sel("te#xt", f), "[te)xt");
 
     assert_eq!(apply_sel("lin#e1\nline2\nli#ne3", f), "[lin)e1\nli[ne2\nli)ne3");
-    // assert_eq!(apply_sel("lin#e1\nline2\nli#ne3\n#", f), "[lin)e1\nli[ne2\nli)[ne3\n)");
+    assert_eq!(apply_sel("lin#e1\nline2\nli#ne3\n#", f), "[lin)e1\nli[ne2\n)[line3\n)");
 }

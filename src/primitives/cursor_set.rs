@@ -566,6 +566,12 @@ impl CursorSet {
             }
         }
 
+        if l < 0 {
+            self.new_reduce_left();
+        } else {
+            self.new_reduce_right();
+        }
+
         res
     }
 
