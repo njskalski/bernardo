@@ -12,7 +12,7 @@ use std::borrow::Borrow;
 use ropey::Rope;
 
 // use serde::de::Unexpected::Str;
-use crate::primitives::cursor_set::{Cursor, CursorSet};
+use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
 
 fn text_to_buffer_cursors(s: &str) -> (Rope, CursorSet) {
     let mut cursors: Vec<usize> = vec![];
@@ -39,7 +39,7 @@ fn text_to_buffer_cursors(s: &str) -> (Rope, CursorSet) {
     (Rope::from(text), CursorSet::new(cursors))
 }
 
-// cursors start with [ or # and end with ] or #, having exactly one #, and exactly one of {,}
+// cursors start with [ or # and end with ] or #, having exactly one #, and exactly one of [ or ]
 fn text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSet) {
     let mut text = String::new();
 
@@ -47,24 +47,33 @@ fn text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSet) {
 
     dbg!(s);
 
-    let mut sel_begin: Option<usize> = None;
-    let mut sel_end: Option<usize> = None;
-    let mut anc: Option<usize> = None;
+    let mut other_part: Option<usize> = None;
 
     for c in s.chars() {
+        let pos = text.len();
         if c == '#' {
-            match (sel_begin, sel_end) {
-                (Some(begin), None) => {
-                    cursors.push(Cursor::new)
+            match other_part {
+                None => other_part = Some(pos),
+                Some(idx) => {
+                    cursors.push(
+                        Cursor::new(pos).with_selection(Selection::new(idx, pos))
+                    );
                 }
             }
-
-
-            cursors.push(text.len());
             continue
         }
 
-        text.push(c);
+        if c == '[' || c == ']' {
+            match other_part {
+                None => other_part = Some(pos),
+                Some(idx) => {
+                    cursors.push(
+                        Cursor::new(idx).with_selection(Selection::new(idx, pos))
+                    );
+                }
+            };
+            continue;
+        }
     }
 
     dbg!(&cursors);
@@ -74,7 +83,6 @@ fn text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSet) {
     (Rope::from(text), CursorSet::new(cursors))
 }
 
-/// TODO add support for the selection, maybe preferred column
 fn buffer_cursors_to_text<T: Borrow<Rope>>(b: T, cs: &CursorSet) -> String {
     let mut output = String::new();
     let mut anchors: Vec<usize> = cs.set().iter().map(|c| c.a).collect();

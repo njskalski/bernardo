@@ -78,11 +78,25 @@ impl Cursor {
         }
     }
 
-    pub fn new(anc: usize, sel: Option<Selection>, pref_col: Option<usize>) -> Self {
+    pub fn new(anc: usize) -> Self {
         Cursor {
-            s: sel,
+            s: None,
             a: anc,
-            preferred_column: pref_col,
+            preferred_column: None,
+        }
+    }
+
+    pub fn with_selection(self, selection: Selection) -> Self {
+        Cursor {
+            s: Some(selection),
+            ..self
+        }
+    }
+
+    pub fn with_preferred_column(self, preferred_column: usize) -> Self {
+        Cursor {
+            preferred_column: Some(preferred_column),
+            ..self
         }
     }
 
