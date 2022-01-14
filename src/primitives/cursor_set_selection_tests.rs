@@ -120,6 +120,7 @@ fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
             (None, Some(prev_cursor_idx)) => {
                 let begin_pos = idx + 1;
                 add_cursor_begin(begin_pos, &cs.set()[prev_cursor_idx], &mut output);
+                current_cursor_idx = None;
             }
             _ => {} // None, None is noop.
         }
@@ -211,11 +212,11 @@ fn test_buffer_cursors_sel_to_text_2() {
     assert_eq!(text, "[te)[xt)");
 }
 
-// #[test]
-// fn apply_sel_works() {
-//     let f: fn(&mut CursorSet, &dyn Buffer) = |_c: &mut CursorSet, _b: &dyn Buffer| {};
-//
-//     assert_eq!(apply_sel("text", f), "text");
-//     assert_eq!(apply_sel("te[xt)", f), "te[xt)");
-//     assert_eq!(apply_sel("[t)(ext]", f), "[t)(ext]");
-// }
+#[test]
+fn apply_sel_works() {
+    let f: fn(&mut CursorSet, &dyn Buffer) = |_c: &mut CursorSet, _b: &dyn Buffer| {};
+
+    assert_eq!(apply_sel("text", f), "text");
+    assert_eq!(apply_sel("te[xt)", f), "te[xt)");
+    assert_eq!(apply_sel("[t)(ext]", f), "[t)(ext]");
+}
