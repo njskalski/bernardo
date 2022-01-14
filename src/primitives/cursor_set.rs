@@ -21,7 +21,7 @@
 use std::collections::{HashMap, HashSet};
 use std::slice::Iter;
 
-use log::error;
+use log::{error, warn};
 use stderrlog::new;
 
 use crate::text::buffer::Buffer;
@@ -747,5 +747,93 @@ impl CursorSet {
         self.reduce();
 
         res
+    }
+
+    // this is a helper function, that moves cursors' .a to begin or end of selection.
+    // returns whether operation had any impact on set or not.
+    fn normalize_anchor(&mut self, right: bool) -> bool {
+        let mut changed = false;
+        for cursor in self.set.iter_mut() {
+            match cursor.s {
+                Some(s) => {
+                    debug_assert!(cursor.a == s.b || cursor.a == s.e);
+
+                    if right {
+                        if cursor.a != s.e {
+                            changed = true;
+                        }
+                        cursor.a = s.e;
+                    } else {
+                        if cursor.a != s.b {
+                            changed = true;
+                        }
+                        cursor.a = s.b;
+                    }
+                },
+                None => {}
+            }
+        }
+        changed
+    }
+
+    // Reduces cursors after a move left.
+    // Moves anchors left.
+    // When two anchors collide, keeps the one with longer selection.
+    // When anchors are different, but selections overlap, I SHORTEN THE EARLIER SELECTION, because
+    // I assume there have been a move left with selection on.
+    fn new_reduce_left(&mut self, rope: &dyn Buffer) {
+        let norm_res = self.normalize_anchor(false);
+        if norm_res {
+            warn!("normalizing anchor left had an effect, this is not expected.");
+        }
+
+        let mut new_set = HashMap::<usize, Cursor>::new();
+
+        self.set.sort_by_key(|c| c.a);
+
+        for c in self.set.iter() {
+            match new_set.get(&c.a) {
+                None => { new_set.insert(c.a, c.clone()); },
+                Some(old_c) => {
+                    // we replace only if old one has shorter selection than new one.
+                    match (old_c.s, c.s) {
+                        (Some(old_sel), Some(new_sel)) => {
+                            if old_sel.e < new_sel.e {
+                                new_set.insert(c.a, c.clone());
+                            }
+                        }
+                        // if previous one had no selection, we consider new selection longer.
+                        (None, Some(new_sel)) => {
+                            new_set.insert(c.a, c.clone());
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        if new_set.len() < self.set.len() {
+            self.set.clear();
+            for (_a, c) in new_set.iter() {
+                self.set.push(c.clone());
+            }
+            self.set.sort_by_key(|c| c.a);
+        }
+
+        // now possibly shortening the selections.
+        for i in 0..self.set.len() - 1 {
+            let next = self.set[i + 1].clone();
+            let curr = &mut self.set[i];
+
+            match &mut curr.s {
+                Some(curr_s) => {
+                    // it's a little easier because I know from above sorts, that curr.a < next.a
+                    if curr_s.e > next.a {
+                        curr_s.e = next.a;
+                    }
+                }
+                None => {},
+            }
+        }
     }
 }
