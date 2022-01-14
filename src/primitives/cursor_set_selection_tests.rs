@@ -81,6 +81,24 @@ fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
     // cursor_idx (aka color), pos
     let mut current_cursor_idx: Option<usize> = None;
 
+    fn add_cursor_end(end_pos: usize, cursor: &Cursor, output: &mut String) {
+        assert_eq!(cursor.s.map(|s| s.e), Some(end_pos));
+        if cursor.a == end_pos {
+            output.insert(end_pos, ']');
+        } else {
+            output.insert(end_pos, ')');
+        }
+    }
+
+    fn add_cursor_begin(begin_pos: usize, cursor: &Cursor, output: &mut String) {
+        assert_eq!(cursor.s.map(|s| s.b), Some(begin_pos));
+        if cursor.a == begin_pos {
+            output.insert(begin_pos, '[');
+        } else {
+            output.insert(begin_pos, '(');
+        }
+    }
+
     for idx in (0..colors.len()).rev() {
         println!("{}: ci {:?} cc {:?} output {}", idx, colors[idx], current_cursor_idx, output);
 
@@ -88,45 +106,20 @@ fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
             (Some(cursor_idx), None) => {
                 // a cursor is ending here
                 let end_pos = idx + 1; // the "end" is not inclusive, so we add +1.
+                add_cursor_end(end_pos, &cs.set()[cursor_idx], &mut output);
                 current_cursor_idx = Some(cursor_idx);
-                let cursor = cs.set()[cursor_idx];
-
-                if cursor.a == end_pos {
-                    output.insert(end_pos, ']');
-                } else {
-                    output.insert(end_pos, ')');
-                }
             },
             (Some(new_cursor_idx), Some(prev_cursor_idx)) if new_cursor_idx != prev_cursor_idx => {
                 // this is hard, everything is selected, but the cursor changes.
                 // first, let's close the previous one. This will be a "beginning", since we're walking backwards.
-
-                let old_cursor = cs.set()[prev_cursor_idx];
-                // beginnings are inclusive, but now we're over PREVIOUS character, the one that preceeds the end
-                // of "previous" cursor (that has higher indices).
-
-                let begin_pos = idx;
-                if old_cursor.a == begin_pos {
-                    output.insert(begin_pos, '[');
-                } else {
-                    output.insert(begin_pos, '(');
-                }
-
-                // now, let's open a new cursor
-                // cursor_idx (aka color), pos
+                let begin_end_pos = idx + 1;
+                add_cursor_begin(begin_end_pos, &cs.set()[prev_cursor_idx], &mut output);
                 current_cursor_idx = Some(new_cursor_idx);
+                add_cursor_end(begin_end_pos, &cs.set()[new_cursor_idx], &mut output);
             }
             (None, Some(prev_cursor_idx)) => {
-                // here we just copy-paste from above
-                let old_cursor = cs.set()[prev_cursor_idx];
-                let begin_pos = idx;
-                if old_cursor.a == begin_pos {
-                    output.insert(begin_pos, '[');
-                } else {
-                    output.insert(begin_pos, '(');
-                }
-                // but clear the "current_cursor"
-                current_cursor_idx = None;
+                let begin_pos = idx + 1;
+                add_cursor_begin(begin_pos, &cs.set()[prev_cursor_idx], &mut output);
             }
             _ => {} // None, None is noop.
         }
@@ -137,12 +130,8 @@ fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
     // handling cursor starting in 0
     match current_cursor_idx {
         Some(cursor_idx) => {
-            let cursor = cs.set()[cursor_idx];
-            if cursor.a == 0 {
-                output.insert(0, '[');
-            } else {
-                output.insert(0, '(');
-            }
+            add_cursor_begin(0, &cs.set()[cursor_idx], &mut output);
+            current_cursor_idx = None;
         }
         None => {}
     }
