@@ -632,7 +632,7 @@ impl CursorSet {
         for c in self.set.iter_mut() {
             res |= c.home(rope, selecting);
         };
-        
+
         self.new_reduce_left();
 
         res
@@ -652,37 +652,7 @@ impl CursorSet {
         };
 
         // reducing - we just pick ones that are furthest left
-        let mut new_set = HashMap::<usize, Cursor>::new();
-        for c in self.set.iter() {
-            match new_set.get(&c.a) {
-                None => { new_set.insert(c.a, c.clone()); },
-                Some(old_c) => {
-                    // we replace only if old one has shorter selection than new one.
-                    match (old_c.s, c.s) {
-                        (Some(old_sel), Some(new_sel)) => {
-                            if new_sel.b < old_sel.b {
-                                new_set.insert(c.a, c.clone());
-                            }
-                        },
-                        // if previous one had no selection, we consider new selection longer.
-                        (None, Some(new_sel)) => {
-                            new_set.insert(c.a, c.clone());
-                        }
-                        _ => {}
-                    }
-                }
-            }
-        }
-        debug_assert!(new_set.len() <= self.set.len()); //midnight paranoia
-        if new_set.len() < self.set.len() {
-            self.set.clear();
-
-            for (_a, c) in new_set.iter() {
-                self.set.push(c.clone());
-            }
-
-            self.set.sort_by_key(|c| c.a);
-        }
+        self.new_reduce_right();
 
         res
     }
@@ -818,7 +788,7 @@ impl CursorSet {
     // When two anchors collide, keeps the one with longer selection.
     // When anchors are different, but selections overlap, I SHORTEN THE LATER SELECTION, because
     // I assume there have been a move RIGHT with selection on.
-    fn new_reduce_right(&mut self, rope: &dyn Buffer) {
+    fn new_reduce_right(&mut self) {
         if self.set.len() == 1 {
             return;
         }
