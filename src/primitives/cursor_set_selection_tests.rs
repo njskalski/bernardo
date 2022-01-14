@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use log::error;
 use ropey::Rope;
 
@@ -36,6 +38,12 @@ fn text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSet) {
                     other_part = None;
                 }
             };
+            continue;
+        }
+
+        if c == '#' {
+            assert!(other_part.is_none());
+            cursors.push(Cursor::new(idx));
             continue;
         }
 
@@ -99,6 +107,8 @@ fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
         }
     }
 
+    let lone_cursors: HashSet<usize> = cs.set().iter().filter(|c| c.s.is_none()).map(|c| c.a).collect();
+
     for idx in (0..colors.len()).rev() {
         println!("{}: ci {:?} cc {:?} output {}", idx, colors[idx], current_cursor_idx, output);
 
@@ -124,7 +134,12 @@ fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
             }
             _ => {} // None, None is noop.
         }
+
+        if lone_cursors.contains(&idx) {
+            output.insert(idx, '#');
+        }
     }
+
 
     println!("after : cc {:?} output {}", current_cursor_idx, output);
 
@@ -219,4 +234,16 @@ fn apply_sel_works() {
     assert_eq!(apply_sel("text", f), "text");
     assert_eq!(apply_sel("te[xt)", f), "te[xt)");
     assert_eq!(apply_sel("[t)(ext]", f), "[t)(ext]");
+}
+
+#[test]
+fn home_1() {
+    let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, b: &dyn Buffer| {
+        c.home(b, true);
+    };
+
+    assert_eq!(apply_sel("text", f), "text");
+    assert_eq!(apply_sel("text#", f), "[text)");
+    assert_eq!(apply_sel("te#xt", f), "[te)xt");
+    assert_eq!(apply_sel("a#aa\nbb#b\nccc#\n#", f), "[a)aa\n[bb)b\n[ccc)\n#");
 }
