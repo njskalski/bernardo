@@ -237,7 +237,7 @@ fn apply_sel_works() {
 }
 
 #[test]
-fn home_1() {
+fn home() {
     let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, b: &dyn Buffer| {
         c.home(b, true);
     };
@@ -246,4 +246,6 @@ fn home_1() {
     assert_eq!(apply_sel("text#", f), "[text)");
     assert_eq!(apply_sel("te#xt", f), "[te)xt");
     assert_eq!(apply_sel("a#aa\nbb#b\nccc#\n#", f), "[a)aa\n[bb)b\n[ccc)\n#");
+    assert_eq!(apply_sel("a#aa\nb#b#b\nccc#\n#", f), "[a)aa\n[bb)b\n[ccc)\n#");
+    assert_eq!(apply_sel("a#aa\nb#b#b\n#ccc#\n##", f), "[a)aa\n[bb)b\n[ccc)\n#");
 }

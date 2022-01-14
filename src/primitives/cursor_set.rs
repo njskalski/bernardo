@@ -639,7 +639,11 @@ impl CursorSet {
                             if old_sel.e < new_sel.e {
                                 new_set.insert(c.a, c.clone());
                             }
-                        },
+                        }
+                        // if previous one had no selection, we consider new selection longer.
+                        (None, Some(new_sel)) => {
+                            new_set.insert(c.a, c.clone());
+                        }
                         _ => {}
                     }
                 }
@@ -684,6 +688,10 @@ impl CursorSet {
                                 new_set.insert(c.a, c.clone());
                             }
                         },
+                        // if previous one had no selection, we consider new selection longer.
+                        (None, Some(new_sel)) => {
+                            new_set.insert(c.a, c.clone());
+                        }
                         _ => {}
                     }
                 }
