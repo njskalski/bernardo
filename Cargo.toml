@@ -16,3 +16,8 @@ stderrlog = "0.5.1"
 filesystem = "0.4.4"
 crossterm = "0.22.1"
 either = "1.6.1"
+
+[profile.dev]
+opt-level = 0
+debug = 2
+lto = false

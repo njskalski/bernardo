@@ -78,59 +78,66 @@ fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
     // insertion will invalidate all subsequent indices.
 
     let mut output = buffer_to_string(b);
-    let mut current_cursor: Option<usize> = None;
+    // cursor_idx (aka color), pos
+    let mut current_cursor_idx: Option<usize> = None;
 
     for idx in (0..colors.len()).rev() {
-        match colors[idx] {
-            Some(cursor_idx) => {
-                if current_cursor.is_none() {
-                    // a cursor is starting
-                    let cursor_pos = idx + 1;
-                    current_cursor = Some(cursor_pos);
-                    let cursor = cs.set()[cursor_idx];
+        println!("{}: ci {:?} cc {:?} output {}", idx, colors[idx], current_cursor_idx, output);
 
-                    // this end is exclusive
-                    if cursor.a == cursor_pos {
-                        output.insert(cursor_pos, ']');
-                    } else {
-                        output.insert(cursor_pos, ')');
-                    }
+        match (colors[idx], current_cursor_idx) {
+            (Some(cursor_idx), None) => {
+                // a cursor is ending here
+                let end_pos = idx + 1; // the "end" is not inclusive, so we add +1.
+                current_cursor_idx = Some(cursor_idx);
+                let cursor = cs.set()[cursor_idx];
+
+                if cursor.a == end_pos {
+                    output.insert(end_pos, ']');
+                } else {
+                    output.insert(end_pos, ')');
                 }
-            }
-            None => {
-                match current_cursor {
-                    None => {}
-                    Some(cursor_idx) => {
-                        let cursor_pos = idx + 1;
-                        let cursor = cs.set()[cursor_idx];
-                        assert!(cursor.s.is_some());
+            },
+            (Some(new_cursor_idx), Some(prev_cursor_idx)) if new_cursor_idx != prev_cursor_idx => {
+                // this is hard, everything is selected, but the cursor changes.
+                // first, let's close the previous one. This will be a "beginning", since we're walking backwards.
 
-                        match cursor.s {
-                            Some(s) => {
-                                assert!(s.b == cursor_pos || s.e == cursor_pos);
+                let old_cursor = cs.set()[prev_cursor_idx];
+                // beginnings are inclusive, but now we're over PREVIOUS character, the one that preceeds the end
+                // of "previous" cursor (that has higher indices).
 
-                                if cursor.a == cursor_pos {
-                                    output.insert(cursor_pos, '[');
-                                } else {
-                                    output.insert(cursor_pos, '(');
-                                }
-                            }
-                            None => {}
-                        }
-                        current_cursor = None;
-                    }
+                let begin_pos = idx;
+                if old_cursor.a == begin_pos {
+                    output.insert(begin_pos, '[');
+                } else {
+                    output.insert(begin_pos, '(');
                 }
+
+                // now, let's open a new cursor
+                // cursor_idx (aka color), pos
+                current_cursor_idx = Some(new_cursor_idx);
             }
+            (None, Some(prev_cursor_idx)) => {
+                // here we just copy-paste from above
+                let old_cursor = cs.set()[prev_cursor_idx];
+                let begin_pos = idx;
+                if old_cursor.a == begin_pos {
+                    output.insert(begin_pos, '[');
+                } else {
+                    output.insert(begin_pos, '(');
+                }
+                // but clear the "current_cursor"
+                current_cursor_idx = None;
+            }
+            _ => {} // None, None is noop.
         }
     }
 
-    // handling cursor starting in 0
-    match current_cursor {
-        Some(cursor_pos) => {
-            assert!(colors[0].is_some());
-            let cursor_idx = colors[0].unwrap();
-            let cursor = cs.set()[cursor_idx];
+    println!("after : cc {:?} output {}", current_cursor_idx, output);
 
+    // handling cursor starting in 0
+    match current_cursor_idx {
+        Some(cursor_idx) => {
+            let cursor = cs.set()[cursor_idx];
             if cursor.a == 0 {
                 output.insert(0, '[');
             } else {
@@ -181,6 +188,15 @@ fn test_text_to_buffer_cursors_with_selections_4() {
     assert_eq!(cursors.set()[0].s, Some(Selection::new(0, 2)));
     assert_eq!(cursors.set()[1].a, 4);
     assert_eq!(cursors.set()[1].s, Some(Selection::new(2, 4)));
+}
+
+#[test]
+fn test_buffer_cursors_sel_to_text_0() {
+    let text = buffer_cursors_sel_to_text(&Rope::from("text"), &CursorSet::new(
+        vec![]
+    ));
+
+    assert_eq!(text, "text");
 }
 
 #[test]
