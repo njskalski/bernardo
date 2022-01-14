@@ -249,3 +249,31 @@ fn home() {
     assert_eq!(apply_sel("a#aa\nb#b#b\nccc#\n#", f), "[a)aa\n[bb)b\n[ccc)\n#");
     assert_eq!(apply_sel("a#aa\nb#b#b\n#ccc#\n##", f), "[a)aa\n[bb)b\n[ccc)\n#");
 }
+
+#[test]
+fn end() {
+    let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, b: &dyn Buffer| {
+        c.end(b, true);
+    };
+
+    assert_eq!(apply_sel("text", f), "text");
+    assert_eq!(apply_sel("text#", f), "text#");
+    assert_eq!(apply_sel("te#xt", f), "te(xt]");
+    assert_eq!(apply_sel("a#aa\nbb#b\nccc#\n#", f), "a(aa]\nbb(b]\nccc#\n#");
+    assert_eq!(apply_sel("a#aa\nb#b#b\nccc#\n#", f), "a(aa]\nb(bb]\nccc#\n#");
+    assert_eq!(apply_sel("a#aa\nb#b#b\n#ccc#\n##", f), "a(aa]\nb(bb]\n(ccc]\n#");
+}
+
+#[test]
+fn arrow_up_1() {
+    let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, b: &dyn Buffer| {
+        c.move_vertically_by(b, -1, true);
+    };
+
+    assert_eq!(apply_sel("text", f), "text");
+    assert_eq!(apply_sel("text#", f), "[text)");
+    assert_eq!(apply_sel("te#xt", f), "[te)xt");
+
+    assert_eq!(apply_sel("lin#e1\nline2\nli#ne3", f), "[lin)e1\nli[ne2\nli)ne3");
+    assert_eq!(apply_sel("lin#e1\nline2\nli#ne3\n#", f), "[lin)e1\nli[ne2\nli)[ne3\n)");
+}

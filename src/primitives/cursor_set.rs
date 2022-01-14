@@ -22,6 +22,7 @@ use std::collections::{HashMap, HashSet};
 use std::slice::Iter;
 
 use log::error;
+use stderrlog::new;
 
 use crate::text::buffer::Buffer;
 
@@ -107,7 +108,12 @@ impl Cursor {
         }
 
         match self.s {
-            None => { self.s = Some(Selection::new(old_pos, new_pos)); },
+            None => {
+                self.s = Some(Selection::new(
+                    usize::min(old_pos, new_pos),
+                    usize::max(old_pos, new_pos),
+                ))
+            },
             Some(sel) => {
                 /* and here'd be dragons:
                    so I need to cover a following scenario:
