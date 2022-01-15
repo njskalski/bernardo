@@ -126,7 +126,6 @@ impl Cursor {
                        [  ]
                    So shift initially engaged at middle position, then user moved left while holding
                    it, then decided to go right. In this scenario, selection shrinks.
-                   Here is where I use the invariant that
                 */
 
                 debug_assert!(old_pos == sel.b || old_pos == sel.e);
@@ -135,8 +134,8 @@ impl Cursor {
                     self.s = Some(Selection::new(new_pos, sel.e));
                     return;
                 }
-                if sel.e == old_pos + 1 {
-                    self.s = Some(Selection::new(sel.b, new_pos + 1));
+                if sel.e == old_pos {
+                    self.s = Some(Selection::new(sel.b, new_pos));
                     return;
                 }
                 error!("invariant that selection begins or ends with anchor broken.");
@@ -434,6 +433,9 @@ impl CursorSet {
 
         for mut c in &mut self.set {
             //getting data
+            if !selecting {
+                c.clear_selection();
+            }
 
             let cur_line_idx = match rope.char_to_line(c.a) {
                 Some(line) => line,
@@ -518,10 +520,6 @@ impl CursorSet {
             };
 
             let new_line_num_chars = last_char_in_new_line_idx + 1 - new_line_begin;
-
-            //setting data
-
-            c.clear_selection();
 
             if let Some(preferred_column) = c.preferred_column {
                 debug_assert!(preferred_column >= current_col_idx);
