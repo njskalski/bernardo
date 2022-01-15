@@ -287,6 +287,8 @@ impl Cursor {
             self.update_select(old_pos, self.a);
         };
 
+        debug_assert!(old_pos >= self.a);
+
         old_pos != self.a
     }
 
@@ -312,6 +314,8 @@ impl Cursor {
         if selecting {
             self.update_select(old_pos, self.a);
         }
+
+        debug_assert!(old_pos <= self.a);
 
         old_pos != self.a
     }
@@ -898,7 +902,7 @@ impl CursorSet {
                     // it's a little easier because I know from above sorts, that curr.a < next.a
                     if curr_s.b < prev_s.e {
                         curr_s.b = prev_s.e;
-                        curr.a = prev_s.e;
+                        debug_assert!(curr.a == curr_s.e);
                     }
                 }
                 _ => {}
@@ -947,16 +951,9 @@ impl CursorSet {
             buffer,
             selecting,
             &|idx: usize| -> bool {
-                println!("i: {} c: {:?}", idx, buffer.char_at(idx));
                 match buffer.char_at(idx) {
-                    None => {
-                        println!("f");
-                        false
-                    },
-                    Some(ch) => {
-                        println!("{}", !ch.is_whitespace());
-                        !ch.is_whitespace()
-                    }
+                    None => false,
+                    Some(ch) => !ch.is_whitespace()
                 }
             },
         )

@@ -110,7 +110,7 @@ fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
     let lone_cursors: HashSet<usize> = cs.set().iter().filter(|c| c.s.is_none()).map(|c| c.a).collect();
 
     for idx in (0..colors.len()).rev() {
-        println!("{}: ci {:?} cc {:?} output {}", idx, colors[idx], current_cursor_idx, output);
+        // println!("{}: ci {:?} cc {:?} output {}", idx, colors[idx], current_cursor_idx, output);
 
         match (colors[idx], current_cursor_idx) {
             (Some(cursor_idx), None) => {
@@ -141,7 +141,7 @@ fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
     }
 
 
-    println!("after : cc {:?} output {}", current_cursor_idx, output);
+    // println!("after : cc {:?} output {}", current_cursor_idx, output);
 
     // handling cursor starting in 0
     match current_cursor_idx {
@@ -341,4 +341,73 @@ fn arrow_down_2() {
     assert_eq!(apply_sel("li#ne1\nline2\nline3", f), "li(ne1\nli]ne2\nline3");
     assert_eq!(apply_sel("li(ne1\nli]ne2\nline3", f), "li(ne1\nline2\nli]ne3");
     assert_eq!(apply_sel("li(ne1\nline2\nli]ne3", f), "li(ne1\nline2\nline3]");
+}
+
+#[test]
+fn single_cursor_word_begin_with_selection() {
+    let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, bs: &dyn Buffer| {
+        c.word_begin_default(bs, true);
+    };
+
+    let progress = vec![
+        "ala ma ko#ta",
+        "ala ma [ko)ta",
+        "ala ma[ ko)ta",
+        "ala [ma ko)ta",
+        "ala[ ma ko)ta",
+        "[ala ma ko)ta",
+        "[ala ma ko)ta",
+    ];
+
+    for i in 0..progress.len() - 1 {
+        assert_eq!(apply_sel(progress[i], f), progress[i + 1], "i: {}", i);
+    }
+}
+
+#[test]
+fn single_cursor_word_end_with_selection() {
+    let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, bs: &dyn Buffer| {
+        c.word_end_default(bs, true);
+    };
+
+    let progress = vec![
+        "al#a ma kota",
+        "al(a] ma kota",
+        "al(a ]ma kota",
+        "al(a ma] kota",
+        "al(a ma ]kota",
+        "al(a ma kota]",
+        "al(a ma kota]",
+    ];
+
+    for i in 0..progress.len() - 1 {
+        assert_eq!(apply_sel(progress[i], f), progress[i + 1], "i: {}", i);
+    }
+}
+
+#[test]
+fn multiple_cursors_word_end_with_selection() {
+    let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, bs: &dyn Buffer| {
+        c.word_end_default(bs, true);
+    };
+
+    let progress = vec![
+        "ala ma ko#ta\nkot ma# ale\npies sp#i\n#",
+        "ala ma ko(ta]\nkot ma( ]ale\npies sp(i]\n#",
+        "ala ma ko(ta\n]kot ma( ale]\npies sp(i\n]",
+        "ala ma ko(ta\nkot] ma( ale\n]pies sp(i\n]",
+        "ala ma ko(ta\nkot ]ma( ale\npies] sp(i\n]",
+        "ala ma ko(ta\nkot ma]( ale\npies ]sp(i\n]",
+        "ala ma ko(ta\nkot ma ](ale\npies spi](\n]",
+        "ala ma ko(ta\nkot ma ale](\npies spi\n]",
+        "ala ma ko(ta\nkot ma ale\n](pies spi\n]",
+        "ala ma ko(ta\nkot ma ale\npies]( spi\n]",
+        "ala ma ko(ta\nkot ma ale\npies ](spi\n]",
+        "ala ma ko(ta\nkot ma ale\npies spi](\n]",
+        "ala ma ko(ta\nkot ma ale\npies spi\n]",
+    ];
+
+    for i in 0..progress.len() - 1 {
+        assert_eq!(apply_sel(progress[i], f), progress[i + 1], "i: {}", i);
+    }
 }
