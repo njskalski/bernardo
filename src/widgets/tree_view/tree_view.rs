@@ -4,6 +4,7 @@ use std::hash::Hash;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
+use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::input_event::InputEvent;
@@ -268,6 +269,7 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
                 break;
             }
 
+            // TODO this I think can be skipped
             match output.size_constraint().y() {
                 Some(y) => if idx >= y as usize {
                     debug!("idx {}, output.size().y {}", idx, output.size_constraint());
@@ -275,7 +277,6 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
                 }
                 None => {}
             }
-
 
             let style = if idx == self.highlighted {
                 cursor_style
@@ -295,11 +296,29 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
 
             let text = format!("{} {}", prefix, node.label());
 
-            output.print_at(
-                XY::new(depth * 2, idx as u16), // TODO idx in u16
-                style,
-                text.as_str(),
-            );
+            for (x_offset, g) in text.graphemes(true).enumerate()
+                .skip(output.size_constraint().hint().upper_left().x as usize) // this is cutting left
+                .into_iter() {
+                let desired_pos_x: usize = depth as usize * 2 + x_offset;
+                if desired_pos_x > u16::MAX as usize {
+                    error!("skipping drawing beyond x = u16::MAX");
+                    break;
+                }
+
+                let x = desired_pos_x as u16;
+                if x >= output.size_constraint().hint().lower_right().x {
+                    break;
+                }
+
+                // This is fine, because idx is proved to be within output constraints, which by definition are u16.
+                let y = idx as u16;
+
+                output.print_at(
+                    XY::new(x, y),
+                    style,
+                    g,
+                )
+            }
         }
     }
 
