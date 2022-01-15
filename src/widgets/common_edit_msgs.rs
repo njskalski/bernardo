@@ -1,10 +1,12 @@
 use log::{debug, error};
 
-
 use crate::io::keys::Key;
 use crate::Keycode;
-use crate::primitives::cursor_set::{CursorSet};
+use crate::primitives::cursor_set::CursorSet;
 use crate::text::buffer::Buffer;
+
+// this is a completely arbitrary number against which I compare Page length, to avoid under/overflow while casting to isize safely.
+const PAGE_HEIGHT_LIMIT: usize = 2000;
 
 #[derive(Debug, Clone, Copy)]
 pub enum CommonEditMsg {
@@ -70,8 +72,7 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
 }
 
 // Returns FALSE if the command results in no-op.
-// TODO the result is mocked, not implemented properly
-pub fn apply_cme(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer) -> bool {
+pub fn apply_cme(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, page_height: usize) -> bool {
     match cem {
         CommonEditMsg::Char(char) => {
             for c in cs.iter() {
@@ -84,24 +85,19 @@ pub fn apply_cme(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer) 
                 rope.insert_char(c.a, char);
             };
 
-            cs.move_right_by(rope, 1, false);
-            true //TODO single cursor should return false on impossible
+            cs.move_right_by(rope, 1, false)
         }
         CommonEditMsg::CursorUp { selecting } => {
-            cs.move_vertically_by(rope, -1, selecting);
-            true//TODO single cursor should return false on impossible
+            cs.move_vertically_by(rope, -1, selecting)
         }
         CommonEditMsg::CursorDown { selecting } => {
-            cs.move_vertically_by(rope, 1, selecting);
-            true//TODO single cursor should return false on impossible
+            cs.move_vertically_by(rope, 1, selecting)
         }
         CommonEditMsg::CursorLeft { selecting } => {
-            cs.move_left(selecting);
-            true//TODO single cursor should return false on impossible
+            cs.move_left(selecting)
         }
         CommonEditMsg::CursorRight { selecting } => {
-            cs.move_right(rope, selecting);
-            true
+            cs.move_right(rope, selecting)
         }
         CommonEditMsg::Backspace => {
             cs.backspace(rope)
@@ -112,11 +108,42 @@ pub fn apply_cme(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer) 
         CommonEditMsg::LineEnd { selecting } => {
             cs.end(rope, selecting)
         }
-        // CommonEditMsg::WordBegin { selecting } => {}
-        // CommonEditMsg::WordEnd { selecting } => {}
-        // CommonEditMsg::PageUp => {}
-        // CommonEditMsg::PageDown => {}
-        // CommonEditMsg::Delete => {}
+        CommonEditMsg::WordBegin { selecting } => {
+            cs.word_begin_default(rope, selecting)
+        }
+        CommonEditMsg::WordEnd { selecting } => {
+            cs.word_end_default(rope, selecting)
+        }
+        CommonEditMsg::PageUp { selecting } => {
+            if page_height > PAGE_HEIGHT_LIMIT {
+                error!("received PageUp of page_height {}, ignoring.", page_height);
+                false
+            } else {
+                cs.move_vertically_by(rope, -(page_height as isize), selecting)
+            }
+        }
+        CommonEditMsg::PageDown { selecting } => {
+            if page_height > PAGE_HEIGHT_LIMIT {
+                error!("received PageDown of page_height {}, ignoring.", page_height);
+                false
+            } else {
+                cs.move_vertically_by(rope, page_height as isize, selecting)
+            }
+        }
+        CommonEditMsg::Delete => {
+            let mut res = false;
+            for c in cs.iter() {
+                if cfg!(debug_assertions) {
+                    if c.a > rope.len_chars() {
+                        error!("cursor beyond length of rope: {} > {}", c.a, rope.len_chars());
+                    }
+                }
+
+                res |= rope.remove(c.a, c.a + 1);
+            };
+
+            res
+        }
         e => {
             debug!("unhandled common edit msg {:?}", e);
             false

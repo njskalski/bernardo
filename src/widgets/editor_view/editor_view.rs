@@ -1,5 +1,4 @@
-use log::warn;
-
+use log::{error, warn};
 
 use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, Widget};
 use crate::primitives::cursor_set::{CursorSet, CursorStatus};
@@ -19,6 +18,8 @@ pub struct EditorView {
     wid: WID,
     cursors: CursorSet,
 
+    last_size: Option<XY>,
+
     todo_text: BufferState,
 }
 
@@ -27,6 +28,7 @@ impl EditorView {
         EditorView {
             wid: get_new_widget_id(),
             cursors: CursorSet::single(),
+            last_size: None,
             todo_text: BufferState::new(),
         }
     }
@@ -46,7 +48,10 @@ impl Widget for EditorView {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        sc.hint().size
+        let size = sc.hint().size;
+        self.last_size = Some(size);
+
+        size
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -69,7 +74,16 @@ impl Widget for EditorView {
             }
             Some(msg) => match msg {
                 EditorViewMsg::EditMsg(cem) => {
-                    let _noop = apply_cme(*cem, &mut self.cursors, &mut self.todo_text);
+                    let page_height = match self.last_size {
+                        Some(xy) => xy.y,
+                        None => {
+                            error!("received {:?} before retrieving last_size, using {} as page_height instead", cem, MIN_EDITOR_SIZE.y);
+                            MIN_EDITOR_SIZE.y
+                        }
+                    };
+
+                    // page_height as usize is safe, since page_height is u16 and usize is larger.
+                    let _noop = apply_cme(*cem, &mut self.cursors, &mut self.todo_text, page_height as usize);
                     None
                 }
                 _ => {
