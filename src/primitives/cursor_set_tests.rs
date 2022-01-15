@@ -496,15 +496,30 @@ fn single_cursor_move_up_by_some() {
         );
 
         let new_text = concat!(
-            "#there was a man\n",
-            "called paul\n",
-            "w#ho went to a fancy\n",
-            "dress ball#\n",
-            "he just went for fun\n",
-            "dressed up as bone\n",
-            "and dog eat him up in the hall.\n"
+        "#there was a man\n",
+        "called paul\n",
+        "w#ho went to a fancy\n",
+        "dress ball#\n",
+        "he just went for fun\n",
+        "dressed up as bone\n",
+        "and dog eat him up in the hall.\n"
         );
 
         assert_eq!(apply(text, f), new_text);
     }
+}
+
+
+#[test]
+fn single_cursor_to_move_up_bug_1() {
+    let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
+        c.move_vertically_by(bs, -1, false);
+        c.move_vertically_by(bs, -1, false);
+        c.move_vertically_by(bs, -1, false);
+    };
+
+    let x = "asdf\nasd\n\ndsafsdf\nfdsafds#";
+    let y = "asdf\nasd#\n\ndsafsdf\nfdsafds";
+
+    assert_eq!(apply(x, f), y);
 }

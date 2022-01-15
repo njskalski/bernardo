@@ -522,15 +522,15 @@ impl CursorSet {
             let new_line_num_chars = last_char_in_new_line_idx + 1 - new_line_begin;
 
             if let Some(preferred_column) = c.preferred_column {
-                debug_assert!(preferred_column >= current_col_idx);
+                // debug_assert!(preferred_column >= current_col_idx);
 
                 let old_pos = c.a;
 
-                if preferred_column <= new_line_num_chars {
+                if preferred_column <= (new_line_num_chars - NEWLINE_LENGTH) {
                     c.clear_pc();
                     c.a = new_line_begin + preferred_column;
                 } else {
-                    c.a = new_line_begin + new_line_num_chars;
+                    c.a = new_line_begin + new_line_num_chars - NEWLINE_LENGTH;
                 }
 
                 if selecting {
