@@ -2,7 +2,10 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::ops::Add;
 
+use crate::primitives::xy;
 use crate::primitives::xy::XY;
+
+pub const ZERO_RECT: Rect = Rect::new(xy::ZERO, xy::ZERO);
 
 #[derive(Clone, Copy, Debug)]
 pub struct Rect {
@@ -89,6 +92,32 @@ impl Rect {
 
     pub fn corners(&self) -> CornersIterator {
         CornersIterator::new(*self)
+    }
+
+    // This will expand the Rect, that it contains xy.
+    // Since lower-right is exclusive invariant holds: self.lower_right() > xy after this operation.
+    pub fn expand_to_contain(&mut self, xy: XY) {
+        if self.pos.x > xy.x {
+            self.pos.x = xy.x;
+        }
+        if self.pos.y > xy.y {
+            self.pos.y = xy.y;
+        }
+
+        // at this point we know, that self.pos.x <= xy.x and self.pos.y <= xy.y . We will use that
+        // to avoid underflow errors.
+        if self.lower_right().x <= xy.x && xy.x < u16::MAX {
+            //even if self.pos.x == 0, xy.x < u16::MAX, so I can add safely
+            self.size.x = xy.x - self.pos.x + 1;
+        }
+
+        if self.lower_right().y <= xy.y && xy.y < u16::MAX {
+            //even if self.pos.x == 0, xy.x < u16::MAX, so I can add safely
+            self.size.y = xy.y - self.pos.y + 1;
+        }
+
+        debug_assert!(self.lower_right().x > xy.x || xy.x == u16::MAX);
+        debug_assert!(self.lower_right().y > xy.y || xy.y == u16::MAX);
     }
 }
 

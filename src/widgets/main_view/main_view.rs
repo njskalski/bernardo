@@ -5,13 +5,13 @@ use std::path::{Path, PathBuf};
 use log::{debug, error, warn};
 
 use crate::{AnyMsg, InputEvent, LocalFilesystemProvider, Output, SizeConstraint, Theme, Widget};
-use crate::experiments::scroll::ScrollDirection;
 use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
 use crate::io::sub_output::SubOutput;
 use crate::layout::cached_sizes::DisplayState;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::widget::widget::{get_new_widget_id, WID};
@@ -29,7 +29,7 @@ pub struct MainView {
     fs: Box<dyn FilesystemProvider>,
     tree_widget: WithScroll<TreeViewWidget<PathBuf>>,
     no_editor: NoEditorWidget,
-    editor: Option<EditorView>,
+    editor: Option<WithScroll<EditorView>>,
 }
 
 impl MainView {
@@ -62,7 +62,7 @@ impl MainView {
 
     pub fn with_empty_editor(self) -> Self {
         MainView {
-            editor: Some(EditorView::new()),
+            editor: Some(WithScroll::new(EditorView::new(), ScrollDirection::Both)),
             ..self
         }
     }
@@ -95,7 +95,11 @@ impl MainView {
 
         match self.fs.todo_read_file(path) {
             Ok(buffer_state) => {
-                self.editor = Some(EditorView::new().with_buffer(buffer_state));
+                self.editor = Some(
+                    WithScroll::new(
+                        EditorView::new().with_buffer(buffer_state),
+                        ScrollDirection::Both,
+                    ));
                 true
             }
             Err(_) => {

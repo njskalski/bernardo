@@ -259,15 +259,13 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
         helpers::fill_output(primary_style.background, output);
         let cursor_style = theme.cursor().maybe_half(focused);
 
-        for (idx, (depth, node)) in self.items().enumerate() {
+        for (idx, (depth, node)) in self.items().enumerate()
             // skipping lines that cannot be visible, because they are before hint()
-            if idx < output.size_constraint().hint().upper_left().y as usize {
-                continue;
-            }
+            .skip(output.size_constraint().hint().upper_left().y as usize) {
 
             // skipping lines that cannot be visible, because larger than the hint()
             if idx >= output.size_constraint().hint().lower_right().y as usize {
-                continue;
+                break;
             }
 
             match output.size_constraint().y() {

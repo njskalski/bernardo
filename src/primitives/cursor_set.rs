@@ -26,6 +26,8 @@ use crossbeam_channel::select;
 use log::{debug, error, warn};
 use stderrlog::new;
 
+use crate::primitives::rect::Rect;
+use crate::primitives::xy::ZERO;
 use crate::text::buffer::Buffer;
 
 const NEWLINE_LENGTH: usize = 1; // TODO(njskalski): add support for multisymbol newlines?

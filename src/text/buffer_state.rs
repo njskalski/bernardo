@@ -1,6 +1,10 @@
+use std::borrow::Borrow;
+
 use log::{error, warn};
 use ropey::Rope;
+use tree_sitter::Tree;
 
+use crate::experiments::try_parse::try_parsing_rust;
 use crate::text::buffer::Buffer;
 
 #[derive(Clone, Debug)]
@@ -9,6 +13,8 @@ pub struct BufferState {
 
     history: Vec<Rope>,
     forward_history: Vec<Rope>,
+
+    todo_parse_tree: Option<tree_sitter::Tree>,
 }
 
 impl BufferState {
@@ -17,14 +23,24 @@ impl BufferState {
             text: Rope::new(),
             history: vec![],
             forward_history: vec![],
+            todo_parse_tree: None,
         }
     }
 
     pub fn with_text_from_string<'a, T: Into<&'a str>>(self, text: T) -> BufferState {
-        BufferState {
+        let mut res = BufferState {
             text: Rope::from_str(text.into()),
             ..self
-        }
+        };
+
+        match try_parsing_rust(res.text.to_string().as_str()) {
+            None => {}
+            Some(tree) => {
+                res.todo_parse_tree = Some(tree)
+            }
+        };
+
+        res
     }
 
     fn clone_top(&mut self) {

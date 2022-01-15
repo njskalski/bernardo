@@ -1,9 +1,4 @@
-
-
-
-use crate::experiments::scroll::ScrollDirection::{Both, Vertical};
-
-
+use crate::primitives::scroll::ScrollDirection::{Both, Vertical};
 use crate::primitives::xy::{XY, ZERO};
 
 #[derive(PartialEq, Eq)]

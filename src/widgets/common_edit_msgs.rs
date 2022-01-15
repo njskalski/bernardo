@@ -2,6 +2,7 @@ use log::{debug, error};
 
 use crate::io::keys::Key;
 use crate::Keycode;
+use crate::primitives::arrow::Arrow;
 use crate::primitives::cursor_set::CursorSet;
 use crate::text::buffer::Buffer;
 
@@ -148,5 +149,25 @@ pub fn apply_cme(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, 
             debug!("unhandled common edit msg {:?}", e);
             false
         }
+    }
+}
+
+// This maps a cme into a direction that the cursor has (probably) moved. It's used to update
+// scrolling information.
+pub fn cme_to_direction(cme: CommonEditMsg) -> Option<Arrow> {
+    match cme {
+        CommonEditMsg::Char(_) => Some(Arrow::Right),
+        CommonEditMsg::CursorUp { .. } => Some(Arrow::Up),
+        CommonEditMsg::CursorDown { .. } => Some(Arrow::Down),
+        CommonEditMsg::CursorLeft { .. } => Some(Arrow::Left),
+        CommonEditMsg::CursorRight { .. } => Some(Arrow::Right),
+        CommonEditMsg::Backspace => Some(Arrow::Left),
+        CommonEditMsg::LineBegin { .. } => Some(Arrow::Left),
+        CommonEditMsg::LineEnd { .. } => Some(Arrow::Right),
+        CommonEditMsg::WordBegin { .. } => Some(Arrow::Left),
+        CommonEditMsg::WordEnd { .. } => Some(Arrow::Right),
+        CommonEditMsg::PageUp { .. } => Some(Arrow::Up),
+        CommonEditMsg::PageDown { .. } => Some(Arrow::Down),
+        CommonEditMsg::Delete => None,
     }
 }
