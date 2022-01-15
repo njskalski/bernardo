@@ -299,19 +299,14 @@ impl Cursor {
         let mut first_move = true;
 
         if self.a < buffer.len_chars() {
-            if word_determinant(self.a + 1) {
+            if word_determinant(self.a) {
                 // variant within the word
-                while self.a < buffer.len_chars() && word_determinant(self.a + 1) {
+                while self.a < buffer.len_chars() && word_determinant(self.a) {
                     self.a += 1;
                 }
             } else {
                 self.a += 1;
             }
-        }
-
-        while self.a < buffer.len_chars() && (word_determinant(self.a) || first_move) {
-            self.a += 1;
-            first_move = false;
         }
 
         if selecting {
@@ -939,16 +934,9 @@ impl CursorSet {
         self.word_begin(
             selecting,
             &|idx: usize| -> bool {
-                println!("i: {} c: {:?}", idx, buffer.char_at(idx));
                 match buffer.char_at(idx) {
-                    None => {
-                        println!("f");
-                        false
-                    },
-                    Some(ch) => {
-                        println!("{}", !ch.is_whitespace());
-                        !ch.is_whitespace()
-                    }
+                    None => false,
+                    Some(ch) => !ch.is_whitespace()
                 }
             },
         )
@@ -959,9 +947,16 @@ impl CursorSet {
             buffer,
             selecting,
             &|idx: usize| -> bool {
+                println!("i: {} c: {:?}", idx, buffer.char_at(idx));
                 match buffer.char_at(idx) {
-                    None => false,
-                    Some(ch) => !ch.is_whitespace()
+                    None => {
+                        println!("f");
+                        false
+                    },
+                    Some(ch) => {
+                        println!("{}", !ch.is_whitespace());
+                        !ch.is_whitespace()
+                    }
                 }
             },
         )

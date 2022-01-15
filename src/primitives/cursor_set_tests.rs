@@ -576,3 +576,56 @@ fn multiple_cursors_word_begin() {
         assert_eq!(apply(progress[i], f), progress[i + 1], "i: {}", i);
     }
 }
+
+#[test]
+fn single_cursor_word_end() {
+    let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
+        c.word_end_default(bs, false);
+    };
+
+    let progress = vec![
+        "al#a ma kota",
+        "ala# ma kota",
+        "ala #ma kota",
+        "ala ma# kota",
+        "ala ma #kota",
+        "ala ma kota#",
+        "ala ma kota#",
+        "ala ma kota#",
+    ];
+
+    for i in 0..progress.len() - 1 {
+        assert_eq!(apply(progress[i], f), progress[i + 1], "i: {}", i);
+    }
+}
+
+// #[test]
+// fn multiple_cursors_word_end() {
+//     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
+//         c.word_end_default(bs, false);
+//     };
+//
+//     let progress = vec![
+//         "ala ma ko#ta\nkot ma# ale\npies sp#i\n#",
+//         "ala ma #kota\nkot #ma ale\npies #spi#\n",
+//         "ala ma# kota\nkot# ma ale\npies# #spi\n",
+//         "ala #ma kota\n#kot ma ale\n#pies# spi\n",
+//         "ala# ma kota#\nkot ma ale#\n#pies spi\n",
+//         "#ala ma #kota\nkot ma #ale#\npies spi\n",
+//         "#ala ma# kota\nkot ma# #ale\npies spi\n",
+//         "#ala #ma kota\nkot #ma# ale\npies spi\n",
+//         "#ala# ma kota\nkot# #ma ale\npies spi\n",
+//         "#ala ma kota\n#kot# ma ale\npies spi\n",
+//         "#ala ma kota#\n#kot ma ale\npies spi\n",
+//         "#ala ma #kota#\nkot ma ale\npies spi\n",
+//         "#ala ma# #kota\nkot ma ale\npies spi\n",
+//         "#ala #ma# kota\nkot ma ale\npies spi\n",
+//         "#ala# #ma kota\nkot ma ale\npies spi\n",
+//         "#ala# ma kota\nkot ma ale\npies spi\n",
+//         "#ala ma kota\nkot ma ale\npies spi\n",
+//     ];
+//
+//     for i in 0..progress.len() - 1 {
+//         assert_eq!(apply(progress[i], f), progress[i + 1], "i: {}", i);
+//     }
+// }
