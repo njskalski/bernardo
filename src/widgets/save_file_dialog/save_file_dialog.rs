@@ -8,14 +8,14 @@ this widget is supposed to offer:
 I hope I will discover most of functional constraints while implementing it.
  */
 
-use std::borrow::{Borrow};
+use std::borrow::Borrow;
 use std::fmt::Debug;
 use std::path::PathBuf;
 
 use log::{debug, warn};
 
 use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
-use crate::experiments::scroll::{ScrollDirection};
+use crate::experiments::scroll::ScrollDirection;
 use crate::io::filesystem_tree::filesystem_list_item::FilesystemListItem;
 use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
 use crate::io::input_event::InputEvent;
@@ -30,13 +30,14 @@ use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::list_widget::ListWidget;
-
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::tree_view::tree_view_node::ChildRc;
 use crate::widgets::with_scroll::WithScroll;
+
+// TODO now it displays both files and directories in tree view, it should only directories
 
 pub struct SaveFileDialogWidget {
     id: WID,

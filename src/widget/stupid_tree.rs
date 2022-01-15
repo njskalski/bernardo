@@ -1,6 +1,3 @@
-
-
-
 use std::rc::Rc;
 
 use crate::widgets::tree_view::tree_view_node::{ChildRc, TreeViewNode};
@@ -97,6 +94,7 @@ pub fn get_stupid_tree() -> Rc<dyn TreeViewNode<usize>> {
                     StupidTree::new(20003, vec![StupidTree::new(2000301, vec![])]),
                 ],
             ),
+            StupidTree::new(4, vec![]),
             StupidTree::new(4, stupid_subtree),
         ],
     );
