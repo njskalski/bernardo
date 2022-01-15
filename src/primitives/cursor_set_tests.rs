@@ -221,7 +221,6 @@ fn one_cursor_move_left_some() {
 fn multiple_cursor_move_left() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, _| {
         c.move_left(false);
-        c.reduce();
     };
 
     assert_eq!(apply("te#x#t", f), "t#e#xt");
@@ -233,7 +232,6 @@ fn multiple_cursor_move_left() {
 fn multiple_cursor_move_left_some() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, _| {
         c.move_left_by(3, false);
-        c.reduce();
     };
 
     assert_eq!(apply("te#x#t", f), "#text");
@@ -245,7 +243,6 @@ fn multiple_cursor_move_left_some() {
 fn one_cursor_move_right() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
         c.move_right(bs, false);
-        c.reduce();
     };
 
     assert_eq!(apply("text", f), "text");
@@ -259,7 +256,6 @@ fn one_cursor_move_right() {
 fn one_cursor_move_right_some() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
         c.move_right_by(bs, 3, false);
-        c.reduce();
     };
 
     assert_eq!(apply("text", f), "text");
@@ -273,7 +269,6 @@ fn one_cursor_move_right_some() {
 fn multiple_cursor_move_right() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
         c.move_right(bs, false);
-        c.reduce();
     };
 
     assert_eq!(apply("te#x#t", f), "tex#t#");
@@ -286,7 +281,6 @@ fn multiple_cursor_move_right() {
 fn multiple_cursor_move_right_some() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
         c.move_right_by(bs, 3, false);
-        c.reduce();
     };
 
     assert_eq!(apply("te#x#t", f), "text#");
@@ -299,7 +293,6 @@ fn multiple_cursor_move_right_some() {
 fn single_cursor_move_down_by_1() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
         c.move_vertically_by(bs, 1, false);
-        c.reduce();
     };
 
     // noop
@@ -329,7 +322,6 @@ fn single_cursor_move_down_by_1() {
 fn single_cursor_move_down_by_2() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
         c.move_vertically_by(bs, 2, false);
-        c.reduce();
     };
 
     // moving down the line
@@ -369,7 +361,6 @@ fn single_cursor_move_down_by_2() {
 fn single_cursor_move_down_by_some() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
         c.move_vertically_by(bs, 3, false);
-        c.reduce();
     };
 
     {
@@ -425,7 +416,6 @@ fn single_cursor_move_down_by_some() {
 fn single_cursor_move_up_by_1() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
         c.move_vertically_by(bs, -1, false);
-        c.reduce();
     };
 
     // noop
@@ -455,7 +445,6 @@ fn single_cursor_move_up_by_1() {
 fn single_cursor_move_up_by_2() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
         c.move_vertically_by(bs, -2, false);
-        c.reduce();
     };
 
     assert_eq!(apply("aaaa\nbbbb\ncc#cc", f), "aa#aa\nbbbb\ncccc");
@@ -493,7 +482,6 @@ fn single_cursor_move_up_by_2() {
 fn single_cursor_move_up_by_some() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
         c.move_vertically_by(bs, -3, false);
-        c.reduce();
     };
 
     {

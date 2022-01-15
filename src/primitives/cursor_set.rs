@@ -355,6 +355,8 @@ impl CursorSet {
             }
         }
 
+        self.new_reduce_left();
+
         res
     }
 
@@ -387,7 +389,6 @@ impl CursorSet {
             };
         }
 
-        // TODO test
         if selecting {
             // we will test for overlaps, and cut them. Since this is a move right, we cut a piece
             // from left side. I proceed in reverse order, so if setting selection to None I don't
@@ -411,6 +412,8 @@ impl CursorSet {
                 }
             }
         }
+
+        self.new_reduce_right();
 
         res
     }
@@ -573,32 +576,6 @@ impl CursorSet {
         }
 
         res
-    }
-
-    /// TODO(njskalski): how to reduce selections? Overlapping selections?
-    /// TODO(njskalski): it would make a sense not to reduce cursors that have identical .a but different .preferred_column.
-    /// Yet we want not to put characters twice for overlapping cursors.
-    pub fn reduce(&mut self) {
-        let _curs: HashSet<usize> = HashSet::new();
-
-        //        dbg!(&self.set);
-
-        let mut old_curs: Vec<Cursor> = vec![];
-        std::mem::swap(&mut old_curs, &mut self.set);
-
-        for c in &old_curs {
-            let mut found = false;
-            for oc in &self.set {
-                if c.a == oc.a {
-                    found = true;
-                    break;
-                }
-            }
-
-            if !found {
-                self.set.push(c.clone());
-            }
-        }
     }
 
     pub fn get_cursor_status_for_char(&self, char_idx: usize) -> CursorStatus {
