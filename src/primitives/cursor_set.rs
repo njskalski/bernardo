@@ -355,7 +355,7 @@ impl CursorSet {
             }
         }
 
-        self.new_reduce_left();
+        self.reduce_left();
 
         res
     }
@@ -413,7 +413,7 @@ impl CursorSet {
             }
         }
 
-        self.new_reduce_right();
+        self.reduce_right();
 
         res
     }
@@ -570,9 +570,9 @@ impl CursorSet {
         }
 
         if l < 0 {
-            self.new_reduce_left();
+            self.reduce_left();
         } else {
-            self.new_reduce_right();
+            self.reduce_right();
         }
 
         res
@@ -616,7 +616,7 @@ impl CursorSet {
             res |= c.home(rope, selecting);
         };
 
-        self.new_reduce_left();
+        self.reduce_left();
 
         res
     }
@@ -635,7 +635,7 @@ impl CursorSet {
         };
 
         // reducing - we just pick ones that are furthest left
-        self.new_reduce_right();
+        self.reduce_right();
 
         res
     }
@@ -667,7 +667,7 @@ impl CursorSet {
             c.a = b;
         }
 
-        self.new_reduce_left();
+        self.reduce_left();
 
         res
     }
@@ -704,7 +704,7 @@ impl CursorSet {
     // When two anchors collide, keeps the one with longer selection.
     // When anchors are different, but selections overlap, I SHORTEN THE EARLIER SELECTION, because
     // I assume there have been a move LEFT with selection on.
-    fn new_reduce_left(&mut self) {
+    fn reduce_left(&mut self) {
         if self.set.len() == 1 {
             return;
         }
@@ -771,7 +771,7 @@ impl CursorSet {
     // When two anchors collide, keeps the one with longer selection.
     // When anchors are different, but selections overlap, I SHORTEN THE LATER SELECTION, because
     // I assume there have been a move RIGHT with selection on.
-    fn new_reduce_right(&mut self) {
+    fn reduce_right(&mut self) {
         if self.set.len() == 1 {
             return;
         }
