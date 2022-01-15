@@ -22,7 +22,8 @@
 use std::collections::{HashMap, HashSet};
 use std::slice::Iter;
 
-use log::{error, warn};
+use crossbeam_channel::select;
+use log::{debug, error, warn};
 use stderrlog::new;
 
 use crate::text::buffer::Buffer;
@@ -157,7 +158,7 @@ impl Cursor {
                     } else {
                         self.s = None;
                     }
-                    
+
                     return;
                 }
                 error!("invariant that selection begins or ends with anchor broken. Not crashing, but fix it.");
@@ -262,16 +263,28 @@ impl Cursor {
 
     // Returns FALSE on noop.
     // word_determinant should return FALSE when word ends, and TRUE while it continues.
-    fn word_begin(&mut self, selecting: bool, word_determinant: fn(idx: usize) -> bool) -> bool {
+    fn word_begin<F: Fn(usize) -> bool>(&mut self, selecting: bool, word_determinant: F) -> bool {
         if self.a == 0 {
             return false;
         }
 
         let old_pos = self.a;
 
-        while self.a > 0 && word_determinant(self.a) {
-            self.a -= 1;
+        if self.a > 0 {
+            if word_determinant(self.a - 1) {
+                // case when cursor is within a word
+                println!("l {}", self.a);
+                while self.a > 0 && word_determinant(self.a - 1) {
+                    self.a -= 1;
+                }
+                println!("e {}", self.a);
+            } else {
+                println!("s");
+                // otherwise we do just one step.
+                self.a -= 1; //safe to do, we checked it's > 0.
+            }
         }
+
 
         if selecting {
             self.update_select(old_pos, self.a);
@@ -280,15 +293,17 @@ impl Cursor {
         old_pos != self.a
     }
 
-    fn word_end(&mut self, buffer: &dyn Buffer, selecting: bool, word_determinant: fn(idx: usize) -> bool) -> bool {
+    fn word_end<F: Fn(usize) -> bool>(&mut self, buffer: &dyn Buffer, selecting: bool, word_determinant: F) -> bool {
         if self.a == buffer.len_chars() {
             return false;
         }
 
         let old_pos = self.a;
+        let mut first_move = true;
 
-        while self.a < buffer.len_chars() && word_determinant(self.a) {
+        while self.a < buffer.len_chars() && (word_determinant(self.a) || first_move) {
             self.a += 1;
+            first_move = false;
         }
 
         if selecting {
@@ -888,5 +903,59 @@ impl CursorSet {
         }
     }
 
-    // fn word_begin(&mut self, buffer: &dyn Buffer, word_end_determinant: fn() -> bool) -> bool {}
+    pub fn word_begin<F: Fn(usize) -> bool>(&mut self, selecting: bool, word_determinant: &F) -> bool {
+        let mut res = false;
+
+        for c in self.set.iter_mut() {
+            res |= c.word_begin(selecting, word_determinant);
+        }
+
+        self.reduce_left();
+
+        res
+    }
+
+    pub fn word_end<F: Fn(usize) -> bool>(&mut self, buffer: &dyn Buffer, selecting: bool, word_determinant: &F) -> bool {
+        let mut res = false;
+
+        for c in self.set.iter_mut() {
+            res |= c.word_end(buffer, selecting, word_determinant);
+        }
+
+        self.reduce_right();
+
+        res
+    }
+
+    pub fn word_begin_default(&mut self, buffer: &dyn Buffer, selecting: bool) -> bool {
+        self.word_begin(
+            selecting,
+            &|idx: usize| -> bool {
+                println!("i: {} c: {:?}", idx, buffer.char_at(idx));
+                match buffer.char_at(idx) {
+                    None => {
+                        println!("f");
+                        false
+                    },
+                    Some(ch) => {
+                        println!("{}", !ch.is_whitespace());
+                        !ch.is_whitespace()
+                    }
+                }
+            },
+        )
+    }
+
+    pub fn word_end_default(&mut self, buffer: &dyn Buffer, selecting: bool) -> bool {
+        self.word_end(
+            buffer,
+            selecting,
+            &|idx: usize| -> bool {
+                match buffer.char_at(idx) {
+                    None => false,
+                    Some(ch) => !ch.is_whitespace()
+                }
+            },
+        )
+    }
 }

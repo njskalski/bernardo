@@ -1,6 +1,3 @@
-
-
-
 use log::{error, warn};
 use ropey::Rope;
 
@@ -114,5 +111,9 @@ impl Buffer for BufferState {
                 false
             }
         }
+    }
+
+    fn char_at(&self, char_idx: usize) -> Option<char> {
+        self.text.char_at(char_idx)
     }
 }

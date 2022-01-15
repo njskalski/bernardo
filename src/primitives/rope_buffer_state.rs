@@ -52,4 +52,8 @@ impl Buffer for Rope {
             Err(_) => false,
         }
     }
+
+    fn char_at(&self, char_idx: usize) -> Option<char> {
+        self.get_char(char_idx)
+    }
 }

@@ -523,3 +523,25 @@ fn single_cursor_to_move_up_bug_1() {
 
     assert_eq!(apply(x, f), y);
 }
+
+#[test]
+fn single_cursor_word_begin() {
+    let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
+        c.word_begin_default(bs, false);
+    };
+
+    let progress = vec![
+        "ala ma ko#ta",
+        "ala ma #kota",
+        "ala ma# kota",
+        "ala #ma kota",
+        "ala# ma kota",
+        "#ala ma kota",
+        "#ala ma kota",
+        "#ala ma kota",
+    ];
+
+    for i in 0..progress.len() - 1 {
+        assert_eq!(apply(progress[i], f), progress[i + 1], "i: {}", i);
+    }
+}

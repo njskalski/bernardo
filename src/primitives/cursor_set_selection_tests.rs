@@ -256,6 +256,8 @@ fn walking_over_selection_begin() {
         "missi(si]pi",
         "missi(sip]i",
         "missi(sipi]",
+        "missi(sipi]",
+        "missi(sipi]",
     ];
 
     for i in 0..expected_process.len() - 1 {
