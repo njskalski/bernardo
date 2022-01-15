@@ -302,3 +302,14 @@ fn arrow_down_1() {
     assert_eq!(apply_sel("lin#e1\nline2\nli#ne3", f), "lin(e1\nlin]e2\nli(ne3]");
     assert_eq!(apply_sel("lin#e1\nline2\nli#ne3\n#", f), "lin(e1\nlin]e2\nli(ne3\n]");
 }
+
+#[test]
+fn arrow_down_2() {
+    let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, b: &dyn Buffer| {
+        c.move_vertically_by(b, 1, true);
+    };
+
+    assert_eq!(apply_sel("li#ne1\nline2\nline3", f), "li(ne1\nli]ne2\nline3");
+    assert_eq!(apply_sel("li(ne1\nli]ne2\nline3", f), "li(ne1\nline2\nli]ne3");
+    assert_eq!(apply_sel("li(ne1\nline2\nli]ne3", f), "li(ne1\nline2\nline3]");
+}
