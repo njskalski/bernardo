@@ -411,3 +411,34 @@ fn multiple_cursors_word_end_with_selection() {
         assert_eq!(apply_sel(progress[i], f), progress[i + 1], "i: {}", i);
     }
 }
+
+#[test]
+fn multiple_cursors_word_begin_with_selection() {
+    let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, bs: &dyn Buffer| {
+        c.word_begin_default(bs, true);
+    };
+
+    let progress = vec![
+        "ala ma ko#ta\nkot ma# ale\npies sp#i\n#",
+        "ala ma [ko)ta\nkot [ma) ale\npies [sp)i[\n)",
+        "ala ma[ ko)ta\nkot[ ma) ale\npies[ )[spi\n)",
+        "ala [ma ko)ta\n[kot ma) ale\n[pies)[ spi\n)",
+        "ala[ ma ko)ta[\nkot ma) ale[\n)[pies spi\n)",
+        "[ala ma )[kota\nkot ma) [ale)[\npies spi\n)",
+        "[ala ma)[ kota\nkot ma)[ )[ale\npies spi\n)",
+        "[ala )[ma kota\nkot )[ma)[ ale\npies spi\n)",
+        "[ala)[ ma kota\nkot)[ )[ma ale\npies spi\n)",
+        "[ala ma kota\n)[kot)[ ma ale\npies spi\n)",
+        "[ala ma kota)[\n)[kot ma ale\npies spi\n)",
+        "[ala ma )[kota)[\nkot ma ale\npies spi\n)",
+        "[ala ma)[ )[kota\nkot ma ale\npies spi\n)",
+        "[ala )[ma)[ kota\nkot ma ale\npies spi\n)",
+        "[ala)[ )[ma kota\nkot ma ale\npies spi\n)",
+        "[ala)[ ma kota\nkot ma ale\npies spi\n)",
+        "[ala ma kota\nkot ma ale\npies spi\n)",
+    ];
+
+    for i in 0..progress.len() - 1 {
+        assert_eq!(apply_sel(progress[i], f), progress[i + 1], "i: {}", i);
+    }
+}
