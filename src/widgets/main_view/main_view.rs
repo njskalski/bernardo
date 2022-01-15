@@ -1,9 +1,11 @@
 use std::borrow::Borrow;
-use std::path::PathBuf;
+use std::f32::consts::E;
+use std::path::{Path, PathBuf};
 
-use log::{debug, warn};
+use log::{debug, error, warn};
 
 use crate::{AnyMsg, InputEvent, LocalFilesystemProvider, Output, SizeConstraint, Theme, Widget};
+use crate::experiments::scroll::ScrollDirection;
 use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
 use crate::io::sub_output::SubOutput;
 use crate::layout::cached_sizes::DisplayState;
@@ -11,11 +13,13 @@ use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::xy::XY;
+use crate::text::buffer_state::BufferState;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
+use crate::widgets::with_scroll::WithScroll;
 
 const MIN_VIEW_SIZE: XY = XY::new(32, 10);
 
@@ -23,21 +27,34 @@ pub struct MainView {
     wid: WID,
     display_state: Option<DisplayState>,
     fs: Box<dyn FilesystemProvider>,
-    tree_widget: TreeViewWidget<PathBuf>,
+    tree_widget: WithScroll<TreeViewWidget<PathBuf>>,
     no_editor: NoEditorWidget,
-    editor: Option<EditorView>
+    editor: Option<EditorView>,
 }
 
 impl MainView {
     pub fn new(root_dir: PathBuf) -> MainView {
         let local = LocalFilesystemProvider::new(root_dir);
-        let tree = TreeViewWidget::new(local.get_root());
+
+        let tree = TreeViewWidget::new(local.get_root())
+            .with_on_flip_expand(|widget| {
+                let (_, item) = widget.get_highlighted();
+
+                Some(Box::new(MainViewMsg::TreeExpandedFlip {
+                    expanded: widget.is_expanded(item.id()),
+                    item,
+                }))
+            })
+            .with_on_select_hightlighted(|widget| {
+                let (_, item) = widget.get_highlighted();
+                Some(Box::new(MainViewMsg::TreeSelected { item }))
+            });
 
         MainView {
             wid: get_new_widget_id(),
             display_state: None,
             fs: Box::new(local),
-            tree_widget: tree,
+            tree_widget: WithScroll::new(tree, ScrollDirection::Vertical),
             no_editor: NoEditorWidget::new(),
             editor: None,
         }
@@ -69,6 +86,23 @@ impl MainView {
         let res = layout.calc_sizes(max_size);
 
         res
+    }
+
+    fn open_file(&mut self, path: &Path) -> bool {
+        debug!("opening file {:?}", path);
+
+        // TODO this maybe needs to be moved to other place, but there is no other place yet.
+
+        match self.fs.todo_read_file(path) {
+            Ok(buffer_state) => {
+                self.editor = Some(EditorView::new().with_buffer(buffer_state));
+                true
+            }
+            Err(_) => {
+                error!("failed to load file {:?}", path);
+                false
+            }
+        }
     }
 }
 
@@ -154,6 +188,17 @@ impl Widget for MainView {
                 let fg = &mut ds.focus_group;
                 let msg = fg.update_focus(fc);
                 warn!("focus updated {}", msg);
+                None
+            }
+            MainViewMsg::TreeExpandedFlip { expanded, item } => {
+                if *expanded {
+                    self.fs.expand(item.id());
+                }
+                None
+            }
+            MainViewMsg::TreeSelected { item } => {
+                self.open_file(item.id().as_path());
+
                 None
             }
             unknown_msg => {

@@ -32,6 +32,14 @@ impl EditorView {
             todo_text: BufferState::new(),
         }
     }
+
+
+    pub fn with_buffer(self, buffer: BufferState) -> Self {
+        EditorView {
+            todo_text: buffer,
+            ..self
+        }
+    }
 }
 
 impl Widget for EditorView {

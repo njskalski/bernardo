@@ -5,8 +5,6 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::io::output::Output;
 use crate::io::style::TextStyle;
-
-
 use crate::primitives::xy::XY;
 use crate::SizeConstraint;
 
@@ -37,10 +35,13 @@ impl<'a> OverOutput<'a> {
 
 impl Output for OverOutput<'_> {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
-        if !self.size_constraint.strictly_bigger_than(
+        if !self.size_constraint.bigger_equal_than(
             self.size_constraint.hint().lower_right()
         ) {
-            warn!("hint (visible part) beyond output space. Most likely layouting error.");
+            warn!("hint (visible part) beyond output space. Most likely layouting error. Hint: {}, output: {}",
+                self.size_constraint.hint(),
+                self.size_constraint,
+            );
         }
 
         if text.width() > u16::MAX as usize {
@@ -54,7 +55,7 @@ impl Output for OverOutput<'_> {
         }
         // no analogue exit on x, as something starting left from frame might still overlap with it.
 
-        if !self.size_constraint().strictly_bigger_than(pos) {
+        if !self.size_constraint().bigger_equal_than(pos) {
             debug!("drawing beyond output, early exit. pos: {} sc: {}", pos, self.size_constraint());
             return;
         }

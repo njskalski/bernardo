@@ -1,26 +1,35 @@
-use std::borrow::{Borrow};
+use std::borrow::Borrow;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::str::Utf8Error;
 
-use log::{debug, warn};
+use filesystem::{FileSystem, OsFileSystem};
+use log::{debug, error, warn};
 
 use crate::io::filesystem_tree::filesystem_list_item::FilesystemListItem;
 use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
 use crate::io::filesystem_tree::filesystem_tree::FilesystemNode;
-use crate::widgets::tree_view::tree_view_node::{TreeViewNode};
+use crate::text::buffer_state::BufferState;
+use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 pub struct LocalFilesystemProvider {
     root: PathBuf,
     root_node: Rc<FilesystemNode>,
+
+    fs: OsFileSystem,
 }
 
 impl LocalFilesystemProvider {
     pub fn new(root: PathBuf) -> Self {
         let root_node = Rc::new(FilesystemNode::new(root.clone()));
 
+        let filesystem = filesystem::OsFileSystem::new();
+
         LocalFilesystemProvider {
             root,
             root_node,
+            fs: filesystem,
         }
     }
 
@@ -81,7 +90,7 @@ impl FilesystemProvider for LocalFilesystemProvider {
 
         let mut res = vec![];
 
-        return match path.read_dir() {
+        return match self.fs.read_dir(path) {
             Err(err) => {
                 warn!("failed to read {:?} because {}", path, err);
                 Box::new(std::iter::empty())
@@ -100,6 +109,26 @@ impl FilesystemProvider for LocalFilesystemProvider {
                     }
                 }
                 Box::new(res.into_iter())
+            }
+        }
+    }
+
+    fn todo_read_file(&mut self, path: &Path) -> Result<BufferState, ()> {
+        match self.fs.read_file(path) {
+            Ok(v8) => {
+                match std::str::from_utf8(v8.borrow()) {
+                    Ok(s) => {
+                        Ok(BufferState::new().with_text_from_string(s))
+                    }
+                    Err(e) => {
+                        error!("file read error {:?} : {}", path, e);
+                        Err(())
+                    }
+                }
+            }
+            Err(e) => {
+                error!("file read error {:?} : {}", path, e);
+                Err(())
             }
         }
     }

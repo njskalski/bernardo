@@ -20,9 +20,9 @@ impl BufferState {
         }
     }
 
-    pub fn with_text(self, text: &str) -> BufferState {
+    pub fn with_text_from_string<'a, T: Into<&'a str>>(self, text: T) -> BufferState {
         BufferState {
-            text: Rope::from_str(text),
+            text: Rope::from_str(text.into()),
             ..self
         }
     }
@@ -63,7 +63,8 @@ impl Buffer for BufferState {
         self.text.len_lines()
     }
     fn lines(&self) -> Box<dyn std::iter::Iterator<Item=&str> + '_> {
-        Box::new(self.text.lines().map(|line| line.as_str().unwrap()))
+        // TODO this will fail for large files
+        Box::new(self.text.lines().map(|f| f.as_str()).flatten())
     }
 
     fn is_editable(&self) -> bool {

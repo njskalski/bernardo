@@ -1,10 +1,9 @@
-
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::rc::Rc;
 
-use log::{debug, warn};
+use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::input_event::InputEvent;
@@ -33,12 +32,14 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
     on_miss: Option<WidgetAction<TreeViewWidget<Key>>>,
     on_highlighted_changed: Option<WidgetAction<TreeViewWidget<Key>>>,
     on_flip_expand: Option<WidgetAction<TreeViewWidget<Key>>>,
+    // called on hitting "enter" over a selection.
+    on_select_highlighted: Option<WidgetAction<TreeViewWidget<Key>>>
 }
 
 #[derive(Debug)]
 enum TreeViewMsg {
     Arrow(Arrow),
-    FlipExpansion,
+    HitEnter,
 }
 
 impl AnyMsg for TreeViewMsg {}
@@ -59,6 +60,7 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
             on_miss: None,
             on_highlighted_changed: None,
             on_flip_expand: None,
+            on_select_highlighted: None,
         }
     }
 
@@ -69,8 +71,8 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         }
     }
 
-    fn get_is_expanded(&self) -> Box<dyn Fn(&Key) -> bool + '_> {
-        Box::new(move |key: &Key| self.expanded.contains(key))
+    pub fn is_expanded(&self, key: &Key) -> bool {
+        self.expanded.contains(key)
     }
 
     fn size_from_items(&self) -> XY {
@@ -101,6 +103,17 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
 
     fn event_highlighted_changed(&self) -> Option<Box<dyn AnyMsg>> {
         self.on_highlighted_changed.map(|f| f(self)).flatten()
+    }
+
+    pub fn with_on_select_hightlighted(self, on_select_highlighted: WidgetAction<TreeViewWidget<Key>>) -> Self {
+        Self {
+            on_select_highlighted: Some(on_select_highlighted),
+            ..self
+        }
+    }
+
+    fn event_select_highlighted(&self) -> Option<Box<dyn AnyMsg>> {
+        self.on_select_highlighted.map(|f| f(self)).flatten()
     }
 
     fn event_miss(&self) -> Option<Box<dyn AnyMsg>> {
@@ -174,12 +187,11 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
         return match input_event {
             InputEvent::KeyInput(key) => {
                 match key.keycode {
-                    Keycode::Char('a') => Some(Box::new(TreeViewMsg::FlipExpansion)),
                     Keycode::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
                     Keycode::ArrowDown => Some(Box::new(TreeViewMsg::Arrow(Arrow::Down))),
                     Keycode::ArrowLeft => Some(Box::new(TreeViewMsg::Arrow(Arrow::Left))),
                     Keycode::ArrowRight => Some(Box::new(TreeViewMsg::Arrow(Arrow::Right))),
-                    Keycode::Enter => Some(Box::new(TreeViewMsg::FlipExpansion)),
+                    Keycode::Enter => { Some(Box::new(TreeViewMsg::HitEnter)) },
                     _ => None,
                 }
             }
@@ -216,8 +228,8 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
                 // Arrow::Left => {}
                 // Arrow::Right => {}
             },
-            TreeViewMsg::FlipExpansion => {
-                let (id, is_leaf) = {
+            TreeViewMsg::HitEnter => {
+                let node = {
                     let highlighted_pair = self.items().skip(self.highlighted).next();
 
                     if highlighted_pair.is_none() {
@@ -229,13 +241,13 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
                         return None;
                     }
                     let (_, highlighted_node) = highlighted_pair.unwrap();
-                    (highlighted_node.id().clone(), highlighted_node.is_leaf()) // TODO can we avoid the clone?
+                    highlighted_node
                 };
 
-                if is_leaf {
-                    self.event_miss()
+                if node.is_leaf() {
+                    self.event_select_highlighted()
                 } else {
-                    self.flip_expanded(&id);
+                    self.flip_expanded(node.id());
                     self.event_flip_expand()
                 }
             }
@@ -248,6 +260,16 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
         let cursor_style = theme.cursor().maybe_half(focused);
 
         for (idx, (depth, node)) in self.items().enumerate() {
+            // skipping lines that cannot be visible, because they are before hint()
+            if idx < output.size_constraint().hint().upper_left().y as usize {
+                continue;
+            }
+
+            // skipping lines that cannot be visible, because larger than the hint()
+            if idx >= output.size_constraint().hint().lower_right().y as usize {
+                continue;
+            }
+
             match output.size_constraint().y() {
                 Some(y) => if idx >= y as usize {
                     debug!("idx {}, output.size().y {}", idx, output.size_constraint());
@@ -285,6 +307,6 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
 
     fn anchor(&self) -> XY {
         //TODO add x corresponding to depth
-        XY::new( 0, self.highlighted as u16) //TODO unsafe cast
+        XY::new(0, self.highlighted as u16) //TODO unsafe cast
     }
 }
