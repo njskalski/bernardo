@@ -273,13 +273,10 @@ impl Cursor {
         if self.a > 0 {
             if word_determinant(self.a - 1) {
                 // case when cursor is within a word
-                println!("l {}", self.a);
                 while self.a > 0 && word_determinant(self.a - 1) {
                     self.a -= 1;
                 }
-                println!("e {}", self.a);
             } else {
-                println!("s");
                 // otherwise we do just one step.
                 self.a -= 1; //safe to do, we checked it's > 0.
             }
@@ -300,6 +297,17 @@ impl Cursor {
 
         let old_pos = self.a;
         let mut first_move = true;
+
+        if self.a < buffer.len_chars() {
+            if word_determinant(self.a + 1) {
+                // variant within the word
+                while self.a < buffer.len_chars() && word_determinant(self.a + 1) {
+                    self.a += 1;
+                }
+            } else {
+                self.a += 1;
+            }
+        }
 
         while self.a < buffer.len_chars() && (word_determinant(self.a) || first_move) {
             self.a += 1;
