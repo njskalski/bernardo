@@ -296,9 +296,8 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
 
             let text = format!("{} {}", prefix, node.label());
 
-            for (x_offset, g) in text.graphemes(true).enumerate()
-                .skip(output.size_constraint().hint().upper_left().x as usize) // this is cutting left
-                .into_iter() {
+            let mut x_offset: usize = 0;
+            for g in text.graphemes(true).into_iter() {
                 let desired_pos_x: usize = depth as usize * 2 + x_offset;
                 if desired_pos_x > u16::MAX as usize {
                     error!("skipping drawing beyond x = u16::MAX");
@@ -317,7 +316,9 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
                     XY::new(x, y),
                     style,
                     g,
-                )
+                );
+
+                x_offset += g.width();
             }
         }
     }

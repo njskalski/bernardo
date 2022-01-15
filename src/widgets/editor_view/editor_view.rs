@@ -1,4 +1,6 @@
 use log::{error, warn};
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, Widget};
 use crate::primitives::arrow::Arrow;
@@ -145,20 +147,24 @@ impl Widget for EditorView {
     fn render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
         for (line_idx, line) in self.todo_text.lines().enumerate()
             // skipping lines that cannot be visible, because they are before hint()
-            .skip(output.size_constraint().hint().upper_left().y as usize) {
+            .skip(output.size_constraint().hint().upper_left().y as usize)
+        {
             // skipping lines that cannot be visible, because larger than the hint()
             if line_idx >= output.size_constraint().hint().lower_right().y as usize {
                 break;
             }
 
-            for (c_idx, c) in line.chars().enumerate() {
-                let char_idx = self.todo_text.line_to_char(line_idx).unwrap() + c_idx; //TODO
+            let line_begin = self.todo_text.line_to_char(line_idx).unwrap(); //TODO
+
+            let mut x_offset: usize = 0;
+            for (c_idx, c) in line.graphemes(true).into_iter().enumerate() {
+                let char_idx = line_begin + c_idx;
                 let cursor_status = self.cursors.get_cursor_status_for_char(char_idx);
-                let pos = XY::new(c_idx as u16, line_idx as u16);
+                let pos = XY::new(x_offset as u16, line_idx as u16);
 
                 // TODO optimise
                 let text = format!("{}", c);
-                let tr = if c == '\n' { NEWLINE } else { text.as_str() };
+                let tr = if c == "\n" { NEWLINE } else { text.as_str() };
 
                 match cursor_status {
                     CursorStatus::None => {
@@ -171,6 +177,8 @@ impl Widget for EditorView {
                         output.print_at(pos, theme.cursor(), tr);
                     }
                 }
+
+                x_offset += tr.width();
             }
         }
 
