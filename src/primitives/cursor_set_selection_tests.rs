@@ -155,6 +155,8 @@ fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
     output
 }
 
+// these are the tests of testing framework. It's complicated.
+
 #[test]
 fn test_text_to_buffer_cursors_with_selections_1() {
     let (text, cursors) = text_to_buffer_cursors_with_selections("te[xt)");
@@ -234,6 +236,31 @@ fn apply_sel_works() {
     assert_eq!(apply_sel("text", f), "text");
     assert_eq!(apply_sel("te[xt)", f), "te[xt)");
     assert_eq!(apply_sel("[t)(ext]", f), "[t)(ext]");
+}
+
+// these are actual tests of CursorSet with the selection.
+
+#[test]
+fn walking_over_selection_begin() {
+    let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, b: &dyn Buffer| {
+        c.move_right(b, true);
+    };
+
+    let expected_process = vec![
+        "m[issi)sipi",
+        "mi[ssi)sipi",
+        "mis[si)sipi",
+        "miss[i)sipi",
+        "missi#sipi",
+        "missi(s]ipi",
+        "missi(si]pi",
+        "missi(sip]i",
+        "missi(sipi]",
+    ];
+
+    for i in 0..expected_process.len() - 1 {
+        assert_eq!(apply_sel(expected_process[i], f), expected_process[i + 1]);
+    }
 }
 
 #[test]

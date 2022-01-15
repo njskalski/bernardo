@@ -1,10 +1,11 @@
-// Copyright 2018-2020 Google LLC, 2021 Andrzej J Skalski
+// Copyright 2018-2020 Google LLC, 2021-2022 Andrzej J Skalski
 // This version of the file (2021+) is licensed with GNU LGPLv3 License.
 // For older version of file (licensed under Apache 2 license), see sly-editor, at
 // https://github.com/njskalski/sly-editor/blob/master/src/cursor_set.rs
 
 // Cursor == (Selection, Anchor), thanks Kakoune!
 // both positions and anchor are counted in CHARS not offsets.
+// Furthermore, I impose a following invariant: the anchor is always above one of selection ends.
 
 // The cursor points to a index where a NEW character will be included, or old character will be
 // REPLACED.
@@ -16,7 +17,7 @@
 // Newline is always an end of previous line, not a beginning of new.
 
 
-// TODO change the selection to Option<usize> to ENFORCE the invariant with data volume
+// TODO change the selection to Option<usize> to ENFORCE the invariant by reducing the volume of data.
 
 use std::collections::{HashMap, HashSet};
 use std::slice::Iter;
@@ -49,7 +50,7 @@ pub struct Selection {
 
 impl Selection {
     pub fn new(b: usize, e: usize) -> Self {
-        debug_assert!(b < e);
+        debug_assert!(b < e, "b {} e {}", b, e);
         Selection {
             b,
             e,
@@ -101,9 +102,20 @@ impl Cursor {
         }
     }
 
-    fn update_select(&mut self, old_pos: usize, new_pos: usize) {
+    // Updates selection, had it changed.
+    // old_pos is one of selection ends.
+    // new_pos is where THAT end is moved.
+    // if there is no selection, I behave as if 0-length selection at old_pos was present, so
+    //      it gets expanded towards new_pos.
+    pub fn update_select(&mut self, old_pos: usize, new_pos: usize) {
+        match self.s {
+            None => {}
+            Some(s) => {
+                debug_assert!(s.b == old_pos || s.e == old_pos);
+            }
+        }
+
         if old_pos == new_pos {
-            self.s = None;
             return;
         }
 
@@ -131,14 +143,24 @@ impl Cursor {
                 debug_assert!(old_pos == sel.b || old_pos == sel.e);
 
                 if sel.b == old_pos {
-                    self.s = Some(Selection::new(new_pos, sel.e));
+                    if new_pos != sel.e {
+                        self.s = Some(Selection::new(new_pos, sel.e));
+                    } else {
+                        self.s = None;
+                    }
+
                     return;
                 }
                 if sel.e == old_pos {
-                    self.s = Some(Selection::new(sel.b, new_pos));
+                    if sel.b != new_pos {
+                        self.s = Some(Selection::new(sel.b, new_pos));
+                    } else {
+                        self.s = None;
+                    }
+                    
                     return;
                 }
-                error!("invariant that selection begins or ends with anchor broken.");
+                error!("invariant that selection begins or ends with anchor broken. Not crashing, but fix it.");
             }
         }
     }
@@ -236,6 +258,44 @@ impl Cursor {
         };
 
         res
+    }
+
+    // Returns FALSE on noop.
+    // word_determinant should return FALSE when word ends, and TRUE while it continues.
+    fn word_begin(&mut self, selecting: bool, word_determinant: fn(idx: usize) -> bool) -> bool {
+        if self.a == 0 {
+            return false;
+        }
+
+        let old_pos = self.a;
+
+        while self.a > 0 && word_determinant(self.a) {
+            self.a -= 1;
+        }
+
+        if selecting {
+            self.update_select(old_pos, self.a);
+        };
+
+        old_pos != self.a
+    }
+
+    fn word_end(&mut self, buffer: &dyn Buffer, selecting: bool, word_determinant: fn(idx: usize) -> bool) -> bool {
+        if self.a == buffer.len_chars() {
+            return false;
+        }
+
+        let old_pos = self.a;
+
+        while self.a < buffer.len_chars() && word_determinant(self.a) {
+            self.a += 1;
+        }
+
+        if selecting {
+            self.update_select(old_pos, self.a);
+        }
+
+        old_pos != self.a
     }
 }
 
@@ -600,8 +660,6 @@ impl CursorSet {
     }
 
     // Returns FALSE if results in no-op
-    // TODO test
-    // TODO there should be a reduction of overlapping. This case is easy - just pick the biggest.
     pub fn home(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
         if self.max_cursor_pos() > rope.len_chars() {
             error!("buffer shorter than cursor positions. Returning prematurely to avoid crash.");
@@ -829,4 +887,6 @@ impl CursorSet {
             }
         }
     }
+
+    // fn word_begin(&mut self, buffer: &dyn Buffer, word_end_determinant: fn() -> bool) -> bool {}
 }
