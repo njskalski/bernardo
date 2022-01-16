@@ -2,16 +2,17 @@ use std::io::Write;
 
 use crossterm::{cursor, ExecutableCommand, style, terminal};
 use crossterm::cursor::MoveTo;
-use crossterm::style::{Attribute, Color, PrintStyledContent, SetAttribute, SetBackgroundColor, SetForegroundColor, StyledContent};
+use crossterm::style::{Attribute, Color, ContentStyle, Print, PrintStyledContent, SetAttribute, SetAttributes, SetBackgroundColor, SetForegroundColor, StyledContent};
 use crossterm::terminal::{Clear, ClearType};
 use log::warn;
+use unicode_width::UnicodeWidthStr;
 
 use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::sized_xy::SizedXY;
-use crate::primitives::xy::XY;
+use crate::primitives::xy::{XY, ZERO};
 use crate::SizeConstraint;
 
 pub struct CrosstermOutput<W: Write> {
@@ -87,12 +88,21 @@ impl<W: Write> CrosstermOutput<W> {
             .execute(SetBackgroundColor(Color::Reset))?
             .execute(SetAttribute(Attribute::Reset))?;
 
+        let mut last_bg_color: Option<crossterm::style::Color> = None;
+        let mut last_fg_color: Option<crossterm::style::Color> = None;
+        let mut last_attrs: Option<crossterm::style::Attributes> = None;
+        let mut curr_pos: XY = ZERO;
+
+        self.stdout.execute(cursor::MoveTo(0, 0))?;
 
         for y in 0..self.size.y {
-            self.stdout.execute(cursor::MoveTo(0, y)); //TODO HANDLE ERR
-
             for x in 0..self.size.x {
-                let pos = (x, y).into();
+                let pos = XY::new(x, y);
+
+                if pos != curr_pos {
+                    self.stdout.execute(cursor::MoveTo(pos.x, pos.y));
+                    curr_pos = pos;
+                }
 
                 let cell = &buffer[pos];
                 match cell {
@@ -108,30 +118,40 @@ impl<W: Write> CrosstermOutput<W> {
                             b: style.foreground.B,
                         };
 
-                        let mut cstyle = style::ContentStyle::new();
-                        cstyle.background_color = Some(bgcolor);
-                        cstyle.foreground_color = Some(fgcolor);
+                        // let mut cstyle = style::ContentStyle::new();
+                        // cstyle.background_color = Some(bgcolor);
+                        // cstyle.foreground_color = Some(fgcolor);
 
+                        let mut attributes: style::Attributes = style::Attributes::default();
                         match style.effect {
                             Effect::Bold => {
-                                cstyle.attributes.set(Attribute::Bold);
+                                attributes.set(Attribute::Bold);
                             }
                             Effect::Italic => {
-                                cstyle.attributes.set(Attribute::Italic);
+                                attributes.set(Attribute::Italic);
                             }
                             Effect::Underline => {
-                                cstyle.attributes.set(Attribute::Underlined);
+                                attributes.set(Attribute::Underlined);
                             }
                             _ => {}
                         };
 
+                        if last_bg_color != Some(bgcolor) {
+                            self.stdout.execute(SetBackgroundColor(bgcolor))?;
+                            last_bg_color = Some(bgcolor);
+                        }
+                        if last_fg_color != Some(fgcolor) {
+                            self.stdout.execute(SetForegroundColor(fgcolor))?;
+                            last_fg_color = Some(fgcolor);
+                        }
+                        if last_attrs != Some(attributes) {
+                            self.stdout.execute(SetAttributes(attributes))?;
+                            last_attrs = Some(attributes);
+                        };
 
-                        self.stdout
-                            .execute(MoveTo(pos.x, pos.y))?
-                            .execute(PrintStyledContent(StyledContent::new(
-                                cstyle,
-                                grapheme,
-                            )))?;
+                        self.stdout.execute(Print(grapheme))?;
+
+                        curr_pos.x += grapheme.width() as u16;
                     }
                     Cell::Continuation => {}
                 }
