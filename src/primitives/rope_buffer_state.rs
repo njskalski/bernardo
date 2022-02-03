@@ -9,8 +9,8 @@ impl Buffer for Rope {
         self.len_lines()
     }
 
-    fn lines(&self) -> Box<dyn Iterator<Item=&str> + '_> {
-        Box::new(self.lines().map(|f| f.as_str().unwrap_or("")).into_iter())
+    fn lines(&self) -> Box<dyn Iterator<Item=String> + '_> {
+        Box::new(self.lines().map(|f| f.to_string()))
     }
 
     fn is_editable(&self) -> bool {

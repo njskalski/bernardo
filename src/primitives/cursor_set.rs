@@ -24,7 +24,6 @@ use std::slice::Iter;
 
 use crossbeam_channel::select;
 use log::{debug, error, warn};
-use stderrlog::new;
 
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::ZERO;

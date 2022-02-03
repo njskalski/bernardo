@@ -2,7 +2,7 @@ use std::iter;
 
 pub trait Buffer {
     fn len_lines(&self) -> usize;
-    fn lines(&self) -> Box<dyn iter::Iterator<Item=&str> + '_>;
+    fn lines(&self) -> Box<dyn iter::Iterator<Item=String> + '_>;
 
     fn is_editable(&self) -> bool;
 
@@ -25,7 +25,7 @@ pub fn buffer_to_string(b: &dyn Buffer) -> String {
     let mut output = String::new();
 
     for line in b.lines() {
-        output += line;
+        output += line.as_str()
     }
 
     output

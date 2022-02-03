@@ -1,8 +1,9 @@
+use std::env::args;
 use std::io::stdout;
 use std::path::PathBuf;
 
+use clap::Parser;
 use log::debug;
-
 use termion::raw::IntoRawMode;
 
 use crate::io::crossterm_input::CrosstermInput;
@@ -13,12 +14,11 @@ use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::size_constraint::SizeConstraint;
-
 use crate::primitives::theme::Theme;
+use crate::primitives::xy::ZERO;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
-
 
 mod experiments;
 mod io;
@@ -29,12 +29,17 @@ mod widget;
 mod text;
 mod widgets;
 
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    #[clap(flatten)]
+    pub verbosity: clap_verbosity_flag::Verbosity,
+}
+
+
 fn main() {
-    stderrlog::new()
-        .verbosity(3 /* Debug */)
-        // .module(module_path!())
-        .init()
-        .unwrap();
+    let args = Args::parse();
+    env_logger::builder().filter_level(args.verbosity.log_level_filter()).init();
 
     let stdout = stdout();
     let stdout = stdout.lock().into_raw_mode().unwrap();
@@ -45,6 +50,11 @@ fn main() {
 
     let input = CrosstermInput::new();
     let mut output = CrosstermOutput::new(stdout);
+
+    if output.size_constraint().hint().size == ZERO {
+        //TODO
+        return;
+    }
 
     // let input = TermionInput::new(stdin);
     // let mut output = TermionOutput::new(stdout);

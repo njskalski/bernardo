@@ -1,8 +1,10 @@
 use std::borrow::Borrow;
+use std::string::String;
 
 use log::{error, warn};
+use ropey::iter::Lines;
 use ropey::Rope;
-use tree_sitter::Tree;
+use unicode_segmentation::UnicodeSegmentation;
 
 use crate::experiments::try_parse::try_parsing_rust;
 use crate::text::buffer::Buffer;
@@ -78,9 +80,9 @@ impl Buffer for BufferState {
     fn len_lines(&self) -> usize {
         self.text.len_lines()
     }
-    fn lines(&self) -> Box<dyn std::iter::Iterator<Item=&str> + '_> {
+    fn lines(&self) -> Box<dyn Iterator<Item=String> + '_> {
         // TODO this will fail for large files
-        Box::new(self.text.lines().map(|f| f.as_str()).flatten())
+        Box::new(self.text.lines().map(|f| f.to_string()))
     }
 
     fn is_editable(&self) -> bool {
