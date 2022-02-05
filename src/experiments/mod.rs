@@ -3,3 +3,4 @@ pub mod from_geometry;
 pub mod config;
 pub mod try_parse;
 pub mod symbol;
+pub mod tree_sitter_wrapper;

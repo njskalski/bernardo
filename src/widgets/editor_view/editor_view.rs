@@ -154,7 +154,10 @@ impl Widget for EditorView {
                 break;
             }
 
-            let line_begin = self.todo_text.line_to_char(line_idx).unwrap(); //TODO
+            let line_begin = match self.todo_text.line_to_char(line_idx) {
+                Some(begin) => begin,
+                None => continue,
+            };
 
             let mut x_offset: usize = 0;
             for (c_idx, c) in line.graphemes(true).into_iter().enumerate() {
@@ -165,6 +168,8 @@ impl Widget for EditorView {
                 // TODO optimise
                 let text = format!("{}", c);
                 let tr = if c == "\n" { NEWLINE } else { text.as_str() };
+
+                let x = self.todo_text.char_to_kind(line_begin + char_idx);
 
                 match cursor_status {
                     CursorStatus::None => {

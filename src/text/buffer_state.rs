@@ -1,9 +1,11 @@
 use std::borrow::Borrow;
+use std::ops::Range;
 use std::string::String;
 
-use log::{error, warn};
+use log::{debug, error, warn};
 use ropey::iter::Lines;
 use ropey::Rope;
+use tree_sitter::{Tree, TreeCursor};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::experiments::try_parse::try_parsing_rust;
@@ -38,7 +40,8 @@ impl BufferState {
         match try_parsing_rust(res.text.to_string().as_str()) {
             None => {}
             Some(tree) => {
-                res.todo_parse_tree = Some(tree)
+                // todo_dump_tree(&tree);
+                res.todo_parse_tree = Some(tree);
             }
         };
 
@@ -74,7 +77,37 @@ impl BufferState {
             }
         }
     }
+
+    pub fn char_to_kind(&self, char_idx: usize) -> Option<&str> {
+        let byte_idx = match self.text.try_char_to_byte(char_idx) {
+            Ok(idx) => idx,
+            _ => return None,
+        };
+
+        
+        self.todo_parse_tree.as_ref().map(|tree| {
+            tree.root_node().descendant_for_byte_range(byte_idx, byte_idx)
+        }).flatten().map(|node| node.kind())
+    }
 }
+
+// fn todo_dump_tree(tree: &Tree) {
+//     let mut cursor = tree.walk();
+//
+//     let mut nodes: Vec<(usize, usize, usize)> = vec![];
+//
+//     debug!("dumping tree");
+//
+//     loop {
+//         let pair = cursor.node().byte_range();
+//
+//         debug!("{}-{}: {:?}", pair.start, pair.end, cursor.node().kind_id());
+//
+//         if !cursor.goto_next_sibling() {
+//             break;
+//         }
+//     }
+// }
 
 impl Buffer for BufferState {
     fn len_lines(&self) -> usize {

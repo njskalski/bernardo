@@ -1,10 +1,11 @@
 use std::borrow::Borrow;
 use std::f32::consts::E;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
 use log::{debug, error, warn};
 
-use crate::{AnyMsg, InputEvent, LocalFilesystemProvider, Output, SizeConstraint, Theme, Widget};
+use crate::{AnyMsg, InputEvent, LocalFilesystemProvider, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
 use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
 use crate::io::sub_output::SubOutput;
 use crate::layout::cached_sizes::DisplayState;
@@ -30,6 +31,7 @@ pub struct MainView {
     tree_widget: WithScroll<TreeViewWidget<PathBuf>>,
     no_editor: NoEditorWidget,
     editor: Option<WithScroll<EditorView>>,
+    tree_sitter: Option<Rc<TreeSitterWrapper>>,
 }
 
 impl MainView {
@@ -57,12 +59,20 @@ impl MainView {
             tree_widget: WithScroll::new(tree, ScrollDirection::Vertical),
             no_editor: NoEditorWidget::new(),
             editor: None,
+            tree_sitter: None,
         }
     }
 
     pub fn with_empty_editor(self) -> Self {
         MainView {
             editor: Some(WithScroll::new(EditorView::new(), ScrollDirection::Both)),
+            ..self
+        }
+    }
+
+    pub fn with_tree_sitter(self, tsw: Rc<TreeSitterWrapper>) -> Self {
+        MainView {
+            tree_sitter: Some(tsw),
             ..self
         }
     }

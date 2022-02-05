@@ -19,6 +19,8 @@ pub trait Buffer {
     fn remove(&mut self, char_idx_begin: usize, char_idx_end: usize) -> bool;
 
     fn char_at(&self, char_idx: usize) -> Option<char>;
+
+    fn char_to_kind(&self, char_idx: usize) -> Option<&str> { None }
 }
 
 pub fn buffer_to_string(b: &dyn Buffer) -> String {

@@ -1,11 +1,13 @@
 use std::env::args;
 use std::io::stdout;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use clap::Parser;
 use log::debug;
 use termion::raw::IntoRawMode;
 
+use crate::experiments::tree_sitter_wrapper::{LanguageSet, TreeSitterWrapper};
 use crate::io::crossterm_input::CrosstermInput;
 use crate::io::crossterm_output::CrosstermOutput;
 use crate::io::filesystem_tree::local_filesystem_provider::LocalFilesystemProvider;
@@ -39,7 +41,11 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    env_logger::builder().filter_level(args.verbosity.log_level_filter()).init();
+    env_logger::builder()
+        .filter_level(args.verbosity.log_level_filter())
+        .init();
+
+    let tree_sitter_wrapper = TreeSitterWrapper::new(LanguageSet::full());
 
     let stdout = stdout();
     let stdout = stdout.lock().into_raw_mode().unwrap();
@@ -73,7 +79,10 @@ fn main() {
     // let fsp = LocalFilesystemProvider::new(PathBuf::from("/home/andrzej"));
     // let boxed = Box::new(fsp);
     // let mut main_view = SaveFileDialogWidget::new(boxed);
-    let mut main_view = MainView::new(PathBuf::from("/home/andrzej")).with_empty_editor();
+
+    let mut main_view = MainView::new(PathBuf::from("/home/andrzej/r"))
+        .with_empty_editor()
+        .with_tree_sitter(Rc::new(tree_sitter_wrapper));
 
     let theme = Theme::default();
 
