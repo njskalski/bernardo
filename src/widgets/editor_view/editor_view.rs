@@ -182,17 +182,18 @@ impl Widget for EditorView {
                 let text = format!("{}", c);
                 let tr = if c == "\n" { NEWLINE } else { text.as_str() };
 
-                let x = self.todo_text.char_to_kind(line_begin + char_idx);
-                let style = x.map(|s| theme.name_to_theme(s)).flatten();
+                let x = self.todo_text.char_to_kind(char_idx);
+                let fg_color = x.map(|s| theme.name_to_theme(s)).flatten();
 
                 match cursor_status {
                     CursorStatus::None => {
-                        let s = match style {
-                            None => theme.default_text(false),
-                            Some(st) => st,
+                        let mut style = theme.default_text(false);
+                        match fg_color {
+                            Some(fgc) => style = style.with_foreground(fgc),
+                            None => {}
                         };
 
-                        output.print_at(pos, s, tr);
+                        output.print_at(pos, style, tr);
                     }
                     CursorStatus::WithinSelection => {
                         output.print_at(pos, theme.default_text(true), tr);

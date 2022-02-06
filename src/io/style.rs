@@ -1,7 +1,3 @@
-
-
-
-
 use crate::primitives::color::Color;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -49,6 +45,27 @@ impl TextStyle {
             *self
         } else {
             self.half()
+        }
+    }
+
+    pub fn with_foreground(self, foreground: Color) -> Self {
+        Self {
+            foreground,
+            ..self
+        }
+    }
+
+    pub fn with_background(self, background: Color) -> Self {
+        Self {
+            background,
+            ..self
+        }
+    }
+
+    pub fn with_effect(self, effect: Effect) -> Self {
+        Self {
+            effect,
+            ..self
         }
     }
 }

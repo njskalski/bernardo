@@ -7,6 +7,7 @@ use clap::Parser;
 use log::debug;
 use termion::raw::IntoRawMode;
 
+use crate::experiments::color_theme::ColorTheme;
 use crate::experiments::tree_sitter_wrapper::{LanguageSet, TreeSitterWrapper};
 use crate::io::crossterm_input::CrosstermInput;
 use crate::io::crossterm_output::CrosstermOutput;
@@ -85,7 +86,10 @@ fn main() {
         .with_empty_editor()
         .with_tree_sitter(Rc::new(tree_sitter_wrapper));
 
-    let theme = Theme::default();//.with_code_theme(code_theme);
+    let fs = filesystem::OsFileSystem::new();
+    let color_theme = ColorTheme::load_from_file(fs, &PathBuf::from("./themes/default.ron")).unwrap(); // TODO
+
+    let theme = Theme::default().with_color_theme(color_theme);
 
     // returns (consumed, message_to_parent)
     fn recursive_treat_views(

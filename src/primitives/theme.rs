@@ -7,6 +7,7 @@ use std::str::FromStr;
 
 use log::debug;
 
+use crate::ColorTheme;
 use crate::io::style::{Effect, TextStyle};
 use crate::Keycode::F;
 use crate::primitives::color::Color;
@@ -25,7 +26,7 @@ pub struct Theme {
     non_focused_background: Color,
     focused_background: Color,
 
-    code_theme: Option<()>,
+    color_theme: Option<ColorTheme>,
 }
 
 impl Theme {
@@ -42,30 +43,31 @@ impl Theme {
             non_focused_background: colors::NON_FOCUSED_FOREGROUND,
             focused_background: colors::FOCUSED_BACKGROUND,
 
-            code_theme: None,
+            color_theme: None,
         }
     }
 
-    // pub fn with_code_theme(self, code_theme: syntect::highlighting::Theme) -> Self {
-    //     Self {
-    //         code_theme: Some(code_theme),
-    //         ..self
-    //     }
-    // }
+    pub fn with_color_theme(self, color_theme: ColorTheme) -> Self {
+        Self {
+            color_theme: Some(color_theme),
+            ..self
+        }
+    }
 
-    pub fn name_to_theme(&self, s: &str) -> Option<TextStyle> {
-        // let ct = match self.code_theme.as_ref() {
-        //     Some(ct) => ct,
-        //     None => return None,
-        // };
-
+    pub fn name_to_theme(&self, s: &str) -> Option<Color> {
         debug!("name_to_theme: {}", s);
 
-        None
-
-        // for i in ct.scopes.iter() {
-        //     debug!("{:?}", i.scope.selectors);
-        // }
+        self.color_theme.as_ref().map(|ct| {
+            match s {
+                "string_literal" => ct.general_code_theme.string_literal,
+                "\"" => ct.general_code_theme.double_quote,
+                "\'" => ct.general_code_theme.single_quote,
+                "(" => ct.general_code_theme.parenthesis,
+                ")" => ct.general_code_theme.parenthesis,
+                "identifier" => ct.general_code_theme.identifier,
+                _ => None
+            }
+        }).flatten()
 
         // let highlighter = syntect::highlighting::Highlighter::new(ct);
         // let scope_sel = syntect::highlighting::ScopeSelector::from_str(s);

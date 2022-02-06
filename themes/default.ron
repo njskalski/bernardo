@@ -1,0 +1,11 @@
+(
+    general_code_theme: (
+        identifier: Some("#D1916B"),
+        string_literal: Some("#C36B72"),
+        type_identifier: Some("#7FA1C2"),
+        parenthesis: Some("#7D889D"),
+        bracket: Some("#7D889D"),
+        double_quote: Some("#C36B72"),
+        single_quote: Some("#C36B72"),
+    )
+)

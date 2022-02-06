@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::fs::{DirEntry, ReadDir};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -24,12 +25,10 @@ impl LocalFilesystemProvider {
     pub fn new(root: PathBuf) -> Self {
         let root_node = Rc::new(FilesystemNode::new(root.clone()));
 
-        let filesystem = filesystem::OsFileSystem::new();
-
         LocalFilesystemProvider {
             root,
             root_node,
-            fs: filesystem,
+            fs: OsFileSystem::new(),
         }
     }
 
