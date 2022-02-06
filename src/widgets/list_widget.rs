@@ -10,18 +10,11 @@ use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
-
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
-use crate::primitives::xy::{XY};
+use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
-
-pub enum ListWidgetCell {
-    NotAvailable,
-    Loading,
-    Ready(String),
-}
 
 /*
     Items are held in Widget state itself, and overwritten with set_items when necessary. Therefore
@@ -30,10 +23,10 @@ pub enum ListWidgetCell {
  */
 pub trait ListWidgetItem: Clone + Debug {
     //TODO change to static str?
-    fn get_column_name(idx: usize) -> String;
+    fn get_column_name(idx: usize) -> &'static str;
     fn get_min_column_width(idx: usize) -> u16;
     fn len_columns() -> usize;
-    fn get(&self, idx: usize) -> ListWidgetCell;
+    fn get(&self, idx: usize) -> Option<String>;
 }
 
 pub trait ListWidgetProvider<Item: ListWidgetItem> {
@@ -296,7 +289,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
                 output.print_at(
                     XY::new(x_offset, y_offset),
                     header_style,
-                    Item::get_column_name(c_idx).as_str(), // TODO cut agaist overflow
+                    Item::get_column_name(c_idx), // TODO cut agaist overflow
                 );
                 x_offset += Item::get_min_column_width(c_idx);
             }
@@ -323,9 +316,8 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
 
             for c_idx in 0..Item::len_columns() {
                 let text: String = match item.get(c_idx) {
-                    ListWidgetCell::NotAvailable => "N/A".to_string(),
-                    ListWidgetCell::Loading => "...".to_string(),
-                    ListWidgetCell::Ready(s) => s,
+                    Some(s) => s,
+                    None => "".to_string(),
                 };
 
                 let column_width = Item::get_min_column_width(c_idx);
@@ -335,7 +327,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
                     // TODO handle overflow of column length
                     XY::new(x_offset, y_offset + idx as u16),
                     style,
-                    text.as_str(),
+                    &text,
                 );
 
                 if text.width() < column_width as usize {

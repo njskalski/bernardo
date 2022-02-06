@@ -8,3 +8,4 @@ pub mod main_view;
 pub mod editor_view;
 pub mod common_edit_msgs;
 pub mod list_widget;
+pub mod fuzzy_search;

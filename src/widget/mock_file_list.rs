@@ -1,5 +1,5 @@
 pub mod mock {
-    use crate::widgets::list_widget::{ListWidgetCell, ListWidgetItem};
+    use crate::widgets::list_widget::ListWidgetItem;
 
     #[derive(Clone, Debug)]
     pub struct MockFile {
@@ -31,21 +31,20 @@ pub mod mock {
             3
         }
 
-        fn get_column_name(idx: usize) -> String {
+        fn get_column_name(idx: usize) -> &'static str {
             match idx {
-                0 => { "filename".to_string() }
-                1 => { "size".to_string() }
-                2 => { "type".to_string() }
-                _ => { "N/A".to_string() }
+                0 => { "filename" }
+                1 => { "size" }
+                2 => { "type" }
+                _ => { "N/A" }
             }
         }
 
-        fn get(&self, idx: usize) -> ListWidgetCell {
+        fn get(&self, idx: usize) -> Option<String> {
             match idx {
-                0 => { ListWidgetCell::Ready(self.name.clone()) }
-                1 => { ListWidgetCell::Ready(format!("{}", self.size)) }
-                2 => { ListWidgetCell::NotAvailable }
-                _ => { ListWidgetCell::NotAvailable }
+                0 => { Some(self.name.to_string()) }
+                1 => { Some(format!("{}", self.size)) }
+                _ => None
             }
         }
 
