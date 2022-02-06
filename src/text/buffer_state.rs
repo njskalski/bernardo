@@ -10,6 +10,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::experiments::try_parse::try_parsing_rust;
 use crate::text::buffer::Buffer;
+use crate::Theme;
 
 #[derive(Clone, Debug)]
 pub struct BufferState {
@@ -84,30 +85,13 @@ impl BufferState {
             _ => return None,
         };
 
-        
         self.todo_parse_tree.as_ref().map(|tree| {
             tree.root_node().descendant_for_byte_range(byte_idx, byte_idx)
-        }).flatten().map(|node| node.kind())
+        }).flatten().map(|node| {
+            node.kind()
+        })
     }
 }
-
-// fn todo_dump_tree(tree: &Tree) {
-//     let mut cursor = tree.walk();
-//
-//     let mut nodes: Vec<(usize, usize, usize)> = vec![];
-//
-//     debug!("dumping tree");
-//
-//     loop {
-//         let pair = cursor.node().byte_range();
-//
-//         debug!("{}-{}: {:?}", pair.start, pair.end, cursor.node().kind_id());
-//
-//         if !cursor.goto_next_sibling() {
-//             break;
-//         }
-//     }
-// }
 
 impl Buffer for BufferState {
     fn len_lines(&self) -> usize {

@@ -1,8 +1,11 @@
+use std::rc::Rc;
+
 use log::{error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, Widget};
+use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
+use crate::io::style::TextStyle;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::cursor_set::{CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
@@ -27,6 +30,8 @@ pub struct EditorView {
     todo_text: BufferState,
 
     anchor: XY,
+
+    tree_sitter: Option<Rc<TreeSitterWrapper>>,
 }
 
 impl EditorView {
@@ -37,6 +42,7 @@ impl EditorView {
             last_size: None,
             todo_text: BufferState::new(),
             anchor: ZERO,
+            tree_sitter: None,
         }
     }
 
@@ -44,6 +50,13 @@ impl EditorView {
     pub fn with_buffer(self, buffer: BufferState) -> Self {
         EditorView {
             todo_text: buffer,
+            ..self
+        }
+    }
+
+    pub fn with_tree_sitter_op(self, tree_sitter_op: Option<Rc<TreeSitterWrapper>>) -> Self {
+        EditorView {
+            tree_sitter: tree_sitter_op,
             ..self
         }
     }
@@ -170,10 +183,16 @@ impl Widget for EditorView {
                 let tr = if c == "\n" { NEWLINE } else { text.as_str() };
 
                 let x = self.todo_text.char_to_kind(line_begin + char_idx);
+                let style = x.map(|s| theme.name_to_theme(s)).flatten();
 
                 match cursor_status {
                     CursorStatus::None => {
-                        output.print_at(pos, theme.default_text(false), tr);
+                        let s = match style {
+                            None => theme.default_text(false),
+                            Some(st) => st,
+                        };
+
+                        output.print_at(pos, s, tr);
                     }
                     CursorStatus::WithinSelection => {
                         output.print_at(pos, theme.default_text(true), tr);

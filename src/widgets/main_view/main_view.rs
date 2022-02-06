@@ -31,7 +31,7 @@ pub struct MainView {
     tree_widget: WithScroll<TreeViewWidget<PathBuf>>,
     no_editor: NoEditorWidget,
     editor: Option<WithScroll<EditorView>>,
-    tree_sitter: Option<Rc<TreeSitterWrapper>>,
+    tree_sitter_op: Option<Rc<TreeSitterWrapper>>,
 }
 
 impl MainView {
@@ -59,20 +59,26 @@ impl MainView {
             tree_widget: WithScroll::new(tree, ScrollDirection::Vertical),
             no_editor: NoEditorWidget::new(),
             editor: None,
-            tree_sitter: None,
+            tree_sitter_op: None,
         }
     }
 
     pub fn with_empty_editor(self) -> Self {
         MainView {
-            editor: Some(WithScroll::new(EditorView::new(), ScrollDirection::Both)),
+            editor: Some(
+                WithScroll::new(
+                    EditorView::new()
+                        .with_tree_sitter_op(self.tree_sitter_op.clone()),
+                    ScrollDirection::Both,
+                )
+            ),
             ..self
         }
     }
 
     pub fn with_tree_sitter(self, tsw: Rc<TreeSitterWrapper>) -> Self {
         MainView {
-            tree_sitter: Some(tsw),
+            tree_sitter_op: Some(tsw),
             ..self
         }
     }

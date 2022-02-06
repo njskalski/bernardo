@@ -2,7 +2,13 @@
 // It's not very well thought.
 
 
+use std::fs::read;
+use std::str::FromStr;
+
+use log::debug;
+
 use crate::io::style::{Effect, TextStyle};
+use crate::Keycode::F;
 use crate::primitives::color::Color;
 use crate::primitives::colors;
 
@@ -18,6 +24,8 @@ pub struct Theme {
 
     non_focused_background: Color,
     focused_background: Color,
+
+    code_theme: Option<()>,
 }
 
 impl Theme {
@@ -33,8 +41,47 @@ impl Theme {
             header_foreground: colors::HEADER_FOREGROUND,
             non_focused_background: colors::NON_FOCUSED_FOREGROUND,
             focused_background: colors::FOCUSED_BACKGROUND,
+
+            code_theme: None,
         }
     }
+
+    // pub fn with_code_theme(self, code_theme: syntect::highlighting::Theme) -> Self {
+    //     Self {
+    //         code_theme: Some(code_theme),
+    //         ..self
+    //     }
+    // }
+
+    pub fn name_to_theme(&self, s: &str) -> Option<TextStyle> {
+        // let ct = match self.code_theme.as_ref() {
+        //     Some(ct) => ct,
+        //     None => return None,
+        // };
+
+        debug!("name_to_theme: {}", s);
+
+        None
+
+        // for i in ct.scopes.iter() {
+        //     debug!("{:?}", i.scope.selectors);
+        // }
+
+        // let highlighter = syntect::highlighting::Highlighter::new(ct);
+        // let scope_sel = syntect::highlighting::ScopeSelector::from_str(s);
+        //
+        //
+        // let style = match scope_sel {
+        //     Ok(ss) => {
+        //         highlighter.style_for_stack(&ss.extract_scopes())
+        //     },
+        //     _ => return None,
+        // };
+        //
+        // Some(style_to_text_style(style))
+    }
+
+    pub fn xx(&self) {}
 
     pub fn cursor(&self) -> TextStyle {
         TextStyle::new(self.cursor_foreground, self.cursor_background, Effect::None)

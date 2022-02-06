@@ -47,6 +47,7 @@ fn main() {
 
     let tree_sitter_wrapper = TreeSitterWrapper::new(LanguageSet::full());
 
+
     let stdout = stdout();
     let stdout = stdout.lock().into_raw_mode().unwrap();
     // let stdin = stdin();
@@ -84,7 +85,7 @@ fn main() {
         .with_empty_editor()
         .with_tree_sitter(Rc::new(tree_sitter_wrapper));
 
-    let theme = Theme::default();
+    let theme = Theme::default();//.with_code_theme(code_theme);
 
     // returns (consumed, message_to_parent)
     fn recursive_treat_views(

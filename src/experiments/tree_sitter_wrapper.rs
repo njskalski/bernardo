@@ -85,4 +85,6 @@ impl TreeSitterWrapper {
             languages
         }
     }
+
+    fn x(&self) {}
 }

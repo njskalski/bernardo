@@ -18,6 +18,10 @@ filesystem = "0.4.4"
 crossterm = "0.22.1"
 either = "1.6.1"
 env_logger = "0.9.0"
+json = "0.12.4"
+ron = "0.7.0"
+serde = { version = "1", features = ["derive"] }
+hex = "0.4.3"
 
 #tree sitter items
 tree-sitter = "0.20.2"
