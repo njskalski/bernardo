@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::rc::Rc;
 
+use env_logger::filter::Filter;
 use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -20,10 +21,11 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::tree_view::tree_it::TreeIt;
 use crate::widgets::tree_view::tree_view_node::{ChildRc, TreeViewNode};
 
+pub type TreeViewFilter<Key> = fn(&TreeViewNode<Key>) -> bool;
+
 pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
     id: WID,
-    filter: String,
-    filter_enabled: bool,
+    filter: Option<TreeViewFilter<Key>>,
     root_node: Rc<dyn TreeViewNode<Key>>,
 
     expanded: HashSet<Key>,
@@ -54,8 +56,7 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         Self {
             id: get_new_widget_id(),
             root_node,
-            filter_enabled: false,
-            filter: "".to_owned(),
+            filter: None,
             expanded: HashSet::new(),
             highlighted: 0,
             on_miss: None,
@@ -65,11 +66,15 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         }
     }
 
-    pub fn with_filter_enabled(self, enabled: bool) -> Self {
+    pub fn with_filter(self, filter: TreeViewFilter<Key>) -> Self {
         TreeViewWidget {
-            filter_enabled: enabled,
+            filter: Some(filter),
             ..self
         }
+    }
+
+    pub fn set_filter(&mut self, filter: Option<TreeViewFilter<Key>>) {
+        self.filter = filter;
     }
 
     pub fn is_expanded(&self, key: &Key) -> bool {
