@@ -9,10 +9,10 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::rc::Rc;
 
-
-
+use crate::io::keys::Key;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
+type TreeItFilter = fn(&TreeViewNode<Key>) -> bool;
 type QueueType<Key> = Rc<dyn TreeViewNode<Key>>;
 
 pub struct TreeIt<'a, Key: Hash + Eq + Debug> {

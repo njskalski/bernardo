@@ -1,5 +1,5 @@
 pub mod mock {
-    use crate::widget::list_widget::{ListWidgetCell, ListWidgetItem};
+    use crate::widgets::list_widget::{ListWidgetCell, ListWidgetItem};
 
     #[derive(Clone, Debug)]
     pub struct MockFile {

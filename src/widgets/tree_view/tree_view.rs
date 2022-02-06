@@ -21,12 +21,11 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::tree_view::tree_it::TreeIt;
 use crate::widgets::tree_view::tree_view_node::{ChildRc, TreeViewNode};
 
-pub type TreeViewFilter<Key> = fn(&TreeViewNode<Key>) -> bool;
-
 pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
     id: WID,
-    filter: Option<TreeViewFilter<Key>>,
     root_node: Rc<dyn TreeViewNode<Key>>,
+
+    filter_letters: Option<String>,
 
     expanded: HashSet<Key>,
     highlighted: usize,
@@ -36,7 +35,7 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
     on_highlighted_changed: Option<WidgetAction<TreeViewWidget<Key>>>,
     on_flip_expand: Option<WidgetAction<TreeViewWidget<Key>>>,
     // called on hitting "enter" over a selection.
-    on_select_highlighted: Option<WidgetAction<TreeViewWidget<Key>>>
+    on_select_highlighted: Option<WidgetAction<TreeViewWidget<Key>>>,
 }
 
 #[derive(Debug)]
@@ -56,7 +55,7 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         Self {
             id: get_new_widget_id(),
             root_node,
-            filter: None,
+            filter_letters: None,
             expanded: HashSet::new(),
             highlighted: 0,
             on_miss: None,
@@ -66,15 +65,15 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         }
     }
 
-    pub fn with_filter(self, filter: TreeViewFilter<Key>) -> Self {
+    pub fn with_filter_letters(self, filter_letters: String) -> Self {
         TreeViewWidget {
-            filter: Some(filter),
+            filter_letters: Some(filter_letters),
             ..self
         }
     }
 
-    pub fn set_filter(&mut self, filter: Option<TreeViewFilter<Key>>) {
-        self.filter = filter;
+    pub fn set_filter_letters(&mut self, filter_letters: Option<String>) {
+        self.filter_letters = filter_letters;
     }
 
     pub fn is_expanded(&self, key: &Key) -> bool {
