@@ -137,7 +137,9 @@ fn main() {
                 debug!("uw pushing {:?} to {}", internal_message, view.typename());
                 let message_to_parent = view.update(internal_message);
                 debug!("uw resp {:?}", message_to_parent);
-                (message_to_parent.is_some(), message_to_parent)
+
+                // (message_to_parent.is_some(), message_to_parent)
+                (true, message_to_parent)
             }
         }
     }

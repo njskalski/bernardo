@@ -1,10 +1,11 @@
 use std::rc::Rc;
 
 use log::{error, warn};
+use termion::event::Event::Key;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
+use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
 use crate::io::style::TextStyle;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::cursor_set::{CursorSet, CursorStatus};
@@ -14,7 +15,9 @@ use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::common_edit_msgs::{apply_cme, cme_to_direction, CommonEditMsg, key_to_edit_msg};
+use crate::widgets::edit_box::EditBoxWidgetMsg::Letter;
 use crate::widgets::editor_view::msg::EditorViewMsg;
+use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
 
@@ -30,8 +33,9 @@ pub struct EditorView {
     todo_text: BufferState,
 
     anchor: XY,
-
     tree_sitter: Option<Rc<TreeSitterWrapper>>,
+
+    save_file_dialog: Option<SaveFileDialogWidget>,
 }
 
 impl EditorView {
@@ -43,9 +47,9 @@ impl EditorView {
             todo_text: BufferState::new(),
             anchor: ZERO,
             tree_sitter: None,
+            save_file_dialog: None,
         }
     }
-
 
     pub fn with_buffer(self, buffer: BufferState) -> Self {
         EditorView {
@@ -113,11 +117,25 @@ impl Widget for EditorView {
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         return match input_event {
+            //TODO refactor the settings
+
             InputEvent::Tick => None,
             InputEvent::KeyInput(key) => {
-                match key_to_edit_msg(key) {
-                    None => None,
-                    Some(edit_msg) => Some(Box::new(EditorViewMsg::EditMsg(edit_msg)))
+                if key.modifiers.CTRL && key.keycode == Keycode::Char('s') {
+                    return if key.modifiers.SHIFT == false {
+                        Some(Box::new(EditorViewMsg::Save))
+                    } else {
+                        Some(Box::new(EditorViewMsg::SaveAs))
+                    }
+                }
+
+                return if key.modifiers.ALT == false {
+                    match key_to_edit_msg(key) {
+                        None => None,
+                        Some(edit_msg) => Some(Box::new(EditorViewMsg::EditMsg(edit_msg)))
+                    }
+                } else {
+                    None
                 }
             }
         };

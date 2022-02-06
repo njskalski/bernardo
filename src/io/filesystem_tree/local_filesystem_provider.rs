@@ -14,6 +14,7 @@ use crate::io::filesystem_tree::filesystem_tree::FilesystemNode;
 use crate::text::buffer_state::BufferState;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
+#[derive(Debug, Clone)]
 pub struct LocalFilesystemProvider {
     root: PathBuf,
     root_node: Rc<FilesystemNode>,

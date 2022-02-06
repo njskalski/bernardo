@@ -194,8 +194,6 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
                 match key.keycode {
                     Keycode::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
                     Keycode::ArrowDown => Some(Box::new(TreeViewMsg::Arrow(Arrow::Down))),
-                    Keycode::ArrowLeft => Some(Box::new(TreeViewMsg::Arrow(Arrow::Left))),
-                    Keycode::ArrowRight => Some(Box::new(TreeViewMsg::Arrow(Arrow::Right))),
                     Keycode::Enter => { Some(Box::new(TreeViewMsg::HitEnter)) },
                     _ => None,
                 }
@@ -230,8 +228,6 @@ impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
                     }
                 }
                 _ => None,
-                // Arrow::Left => {}
-                // Arrow::Right => {}
             },
             TreeViewMsg::HitEnter => {
                 let node = {

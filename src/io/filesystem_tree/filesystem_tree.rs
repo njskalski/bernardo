@@ -8,6 +8,7 @@ use log::warn;
 use crate::widgets::list_widget::ListWidgetItem;
 use crate::widgets::tree_view::tree_view_node::{ChildRc, TreeViewNode};
 
+#[derive(Debug)]
 pub struct FilesystemNode {
     path: PathBuf,
     dir_cache: RefCell<Vec<Rc<FilesystemNode>>>,
