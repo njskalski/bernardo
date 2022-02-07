@@ -1,3 +1,8 @@
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate maplit;
+
 use std::env::args;
 use std::io::stdout;
 use std::path::PathBuf;
@@ -22,6 +27,7 @@ use crate::primitives::xy::ZERO;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
+
 
 mod experiments;
 mod io;

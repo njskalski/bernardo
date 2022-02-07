@@ -52,6 +52,7 @@ pub struct Selection {
 
 impl Selection {
     pub fn new(b: usize, e: usize) -> Self {
+        //TODO got a panic here with move_vertically_by on cursor up
         debug_assert!(b < e, "b {} e {}", b, e);
         Selection {
             b,

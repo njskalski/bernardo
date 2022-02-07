@@ -16,6 +16,9 @@ use crate::primitives::colors;
 pub struct Theme {
     cursor_background: Color,
     cursor_foreground: Color,
+
+    // highlight_background: Color,
+
     default_text_bg: Color,
     default_text_fg: Color,
     edit_background: Color,
@@ -96,6 +99,12 @@ impl Theme {
     pub fn default_text(&self, focused: bool) -> TextStyle {
         TextStyle::new(self.default_text_fg,
                        self.default_background(focused),
+                       Effect::None)
+    }
+
+    pub fn selected_text(&self, focused: bool) -> TextStyle {
+        TextStyle::new(Color::interpolate(self.cursor_foreground, self.default_text_fg),
+                       Color::interpolate(self.cursor_background, self.default_background(focused)),
                        Effect::None)
     }
 

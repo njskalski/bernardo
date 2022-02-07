@@ -5,11 +5,12 @@ use termion::event::Event::Key;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
+use crate::{AnyMsg, InputEvent, Keycode, LocalFilesystemProvider, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
 use crate::io::style::TextStyle;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::cursor_set::{CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
+use crate::primitives::helpers;
 use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
@@ -93,6 +94,8 @@ impl EditorView {
             }
         }
     }
+
+    fn build_save_as(&mut self) {}
 }
 
 impl Widget for EditorView {
@@ -167,6 +170,9 @@ impl Widget for EditorView {
 
                     None
                 }
+                EditorViewMsg::SaveAs => {
+                    None
+                }
                 _ => {
                     warn!("unhandled message {:?}", msg);
                     None
@@ -175,7 +181,10 @@ impl Widget for EditorView {
         };
     }
 
-    fn render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
+    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let fill_color = theme.default_background(focused);
+        helpers::fill_output(fill_color, output);
+
         for (line_idx, line) in self.todo_text.lines().enumerate()
             // skipping lines that cannot be visible, because they are before hint()
             .skip(output.size_constraint().hint().upper_left().y as usize)
@@ -205,7 +214,7 @@ impl Widget for EditorView {
 
                 match cursor_status {
                     CursorStatus::None => {
-                        let mut style = theme.default_text(false);
+                        let mut style = theme.default_text(focused);
                         match fg_color {
                             Some(fgc) => style = style.with_foreground(fgc),
                             None => {}
@@ -214,7 +223,7 @@ impl Widget for EditorView {
                         output.print_at(pos, style, tr);
                     }
                     CursorStatus::WithinSelection => {
-                        output.print_at(pos, theme.default_text(true), tr);
+                        output.print_at(pos, theme.selected_text(focused), tr);
                     }
                     CursorStatus::UnderCursor => {
                         output.print_at(pos, theme.cursor(), tr);

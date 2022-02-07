@@ -19,6 +19,17 @@ impl Color {
     pub fn half(&self) -> Self {
         Color { R: self.R / 2, G: self.R / 2, B: self.B / 2 }
     }
+
+    pub fn interpolate(a: Color, b: Color) -> Color {
+        let r: u16 = (a.R as u16 + b.R as u16) / 2;
+        let g: u16 = (a.B as u16 + b.B as u16) / 2;
+        let b: u16 = (a.G as u16 + b.G as u16) / 2;
+        Color {
+            R: r as u8,
+            G: g as u8,
+            B: b as u8,
+        }
+    }
 }
 
 impl Serialize for Color {

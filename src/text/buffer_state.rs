@@ -1,5 +1,7 @@
 use std::borrow::Borrow;
 use std::ops::Range;
+use std::path::PathBuf;
+use std::rc::Rc;
 use std::string::String;
 
 use log::{debug, error, warn};
@@ -8,9 +10,10 @@ use ropey::Rope;
 use tree_sitter::{Tree, TreeCursor};
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::{Theme, TreeSitterWrapper};
+use crate::experiments::tree_sitter_wrapper::LangId;
 use crate::experiments::try_parse::try_parsing_rust;
 use crate::text::buffer::Buffer;
-use crate::Theme;
 
 #[derive(Clone, Debug)]
 pub struct BufferState {
@@ -20,6 +23,8 @@ pub struct BufferState {
     forward_history: Vec<Rope>,
 
     todo_parse_tree: Option<tree_sitter::Tree>,
+
+    file_path: Option<PathBuf>,
 }
 
 impl BufferState {
@@ -29,6 +34,7 @@ impl BufferState {
             history: vec![],
             forward_history: vec![],
             todo_parse_tree: None,
+            file_path: None,
         }
     }
 
@@ -91,6 +97,8 @@ impl BufferState {
             node.kind()
         })
     }
+
+    pub fn try_parse(&self, language: LangId, tree_sitter: Rc<TreeSitterWrapper>) -> bool {}
 }
 
 impl Buffer for BufferState {
