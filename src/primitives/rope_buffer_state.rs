@@ -59,7 +59,11 @@ impl Buffer for Rope {
         self.get_char(char_idx)
     }
 
-    fn reader_for_parser<'a>(&'a self) -> Box<dyn Fn(usize, Point) -> &'a [u8] + 'a> {
-        pack_rope_with_callback(self)
+    fn reader_for_parser<'a>(&'a self) -> fn(usize, Point) -> &'a [u8] {
+        todo!()
     }
+
+    // fn reader_for_parser<'a>(&'a self) -> Box<dyn Fn(usize, Point) -> &'a [u8] + 'a> {
+    //     pack_rope_with_callback(self)
+    // }
 }

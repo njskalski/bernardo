@@ -161,7 +161,7 @@ impl Buffer for BufferState {
         self.text.char_at(char_idx)
     }
 
-    fn reader_for_parser<'a>(&'a self) -> Box<dyn Fn(usize, Point) -> &'a [u8] + 'a> {
-        pack_rope_with_callback(&self.text)
+    fn reader_for_parser<'a>(&'a self) -> fn(usize, Point) -> &'a [u8] {
+        todo!()
     }
 }
