@@ -11,28 +11,22 @@ use crate::text::buffer::Buffer;
 
 static EMPTY_SLICE: [u8; 0] = [0; 0];
 
-pub type parser_callback<'a> = FnMut(usize, Point) -> &'a [u8];
-
-trait X {
-    fn a<'a, T: FnMut(usize, Point) -> &'a [u8]>(&self) -> T;
-}
-
-pub fn pack_rope_with_callback<'a>(buffer: &'a Rope) -> impl FnMut(usize, Point) -> &'a [u8] {
-    return move |offset: usize, point: Point| {
-        if offset >= buffer.len_bytes() {
+pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<Fn(usize, tree_sitter::Point) -> &'a [u8] + 'a> {
+    return Box::new(move |offset: usize, point: Point| {
+        if offset >= rope.len_bytes() {
             return &EMPTY_SLICE
         }
 
         // next several lines are just a sanity check
-        let char_idx = match buffer.try_byte_to_char(offset) {
+        let char_idx = match rope.try_byte_to_char(offset) {
             Ok(idx) => idx,
             _ => return &EMPTY_SLICE,
         };
-        let line_idx = match buffer.try_char_to_line(char_idx) {
+        let line_idx = match rope.try_char_to_line(char_idx) {
             Ok(idx) => idx,
             _ => return &EMPTY_SLICE,
         };
-        let line_begin_idx = match buffer.try_line_to_char(line_idx) {
+        let line_begin_idx = match rope.try_line_to_char(line_idx) {
             Ok(idx) => idx,
             _ => return &EMPTY_SLICE,
         };
@@ -43,12 +37,12 @@ pub fn pack_rope_with_callback<'a>(buffer: &'a Rope) -> impl FnMut(usize, Point)
         }
         // end of sanity check
 
-        let (bytes, _, _, _) = buffer.chunk_at_byte(offset);
+        let (bytes, _, _, _) = rope.chunk_at_byte(offset);
         bytes.as_bytes()
-    }
+    })
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum LangId {
     C,
     CPP,
@@ -140,17 +134,16 @@ impl TreeSitterWrapper {
     }
 
     // This should be called on loading a file. On update, ParserAndTree struct should be used.
-    pub fn new_parse(&self, langId: LangId, buffer: &dyn Buffer) -> Result<ParserAndTree, LanguageError> {
-        let language = self.languages.get(&langId).unwrap();//TODO
-        let mut parser = Parser::new();
-        parser.set_language(language.clone())?;
-
-        let mut callback = pack_rope_with_callback(buffer);
-
-        // parser.parse_with(callback, None)
-
-        Err(())
-
-        // let tree = parser.parse_with()
-    }
+    // pub fn new_parse(&self, langId: LangId, buffer: &ropey::Rope) -> Result<ParserAndTree, LanguageError> {
+    //     let language = self.languages.get(&langId).unwrap();//TODO
+    //     let mut parser = Parser::new();
+    //     parser.set_language(language.clone());
+    //
+    //     let mut callback = pack_rope_with_callback(buffer);
+    //
+    //     // parser.parse_with(callback, None)
+    //
+    //
+    //     // let tree = parser.parse_with()
+    // }
 }
