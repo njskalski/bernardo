@@ -9,28 +9,32 @@ use tree_sitter_highlight::HighlightConfiguration;
 
 use crate::text::buffer::Buffer;
 
-pub type TreeSitterCallback<T: AsRef<[u8]>> = FnMut(usize, Point) -> T;
+static EMPTY_SLICE: [u8; 0] = [0; 0];
 
-static EMPTY_SLICE: [u8; 0] = [u8; 0];
+pub type parser_callback<'a> = FnMut(usize, Point) -> &'a [u8];
 
-pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> fn(usize, Point) -> &[u8] {
-    return |offset: usize, point: Point| {
-        if offset >= rope.len_bytes() {
+trait X {
+    fn a<'a, T: FnMut(usize, Point) -> &'a [u8]>(&self) -> T;
+}
+
+pub fn pack_rope_with_callback<'a>(buffer: &'a Rope) -> impl FnMut(usize, Point) -> &'a [u8] {
+    return move |offset: usize, point: Point| {
+        if offset >= buffer.len_bytes() {
             return &EMPTY_SLICE
         }
 
         // next several lines are just a sanity check
-        let char_idx = match rope.try_byte_to_char(offset) {
-            Some(idx) => idx,
-            None => return &EMPTY_SLICE,
+        let char_idx = match buffer.try_byte_to_char(offset) {
+            Ok(idx) => idx,
+            _ => return &EMPTY_SLICE,
         };
-        let line_idx = match rope.try_char_to_line(char_idx) {
-            Some(idx) => idx,
-            None => return &EMPTY_SLICE,
+        let line_idx = match buffer.try_char_to_line(char_idx) {
+            Ok(idx) => idx,
+            _ => return &EMPTY_SLICE,
         };
-        let line_begin_idx = match rope.try_line_to_char(line_idx) {
-            Some(idx) => idx,
-            None => return &EMPTY_SLICE,
+        let line_begin_idx = match buffer.try_line_to_char(line_idx) {
+            Ok(idx) => idx,
+            _ => return &EMPTY_SLICE,
         };
         let column_idx = char_idx - line_begin_idx;
         if point.row == line_idx || point.column == column_idx {
@@ -39,7 +43,7 @@ pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> fn(usize, Point) -> &[u8] 
         }
         // end of sanity check
 
-        let (bytes, _, _, _) = rope.chunk_at_byte(offset);
+        let (bytes, _, _, _) = buffer.chunk_at_byte(offset);
         bytes.as_bytes()
     }
 }
@@ -136,11 +140,17 @@ impl TreeSitterWrapper {
     }
 
     // This should be called on loading a file. On update, ParserAndTree struct should be used.
-    // pub fn new_parse(&self, langId: LangId, buffer: &dyn Buffer) -> Result<ParserAndTree, ()> {
-    //     let language = self.languages.get(&langId).ok_or(Err(()))?;
-    //     let mut parser = Parser::new();
-    //     parser.set_language(language.clone())?;
-    //
-    //     // let tree = parser.parse_with()
-    // }
+    pub fn new_parse(&self, langId: LangId, buffer: &dyn Buffer) -> Result<ParserAndTree, LanguageError> {
+        let language = self.languages.get(&langId).unwrap();//TODO
+        let mut parser = Parser::new();
+        parser.set_language(language.clone())?;
+
+        let mut callback = pack_rope_with_callback(buffer);
+
+        // parser.parse_with(callback, None)
+
+        Err(())
+
+        // let tree = parser.parse_with()
+    }
 }
