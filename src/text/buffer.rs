@@ -21,8 +21,6 @@ pub trait Buffer {
     fn char_at(&self, char_idx: usize) -> Option<char>;
 
     fn char_to_kind(&self, char_idx: usize) -> Option<&str> { None }
-
-    fn reader_for_parser<'a>(&'a self) -> fn(usize, tree_sitter::Point) -> &'a [u8];
 }
 
 pub fn buffer_to_string(b: &dyn Buffer) -> String {

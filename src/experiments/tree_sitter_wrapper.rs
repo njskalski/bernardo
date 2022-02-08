@@ -11,7 +11,7 @@ use crate::text::buffer::Buffer;
 
 static EMPTY_SLICE: [u8; 0] = [0; 0];
 
-pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<Fn(usize, tree_sitter::Point) -> &'a [u8] + 'a> {
+pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<FnMut(usize, Point) -> &'a [u8] + 'a> {
     return Box::new(move |offset: usize, point: Point| {
         if offset >= rope.len_bytes() {
             return &EMPTY_SLICE
@@ -134,12 +134,12 @@ impl TreeSitterWrapper {
     }
 
     // This should be called on loading a file. On update, ParserAndTree struct should be used.
-    pub fn new_parse(&self, langId: LangId, buffer: &dyn Buffer) -> Option<ParserAndTree> {
+    pub fn new_parse(&self, langId: LangId, buffer: &ropey::Rope) -> Option<ParserAndTree> {
         let language = self.languages.get(&langId)?;
         let mut parser = Parser::new();
         parser.set_language(language.clone());
 
-        let mut callback = buffer.reader_for_parser();
+        let mut callback = pack_rope_with_callback(buffer);
         let tree = parser.parse_with(&mut callback, None)?;
 
         Some(

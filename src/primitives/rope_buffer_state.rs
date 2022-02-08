@@ -1,10 +1,12 @@
 // this is for test only
 
+use log::debug;
 use ropey::Rope;
 use tree_sitter::Point;
 
-use crate::experiments::tree_sitter_wrapper::pack_rope_with_callback;
 use crate::text::buffer::Buffer;
+
+static EMPTY_SLICE: [u8; 0] = [0; 0];
 
 impl Buffer for Rope {
     fn len_lines(&self) -> usize {
@@ -58,12 +60,4 @@ impl Buffer for Rope {
     fn char_at(&self, char_idx: usize) -> Option<char> {
         self.get_char(char_idx)
     }
-
-    fn reader_for_parser<'a>(&'a self) -> fn(usize, Point) -> &'a [u8] {
-        todo!()
-    }
-
-    // fn reader_for_parser<'a>(&'a self) -> Box<dyn Fn(usize, Point) -> &'a [u8] + 'a> {
-    //     pack_rope_with_callback(self)
-    // }
 }

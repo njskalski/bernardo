@@ -11,7 +11,7 @@ use tree_sitter::{Point, Tree, TreeCursor};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{Theme, TreeSitterWrapper};
-use crate::experiments::tree_sitter_wrapper::{LangId, pack_rope_with_callback};
+use crate::experiments::tree_sitter_wrapper::LangId;
 use crate::experiments::try_parse::try_parsing_rust;
 use crate::text::buffer::Buffer;
 
@@ -159,9 +159,5 @@ impl Buffer for BufferState {
 
     fn char_at(&self, char_idx: usize) -> Option<char> {
         self.text.char_at(char_idx)
-    }
-
-    fn reader_for_parser<'a>(&'a self) -> fn(usize, Point) -> &'a [u8] {
-        todo!()
     }
 }
