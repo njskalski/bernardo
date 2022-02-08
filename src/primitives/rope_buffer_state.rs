@@ -4,6 +4,7 @@ use log::debug;
 use ropey::Rope;
 use tree_sitter::Point;
 
+use crate::experiments::tree_sitter_wrapper::pack_rope_with_callback;
 use crate::text::buffer::Buffer;
 
 static EMPTY_SLICE: [u8; 0] = [0; 0];
@@ -59,5 +60,9 @@ impl Buffer for Rope {
 
     fn char_at(&self, char_idx: usize) -> Option<char> {
         self.get_char(char_idx)
+    }
+
+    fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {
+        pack_rope_with_callback(self)
     }
 }

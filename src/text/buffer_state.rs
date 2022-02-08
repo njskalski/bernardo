@@ -160,4 +160,8 @@ impl Buffer for BufferState {
     fn char_at(&self, char_idx: usize) -> Option<char> {
         self.text.char_at(char_idx)
     }
+
+    fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {
+        self.text.callback_for_parser()
+    }
 }

@@ -134,12 +134,12 @@ impl TreeSitterWrapper {
     }
 
     // This should be called on loading a file. On update, ParserAndTree struct should be used.
-    pub fn new_parse(&self, langId: LangId, buffer: &ropey::Rope) -> Option<ParserAndTree> {
+    pub fn new_parse(&self, langId: LangId, buffer: &dyn Buffer) -> Option<ParserAndTree> {
         let language = self.languages.get(&langId)?;
         let mut parser = Parser::new();
         parser.set_language(language.clone());
 
-        let mut callback = pack_rope_with_callback(buffer);
+        let mut callback = buffer.callback_for_parser();
         let tree = parser.parse_with(&mut callback, None)?;
 
         Some(
