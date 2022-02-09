@@ -61,6 +61,7 @@ extern "C" {
     fn tree_sitter_rust() -> Language;
 }
 
+#[derive(Debug)]
 pub struct TreeSitterWrapper {
     languages: HashMap<LangId, Language>,
 }

@@ -6,6 +6,7 @@ use std::rc::Rc;
 use log::{debug, error, warn};
 
 use crate::{AnyMsg, InputEvent, LocalFilesystemProvider, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
+use crate::experiments::filename_to_language::filename_to_language;
 use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
 use crate::io::sub_output::SubOutput;
 use crate::layout::cached_sizes::DisplayState;
@@ -101,12 +102,17 @@ impl MainView {
 
         // TODO this maybe needs to be moved to other place, but there is no other place yet.
 
+        let lang_id = filename_to_language(path);
+
         match self.fs.todo_read_file(path) {
             Ok(rope) => {
                 self.editor = Some(
                     WithScroll::new(
                         EditorView::new(self.tree_sitter.clone())
-                            .with_buffer(BufferState::new(self.tree_sitter.clone()).with_text_from_rope(rope)),
+                            .with_buffer(
+                                BufferState::new(self.tree_sitter.clone())
+                                    .with_text_from_rope(rope, lang_id)
+                            ),
                         ScrollDirection::Both,
                     ));
                 true
