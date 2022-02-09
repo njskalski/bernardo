@@ -88,12 +88,6 @@ impl LanguageSet {
     }
 }
 
-pub struct ParserAndTree {
-    pub parser: Parser,
-    pub tree: Tree,
-    pub lang: LangId,
-}
-
 impl TreeSitterWrapper {
     pub fn new(ls: LanguageSet) -> TreeSitterWrapper {
         let mut languages = HashMap::<LangId, Language>::new();
@@ -134,7 +128,7 @@ impl TreeSitterWrapper {
     }
 
     // This should be called on loading a file. On update, ParserAndTree struct should be used.
-    pub fn new_parse(&self, langId: LangId, buffer: &dyn Buffer) -> Option<ParserAndTree> {
+    pub fn new_parse(&self, langId: LangId, buffer: &dyn Buffer) -> Option<(Parser, Tree)> {
         let language = self.languages.get(&langId)?;
         let mut parser = Parser::new();
         parser.set_language(language.clone());
@@ -143,11 +137,10 @@ impl TreeSitterWrapper {
         let tree = parser.parse_with(&mut callback, None)?;
 
         Some(
-            ParserAndTree {
+            (
                 parser,
                 tree,
-                lang: langId,
-            }
+            )
         )
     }
 }

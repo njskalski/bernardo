@@ -28,7 +28,6 @@ use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
 
-
 mod experiments;
 mod io;
 mod layout;
@@ -52,7 +51,7 @@ fn main() {
         .filter_level(args.verbosity.log_level_filter())
         .init();
 
-    let tree_sitter_wrapper = TreeSitterWrapper::new(LanguageSet::full());
+    let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
 
 
     let stdout = stdout();
@@ -88,9 +87,8 @@ fn main() {
     // let boxed = Box::new(fsp);
     // let mut main_view = SaveFileDialogWidget::new(boxed);
 
-    let mut main_view = MainView::new(PathBuf::from("/home/andrzej/r"))
-        .with_empty_editor()
-        .with_tree_sitter(Rc::new(tree_sitter_wrapper));
+    let mut main_view = MainView::new(tree_sitter, PathBuf::from("/home/andrzej/r"))
+        .with_empty_editor();
 
     let fs = filesystem::OsFileSystem::new();
     let color_theme = ColorTheme::load_from_file(fs, &PathBuf::from("./themes/default.ron")).unwrap(); // TODO

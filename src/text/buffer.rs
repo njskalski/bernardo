@@ -1,5 +1,7 @@
 use std::iter;
 
+use crate::experiments::tree_sitter_wrapper::LangId;
+
 pub trait Buffer {
     fn len_lines(&self) -> usize;
     fn lines(&self) -> Box<dyn iter::Iterator<Item=String> + '_>;
@@ -23,6 +25,8 @@ pub trait Buffer {
     fn char_to_kind(&self, char_idx: usize) -> Option<&str> { None }
 
     fn callback_for_parser<'a>(&'a self) -> Box<FnMut(usize, tree_sitter::Point) -> &'a [u8] + 'a>;
+
+    fn try_parse(&mut self, langId: LangId) -> bool { false }
 }
 
 pub fn buffer_to_string(b: &dyn Buffer) -> String {

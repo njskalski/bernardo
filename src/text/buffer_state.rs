@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::fmt::{Debug, Formatter};
 use std::ops::Range;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -7,52 +8,78 @@ use std::string::String;
 use log::{debug, error, warn};
 use ropey::iter::Lines;
 use ropey::Rope;
-use tree_sitter::{Point, Tree, TreeCursor};
+use tree_sitter::{Parser, Point, Tree, TreeCursor};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{Theme, TreeSitterWrapper};
 use crate::experiments::tree_sitter_wrapper::LangId;
-use crate::experiments::try_parse::try_parsing_rust;
 use crate::text::buffer::Buffer;
+
+#[derive(Clone)]
+struct Text {
+    pub rope: Rope,
+    pub tree: Tree,
+    pub parser: Rc<Parser>,
+}
+
+impl Debug for Text {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "rope len {}", self.rope.len_chars())
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct BufferState {
+    tree_sitter: Rc<TreeSitterWrapper>,
+
     text: Rope,
 
     history: Vec<Rope>,
     forward_history: Vec<Rope>,
 
-    todo_parse_tree: Option<tree_sitter::Tree>,
+    lang_id: Option<LangId>,
 
     file_path: Option<PathBuf>,
 }
 
 impl BufferState {
-    pub fn new() -> BufferState {
+    pub fn new(tree_sitter: Rc<TreeSitterWrapper>) -> BufferState {
         BufferState {
+            tree_sitter,
             text: Rope::new(),
             history: vec![],
             forward_history: vec![],
-            todo_parse_tree: None,
+
             file_path: None,
+            lang_id: None,
         }
     }
 
-    pub fn with_text_from_string<'a, T: Into<&'a str>>(self, text: T) -> BufferState {
+    pub fn with_lang(self, lang_id: LangId) -> Self {
+        Self {
+            lang_id: Some(lang_id),
+            ..self
+        }
+    }
+
+    pub fn with_text_from_rope(self, rope: Rope) -> Self {
+        BufferState {
+            text: rope,
+            ..self
+        }
+    }
+
+    pub fn with_text_from_string<'a, T: Into<&'a str>>(self, text: T) -> Self {
         let mut res = BufferState {
             text: Rope::from_str(text.into()),
             ..self
         };
 
-        match try_parsing_rust(res.text.to_string().as_str()) {
-            None => {}
-            Some(tree) => {
-                // todo_dump_tree(&tree);
-                res.todo_parse_tree = Some(tree);
-            }
-        };
-
         res
+    }
+
+    pub fn set_lang(&mut self, lang_id: Option<LangId>) {
+        self.lang_id = lang_id;
     }
 
     fn clone_top(&mut self) {
@@ -91,14 +118,13 @@ impl BufferState {
             _ => return None,
         };
 
-        self.todo_parse_tree.as_ref().map(|tree| {
-            tree.root_node().descendant_for_byte_range(byte_idx, byte_idx)
-        }).flatten().map(|node| {
-            node.kind()
-        })
+        // self.todo_parse_tree.as_ref().map(|tree| {
+        //     tree.root_node().descendant_for_byte_range(byte_idx, byte_idx)
+        // }).flatten().map(|node| {
+        //     node.kind()
+        // })
+        None
     }
-
-    // pub fn try_parse(&self, language: LangId, tree_sitter: Rc<TreeSitterWrapper>) -> bool {}
 }
 
 impl Buffer for BufferState {

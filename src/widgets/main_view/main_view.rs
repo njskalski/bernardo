@@ -31,11 +31,11 @@ pub struct MainView {
     tree_widget: WithScroll<TreeViewWidget<PathBuf>>,
     no_editor: NoEditorWidget,
     editor: Option<WithScroll<EditorView>>,
-    tree_sitter_op: Option<Rc<TreeSitterWrapper>>,
+    tree_sitter: Rc<TreeSitterWrapper>,
 }
 
 impl MainView {
-    pub fn new(root_dir: PathBuf) -> MainView {
+    pub fn new(tree_sitter: Rc<TreeSitterWrapper>, root_dir: PathBuf) -> MainView {
         let local = LocalFilesystemProvider::new(root_dir);
 
         let tree = TreeViewWidget::new(local.get_root())
@@ -59,7 +59,7 @@ impl MainView {
             tree_widget: WithScroll::new(tree, ScrollDirection::Vertical),
             no_editor: NoEditorWidget::new(),
             editor: None,
-            tree_sitter_op: None,
+            tree_sitter,
         }
     }
 
@@ -67,18 +67,10 @@ impl MainView {
         MainView {
             editor: Some(
                 WithScroll::new(
-                    EditorView::new()
-                        .with_tree_sitter_op(self.tree_sitter_op.clone()),
+                    EditorView::new(self.tree_sitter.clone()),
                     ScrollDirection::Both,
                 )
             ),
-            ..self
-        }
-    }
-
-    pub fn with_tree_sitter(self, tsw: Rc<TreeSitterWrapper>) -> Self {
-        MainView {
-            tree_sitter_op: Some(tsw),
             ..self
         }
     }
@@ -110,10 +102,11 @@ impl MainView {
         // TODO this maybe needs to be moved to other place, but there is no other place yet.
 
         match self.fs.todo_read_file(path) {
-            Ok(buffer_state) => {
+            Ok(rope) => {
                 self.editor = Some(
                     WithScroll::new(
-                        EditorView::new().with_buffer(buffer_state),
+                        EditorView::new(self.tree_sitter.clone())
+                            .with_buffer(BufferState::new(self.tree_sitter.clone()).with_text_from_rope(rope)),
                         ScrollDirection::Both,
                     ));
                 true

@@ -34,20 +34,20 @@ pub struct EditorView {
     todo_text: BufferState,
 
     anchor: XY,
-    tree_sitter: Option<Rc<TreeSitterWrapper>>,
+    tree_sitter: Rc<TreeSitterWrapper>,
 
     save_file_dialog: Option<SaveFileDialogWidget>,
 }
 
 impl EditorView {
-    pub fn new() -> EditorView {
+    pub fn new(tree_sitter: Rc<TreeSitterWrapper>) -> EditorView {
         EditorView {
             wid: get_new_widget_id(),
             cursors: CursorSet::single(),
             last_size: None,
-            todo_text: BufferState::new(),
+            todo_text: BufferState::new(tree_sitter.clone()),
             anchor: ZERO,
-            tree_sitter: None,
+            tree_sitter,
             save_file_dialog: None,
         }
     }
@@ -55,13 +55,6 @@ impl EditorView {
     pub fn with_buffer(self, buffer: BufferState) -> Self {
         EditorView {
             todo_text: buffer,
-            ..self
-        }
-    }
-
-    pub fn with_tree_sitter_op(self, tree_sitter_op: Option<Rc<TreeSitterWrapper>>) -> Self {
-        EditorView {
-            tree_sitter: tree_sitter_op,
             ..self
         }
     }

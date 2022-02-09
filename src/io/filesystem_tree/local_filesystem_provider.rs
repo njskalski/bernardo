@@ -7,6 +7,7 @@ use std::str::Utf8Error;
 
 use filesystem::{FileSystem, OsFileSystem};
 use log::{debug, error, warn};
+use ropey::Rope;
 
 use crate::io::filesystem_tree::filesystem_list_item::FilesystemListItem;
 use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
@@ -113,12 +114,12 @@ impl FilesystemProvider for LocalFilesystemProvider {
         }
     }
 
-    fn todo_read_file(&mut self, path: &Path) -> Result<BufferState, ()> {
+    fn todo_read_file(&mut self, path: &Path) -> Result<Rope, ()> {
         match self.fs.read_file(path) {
             Ok(v8) => {
                 match std::str::from_utf8(v8.borrow()) {
                     Ok(s) => {
-                        Ok(BufferState::new().with_text_from_string(s))
+                        Ok(Rope::from(s))
                     }
                     Err(e) => {
                         error!("file read error {:?} : {}", path, e);
