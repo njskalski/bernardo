@@ -11,34 +11,49 @@ use crate::text::buffer::Buffer;
 
 static EMPTY_SLICE: [u8; 0] = [0; 0];
 
+pub fn byte_offset_to_point(rope: &Rope, byte_offset: usize) -> Option<Point> {
+    let char_idx = rope.try_byte_to_char(byte_offset).ok()?;
+    let line_idx = rope.try_char_to_line(char_idx).ok()?;
+    let line_begin_char_idx = rope.try_line_to_char(line_idx).ok()?;
+
+    // some paranoia
+    if char_idx < line_begin_char_idx {
+        None
+    } else {
+        let column_idx = char_idx - line_begin_char_idx;
+        Some(Point::new(line_idx, column_idx))
+    }
+}
+
 pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<FnMut(usize, Point) -> &'a [u8] + 'a> {
     return Box::new(move |offset: usize, point: Point| {
         if offset >= rope.len_bytes() {
+            debug!("byte offset beyond rope length: {} >= {}", offset, rope.len_bytes());
             return &EMPTY_SLICE
         }
 
-        // next several lines are just a sanity check
-        let char_idx = match rope.try_byte_to_char(offset) {
-            Ok(idx) => idx,
-            _ => return &EMPTY_SLICE,
+        let point_from_offset = match byte_offset_to_point(rope, offset) {
+            Some(point) => point,
+            None => return &EMPTY_SLICE,
         };
-        let line_idx = match rope.try_char_to_line(char_idx) {
-            Ok(idx) => idx,
-            _ => return &EMPTY_SLICE,
-        };
-        let line_begin_idx = match rope.try_line_to_char(line_idx) {
-            Ok(idx) => idx,
-            _ => return &EMPTY_SLICE,
-        };
-        let column_idx = char_idx - line_begin_idx;
-        if point.row == line_idx || point.column == column_idx {
-            debug!("byte offset diverted from point. Point is {},{} and offset {}:{},{}",
-                point.column, point.row, offset, column_idx, line_idx);
+        if point != point_from_offset {
+            error!("byte offset diverted from point. Point is {},{} and offset {}:{},{}",
+                point.column, point.row, offset, point_from_offset.column, point_from_offset.row);
         }
         // end of sanity check
 
-        let (bytes, _, _, _) = rope.chunk_at_byte(offset);
-        bytes.as_bytes()
+        //(chunk, chunk_byte_idx, chunk_char_idx, chunk_line_idx).
+        let (chunk, chunk_byte_idx, _, _) = rope.chunk_at_byte(offset);
+        let chunk_as_bytes = chunk.as_bytes();
+        // now chunk most probably begins BEFORE our offset. We need to offset for the offset.
+
+        debug_assert!(offset >= chunk_byte_idx); //TODO add some non-panicking failsafe.
+        let cut_from_beginning = offset - chunk_byte_idx;
+        let result = &chunk_as_bytes[cut_from_beginning..];
+
+        debug!("parser reading bytes [{}-{}) |{}|", offset, offset + result.len(), result.len());
+
+        result
     })
 }
 

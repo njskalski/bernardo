@@ -1,6 +1,6 @@
 // this is for test only
 
-use log::debug;
+use log::{debug, error};
 use ropey::Rope;
 use tree_sitter::Point;
 
@@ -27,35 +27,28 @@ impl Buffer for Rope {
     }
 
     fn char_to_line(&self, char_idx: usize) -> Option<usize> {
-        match self.try_char_to_line(char_idx) {
-            Ok(idx) => Some(idx),
-            Err(_) => None,
-        }
+        self.try_char_to_line(char_idx).ok()
     }
 
     fn line_to_char(&self, line_idx: usize) -> Option<usize> {
-        match self.try_line_to_char(line_idx) {
-            Ok(idx) => Some(idx),
-            Err(_) => None
-        }
+        self.try_line_to_char(line_idx).ok()
     }
 
     fn insert_char(&mut self, char_idx: usize, ch: char) -> bool {
-        match self.try_insert_char(char_idx, ch) {
-            Ok(_) => true,
-            Err(_) => false,
-        }
+        self.try_insert_char(char_idx, ch).is_ok()
+    }
+
+    fn insert_block(&mut self, char_idx: usize, block: &str) -> bool {
+        self.try_insert(char_idx, block).is_ok()
     }
 
     fn remove(&mut self, char_idx_begin: usize, char_idx_end: usize) -> bool {
         if char_idx_end >= char_idx_begin {
+            error!("char_idx >= char_idx_begin ( {} >= {} )", char_idx_end, char_idx_begin);
             return false;
         }
 
-        match self.try_remove(char_idx_begin..char_idx_end) {
-            Ok(_) => true,
-            Err(_) => false,
-        }
+        self.try_remove(char_idx_begin..char_idx_end).is_ok()
     }
 
     fn char_at(&self, char_idx: usize) -> Option<char> {

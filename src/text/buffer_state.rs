@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
 use std::ops::Range;
 use std::path::PathBuf;
@@ -8,18 +9,18 @@ use std::string::String;
 use log::{debug, error, warn};
 use ropey::iter::Lines;
 use ropey::Rope;
-use tree_sitter::{Parser, Point, Tree, TreeCursor};
+use tree_sitter::{InputEdit, Parser, Point, Tree, TreeCursor};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{Theme, TreeSitterWrapper};
-use crate::experiments::tree_sitter_wrapper::LangId;
+use crate::experiments::tree_sitter_wrapper::{byte_offset_to_point, LangId};
 use crate::text::buffer::Buffer;
 
 #[derive(Clone)]
 struct ParsingTuple {
     pub tree: Tree,
     pub lang_id: LangId,
-    pub parser: Rc<Parser>,
+    pub parser: Rc<RefCell<Parser>>,
 }
 
 impl Debug for ParsingTuple {
@@ -47,11 +48,130 @@ impl Text {
             self.parsing = Some(ParsingTuple {
                 tree,
                 lang_id,
-                parser: Rc::new(parser),
+                parser: Rc::new(RefCell::new(parser)),
             });
             true
         } else {
             false
+        }
+    }
+
+    fn try_reparse_after_tree_update(&mut self) {
+        let mut callback = self.rope.callback_for_parser();
+        if let Some(mut parsing) = self.parsing.as_mut() {
+            if let Ok(mut parser) = parsing.parser.try_borrow_mut() {
+                let new_tree = parser.parse_with(
+                    &mut callback,
+                    Some(&parsing.tree),
+                );
+
+                match new_tree {
+                    Some(new_tree) => parsing.tree = new_tree,
+                    None => {
+                        debug!("failed to update parse_tree");
+                    }
+                }
+            } else {
+                error!("failed acquiring ref_cell for parser.");
+            }
+        }
+    }
+
+    fn update_parse_on_insert(&mut self, char_idx_begin: usize, char_idx_end: usize) {
+        // if char_idx_begin >= char_idx_end {
+        //     error!("char_idx_begin >= char_idx_end: {} >= {}", char_idx_begin, char_idx_end);
+        //     return;
+        // }
+
+        if self.rope.len_chars() < char_idx_begin {
+            error!("rope.len_chars() < char_idx_begin: {} >= {}", self.rope.len_chars(), char_idx_begin);
+            return;
+        }
+
+        match &mut self.parsing {
+            None => return,
+            Some(parsing) => {
+                let start_byte = match self.rope.try_char_to_byte(char_idx_begin) {
+                    Ok(byte) => byte,
+                    _ => return,
+                };
+
+                let new_end_byte = match self.rope.try_char_to_byte(char_idx_end) {
+                    Ok(byte) => byte,
+                    _ => return,
+                };
+
+                let start_point = match byte_offset_to_point(&self.rope, start_byte) {
+                    Some(point) => point,
+                    None => return,
+                };
+
+                let new_end_point = match byte_offset_to_point(&self.rope, new_end_byte) {
+                    Some(point) => point,
+                    None => return,
+                };
+
+                let input_edit = InputEdit {
+                    start_byte,
+                    old_end_byte: start_byte,
+                    new_end_byte,
+                    start_position: start_point,
+                    old_end_position: start_point,
+                    new_end_position: new_end_point,
+                };
+
+                parsing.tree.edit(&input_edit);
+                self.try_reparse_after_tree_update();
+            }
+        }
+    }
+
+    fn update_parse_on_delete(&mut self, char_idx_begin: usize, char_idx_end: usize) {
+        if char_idx_begin >= char_idx_end {
+            error!("char_idx_begin >= char_idx_end: {} >= {}", char_idx_begin, char_idx_end);
+            return;
+        }
+
+        if self.rope.len_chars() < char_idx_begin {
+            error!("rope.len_chars() < char_idx_begin: {} >= {}", self.rope.len_chars(), char_idx_begin);
+            return;
+        }
+
+        match &mut self.parsing {
+            None => return,
+            Some(parsing) => {
+                let start_byte = match self.rope.try_char_to_byte(char_idx_begin) {
+                    Ok(byte) => byte,
+                    _ => return,
+                };
+
+                let old_end_byte = match self.rope.try_char_to_byte(char_idx_end) {
+                    Ok(byte) => byte,
+                    _ => return,
+                };
+
+                let start_point = match byte_offset_to_point(&self.rope, start_byte) {
+                    Some(point) => point,
+                    None => return,
+                };
+
+                let old_end_point = match byte_offset_to_point(&self.rope, old_end_byte) {
+                    Some(point) => point,
+                    None => return,
+                };
+
+                let input_edit = InputEdit {
+                    start_byte,
+                    old_end_byte,
+                    new_end_byte: start_byte,
+                    start_position: start_point,
+                    old_end_position: old_end_point,
+                    new_end_position: start_point,
+                };
+
+                parsing.tree.edit(&input_edit);
+                self.try_reparse_after_tree_update();
+            }
         }
     }
 }
@@ -138,17 +258,8 @@ impl BufferState {
     }
 
     pub fn char_to_kind(&self, char_idx: usize) -> Option<&str> {
-        // let byte_idx = match self.text.try_char_to_byte(char_idx) {
-        //     Ok(idx) => idx,
-        //     _ => return None,
-        // };
-
-        // self.todo_parse_tree.as_ref().map(|tree| {
-        //     tree.root_node().descendant_for_byte_range(byte_idx, byte_idx)
-        // }).flatten().map(|node| {
-        //     node.kind()
-        // })
-        None
+        let byte_idx = self.text.rope.try_char_to_byte(char_idx).ok()?;
+        self.text.parsing.as_ref()?.tree.root_node().descendant_for_byte_range(byte_idx, byte_idx).map(|node| node.kind())
     }
 }
 
@@ -185,9 +296,29 @@ impl Buffer for BufferState {
 
     fn insert_char(&mut self, char_idx: usize, ch: char) -> bool {
         match self.text.rope.try_insert_char(char_idx, ch) {
-            Ok(_) => true,
+            Ok(_) => {
+                self.text.update_parse_on_insert(char_idx, char_idx + 1);
+
+                true
+            },
             Err(e) => {
                 warn!("failed inserting char {} because {}", char_idx, e);
+                false
+            }
+        }
+    }
+
+    fn insert_block(&mut self, char_idx: usize, block: &str) -> bool {
+        // TODO maybe blocks will be more performant?
+        let grapheme_len = block.graphemes(true).count();
+        match self.text.rope.try_insert(char_idx, block) {
+            Ok(_) => {
+                self.text.update_parse_on_insert(char_idx, char_idx + grapheme_len);
+
+                true
+            },
+            Err(e) => {
+                warn!("failed inserting block {} (len {}) because {}", char_idx, grapheme_len, e);
                 false
             }
         }
@@ -200,7 +331,11 @@ impl Buffer for BufferState {
         }
 
         match self.text.rope.try_remove(char_idx_begin..char_idx_end) {
-            Ok(_) => true,
+            Ok(_) => {
+                self.text.update_parse_on_delete(char_idx_begin, char_idx_end);
+
+                true
+            },
             Err(e) => {
                 warn!("failed removing char {:?}-{:?} because {}", char_idx_begin, char_idx_end, e);
                 false

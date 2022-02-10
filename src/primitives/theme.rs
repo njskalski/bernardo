@@ -58,7 +58,7 @@ impl Theme {
     }
 
     pub fn name_to_theme(&self, s: &str) -> Option<Color> {
-        debug!("name_to_theme: {}", s);
+        // debug!("name_to_theme: {}", s);
 
         self.color_theme.as_ref().map(|ct| {
             match s {
