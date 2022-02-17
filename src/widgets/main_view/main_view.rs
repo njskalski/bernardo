@@ -245,7 +245,7 @@ impl Widget for MainView {
                 for wir in &cached_sizes.widget_sizes {
                     match self.get_subwidget(wir.wid) {
                         Some(widget) => {
-                            let sub_output = &mut SubOutput::new(Box::new(output), wir.rect);
+                            let sub_output = &mut SubOutput::new(output, wir.rect);
                             widget.render(theme,
                                           cached_sizes.focus_group.get_focused() == widget.id(),
                                           sub_output,

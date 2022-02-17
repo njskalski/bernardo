@@ -1,5 +1,3 @@
-
-
 use crate::io::output::Output;
 use crate::io::style::{TextStyle, TextStyle_WhiteOnBlack};
 use crate::primitives::rect::Rect;
@@ -8,12 +6,12 @@ use crate::primitives::xy::XY;
 use crate::SizeConstraint;
 
 pub struct SubOutput<'a> {
-    output: Box<&'a mut dyn Output>,
+    output: &'a mut dyn Output,
     frame: Rect,
 }
 
 impl<'a> SubOutput<'a> {
-    pub fn new(output: Box<&'a mut dyn Output>, frame: Rect) -> Self {
+    pub fn new(output: &'a mut dyn Output, frame: Rect) -> Self {
         // TODO add tests if frame is fully contained in Output and write errors to logs if its not.
 
         debug_assert!(output.size_constraint().bigger_equal_than(frame.lower_right()),

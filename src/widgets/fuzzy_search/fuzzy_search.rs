@@ -134,7 +134,7 @@ impl Widget for FuzzySearchWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let mut suboutput = SubOutput::new(Box::new(output),
+        let mut suboutput = SubOutput::new(output,
                                            Rect::new(ZERO, XY::new(self.width(), 1)));
     }
 }
