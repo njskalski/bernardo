@@ -6,18 +6,11 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::Theme;
 
-pub struct Item<'a> {
-    context: &'a str,
-    display_name: &'a str,
-}
-
-impl<'a> Item<'a> {
-    pub fn display_name(&self) -> &str {
-        self.display_name
-    }
+pub trait Item {
+    fn display_name(&self) -> &str;
 }
 
 pub trait ItemsProvider {
     fn context_name(&self) -> &str;
-    fn items<'a>(&'a self, query: &str) -> Box<dyn Iterator<Item=Item<'a>>>;
+    fn items<'a>(&'a self, query: &'a str) -> Box<dyn Iterator<Item=&'a dyn Item> + '_>;
 }
