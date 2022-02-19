@@ -5,7 +5,7 @@ pub mod mock {
     use crate::widgets::fuzzy_search::helpers::is_substring;
     use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 
-    struct MockItemProvider {
+    pub struct MockItemProvider {
         num_items: usize,
         items: Vec<String>,
     }
@@ -25,7 +25,7 @@ pub mod mock {
                     }
 
                     item += alphabet[idx % alphabet.len()];
-                    idx /= item_indices.len();
+                    idx /= alphabet.len();
                     if idx == 0 {
                         break;
                     }
@@ -52,8 +52,8 @@ pub mod mock {
             "mock"
         }
 
-        fn items<'a>(&'a self, query: &'a str) -> Box<dyn Iterator<Item=&'a dyn Item> + '_> {
-            Box::new(self.items.iter().filter(move |t| is_substring(t, query)).map(|f| f as &dyn Item))
+        fn items<'a>(&'a self, query: String) -> Box<dyn Iterator<Item=&'a dyn Item> + '_> {
+            Box::new(self.items.iter().filter(move |t| is_substring(t, &query)).map(|f| f as &dyn Item))
         }
     }
 }

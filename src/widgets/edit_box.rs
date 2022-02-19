@@ -1,4 +1,4 @@
-use log::warn;
+use log::{debug, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -6,15 +6,21 @@ use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
+use crate::primitives::cursor_set::{CursorSet, CursorStatus};
 use crate::primitives::helpers;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+use crate::widgets::common_edit_msgs::{apply_cme, CommonEditMsg, key_to_edit_msg};
+use crate::widgets::editor_view::msg::EditorViewMsg;
 
 const MIN_WIDTH: u16 = 12;
 const MAX_WIDTH: u16 = 80; //completely arbitrary
+
+//TODO filter out the newlines on paste
+
 
 struct EditBoxDisplayState {
     width: u16,
@@ -28,8 +34,8 @@ pub struct EditBoxWidget {
     on_change: Option<WidgetAction<EditBoxWidget>>,
     // miss is trying to make illegal move. Like backspace on empty, left on leftmost etc.
     on_miss: Option<WidgetAction<EditBoxWidget>>,
-    text: String,
-    cursor: usize,
+    text: ropey::Rope,
+    cursor_set: CursorSet,
 
     max_width_op: Option<u16>,
 
@@ -41,7 +47,7 @@ impl EditBoxWidget {
     pub fn new() -> Self {
         EditBoxWidget {
             id: get_new_widget_id(),
-            cursor: 0,
+            cursor_set: CursorSet::single(),
             enabled: true,
             text: "".into(),
             on_hit: None,
@@ -86,11 +92,14 @@ impl EditBoxWidget {
         EditBoxWidget { enabled, ..self }
     }
 
-    pub fn with_text(self, text: String) -> Self {
-        EditBoxWidget { text, ..self }
+    pub fn with_text<'a, T: Into<&'a str>>(self, text: T) -> Self {
+        EditBoxWidget {
+            text: ropey::Rope::from_str(text.into()),
+            ..self
+        }
     }
 
-    pub fn get_text(&self) -> &String {
+    pub fn get_text(&self) -> &ropey::Rope {
         &self.text
     }
 
@@ -148,13 +157,15 @@ impl Widget for EditBoxWidget {
         );
 
         return match input_event {
-            KeyInput(key_event) if key_event.no_modifiers() => match key_event.keycode {
-                Keycode::Enter => Some(Box::new(EditBoxWidgetMsg::Hit)),
-                Keycode::Char(ch) => Some(Box::new(EditBoxWidgetMsg::Letter(ch))),
-                Keycode::Backspace => Some(Box::new(EditBoxWidgetMsg::Backspace)),
-                Keycode::ArrowLeft => Some(Box::new(EditBoxWidgetMsg::ArrowLeft)),
-                Keycode::ArrowRight => Some(Box::new(EditBoxWidgetMsg::ArrowRight)),
-                _ => None
+            KeyInput(key_event) => {
+                if key_event.keycode == Keycode::Enter {
+                    Some(Box::new(EditBoxWidgetMsg::Hit))
+                } else {
+                    match key_to_edit_msg(key_event) {
+                        Some(edit_msg) => Some(Box::new(EditorViewMsg::EditMsg(edit_msg))),
+                        None => None,
+                    }
+                }
             }
             _ => None,
         };
@@ -166,63 +177,14 @@ impl Widget for EditBoxWidget {
             warn!("expecetd EditBoxWidgetMsg, got {:?}", msg);
             return None;
         }
+        debug!("EditBox got {:?}", msg);
 
         return match our_msg.unwrap() {
             EditBoxWidgetMsg::Hit => self.event_hit(),
-            EditBoxWidgetMsg::Letter(ch) => {
-                let mut new_text = self
-                    .text
-                    .graphemes(true)
-                    .take(self.cursor)
-                    .fold("".to_owned(), |a, b| a + b);
-
-                new_text += ch.to_string().as_str(); //TODO: make this conversion better?
-
-                new_text += self
-                    .text
-                    .graphemes(true)
-                    .skip(self.cursor)
-                    .fold("".to_owned(), |a, b| a + b)
-                    .as_str();
-
-                self.text = new_text;
-                self.cursor += 1;
-
-                self.event_changed()
-            }
-            EditBoxWidgetMsg::Backspace => {
-                if self.cursor == 0 {
-                    self.event_miss()
-                } else {
-                    self.cursor -= 1;
-                    let mut new_text = self
-                        .text
-                        .graphemes(true)
-                        .take(self.cursor)
-                        .fold("".to_owned(), |a, b| a + b);
-                    new_text += self
-                        .text
-                        .graphemes(true)
-                        .skip(self.cursor + 1)
-                        .fold("".to_owned(), |a, b| a + b)
-                        .as_str();
-                    self.text = new_text;
+            EditBoxWidgetMsg::CommonEditMsg(cem) => {
+                if apply_cme(*cem, &mut self.cursor_set, &mut self.text, 1) {
                     self.event_changed()
-                }
-            }
-            EditBoxWidgetMsg::ArrowLeft => {
-                if self.cursor == 0 {
-                    self.event_miss()
                 } else {
-                    self.cursor -= 1;
-                    None
-                }
-            }
-            EditBoxWidgetMsg::ArrowRight => {
-                if self.cursor >= self.text.len() {
-                    self.event_miss()
-                } else {
-                    self.cursor += 1;
                     None
                 }
             }
@@ -236,53 +198,34 @@ impl Widget for EditBoxWidget {
         helpers::fill_output(primary_style.background, output);
         let cursor_style = theme.cursor().maybe_half(focused);
 
-        let before_cursor = self
-            .text
-            .graphemes(true)
-            // .enumerate()
-            .take(self.cursor)
-            .map(|g| g.into())
-            .fold("".to_string(), |a, b| a + b);
+        let mut x: usize = 0;
+        for (char_idx, g) in self.text.to_string().graphemes(true).enumerate() {
+            let style = match self.cursor_set.get_cursor_status_for_char(char_idx) {
+                CursorStatus::None => theme.editable_field(),
+                CursorStatus::WithinSelection => theme.selected_text(focused),
+                CursorStatus::UnderCursor => theme.cursor(),
+            };
 
-        let cursor_pos = self
-            .text
-            .graphemes(true)
-            .take(self.cursor)
-            .map(|g| g.width())
-            .fold(0, |a, b| a + b);
-
-        let at_cursor = self
-            .text
-            .graphemes(true)
-            .skip(self.cursor)
-            .next()
-            .unwrap_or(" ");
-
-        let after_cursor = self
-            .text
-            .graphemes(true)
-            .skip(self.cursor + 1)
-            .map(|g| g.into())
-            .fold("".to_string(), |a, b| a + b);
-
-        output.print_at((0, 0).into(), primary_style, before_cursor.as_str());
-        output.print_at((cursor_pos, 0).into(), cursor_style, at_cursor);
-        if after_cursor.len() > 0 {
             output.print_at(
-                (cursor_pos + 1, 0).into(),
-                primary_style,
-                after_cursor.as_str(),
+                XY::new(x as u16, 0), //TODO
+                style,
+                g,
             );
+
+            x += g.width_cjk();
         }
+
 
         // if cursor is after the text, we need to add an offset, so the background does not
         // overwrite cursor style.
-        let cursor_offset: u16 = if cursor_pos == self.text.len() { 1 } else { 0 };
+        let cursor_offset: u16 = self.cursor_set.max_cursor_pos() as u16 + 1; //TODO
+
+        let text_width = self.text.to_string().width_cjk() as u16; //TODO
 
         // background after the text
-        if self.display_state.width as usize > self.text.width() {
-            let background_length = self.display_state.width - (cursor_offset + self.text.width() as u16);
-            let begin_pos: XY = XY::new(cursor_offset + self.text.width() as u16, 0);
+        if self.display_state.width > cursor_offset + text_width {
+            let background_length = self.display_state.width - (cursor_offset + text_width);
+            let begin_pos: XY = XY::new(cursor_offset + text_width, 0);
             for i in 0..background_length {
                 let pos = begin_pos + XY::new(i, 0);
                 output.print_at(
@@ -302,10 +245,7 @@ impl Widget for EditBoxWidget {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum EditBoxWidgetMsg {
     Hit,
-    Letter(char),
-    Backspace,
-    ArrowLeft,
-    ArrowRight,
+    CommonEditMsg(CommonEditMsg),
 }
 
 impl AnyMsg for EditBoxWidgetMsg {}

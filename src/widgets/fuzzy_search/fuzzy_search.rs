@@ -15,7 +15,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::{get_new_widget_id, WID, WidgetAction};
 use crate::widgets::common_edit_msgs::key_to_edit_msg;
-use crate::widgets::edit_box::EditBoxWidget;
+use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};
 
@@ -72,7 +72,7 @@ impl FuzzySearchWidget {
         ItemIter {
             providers: &self.providers,
             context_shortcuts: &self.shortened_contexts(),
-            query: &self.edit.get_text(),
+            query: self.edit.get_text().to_string(),
             pos: 0,
             cur_iter: None,
         }
@@ -82,7 +82,7 @@ impl FuzzySearchWidget {
 struct ItemIter<'a> {
     providers: &'a Vec<Box<dyn ItemsProvider>>,
     context_shortcuts: &'a Vec<String>,
-    query: &'a str,
+    query: String,
     pos: usize,
     cur_iter: Option<Box<dyn Iterator<Item=&'a dyn Item> + 'a>>,
 }
@@ -93,7 +93,7 @@ impl<'a> Iterator for ItemIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         while self.pos < self.providers.len() {
             if self.cur_iter.is_none() {
-                self.cur_iter = Some(self.providers[self.pos].items(self.query));
+                self.cur_iter = Some(self.providers[self.pos].items(self.query.clone()));
             }
 
             let mut iter = self.cur_iter.as_mut().unwrap();
@@ -140,6 +140,9 @@ impl Widget for FuzzySearchWidget {
                     return Some(Box::new(FuzzySearchMsg::Close));
                 }
 
+                if ki.keycode == Keycode::Enter {
+                    return Some(Box::new(FuzzySearchMsg::Hit));
+                }
 
                 let nav_msg = match ki.keycode {
                     Keycode::ArrowUp => Some(FuzzySearchMsg::Navigation(Navigation::ArrowUp)),
@@ -173,7 +176,7 @@ impl Widget for FuzzySearchWidget {
         }
 
         match our_msg.unwrap() {
-            FuzzySearchMsg::EditMsg(cem) => self.edit.update(Box::new(FuzzySearchMsg::EditMsg(cem.clone()))),
+            FuzzySearchMsg::EditMsg(cem) => self.edit.update(Box::new(EditBoxWidgetMsg::CommonEditMsg(cem.clone()))),
             FuzzySearchMsg::EscalateContext => None, //TODO
             FuzzySearchMsg::Navigation(nav) => {
                 match nav {
@@ -201,27 +204,27 @@ impl Widget for FuzzySearchWidget {
 
         //
 
-        let query = self.edit.get_text();
-        let mut y = 1 as u16;
+        let query = self.edit.get_text().to_string();
 
-        for ref item in self.items() {
+        for (item_idx, item) in self.items().enumerate() {
+            let mut query_it = query.graphemes(true).peekable();
             let mut x = 0 as u16;
-            let mut i = query.graphemes(true).next();
 
             for g in item.display_name().graphemes(true) {
-                let selected = Some(g) == i;
+                let selected = query_it.peek().map(|f| *f == g).unwrap_or(false);
                 let style = if selected { theme.selected_text(focused) } else { theme.default_text(focused) };
 
                 output.print_at(
-                    XY::new(x, y),
+                    XY::new(x, item_idx as u16 + 1),
                     style,
                     g,
                 );
 
                 x += g.width_cjk() as u16;
+                if selected {
+                    query_it.next();
+                }
             }
-
-            y += 1;
         }
     }
 }

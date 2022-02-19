@@ -9,7 +9,7 @@ use crate::text::buffer::Buffer;
 // this is a completely arbitrary number against which I compare Page length, to avoid under/overflow while casting to isize safely.
 const PAGE_HEIGHT_LIMIT: usize = 2000;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum CommonEditMsg {
     Char(char),
     CursorUp { selecting: bool },

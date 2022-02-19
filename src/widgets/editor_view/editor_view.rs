@@ -21,9 +21,9 @@ use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::common_edit_msgs::{apply_cme, cme_to_direction, CommonEditMsg, key_to_edit_msg};
-use crate::widgets::edit_box::EditBoxWidgetMsg::Letter;
 use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
+use crate::widgets::fuzzy_search::mock_items_provider::mock::MockItemProvider;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
@@ -276,6 +276,8 @@ impl Widget for EditorView {
                 EditorViewMsg::Fuzzy => {
                     self.fuzzy_search = Some(FuzzySearchWidget::new(
                         |_| Some(Box::new(EditorViewMsg::FuzzyClose))
+                    ).with_provider(
+                        Box::new(MockItemProvider::new(30))
                     ));
 
                     None
@@ -299,7 +301,7 @@ impl Widget for EditorView {
             sd.render(theme, focused, output);
         }
 
-        if let Some(fs) = self.save_file_dialog.as_ref() {
+        if let Some(fs) = self.fuzzy_search.as_ref() {
             fs.render(theme, focused, output);
         }
     }

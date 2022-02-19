@@ -43,7 +43,7 @@ impl Buffer for Rope {
     }
 
     fn remove(&mut self, char_idx_begin: usize, char_idx_end: usize) -> bool {
-        if char_idx_end >= char_idx_begin {
+        if !(char_idx_end > char_idx_begin) {
             error!("char_idx >= char_idx_begin ( {} >= {} )", char_idx_end, char_idx_begin);
             return false;
         }
