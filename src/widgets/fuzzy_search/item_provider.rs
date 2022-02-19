@@ -4,10 +4,11 @@
 use crossterm::style::ContentStyle;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::Theme;
+use crate::{AnyMsg, Theme};
 
 pub trait Item {
     fn display_name(&self) -> &str;
+    fn on_hit(&self) -> Box<dyn AnyMsg>;
 }
 
 pub trait ItemsProvider {

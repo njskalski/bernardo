@@ -1,6 +1,6 @@
 pub mod mock {
     lazy_static! {
-        pub static ref alphabet : Vec<&'static str>= vec![
+        pub static ref ALPHABET : Vec<&'static str>= vec![
             "alfa",
             "bravo",
             "charlie",

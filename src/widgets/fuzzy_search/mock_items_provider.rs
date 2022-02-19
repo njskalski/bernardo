@@ -1,7 +1,9 @@
 pub mod mock {
     use std::borrow::Borrow;
 
-    use crate::primitives::alphabet::mock::alphabet;
+    use crate::AnyMsg;
+    use crate::primitives::alphabet::mock::ALPHABET;
+    use crate::widgets::editor_view::msg::EditorViewMsg;
     use crate::widgets::fuzzy_search::helpers::is_substring;
     use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 
@@ -24,8 +26,8 @@ pub mod mock {
                         item += " ";
                     }
 
-                    item += alphabet[idx % alphabet.len()];
-                    idx /= alphabet.len();
+                    item += ALPHABET[idx % ALPHABET.len()];
+                    idx /= ALPHABET.len();
                     if idx == 0 {
                         break;
                     }
@@ -44,6 +46,10 @@ pub mod mock {
     impl Item for String {
         fn display_name(&self) -> &str {
             self.as_str()
+        }
+
+        fn on_hit(&self) -> Box<dyn AnyMsg> {
+            Box::new(EditorViewMsg::FuzzyClose)
         }
     }
 

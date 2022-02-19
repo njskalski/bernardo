@@ -27,7 +27,7 @@ pub trait Buffer {
 
     fn callback_for_parser<'a>(&'a self) -> Box<FnMut(usize, tree_sitter::Point) -> &'a [u8] + 'a>;
 
-    fn try_parse(&mut self, langId: LangId) -> bool { false }
+    fn try_parse(&mut self, lang_id: LangId) -> bool { false }
 }
 
 pub fn buffer_to_string(b: &dyn Buffer) -> String {

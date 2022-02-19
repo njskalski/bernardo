@@ -210,7 +210,10 @@ impl Widget for FuzzySearchWidget {
                 (self.on_close)(self)
             }
             FuzzySearchMsg::Hit => {
-                None //TODO
+                match self.items().nth(self.highlighted) {
+                    Some(item) => Some(item.on_hit()),
+                    None => None
+                }
             }
         }
     }
@@ -236,7 +239,7 @@ impl Widget for FuzzySearchWidget {
                 let mut style = if selected_grapheme { theme.selected_text(focused) } else { theme.default_text(focused) };
 
                 if selected_line {
-                    style.background = theme.cursor().background;
+                    style.background = theme.selected_text(true).background;
                 }
 
                 output.print_at(
