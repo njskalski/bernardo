@@ -25,11 +25,14 @@ pub struct FuzzySearchWidget {
     providers: Vec<Box<dyn ItemsProvider>>,
     context_shortcuts: Vec<String>,
 
-    on_close: WidgetAction<FuzzySearchWidget>,
+    highlighted: usize,
+
+    on_close: WidgetAction<Self>,
+    on_miss: Option<WidgetAction<Self>>,
 }
 
 impl FuzzySearchWidget {
-    pub fn new(on_close: WidgetAction<FuzzySearchWidget>) -> Self {
+    pub fn new(on_close: WidgetAction<Self>) -> Self {
         let edit = EditBoxWidget::new();
 
         Self {
@@ -37,7 +40,9 @@ impl FuzzySearchWidget {
             edit,
             providers: vec![],
             context_shortcuts: vec![],
+            highlighted: 0,
             on_close,
+            on_miss: None,
         }
     }
 
@@ -56,6 +61,13 @@ impl FuzzySearchWidget {
         Self {
             providers: contexts,
             context_shortcuts,
+            ..self
+        }
+    }
+
+    pub fn on_miss(self, on_miss: WidgetAction<Self>) -> Self {
+        Self {
+            on_miss: Some(on_miss),
             ..self
         }
     }
@@ -110,7 +122,6 @@ impl<'a> Iterator for ItemIter<'a> {
         None
     }
 }
-
 
 impl Widget for FuzzySearchWidget {
     fn id(&self) -> WID {
@@ -182,8 +193,16 @@ impl Widget for FuzzySearchWidget {
                 match nav {
                     Navigation::PageUp => {}
                     Navigation::PageDown => {}
-                    Navigation::ArrowUp => {}
-                    Navigation::ArrowDown => {}
+                    Navigation::ArrowUp => {
+                        if self.highlighted > 0 {
+                            self.highlighted -= 1;
+                        }
+                    }
+                    Navigation::ArrowDown => {
+                        if self.highlighted < self.items().count() + 1 {
+                            self.highlighted += 1;
+                        }
+                    }
                 }
                 None //TODO
             }
@@ -210,9 +229,15 @@ impl Widget for FuzzySearchWidget {
             let mut query_it = query.graphemes(true).peekable();
             let mut x = 0 as u16;
 
+            let selected_line = item_idx == self.highlighted;
+
             for g in item.display_name().graphemes(true) {
-                let selected = query_it.peek().map(|f| *f == g).unwrap_or(false);
-                let style = if selected { theme.selected_text(focused) } else { theme.default_text(focused) };
+                let selected_grapheme = query_it.peek().map(|f| *f == g).unwrap_or(false);
+                let mut style = if selected_grapheme { theme.selected_text(focused) } else { theme.default_text(focused) };
+
+                if selected_line {
+                    style.background = theme.cursor().background;
+                }
 
                 output.print_at(
                     XY::new(x, item_idx as u16 + 1),
@@ -221,7 +246,7 @@ impl Widget for FuzzySearchWidget {
                 );
 
                 x += g.width_cjk() as u16;
-                if selected {
+                if selected_grapheme {
                     query_it.next();
                 }
             }
