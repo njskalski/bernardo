@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use log::{debug};
+use log::debug;
 
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
@@ -40,6 +40,7 @@ pub trait Widget {
 
     // If these return None, it means that it's not a complex widget - the input should be addressed
     // directly to it.
+    // Returning Some(self) would lead to infinite loop.
     fn get_focused(&self) -> Option<&dyn Widget> { None }
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> { None }
 

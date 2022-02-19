@@ -7,10 +7,15 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{AnyMsg, InputEvent, Keycode, LocalFilesystemProvider, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
 use crate::io::style::TextStyle;
+use crate::layout::dummy_layout::DummyLayout;
+use crate::layout::hover_layout::HoverLayout;
+use crate::layout::layout::{Layout, WidgetIdRect};
+use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::cursor_set::{CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
+use crate::primitives::rect::Rect;
 use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
@@ -18,6 +23,7 @@ use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::common_edit_msgs::{apply_cme, cme_to_direction, CommonEditMsg, key_to_edit_msg};
 use crate::widgets::edit_box::EditBoxWidgetMsg::Letter;
 use crate::widgets::editor_view::msg::EditorViewMsg;
+use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
@@ -36,7 +42,9 @@ pub struct EditorView {
     anchor: XY,
     tree_sitter: Rc<TreeSitterWrapper>,
 
+    // TODO I should refactor that these two don't appear at the same time.
     save_file_dialog: Option<SaveFileDialogWidget>,
+    fuzzy_search: Option<FuzzySearchWidget>,
 }
 
 impl EditorView {
@@ -49,6 +57,7 @@ impl EditorView {
             anchor: ZERO,
             tree_sitter,
             save_file_dialog: None,
+            fuzzy_search: None,
         }
     }
 
@@ -88,93 +97,32 @@ impl EditorView {
         }
     }
 
-    fn build_save_as(&mut self) {}
-}
+    fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
+        if let Some(sd) = self.save_file_dialog.as_mut() {
+            let layout = HoverLayout::new(
+                &mut DummyLayout::new(self.wid, size),
+                &mut LeafLayout::new(sd),
+                Rect::new(XY::new(4, 4), XY::new(30, 15)), //TODO
+            ).calc_sizes(size);
 
-impl Widget for EditorView {
-    fn id(&self) -> WID {
-        self.wid
+            return layout;
+        }
+
+        if let Some(fuzzy) = self.fuzzy_search.as_mut() {
+            let layout = HoverLayout::new(
+                &mut DummyLayout::new(self.wid, size),
+                &mut LeafLayout::new(fuzzy),
+                Rect::new(XY::new(4, 4), XY::new(30, 15)), //TODO
+            ).calc_sizes(size);
+
+            return layout;
+        }
+
+        let mut layout = DummyLayout::new(self.wid, size);
+        layout.calc_sizes(size)
     }
 
-    fn typename(&self) -> &'static str {
-        "editor_view"
-    }
-
-    fn min_size(&self) -> XY {
-        MIN_EDITOR_SIZE
-    }
-
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let size = sc.hint().size;
-        self.last_size = Some(size);
-
-        size
-    }
-
-    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        return match input_event {
-            //TODO refactor the settings
-
-            InputEvent::Tick => None,
-            InputEvent::KeyInput(key) => {
-                if key.modifiers.CTRL && key.keycode == Keycode::Char('s') {
-                    return if key.modifiers.SHIFT == false {
-                        Some(Box::new(EditorViewMsg::Save))
-                    } else {
-                        Some(Box::new(EditorViewMsg::SaveAs))
-                    }
-                }
-
-                return if key.modifiers.ALT == false {
-                    match key_to_edit_msg(key) {
-                        None => None,
-                        Some(edit_msg) => Some(Box::new(EditorViewMsg::EditMsg(edit_msg)))
-                    }
-                } else {
-                    None
-                }
-            }
-        };
-    }
-
-    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        return match msg.as_msg::<EditorViewMsg>() {
-            None => {
-                warn!("expecetd EditorViewMsg, got {:?}", msg);
-                None
-            }
-            Some(msg) => match msg {
-                EditorViewMsg::EditMsg(cem) => {
-                    let page_height = match self.last_size {
-                        Some(xy) => xy.y,
-                        None => {
-                            error!("received {:?} before retrieving last_size, using {} as page_height instead", cem, MIN_EDITOR_SIZE.y);
-                            MIN_EDITOR_SIZE.y
-                        }
-                    };
-
-                    // page_height as usize is safe, since page_height is u16 and usize is larger.
-                    let _noop = apply_cme(*cem, &mut self.cursors, &mut self.todo_text, page_height as usize);
-
-                    match cme_to_direction(*cem) {
-                        None => {}
-                        Some(direction) => self.update_anchor(direction)
-                    };
-
-                    None
-                }
-                EditorViewMsg::SaveAs => {
-                    None
-                }
-                _ => {
-                    warn!("unhandled message {:?}", msg);
-                    None
-                }
-            }
-        };
-    }
-
-    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+    fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let fill_color = theme.default_background(focused);
         helpers::fill_output(fill_color, output);
 
@@ -242,8 +190,145 @@ impl Widget for EditorView {
             }
         }
     }
+}
+
+impl Widget for EditorView {
+    fn id(&self) -> WID {
+        self.wid
+    }
+
+    fn typename(&self) -> &'static str {
+        "editor_view"
+    }
+
+    fn min_size(&self) -> XY {
+        MIN_EDITOR_SIZE
+    }
+
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
+        let size = sc.hint().size;
+        self.last_size = Some(size);
+
+        size
+    }
+
+    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        return match input_event {
+            //TODO refactor the settings
+
+            InputEvent::Tick => None,
+            InputEvent::KeyInput(key) => {
+                if key.modifiers.CTRL && key.keycode == Keycode::Char('s') {
+                    return if key.modifiers.SHIFT == false {
+                        Some(Box::new(EditorViewMsg::Save))
+                    } else {
+                        Some(Box::new(EditorViewMsg::SaveAs))
+                    }
+                }
+
+                if key.modifiers.CTRL && key.keycode == Keycode::Char('h') {
+                    return Some(Box::new(EditorViewMsg::Fuzzy))
+                }
+
+                return if key.modifiers.ALT == false {
+                    match key_to_edit_msg(key) {
+                        None => None,
+                        Some(edit_msg) => Some(Box::new(EditorViewMsg::EditMsg(edit_msg)))
+                    }
+                } else {
+                    None
+                }
+            }
+        };
+    }
+
+    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+        return match msg.as_msg::<EditorViewMsg>() {
+            None => {
+                warn!("expecetd EditorViewMsg, got {:?}", msg);
+                None
+            }
+            Some(msg) => match msg {
+                EditorViewMsg::EditMsg(cem) => {
+                    let page_height = match self.last_size {
+                        Some(xy) => xy.y,
+                        None => {
+                            error!("received {:?} before retrieving last_size, using {} as page_height instead", cem, MIN_EDITOR_SIZE.y);
+                            MIN_EDITOR_SIZE.y
+                        }
+                    };
+
+                    // page_height as usize is safe, since page_height is u16 and usize is larger.
+                    let _noop = apply_cme(*cem, &mut self.cursors, &mut self.todo_text, page_height as usize);
+
+                    match cme_to_direction(*cem) {
+                        None => {}
+                        Some(direction) => self.update_anchor(direction)
+                    };
+
+                    None
+                }
+                EditorViewMsg::SaveAs => {
+                    self.fuzzy_search = None;
+
+                    None
+                }
+                EditorViewMsg::Fuzzy => {
+                    self.fuzzy_search = Some(FuzzySearchWidget::new(
+                        |_| Some(Box::new(EditorViewMsg::FuzzyClose))
+                    ));
+
+                    None
+                }
+                EditorViewMsg::FuzzyClose => {
+                    self.fuzzy_search = None;
+                    None
+                }
+                _ => {
+                    warn!("unhandled message {:?}", msg);
+                    None
+                }
+            }
+        };
+    }
+
+    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        self.internal_render(theme, focused, output);
+
+        if let Some(sd) = self.save_file_dialog.as_ref() {
+            sd.render(theme, focused, output);
+        }
+
+        if let Some(fs) = self.save_file_dialog.as_ref() {
+            fs.render(theme, focused, output);
+        }
+    }
 
     fn anchor(&self) -> XY {
         self.anchor
+    }
+
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        if self.save_file_dialog.is_some() {
+            return self.save_file_dialog.as_ref().map(|f| f as &dyn Widget)
+        }
+
+        if self.fuzzy_search.is_some() {
+            return self.fuzzy_search.as_ref().map(|f| f as &dyn Widget)
+        }
+
+        None
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        if self.save_file_dialog.is_some() {
+            return self.save_file_dialog.as_mut().map(|f| f as &mut dyn Widget);
+        }
+
+        if self.fuzzy_search.is_some() {
+            return self.fuzzy_search.as_mut().map(|f| f as &mut dyn Widget);
+        }
+
+        None
     }
 }

@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 
+use log::{debug, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -12,22 +13,23 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
-use crate::widget::widget::{get_new_widget_id, WID};
+use crate::widget::widget::{get_new_widget_id, WID, WidgetAction};
 use crate::widgets::common_edit_msgs::key_to_edit_msg;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};
-use crate::widgets::fuzzy_search::msg::FuzzySearchMsg::{EditMsg, Navigation};
 
 pub struct FuzzySearchWidget {
     id: WID,
     edit: EditBoxWidget,
     providers: Vec<Box<dyn ItemsProvider>>,
     context_shortcuts: Vec<String>,
+
+    on_close: WidgetAction<FuzzySearchWidget>,
 }
 
 impl FuzzySearchWidget {
-    pub fn new() -> Self {
+    pub fn new(on_close: WidgetAction<FuzzySearchWidget>) -> Self {
         let edit = EditBoxWidget::new();
 
         Self {
@@ -35,6 +37,7 @@ impl FuzzySearchWidget {
             edit,
             providers: vec![],
             context_shortcuts: vec![],
+            on_close,
         }
     }
 
@@ -133,20 +136,27 @@ impl Widget for FuzzySearchWidget {
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         return match input_event {
             InputEvent::KeyInput(ki) => {
+                if ki.keycode == Keycode::Esc {
+                    return Some(Box::new(FuzzySearchMsg::Close));
+                }
+
+
                 let nav_msg = match ki.keycode {
-                    Keycode::ArrowUp => Some(Navigation(Navigation::ArrowUp)),
-                    Keycode::ArrowDown => Some(Navigation(Navigation::ArrowDown)),
-                    Keycode::PageUp => Some(Navigation(Navigation::PageUp)),
-                    Keycode::PageDown => Some(Navigation(Navigation::PageDown)),
+                    Keycode::ArrowUp => Some(FuzzySearchMsg::Navigation(Navigation::ArrowUp)),
+                    Keycode::ArrowDown => Some(FuzzySearchMsg::Navigation(Navigation::ArrowDown)),
+                    Keycode::PageUp => Some(FuzzySearchMsg::Navigation(Navigation::PageUp)),
+                    Keycode::PageDown => Some(FuzzySearchMsg::Navigation(Navigation::PageDown)),
                     _ => None,
                 };
 
-                if nav_msg.is_some() {
-                    nav_msg.map(|f| Box::new(f))
-                } else {
-                    key_to_edit_msg(ki).map(|cem|
-                        Box::new(FuzzySearchMsg::EditMsg(cem))
-                    )
+                match nav_msg {
+                    Some(msg) => Some(Box::new(msg)),
+                    None => {
+                        match key_to_edit_msg(ki) {
+                            Some(cem) => Some(Box::new(FuzzySearchMsg::EditMsg(cem))),
+                            None => None,
+                        }
+                    }
                 }
             }
             _ => None,
@@ -154,7 +164,33 @@ impl Widget for FuzzySearchWidget {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        None
+        debug!("fuzzy_search.update {:?}", msg);
+
+        let our_msg = msg.as_msg::<FuzzySearchMsg>();
+        if our_msg.is_none() {
+            warn!("expecetd FuzzySearchMsg, got {:?}", msg);
+            return None;
+        }
+
+        match our_msg.unwrap() {
+            FuzzySearchMsg::EditMsg(cem) => self.edit.update(Box::new(FuzzySearchMsg::EditMsg(cem.clone()))),
+            FuzzySearchMsg::EscalateContext => None, //TODO
+            FuzzySearchMsg::Navigation(nav) => {
+                match nav {
+                    Navigation::PageUp => {}
+                    Navigation::PageDown => {}
+                    Navigation::ArrowUp => {}
+                    Navigation::ArrowDown => {}
+                }
+                None //TODO
+            }
+            FuzzySearchMsg::Close => {
+                (self.on_close)(self)
+            }
+            FuzzySearchMsg::Hit => {
+                None //TODO
+            }
+        }
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
@@ -182,7 +218,7 @@ impl Widget for FuzzySearchWidget {
                     g,
                 );
 
-                x += g.width_cjk();
+                x += g.width_cjk() as u16;
             }
 
             y += 1;
