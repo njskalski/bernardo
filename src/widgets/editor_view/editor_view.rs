@@ -5,7 +5,8 @@ use termion::event::Event::Key;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, InputEvent, Keycode, LocalFilesystemProvider, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
+use crate::{AnyMsg, InputEvent, Keycode, LocalFilesystemFront, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
+use crate::io::filesystem_tree::filesystem_front::FsfRef;
 use crate::io::style::TextStyle;
 use crate::layout::dummy_layout::DummyLayout;
 use crate::layout::hover_layout::HoverLayout;
@@ -42,13 +43,15 @@ pub struct EditorView {
     anchor: XY,
     tree_sitter: Rc<TreeSitterWrapper>,
 
+    fs: FsfRef,
+
     // TODO I should refactor that these two don't appear at the same time.
     save_file_dialog: Option<SaveFileDialogWidget>,
     fuzzy_search: Option<FuzzySearchWidget>,
 }
 
 impl EditorView {
-    pub fn new(tree_sitter: Rc<TreeSitterWrapper>) -> EditorView {
+    pub fn new(tree_sitter: Rc<TreeSitterWrapper>, fs: FsfRef) -> EditorView {
         EditorView {
             wid: get_new_widget_id(),
             cursors: CursorSet::single(),
@@ -56,6 +59,7 @@ impl EditorView {
             todo_text: BufferState::new(tree_sitter.clone()),
             anchor: ZERO,
             tree_sitter,
+            fs,
             save_file_dialog: None,
             fuzzy_search: None,
         }

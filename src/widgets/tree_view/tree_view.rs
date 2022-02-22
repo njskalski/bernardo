@@ -5,6 +5,7 @@ use std::rc::Rc;
 
 use env_logger::filter::Filter;
 use log::{debug, error, warn};
+use termion::event::Key;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -21,21 +22,19 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::tree_view::tree_it::TreeIt;
 use crate::widgets::tree_view::tree_view_node::{ChildRc, TreeViewNode};
 
-pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone> {
+pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> {
     id: WID,
-    root_node: Rc<dyn TreeViewNode<Key>>,
-
+    root_node: Rc<Item>,
     filter_letters: Option<String>,
-
     expanded: HashSet<Key>,
     highlighted: usize,
 
     //events
-    on_miss: Option<WidgetAction<TreeViewWidget<Key>>>,
-    on_highlighted_changed: Option<WidgetAction<TreeViewWidget<Key>>>,
-    on_flip_expand: Option<WidgetAction<TreeViewWidget<Key>>>,
+    on_miss: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
+    on_highlighted_changed: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
+    on_flip_expand: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
     // called on hitting "enter" over a selection.
-    on_select_highlighted: Option<WidgetAction<TreeViewWidget<Key>>>,
+    on_select_highlighted: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
 }
 
 #[derive(Debug)]
@@ -50,7 +49,7 @@ impl AnyMsg for TreeViewMsg {}
 Warranties:
 - (TODO double check) Highlighted always exists.
  */
-impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
+impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key, Item> {
     pub fn new(root_node: Rc<dyn TreeViewNode<Key>>) -> Self {
         Self {
             id: get_new_widget_id(),
@@ -92,14 +91,14 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         })
     }
 
-    pub fn with_on_flip_expand(self, on_flip_expand: WidgetAction<TreeViewWidget<Key>>) -> Self {
+    pub fn with_on_flip_expand(self, on_flip_expand: WidgetAction<TreeViewWidget<Key, Item>>) -> Self {
         Self {
             on_flip_expand: Some(on_flip_expand),
             ..self
         }
     }
 
-    pub fn with_on_highlighted_changed(self, on_highlighted_changed: WidgetAction<TreeViewWidget<Key>>) -> Self {
+    pub fn with_on_highlighted_changed(self, on_highlighted_changed: WidgetAction<TreeViewWidget<Key, Item>>) -> Self {
         Self {
             on_highlighted_changed: Some(on_highlighted_changed),
             ..self
@@ -110,7 +109,7 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         self.on_highlighted_changed.map(|f| f(self)).flatten()
     }
 
-    pub fn with_on_select_hightlighted(self, on_select_highlighted: WidgetAction<TreeViewWidget<Key>>) -> Self {
+    pub fn with_on_select_hightlighted(self, on_select_highlighted: WidgetAction<TreeViewWidget<Key, Item>>) -> Self {
         Self {
             on_select_highlighted: Some(on_select_highlighted),
             ..self
@@ -144,12 +143,12 @@ impl<Key: Hash + Eq + Debug + Clone> TreeViewWidget<Key> {
         TreeIt::new(&self.root_node, &self.expanded)
     }
 
-    pub fn get_highlighted(&self) -> (u16, ChildRc<Key>) {
-        self.items().nth(self.highlighted).unwrap()
+    pub fn get_highlighted(&self) -> (u16, Item) {
+        self.items().nth(self.highlighted).unwrap() //TODO
     }
 }
 
-impl<K: Hash + Eq + Debug + Clone> Widget for TreeViewWidget<K> {
+impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget<K, I> {
     fn id(&self) -> WID {
         self.id
     }

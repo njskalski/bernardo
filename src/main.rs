@@ -16,7 +16,7 @@ use crate::experiments::color_theme::ColorTheme;
 use crate::experiments::tree_sitter_wrapper::{LanguageSet, TreeSitterWrapper};
 use crate::io::crossterm_input::CrosstermInput;
 use crate::io::crossterm_output::CrosstermOutput;
-use crate::io::filesystem_tree::local_filesystem_provider::LocalFilesystemProvider;
+use crate::io::filesystem_tree::local_filesystem_front::LocalFilesystemFront;
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;

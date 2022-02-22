@@ -1,8 +1,5 @@
-
-
 use std::fmt::{Debug, Formatter};
 use std::hash::Hash;
-
 use std::rc::Rc;
 
 pub type ChildRc<Key> = Rc<dyn TreeViewNode<Key>>;
@@ -12,15 +9,13 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug> {
     fn label(&self) -> String;
     fn is_leaf(&self) -> bool;
 
-    fn num_child(&self) -> usize;
-    fn get_child(&self, idx: usize) -> ChildRc<Key>;
+    fn num_child(&self) -> (bool, usize);
+    fn get_child(&self, idx: usize) -> Option<ChildRc<Key>>;
     fn get_child_by_key(&self, key: &Key) -> Option<ChildRc<Key>>;
 
-    fn has_child(&self, key: &Key) -> bool;
+    fn is_complete(&self) -> bool;
 
-    // I am not sure if this should be there, or the filesystem provider should just re-issue
-    // entire tree.
-    fn todo_update_cache(&self);
+    fn children(&self) -> (bool, Box<dyn Iterator<Item=ChildRc<Key>>>);
 }
 
 impl<Key: Hash + Eq + Debug> std::fmt::Debug for dyn TreeViewNode<Key> {

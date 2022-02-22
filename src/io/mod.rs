@@ -16,4 +16,3 @@ pub mod termion_keys;
 pub mod crossterm_keys;
 pub mod crossterm_output;
 pub mod filesystem_tree;
-pub mod filesystem;

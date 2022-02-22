@@ -10,13 +10,14 @@ I hope I will discover most of functional constraints while implementing it.
 
 use std::borrow::Borrow;
 use std::fmt::Debug;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
 use log::{debug, warn};
 
 use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
-use crate::io::filesystem_tree::filesystem_list_item::FilesystemListItem;
-use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
+use crate::io::filesystem_tree::file_front::FileFront;
+use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
@@ -44,8 +45,8 @@ pub struct SaveFileDialogWidget {
 
     display_state: Option<DisplayState>,
 
-    tree_widget: WithScroll<TreeViewWidget<PathBuf>>,
-    list_widget: ListWidget<FilesystemListItem>,
+    tree_widget: WithScroll<TreeViewWidget<PathBuf, FileFront>>,
+    list_widget: ListWidget<FileFront>,
     edit_box: EditBoxWidget,
 
     ok_button: ButtonWidget,
@@ -54,22 +55,22 @@ pub struct SaveFileDialogWidget {
     curr_display_path: PathBuf,
 
     // TODO this will probably get moved
-    filesystem_provider: Box<dyn FilesystemProvider>,
+    filesystem_provider: Box<dyn FilesystemFront>,
 }
 
 #[derive(Clone, Debug)]
 pub enum SaveFileDialogMsg {
     FocusUpdateMsg(FocusUpdate),
-    Expanded(ChildRc<PathBuf>),
-    Highlighted(ChildRc<PathBuf>),
+    Expanded(FileFront),
+    Highlighted(FileFront),
 }
 
 impl AnyMsg for SaveFileDialogMsg {}
 
 impl SaveFileDialogWidget {
-    pub fn new(filesystem_provider: Box<dyn FilesystemProvider>) -> Self {
+    pub fn new(filesystem_provider: Box<dyn FilesystemFront>) -> Self {
         let tree = filesystem_provider.get_root();
-        let tree_widget = TreeViewWidget::<PathBuf>::new(tree)
+        let tree_widget = TreeViewWidget::<PathBuf, FileFront>::new(tree)
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
                 Some(Box::new(SaveFileDialogMsg::Expanded(item)))
@@ -220,11 +221,8 @@ impl Widget for SaveFileDialogWidget {
                 warn!("focus updated {}", msg);
                 None
             }
-            SaveFileDialogMsg::Expanded(child) => {
-                // TODO this looks like shit
-                self.filesystem_provider.expand(child.id().as_path());
-                self.curr_display_path = child.id().clone();
-                let mut items = self.filesystem_provider.get_files(self.curr_display_path.borrow()).collect::<Vec<_>>();
+            SaveFileDialogMsg::Expanded(node) => {
+                let mut items = node.get_child(self.curr_display_path.borrow()).collect::<Vec<_>>();
                 self.list_widget.set_items(&mut items);
 
                 None

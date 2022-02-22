@@ -1,13 +1,15 @@
 use std::borrow::Borrow;
+use std::cell::RefCell;
 use std::f32::consts::E;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use log::{debug, error, warn};
 
-use crate::{AnyMsg, InputEvent, LocalFilesystemProvider, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
+use crate::{AnyMsg, InputEvent, LocalFilesystemFront, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
 use crate::experiments::filename_to_language::filename_to_language;
-use crate::io::filesystem_tree::filesystem_provider::FilesystemProvider;
+use crate::io::filesystem_tree::file_front::FileFront;
+use crate::io::filesystem_tree::filesystem_front::{FilesystemFront, FsfRef};
 use crate::io::sub_output::SubOutput;
 use crate::layout::cached_sizes::DisplayState;
 use crate::layout::layout::{Layout, WidgetIdRect};
@@ -21,6 +23,7 @@ use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
+use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 use crate::widgets::with_scroll::WithScroll;
 
 const MIN_VIEW_SIZE: XY = XY::new(32, 10);
@@ -28,18 +31,19 @@ const MIN_VIEW_SIZE: XY = XY::new(32, 10);
 pub struct MainView {
     wid: WID,
     display_state: Option<DisplayState>,
-    fs: Box<dyn FilesystemProvider>,
-    tree_widget: WithScroll<TreeViewWidget<PathBuf>>,
+
+    tree_widget: WithScroll<TreeViewWidget<PathBuf, FileFront>>,
     no_editor: NoEditorWidget,
     editor: Option<WithScroll<EditorView>>,
     tree_sitter: Rc<TreeSitterWrapper>,
+
+    fs: FsfRef,
 }
 
 impl MainView {
-    pub fn new(tree_sitter: Rc<TreeSitterWrapper>, root_dir: PathBuf) -> MainView {
-        let local = LocalFilesystemProvider::new(root_dir);
-
-        let tree = TreeViewWidget::new(local.get_root())
+    pub fn new(tree_sitter: Rc<TreeSitterWrapper>, fs: FsfRef) -> MainView {
+        let root_node = fs.get_root();
+        let tree = TreeViewWidget::new(root_node)
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
 
@@ -56,11 +60,11 @@ impl MainView {
         MainView {
             wid: get_new_widget_id(),
             display_state: None,
-            fs: Box::new(local),
             tree_widget: WithScroll::new(tree, ScrollDirection::Vertical),
             no_editor: NoEditorWidget::new(),
             editor: None,
             tree_sitter,
+            fs,
         }
     }
 

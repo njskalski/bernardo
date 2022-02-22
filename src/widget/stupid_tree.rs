@@ -37,12 +37,12 @@ impl TreeViewNode<usize> for StupidTree {
         self.children.is_empty()
     }
 
-    fn num_child(&self) -> usize {
-        self.children.len()
+    fn num_child(&self) -> (bool, usize) {
+        (true, self.children.len())
     }
 
-    fn get_child(&self, idx: usize) -> ChildRc<usize> {
-        self.children[idx].clone()
+    fn get_child(&self, idx: usize) -> Option<ChildRc<usize>> {
+        self.children.get(idx).map(|f| f.clone() as Rc<dyn TreeViewNode<usize>>)
     }
 
     fn get_child_by_key(&self, key: &usize) -> Option<ChildRc<usize>> {
@@ -54,17 +54,25 @@ impl TreeViewNode<usize> for StupidTree {
         return None
     }
 
-    fn has_child(&self, key: &usize) -> bool {
-        for c in self.children.iter() {
-            if c.id() == key {
-                return true;
-            }
-        }
-
-        false
+    fn is_complete(&self) -> bool {
+        true
     }
 
-    fn todo_update_cache(&self) {}
+    fn children(&self) -> (bool, Box<dyn Iterator<Item=ChildRc<usize>>>) {
+        (true, Box::new(self.children.iter()))
+    }
+
+    // fn has_child(&self, key: &usize) -> bool {
+    //     for c in self.children.iter() {
+    //         if c.id() == key {
+    //             return true;
+    //         }
+    //     }
+    //
+    //     false
+    // }
+    //
+    // fn todo_update_cache(&self) {}
 }
 
 pub fn get_stupid_tree() -> Rc<dyn TreeViewNode<usize>> {
