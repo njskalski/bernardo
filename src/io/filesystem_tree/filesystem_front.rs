@@ -12,9 +12,7 @@ use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 pub type FsfRef = Rc<Box<dyn FilesystemFront>>;
 
 pub trait FilesystemFront {
-    fn get_root(&self) -> Rc<dyn TreeViewNode<PathBuf>>;
-
-    fn get_file(&self, path: &Path) -> Option<FileFront>;
+    fn get_root(&self) -> Rc<FileFront>;
 
     // This is a mock method. It should probably return a stream and should probably report errors.
     // One of many "nice to haves" of this editor, outside of scope of MVP, is "large files support",

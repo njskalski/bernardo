@@ -13,15 +13,17 @@ use crate::io::keys::Key;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 type TreeItFilter = fn(&TreeViewNode<Key>) -> bool;
-type QueueType<Key> = Rc<dyn TreeViewNode<Key>>;
+type QueueType<Item> = Rc<Item>;
 
-pub struct TreeIt<'a, Key: Hash + Eq + Debug> {
-    queue: Vec<(u16, QueueType<Key>)>,
+// tu nie trzeba pogrzebacza, tu trzeba pogrzebu.
+
+pub struct TreeIt<'a, Key: Hash + Eq + Debug, Item: TreeViewNode<Key>> {
+    queue: Vec<(u16, QueueType<Item>)>,
     expanded: &'a HashSet<Key>,
 }
 
-impl<'a, Key: Hash + Eq + Debug + Clone> TreeIt<'a, Key> {
-    pub fn new(root: &Rc<dyn TreeViewNode<Key>>, expanded: &'a HashSet<Key>) -> TreeIt<'a, Key> {
+impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeIt<'a, Key, Item> {
+    pub fn new(root: &Rc<Item>, expanded: &'a HashSet<Key>) -> TreeIt<'a, Key, Item> {
         let mut queue: Vec<(u16, QueueType<Key>)> = Vec::new();
 
         queue.push((0, root.clone()));
@@ -33,8 +35,8 @@ impl<'a, Key: Hash + Eq + Debug + Clone> TreeIt<'a, Key> {
     }
 }
 
-impl<'a, Key: Hash + Eq + Debug + Clone> Iterator for TreeIt<'a, Key> {
-    type Item = (u16, Rc<dyn TreeViewNode<Key>>);
+impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> Iterator for TreeIt<'a, Key, Item> {
+    type Item = (u16, Rc<Item>);
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.queue.is_empty() == false {

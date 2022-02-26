@@ -5,7 +5,7 @@ use termion::event::Event::Key;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, InputEvent, Keycode, LocalFilesystemFront, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
+use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
 use crate::io::filesystem_tree::filesystem_front::FsfRef;
 use crate::io::style::TextStyle;
 use crate::layout::dummy_layout::DummyLayout;

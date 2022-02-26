@@ -1,8 +1,9 @@
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use crate::AnyMsg;
 use crate::experiments::focus_group::FocusUpdate;
-use crate::widgets::tree_view::tree_view_node::ChildRc;
+use crate::io::filesystem_tree::file_front::FileFront;
 
 #[derive(Clone, Debug)]
 pub enum MainViewMsg {
@@ -10,10 +11,10 @@ pub enum MainViewMsg {
 
     // This is called whenever item in tree is "expanded" or "collapsed".
     // I'm moving entire ChildRc, because PathBuf would allocate, and passing &Path would unleash borrow checker hell.
-    TreeExpandedFlip { expanded: bool, item: ChildRc<PathBuf> },
+    TreeExpandedFlip { expanded: bool, item: Rc<FileFront> },
 
     // This is called whenever a file is selected.
-    TreeSelected { item: ChildRc<PathBuf> },
+    TreeSelected { item: Rc<FileFront> },
 }
 
 impl AnyMsg for MainViewMsg {}

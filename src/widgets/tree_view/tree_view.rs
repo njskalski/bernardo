@@ -20,7 +20,7 @@ use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::tree_view::tree_it::TreeIt;
-use crate::widgets::tree_view::tree_view_node::{ChildRc, TreeViewNode};
+use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> {
     id: WID,
@@ -50,7 +50,7 @@ Warranties:
 - (TODO double check) Highlighted always exists.
  */
 impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key, Item> {
-    pub fn new(root_node: Rc<dyn TreeViewNode<Key>>) -> Self {
+    pub fn new(root_node: Rc<Item>) -> Self {
         Self {
             id: get_new_widget_id(),
             root_node,
@@ -139,7 +139,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
         }
     }
 
-    pub fn items(&self) -> TreeIt<Key> {
+    pub fn items(&self) -> TreeIt<Key, Item> {
         TreeIt::new(&self.root_node, &self.expanded)
     }
 

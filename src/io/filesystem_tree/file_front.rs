@@ -9,36 +9,40 @@ use log::error;
 
 use crate::io::filesystem_tree::filesystem_front::{FilesystemFront, FsfRef};
 use crate::widgets::list_widget::ListWidgetItem;
-use crate::widgets::tree_view::tree_view_node::{ChildRc, TreeViewNode};
+use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
-struct Cache {
-    complete: bool,
-    children: Vec<Rc<FileFront>>,
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum FileType {
+    File,
+    Directory { cache: Rc<RefCell<FileChildrenCache>> },
+}
+
+pub struct FileChildrenCache {
+    pub complete: bool,
+    pub children: Vec<Rc<FileFront>>,
 }
 
 #[derive(Debug)]
 pub struct FileFront {
-    path: PathBuf,
-    fsf: FsfRef,
-
-    dir_cache: RefCell<Cache>,
+    path: Rc<PathBuf>,
+    file_type: FileType,
 }
 
 impl FileFront {
-    fn update_cache(&self) {
-        let (complete, children) = self.fsf.get_children(&self.path);
-
-        let mut child_vec: Vec<Rc<FileFront>> = vec![];
-        for c in children {
-            child_vec.push(c);
+    pub fn new_file(path: Rc<PathBuf>) -> Self {
+        Self {
+            path,
+            file_type: FileType::File,
         }
+    }
 
-        self.dir_cache.replace(
-            Cache {
-                complete,
-                children: child_vec,
-            }
-        );
+    pub fn new_directory(path: Rc<PathBuf>, cache: Rc<RefCell<FileChildrenCache>>) -> Self {
+        Self {
+            path,
+            file_type: FileType::Directory {
+                cache
+            },
+        }
     }
 }
 
@@ -52,60 +56,50 @@ impl TreeViewNode<PathBuf> for FileFront {
     }
 
     fn is_leaf(&self) -> bool {
-        !self.fsf.is_dir(&self.path) //TODO
+        self.file_type == FileType::File
     }
 
     fn num_child(&self) -> (bool, usize) {
-        self.update_cache();
-        self.dir_cache.try_borrow().map(
-            |c| (c.complete, c.children.len())
-        ).unwrap_or_else(|_| {
-            error!("failed to access cache");
-            (false, 0)
-        })
+        match &self.file_type {
+            FileType::File => (true, 0),
+            FileType::Directory { cache } => {
+                cache.try_borrow().map(
+                    |c| (c.complete, c.children.len())
+                ).unwrap_or_else(|_| {
+                    error!("failed to access cache");
+                    (false, 0)
+                })
+            }
+        }
     }
 
-    fn get_child(&self, idx: usize) -> Option<ChildRc<PathBuf>> {
-        self.dir_cache.try_borrow().map(
-            |c| c.children.get(idx).map(|f| f.clone() as Rc<dyn TreeViewNode<PathBuf>>)
-        ).unwrap_or_else(|_| {
-            error!("failed to access cache");
-            None
-        })
+    fn get_child(&self, idx: usize) -> Option<Rc<Self>> {
+        match &self.file_type {
+            FileType::File => None,
+            FileType::Directory { cache } => {
+                cache.try_borrow().map(
+                    |c| c.children.get(idx).map(|f| f.clone())
+                ).unwrap_or_else(|_| {
+                    error!("failed to access cache");
+                    None
+                })
+            }
+        }
     }
 
-    fn get_child_by_key(&self, key: &PathBuf) -> Option<ChildRc<PathBuf>> {
-        self.dir_cache.try_borrow().map(
-            |c| {
-                for child in c.children.iter() {
-                    if child.path == *key {
-                        return Some(child.clone() as Rc<dyn TreeViewNode<PathBuf>>);
-                    }
-                }
-                None
-            })
-            .unwrap_or_else(|_| {
-                error!("failed to access cache");
-                None
-            })
-    }
 
     fn is_complete(&self) -> bool {
-        self.dir_cache.try_borrow().map(
-            |c| c.complete
-        ).unwrap_or_else(|_| {
-            error!("failed to access cache");
-            false
-        })
-    }
-
-    fn children(&self) -> (bool, Box<dyn Iterator<Item=ChildRc<PathBuf>>>) {
-        self.dir_cache.try_borrow().map(
-            |c| (c.complete, Box::new(c.children.iter()))
-        ).unwrap_or_else(|_| {
-            error!("failed to access cache");
-            (false, Box::new(vec![].iter()))
-        })
+        match &self.file_type {
+            FileType::File => true,
+            FileType::Directory { cache } => {
+                cache.try_borrow().map(
+                    |c| c.complete
+                ).unwrap_or_else(|_| {
+                    error!("failed to access cache");
+                    false
+                })
+            }
+        }
     }
 }
 

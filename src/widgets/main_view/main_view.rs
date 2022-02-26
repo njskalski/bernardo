@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use log::{debug, error, warn};
 
-use crate::{AnyMsg, InputEvent, LocalFilesystemFront, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
+use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::io::filesystem_tree::file_front::FileFront;
 use crate::io::filesystem_tree::filesystem_front::{FilesystemFront, FsfRef};

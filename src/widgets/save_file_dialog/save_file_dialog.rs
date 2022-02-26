@@ -35,7 +35,6 @@ use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::list_widget::ListWidget;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
-use crate::widgets::tree_view::tree_view_node::ChildRc;
 use crate::widgets::with_scroll::WithScroll;
 
 // TODO now it displays both files and directories in tree view, it should only directories
