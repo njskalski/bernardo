@@ -16,6 +16,8 @@ use crate::experiments::color_theme::ColorTheme;
 use crate::experiments::tree_sitter_wrapper::{LanguageSet, TreeSitterWrapper};
 use crate::io::crossterm_input::CrosstermInput;
 use crate::io::crossterm_output::CrosstermOutput;
+use crate::io::filesystem_tree::filesystem_front::FsfRef;
+use crate::io::filesystem_tree::local_filesystem_front::LocalFilesystem;
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
@@ -86,7 +88,9 @@ fn main() {
     // let boxed = Box::new(fsp);
     // let mut main_view = SaveFileDialogWidget::new(boxed);
 
-    let mut main_view = MainView::new(tree_sitter, PathBuf::from("/home/andrzej/r"))
+    let fsf: FsfRef = Rc::new(Box::new(LocalFilesystem::new(PathBuf::from("/home/andrzej/r"))));
+
+    let mut main_view = MainView::new(tree_sitter, fsf.clone())
         .with_empty_editor();
 
     let fs = filesystem::OsFileSystem::new();

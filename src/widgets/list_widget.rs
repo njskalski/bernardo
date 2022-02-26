@@ -21,7 +21,7 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
     keep them lightweight as they are being cloned on update. Treat ListWidgetItem as "sub widget",
     a cached projection on actual data, and not the data itself. Do not store data in widgets!
  */
-pub trait ListWidgetItem: Debug {
+pub trait ListWidgetItem: Debug + Clone {
     //TODO change to static str?
     fn get_column_name(idx: usize) -> &'static str;
     fn get_min_column_width(idx: usize) -> u16;
@@ -125,11 +125,11 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
-    pub fn set_items(&mut self, provider: &mut dyn ListWidgetProvider<Item>) {
+    pub fn set_items(&mut self, provider: &dyn ListWidgetProvider<Item>) {
         self.items.clear();
         for idx in 0..provider.len() {
             match provider.get(idx) {
-                Some(item) => self.items.push(item.clone()),
+                Some(item) => self.items.push((*item).clone()),
                 None => {
                     warn!("ListWidget: failed unpacking provider item #{}", idx);
                 }

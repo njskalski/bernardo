@@ -18,13 +18,13 @@ use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
 use crate::text::buffer_state::BufferState;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum SendFile {
     File(PathBuf),
     Directory(PathBuf),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum FSUpdate {
     DirectoryUpdate {
         full_path: PathBuf,
@@ -32,11 +32,12 @@ pub enum FSUpdate {
     }
 }
 
+#[derive(Debug)]
 struct InternalState {
     caches: HashMap<Rc<PathBuf>, Rc<RefCell<FileChildrenCache>>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct LocalFilesystem {
     fs: OsFileSystem,
     root_node: Rc<FileFront>,
@@ -48,7 +49,7 @@ pub struct LocalFilesystem {
 }
 
 impl LocalFilesystem {
-    pub fn new(root: PathBuf) -> Rc<Self> {
+    pub fn new(root: PathBuf) -> Self {
         let (sender, receiver) = mpsc::channel::<FSUpdate>();
 
         // TODO check it's directory
@@ -59,24 +60,24 @@ impl LocalFilesystem {
         }));
 
         let root_path = Rc::new(root);
-        let root_node = FileFront::new_directory(root_path, root_cache);
+        let root_node = FileFront::new_directory(root_path.clone(), root_cache.clone());
 
         let mut internal_state = InternalState {
             caches: HashMap::default(),
         };
         internal_state.caches.insert(root_path.clone(), root_cache.clone());
 
-        Rc::new(LocalFilesystem {
+        LocalFilesystem {
             fs: OsFileSystem::new(),
             root_node: Rc::new(root_node),
             sender,
             receiver,
             internal_state: RefCell::new(internal_state),
-        })
+        }
     }
 
-    fn start_fs_refresh(&self, path: Rc<PathBuf>) {
-        let path = path.as_ref().clone();
+    fn start_fs_refresh(&self, path: &PathBuf) {
+        let path = path.clone();
         let sender = self.sender.clone();
         let fs = self.fs.clone();
 
@@ -88,9 +89,9 @@ impl LocalFilesystem {
 
             // TODO add partitioning
 
-            match fs.read_dir(path) {
+            match fs.read_dir(&path) {
                 Err(e) => {
-                    error!("failed reading dir {:?}: {}", path, e);
+                    error!("failed reading dir {:?}: {}", &path, e);
                     return;
                 }
                 Ok(rd) => {
@@ -99,7 +100,7 @@ impl LocalFilesystem {
                     for de in rd {
                         match de {
                             Err(e) => {
-                                error!("failed reading_entry dir in {:?}: {}", path, e);
+                                error!("failed reading_entry dir in {:?}: {}", &path, e);
                             }
                             Ok(de) => {
                                 entries.push(de);
@@ -113,7 +114,7 @@ impl LocalFilesystem {
                             entries,
                         }
                     ).map_err(|e| {
-                        error!("failed sending dir update for {:?}: {}", path, e);
+                        error!("failed sending dir update for: {}", e);
                     });
                 }
             }
@@ -135,6 +136,10 @@ impl FilesystemFront for LocalFilesystem {
     }
 
     fn get_children(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<FileFront>>>) {
+        todo!()
+    }
+
+    fn todo_expand(&self, path: &Path) {
         todo!()
     }
 }

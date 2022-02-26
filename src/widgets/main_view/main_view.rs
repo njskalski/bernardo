@@ -32,7 +32,7 @@ pub struct MainView {
     wid: WID,
     display_state: Option<DisplayState>,
 
-    tree_widget: WithScroll<TreeViewWidget<PathBuf, FileFront>>,
+    tree_widget: WithScroll<TreeViewWidget<PathBuf, Rc<FileFront>>>,
     no_editor: NoEditorWidget,
     editor: Option<WithScroll<EditorView>>,
     tree_sitter: Rc<TreeSitterWrapper>,
@@ -72,7 +72,7 @@ impl MainView {
         MainView {
             editor: Some(
                 WithScroll::new(
-                    EditorView::new(self.tree_sitter.clone()),
+                    EditorView::new(self.tree_sitter.clone(), self.fs.clone()),
                     ScrollDirection::Both,
                 )
             ),
@@ -112,7 +112,7 @@ impl MainView {
             Ok(rope) => {
                 self.editor = Some(
                     WithScroll::new(
-                        EditorView::new(self.tree_sitter.clone())
+                        EditorView::new(self.tree_sitter.clone(), self.fs.clone())
                             .with_buffer(
                                 BufferState::new(self.tree_sitter.clone())
                                     .with_text_from_rope(rope, lang_id)
@@ -215,7 +215,7 @@ impl Widget for MainView {
             }
             MainViewMsg::TreeExpandedFlip { expanded, item } => {
                 if *expanded {
-                    self.fs.expand(item.id());
+                    self.fs.todo_expand(item.id());
                 }
                 None
             }

@@ -35,6 +35,7 @@ use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::list_widget::ListWidget;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
+use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 use crate::widgets::with_scroll::WithScroll;
 
 // TODO now it displays both files and directories in tree view, it should only directories
@@ -44,8 +45,8 @@ pub struct SaveFileDialogWidget {
 
     display_state: Option<DisplayState>,
 
-    tree_widget: WithScroll<TreeViewWidget<PathBuf, FileFront>>,
-    list_widget: ListWidget<FileFront>,
+    tree_widget: WithScroll<TreeViewWidget<PathBuf, Rc<FileFront>>>,
+    list_widget: ListWidget<Rc<FileFront>>,
     edit_box: EditBoxWidget,
 
     ok_button: ButtonWidget,
@@ -60,8 +61,10 @@ pub struct SaveFileDialogWidget {
 #[derive(Clone, Debug)]
 pub enum SaveFileDialogMsg {
     FocusUpdateMsg(FocusUpdate),
-    Expanded(FileFront),
-    Highlighted(FileFront),
+    // Sent when a left hand-side file-tree subtree is expanded (default: on Enter key)
+    TreeExpanded(Rc<FileFront>),
+    // Sent when a left hand-side file-tree subtree selection changed
+    TreeHighlighted(Rc<FileFront>),
 }
 
 impl AnyMsg for SaveFileDialogMsg {}
@@ -69,14 +72,14 @@ impl AnyMsg for SaveFileDialogMsg {}
 impl SaveFileDialogWidget {
     pub fn new(filesystem_provider: Box<dyn FilesystemFront>) -> Self {
         let tree = filesystem_provider.get_root();
-        let tree_widget = TreeViewWidget::<PathBuf, FileFront>::new(tree)
+        let tree_widget = TreeViewWidget::<PathBuf, Rc<FileFront>>::new(tree)
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
-                Some(Box::new(SaveFileDialogMsg::Expanded(item)))
+                Some(Box::new(SaveFileDialogMsg::TreeExpanded(item)))
             })
             .with_on_highlighted_changed(|widget| {
                 let (_, item) = widget.get_highlighted();
-                Some(Box::new(SaveFileDialogMsg::Highlighted(item)))
+                Some(Box::new(SaveFileDialogMsg::TreeHighlighted(item)))
             });
 
         let scroll_tree_widget = WithScroll::new(tree_widget, ScrollDirection::Vertical);
@@ -220,15 +223,17 @@ impl Widget for SaveFileDialogWidget {
                 warn!("focus updated {}", msg);
                 None
             }
-            SaveFileDialogMsg::Expanded(node) => {
-                let mut items = node.get_child(self.curr_display_path.borrow()).collect::<Vec<_>>();
-                self.list_widget.set_items(&mut items);
+            SaveFileDialogMsg::TreeExpanded(node) => {
+                // TODO load data if necessary
 
                 None
             }
-            SaveFileDialogMsg::Highlighted(child) => {
-                let items = self.filesystem_provider.get_files(child.id().as_path());
-                self.list_widget.set_items_it(items);
+            SaveFileDialogMsg::TreeHighlighted(node) => {
+                node.children().map(|f|
+                    self.list_widget.set_items(f)
+                ).unwrap_or_else(|| {
+                    debug!("failed expanding - no children")
+                });
 
                 None
             }

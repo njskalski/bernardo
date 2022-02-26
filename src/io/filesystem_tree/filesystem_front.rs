@@ -24,5 +24,7 @@ pub trait FilesystemFront {
     // first argument says if the list is complete.
     // none = true, empty iterator
     fn get_children(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<FileFront>>>);
+
+    fn todo_expand(&self, path: &Path);
 }
 

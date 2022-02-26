@@ -17,13 +17,7 @@ impl StupidTree {
     }
 }
 
-impl AsRef<StupidTree> for StupidTree {
-    fn as_ref(&self) -> &StupidTree {
-        self
-    }
-}
-
-impl TreeViewNode<usize> for StupidTree {
+impl TreeViewNode<usize> for Rc<StupidTree> {
     fn id(&self) -> &usize {
         &self.id
     }
@@ -41,38 +35,13 @@ impl TreeViewNode<usize> for StupidTree {
         (true, self.children.len())
     }
 
-    fn get_child(&self, idx: usize) -> Option<Rc<Self>> {
+    fn get_child(&self, idx: usize) -> Option<Self> {
         self.children.get(idx).map(|f| f.clone())
     }
-
-    // fn get_child_by_key(&self, key: &usize) -> Option<Rc<Self>> {
-    //     for child in self.children.iter() {
-    //         if child.id() == key {
-    //             return Some(child.clone());
-    //         };
-    //     };
-    //     return None
-    // }
 
     fn is_complete(&self) -> bool {
         true
     }
-
-    // fn children(&self) -> (bool, Box<dyn Iterator<Item=Rc<Self>>>) {
-    //     (true, Box::new(self.children.iter()))
-    // }
-
-    // fn has_child(&self, key: &usize) -> bool {
-    //     for c in self.children.iter() {
-    //         if c.id() == key {
-    //             return true;
-    //         }
-    //     }
-    //
-    //     false
-    // }
-    //
-    // fn todo_update_cache(&self) {}
 }
 
 pub fn get_stupid_tree() -> Rc<StupidTree> {

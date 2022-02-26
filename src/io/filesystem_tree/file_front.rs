@@ -1,7 +1,8 @@
 use std::borrow::Borrow;
-use std::cell::RefCell;
+use std::cell::{BorrowError, Ref, RefCell};
 use std::fmt::{Debug, Formatter};
 use std::iter;
+use std::iter::empty;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
@@ -11,12 +12,13 @@ use crate::io::filesystem_tree::filesystem_front::{FilesystemFront, FsfRef};
 use crate::widgets::list_widget::ListWidgetItem;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum FileType {
     File,
     Directory { cache: Rc<RefCell<FileChildrenCache>> },
 }
 
+#[derive(Debug)]
 pub struct FileChildrenCache {
     pub complete: bool,
     pub children: Vec<Rc<FileFront>>,
@@ -44,9 +46,27 @@ impl FileFront {
             },
         }
     }
+
+    pub fn children(&self) -> Box<dyn Iterator<Item=Rc<Self>> + '_> {
+        return match &self.file_type {
+            FileType::Directory { cache } => {
+                cache.try_borrow().map(
+                    |c| {
+                        Box::new(c.children.iter().map(|f| f.clone())) as Box<dyn Iterator<Item=Rc<Self>>>
+                    }
+                ).unwrap_or_else(
+                    |_| {
+                        error!("failed acquiring cache");
+                        Box::new(empty()) as Box<dyn Iterator<Item=Rc<Self>>>
+                    }
+                )
+            }
+            FileType::File => Box::new(empty()),
+        }
+    }
 }
 
-impl TreeViewNode<PathBuf> for FileFront {
+impl TreeViewNode<PathBuf> for Rc<FileFront> {
     fn id(&self) -> &PathBuf {
         &self.path
     }
@@ -56,7 +76,10 @@ impl TreeViewNode<PathBuf> for FileFront {
     }
 
     fn is_leaf(&self) -> bool {
-        self.file_type == FileType::File
+        match self.file_type {
+            FileType::File => false,
+            FileType::Directory { .. } => true
+        }
     }
 
     fn num_child(&self) -> (bool, usize) {
@@ -73,8 +96,8 @@ impl TreeViewNode<PathBuf> for FileFront {
         }
     }
 
-    fn get_child(&self, idx: usize) -> Option<Rc<Self>> {
-        match &self.file_type {
+    fn get_child(&self, idx: usize) -> Option<Self> {
+        return match &self.file_type {
             FileType::File => None,
             FileType::Directory { cache } => {
                 cache.try_borrow().map(
@@ -86,7 +109,6 @@ impl TreeViewNode<PathBuf> for FileFront {
             }
         }
     }
-
 
     fn is_complete(&self) -> bool {
         match &self.file_type {
@@ -103,7 +125,7 @@ impl TreeViewNode<PathBuf> for FileFront {
     }
 }
 
-impl ListWidgetItem for FileFront {
+impl ListWidgetItem for Rc<FileFront> {
     fn get_column_name(_idx: usize) -> &'static str {
         "name"
     }

@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -24,7 +25,7 @@ use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> {
     id: WID,
-    root_node: Rc<Item>,
+    root_node: Item,
     filter_letters: Option<String>,
     expanded: HashSet<Key>,
     highlighted: usize,
@@ -50,7 +51,7 @@ Warranties:
 - (TODO double check) Highlighted always exists.
  */
 impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key, Item> {
-    pub fn new(root_node: Rc<Item>) -> Self {
+    pub fn new(root_node: Item) -> Self {
         Self {
             id: get_new_widget_id(),
             root_node,
@@ -144,7 +145,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
     }
 
     pub fn get_highlighted(&self) -> (u16, Item) {
-        self.items().nth(self.highlighted).unwrap() //TODO
+        self.items().nth(self.highlighted).clone().unwrap() //TODO
     }
 }
 
