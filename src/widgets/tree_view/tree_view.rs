@@ -82,6 +82,8 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
 
     fn size_from_items(&self) -> XY {
         self.items().fold(ZERO, |old_size, item| {
+            // debug!("adding item (depth {}) {:?}", item.0, item.1);
+
             XY::new(
                 // depth * 2 + 1 + label_length
                 old_size

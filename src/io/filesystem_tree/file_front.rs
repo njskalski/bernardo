@@ -1,7 +1,7 @@
+use std::{fmt, iter};
 use std::borrow::Borrow;
 use std::cell::{BorrowError, Ref, RefCell};
 use std::fmt::{Debug, Formatter};
-use std::iter;
 use std::iter::empty;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -18,10 +18,18 @@ pub enum FileType {
     Directory { cache: Rc<RefCell<FileChildrenCache>> },
 }
 
-#[derive(Debug)]
 pub struct FileChildrenCache {
     pub complete: bool,
     pub children: Vec<Rc<FileFront>>,
+}
+
+impl Debug for FileChildrenCache {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} cache with {} items",
+               if self.complete { "complete" } else { "incomplete" },
+               self.children.len(),
+        )
+    }
 }
 
 impl Default for FileChildrenCache {

@@ -38,6 +38,19 @@ struct InternalState {
     caches: HashMap<Rc<PathBuf>, Rc<RefCell<FileChildrenCache>>>,
 }
 
+impl InternalState {
+    fn get_or_create_cache(&mut self, path: &Rc<PathBuf>) -> Rc<RefCell<FileChildrenCache>> {
+        match self.caches.get(path) {
+            None => {
+                let cache = Rc::new(RefCell::new(FileChildrenCache::default()));
+                self.caches.insert(path.clone(), cache.clone());
+                cache
+            }
+            Some(cache) => cache.clone(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct LocalFilesystem {
     fs: OsFileSystem,
@@ -152,38 +165,34 @@ impl FilesystemFront for LocalFilesystem {
     }
 
     fn tick(&self) {
+        let mut is = match self.internal_state.try_borrow_mut() {
+            Ok(is) => is,
+            Err(e) => {
+                error!("failed acquiring internal_state: {}", e);
+                return;
+            }
+        };
+
         for msg in self.fs_channel.1.try_iter() {
+            debug!("ticking msg {:?}", msg);
             match msg {
                 // TODO now everything is
                 FSUpdate::DirectoryUpdate { full_path, entries } => {
                     let path = Rc::new(full_path);
-
-                    let cache = match self.internal_state.try_borrow_mut() {
-                        Ok(mut is) => {
-                            match is.caches.get(&path) {
-                                None => {
-                                    let cache = Rc::new(RefCell::new(FileChildrenCache::default()));
-                                    is.caches.insert(path.clone(), cache.clone());
-                                    cache
-                                }
-                                Some(cache) => cache.clone(),
-                            }
-                        }
-                        Err(e) => {
-                            error!("failed acquiring internal_state: {}", e);
-                            continue;
-                        }
-                    };
 
                     let mut items: Vec<Rc<FileFront>> = Vec::new();
                     items.reserve(entries.len());
                     for de in entries.iter() {
                         match de.file_type() {
                             Ok(t) => {
+                                // TODO recycle old cache?
+                                let child_path = Rc::new(de.path());
+
                                 if t.is_dir() {
-                                    items.push(Rc::new(FileFront::new_directory(path.clone(), cache.clone())));
+                                    let child_cache = is.get_or_create_cache(&child_path);
+                                    items.push(Rc::new(FileFront::new_directory(child_path, child_cache)));
                                 } else {
-                                    items.push(Rc::new(FileFront::new_file(path.clone())))
+                                    items.push(Rc::new(FileFront::new_file(child_path.clone())))
                                 }
                             }
                             Err(e) => {
@@ -193,6 +202,7 @@ impl FilesystemFront for LocalFilesystem {
                         }
                     }
 
+                    let cache = is.get_or_create_cache(&path);
                     cache.try_borrow_mut().map(|mut c| {
                         c.complete = true;
                         c.children = items;

@@ -161,6 +161,7 @@ fn main() {
 
         select! {
             recv(input.source()) -> msg => {
+                debug!("processing input: {:?}", msg);
                 match msg {
                     Ok(ie) => {
                         debug!("{:?}", ie);
@@ -183,6 +184,7 @@ fn main() {
                 };
             }
             recv(fsf.tick_recv()) -> msg => {
+                debug!("processing tick: {:?}", msg);
                 msg.map(|_| fsf.tick()).unwrap_or_else(|e| {
                     error!("failed receiving fsf_tick: {}", e);
                 });
