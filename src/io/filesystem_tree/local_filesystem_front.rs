@@ -12,7 +12,6 @@ use std::thread;
 use crossbeam_channel::{Receiver, Sender};
 use filesystem::{FileSystem, OsFileSystem};
 use log::{debug, error, warn};
-use regex::{Regex, RegexBuilder};
 use ropey::Rope;
 
 use crate::io::filesystem_tree::file_front::{FileChildrenCache, FileFront, FileType};
