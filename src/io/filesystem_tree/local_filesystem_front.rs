@@ -1,5 +1,5 @@
 use std::borrow::Borrow;
-use std::cell::RefCell;
+use std::cell::{BorrowMutError, RefCell, RefMut};
 use std::collections::HashMap;
 use std::fs::{DirEntry, ReadDir};
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -9,6 +9,7 @@ use std::str::Utf8Error;
 use std::sync::{Arc, mpsc};
 use std::thread;
 
+use crossbeam_channel::{Receiver, Sender};
 use filesystem::{FileSystem, OsFileSystem};
 use log::{debug, error, warn};
 use ropey::Rope;
@@ -42,16 +43,14 @@ pub struct LocalFilesystem {
     fs: OsFileSystem,
     root_node: Rc<FileFront>,
 
-    sender: mpsc::Sender<FSUpdate>,
-    receiver: mpsc::Receiver<FSUpdate>,
+    fs_channel: (Sender<FSUpdate>, Receiver<FSUpdate>),
+    tick_channel: (Sender<()>, Receiver<()>),
 
     internal_state: RefCell<InternalState>,
 }
 
 impl LocalFilesystem {
     pub fn new(root: PathBuf) -> Self {
-        let (sender, receiver) = mpsc::channel::<FSUpdate>();
-
         // TODO check it's directory
 
         let root_cache = Rc::new(RefCell::new(FileChildrenCache {
@@ -70,15 +69,16 @@ impl LocalFilesystem {
         LocalFilesystem {
             fs: OsFileSystem::new(),
             root_node: Rc::new(root_node),
-            sender,
-            receiver,
+            fs_channel: crossbeam_channel::unbounded::<FSUpdate>(),
+            tick_channel: crossbeam_channel::unbounded(),
             internal_state: RefCell::new(internal_state),
         }
     }
 
-    fn start_fs_refresh(&self, path: &PathBuf) {
-        let path = path.clone();
-        let sender = self.sender.clone();
+    fn start_fs_refresh(&self, path: &Path) {
+        let path = path.to_owned();
+        let fs_sender = self.fs_channel.0.clone();
+        let tick_sender = self.tick_channel.0.clone();
         let fs = self.fs.clone();
 
         thread::spawn(move || {
@@ -108,7 +108,7 @@ impl LocalFilesystem {
                         }
                     }
 
-                    sender.send(
+                    fs_sender.send(
                         FSUpdate::DirectoryUpdate {
                             full_path: path,
                             entries,
@@ -116,6 +116,12 @@ impl LocalFilesystem {
                     ).map_err(|e| {
                         error!("failed sending dir update for: {}", e);
                     });
+
+                    tick_sender.send(()).map_err(|e| {
+                        error!("failed sending fs tick: {}", e);
+                    });
+
+                    debug!("finished sending dir entries");
                 }
             }
         });
@@ -128,11 +134,9 @@ impl FilesystemFront for LocalFilesystem {
     }
 
     fn todo_read_file(&self, path: &Path) -> Result<Rope, ()> {
-        todo!()
-    }
-
-    fn is_dir(&self, path: &Path) -> bool {
-        todo!()
+        self.fs.read_file_to_string(path).map(
+            |s| Rope::from(s)
+        ).map_err(|e| ()) // TODO
     }
 
     fn get_children(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<FileFront>>>) {
@@ -140,6 +144,63 @@ impl FilesystemFront for LocalFilesystem {
     }
 
     fn todo_expand(&self, path: &Path) {
-        todo!()
+        self.start_fs_refresh(path)
+    }
+
+    fn tick_recv(&self) -> &Receiver<()> {
+        &self.tick_channel.1
+    }
+
+    fn tick(&self) {
+        for msg in self.fs_channel.1.try_iter() {
+            match msg {
+                // TODO now everything is
+                FSUpdate::DirectoryUpdate { full_path, entries } => {
+                    let path = Rc::new(full_path);
+
+                    let cache = match self.internal_state.try_borrow_mut() {
+                        Ok(mut is) => {
+                            match is.caches.get(&path) {
+                                None => {
+                                    let cache = Rc::new(RefCell::new(FileChildrenCache::default()));
+                                    is.caches.insert(path.clone(), cache.clone());
+                                    cache
+                                }
+                                Some(cache) => cache.clone(),
+                            }
+                        }
+                        Err(e) => {
+                            error!("failed acquiring internal_state: {}", e);
+                            continue;
+                        }
+                    };
+
+                    let mut items: Vec<Rc<FileFront>> = Vec::new();
+                    items.reserve(entries.len());
+                    for de in entries.iter() {
+                        match de.file_type() {
+                            Ok(t) => {
+                                if t.is_dir() {
+                                    items.push(Rc::new(FileFront::new_directory(path.clone(), cache.clone())));
+                                } else {
+                                    items.push(Rc::new(FileFront::new_file(path.clone())))
+                                }
+                            }
+                            Err(e) => {
+                                error!("failed reading file type for {:?}: {}", de.path(), e);
+                                continue
+                            }
+                        }
+                    }
+
+                    cache.try_borrow_mut().map(|mut c| {
+                        c.complete = true;
+                        c.children = items;
+                    }).unwrap_or_else(|e| {
+                        error!("failed acquiring cache: {}", e);
+                    });
+                }
+            }
+        }
     }
 }

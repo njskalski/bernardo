@@ -24,6 +24,15 @@ pub struct FileChildrenCache {
     pub children: Vec<Rc<FileFront>>,
 }
 
+impl Default for FileChildrenCache {
+    fn default() -> Self {
+        FileChildrenCache {
+            complete: false,
+            children: vec![],
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct FileFront {
     path: Rc<PathBuf>,
@@ -59,8 +68,8 @@ impl TreeViewNode<PathBuf> for Rc<FileFront> {
 
     fn is_leaf(&self) -> bool {
         match self.file_type {
-            FileType::File => false,
-            FileType::Directory { .. } => true
+            FileType::File => true,
+            FileType::Directory { .. } => false
         }
     }
 

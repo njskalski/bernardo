@@ -9,7 +9,8 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use clap::Parser;
-use log::debug;
+use crossbeam_channel::select;
+use log::{debug, error};
 use termion::raw::IntoRawMode;
 
 use crate::experiments::color_theme::ColorTheme;
@@ -151,31 +152,40 @@ fn main() {
         }
     }
 
+    'main:
     loop {
         output.clear();
         main_view.layout(output.size_constraint());
         main_view.render(&theme, true, &mut output);
         output.end_frame();
 
-        match input.source().recv() {
-            Ok(ie) => {
-                debug!("{:?}", ie);
-                // early exit
-                match ie {
-                    InputEvent::KeyInput(key) => {
-                        match key.keycode {
-                            Keycode::Char('q') if key.modifiers.CTRL => {
-                                break;
+        select! {
+            recv(input.source()) -> msg => {
+                match msg {
+                    Ok(ie) => {
+                        debug!("{:?}", ie);
+                        match ie {
+                            InputEvent::KeyInput(key) => {
+                                match key.keycode {
+                                    Keycode::Char('q') if key.modifiers.CTRL => {
+                                        break 'main;
+                                    }
+                                    _ => {}
+                                }
                             }
                             _ => {}
                         }
+                        recursive_treat_views(&mut main_view, ie);
+                    },
+                    Err(e) => {
+                        error!("failed receiving input: {}", e);
                     }
-                    _ => {}
-                }
-                recursive_treat_views(&mut main_view, ie);
+                };
             }
-            Err(e) => {
-                debug!("Err {:?}", e);
+            recv(fsf.tick_recv()) -> msg => {
+                msg.map(|_| fsf.tick()).unwrap_or_else(|e| {
+                    error!("failed receiving fsf_tick: {}", e);
+                });
             }
         }
     }
