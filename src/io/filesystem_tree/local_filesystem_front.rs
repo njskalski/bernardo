@@ -12,12 +12,17 @@ use std::thread;
 use crossbeam_channel::{Receiver, Sender};
 use filesystem::{FileSystem, OsFileSystem};
 use log::{debug, error, warn};
+use regex::{Regex, RegexBuilder};
 use ropey::Rope;
 
 use crate::io::filesystem_tree::file_front::{FileChildrenCache, FileFront, FileType};
 use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
 use crate::text::buffer_state::BufferState;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
+
+// how many file paths should be available for immediate querying "at hand".
+// basically a default size of cache for fuzzy file search
+const DEFAULT_FILES_PRELOADS: usize = 10 * 1024;
 
 #[derive(Debug)]
 pub enum SendFile {
@@ -36,6 +41,7 @@ pub enum FSUpdate {
 #[derive(Debug)]
 struct InternalState {
     caches: HashMap<Rc<PathBuf>, Rc<RefCell<FileChildrenCache>>>,
+    at_hand_limit: usize,
 }
 
 impl InternalState {
@@ -76,6 +82,7 @@ impl LocalFilesystem {
 
         let mut internal_state = InternalState {
             caches: HashMap::default(),
+            at_hand_limit: DEFAULT_FILES_PRELOADS,
         };
         internal_state.caches.insert(root_path.clone(), root_cache.clone());
 
@@ -86,6 +93,17 @@ impl LocalFilesystem {
             tick_channel: crossbeam_channel::unbounded(),
             internal_state: RefCell::new(internal_state),
         }
+    }
+
+    pub fn set_at_hand_limit(&self, new_at_hand_limit: usize) {
+        self.internal_state.try_borrow_mut().map(|mut is| {
+            is.at_hand_limit = new_at_hand_limit;
+        }).unwrap_or_else(|e| {})
+    }
+
+    pub fn with_at_hand_limit(self, new_at_hand_limit: usize) -> Self {
+        self.set_at_hand_limit(new_at_hand_limit);
+        self
     }
 
     fn start_fs_refresh(&self, path: &Path) {
