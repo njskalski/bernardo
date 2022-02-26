@@ -9,7 +9,7 @@ use std::rc::Rc;
 use log::error;
 
 use crate::io::filesystem_tree::filesystem_front::{FilesystemFront, FsfRef};
-use crate::widgets::list_widget::ListWidgetItem;
+use crate::widgets::list_widget::{ListWidgetItem, ListWidgetProvider};
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 #[derive(Clone, Debug)]
@@ -44,24 +44,6 @@ impl FileFront {
             file_type: FileType::Directory {
                 cache
             },
-        }
-    }
-
-    pub fn children(&self) -> Box<dyn Iterator<Item=Rc<Self>> + '_> {
-        return match &self.file_type {
-            FileType::Directory { cache } => {
-                cache.try_borrow().map(
-                    |c| {
-                        Box::new(c.children.iter().map(|f| f.clone())) as Box<dyn Iterator<Item=Rc<Self>>>
-                    }
-                ).unwrap_or_else(
-                    |_| {
-                        error!("failed acquiring cache");
-                        Box::new(empty()) as Box<dyn Iterator<Item=Rc<Self>>>
-                    }
-                )
-            }
-            FileType::File => Box::new(empty()),
         }
     }
 }
@@ -140,5 +122,17 @@ impl ListWidgetItem for Rc<FileFront> {
 
     fn get(&self, _idx: usize) -> Option<String> {
         self.path.to_str().map(|f| f.to_string())
+    }
+}
+
+impl ListWidgetProvider<Rc<FileFront>> for Rc<FileFront> {
+    // TODO add loading?
+
+    fn len(&self) -> usize {
+        self.num_child().1
+    }
+
+    fn get(&self, idx: usize) -> Option<Rc<FileFront>> {
+        self.get_child(idx)
     }
 }

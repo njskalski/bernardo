@@ -229,12 +229,7 @@ impl Widget for SaveFileDialogWidget {
                 None
             }
             SaveFileDialogMsg::TreeHighlighted(node) => {
-                node.children().map(|f|
-                    self.list_widget.set_items(f)
-                ).unwrap_or_else(|| {
-                    debug!("failed expanding - no children")
-                });
-
+                self.list_widget.set_items(node);
                 None
             }
             unknown_msg => {

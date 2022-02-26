@@ -31,7 +31,7 @@ pub trait ListWidgetItem: Debug + Clone {
 
 pub trait ListWidgetProvider<Item: ListWidgetItem> {
     fn len(&self) -> usize;
-    fn get(&self, idx: usize) -> Option<&Item>;
+    fn get(&self, idx: usize) -> Option<Item>;
 }
 
 impl<Item: ListWidgetItem> ListWidgetProvider<Item> for Vec<Item> {
@@ -39,12 +39,12 @@ impl<Item: ListWidgetItem> ListWidgetProvider<Item> for Vec<Item> {
         <[Item]>::len(self)
     }
 
-    fn get(&self, idx: usize) -> Option<&Item> {
+    fn get(&self, idx: usize) -> Option<Item> {
         // // Vec::get(self, idx)
         // Some(self[idx].clone())
         // let self_as_vec: &Vec<Item> = self as &Vec<Item>;
         // self_as_vec.get(idx)
-        <[Item]>::get(self, idx)
+        <[Item]>::get(self, idx).map(|f| f.clone())
     }
 }
 
@@ -129,7 +129,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         self.items.clear();
         for idx in 0..provider.len() {
             match provider.get(idx) {
-                Some(item) => self.items.push((*item).clone()),
+                Some(item) => self.items.push(item.clone()),
                 None => {
                     warn!("ListWidget: failed unpacking provider item #{}", idx);
                 }
