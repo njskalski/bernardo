@@ -1,6 +1,9 @@
-use crate::primitives::color::Color;
+use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+use crate::primitives::color::Color;
+use crate::primitives::is_default::IsDefault;
+
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub enum Effect {
     None,
     Bold,
@@ -8,10 +11,17 @@ pub enum Effect {
     Underline,
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+impl Default for Effect {
+    fn default() -> Self {
+        Effect::None
+    }
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub struct TextStyle {
     pub foreground: Color,
     pub background: Color,
+    #[serde(default, skip_serializing_if = "Effect::is_default")]
     pub effect: Effect,
 }
 

@@ -17,3 +17,5 @@ mod cursor_set_selection_tests;
 pub mod scroll;
 pub mod cursor_set_rect;
 pub mod alphabet;
+
+pub mod is_default;

@@ -7,19 +7,81 @@ use json;
 use log::debug;
 use serde::{Deserialize, Serialize};
 
-use crate::primitives::color::Color;
+use crate::io::style::{Effect, TextStyle};
+use crate::primitives::color::{Color, WHITE};
+use crate::primitives::colors::{COLOR_CURSOR_BACKGROUND, DEFAULT_TEXT_FOREGROUND, FOCUSED_BACKGROUND};
+use crate::primitives::is_default::IsDefault;
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct ColorTheme {
     #[serde(default, skip_serializing_if = "GeneralCodeTheme::is_default")]
     pub general_code_theme: GeneralCodeTheme,
+    #[serde(default, skip_serializing_if = "UiTheme::is_default")]
+    pub ui: UiTheme,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct UiTheme {
+    pub non_focused: TextStyle,
+    pub focused: TextStyle,
+    pub highligted: TextStyle,
+    pub cursors: CursorsSettings,
+}
+
+lazy_static!(
+    static ref DEFAULT_NON_FOCUSED_BACKGROUND : Color = ron::from_str("#181818").unwrap();
+    static ref DEFAULT_NON_FOCUSED_FOREGROUND : Color = ron::from_str("#928374").unwrap();
+
+    static ref DEFAULT_FOCUSED_BACKGROUND : Color = ron::from_str("#282828").unwrap();
+    static ref DEFAULT_FOCUSED_FOREGROUND : Color = ron::from_str("#928374").unwrap();
+
+    static ref DEFAULT_HIGHLIGHTED_BACKGROUND : Color = ron::from_str("#383433").unwrap();
+    static ref DEFAULT_HIGHLIGHTED_FOREGROUND : Color = ron::from_str("#928374").unwrap();
+
+    static ref PRIMARY_CURSOR_ANCHOR_BACKGROUND : Color = ron::from_str("#FFB81C").unwrap();
+    static ref SECONDARY_CURSORS_ANCHOR_BACKGROUND : Color = ron::from_str("#ED7737").unwrap();
+    static ref CURSORS_BACKGROUND : Color = ron::from_str("#852F00").unwrap();
+    static ref CURSORS_FOREGROUND : Color = ron::from_str("#FFC4A3").unwrap();
+);
+
+impl Default for UiTheme {
+    fn default() -> Self {
+        UiTheme {
+            non_focused: TextStyle {
+                foreground: *DEFAULT_NON_FOCUSED_BACKGROUND,
+                background: *DEFAULT_NON_FOCUSED_FOREGROUND,
+                effect: Effect::None,
+            },
+            focused: TextStyle {
+                foreground: *DEFAULT_FOCUSED_BACKGROUND,
+                background: *DEFAULT_FOCUSED_FOREGROUND,
+                effect: Effect::None,
+            },
+            highligted: TextStyle {
+                foreground: *DEFAULT_HIGHLIGHTED_BACKGROUND,
+                background: *DEFAULT_HIGHLIGHTED_FOREGROUND,
+                effect: Effect::None,
+            },
+            cursors: CursorsSettings {
+                primary_anchor_background: *PRIMARY_CURSOR_ANCHOR_BACKGROUND,
+                secondary_anchor_background: *SECONDARY_CURSORS_ANCHOR_BACKGROUND,
+                background: *CURSORS_BACKGROUND,
+                foreground: Some(*CURSORS_FOREGROUND),
+            },
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct CursorsSettings {
+    pub primary_anchor_background: Color,
+    pub secondary_anchor_background: Color,
+    pub background: Color,
+    #[serde(default, skip_serializing_if = "Option::is_default")]
+    pub foreground: Option<Color>,
 }
 
 impl ColorTheme {
-    pub fn is_default(&self) -> bool {
-        self == &Self::default()
-    }
-
     pub fn with_general_code_theme(self, general_code_theme: GeneralCodeTheme) -> Self {
         Self {
             general_code_theme,

@@ -189,16 +189,6 @@ impl ListWidgetItem for Rc<FileFront> {
         self.path.file_name().map(|f| f.to_str().map(|f| f.to_string())).flatten().or(Some("error".to_string()))
     }
 }
-//
-// impl ListWidgetProvider<Rc<FileFront>> for Vec<Rc<FileFront>> {
-//     fn len(&self) -> usize {
-//         Vec::len(self)
-//     }
-//
-//     fn get(&self, idx: usize) -> Option<Rc<FileFront>> {
-//         Vec::get(self, idx)
-//     }
-// }
 
 #[derive(Clone)]
 pub struct FilteredFileFront {
