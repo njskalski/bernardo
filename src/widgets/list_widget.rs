@@ -1,5 +1,6 @@
+use std::cmp::Ordering;
+use std::convert::Infallible;
 use std::fmt::Debug;
-use std::iter::Iterator;
 use std::slice::SliceIndex;
 
 use log::{debug, warn};
@@ -15,12 +16,8 @@ use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+use crate::widgets::fuzzy_search::item_provider::Item;
 
-/*
-    Items are held in Widget state itself, and overwritten with set_items when necessary. Therefore
-    keep them lightweight as they are being cloned on update. Treat ListWidgetItem as "sub widget",
-    a cached projection on actual data, and not the data itself. Do not store data in widgets!
- */
 pub trait ListWidgetItem: Debug + Clone {
     //TODO change to static str?
     fn get_column_name(idx: usize) -> &'static str;
@@ -29,9 +26,42 @@ pub trait ListWidgetItem: Debug + Clone {
     fn get(&self, idx: usize) -> Option<String>;
 }
 
-pub trait ListWidgetProvider<Item: ListWidgetItem> {
+/*
+    Keep the provider light
+ */
+pub trait ListWidgetProvider<Item: ListWidgetItem>: Debug {
     fn len(&self) -> usize;
     fn get(&self, idx: usize) -> Option<Item>;
+}
+
+struct ProviderIter<'a, Item: ListWidgetItem> {
+    p: &'a dyn ListWidgetProvider<Item>,
+    idx: usize,
+}
+
+impl<'a, LItem: ListWidgetItem> Iterator for ProviderIter<'a, LItem> {
+    type Item = LItem;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.idx >= self.p.len() {
+            None
+        } else {
+            self.p.get(self.idx)
+        }
+    }
+
+    fn count(self) -> usize where Self: Sized {
+        self.p.len()
+    }
+}
+
+impl<Item: ListWidgetItem> ListWidgetProvider<Item> {
+    pub fn iter(&self) -> impl std::iter::Iterator<Item=Item> + '_ {
+        ProviderIter {
+            p: self,
+            idx: 0,
+        }
+    }
 }
 
 impl<Item: ListWidgetItem> ListWidgetProvider<Item> for Vec<Item> {
@@ -50,8 +80,8 @@ impl<Item: ListWidgetItem> ListWidgetProvider<Item> for Vec<Item> {
 
 pub struct ListWidget<Item: ListWidgetItem> {
     id: WID,
-    // later probably change into some provider
-    items: Vec<Item>,
+
+    provider: Box<dyn ListWidgetProvider<Item>>,
     highlighted: Option<usize>,
     show_column_names: bool,
 
@@ -74,11 +104,21 @@ pub enum ListWidgetMsg {
 
 impl AnyMsg for ListWidgetMsg {}
 
+impl<Item: ListWidgetItem> ListWidgetProvider<Item> for () {
+    fn len(&self) -> usize {
+        0
+    }
+
+    fn get(&self, idx: usize) -> Option<Item> {
+        None
+    }
+}
+
 impl<Item: ListWidgetItem> ListWidget<Item> {
     pub fn new() -> Self {
         ListWidget {
             id: get_new_widget_id(),
-            items: vec![],
+            provider: Box::new(()),
             highlighted: None,
             show_column_names: true,
             on_miss: None,
@@ -87,9 +127,9 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
-    pub fn with_items(self, items: Vec<Item>) -> Self {
+    pub fn with_provider(self, provider: Box<dyn ListWidgetProvider<Item>>) -> Self {
         ListWidget {
-            items,
+            provider,
             ..self
         }
     }
@@ -125,24 +165,8 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
-    pub fn set_items(&mut self, provider: &dyn ListWidgetProvider<Item>) {
-        self.items.clear();
-        for idx in 0..provider.len() {
-            match provider.get(idx) {
-                Some(item) => self.items.push(item.clone()),
-                None => {
-                    warn!("ListWidget: failed unpacking provider item #{}", idx);
-                }
-            }
-        }
-    }
-
-    pub fn set_items_it<T: Iterator<Item=Item>>(&mut self, provider: T) {
-        self.items.clear();
-        for c in provider {
-            self.items.push(c);
-        }
-        debug!("new items {:?}", self.items)
+    pub fn set_provider(&mut self, provider: Box<dyn ListWidgetProvider<Item>>) {
+        self.provider = provider
     }
 }
 
@@ -173,7 +197,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         debug_assert!(sc.bigger_equal_than(self.min_size()));
 
         // TODO check if items < max_u16
-        let rows = (self.items.len() + if self.show_column_names { 1 } else { 0 }) as u16;
+        let rows = (self.provider.len() + if self.show_column_names { 1 } else { 0 }) as u16;
         let mut cols = 0;
 
         for i in 0..Item::len_columns() {
@@ -182,7 +206,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
 
         let desired = XY::new(cols, rows);
 
-        debug!("layout, items.len = {}", self.items.len());
+        debug!("layout, items.len = {}", self.provider.len());
 
         desired.cut(sc)
     }
@@ -248,8 +272,8 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
                                 }
                             },
                             Arrow::Down => {
-                                debug!("items {}, old_high {}", self.items.len(), old_highlighted);
-                                if old_highlighted + 1 < self.items.len() {
+                                debug!("items {}, old_high {}", self.provider.len(), old_highlighted);
+                                if old_highlighted + 1 < self.provider.len() {
                                     self.highlighted = Some(old_highlighted + 1);
                                     self.on_change()
                                 } else {
@@ -296,7 +320,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
             y_offset += 1;
         }
 
-        for (idx, item) in self.items.iter().enumerate() {
+        for (idx, item) in self.provider.iter().enumerate() {
             // debug!("y+idx = {}, osy = {:?}", y_offset as usize + idx, output.size_constraint().y());
 
             match output.size_constraint().y() {

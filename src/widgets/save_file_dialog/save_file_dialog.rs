@@ -17,7 +17,7 @@ use log::{debug, error, warn};
 
 use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
 use crate::FsfRef;
-use crate::io::filesystem_tree::file_front::FileFront;
+use crate::io::filesystem_tree::file_front::{FileFront, FilteredFileFront};
 use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
@@ -241,7 +241,12 @@ impl Widget for SaveFileDialogWidget {
                 None
             }
             SaveFileDialogMsg::TreeHighlighted(node) => {
-                self.list_widget.set_items(node);
+                self.list_widget.set_provider(
+                    Box::new(FilteredFileFront::new(node.clone(),
+                                                    |f| f.is_file(),
+                    ))
+                );
+
                 None
             }
             unknown_msg => {

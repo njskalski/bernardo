@@ -12,10 +12,28 @@ use crate::io::filesystem_tree::filesystem_front::{FilesystemFront, FsfRef};
 use crate::widgets::list_widget::{ListWidgetItem, ListWidgetProvider};
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
+type FilterType = fn(&Rc<FileFront>) -> bool;
+
 #[derive(Clone, Debug)]
 pub enum FileType {
     File,
     Directory { cache: Rc<RefCell<FileChildrenCache>> },
+}
+
+impl FileType {
+    pub fn is_file(&self) -> bool {
+        match self {
+            FileType::File => true,
+            FileType::Directory { .. } => false,
+        }
+    }
+
+    pub fn is_dir(&self) -> bool {
+        match self {
+            FileType::File => false,
+            FileType::Directory { .. } => true,
+        }
+    }
 }
 
 pub struct FileChildrenCache {
@@ -66,6 +84,28 @@ impl FileFront {
 
     pub fn path(&self) -> &Path {
         &self.path
+    }
+
+    pub fn is_dir(&self) -> bool {
+        self.file_type.is_dir()
+    }
+
+    pub fn is_file(&self) -> bool {
+        self.file_type.is_file()
+    }
+
+    pub fn children(&self) -> Vec<Rc<FileFront>> {
+        return match &self.file_type {
+            FileType::Directory { cache } => {
+                cache.try_borrow().map(
+                    |cache| cache.children.iter().map(|f| f.clone()).collect::<Vec<_>>()
+                ).unwrap_or_else(|e| {
+                    error!("failed accessing file_front cache: {}", e);
+                    vec![]
+                })
+            }
+            FileType::File => vec![],
+        }
     }
 }
 
@@ -149,15 +189,44 @@ impl ListWidgetItem for Rc<FileFront> {
         self.path.file_name().map(|f| f.to_str().map(|f| f.to_string())).flatten().or(Some("error".to_string()))
     }
 }
+//
+// impl ListWidgetProvider<Rc<FileFront>> for Vec<Rc<FileFront>> {
+//     fn len(&self) -> usize {
+//         Vec::len(self)
+//     }
+//
+//     fn get(&self, idx: usize) -> Option<Rc<FileFront>> {
+//         Vec::get(self, idx)
+//     }
+// }
 
-impl ListWidgetProvider<Rc<FileFront>> for Rc<FileFront> {
-    // TODO add loading?
+#[derive(Clone)]
+pub struct FilteredFileFront {
+    ff: Rc<FileFront>,
+    filter: FilterType,
+}
 
+impl Debug for FilteredFileFront {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "[filtered {:?}]", self.ff)
+    }
+}
+
+impl FilteredFileFront {
+    pub fn new(ff: Rc<FileFront>, filter: FilterType) -> Self {
+        Self {
+            ff,
+            filter,
+        }
+    }
+}
+
+impl ListWidgetProvider<Rc<FileFront>> for FilteredFileFront {
     fn len(&self) -> usize {
-        self.num_child().1
+        self.ff.children().iter().filter(|x| (self.filter)(x)).count()
     }
 
     fn get(&self, idx: usize) -> Option<Rc<FileFront>> {
-        self.get_child(idx)
+        self.ff.children().iter().filter(|x| (self.filter)(x)).nth(idx).map(|f| f.clone())
     }
 }
