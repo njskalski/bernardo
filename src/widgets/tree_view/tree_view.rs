@@ -80,6 +80,14 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
         self.expanded.contains(key)
     }
 
+    pub fn expanded_mut(&mut self) -> &mut HashSet<Key> {
+        &mut self.expanded
+    }
+
+    pub fn expanded(&self) -> &HashSet<Key> {
+        &self.expanded
+    }
+
     fn size_from_items(&self) -> XY {
         self.items().fold(ZERO, |old_size, item| {
             // debug!("adding item (depth {}) {:?}", item.0, item.1);

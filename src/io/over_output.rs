@@ -22,10 +22,7 @@ impl<'a> OverOutput<'a> {
         output: &'a mut dyn Output,
         size_constraint: SizeConstraint,
     ) -> Self {
-        debug!(
-            "making overoutput {:?}",
-            size_constraint,
-        );
+        // debug!("making overoutput {:?}", size_constraint);
         OverOutput {
             output,
             size_constraint,

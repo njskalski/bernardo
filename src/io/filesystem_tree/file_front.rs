@@ -63,6 +63,10 @@ impl FileFront {
             },
         }
     }
+
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
 }
 
 impl TreeViewNode<PathBuf> for Rc<FileFront> {
@@ -138,7 +142,11 @@ impl ListWidgetItem for Rc<FileFront> {
     }
 
     fn get(&self, _idx: usize) -> Option<String> {
-        self.path.to_str().map(|f| f.to_string())
+        if _idx > 0 {
+            return None;
+        }
+
+        self.path.file_name().map(|f| f.to_str().map(|f| f.to_string())).flatten().or(Some("error".to_string()))
     }
 }
 

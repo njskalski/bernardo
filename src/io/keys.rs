@@ -56,6 +56,20 @@ impl Key {
     pub fn no_modifiers(&self) -> bool {
         !(self.modifiers.ALT || self.modifiers.CTRL || self.modifiers.SHIFT)
     }
+
+    pub fn as_focus_update(&self) -> Option<FocusUpdate> {
+        if self.modifiers.ALT == false {
+            return None;
+        }
+
+        return match self.keycode {
+            Keycode::ArrowUp => Some(FocusUpdate::Up),
+            Keycode::ArrowDown => Some(FocusUpdate::Down),
+            Keycode::ArrowLeft => Some(FocusUpdate::Left),
+            Keycode::ArrowRight => Some(FocusUpdate::Right),
+            _ => None
+        };
+    }
 }
 
 impl Keycode {
@@ -64,16 +78,6 @@ impl Keycode {
             *self == Keycode::ArrowLeft ||
             *self == Keycode::ArrowUp ||
             *self == Keycode::ArrowDown
-    }
-
-    pub fn as_focus_update(&self) -> Option<FocusUpdate> {
-        return match self {
-            Keycode::ArrowUp => Some(FocusUpdate::Up),
-            Keycode::ArrowDown => Some(FocusUpdate::Down),
-            Keycode::ArrowLeft => Some(FocusUpdate::Left),
-            Keycode::ArrowRight => Some(FocusUpdate::Right),
-            _ => None
-        }
     }
 }
 

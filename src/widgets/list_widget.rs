@@ -191,17 +191,17 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         return match input_event {
             InputEvent::KeyInput(key) => {
                 match key.keycode {
-                    Keycode::ArrowUp => {
+                    Keycode::ArrowUp if key.modifiers.ALT == false => {
                         Some(ListWidgetMsg::Arrow(Arrow::Up))
                     }
-                    Keycode::ArrowDown => {
+                    Keycode::ArrowDown if key.modifiers.ALT == false => {
                         Some(ListWidgetMsg::Arrow(Arrow::Down))
                     }
                     Keycode::ArrowLeft => {
-                        Some(ListWidgetMsg::Arrow(Arrow::Left))
+                        None
                     }
                     Keycode::ArrowRight => {
-                        Some(ListWidgetMsg::Arrow(Arrow::Right))
+                        None
                     }
                     Keycode::Enter => {
                         Some(ListWidgetMsg::Hit)
@@ -297,7 +297,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         }
 
         for (idx, item) in self.items.iter().enumerate() {
-            debug!("y+idx = {}, osy = {:?}", y_offset as usize + idx, output.size_constraint().y());
+            // debug!("y+idx = {}, osy = {:?}", y_offset as usize + idx, output.size_constraint().y());
 
             match output.size_constraint().y() {
                 Some(y) => if y_offset as usize + idx >= y as usize {

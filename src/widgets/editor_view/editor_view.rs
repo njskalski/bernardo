@@ -43,7 +43,7 @@ pub struct EditorView {
     anchor: XY,
     tree_sitter: Rc<TreeSitterWrapper>,
 
-    fs: FsfRef,
+    fsf: FsfRef,
 
     // TODO I should refactor that these two don't appear at the same time.
     save_file_dialog: Option<SaveFileDialogWidget>,
@@ -59,7 +59,7 @@ impl EditorView {
             todo_text: BufferState::new(tree_sitter.clone()),
             anchor: ZERO,
             tree_sitter,
-            fs,
+            fsf: fs,
             save_file_dialog: None,
             fuzzy_search: None,
         }
@@ -103,11 +103,12 @@ impl EditorView {
 
     fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
         if let Some(sd) = self.save_file_dialog.as_mut() {
-            let layout = HoverLayout::new(
+            let mut layout = HoverLayout::new(
                 &mut DummyLayout::new(self.wid, size),
                 &mut LeafLayout::new(sd),
                 Rect::new(XY::new(4, 4), XY::new(30, 15)), //TODO
             ).calc_sizes(size);
+
 
             return layout;
         }
@@ -213,36 +214,24 @@ impl Widget for EditorView {
         let size = sc.hint().size;
         self.last_size = Some(size);
 
+        self.internal_layout(size);
+
         size
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         return match input_event {
             //TODO refactor the settings
-
-            InputEvent::Tick => None,
-            InputEvent::KeyInput(key) => {
-                if key.modifiers.CTRL && key.keycode == Keycode::Char('s') {
-                    return if key.modifiers.SHIFT == false {
-                        Some(Box::new(EditorViewMsg::Save))
-                    } else {
-                        Some(Box::new(EditorViewMsg::SaveAs))
-                    }
-                }
-
-                if key.modifiers.CTRL && key.keycode == Keycode::Char('h') {
-                    return Some(Box::new(EditorViewMsg::Fuzzy))
-                }
-
-                return if key.modifiers.ALT == false {
-                    match key_to_edit_msg(key) {
-                        None => None,
-                        Some(edit_msg) => Some(Box::new(EditorViewMsg::EditMsg(edit_msg)))
-                    }
-                } else {
-                    None
-                }
-            }
+            InputEvent::KeyInput(key) if key.modifiers.CTRL && key.keycode == Keycode::Char('s') => {
+                Some(Box::new(EditorViewMsg::SaveAs))
+            },
+            InputEvent::KeyInput(key) if key.modifiers.CTRL && key.keycode == Keycode::Char('h') => {
+                Some(Box::new(EditorViewMsg::Fuzzy))
+            },
+            InputEvent::KeyInput(key) if key_to_edit_msg(key).is_some() => {
+                Some(Box::new(EditorViewMsg::EditMsg(key_to_edit_msg(key).unwrap())))
+            },
+            _ => None,
         };
     }
 
@@ -272,8 +261,13 @@ impl Widget for EditorView {
 
                     None
                 }
-                EditorViewMsg::SaveAs => {
+                EditorViewMsg::SaveAs |
+                EditorViewMsg::Save => {
                     self.fuzzy_search = None;
+
+                    self.save_file_dialog = Some(SaveFileDialogWidget::new(
+                        self.fsf.clone(),
+                    ));
 
                     None
                 }

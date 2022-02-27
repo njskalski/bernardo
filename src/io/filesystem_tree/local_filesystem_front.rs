@@ -166,7 +166,9 @@ impl FilesystemFront for LocalFilesystem {
     fn todo_read_file(&self, path: &Path) -> Result<Rope, ()> {
         self.fs.read_file_to_string(path).map(
             |s| Rope::from(s)
-        ).map_err(|e| ()) // TODO
+        ).map_err(|e|
+            error!("failed to read file {:?} : {}", path, e)
+        ) // TODO
     }
 
     fn get_children(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<FileFront>>>) {
@@ -174,6 +176,7 @@ impl FilesystemFront for LocalFilesystem {
     }
 
     fn todo_expand(&self, path: &Path) {
+        // TODO do refresh
         self.start_fs_refresh(path)
     }
 

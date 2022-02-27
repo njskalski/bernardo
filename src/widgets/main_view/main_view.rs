@@ -150,7 +150,7 @@ impl Widget for MainView {
 
         let res_sizes = self.internal_layout(max_size);
 
-        debug!("size {}, res_sizes {:?}", max_size, res_sizes);
+        // debug!("size {}, res_sizes {:?}", max_size, res_sizes);
 
         // Retention of focus. Not sure if it should be here.
         let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
@@ -170,27 +170,10 @@ impl Widget for MainView {
         debug!("main_view.on_input {:?}", input_event);
 
         return match input_event {
-            InputEvent::KeyInput(key) => match key {
-                key if key.keycode.is_arrow() && key.modifiers.ALT => {
-                    debug!("arrow {:?}", key);
-                    match key.keycode.as_focus_update() {
-                        None => {
-                            warn!("failed expected cast to FocusUpdate of {:?}", key);
-                            None
-                        }
-                        Some(event) => {
-                            let msg = MainViewMsg::FocusUpdateMsg(event);
-                            debug!("sending {:?}", msg);
-                            Some(Box::new(msg))
-                        }
-                    }
-                }
-                unknown_key => {
-                    debug!("main_view skipping unknown_key {:?}", unknown_key);
-                    None
-                }
-            }
-            InputEvent::Tick => None
+            InputEvent::FocusUpdate(focus_update) => {
+                Some(Box::new(MainViewMsg::FocusUpdateMsg(focus_update)))
+            },
+            _ => None
         }
     }
 
@@ -245,7 +228,7 @@ impl Widget for MainView {
         match self.display_state.borrow().as_ref() {
             None => warn!("failed rendering main_view without cached_sizes"),
             Some(cached_sizes) => {
-                debug!("widget_sizes : {:?}", cached_sizes.widget_sizes);
+                // debug!("widget_sizes : {:?}", cached_sizes.widget_sizes);
                 for wir in &cached_sizes.widget_sizes {
                     match self.get_subwidget(wir.wid) {
                         Some(widget) => {

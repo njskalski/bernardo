@@ -3,8 +3,9 @@ use std::io::Write;
 use crossterm::{cursor, ExecutableCommand, style, terminal};
 use crossterm::cursor::MoveTo;
 use crossterm::style::{Attribute, Color, ContentStyle, Print, PrintStyledContent, SetAttribute, SetAttributes, SetBackgroundColor, SetForegroundColor, StyledContent};
+use crossterm::style::Color::Reset;
 use crossterm::terminal::{Clear, ClearType};
-use log::warn;
+use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::buffer_output::BufferOutput;
@@ -88,9 +89,7 @@ impl<W: Write> CrosstermOutput<W> {
             .execute(SetBackgroundColor(Color::Reset))?
             .execute(SetAttribute(Attribute::Reset))?;
 
-        let mut last_bg_color: Option<crossterm::style::Color> = None;
-        let mut last_fg_color: Option<crossterm::style::Color> = None;
-        let mut last_attrs: Option<crossterm::style::Attributes> = None;
+        let mut last_style: Option<TextStyle> = None;
         let mut curr_pos: XY = ZERO;
 
         self.stdout.execute(cursor::MoveTo(0, 0))?;
@@ -101,53 +100,52 @@ impl<W: Write> CrosstermOutput<W> {
 
                 if pos != curr_pos {
                     self.stdout.execute(cursor::MoveTo(pos.x, pos.y));
+                    debug!("moving curr_pos: {} -> {}", pos, curr_pos);
                     curr_pos = pos;
                 }
 
                 let cell = &buffer[pos];
                 match cell {
                     Cell::Begin { style, grapheme } => {
-                        let bgcolor = Color::Rgb {
-                            r: style.background.R,
-                            g: style.background.G,
-                            b: style.background.B,
-                        };
-                        let fgcolor = Color::Rgb {
-                            r: style.foreground.R,
-                            g: style.foreground.G,
-                            b: style.foreground.B,
-                        };
+                        if last_style != Some(*style) {
+                            let bgcolor = Color::Rgb {
+                                r: style.background.R,
+                                g: style.background.G,
+                                b: style.background.B,
+                            };
+                            let fgcolor = Color::Rgb {
+                                r: style.foreground.R,
+                                g: style.foreground.G,
+                                b: style.foreground.B,
+                            };
 
-                        // let mut cstyle = style::ContentStyle::new();
-                        // cstyle.background_color = Some(bgcolor);
-                        // cstyle.foreground_color = Some(fgcolor);
+                            let mut attributes: style::Attributes = style::Attributes::default();
+                            match style.effect {
+                                Effect::Bold => {
+                                    attributes.set(Attribute::Bold);
+                                }
+                                Effect::Italic => {
+                                    attributes.set(Attribute::Italic);
+                                }
+                                Effect::Underline => {
+                                    attributes.set(Attribute::Underlined);
+                                }
+                                _ => {}
+                            };
 
-                        let mut attributes: style::Attributes = style::Attributes::default();
-                        match style.effect {
-                            Effect::Bold => {
-                                attributes.set(Attribute::Bold);
-                            }
-                            Effect::Italic => {
-                                attributes.set(Attribute::Italic);
-                            }
-                            Effect::Underline => {
-                                attributes.set(Attribute::Underlined);
-                            }
-                            _ => {}
-                        };
-
-                        if last_bg_color != Some(bgcolor) {
+                            self.stdout.execute(SetBackgroundColor(Color::Reset))?;
                             self.stdout.execute(SetBackgroundColor(bgcolor))?;
-                            last_bg_color = Some(bgcolor);
-                        }
-                        if last_fg_color != Some(fgcolor) {
+
+                            self.stdout.execute(SetForegroundColor(Color::Reset))?;
                             self.stdout.execute(SetForegroundColor(fgcolor))?;
-                            last_fg_color = Some(fgcolor);
+
+                            // TODO setting attributes breaks things colors.
+                            // self.stdout.execute(SetAttribute(Attribute::Reset))?;
+                            // self.stdout.execute(SetAttributes(attributes))?;
+
+                            
+                            last_style = Some(*style);
                         }
-                        if last_attrs != Some(attributes) {
-                            self.stdout.execute(SetAttributes(attributes))?;
-                            last_attrs = Some(attributes);
-                        };
 
                         self.stdout.execute(Print(grapheme))?;
 
@@ -156,6 +154,9 @@ impl<W: Write> CrosstermOutput<W> {
                     Cell::Continuation => {}
                 }
             }
+
+            curr_pos.y += 1;
+            curr_pos.x = 0;
         }
 
         self.stdout.flush()

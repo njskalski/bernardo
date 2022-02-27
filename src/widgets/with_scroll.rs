@@ -39,6 +39,14 @@ impl<W: Widget> WithScroll<W> {
 
         new_sc
     }
+
+    pub fn internal_mut(&mut self) -> &mut W {
+        &mut self.widget
+    }
+
+    pub fn internal(&self) -> &W {
+        &self.widget
+    }
 }
 
 impl<W: Widget> Widget for WithScroll<W> {

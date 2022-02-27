@@ -10,6 +10,7 @@ use std::rc::Rc;
 
 use clap::Parser;
 use crossbeam_channel::select;
+use filesystem::OsFileSystem;
 use log::{debug, error};
 use termion::raw::IntoRawMode;
 
@@ -29,6 +30,7 @@ use crate::primitives::xy::ZERO;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
+use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 
 mod experiments;
 mod io;
@@ -91,11 +93,12 @@ fn main() {
 
     let fsf: FsfRef = Rc::new(Box::new(LocalFilesystem::new(PathBuf::from("/home/andrzej/r"))));
 
-    let mut main_view = MainView::new(tree_sitter, fsf.clone())
-        .with_empty_editor();
+    // let mut main_view = MainView::new(tree_sitter, fsf.clone())
+    //     .with_empty_editor();
 
-    let fs = filesystem::OsFileSystem::new();
-    let color_theme = ColorTheme::load_from_file(fs, &PathBuf::from("./themes/default.ron")).unwrap(); // TODO
+    let mut main_view = SaveFileDialogWidget::new(fsf.clone());
+
+    let color_theme = ColorTheme::load_from_file(OsFileSystem::new(), &PathBuf::from("./themes/default.ron")).unwrap(); // TODO
 
     let theme = Theme::default().with_color_theme(color_theme);
 
@@ -163,19 +166,18 @@ fn main() {
             recv(input.source()) -> msg => {
                 debug!("processing input: {:?}", msg);
                 match msg {
-                    Ok(ie) => {
+                    Ok(mut ie) => {
                         debug!("{:?}", ie);
                         match ie {
-                            InputEvent::KeyInput(key) => {
-                                match key.keycode {
-                                    Keycode::Char('q') if key.modifiers.CTRL => {
-                                        break 'main;
-                                    }
-                                    _ => {}
-                                }
+                            InputEvent::KeyInput(key) if key.as_focus_update().is_some() => {
+                                ie = InputEvent::FocusUpdate(key.as_focus_update().unwrap());
+                            },
+                            InputEvent::KeyInput(key) if key.keycode == Keycode::Char('q') && key.modifiers.CTRL => {
+                                break 'main;
                             }
                             _ => {}
                         }
+
                         recursive_treat_views(&mut main_view, ie);
                     },
                     Err(e) => {

@@ -10,12 +10,13 @@ I hope I will discover most of functional constraints while implementing it.
 
 use std::borrow::Borrow;
 use std::fmt::Debug;
-use std::path::{Path, PathBuf};
+use std::path::{Path, PathBuf, StripPrefixError};
 use std::rc::Rc;
 
-use log::{debug, warn};
+use log::{debug, error, warn};
 
 use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
+use crate::FsfRef;
 use crate::io::filesystem_tree::file_front::FileFront;
 use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
 use crate::io::input_event::InputEvent;
@@ -52,10 +53,7 @@ pub struct SaveFileDialogWidget {
     ok_button: ButtonWidget,
     cancel_button: ButtonWidget,
 
-    curr_display_path: PathBuf,
-
-    // TODO this will probably get moved
-    filesystem_provider: Box<dyn FilesystemFront>,
+    fsf: FsfRef,
 }
 
 #[derive(Clone, Debug)]
@@ -70,8 +68,8 @@ pub enum SaveFileDialogMsg {
 impl AnyMsg for SaveFileDialogMsg {}
 
 impl SaveFileDialogWidget {
-    pub fn new(filesystem_provider: Box<dyn FilesystemFront>) -> Self {
-        let tree = filesystem_provider.get_root();
+    pub fn new(fsf: FsfRef) -> Self {
+        let tree = fsf.get_root();
         let tree_widget = TreeViewWidget::<PathBuf, Rc<FileFront>>::new(tree)
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
@@ -98,8 +96,7 @@ impl SaveFileDialogWidget {
             edit_box,
             ok_button,
             cancel_button,
-            curr_display_path: filesystem_provider.get_root().id().clone(),
-            filesystem_provider,
+            fsf,
         }
     }
 
@@ -131,7 +128,27 @@ impl SaveFileDialogWidget {
         res
     }
 
-    fn todo_filesystem_updated(&mut self) {}
+    pub fn set_path(&mut self, path: &Path) {
+        let mut curr_path = self.fsf.get_root().path().to_owned();
+
+        match path.strip_prefix(&curr_path) {
+            Err(e) => {
+                error!("supposed to set path to {:?}, but it's outside fs {:?}, because: {}", path, &curr_path, e);
+            }
+            Ok(remainder) => {
+                for comp in remainder.components() {
+                    self.fsf.todo_expand(&curr_path);
+
+                    debug!("expanding subtree {:?}", curr_path);
+
+                    // TODO one can save some memory here
+                    self.tree_widget.internal_mut().expanded_mut().insert(curr_path.clone());
+
+                    curr_path = curr_path.join(comp);
+                }
+            }
+        }
+    }
 }
 
 impl Widget for SaveFileDialogWidget {
@@ -160,12 +177,18 @@ impl Widget for SaveFileDialogWidget {
 
         let res_sizes = self.internal_layout(max_size);
 
-        debug!("size {}, res_sizes {:?}", max_size, res_sizes);
 
         // Retention of focus. Not sure if it should be here.
         let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
 
-        self.display_state = Some(DisplayState::new(max_size, res_sizes));
+        let mut ds = DisplayState::new(max_size, res_sizes);
+        ds.focus_group_mut().add_edge(self.tree_widget.id(), FocusUpdate::Right, self.list_widget.id());
+        ds.focus_group_mut().add_edge(self.list_widget.id(), FocusUpdate::Left, self.tree_widget.id());
+
+        debug!("focusgroup: {:?}", ds.focus_group);
+
+        self.display_state = Some(ds);
+
 
         // re-setting focus.
         match (focus_op, &mut self.display_state) {
@@ -180,27 +203,10 @@ impl Widget for SaveFileDialogWidget {
         debug!("save_file_dialog.on_input {:?}", input_event);
 
         return match input_event {
-            InputEvent::KeyInput(key) => match key {
-                key if key.keycode.is_arrow() && key.modifiers.ALT => {
-                    debug!("arrow {:?}", key);
-                    match key.keycode.as_focus_update() {
-                        None => {
-                            warn!("failed expected cast to FocusUpdate of {:?}", key);
-                            None
-                        }
-                        Some(event) => {
-                            let msg = SaveFileDialogMsg::FocusUpdateMsg(event);
-                            debug!("sending {:?}", msg);
-                            Some(Box::new(msg))
-                        }
-                    }
-                }
-                unknown_key => {
-                    debug!("unknown_key {:?}", unknown_key);
-                    None
-                }
-            }
-            InputEvent::Tick => None
+            InputEvent::FocusUpdate(focus_update) => {
+                Some(Box::new(SaveFileDialogMsg::FocusUpdateMsg(focus_update)))
+            },
+            _ => None,
         }
     }
 
@@ -217,14 +223,20 @@ impl Widget for SaveFileDialogWidget {
             SaveFileDialogMsg::FocusUpdateMsg(focus_update) => {
                 warn!("updating focus");
                 let fc = *focus_update;
-                let ds: &mut DisplayState = self.display_state.as_mut().unwrap();
-                let fg = &mut ds.focus_group;
-                let msg = fg.update_focus(fc);
-                warn!("focus updated {}", msg);
-                None
+                self.display_state.as_mut().map(
+                    |mut ds| {
+                        let msg = ds.focus_group.update_focus(*focus_update);
+                        warn!("focus updated {}", msg);
+                        None
+                    }
+                ).unwrap_or_else(|| {
+                    error!("failed retrieving display_state");
+                    None
+                })
             }
             SaveFileDialogMsg::TreeExpanded(node) => {
                 // TODO load data if necessary
+                self.fsf.todo_expand(node.path());
 
                 None
             }
@@ -253,7 +265,7 @@ impl Widget for SaveFileDialogWidget {
         match self.display_state.borrow().as_ref() {
             None => warn!("failed rendering save_file_dialog without cached_sizes"),
             Some(cached_sizes) => {
-                debug!("widget_sizes : {:?}", cached_sizes.widget_sizes);
+                // debug!("widget_sizes : {:?}", cached_sizes.widget_sizes);
                 for wir in &cached_sizes.widget_sizes {
                     match self.get_subwidget(wir.wid) {
                         Some(widget) => {
