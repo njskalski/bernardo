@@ -82,25 +82,25 @@ pub struct UiTheme {
 }
 
 lazy_static!(
-    static ref DEFAULT_FOCUSED_BACKGROUND : Color = ron::from_str("#282828").unwrap();
-    static ref DEFAULT_FOCUSED_FOREGROUND : Color = ron::from_str("#928374").unwrap();
+    static ref DEFAULT_FOCUSED_BACKGROUND : Color = ron::from_str("\"#282828\"").unwrap();
+    static ref DEFAULT_FOCUSED_FOREGROUND : Color = ron::from_str("\"#928374\"").unwrap();
 
-    static ref DEFAULT_NON_FOCUSED_BACKGROUND : Color = ron::from_str("#181818").unwrap();
-    static ref DEFAULT_NON_FOCUSED_FOREGROUND : Color = ron::from_str("#928374").unwrap();
+    static ref DEFAULT_NON_FOCUSED_BACKGROUND : Color = ron::from_str("\"#181818\"").unwrap();
+    static ref DEFAULT_NON_FOCUSED_FOREGROUND : Color = ron::from_str("\"#928374\"").unwrap();
 
-    static ref HIGHLIGHTED_FOCUSED_BACKGROUND : Color = ron::from_str("#383433").unwrap();
-    static ref HIGHLIGHTED_FOCUSED_FOREGROUND : Color = ron::from_str("#928374").unwrap();
+    static ref HIGHLIGHTED_FOCUSED_BACKGROUND : Color = ron::from_str("\"#383433\"").unwrap();
+    static ref HIGHLIGHTED_FOCUSED_FOREGROUND : Color = ron::from_str("\"#928374\"").unwrap();
 
-    static ref HIGHLIGHTED_NON_FOCUSED_BACKGROUND : Color = ron::from_str("#383433").unwrap();
-    static ref HIGHLIGHTED_NON_FOCUSED_FOREGROUND : Color = ron::from_str("#928374").unwrap();
+    static ref HIGHLIGHTED_NON_FOCUSED_BACKGROUND : Color = ron::from_str("\"#383433\"").unwrap();
+    static ref HIGHLIGHTED_NON_FOCUSED_FOREGROUND : Color = ron::from_str("\"#928374\"").unwrap();
 
-    static ref PRIMARY_CURSOR_ANCHOR_BACKGROUND : Color = ron::from_str("#FFB81C").unwrap();
-    static ref SECONDARY_CURSORS_ANCHOR_BACKGROUND : Color = ron::from_str("#ED7737").unwrap();
-    static ref CURSORS_BACKGROUND : Color = ron::from_str("#852F00").unwrap();
-    static ref CURSORS_FOREGROUND : Color = ron::from_str("#FFC4A3").unwrap();
+    static ref PRIMARY_CURSOR_ANCHOR_BACKGROUND : Color = ron::from_str("\"#FFB81C\"").unwrap();
+    static ref SECONDARY_CURSORS_ANCHOR_BACKGROUND : Color = ron::from_str("\"#ED7737\"").unwrap();
+    static ref CURSORS_BACKGROUND : Color = ron::from_str("\"#852F00\"").unwrap();
+    static ref CURSORS_FOREGROUND : Color = ron::from_str("\"#FFC4A3\"").unwrap();
 
     static ref HEADER_BACKGROUND : Color = *HIGHLIGHTED_FOCUSED_BACKGROUND;
-    static ref HEADER_FOREGROUND : Color = ron::from_str("#FB4931").unwrap();
+    static ref HEADER_FOREGROUND : Color = ron::from_str("\"#FB4931\"").unwrap();
 );
 
 impl Default for UiTheme {
