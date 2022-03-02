@@ -268,7 +268,7 @@ impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let primary_style = theme.default_text(focused);
         helpers::fill_output(primary_style.background, output);
-        let cursor_style = theme.cursor().maybe_half(focused);
+        let cursor_style = theme.highlighted(focused);
 
         for (idx, (depth, node)) in self.items().enumerate()
             // skipping lines that cannot be visible, because they are before hint()

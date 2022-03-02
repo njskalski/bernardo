@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use log::{debug, error, warn};
 
-use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
+use crate::{AnyMsg, InputEvent, Output, SizeConstraint, TreeSitterWrapper, Widget};
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::io::filesystem_tree::file_front::FileFront;
 use crate::io::filesystem_tree::filesystem_front::{FilesystemFront, FsfRef};
@@ -16,6 +16,7 @@ use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::scroll::ScrollDirection;
+use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::widget::widget::{get_new_widget_id, WID};

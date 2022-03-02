@@ -12,7 +12,7 @@ use ropey::Rope;
 use tree_sitter::{InputEdit, Parser, Point, Tree, TreeCursor};
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{Theme, TreeSitterWrapper};
+use crate::TreeSitterWrapper;
 use crate::experiments::tree_sitter_wrapper::{byte_offset_to_point, LangId};
 use crate::text::buffer::Buffer;
 

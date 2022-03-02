@@ -1,6 +1,6 @@
-use crate::{AnyMsg, InputEvent, Output, Theme, Widget};
-
+use crate::{AnyMsg, InputEvent, Output, Widget};
 use crate::primitives::size_constraint::SizeConstraint;
+use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::widget::{get_new_widget_id, WID};
 

@@ -5,13 +5,15 @@ use log::{debug, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Theme, Widget, ZERO};
+use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget, ZERO};
 use crate::io::keys::Key;
 use crate::io::sub_output::SubOutput;
 use crate::layout::layout::WidgetIdRect;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::rect::Rect;
+use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::widget::{get_new_widget_id, WID, WidgetAction};
 use crate::widgets::common_edit_msgs::key_to_edit_msg;
@@ -236,10 +238,17 @@ impl Widget for FuzzySearchWidget {
 
             for g in item.display_name().graphemes(true) {
                 let selected_grapheme = query_it.peek().map(|f| *f == g).unwrap_or(false);
-                let mut style = if selected_grapheme { theme.selected_text(focused) } else { theme.default_text(focused) };
 
-                if selected_line {
-                    style.background = theme.selected_text(true).background;
+                let mut style = if selected_line {
+                    theme.highlighted(focused)
+                } else {
+                    theme.default_text(focused)
+                };
+
+                if selected_grapheme {
+                    theme.cursor_background(CursorStatus::WithinSelection).map(|bg| {
+                        style = style.with_background(bg);
+                    });
                 }
 
                 output.print_at(

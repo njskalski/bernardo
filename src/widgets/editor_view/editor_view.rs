@@ -5,7 +5,7 @@ use termion::event::Event::Key;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
+use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, TreeSitterWrapper, Widget};
 use crate::io::filesystem_tree::filesystem_front::FsfRef;
 use crate::io::style::TextStyle;
 use crate::layout::dummy_layout::DummyLayout;
@@ -17,6 +17,7 @@ use crate::primitives::cursor_set::{CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
 use crate::primitives::rect::Rect;
+use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
@@ -128,8 +129,8 @@ impl EditorView {
     }
 
     fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let fill_color = theme.default_background(focused);
-        helpers::fill_output(fill_color, output);
+        let default = theme.default_text(focused);
+        helpers::fill_output(default.background, output);
 
         for (line_idx, line) in self.todo_text.lines().enumerate()
             // skipping lines that cannot be visible, because they are before hint()
@@ -158,23 +159,14 @@ impl EditorView {
                 let x = self.todo_text.char_to_kind(char_idx);
                 let fg_color = x.map(|s| theme.name_to_theme(s)).flatten();
 
-                match cursor_status {
-                    CursorStatus::None => {
-                        let mut style = theme.default_text(focused);
-                        match fg_color {
-                            Some(fgc) => style = style.with_foreground(fgc),
-                            None => {}
-                        };
+                let mut style = default;
+                fg_color.map(|c| style = style.with_foreground(c));
 
-                        output.print_at(pos, style, tr);
-                    }
-                    CursorStatus::WithinSelection => {
-                        output.print_at(pos, theme.selected_text(focused), tr);
-                    }
-                    CursorStatus::UnderCursor => {
-                        output.print_at(pos, theme.cursor(), tr);
-                    }
-                }
+                theme.cursor_background(cursor_status).map(|bg| {
+                    style = style.with_background(bg);
+                });
+
+                output.print_at(pos, style, tr);
 
                 x_offset += tr.width();
             }
@@ -185,15 +177,12 @@ impl EditorView {
         let x_beyond_last = one_beyond_limit - self.todo_text.line_to_char(last_line).unwrap(); //TODO
 
         let one_beyond_last_pos = XY::new(x_beyond_last as u16, last_line as u16);
-        match self.cursors.get_cursor_status_for_char(one_beyond_limit) {
-            CursorStatus::None => {}
-            CursorStatus::WithinSelection => {
-                output.print_at(one_beyond_last_pos, theme.default_text(true), BEYOND);
-            }
-            CursorStatus::UnderCursor => {
-                output.print_at(one_beyond_last_pos, theme.cursor(), BEYOND);
-            }
-        }
+        let mut style = default;
+        theme.cursor_background(self.cursors.get_cursor_status_for_char(one_beyond_limit)).map(|bg| {
+            style = style.with_background(bg);
+        });
+
+        output.print_at(one_beyond_last_pos, style, BEYOND);
     }
 }
 

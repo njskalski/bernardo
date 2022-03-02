@@ -14,7 +14,6 @@ use filesystem::OsFileSystem;
 use log::{debug, error};
 use termion::raw::IntoRawMode;
 
-use crate::experiments::color_theme::ColorTheme;
 use crate::experiments::tree_sitter_wrapper::{LanguageSet, TreeSitterWrapper};
 use crate::io::crossterm_input::CrosstermInput;
 use crate::io::crossterm_output::CrosstermOutput;
@@ -98,9 +97,7 @@ fn main() {
 
     let mut main_view = SaveFileDialogWidget::new(fsf.clone());
 
-    let color_theme = ColorTheme::load_from_file(OsFileSystem::new(), &PathBuf::from("./themes/default.ron")).unwrap(); // TODO
-
-    let theme = Theme::default().with_color_theme(color_theme);
+    let theme = Theme::load_from_file(OsFileSystem::new(), &PathBuf::from("./themes/default.ron")).unwrap(); // TODO
 
     // returns (consumed, message_to_parent)
     fn recursive_treat_views(

@@ -298,10 +298,10 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let primary_style = theme.default_text(focused).maybe_half(focused);
+        let primary_style = theme.default_text(focused);
         helpers::fill_output(primary_style.background, output);
-        let cursor_style = theme.cursor().maybe_half(focused);
-        let header_style = theme.header().maybe_half(focused);
+        let cursor_style = theme.highlighted(focused);
+        let header_style = theme.header(focused);
 
         // TODO add columns expansion
         // it's the same as in layouts, probably we should move that calc to primitives

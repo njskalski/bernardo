@@ -193,17 +193,15 @@ impl Widget for EditBoxWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let primary_style = theme.editable_field().maybe_half(focused);
+        let primary_style = theme.highlighted(focused);
 
         helpers::fill_output(primary_style.background, output);
-        let cursor_style = theme.cursor().maybe_half(focused);
 
         let mut x: usize = 0;
         for (char_idx, g) in self.text.to_string().graphemes(true).enumerate() {
-            let style = match self.cursor_set.get_cursor_status_for_char(char_idx) {
-                CursorStatus::None => theme.editable_field(),
-                CursorStatus::WithinSelection => theme.selected_text(focused),
-                CursorStatus::UnderCursor => theme.cursor(),
+            let style = match theme.cursor_background(self.cursor_set.get_cursor_status_for_char(char_idx)) {
+                Some(bg) => primary_style.with_background(bg),
+                None => primary_style,
             };
 
             output.print_at(
@@ -214,7 +212,6 @@ impl Widget for EditBoxWidget {
 
             x += g.width_cjk();
         }
-
 
         // if cursor is after the text, we need to add an offset, so the background does not
         // overwrite cursor style.
