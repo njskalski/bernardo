@@ -5,6 +5,10 @@ pub trait AnyMsg: Any + 'static + Debug + AsAny {}
 
 pub trait AsAny {
     fn as_any(&self) -> &dyn Any;
+
+    fn boxed(self) -> Box<dyn AnyMsg> where Self: Sized, Self: AnyMsg {
+        Box::new(self)
+    }
 }
 
 impl<T: AnyMsg> AsAny for T {

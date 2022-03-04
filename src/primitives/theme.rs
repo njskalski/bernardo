@@ -107,13 +107,13 @@ impl Default for UiTheme {
     fn default() -> Self {
         UiTheme {
             non_focused: TextStyle {
-                foreground: *DEFAULT_NON_FOCUSED_BACKGROUND,
-                background: *DEFAULT_NON_FOCUSED_FOREGROUND,
+                foreground: *DEFAULT_NON_FOCUSED_FOREGROUND,
+                background: *DEFAULT_NON_FOCUSED_BACKGROUND,
                 effect: Effect::None,
             },
             focused: TextStyle {
-                foreground: *DEFAULT_FOCUSED_BACKGROUND,
-                background: *DEFAULT_FOCUSED_FOREGROUND,
+                foreground: *DEFAULT_FOCUSED_FOREGROUND,
+                background: *DEFAULT_FOCUSED_BACKGROUND,
                 effect: Effect::None,
             },
             focused_highlighted: TextStyle {

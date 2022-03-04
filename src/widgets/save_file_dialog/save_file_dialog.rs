@@ -30,7 +30,7 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
-use crate::widget::any_msg::AnyMsg;
+use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
@@ -63,6 +63,7 @@ pub enum SaveFileDialogMsg {
     TreeExpanded(Rc<FileFront>),
     // Sent when a left hand-side file-tree subtree selection changed
     TreeHighlighted(Rc<FileFront>),
+    FileListHit(Rc<FileFront>),
 }
 
 impl AnyMsg for SaveFileDialogMsg {}
@@ -82,7 +83,12 @@ impl SaveFileDialogWidget {
 
         let scroll_tree_widget = WithScroll::new(tree_widget, ScrollDirection::Vertical);
 
-        let list_widget = ListWidget::new().with_selection();
+        let list_widget: ListWidget<Rc<FileFront>> = ListWidget::new().with_selection()
+            .with_on_hit(|w| {
+                w.get_highlighted().map(|item| {
+                    Some(SaveFileDialogMsg::FileListHit(item).boxed())
+                }).flatten()
+            });
         let edit_box = EditBoxWidget::new().with_enabled(true);
 
         let ok_button = ButtonWidget::new("OK".to_owned());
@@ -185,6 +191,12 @@ impl Widget for SaveFileDialogWidget {
         ds.focus_group_mut().add_edge(self.tree_widget.id(), FocusUpdate::Right, self.list_widget.id());
         ds.focus_group_mut().add_edge(self.list_widget.id(), FocusUpdate::Left, self.tree_widget.id());
 
+        ds.focus_group_mut().add_edge(self.edit_box.id(), FocusUpdate::Left, self.tree_widget.id());
+
+        ds.focus_group_mut().add_edge(self.edit_box.id(), FocusUpdate::Up, self.list_widget.id());
+        ds.focus_group_mut().add_edge(self.list_widget.id(), FocusUpdate::Down, self.edit_box.id());
+
+
         debug!("focusgroup: {:?}", ds.focus_group);
 
         self.display_state = Some(ds);
@@ -241,12 +253,18 @@ impl Widget for SaveFileDialogWidget {
                 None
             }
             SaveFileDialogMsg::TreeHighlighted(node) => {
+                self.fsf.todo_expand(node.path());
                 self.list_widget.set_provider(
                     Box::new(FilteredFileFront::new(node.clone(),
                                                     |f| f.is_file(),
                     ))
                 );
 
+                None
+            }
+            SaveFileDialogMsg::FileListHit(file) => {
+                let text = file.path().file_name().map(|f| f.to_str().unwrap_or("error")).unwrap();
+                self.edit_box.set_text(text); // TODO
                 None
             }
             unknown_msg => {

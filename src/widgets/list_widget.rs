@@ -46,7 +46,9 @@ impl<'a, LItem: ListWidgetItem> Iterator for ProviderIter<'a, LItem> {
         if self.idx >= self.p.len() {
             None
         } else {
-            self.p.get(self.idx)
+            let item = self.p.get(self.idx);
+            self.idx += 1;
+            item
         }
     }
 
@@ -149,11 +151,25 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
+    pub fn with_on_miss(self, on_miss: WidgetAction<Self>) -> Self {
+        ListWidget {
+            on_miss: Some(on_miss),
+            ..self
+        }
+    }
+
     fn on_hit(&self) -> Option<Box<dyn AnyMsg>> {
         if self.on_hit.is_some() {
             self.on_hit.unwrap()(self)
         } else {
             None
+        }
+    }
+
+    pub fn with_on_hit(self, on_hit: WidgetAction<Self>) -> Self {
+        ListWidget {
+            on_hit: Some(on_hit),
+            ..self
         }
     }
 
@@ -165,8 +181,21 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
+    pub fn with_on_change(self, on_change: WidgetAction<Self>) -> Self {
+        ListWidget {
+            on_change: Some(on_change),
+            ..self
+        }
+    }
+
     pub fn set_provider(&mut self, provider: Box<dyn ListWidgetProvider<Item>>) {
         self.provider = provider
+    }
+
+    pub fn get_highlighted(&self) -> Option<Item> {
+        self.highlighted.map(
+            |idx| self.provider.get(idx)
+        ).flatten()
     }
 }
 
@@ -321,7 +350,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         }
 
         for (idx, item) in self.provider.iter().enumerate() {
-            // debug!("y+idx = {}, osy = {:?}", y_offset as usize + idx, output.size_constraint().y());
+            debug!("y+idx = {}, osy = {:?}, item = {:?}", y_offset as usize + idx, output.size_constraint().y(), item);
 
             match output.size_constraint().y() {
                 Some(y) => if y_offset as usize + idx >= y as usize {

@@ -1,4 +1,5 @@
 use log::{debug, warn};
+use ropey::Rope;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -103,6 +104,10 @@ impl EditBoxWidget {
         &self.text
     }
 
+    pub fn set_text<'a, T: Into<&'a str>>(&mut self, text: T) {
+        self.text = Rope::from(text.into())
+    }
+
     fn event_changed(&self) -> Option<Box<dyn AnyMsg>> {
         if self.on_change.is_some() {
             self.on_change.unwrap()(self)
@@ -162,7 +167,7 @@ impl Widget for EditBoxWidget {
                     Some(Box::new(EditBoxWidgetMsg::Hit))
                 } else {
                     match key_to_edit_msg(key_event) {
-                        Some(edit_msg) => Some(Box::new(EditorViewMsg::EditMsg(edit_msg))),
+                        Some(cem) => Some(Box::new(EditBoxWidgetMsg::CommonEditMsg(cem))),
                         None => None,
                     }
                 }
@@ -194,7 +199,6 @@ impl Widget for EditBoxWidget {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let primary_style = theme.highlighted(focused);
-
         helpers::fill_output(primary_style.background, output);
 
         let mut x: usize = 0;
@@ -203,28 +207,38 @@ impl Widget for EditBoxWidget {
                 Some(bg) => primary_style.with_background(bg),
                 None => primary_style,
             };
-
             output.print_at(
                 XY::new(x as u16, 0), //TODO
                 style,
                 g,
             );
-
             x += g.width_cjk();
+        }
+        // one character after
+        {
+            let style = match theme.cursor_background(self.cursor_set.get_cursor_status_for_char(self.text.len_chars())) {
+                Some(bg) => primary_style.with_background(bg),
+                None => primary_style,
+            };
+            output.print_at(
+                XY::new(x as u16, 0),
+                style,
+                " ",
+            );
         }
 
         // if cursor is after the text, we need to add an offset, so the background does not
         // overwrite cursor style.
         let cursor_offset: u16 = self.cursor_set.max_cursor_pos() as u16 + 1; //TODO
-
         let text_width = self.text.to_string().width_cjk() as u16; //TODO
+        let end_of_text = cursor_offset.max(text_width);
 
         // background after the text
-        if self.display_state.width > cursor_offset + text_width {
-            let background_length = self.display_state.width - (cursor_offset + text_width);
-            let begin_pos: XY = XY::new(cursor_offset + text_width, 0);
+        if self.display_state.width > end_of_text {
+            let background_length = self.display_state.width - end_of_text;
             for i in 0..background_length {
-                let pos = begin_pos + XY::new(i, 0);
+                let pos = XY::new(end_of_text + i as u16, 0);
+
                 output.print_at(
                     pos,
                     primary_style,
