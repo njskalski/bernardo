@@ -225,19 +225,18 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         debug_assert!(sc.bigger_equal_than(self.min_size()));
 
-        // TODO check if items < max_u16
-        let rows = (self.provider.len() + if self.show_column_names { 1 } else { 0 }) as u16;
-        let mut cols = 0;
+        let from_items = self.min_size();
+        let mut res = sc.hint().size;
 
-        for i in 0..Item::len_columns() {
-            cols += Item::get_min_column_width(i);
+        if from_items.x > res.x && sc.x().is_none() {
+            res.x = from_items.x;
         }
 
-        let desired = XY::new(cols, rows);
+        if from_items.y > res.y && sc.y().is_none() {
+            res.y = from_items.y;
+        }
 
-        debug!("layout, items.len = {}", self.provider.len());
-
-        desired.cut(sc)
+        res
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

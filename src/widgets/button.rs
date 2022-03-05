@@ -70,17 +70,17 @@ impl Widget for ButtonWidget {
         }
     }
 
-    fn render(&self, _theme: &Theme, focused: bool, output: &mut dyn Output) {
+    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let mut full_text = "[".to_string() + &self.text + "]";
 
-        let mut style = if self.enabled {
-            TextStyle_WhiteOnBlue
+        let mut style = if focused {
+            theme.ui.focused
         } else {
-            TextStyle_WhiteOnBlack
+            theme.ui.non_focused
         };
 
         if focused {
-            style.effect = Effect::Underline;
+            // style.effect = Effect::Underline;
             full_text = ">".to_string() + &self.text + "<"
         }
 

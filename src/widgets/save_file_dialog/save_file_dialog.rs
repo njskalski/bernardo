@@ -23,9 +23,11 @@ use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::cached_sizes::DisplayState;
+use crate::layout::empty_layout::EmptyLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::helpers::fill_output;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
@@ -112,6 +114,15 @@ impl SaveFileDialogWidget {
         let edit_box = &mut self.edit_box;
 
         let mut left_column = LeafLayout::new(tree_widget);
+        let mut empty = EmptyLayout::new();
+        let mut ok_box = LeafLayout::new(&mut self.ok_button);
+        let mut cancel_box = LeafLayout::new(&mut self.cancel_button);
+
+        let mut button_bar = SplitLayout::new(SplitDirection::Horizontal)
+            .with(SplitRule::Proportional(1.0), &mut empty)
+            .with(SplitRule::Fixed(12), &mut cancel_box)
+            .with(SplitRule::Fixed(12), &mut ok_box);
+
 
         let mut list = LeafLayout::new(list_widget);
         let mut edit = LeafLayout::new(edit_box);
@@ -119,8 +130,9 @@ impl SaveFileDialogWidget {
             .with(SplitRule::Proportional(1.0),
                   &mut list)
             .with(SplitRule::Fixed(1),
-                  &mut edit,
-            );
+                  &mut edit)
+            .with(SplitRule::Fixed(1),
+                  &mut button_bar);
 
         let mut layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0),
@@ -284,7 +296,9 @@ impl Widget for SaveFileDialogWidget {
         wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
     }
 
-    fn render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
+    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        fill_output(theme.ui.non_focused.background, output);
+
         match self.display_state.borrow().as_ref() {
             None => warn!("failed rendering save_file_dialog without cached_sizes"),
             Some(cached_sizes) => {
@@ -294,7 +308,7 @@ impl Widget for SaveFileDialogWidget {
                         Some(widget) => {
                             let sub_output = &mut SubOutput::new(output, wir.rect);
                             widget.render(theme,
-                                          cached_sizes.focus_group.get_focused() == widget.id(),
+                                          focused && cached_sizes.focus_group.get_focused() == widget.id(),
                                           sub_output,
                             );
                         },
@@ -309,11 +323,21 @@ impl Widget for SaveFileDialogWidget {
 
     fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> {
         debug!("call to save_file_dialog subwidget_mut on {}", self.id());
-        Box::new(vec![&mut self.tree_widget as &mut dyn Widget, &mut self.list_widget, &mut self.edit_box].into_iter())
+        Box::new(vec![&mut self.tree_widget as &mut dyn Widget,
+                      &mut self.list_widget,
+                      &mut self.edit_box,
+                      &mut self.ok_button,
+                      &mut self.cancel_button,
+        ].into_iter())
     }
 
     fn subwidgets(&self) -> Box<dyn std::iter::Iterator<Item=&dyn Widget> + '_> {
         debug!("call to save_file_dialog subwidget on {}", self.id());
-        Box::new(vec![&self.tree_widget as &dyn Widget, &self.list_widget, &self.edit_box].into_iter())
+        Box::new(vec![&self.tree_widget as &dyn Widget,
+                      &self.list_widget,
+                      &self.edit_box,
+                      &self.ok_button,
+                      &self.cancel_button,
+        ].into_iter())
     }
 }
