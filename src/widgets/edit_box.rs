@@ -105,7 +105,12 @@ impl EditBoxWidget {
     }
 
     pub fn set_text<'a, T: Into<&'a str>>(&mut self, text: T) {
-        self.text = Rope::from(text.into())
+        self.text = Rope::from(text.into());
+        self.cursor_set.home(&self.text, false);
+    }
+
+    pub fn set_cursor_end(&mut self) {
+        self.cursor_set.end(&self.text, false);
     }
 
     fn event_changed(&self) -> Option<Box<dyn AnyMsg>> {

@@ -15,8 +15,8 @@ use std::rc::Rc;
 
 use log::{debug, error, warn};
 
+use crate::{FsfRef, Keycode};
 use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
-use crate::FsfRef;
 use crate::io::filesystem_tree::file_front::{FileFront, FilteredFileFront};
 use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
 use crate::io::input_event::InputEvent;
@@ -33,10 +33,11 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::list_widget::ListWidget;
+use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogMsg::Save;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 use crate::widgets::with_scroll::WithScroll;
@@ -56,6 +57,9 @@ pub struct SaveFileDialogWidget {
     cancel_button: ButtonWidget,
 
     fsf: FsfRef,
+
+    on_cancel: Option<WidgetAction<Self>>,
+    on_save: Option<WidgetAction<Self>>,
 }
 
 #[derive(Clone, Debug)]
@@ -66,6 +70,10 @@ pub enum SaveFileDialogMsg {
     // Sent when a left hand-side file-tree subtree selection changed
     TreeHighlighted(Rc<FileFront>),
     FileListHit(Rc<FileFront>),
+    EditBoxHit,
+
+    Cancel,
+    Save,
 }
 
 impl AnyMsg for SaveFileDialogMsg {}
@@ -91,10 +99,15 @@ impl SaveFileDialogWidget {
                     Some(SaveFileDialogMsg::FileListHit(item).boxed())
                 }).flatten()
             });
-        let edit_box = EditBoxWidget::new().with_enabled(true);
-
-        let ok_button = ButtonWidget::new("OK".to_owned());
-        let cancel_button = ButtonWidget::new("Cancel".to_owned());
+        let edit_box = EditBoxWidget::new().with_enabled(true).with_on_hit(
+            |_| SaveFileDialogMsg::EditBoxHit.someboxed()
+        );
+        let ok_button = ButtonWidget::new("OK".to_owned()).with_on_hit(
+            |_| SaveFileDialogMsg::Save.someboxed()
+        );
+        let cancel_button = ButtonWidget::new("Cancel".to_owned()).with_on_hit(
+            |_| SaveFileDialogMsg::Cancel.someboxed()
+        );
 
         SaveFileDialogWidget {
             id: get_new_widget_id(),
@@ -105,6 +118,8 @@ impl SaveFileDialogWidget {
             ok_button,
             cancel_button,
             fsf,
+            on_save: None,
+            on_cancel: None,
         }
     }
 
@@ -165,6 +180,28 @@ impl SaveFileDialogWidget {
                     curr_path = curr_path.join(comp);
                 }
             }
+        }
+    }
+
+    pub fn set_on_cancel(&mut self, on_cancel: WidgetAction<Self>) {
+        self.on_cancel = Some(on_cancel);
+    }
+
+    pub fn with_on_cancel(self, on_cancel: WidgetAction<Self>) -> Self {
+        Self {
+            on_cancel: Some(on_cancel),
+            ..self
+        }
+    }
+
+    pub fn set_on_save(&mut self, on_save: WidgetAction<Self>) {
+        self.on_save = Some(on_save);
+    }
+
+    pub fn with_on_save(self, on_save: WidgetAction<Self>) -> Self {
+        Self {
+            on_save: Some(on_save),
+            ..self
         }
     }
 }
@@ -230,6 +267,12 @@ impl Widget for SaveFileDialogWidget {
             InputEvent::FocusUpdate(focus_update) => {
                 Some(Box::new(SaveFileDialogMsg::FocusUpdateMsg(focus_update)))
             },
+            InputEvent::KeyInput(key) => {
+                match key.keycode {
+                    Keycode::Esc => SaveFileDialogMsg::Cancel.someboxed(),
+                    _ => None
+                }
+            }
             _ => None,
         }
     }
@@ -277,7 +320,19 @@ impl Widget for SaveFileDialogWidget {
             SaveFileDialogMsg::FileListHit(file) => {
                 let text = file.path().file_name().map(|f| f.to_str().unwrap_or("error")).unwrap();
                 self.edit_box.set_text(text); // TODO
+                self.edit_box.set_cursor_end();
+                self.set_focused(self.edit_box.id());
                 None
+            }
+            SaveFileDialogMsg::EditBoxHit => {
+                self.set_focused(self.ok_button.id());
+                None
+            }
+            SaveFileDialogMsg::Cancel => {
+                self.on_cancel.map(|action| action(self)).flatten()
+            }
+            SaveFileDialogMsg::Save => {
+                self.on_save.map(|action| action(self)).flatten()
             }
             unknown_msg => {
                 warn!("SaveFileDialog.update : unknown message {:?}", unknown_msg);
@@ -294,6 +349,12 @@ impl Widget for SaveFileDialogWidget {
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
         let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
         wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
+    }
+
+    fn set_focused(&mut self, wid: WID) -> bool {
+        self.display_state.as_mut().map(|ds| {
+            ds.focus_group_mut().set_focused(wid)
+        }).unwrap_or(false)
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {

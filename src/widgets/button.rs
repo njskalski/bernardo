@@ -15,7 +15,7 @@ pub struct ButtonWidget {
     id: usize,
     enabled: bool,
     text: String,
-    on_hit: Option<WidgetAction<ButtonWidget>>,
+    on_hit: Option<WidgetAction<Self>>,
 }
 
 impl Widget for ButtonWidget {

@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use log::debug;
+use log::{debug, error};
 
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
@@ -43,6 +43,17 @@ pub trait Widget {
     // Returning Some(self) would lead to infinite loop.
     fn get_focused(&self) -> Option<&dyn Widget> { None }
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> { None }
+
+    // Updates focus path from that widget below.
+    // Returns whether succeeded.
+    fn set_focused(&mut self, wid: WID) -> bool {
+        if self.id() == wid {
+            true
+        } else {
+            error!("attempted to update focus_path, but hit non-matching end at widget {}", self.id());
+            false
+        }
+    }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output);
 

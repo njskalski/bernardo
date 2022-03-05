@@ -9,6 +9,10 @@ pub trait AsAny {
     fn boxed(self) -> Box<dyn AnyMsg> where Self: Sized, Self: AnyMsg {
         Box::new(self)
     }
+
+    fn someboxed(self) -> Option<Box<dyn AnyMsg>> where Self: Sized, Self: AnyMsg {
+        Some(self.boxed())
+    }
 }
 
 impl<T: AnyMsg> AsAny for T {
