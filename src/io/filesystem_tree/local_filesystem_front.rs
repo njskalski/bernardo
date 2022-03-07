@@ -233,4 +233,8 @@ impl FilesystemFront for LocalFilesystem {
             }
         }
     }
+
+    fn is_dir(&self, path: &Path) -> bool {
+        self.fs.is_dir(path)
+    }
 }

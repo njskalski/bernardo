@@ -30,5 +30,7 @@ pub trait FilesystemFront {
     fn tick_recv(&self) -> &Receiver<()>;
 
     fn tick(&self);
+
+    fn is_dir(&self, path: &Path) -> bool;
 }
 

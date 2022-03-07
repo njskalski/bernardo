@@ -11,14 +11,14 @@ use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
-pub struct ButtonWidget {
+pub struct ButtonWidget<T: AsRef<str>> {
     id: usize,
     enabled: bool,
-    text: String,
+    text: T,
     on_hit: Option<WidgetAction<Self>>,
 }
 
-impl Widget for ButtonWidget {
+impl<T: AsRef<str>> Widget for ButtonWidget<T> {
     fn id(&self) -> WID {
         self.id
     }
@@ -29,7 +29,7 @@ impl Widget for ButtonWidget {
 
     fn min_size(&self) -> XY {
         // TODO: count grapheme width
-        XY::new((self.text.len() + 2) as u16, 1)
+        XY::new((self.text.as_ref().len() + 2) as u16, 1)
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
@@ -71,7 +71,7 @@ impl Widget for ButtonWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let mut full_text = "[".to_string() + &self.text + "]";
+        let mut full_text = "[".to_string() + self.text.as_ref() + "]";
 
         let mut style = if focused {
             theme.ui.focused
@@ -81,7 +81,7 @@ impl Widget for ButtonWidget {
 
         if focused {
             // style.effect = Effect::Underline;
-            full_text = ">".to_string() + &self.text + "<"
+            full_text = ">".to_string() + self.text.as_ref() + "<"
         }
 
         output.print_at((0, 0).into(), style, full_text.as_str());
@@ -92,8 +92,8 @@ impl Widget for ButtonWidget {
     }
 }
 
-impl ButtonWidget {
-    pub fn new(text: String) -> Self {
+impl<T: AsRef<str>> ButtonWidget<T> {
+    pub fn new(text: T) -> Self {
         ButtonWidget {
             id: get_new_widget_id(),
             enabled: true,
@@ -102,7 +102,7 @@ impl ButtonWidget {
         }
     }
 
-    pub fn with_on_hit(self, on_hit: WidgetAction<ButtonWidget>) -> Self {
+    pub fn with_on_hit(self, on_hit: WidgetAction<Self>) -> Self {
         ButtonWidget {
             on_hit: Some(on_hit),
             ..self

@@ -8,12 +8,22 @@ use crate::widget::widget::WID;
 
 // This layout exists only to "fill"
 
-pub struct EmptyLayout {}
-
+pub struct EmptyLayout {
+    size: Option<XY>,
+}
 
 impl EmptyLayout {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            size: None,
+        }
+    }
+
+    pub fn with_size(self, size: XY) -> Self {
+        Self {
+            size: Some(size),
+            ..self
+        }
     }
 }
 
@@ -23,7 +33,7 @@ impl Layout for EmptyLayout {
     }
 
     fn min_size(&self) -> XY {
-        XY::new(0, 0)
+        self.size.unwrap_or(ZERO)
     }
 
     fn calc_sizes(&mut self, _output_size: XY) -> Vec<WidgetIdRect> {

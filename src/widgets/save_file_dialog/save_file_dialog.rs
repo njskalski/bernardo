@@ -10,6 +10,7 @@ I hope I will discover most of functional constraints while implementing it.
 
 use std::borrow::Borrow;
 use std::fmt::Debug;
+use std::path;
 use std::path::{Path, PathBuf, StripPrefixError};
 use std::rc::Rc;
 
@@ -44,6 +45,9 @@ use crate::widgets::with_scroll::WithScroll;
 
 // TODO now it displays both files and directories in tree view, it should only directories
 
+const OK_LABEL: &'static str = "OK";
+const CANCEL_LABEL: &'static str = "CANCEL";
+
 pub struct SaveFileDialogWidget {
     id: WID,
 
@@ -53,13 +57,15 @@ pub struct SaveFileDialogWidget {
     list_widget: ListWidget<Rc<FileFront>>,
     edit_box: EditBoxWidget,
 
-    ok_button: ButtonWidget,
-    cancel_button: ButtonWidget,
+    ok_button: ButtonWidget<&'static str>,
+    cancel_button: ButtonWidget<&'static str>,
 
     fsf: FsfRef,
 
     on_cancel: Option<WidgetAction<Self>>,
     on_save: Option<WidgetAction<Self>>,
+
+    path: PathBuf,
 }
 
 #[derive(Clone, Debug)]
@@ -102,12 +108,14 @@ impl SaveFileDialogWidget {
         let edit_box = EditBoxWidget::new().with_enabled(true).with_on_hit(
             |_| SaveFileDialogMsg::EditBoxHit.someboxed()
         );
-        let ok_button = ButtonWidget::new("OK".to_owned()).with_on_hit(
+        let ok_button = ButtonWidget::new(OK_LABEL).with_on_hit(
             |_| SaveFileDialogMsg::Save.someboxed()
         );
-        let cancel_button = ButtonWidget::new("Cancel".to_owned()).with_on_hit(
+        let cancel_button = ButtonWidget::new(CANCEL_LABEL).with_on_hit(
             |_| SaveFileDialogMsg::Cancel.someboxed()
         );
+
+        let path = fsf.get_root().path().to_owned();
 
         SaveFileDialogWidget {
             id: get_new_widget_id(),
@@ -120,6 +128,7 @@ impl SaveFileDialogWidget {
             fsf,
             on_save: None,
             on_cancel: None,
+            path,
         }
     }
 
@@ -161,26 +170,35 @@ impl SaveFileDialogWidget {
         res
     }
 
-    pub fn set_path(&mut self, path: &Path) {
-        let mut curr_path = self.fsf.get_root().path().to_owned();
 
-        match path.strip_prefix(&curr_path) {
+    pub fn set_path(&mut self, path: &Path) -> bool {
+        if !self.fsf.is_dir(path) {
+            warn!("attempted to set path to non-dir: {:?}", path);
+            return false;
+        }
+
+        let mut root_path = self.fsf.get_root().path().to_owned();
+
+        match path.strip_prefix(&root_path) {
             Err(e) => {
-                error!("supposed to set path to {:?}, but it's outside fs {:?}, because: {}", path, &curr_path, e);
+                error!("supposed to set path to {:?}, but it's outside fs {:?}, because: {}", path, &root_path, e);
             }
             Ok(remainder) => {
                 for comp in remainder.components() {
-                    self.fsf.todo_expand(&curr_path);
-
-                    debug!("expanding subtree {:?}", curr_path);
+                    self.fsf.todo_expand(&root_path);
+                    debug!("expanding subtree {:?}", root_path);
 
                     // TODO one can save some memory here
-                    self.tree_widget.internal_mut().expanded_mut().insert(curr_path.clone());
+                    self.tree_widget.internal_mut().expanded_mut().insert(root_path.clone());
 
-                    curr_path = curr_path.join(comp);
+                    root_path = root_path.join(comp);
                 }
             }
         }
+
+        self.path = path.to_owned();
+
+        true
     }
 
     pub fn set_on_cancel(&mut self, on_cancel: WidgetAction<Self>) {
@@ -202,6 +220,15 @@ impl SaveFileDialogWidget {
         Self {
             on_save: Some(on_save),
             ..self
+        }
+    }
+
+    pub fn get_path(&self) -> Option<PathBuf> {
+        if self.edit_box.get_text().len_chars() == 0 {
+            None
+        } else {
+            let last_item = self.edit_box.get_text().to_string();
+            Some(self.path.join(last_item))
         }
     }
 }
