@@ -5,7 +5,7 @@ pub enum GenericDialogMsg {
     Left,
     Right,
     Cancel,
-    Hit(usize),
+    Hit,
     JustPassMessage(Box<dyn AnyMsg>),
 }
 

@@ -57,8 +57,8 @@ pub struct SaveFileDialogWidget {
     list_widget: ListWidget<Rc<FileFront>>,
     edit_box: EditBoxWidget,
 
-    ok_button: ButtonWidget<&'static str>,
-    cancel_button: ButtonWidget<&'static str>,
+    ok_button: ButtonWidget,
+    cancel_button: ButtonWidget,
 
     fsf: FsfRef,
 
@@ -108,10 +108,10 @@ impl SaveFileDialogWidget {
         let edit_box = EditBoxWidget::new().with_enabled(true).with_on_hit(
             |_| SaveFileDialogMsg::EditBoxHit.someboxed()
         );
-        let ok_button = ButtonWidget::new(OK_LABEL).with_on_hit(
+        let ok_button = ButtonWidget::new(Box::new(OK_LABEL)).with_on_hit(
             |_| SaveFileDialogMsg::Save.someboxed()
         );
-        let cancel_button = ButtonWidget::new(CANCEL_LABEL).with_on_hit(
+        let cancel_button = ButtonWidget::new(Box::new(CANCEL_LABEL)).with_on_hit(
             |_| SaveFileDialogMsg::Cancel.someboxed()
         );
 

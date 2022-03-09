@@ -1,5 +1,11 @@
-use log::warn;
+use std::borrow::Borrow;
+use std::ops::Deref;
+use std::rc::Rc;
 
+use log::warn;
+use unicode_segmentation::UnicodeSegmentation;
+
+use crate::experiments::deref_str::DerefStr;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
@@ -11,14 +17,14 @@ use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
-pub struct ButtonWidget<T: AsRef<str>> {
+pub struct ButtonWidget {
     id: usize,
     enabled: bool,
-    text: T,
+    text: Box<dyn DerefStr>,
     on_hit: Option<WidgetAction<Self>>,
 }
 
-impl<T: AsRef<str>> Widget for ButtonWidget<T> {
+impl Widget for ButtonWidget {
     fn id(&self) -> WID {
         self.id
     }
@@ -29,7 +35,7 @@ impl<T: AsRef<str>> Widget for ButtonWidget<T> {
 
     fn min_size(&self) -> XY {
         // TODO: count grapheme width
-        XY::new((self.text.as_ref().len() + 2) as u16, 1)
+        XY::new((self.text.as_ref_str().len() + 2) as u16, 1)
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
@@ -71,7 +77,7 @@ impl<T: AsRef<str>> Widget for ButtonWidget<T> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let mut full_text = "[".to_string() + self.text.as_ref() + "]";
+        let mut full_text = "[".to_string() + self.text.as_ref_str() + "]";
 
         let mut style = if focused {
             theme.ui.focused
@@ -81,7 +87,7 @@ impl<T: AsRef<str>> Widget for ButtonWidget<T> {
 
         if focused {
             // style.effect = Effect::Underline;
-            full_text = ">".to_string() + self.text.as_ref() + "<"
+            full_text = ">".to_string() + self.text.as_ref_str() + "<"
         }
 
         output.print_at((0, 0).into(), style, full_text.as_str());
@@ -92,8 +98,8 @@ impl<T: AsRef<str>> Widget for ButtonWidget<T> {
     }
 }
 
-impl<T: AsRef<str>> ButtonWidget<T> {
-    pub fn new(text: T) -> Self {
+impl ButtonWidget {
+    pub fn new(text: Box<dyn DerefStr>) -> Self {
         ButtonWidget {
             id: get_new_widget_id(),
             enabled: true,
