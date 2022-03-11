@@ -92,10 +92,10 @@ fn main() {
 
     let fsf: FsfRef = Rc::new(Box::new(LocalFilesystem::new(PathBuf::from("/home/andrzej/r"))));
 
-    let mut main_view = MainView::new(tree_sitter, fsf.clone())
-        .with_empty_editor();
+    // let mut main_view = MainView::new(tree_sitter, fsf.clone())
+    //     .with_empty_editor();
 
-    // let mut main_view = SaveFileDialogWidget::new(fsf.clone());
+    let mut main_view = SaveFileDialogWidget::new(fsf.clone());
 
     let theme = Theme::load_from_file(OsFileSystem::new(), &PathBuf::from("./themes/default.ron")).unwrap(); // TODO
 

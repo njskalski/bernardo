@@ -12,7 +12,7 @@ use std::rc::Rc;
 use crate::io::keys::Key;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
-type TreeItFilter = fn(&TreeViewNode<Key>) -> bool;
+// type TreeItFilter = fn(&TreeViewNode<Key>) -> bool;
 type QueueType<Item> = Item;
 
 // tu nie trzeba pogrzebacza, tu trzeba pogrzebu.

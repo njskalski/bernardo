@@ -89,7 +89,6 @@ impl GenericDialog {
         }
     }
 
-
     pub fn get_total_options_width(&self, interval: u16) -> u16 {
         let mut result: usize = 0;
         for (idx, button) in self.buttons.iter().enumerate() {

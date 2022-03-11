@@ -13,3 +13,6 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
 
     fn is_complete(&self) -> bool;
 }
+
+pub trait TreeItFilter<Key: Hash + Eq + Debug>: Fn(&TreeViewNode<Key>) -> bool {}
+

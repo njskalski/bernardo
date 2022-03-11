@@ -39,6 +39,8 @@ use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::list_widget::ListWidget;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogMsg::Save;
+use crate::widgets::save_file_dialog::save_file_dialog::State::Browse;
+use crate::widgets::save_file_dialog::save_file_dialog_msg::SaveFileDialogMsg;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 use crate::widgets::with_scroll::WithScroll;
@@ -47,6 +49,11 @@ use crate::widgets::with_scroll::WithScroll;
 
 const OK_LABEL: &'static str = "OK";
 const CANCEL_LABEL: &'static str = "CANCEL";
+
+enum State {
+    Browse,
+    OverrideConfirm,
+}
 
 pub struct SaveFileDialogWidget {
     id: WID,
@@ -66,27 +73,16 @@ pub struct SaveFileDialogWidget {
     on_save: Option<WidgetAction<Self>>,
 
     path: PathBuf,
+
+    state: State,
 }
-
-#[derive(Clone, Debug)]
-pub enum SaveFileDialogMsg {
-    FocusUpdateMsg(FocusUpdate),
-    // Sent when a left hand-side file-tree subtree is expanded (default: on Enter key)
-    TreeExpanded(Rc<FileFront>),
-    // Sent when a left hand-side file-tree subtree selection changed
-    TreeHighlighted(Rc<FileFront>),
-    FileListHit(Rc<FileFront>),
-    EditBoxHit,
-
-    Cancel,
-    Save,
-}
-
-impl AnyMsg for SaveFileDialogMsg {}
 
 impl SaveFileDialogWidget {
     pub fn new(fsf: FsfRef) -> Self {
         let tree = fsf.get_root();
+        let just_dirs = FilteredFileFront::new(tree.clone(), |i| {
+            i.is_dir()
+        });
         let tree_widget = TreeViewWidget::<PathBuf, Rc<FileFront>>::new(tree)
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
@@ -129,6 +125,7 @@ impl SaveFileDialogWidget {
             on_save: None,
             on_cancel: None,
             path,
+            state: Browse
         }
     }
 
