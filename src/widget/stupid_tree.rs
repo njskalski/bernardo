@@ -26,7 +26,6 @@ impl TreeViewNode<usize> for Rc<StupidTree> {
         format!("StupidTree {}", self.id)
     }
 
-
     fn is_leaf(&self) -> bool {
         self.children.is_empty()
     }

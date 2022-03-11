@@ -33,6 +33,13 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeIt<'a, Key
             expanded,
         }
     }
+
+    // pub fn with_filter<T: TreeItFilter<Key>>(self, filter: T) -> Self {
+    //     Self {
+    //         filter: Some(Box::new(filter)),
+    //         ..self
+    //     }
+    // }
 }
 
 impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> Iterator for TreeIt<'a, Key, Item> {
