@@ -1,5 +1,6 @@
 use core::option::Option;
-use std::alloc::Layout;
+use std::borrow::Borrow;
+use std::f32::consts::E;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 
@@ -9,14 +10,20 @@ use unicode_width::UnicodeWidthStr;
 use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Theme, Widget, ZERO};
 use crate::experiments::deref_str::DerefStr;
 use crate::io::keys::Key;
+use crate::io::sub_output::SubOutput;
+use crate::layout::display_state::DisplayState;
 use crate::layout::dummy_layout::DummyLayout;
-use crate::layout::layout::WidgetIdRect;
+use crate::layout::empty_layout::EmptyLayout;
+use crate::layout::layout::{Layout, WidgetIdRect};
+use crate::layout::leaf_layout::LeafLayout;
+use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::border::BorderStyle;
+use crate::primitives::helpers::fill_output;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID, WidgetAction};
 use crate::widgets::button::ButtonWidget;
-use crate::widgets::generic_dialog::generic_dialog_msg::GenericDialogMsg;
+use crate::widgets::text_widget::TextWidget;
 
 pub trait KeyToMsg: Fn(&Key) -> Option<Box<dyn AnyMsg>> {}
 
@@ -25,24 +32,26 @@ const CANCEL_LABEL: &'static str = "Cancel";
 
 pub struct GenericDialog {
     wid: WID,
-    text: Rc<String>,
+
+    display_state: Option<DisplayState>,
+
+    text_widget: TextWidget,
 
     with_border: Option<&'static BorderStyle>,
 
     buttons: Vec<ButtonWidget>,
     keystroke: Option<Box<dyn KeyToMsg>>,
+
 }
 
 impl GenericDialog {
-    pub fn new(text: Rc<String>) -> Self {
-        let button: ButtonWidget = ButtonWidget::new(Box::new(CANCEL_LABEL))
-            .with_on_hit(|_| GenericDialogMsg::Cancel.someboxed());
-
+    pub fn new(text: Box<dyn DerefStr>) -> Self {
         Self {
             wid: get_new_widget_id(),
-            text,
+            display_state: None,
+            text_widget: TextWidget::new(text),
             with_border: None,
-            buttons: vec![button],
+            buttons: vec![],
             keystroke: None,
         }
     }
@@ -79,15 +88,6 @@ impl GenericDialog {
         }
     }
 
-    pub fn text_size(&self) -> XY {
-        let mut size = ZERO;
-        for (idx, line) in self.text.lines().enumerate() {
-            size.x = size.x.max(line.width_cjk() as u16); // TODO
-            size.y = idx as u16;
-        }
-
-        size
-    }
 
     pub fn get_total_options_width(&self, interval: u16) -> u16 {
         let mut result: usize = 0;
@@ -116,10 +116,27 @@ impl GenericDialog {
         self.keystroke = Some(keystroke);
     }
 
-    fn internal_layout(&self, size: XY) -> Vec<WidgetIdRect> {
-        let text = self.text_size();
+    fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
+        let mut text_layout = LeafLayout::new(&mut self.text_widget);
 
-        vec![]
+        // let mut button_layout = SplitLayout::new(SplitDirection::Vertical);
+        let mut button_layouts: Vec<LeafLayout> = self.buttons.iter_mut().map(
+            |but| {
+                LeafLayout::new(but as &mut dyn Widget)
+            }).collect();
+
+        let mut button_layout = button_layouts.iter_mut().fold(
+            SplitLayout::new(SplitDirection::Vertical),
+            |acc, layout| {
+                acc.with(SplitRule::Proportional(1.0), layout)
+            });
+
+        let mut total_layout = SplitLayout::new(SplitDirection::Horizontal)
+            .with(SplitRule::Proportional(1.0),
+                  &mut text_layout as &mut dyn Layout)
+            .with(SplitRule::Fixed(1), &mut button_layout as &mut dyn Layout);
+
+        total_layout.calc_sizes(size)
     }
 }
 
@@ -133,7 +150,7 @@ impl Widget for GenericDialog {
     }
 
     fn min_size(&self) -> XY {
-        let mut total_size = self.text_size();
+        let mut total_size = self.text_widget.text_size();
 
         if !self.buttons.is_empty() {
             let op_widths = self.get_total_options_width(DEFAULT_INTERVAL);
@@ -148,39 +165,75 @@ impl Widget for GenericDialog {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        self.min_size()
+        let size = sc.hint().size;
+        let wirs = self.internal_layout(size);
+
+        let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+        self.display_state = Some(DisplayState::new(size, wirs));
+
+        // re-setting focus.
+        match (focus_op, &mut self.display_state) {
+            (Some(focus), Some(ds)) => { ds.focus_group.set_focused(focus); },
+            _ => {}
+        };
+
+        size
     }
 
-    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        return match input_event {
-            InputEvent::KeyInput(key) => {
-                match key.keycode {
-                    Keycode::Esc => GenericDialogMsg::Cancel.someboxed(),
-                    Keycode::ArrowLeft => GenericDialogMsg::Left.someboxed(),
-                    Keycode::ArrowRight => GenericDialogMsg::Right.someboxed(),
-                    _ => None,
-                }
-            },
-            _ => None,
-        }
+    fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        None
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        debug!("save_file_dialog.update {:?}", msg);
-
-        let our_msg = msg.as_msg::<GenericDialogMsg>();
-        if our_msg.is_none() {
-            warn!("expecetd SaveFileDialogMsg, got {:?}", msg);
-            return None;
-        }
-
-        return match our_msg.unwrap() {
-            _ => None,
-        }
+        Some(msg)
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        todo!()
+        fill_output(theme.ui.non_focused.background, output);
+
+        match self.display_state.borrow().as_ref() {
+            None => warn!("failed rendering GenericDialog without cached_sizes"),
+            Some(cached_sizes) => {
+                for wir in &cached_sizes.widget_sizes {
+                    match self.get_subwidget(wir.wid) {
+                        Some(widget) => {
+                            let sub_output = &mut SubOutput::new(output, wir.rect);
+                            widget.render(theme,
+                                          focused && cached_sizes.focus_group.get_focused() == widget.id(),
+                                          sub_output,
+                            );
+                        },
+                        None => {
+                            warn!("subwidget {} not found!", wir.wid);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+        wid_op.map(|wid| self.get_subwidget(wid)).flatten()
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
+    }
+
+    fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> {
+        debug!("call to generic_dialog subwidget_mut on {}", self.id());
+        Box::new(self.buttons.iter_mut().map(|button| {
+            button as &mut dyn Widget
+        }))
+    }
+
+    fn subwidgets(&self) -> Box<dyn std::iter::Iterator<Item=&dyn Widget> + '_> {
+        debug!("call to generic_dialog subwidget on {}", self.id());
+        Box::new(self.buttons.iter().map(|button| {
+            button as &dyn Widget
+        }))
     }
 }
 

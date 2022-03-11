@@ -1,4 +1,4 @@
-use std::borrow::{Borrow};
+use std::borrow::Borrow;
 
 use crate::experiments::focus_group::FocusGroup;
 use crate::experiments::from_geometry::from_wirs;
@@ -16,12 +16,6 @@ pub struct DisplayState {
 }
 
 impl DisplayState {
-    // pub fn new2(for_size: XY, widget_sizes: Vec<WidgetIdRect>) -> Self {
-    //
-    //
-    //     DisplayState::new(for_size, widget_sizes)
-    // }
-
     pub fn focus_group_mut(&mut self) -> &mut dyn FocusGroup {
         self.focus_group.as_mut()
     }

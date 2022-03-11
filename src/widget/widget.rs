@@ -24,9 +24,6 @@ pub trait Widget {
     // and the view cannot be focused (TODO or input will be ignored, haven't decided that yet).
     fn min_size(&self) -> XY;
 
-    // Description of widget type
-    // fn desc() -> &'static str;
-
     // This is guaranteed to be called before render.
     fn layout(&mut self, sc: SizeConstraint) -> XY;
 

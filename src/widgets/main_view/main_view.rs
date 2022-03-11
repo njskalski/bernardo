@@ -11,7 +11,7 @@ use crate::experiments::filename_to_language::filename_to_language;
 use crate::io::filesystem_tree::file_front::FileFront;
 use crate::io::filesystem_tree::filesystem_front::{FilesystemFront, FsfRef};
 use crate::io::sub_output::SubOutput;
-use crate::layout::cached_sizes::DisplayState;
+use crate::layout::display_state::DisplayState;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};

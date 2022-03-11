@@ -1,8 +1,10 @@
-use std::cmp::Ordering;
+use std::cmp::{min, Ordering};
 use std::fmt;
 use std::fmt::Formatter;
 use std::hash::{Hash, Hasher};
-use std::ops::Add;
+use std::ops::{Add, Mul, Sub};
+
+use log::error;
 
 use crate::primitives::size_constraint::SizeConstraint;
 
@@ -39,6 +41,24 @@ impl XY {
         NeighboursIterator::new(*self)
     }
 }
+
+impl Mul<usize> for XY {
+    type Output = Self;
+
+    fn mul(self, rhs: usize) -> Self {
+        let x = rhs * self.x as usize;
+        let y = rhs * self.y as usize;
+        if x > u16::MAX as usize || y > u16::MAX as usize {
+            error!("mult would exceed u16 limit, using 0 as fallback: {} * {}", self, rhs);
+        }
+
+        let x = min(x, u16::MAX as usize) as u16;
+        let y = min(y, u16::MAX as usize) as u16;
+
+        XY::new(x, y)
+    }
+}
+
 
 pub struct NeighboursIterator {
     of: XY,
@@ -147,6 +167,25 @@ impl Add<(u16, u16)> for XY {
             x: self.x + rhs.0,
             y: self.y + rhs.1,
         }
+    }
+}
+
+impl Sub for XY {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self::Output {
+        if other.x > self.x || other.y > self.y {
+            error!("failed substracting XY {} - {}, using fallback 0 for negative value", self, other);
+        }
+
+        XY::new(
+            if self.x > other.x {
+                self.x - other.x
+            } else { 0 },
+            if self.y > other.y {
+                self.y - other.y
+            } else { 0 },
+        )
     }
 }
 

@@ -23,7 +23,7 @@ use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
-use crate::layout::cached_sizes::DisplayState;
+use crate::layout::display_state::DisplayState;
 use crate::layout::empty_layout::EmptyLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
