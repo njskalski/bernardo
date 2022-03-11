@@ -2,6 +2,7 @@ use core::option::Option;
 use std::borrow::Borrow;
 use std::f32::consts::E;
 use std::fmt::{Debug, Formatter};
+use std::iter;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
@@ -226,14 +227,18 @@ impl Widget for GenericDialog {
         debug!("call to generic_dialog subwidget_mut on {}", self.id());
         Box::new(self.buttons.iter_mut().map(|button| {
             button as &mut dyn Widget
-        }))
+        }).chain(
+            iter::once(&mut self.text_widget as &mut dyn Widget)
+        ))
     }
 
     fn subwidgets(&self) -> Box<dyn std::iter::Iterator<Item=&dyn Widget> + '_> {
         debug!("call to generic_dialog subwidget on {}", self.id());
         Box::new(self.buttons.iter().map(|button| {
             button as &dyn Widget
-        }))
+        }).chain(
+            iter::once(&self.text_widget as &dyn Widget)
+        ))
     }
 }
 
