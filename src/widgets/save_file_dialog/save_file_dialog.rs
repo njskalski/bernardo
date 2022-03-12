@@ -10,6 +10,7 @@ I hope I will discover most of functional constraints while implementing it.
 
 use std::borrow::Borrow;
 use std::fmt::Debug;
+use std::io::Error;
 use std::path;
 use std::path::{Path, PathBuf, StripPrefixError};
 use std::rc::Rc;
@@ -19,7 +20,7 @@ use log::{debug, error, warn};
 use crate::{FsfRef, Keycode};
 use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
 use crate::io::filesystem_tree::file_front::{FileFront, FilteredFileFront};
-use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
+use crate::io::filesystem_tree::filesystem_front::{FilesystemFront, SomethingToSave};
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
@@ -34,12 +35,13 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
-use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction, WidgetActionParam};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
+use crate::widgets::generic_dialog::generic_dialog::GenericDialog;
 use crate::widgets::list_widget::ListWidget;
+use crate::widgets::save_file_dialog::dialogs::override_dialog;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogMsg::Save;
-use crate::widgets::save_file_dialog::save_file_dialog::State::Browse;
 use crate::widgets::save_file_dialog::save_file_dialog_msg::SaveFileDialogMsg;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
@@ -49,11 +51,6 @@ use crate::widgets::with_scroll::WithScroll;
 
 const OK_LABEL: &'static str = "OK";
 const CANCEL_LABEL: &'static str = "CANCEL";
-
-enum State {
-    Browse,
-    OverrideConfirm,
-}
 
 pub struct SaveFileDialogWidget {
     id: WID,
@@ -71,10 +68,13 @@ pub struct SaveFileDialogWidget {
 
     on_cancel: Option<WidgetAction<Self>>,
     on_save: Option<WidgetAction<Self>>,
+    on_save_fail: Option<WidgetActionParam<Self, Option<std::io::Error>>>,
 
-    path: PathBuf,
+    root_path: PathBuf,
 
-    state: State,
+    to_save: Option<Box<dyn SomethingToSave>>,
+
+    hover_dialog: Option<GenericDialog>,
 }
 
 impl SaveFileDialogWidget {
@@ -123,10 +123,34 @@ impl SaveFileDialogWidget {
             cancel_button,
             fsf,
             on_save: None,
+            on_save_fail: None,
             on_cancel: None,
-            path,
-            state: Browse
+            root_path: path,
+            to_save: None,
+            hover_dialog: None,
         }
+    }
+
+    pub fn with_something_to_save(self, to_save: Box<dyn SomethingToSave>) -> Self {
+        Self {
+            to_save: Some(to_save),
+            ..self
+        }
+    }
+
+    pub fn set_something_to_save(&mut self, to_save: Option<Box<dyn SomethingToSave>>) {
+        self.to_save = to_save;
+    }
+
+    pub fn with_on_save_fail(self, on_save_fail: WidgetActionParam<Self, Option<std::io::Error>>) -> Self {
+        Self {
+            on_save_fail: Some(on_save_fail),
+            ..self
+        }
+    }
+
+    pub fn set_on_save_fail(&mut self, on_save_fail_op: Option<WidgetActionParam<Self, Option<std::io::Error>>>) {
+        self.on_save_fail = on_save_fail_op;
     }
 
     fn internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {
@@ -193,7 +217,7 @@ impl SaveFileDialogWidget {
             }
         }
 
-        self.path = path.to_owned();
+        self.root_path = path.to_owned();
 
         true
     }
@@ -225,7 +249,60 @@ impl SaveFileDialogWidget {
             None
         } else {
             let last_item = self.edit_box.get_text().to_string();
-            Some(self.path.join(last_item))
+            Some(self.root_path.join(last_item))
+        }
+    }
+
+    // Returns op message to parent, so it can be called from 'update'
+    pub fn save_or_ask_for_override(&mut self) -> Option<Box<dyn AnyMsg>> {
+        if self.hover_dialog.is_some() {
+            error!("save_or_ask_for_override called from unexpected state");
+        }
+
+        let path = match self.get_path() {
+            Some(p) => p,
+            None => {
+                error!("can't save of empty path. The OK button should have been blocked!");
+                return self.on_save_fail.map(|handle| handle(self, None)).flatten()
+            }
+        };
+
+        if self.fsf.exists(&path) {
+            let filename = self.edit_box.get_text().to_string();
+
+            self.hover_dialog = Some(override_dialog(filename));
+            return None;
+        } else {
+            self.save_positively()
+        }
+    }
+
+    // Returns op message to parent, so it can be called from 'update'
+    fn save_positively(&self) -> Option<Box<dyn AnyMsg>> {
+        let sts = match &self.to_save {
+            Some(sts) => sts.get_bytes(),
+            None => {
+                error!("nothing to save");
+                return self.on_save_fail.map(|handler| handler(self, None)).flatten()
+            }
+        };
+
+        let path = match self.get_path() {
+            Some(p) => p,
+            None => {
+                error!("can't save of empty path. The OK button should have been blocked!");
+                return self.on_save_fail.map(|handler| handler(self, None)).flatten()
+            }
+        };
+
+        match self.fsf.todo_save_file_sync(path.as_path(), &sts) {
+            Ok(_) => {
+                self.on_save.map(|handler| handler(self)).flatten()
+            },
+            Err(e) => {
+                error!("save error: {}", e);
+                self.on_save_fail.map(|handler| handler(self, Some(e))).flatten()
+            }
         }
     }
 }
@@ -356,7 +433,7 @@ impl Widget for SaveFileDialogWidget {
                 self.on_cancel.map(|action| action(self)).flatten()
             }
             SaveFileDialogMsg::Save => {
-                self.on_save.map(|action| action(self)).flatten()
+                self.save_or_ask_for_override()
             }
             unknown_msg => {
                 warn!("SaveFileDialog.update : unknown message {:?}", unknown_msg);

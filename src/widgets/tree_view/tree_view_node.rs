@@ -4,6 +4,12 @@ use std::rc::Rc;
 
 use log::error;
 
+pub enum MaybeBool {
+    False,
+    True,
+    Maybe,
+}
+
 // Keep it lightweight. It is expected to be implemented by Rc<some type>
 pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
     fn id(&self) -> &Key;
@@ -18,17 +24,17 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
     /*
     the answer is true, false, or "we don't know yet"
      */
-    fn has_matching_children(&self, filter: &TreeItFilter<Key, Self>, max_depth: Option<usize>) -> Option<bool> {
+    fn has_matching_children(&self, filter: &TreeItFilter<Key, Self>, max_depth: Option<usize>) -> MaybeBool {
         if filter(&self) {
-            return Some(true);
+            return MaybeBool::True;
         }
 
         if self.is_leaf() {
-            return Some(false);
+            return MaybeBool::False;
         }
 
         if max_depth == Some(0) {
-            return None;
+            return MaybeBool::Maybe;
         }
 
         let mut any_chance = false;
@@ -45,16 +51,16 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
             };
 
             match i.has_matching_children(filter, max_depth.map(|i| if i > 0 { i - 1 } else { 0 })) {
-                Some(true) => return Some(true),
-                None => { any_chance = true; }
+                MaybeBool::True => return MaybeBool::True,
+                MaybeBool::Maybe => { any_chance = true; }
                 _ => {}
             }
         }
 
         if any_chance {
-            None
+            MaybeBool::Maybe
         } else {
-            Some(false)
+            MaybeBool::False
         }
     }
 }

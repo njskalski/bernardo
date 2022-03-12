@@ -12,6 +12,7 @@ use crate::widget::any_msg::AnyMsg;
 
 // this corresponds to message to Parent.
 pub type WidgetAction<W> = fn(&W) -> Option<Box<dyn AnyMsg>>;
+pub type WidgetActionParam<W, P> = fn(&W, P) -> Option<Box<dyn AnyMsg>>;
 
 pub type WID = usize;
 

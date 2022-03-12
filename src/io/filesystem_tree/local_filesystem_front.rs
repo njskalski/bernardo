@@ -15,7 +15,7 @@ use log::{debug, error, warn};
 use ropey::Rope;
 
 use crate::io::filesystem_tree::file_front::{FileChildrenCache, FileFront, FileType};
-use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
+use crate::io::filesystem_tree::filesystem_front::{FilesystemFront, SomethingToSave};
 use crate::text::buffer_state::BufferState;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
@@ -236,5 +236,19 @@ impl FilesystemFront for LocalFilesystem {
 
     fn is_dir(&self, path: &Path) -> bool {
         self.fs.is_dir(path)
+    }
+    fn is_file(&self, path: &Path) -> bool { self.fs.is_file(path) }
+
+    fn exists(&self, path: &Path) -> bool {
+        self.fs.is_dir(path) || self.fs.is_file(path)
+    }
+
+    fn todo_save_file_sync(&self, path: &Path, sts: &dyn SomethingToSave) -> Result<(), std::io::Error> {
+        // TODO
+        // Ok, so fs crate does NOT support appending, which is necessary for streaming etc.
+        // Good thing I abstracted over it, will rewrite later.
+        let bytes: Vec<u8> = sts.get_bytes().collect();
+
+        self.fs.overwrite_file(path, &bytes)
     }
 }

@@ -23,6 +23,9 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::tree_view::tree_it::TreeIt;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
+// expectation is that these are sorted
+pub type LabelHighlighter = fn(&str) -> Vec<usize>;
+
 pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> {
     id: WID,
     root_node: Item,
@@ -36,6 +39,8 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key
     on_flip_expand: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
     // called on hitting "enter" over a selection.
     on_select_highlighted: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
+
+    highlighter_op: Option<LabelHighlighter>,
 }
 
 #[derive(Debug)]
@@ -62,7 +67,19 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
             on_highlighted_changed: None,
             on_flip_expand: None,
             on_select_highlighted: None,
+            highlighter_op: None,
         }
+    }
+
+    pub fn with_highlighter(self, highlighter: LabelHighlighter) -> Self {
+        Self {
+            highlighter_op: Some(highlighter),
+            ..self
+        }
+    }
+
+    pub fn set_highlighter(&mut self, highlighter_op: Option<LabelHighlighter>) {
+        self.highlighter_op = highlighter_op;
     }
 
     pub fn with_filter_letters(self, filter_letters: String) -> Self {
@@ -305,9 +322,13 @@ impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget
             };
 
             let text = format!("{} {}", prefix, node.label());
+            let higlighted: Vec<usize> = self.highlighter_op.map(
+                |h| h(&text)
+            ).unwrap_or(vec![]);
+            let highlighted_idx: usize = 0;
 
             let mut x_offset: usize = 0;
-            for g in text.graphemes(true).into_iter() {
+            for (idx, g) in text.graphemes(true).into_iter().enumerate() {
                 let desired_pos_x: usize = depth as usize * 2 + x_offset;
                 if desired_pos_x > u16::MAX as usize {
                     error!("skipping drawing beyond x = u16::MAX");
@@ -322,9 +343,17 @@ impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget
                 // This is fine, because idx is proved to be within output constraints, which by definition are u16.
                 let y = idx as u16;
 
+                let mut local_style = style;
+
+                if highlighted_idx < higlighted.len() {
+                    if higlighted[highlighted_idx] == idx {
+                        local_style.with_background(theme.ui.focused_highlighted.background);
+                    }
+                }
+
                 output.print_at(
                     XY::new(x, y),
-                    style,
+                    local_style,
                     g,
                 );
 

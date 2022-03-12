@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use crate::experiments::deref_str::DerefStr;
 use crate::primitives::border::{BorderStyle, SingleBorderStyle};
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::WidgetAction;
@@ -10,8 +11,8 @@ use crate::widgets::save_file_dialog::save_file_dialog_msg::SaveFileDialogMsg::{
 const CANCEL_STRING: &'static str = "Cancel";
 const OVERRIDE_STRING: &'static str = "Override";
 
-fn override_dialog(file: Rc<String>) -> GenericDialog {
-    let text = format!("File \n\"{}\"\n already exists.\n Do you wish to override?", file);
+pub fn override_dialog<T: DerefStr>(filename: T) -> GenericDialog {
+    let text = format!("File \n\"{}\"\n already exists.\n Do you wish to override?", filename.as_ref_str());
 
     GenericDialog::new(Box::new(text)).with_border(
         &SingleBorderStyle,
