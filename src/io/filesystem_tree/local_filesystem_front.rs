@@ -243,12 +243,10 @@ impl FilesystemFront for LocalFilesystem {
         self.fs.is_dir(path) || self.fs.is_file(path)
     }
 
-    fn todo_save_file_sync(&self, path: &Path, sts: &dyn SomethingToSave) -> Result<(), std::io::Error> {
+    fn todo_save_file_sync(&self, path: &Path, bytes: &dyn AsRef<[u8]>) -> Result<(), std::io::Error> {
         // TODO
         // Ok, so fs crate does NOT support appending, which is necessary for streaming etc.
         // Good thing I abstracted over it, will rewrite later.
-        let bytes: Vec<u8> = sts.get_bytes().collect();
-
         self.fs.overwrite_file(path, &bytes)
     }
 }

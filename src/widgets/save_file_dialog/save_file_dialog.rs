@@ -279,8 +279,8 @@ impl SaveFileDialogWidget {
 
     // Returns op message to parent, so it can be called from 'update'
     fn save_positively(&self) -> Option<Box<dyn AnyMsg>> {
-        let sts = match &self.to_save {
-            Some(sts) => sts.get_bytes(),
+        let bytes: Vec<u8> = match &self.to_save {
+            Some(sts) => sts.get_bytes().collect(),
             None => {
                 error!("nothing to save");
                 return self.on_save_fail.map(|handler| handler(self, None)).flatten()
@@ -295,10 +295,10 @@ impl SaveFileDialogWidget {
             }
         };
 
-        match self.fsf.todo_save_file_sync(path.as_path(), &sts) {
+        match self.fsf.todo_save_file_sync(path.as_path(), &bytes) {
             Ok(_) => {
                 self.on_save.map(|handler| handler(self)).flatten()
-            },
+            }
             Err(e) => {
                 error!("save error: {}", e);
                 self.on_save_fail.map(|handler| handler(self, Some(e))).flatten()
