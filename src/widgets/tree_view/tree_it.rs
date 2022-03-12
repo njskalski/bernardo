@@ -10,9 +10,8 @@ use std::hash::Hash;
 use std::rc::Rc;
 
 use crate::io::keys::Key;
-use crate::widgets::tree_view::tree_view_node::TreeViewNode;
+use crate::widgets::tree_view::tree_view_node::{TreeItFilter, TreeViewNode};
 
-// type TreeItFilter = fn(&TreeViewNode<Key>) -> bool;
 type QueueType<Item> = Item;
 
 // tu nie trzeba pogrzebacza, tu trzeba pogrzebu.
@@ -20,10 +19,17 @@ type QueueType<Item> = Item;
 pub struct TreeIt<'a, Key: Hash + Eq + Debug, Item: TreeViewNode<Key>> {
     queue: Vec<(u16, QueueType<Item>)>,
     expanded: &'a HashSet<Key>,
+    filter_op: &'a Option<Box<dyn TreeItFilter<Key, Item>>>,
+    filter_depth_op: Option<usize>,
 }
 
 impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeIt<'a, Key, Item> {
-    pub fn new(root: &Item, expanded: &'a HashSet<Key>) -> TreeIt<'a, Key, Item> {
+    pub fn new(
+        root: &Item,
+        expanded: &'a HashSet<Key>,
+        filter_op: &'a Option<Box<dyn TreeItFilter<Key, Item>>>,
+        filter_depth_op: Option<usize>,
+    ) -> TreeIt<'a, Key, Item> {
         let mut queue: Vec<(u16, QueueType<Item>)> = Vec::new();
 
         queue.push((0, root.clone()));
@@ -31,15 +37,10 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeIt<'a, Key
         TreeIt {
             queue,
             expanded,
+            filter_op,
+            filter_depth_op,
         }
     }
-
-    // pub fn with_filter<T: TreeItFilter<Key>>(self, filter: T) -> Self {
-    //     Self {
-    //         filter: Some(Box::new(filter)),
-    //         ..self
-    //     }
-    // }
 }
 
 impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> Iterator for TreeIt<'a, Key, Item> {

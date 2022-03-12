@@ -95,7 +95,9 @@ fn main() {
     // let mut main_view = MainView::new(tree_sitter, fsf.clone())
     //     .with_empty_editor();
 
-    let mut main_view = SaveFileDialogWidget::new(fsf.clone());
+    let trash = Rc::new("trash".to_string());
+
+    let mut main_view = SaveFileDialogWidget::new(fsf.clone()).with_something_to_save(Box::new(trash));
 
     let theme = Theme::load_from_file(OsFileSystem::new(), &PathBuf::from("./themes/default.ron")).unwrap(); // TODO
 

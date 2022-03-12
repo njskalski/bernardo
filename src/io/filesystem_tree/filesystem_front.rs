@@ -13,12 +13,18 @@ use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 pub type FsfRef = Rc<Box<dyn FilesystemFront>>;
 
 pub trait SomethingToSave {
-    fn get_bytes(&self) -> Box<dyn Iterator<Item=u8> + '_>;
+    fn get_bytes(&self) -> Box<dyn Iterator<Item=&u8> + '_>;
 }
 
 impl SomethingToSave for Vec<u8> {
-    fn get_bytes(&self) -> Box<dyn Iterator<Item=u8> + '_> {
-        Box::new(self.iter().map(|i| *i))
+    fn get_bytes(&self) -> Box<dyn Iterator<Item=&u8> + '_> {
+        Box::new(self.iter())
+    }
+}
+
+impl SomethingToSave for Rc<String> {
+    fn get_bytes(&self) -> Box<dyn Iterator<Item=&u8> + '_> {
+        Box::new(self.as_bytes().iter())
     }
 }
 

@@ -280,7 +280,7 @@ impl SaveFileDialogWidget {
     // Returns op message to parent, so it can be called from 'update'
     fn save_positively(&self) -> Option<Box<dyn AnyMsg>> {
         let bytes: Vec<u8> = match &self.to_save {
-            Some(sts) => sts.get_bytes().collect(),
+            Some(sts) => sts.get_bytes().map(|i| *i).collect(),
             None => {
                 error!("nothing to save");
                 return self.on_save_fail.map(|handler| handler(self, None)).flatten()

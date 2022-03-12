@@ -21,7 +21,7 @@ use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::tree_view::tree_it::TreeIt;
-use crate::widgets::tree_view::tree_view_node::TreeViewNode;
+use crate::widgets::tree_view::tree_view_node::{TreeItFilter, TreeViewNode};
 
 // expectation is that these are sorted
 pub type LabelHighlighter = fn(&str) -> Vec<usize>;
@@ -29,7 +29,6 @@ pub type LabelHighlighter = fn(&str) -> Vec<usize>;
 pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> {
     id: WID,
     root_node: Item,
-    filter_letters: Option<String>,
     expanded: HashSet<Key>,
     highlighted: usize,
 
@@ -40,7 +39,16 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key
     // called on hitting "enter" over a selection.
     on_select_highlighted: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
 
+    // This will highlight letters given their indices. Use to do "fuzzy search" in tree.
     highlighter_op: Option<LabelHighlighter>,
+    // This is a filter that will be applied to decide which items to show or not.
+    filter_op: Option<Box<dyn TreeItFilter<Key, Item>>>,
+    // This tells whether to follow to dive down looking for filter matching nodes, even if
+    // parent node fails filter. The idea is: "I'm looking for files with infix X, but will
+    // display their non-matching parents too".
+    // filter_depth = None means "don't dive"
+    // filter_depth = Some(x) means "look for items down to x levels down".
+    filter_depth_op: Option<usize>,
 }
 
 #[derive(Debug)]
@@ -54,13 +62,14 @@ impl AnyMsg for TreeViewMsg {}
 /*
 Warranties:
 - (TODO double check) Highlighted always exists.
+- TODO change highlighted to Rc<Key>, because now with lazy loading and filtering, items can
+    disappear...
  */
 impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key, Item> {
     pub fn new(root_node: Item) -> Self {
         Self {
             id: get_new_widget_id(),
             root_node,
-            filter_letters: None,
             expanded: HashSet::new(),
             highlighted: 0,
             on_miss: None,
@@ -68,6 +77,8 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
             on_flip_expand: None,
             on_select_highlighted: None,
             highlighter_op: None,
+            filter_op: None,
+            filter_depth_op: None,
         }
     }
 
@@ -82,15 +93,26 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
         self.highlighter_op = highlighter_op;
     }
 
-    pub fn with_filter_letters(self, filter_letters: String) -> Self {
-        TreeViewWidget {
-            filter_letters: Some(filter_letters),
+    pub fn with_filter(self, filter: Box<dyn TreeItFilter<Key, Item>>) -> Self {
+        Self {
+            filter_op: Some(filter),
             ..self
         }
     }
 
-    pub fn set_filter_letters(&mut self, filter_letters: Option<String>) {
-        self.filter_letters = filter_letters;
+    pub fn set_filter_op(&mut self, filter_op: Option<Box<dyn TreeItFilter<Key, Item>>>) {
+        self.filter_op = filter_op;
+    }
+
+    pub fn with_filter_depth(self, filter_depth: usize) -> Self {
+        Self {
+            filter_depth_op: Some(filter_depth),
+            ..self
+        }
+    }
+
+    pub fn set_filter_depth_op(&mut self, filter_depth_op: Option<usize>) {
+        self.filter_depth_op = filter_depth_op;
     }
 
     pub fn is_expanded(&self, key: &Key) -> bool {
@@ -168,7 +190,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
     }
 
     pub fn items(&self) -> TreeIt<Key, Item> {
-        TreeIt::new(&self.root_node, &self.expanded)
+        TreeIt::new(&self.root_node, &self.expanded, &self.filter_op, self.filter_depth_op)
     }
 
     pub fn get_highlighted(&self) -> (u16, Item) {
