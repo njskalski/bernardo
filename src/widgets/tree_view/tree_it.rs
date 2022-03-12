@@ -25,7 +25,7 @@ type QueueType<Item> = Item;
 pub struct TreeIt<'a, Key: Hash + Eq + Debug, Item: TreeViewNode<Key>> {
     queue: Vec<(u16, QueueType<Item>)>,
     expanded: &'a HashSet<Key>,
-    filter_op: &'a Option<Box<dyn TreeItFilter<Key, Item>>>,
+    filter_op: &'a Option<TreeItFilter<Item>>,
     filter_depth_op: Option<usize>,
 }
 
@@ -33,7 +33,7 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeIt<'a, Key
     pub fn new(
         root: &Item,
         expanded: &'a HashSet<Key>,
-        filter_op: &'a Option<Box<dyn TreeItFilter<Key, Item>>>,
+        filter_op: &'a Option<TreeItFilter<Item>>,
         filter_depth_op: Option<usize>,
     ) -> TreeIt<'a, Key, Item> {
         let mut queue: Vec<(u16, QueueType<Item>)> = Vec::new();

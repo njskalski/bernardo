@@ -25,7 +25,7 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
     /*
     the answer is true, false, or "we don't know yet"
      */
-    fn matching_self_or_children(&self, filter: &TreeItFilter<Key, Self>, max_depth: Option<usize>) -> MaybeBool {
+    fn matching_self_or_children(&self, filter: &TreeItFilter<Self>, max_depth: Option<usize>) -> MaybeBool {
         if filter(&self) {
             return MaybeBool::True;
         }
@@ -66,5 +66,7 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
     }
 }
 
-// type TreeItFilter<Key, Node: TreeViewNode<Key>> = fn(&Node) -> bool;
-pub trait TreeItFilter<Key: Hash + Eq + Debug, Node: TreeViewNode<Key>>: Fn(&Node) -> bool {}
+pub type TreeItFilter<Node> = fn(&Node) -> bool;
+
+// pub type TreeItFilter<Key: Hash, Node: TreeViewNode<Key>> = fn(&Node) -> bool;
+// pub trait TreeItFilter<Key: Hash + Eq + Debug, Node: TreeViewNode<Key>>: Fn(&Node) -> bool {}

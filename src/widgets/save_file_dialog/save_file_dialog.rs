@@ -44,7 +44,7 @@ use crate::widgets::save_file_dialog::dialogs::override_dialog;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogMsg::Save;
 use crate::widgets::save_file_dialog::save_file_dialog_msg::SaveFileDialogMsg;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
-use crate::widgets::tree_view::tree_view_node::{MaybeBool, TreeItFilter, TreeViewNode};
+use crate::widgets::tree_view::tree_view_node::{MaybeBool, TreeViewNode};
 use crate::widgets::with_scroll::WithScroll;
 
 // TODO now it displays both files and directories in tree view, it should only directories
@@ -85,9 +85,9 @@ impl SaveFileDialogWidget {
         // });
         //
 
-        let filter: Box<dyn TreeItFilter<PathBuf, Rc<FileFront>>> = Box::new(|f: &Rc<FileFront>| -> bool {
+        let filter = |f: &Rc<FileFront>| -> bool {
             f.is_dir()
-        });
+        };
 
         let tree_widget = TreeViewWidget::<PathBuf, Rc<FileFront>>::new(tree)
             .with_filter(filter, Some(0))

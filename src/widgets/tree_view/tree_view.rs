@@ -42,7 +42,7 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key
     // This will highlight letters given their indices. Use to do "fuzzy search" in tree.
     highlighter_op: Option<LabelHighlighter>,
     // This is a filter that will be applied to decide which items to show or not.
-    filter_op: Option<Box<dyn TreeItFilter<Key, Item>>>,
+    filter_op: Option<TreeItFilter<Item>>,
     // This tells whether to follow to dive down looking for filter matching nodes, even if
     // parent node fails filter. The idea is: "I'm looking for files with infix X, but will
     // display their non-matching parents too".
@@ -93,7 +93,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
         self.highlighter_op = highlighter_op;
     }
 
-    pub fn with_filter(self, filter: Box<dyn TreeItFilter<Key, Item>>, filter_depth_op: Option<usize>) -> Self {
+    pub fn with_filter(self, filter: TreeItFilter<Item>, filter_depth_op: Option<usize>) -> Self {
         Self {
             filter_op: Some(filter),
             filter_depth_op,
@@ -101,7 +101,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
         }
     }
 
-    pub fn set_filter_op(&mut self, filter_op: Option<Box<dyn TreeItFilter<Key, Item>>>, filter_depth_op: Option<usize>) {
+    pub fn set_filter_op(&mut self, filter_op: Option<TreeItFilter<Item>>, filter_depth_op: Option<usize>) {
         self.filter_op = filter_op;
         self.filter_depth_op = filter_depth_op;
     }
