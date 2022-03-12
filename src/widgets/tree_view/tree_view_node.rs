@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use log::error;
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum MaybeBool {
     False,
     True,
@@ -24,7 +25,7 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
     /*
     the answer is true, false, or "we don't know yet"
      */
-    fn has_matching_children(&self, filter: &TreeItFilter<Key, Self>, max_depth: Option<usize>) -> MaybeBool {
+    fn matching_self_or_children(&self, filter: &TreeItFilter<Key, Self>, max_depth: Option<usize>) -> MaybeBool {
         if filter(&self) {
             return MaybeBool::True;
         }
@@ -50,7 +51,7 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
                 }
             };
 
-            match i.has_matching_children(filter, max_depth.map(|i| if i > 0 { i - 1 } else { 0 })) {
+            match i.matching_self_or_children(filter, max_depth.map(|i| if i > 0 { i - 1 } else { 0 })) {
                 MaybeBool::True => return MaybeBool::True,
                 MaybeBool::Maybe => { any_chance = true; }
                 _ => {}

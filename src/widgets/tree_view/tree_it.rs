@@ -3,14 +3,20 @@ This iterator implements depth-first-order using a double ended queue to emulate
 so I don't have to fight borrow-checker, that seem hard to marry with lazy instantiation.
 
 I got this idea in Zurich Operahouse, watching some ballet. Creativity sprouts from boredom.
+
+Also, now it supports filtering and recursive filtering: if filter is present, then node
+    will be visible in either case:
+        - it passes filter test
+        - one of it's descendants up to "filter_depth_op" deep (None = infinity)
  */
+use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::rc::Rc;
 
 use crate::io::keys::Key;
-use crate::widgets::tree_view::tree_view_node::{TreeItFilter, TreeViewNode};
+use crate::widgets::tree_view::tree_view_node::{MaybeBool, TreeItFilter, TreeViewNode};
 
 type QueueType<Item> = Item;
 
@@ -55,6 +61,16 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> Iterator for T
             if self.expanded.contains(node_ref.id()) {
                 for idx in (0..node_ref.num_child().1).rev() {
                     let item = node_ref.get_child(idx).unwrap();
+
+                    match self.filter_op {
+                        Some(filter) => {
+                            if item.matching_self_or_children(filter.borrow(), self.filter_depth_op) == MaybeBool::False {
+                                continue
+                            }
+                        },
+                        None => {},
+                    }
+
                     self.queue.push(
                         (depth + 1, item)
                     );

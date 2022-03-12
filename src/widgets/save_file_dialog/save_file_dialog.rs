@@ -44,7 +44,7 @@ use crate::widgets::save_file_dialog::dialogs::override_dialog;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogMsg::Save;
 use crate::widgets::save_file_dialog::save_file_dialog_msg::SaveFileDialogMsg;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
-use crate::widgets::tree_view::tree_view_node::TreeViewNode;
+use crate::widgets::tree_view::tree_view_node::{MaybeBool, TreeItFilter, TreeViewNode};
 use crate::widgets::with_scroll::WithScroll;
 
 // TODO now it displays both files and directories in tree view, it should only directories
@@ -80,10 +80,17 @@ pub struct SaveFileDialogWidget {
 impl SaveFileDialogWidget {
     pub fn new(fsf: FsfRef) -> Self {
         let tree = fsf.get_root();
-        let just_dirs = FilteredFileFront::new(tree.clone(), |i| {
-            i.is_dir()
+        // let just_dirs = FilteredFileFront::new(tree.clone(), |i| {
+        //     i.is_dir()
+        // });
+        //
+
+        let filter: Box<dyn TreeItFilter<PathBuf, Rc<FileFront>>> = Box::new(|f: &Rc<FileFront>| -> bool {
+            f.is_dir()
         });
+
         let tree_widget = TreeViewWidget::<PathBuf, Rc<FileFront>>::new(tree)
+            .with_filter(filter, Some(0))
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
                 Some(Box::new(SaveFileDialogMsg::TreeExpanded(item)))

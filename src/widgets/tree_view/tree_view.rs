@@ -93,25 +93,16 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
         self.highlighter_op = highlighter_op;
     }
 
-    pub fn with_filter(self, filter: Box<dyn TreeItFilter<Key, Item>>) -> Self {
+    pub fn with_filter(self, filter: Box<dyn TreeItFilter<Key, Item>>, filter_depth_op: Option<usize>) -> Self {
         Self {
             filter_op: Some(filter),
+            filter_depth_op,
             ..self
         }
     }
 
-    pub fn set_filter_op(&mut self, filter_op: Option<Box<dyn TreeItFilter<Key, Item>>>) {
+    pub fn set_filter_op(&mut self, filter_op: Option<Box<dyn TreeItFilter<Key, Item>>>, filter_depth_op: Option<usize>) {
         self.filter_op = filter_op;
-    }
-
-    pub fn with_filter_depth(self, filter_depth: usize) -> Self {
-        Self {
-            filter_depth_op: Some(filter_depth),
-            ..self
-        }
-    }
-
-    pub fn set_filter_depth_op(&mut self, filter_depth_op: Option<usize>) {
         self.filter_depth_op = filter_depth_op;
     }
 
