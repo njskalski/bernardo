@@ -287,25 +287,25 @@ impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget
         helpers::fill_output(primary_style.background, output);
         let cursor_style = theme.highlighted(focused);
 
-        for (idx, (depth, node)) in self.items().enumerate()
+        for (item_idx, (depth, node)) in self.items().enumerate()
             // skipping lines that cannot be visible, because they are before hint()
             .skip(output.size_constraint().hint().upper_left().y as usize) {
 
             // skipping lines that cannot be visible, because larger than the hint()
-            if idx >= output.size_constraint().hint().lower_right().y as usize {
+            if item_idx >= output.size_constraint().hint().lower_right().y as usize {
                 break;
             }
 
             // TODO this I think can be skipped
             match output.size_constraint().y() {
-                Some(y) => if idx >= y as usize {
-                    debug!("idx {}, output.size().y {}", idx, output.size_constraint());
+                Some(y) => if item_idx >= y as usize {
+                    debug!("idx {}, output.size().y {}", item_idx, output.size_constraint());
                     break;
                 }
                 None => {}
             }
 
-            let style = if idx == self.highlighted {
+            let style = if item_idx == self.highlighted {
                 cursor_style
             } else {
                 primary_style
@@ -328,7 +328,7 @@ impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget
             let highlighted_idx: usize = 0;
 
             let mut x_offset: usize = 0;
-            for (idx, g) in text.graphemes(true).into_iter().enumerate() {
+            for (grapheme_idx, g) in text.graphemes(true).into_iter().enumerate() {
                 let desired_pos_x: usize = depth as usize * 2 + x_offset;
                 if desired_pos_x > u16::MAX as usize {
                     error!("skipping drawing beyond x = u16::MAX");
@@ -341,12 +341,12 @@ impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget
                 }
 
                 // This is fine, because idx is proved to be within output constraints, which by definition are u16.
-                let y = idx as u16;
+                let y = item_idx as u16;
 
                 let mut local_style = style;
 
                 if highlighted_idx < higlighted.len() {
-                    if higlighted[highlighted_idx] == idx {
+                    if higlighted[highlighted_idx] == grapheme_idx {
                         local_style.with_background(theme.ui.focused_highlighted.background);
                     }
                 }
