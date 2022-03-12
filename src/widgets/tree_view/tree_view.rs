@@ -26,10 +26,14 @@ use crate::widgets::tree_view::tree_view_node::{TreeItFilter, TreeViewNode};
 // expectation is that these are sorted
 pub type LabelHighlighter = fn(&str) -> Vec<usize>;
 
+// Keys are unique
+
 pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> {
     id: WID,
     root_node: Item,
     expanded: HashSet<Key>,
+    // TODO rethink that
+    // at this point, highlighted can move (nodes can disappear if the filter throws them away with delay)
     highlighted: usize,
 
     //events

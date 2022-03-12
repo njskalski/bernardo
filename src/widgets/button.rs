@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use log::warn;
 use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 use crate::experiments::deref_str::DerefStr;
 use crate::io::input_event::InputEvent;
@@ -34,12 +35,11 @@ impl Widget for ButtonWidget {
     }
 
     fn min_size(&self) -> XY {
-        // TODO: count grapheme width
-        XY::new((self.text.as_ref_str().len() + 2) as u16, 1)
+        XY::new((self.text.as_ref_str().width_cjk() + 2) as u16, 1)
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        debug_assert!(sc.bigger_equal_than(self.min_size()));
+        debug_assert!(sc.bigger_equal_than(self.min_size()), "min_size {}, got {}", self.min_size(), sc);
         self.min_size()
     }
 

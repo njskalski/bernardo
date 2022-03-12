@@ -10,11 +10,13 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Theme, Widget, ZERO};
 use crate::experiments::deref_str::DerefStr;
+use crate::experiments::focus_group::FocusUpdate;
 use crate::io::keys::Key;
 use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::DisplayState;
 use crate::layout::dummy_layout::DummyLayout;
 use crate::layout::empty_layout::EmptyLayout;
+use crate::layout::frame_layout::FrameLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
@@ -25,6 +27,8 @@ use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID, WidgetAction};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::text_widget::TextWidget;
+
+// TODO handle too small displays
 
 pub trait KeyToMsg: Fn(&Key) -> Option<Box<dyn AnyMsg>> {}
 
@@ -44,6 +48,13 @@ pub struct GenericDialog {
     keystroke: Option<Box<dyn KeyToMsg>>,
 
 }
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum GenericDialogMsg {
+    FocusUpdate(FocusUpdate)
+}
+
+impl AnyMsg for GenericDialogMsg {}
 
 impl GenericDialog {
     pub fn new(text: Box<dyn DerefStr>) -> Self {
@@ -126,17 +137,19 @@ impl GenericDialog {
             }).collect();
 
         let mut button_layout = button_layouts.iter_mut().fold(
-            SplitLayout::new(SplitDirection::Vertical),
+            SplitLayout::new(SplitDirection::Horizontal),
             |acc, layout| {
                 acc.with(SplitRule::Proportional(1.0), layout)
             });
 
-        let mut total_layout = SplitLayout::new(SplitDirection::Horizontal)
+        let mut total_layout = SplitLayout::new(SplitDirection::Vertical)
             .with(SplitRule::Proportional(1.0),
                   &mut text_layout as &mut dyn Layout)
             .with(SplitRule::Fixed(1), &mut button_layout as &mut dyn Layout);
 
-        total_layout.calc_sizes(size)
+        let mut frame_layout = FrameLayout::new(&mut total_layout, XY::new(2, 2));
+
+        frame_layout.calc_sizes(size)
     }
 }
 
@@ -174,22 +187,68 @@ impl Widget for GenericDialog {
         // re-setting focus.
         match (focus_op, &mut self.display_state) {
             (Some(focus), Some(ds)) => { ds.focus_group.set_focused(focus); },
+            (None, Some(ds)) => {
+                self.buttons.first().map(|f| {
+                    ds.focus_group.set_focused(f.id());
+                });
+            }
             _ => {}
         };
+
+        debug!("focusgroup: {:?}", self.display_state);
 
         size
     }
 
-    fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        None
+    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        debug!("generic_dialog.on_input {:?}", input_event);
+
+        return match input_event {
+            InputEvent::FocusUpdate(focus_update) => {
+                Some(Box::new(GenericDialogMsg::FocusUpdate(focus_update)))
+            },
+            _ => None,
+        }
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        Some(msg)
+        debug!("generic_dialog.update {:?}", msg);
+
+        let our_msg = msg.as_msg::<GenericDialogMsg>();
+        if our_msg.is_none() {
+            warn!("expecetd GenericDialogMsg, got {:?}", msg);
+            return None;
+        }
+
+        return match our_msg.unwrap() {
+            GenericDialogMsg::FocusUpdate(focus_update) => {
+                warn!("updating focus");
+                let fc = *focus_update;
+                self.display_state.as_mut().map(
+                    |mut ds| {
+                        let msg = ds.focus_group.update_focus(*focus_update);
+                        warn!("focus updated {}", msg);
+                        None
+                    }
+                ).unwrap_or_else(|| {
+                    error!("failed retrieving display_state");
+                    None
+                })
+            }
+            unknown_msg => {
+                warn!("GenericDialog.update : unknown message {:?}", unknown_msg);
+                None
+            }
+        }
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        fill_output(theme.ui.non_focused.background, output);
+        let style = theme.default_text(focused);
+        fill_output(style.background, output);
+
+        self.with_border.map(|b| {
+            b.draw_edges(style, output);
+        });
 
         match self.display_state.borrow().as_ref() {
             None => warn!("failed rendering GenericDialog without cached_sizes"),

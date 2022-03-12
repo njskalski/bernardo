@@ -26,10 +26,12 @@ use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::DisplayState;
 use crate::layout::empty_layout::EmptyLayout;
+use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::helpers::fill_output;
+use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
@@ -49,8 +51,10 @@ use crate::widgets::with_scroll::WithScroll;
 
 // TODO now it displays both files and directories in tree view, it should only directories
 
+
 const OK_LABEL: &'static str = "OK";
 const CANCEL_LABEL: &'static str = "CANCEL";
+
 
 pub struct SaveFileDialogWidget {
     id: WID,
@@ -193,9 +197,21 @@ impl SaveFileDialogWidget {
                   &mut right_column,
             );
 
-        let res = layout.calc_sizes(max_size);
 
-        res
+        match &mut self.hover_dialog {
+            None => layout.calc_sizes(max_size),
+            Some(dialog) => {
+                let size = dialog.min_size() * 3;
+                let mut leaf_dialog = LeafLayout::new(dialog);
+                let mut layout = &mut HoverLayout::new(&mut layout,
+                                                       &mut leaf_dialog,
+                                                       Rect::new(
+                                                           XY::new(6, 3), // TODO
+                                                           size,
+                                                       ));
+                layout.calc_sizes(max_size)
+            }
+        }
     }
 
 
@@ -255,8 +271,9 @@ impl SaveFileDialogWidget {
         if self.edit_box.get_text().len_chars() == 0 {
             None
         } else {
+            let path = self.tree_widget.internal().get_highlighted().1.path().to_owned();
             let last_item = self.edit_box.get_text().to_string();
-            Some(self.root_path.join(last_item))
+            Some(path.join(last_item))
         }
     }
 
@@ -273,6 +290,8 @@ impl SaveFileDialogWidget {
                 return self.on_save_fail.map(|handle| handle(self, None)).flatten()
             }
         };
+
+        warn!("will save to {:?}", path);
 
         if self.fsf.exists(&path) {
             let filename = self.edit_box.get_text().to_string();
@@ -354,7 +373,7 @@ impl Widget for SaveFileDialogWidget {
         ds.focus_group_mut().add_edge(self.list_widget.id(), FocusUpdate::Down, self.edit_box.id());
 
 
-        debug!("focusgroup: {:?}", ds.focus_group);
+        // debug!("focusgroup: {:?}", ds.focus_group);
 
         self.display_state = Some(ds);
 
@@ -369,7 +388,7 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        debug!("save_file_dialog.on_input {:?}", input_event);
+        // debug!("save_file_dialog.on_input {:?}", input_event);
 
         return match input_event {
             InputEvent::FocusUpdate(focus_update) => {
@@ -386,7 +405,7 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        debug!("save_file_dialog.update {:?}", msg);
+        // debug!("save_file_dialog.update {:?}", msg);
 
         let our_msg = msg.as_msg::<SaveFileDialogMsg>();
         if our_msg.is_none() {
@@ -450,16 +469,28 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
+        if self.hover_dialog.is_some() {
+            return self.hover_dialog.as_ref().map(|f| f as &dyn Widget);
+        };
+
         let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
         wid_op.map(|wid| self.get_subwidget(wid)).flatten()
     }
 
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        if self.hover_dialog.is_some() {
+            return self.hover_dialog.as_mut().map(|f| f as &mut dyn Widget)
+        }
+
         let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
         wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
     }
 
     fn set_focused(&mut self, wid: WID) -> bool {
+        if self.hover_dialog.is_some() {
+            warn!("blocking setting focus, hovering dialog displayed");
+            return false;
+        }
         self.display_state.as_mut().map(|ds| {
             ds.focus_group_mut().set_focused(wid)
         }).unwrap_or(false)
@@ -492,21 +523,26 @@ impl Widget for SaveFileDialogWidget {
 
     fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> {
         debug!("call to save_file_dialog subwidget_mut on {}", self.id());
-        Box::new(vec![&mut self.tree_widget as &mut dyn Widget,
-                      &mut self.list_widget,
-                      &mut self.edit_box,
-                      &mut self.ok_button,
-                      &mut self.cancel_button,
-        ].into_iter())
+        let mut widgets = vec![&mut self.tree_widget as &mut dyn Widget,
+                               &mut self.list_widget,
+                               &mut self.edit_box,
+                               &mut self.ok_button,
+                               &mut self.cancel_button];
+
+        self.hover_dialog.as_mut().map(|f| widgets.push(f));
+
+        Box::new(widgets.into_iter())
     }
 
     fn subwidgets(&self) -> Box<dyn std::iter::Iterator<Item=&dyn Widget> + '_> {
         debug!("call to save_file_dialog subwidget on {}", self.id());
-        Box::new(vec![&self.tree_widget as &dyn Widget,
-                      &self.list_widget,
-                      &self.edit_box,
-                      &self.ok_button,
-                      &self.cancel_button,
-        ].into_iter())
+        let mut widgets = vec![&self.tree_widget as &dyn Widget,
+                               &self.list_widget,
+                               &self.edit_box,
+                               &self.ok_button,
+                               &self.cancel_button];
+
+        self.hover_dialog.as_ref().map(|f| widgets.push(f));
+        Box::new(widgets.into_iter())
     }
 }

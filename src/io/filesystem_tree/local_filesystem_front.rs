@@ -247,6 +247,7 @@ impl FilesystemFront for LocalFilesystem {
         // TODO
         // Ok, so fs crate does NOT support appending, which is necessary for streaming etc.
         // Good thing I abstracted over it, will rewrite later.
-        self.fs.overwrite_file(path, &bytes)
+        //self.fs.overwrite_file(path, &bytes)
+        Ok(())
     }
 }

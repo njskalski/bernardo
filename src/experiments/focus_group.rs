@@ -94,12 +94,12 @@ impl FocusGroup for FocusGroupImpl {
     }
 
     fn get_focused(&self) -> WID {
-        debug!("get_focused : {}", self.selected);
+        //debug!("get_focused : {}", self.selected);
         self.selected
     }
 
     fn set_focused(&mut self, wid: WID) -> bool {
-        debug!("set_focused : {}", wid);
+        //debug!("set_focused : {}", wid);
         if self.has_view(wid) {
             self.selected = wid;
             true
