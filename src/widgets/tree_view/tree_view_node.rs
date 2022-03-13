@@ -36,10 +36,9 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
         if max_depth == Some(0) {
             return MaybeBool::Maybe;
         }
-
-        let mut any_chance = false;
+        
         let (done, num_children) = self.num_child();
-        any_chance = done;
+        let mut any_chance = done;
 
         for idx in 0..num_children {
             let i = match self.get_child(idx) {

@@ -103,7 +103,7 @@ impl<'a> Iterator for ItemIter<'a> {
                 self.cur_iter = Some(self.providers[self.pos].items(self.query.clone()));
             }
 
-            let mut iter = self.cur_iter.as_mut().unwrap();
+            let iter = self.cur_iter.as_mut().unwrap();
 
             match iter.next() {
                 Some(item) => { return Some(item); }
@@ -132,7 +132,7 @@ impl Widget for FuzzySearchWidget {
         XY::new(16, 5)
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, _sc: SizeConstraint) -> XY {
         let items_len = self.items().count() + 1;
 
         //TODO

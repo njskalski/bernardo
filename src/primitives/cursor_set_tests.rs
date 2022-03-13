@@ -38,7 +38,7 @@ fn text_to_buffer_cursors(s: &str) -> (Rope, CursorSet) {
 
 // cursors start with [ or # and end with ] or #, having exactly one #, and exactly one of [ or ]
 fn text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSet) {
-    let mut text = String::new();
+    let text = String::new();
 
     let mut cursors: Vec<Cursor> = vec![];
 

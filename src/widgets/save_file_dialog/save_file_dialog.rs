@@ -196,12 +196,12 @@ impl SaveFileDialogWidget {
             Some(dialog) => {
                 let size = dialog.min_size() * 3;
                 let mut leaf_dialog = LeafLayout::new(dialog);
-                let mut layout = &mut HoverLayout::new(&mut layout,
-                                                       &mut leaf_dialog,
-                                                       Rect::new(
-                                                           XY::new(6, 3), // TODO
-                                                           size,
-                                                       ));
+                let layout = &mut HoverLayout::new(&mut layout,
+                                                   &mut leaf_dialog,
+                                                   Rect::new(
+                                                       XY::new(6, 3), // TODO
+                                                       size,
+                                                   ));
                 layout.calc_sizes(max_size)
             }
         }
@@ -409,9 +409,8 @@ impl Widget for SaveFileDialogWidget {
         return match our_msg.unwrap() {
             SaveFileDialogMsg::FocusUpdateMsg(focus_update) => {
                 warn!("updating focus");
-                let fc = *focus_update;
                 self.display_state.as_mut().map(
-                    |mut ds| {
+                    |ds| {
                         let msg = ds.focus_group.update_focus(*focus_update);
                         warn!("focus updated {}", msg);
                         None

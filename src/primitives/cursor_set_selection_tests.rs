@@ -146,7 +146,7 @@ fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
     match current_cursor_idx {
         Some(cursor_idx) => {
             add_cursor_begin(0, &cs.set()[cursor_idx], &mut output);
-            current_cursor_idx = None;
+            // current_cursor_idx = None;
         }
         None => {}
     }
