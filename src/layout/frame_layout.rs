@@ -1,10 +1,8 @@
-use log::{error, warn};
+use log::error;
 
-use crate::io::sub_output::SubOutput;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
-use crate::primitives::xy::{XY, ZERO};
+use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 
 pub struct FrameLayout<'a> {

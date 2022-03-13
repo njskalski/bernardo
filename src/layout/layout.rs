@@ -1,9 +1,4 @@
-
-
-
-
 use crate::primitives::rect::Rect;
-
 use crate::primitives::xy::XY;
 use crate::widget::widget::{WID, Widget};
 

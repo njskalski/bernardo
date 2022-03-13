@@ -2,14 +2,10 @@
 // there's a background layout and foreground layout.
 // Background is visible but inactive, foreground is visible.
 
-
-
 use log::warn;
-
 
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::primitives::rect::Rect;
-
 use crate::primitives::xy::XY;
 
 pub struct HoverLayout<'a> {
