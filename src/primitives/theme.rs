@@ -21,12 +21,14 @@ impl Theme {
     pub fn name_to_theme(&self, s: &str) -> Option<Color> {
         let ct = &self;
         match s {
-            "string_literal" => ct.general_code_theme.string_literal,
+            "string_literal" if ct.general_code_theme.string_literal.is_some() => ct.general_code_theme.string_literal,
+            "string_literal" | "literal" => ct.general_code_theme.literal,
             "\"" => ct.general_code_theme.double_quote,
             "\'" => ct.general_code_theme.single_quote,
             "(" => ct.general_code_theme.parenthesis,
             ")" => ct.general_code_theme.parenthesis,
             "identifier" => ct.general_code_theme.identifier,
+            "::" | ">>" | "<<" | "<" | ">" => ct.general_code_theme.operator,
             _ => {
                 warn!("not matched code identifier \"{}\"", s);
                 None
@@ -171,6 +173,8 @@ pub struct GeneralCodeTheme {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub string_literal: Option<Color>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub literal: Option<Color>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub type_identifier: Option<Color>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parenthesis: Option<Color>,
@@ -180,6 +184,10 @@ pub struct GeneralCodeTheme {
     pub double_quote: Option<Color>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub single_quote: Option<Color>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub operator: Option<Color>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub keyword: Option<Color>,
 }
 
 impl GeneralCodeTheme {
