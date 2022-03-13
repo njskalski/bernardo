@@ -10,7 +10,6 @@ use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
-use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::{XY, ZERO};
 use crate::SizeConstraint;
 

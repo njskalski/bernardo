@@ -110,14 +110,14 @@ impl GenericDialog {
         }
     }
 
-    pub fn with_keystroke(self, keystroke: Box<KeyToMsg>) -> Self {
+    pub fn with_keystroke(self, keystroke: Box<dyn KeyToMsg>) -> Self {
         Self {
             keystroke: Some(keystroke),
             ..self
         }
     }
 
-    pub fn set_keystroke(&mut self, keystroke: Box<KeyToMsg>) {
+    pub fn set_keystroke(&mut self, keystroke: Box<dyn KeyToMsg>) {
         self.keystroke = Some(keystroke);
     }
 

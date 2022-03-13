@@ -1,7 +1,7 @@
 use std::cmp::{min, Ordering};
 use std::fmt;
 use std::fmt::Formatter;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 use std::ops::{Add, Mul, Sub};
 
 use log::error;

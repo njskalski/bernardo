@@ -55,7 +55,7 @@ impl<'a, LItem: ListWidgetItem> Iterator for ProviderIter<'a, LItem> {
     }
 }
 
-impl<Item: ListWidgetItem> ListWidgetProvider<Item> {
+impl<Item: ListWidgetItem> dyn ListWidgetProvider<Item> {
     pub fn iter(&self) -> impl std::iter::Iterator<Item=Item> + '_ {
         ProviderIter {
             p: self,

@@ -23,11 +23,11 @@ pub trait Buffer {
 
     fn char_at(&self, char_idx: usize) -> Option<char>;
 
-    fn char_to_kind(&self, char_idx: usize) -> Option<&str> { None }
+    fn char_to_kind(&self, _char_idx: usize) -> Option<&str> { None }
 
-    fn callback_for_parser<'a>(&'a self) -> Box<FnMut(usize, tree_sitter::Point) -> &'a [u8] + 'a>;
+    fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, tree_sitter::Point) -> &'a [u8] + 'a>;
 
-    fn try_parse(&mut self, lang_id: LangId) -> bool { false }
+    fn try_parse(&mut self, _lang_id: LangId) -> bool { false }
 }
 
 pub fn buffer_to_string(b: &dyn Buffer) -> String {
