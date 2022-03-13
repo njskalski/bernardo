@@ -10,7 +10,7 @@ get merged with some other component.
 use std::collections::HashMap;
 use std::fmt::Debug;
 
-use log::debug;
+use log::{debug, error};
 
 use crate::widget::widget::WID;
 
@@ -39,6 +39,9 @@ pub trait FocusGroup: Debug {
     //TODO proper error reporting
     fn override_edges(&mut self, widget_id: WID, edges: Vec<(FocusUpdate, WID)>) -> bool;
     fn add_edge(&mut self, src_widget: WID, edge: FocusUpdate, target_widget: WID) -> bool;
+
+    // Removes item and drops all edges adjacent to it
+    fn remove_item(&mut self, widget_id: WID) -> bool;
 }
 
 #[derive(Debug)]
@@ -142,6 +145,27 @@ impl FocusGroup for FocusGroupImpl {
                 src_node.neighbours.insert(edge, target_widget);
                 true
             }
+        }
+    }
+
+    fn remove_item(&mut self, widget_id: WID) -> bool {
+        if let Some(item) = self.nodes.remove(&widget_id) {
+            for (fu, id) in item.neighbours.iter() {
+                self.nodes.get_mut(id).map(|node| {
+                    let all_items: Vec<_> = node.neighbours.iter().map(|(a, b)| (*a, *b)).collect();
+                    for (fu, neighbour) in all_items.iter() {
+                        if *neighbour == widget_id {
+                            node.neighbours.remove(fu);
+                        }
+                    }
+                }).unwrap_or_else(|| {
+                    error!("failed to read neighbour {} of {}", id, widget_id);
+                });
+            }
+
+            true
+        } else {
+            false
         }
     }
 }

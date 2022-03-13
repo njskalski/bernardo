@@ -11,7 +11,7 @@ use std::rc::Rc;
 use clap::Parser;
 use crossbeam_channel::select;
 use filesystem::OsFileSystem;
-use log::{debug, error};
+use log::{debug, error, warn};
 use termion::raw::IntoRawMode;
 
 use crate::experiments::tree_sitter_wrapper::{LanguageSet, TreeSitterWrapper};
@@ -107,47 +107,49 @@ fn main() {
         ie: InputEvent,
     ) -> (bool, Option<Box<dyn AnyMsg>>) {
         let my_id = view.id();
+        let my_desc = format!("{:?}", &view).clone();
+
         let focused_child_op = view.get_focused_mut();
+        let child_desc = format!("{:?}", &focused_child_op);
+
         let active_child_id_op = focused_child_op.as_ref().map(|w| w.id());
 
-        // debug!("recursive_treat_views my_id {} aci {:?}", my_id, active_child_id_op);
+        warn!("rtv0 {:?}: event {:?}, active_child: {:?}", my_desc, ie, child_desc);
 
         // first, dig as deep as possible.
         let (child_have_consumed, message_from_child_op) = match focused_child_op {
             Some(focused_child) => recursive_treat_views(focused_child, ie),
             None => (false, None)
         };
+        warn!("rtv1 {:?}: event {:?}, active_child: {:?}, child_consumed: {}, message_from_child: {:?}",
+            my_desc, ie, child_desc, child_have_consumed, &message_from_child_op);
 
         if child_have_consumed {
-            // debug!("child {:?} consumed", active_child_id_op);
-
             return match message_from_child_op {
                 None => (true, None),
                 Some(message_from_child) => {
-                    // debug!("cs pushing {:?} to {}", message_from_child, view.typename());
+                    let msg_from_child_text = format!("{:?}", &message_from_child);
                     let my_message_to_parent = view.update(message_from_child);
-                    // debug!("cs resp {:?}", my_message_to_parent);
+                    debug!("rtv3 {:?}: message_from_child: {:?} sent to me, responding {:?} to parent",
+                        my_desc, msg_from_child_text, &my_message_to_parent);
                     (true, my_message_to_parent)
                 }
             }
         };
 
-        // debug!("child {:?} did not consume", active_child_id_op);
-
         // Either child did not consume (unwinding), or we're on the bottom of path.
         // We're here to consume the Input.
         match view.on_input(ie) {
             None => {
-                // debug!("{} did not consume either.", my_id);
+                debug!("rtv4 {:?}: did not consume {:?} either.", my_desc, ie);
                 // we did not see this input as useful, unfolding the recursion:
                 // no consume, no message.
                 (false, None)
             }
             Some(internal_message) => {
-                // debug!("uw pushing {:?} to {}", internal_message, view.typename());
+                debug!("rtv5 {:?}: consumed {:?} and am pushing {:?} to myself", my_desc, ie, internal_message);
                 let message_to_parent = view.update(internal_message);
-                // debug!("uw resp {:?}", message_to_parent);
-
+                debug!("rtv6 {:?}: send {:?} to parent", my_desc, message_to_parent);
                 // (message_to_parent.is_some(), message_to_parent)
                 (true, message_to_parent)
             }

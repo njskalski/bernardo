@@ -182,7 +182,9 @@ impl Widget for GenericDialog {
         let wirs = self.internal_layout(size);
 
         let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        self.display_state = Some(DisplayState::new(size, wirs));
+        let mut ds = DisplayState::new(size, wirs);
+        ds.focus_group.remove_item(self.text_widget.id());
+        self.display_state = Some(ds);
 
         // re-setting focus.
         match (focus_op, &mut self.display_state) {
@@ -195,7 +197,7 @@ impl Widget for GenericDialog {
             _ => {}
         };
 
-        debug!("focusgroup: {:?}", self.display_state);
+        // debug!("focusgroup: {:?}", self.display_state);
 
         size
     }
@@ -282,7 +284,7 @@ impl Widget for GenericDialog {
     }
 
     fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> {
-        debug!("call to generic_dialog subwidget_mut on {}", self.id());
+        // debug!("call to generic_dialog subwidget_mut on {}", self.id());
         Box::new(self.buttons.iter_mut().map(|button| {
             button as &mut dyn Widget
         }).chain(
@@ -291,7 +293,7 @@ impl Widget for GenericDialog {
     }
 
     fn subwidgets(&self) -> Box<dyn std::iter::Iterator<Item=&dyn Widget> + '_> {
-        debug!("call to generic_dialog subwidget on {}", self.id());
+        // debug!("call to generic_dialog subwidget on {}", self.id());
         Box::new(self.buttons.iter().map(|button| {
             button as &dyn Widget
         }).chain(

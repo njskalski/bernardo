@@ -479,7 +479,7 @@ impl Widget for SaveFileDialogWidget {
 
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
         if self.hover_dialog.is_some() {
-            return self.hover_dialog.as_mut().map(|f| f as &mut dyn Widget)
+            return self.hover_dialog.as_mut().map(|f| f as &mut dyn Widget);
         }
 
         let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
@@ -522,7 +522,7 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> {
-        debug!("call to save_file_dialog subwidget_mut on {}", self.id());
+        // debug!("call to save_file_dialog subwidget_mut on {}", self.id());
         let mut widgets = vec![&mut self.tree_widget as &mut dyn Widget,
                                &mut self.list_widget,
                                &mut self.edit_box,
@@ -535,7 +535,7 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn subwidgets(&self) -> Box<dyn std::iter::Iterator<Item=&dyn Widget> + '_> {
-        debug!("call to save_file_dialog subwidget on {}", self.id());
+        // debug!("call to save_file_dialog subwidget on {}", self.id());
         let mut widgets = vec![&self.tree_widget as &dyn Widget,
                                &self.list_widget,
                                &self.edit_box,
