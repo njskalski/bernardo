@@ -4,6 +4,6 @@ use crate::SizeConstraint;
 
 pub trait Output {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str);
-    fn clear(&mut self);
+    fn clear(&mut self) -> Result<(), std::io::Error>;
     fn size_constraint(&self) -> SizeConstraint;
 }

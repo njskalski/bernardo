@@ -66,10 +66,11 @@ impl Output for BufferOutput {
         }
     }
 
-    fn clear(&mut self) {
+    fn clear(&mut self) -> Result<(), std::io::Error> {
         for idx in 0..self.cells().len() {
             self.cells_mut()[idx] = Cell::default();
         }
+        Ok(())
     }
 
     fn size_constraint(&self) -> SizeConstraint {

@@ -1,5 +1,5 @@
 use crate::io::output::Output;
-use crate::io::style::{TextStyle, TextStyle_WhiteOnBlack};
+use crate::io::style::{TEXT_STYLE_WHITE_ON_BLACK, TextStyle};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::SizeConstraint;
@@ -27,10 +27,10 @@ impl Output for SubOutput<'_> {
         self.output.print_at(self.frame.pos + pos, style, text)
     }
 
-    fn clear(&mut self) {
+    fn clear(&mut self) -> Result<(), std::io::Error> {
         // DO NOT clear the wider output, clear only your part.
 
-        let style = TextStyle_WhiteOnBlack;
+        let style = TEXT_STYLE_WHITE_ON_BLACK;
 
         for x in 0..self.frame.size.x {
             for y in 0..self.frame.size.y {
@@ -38,6 +38,7 @@ impl Output for SubOutput<'_> {
                     .print_at(self.frame.pos + XY::new(x, y), style, " ")
             }
         }
+        Ok(())
     }
 
     fn size_constraint(&self) -> SizeConstraint {

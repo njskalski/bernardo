@@ -87,7 +87,7 @@ impl Output for OverOutput<'_> {
         }
     }
 
-    fn clear(&mut self) {
+    fn clear(&mut self) -> Result<(), std::io::Error> {
         self.output.clear()
     }
 

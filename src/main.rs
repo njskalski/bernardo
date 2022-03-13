@@ -157,10 +157,22 @@ fn main() {
 
     'main:
     loop {
-        output.clear();
+        match output.clear() {
+            Ok(_) => {}
+            Err(e) => {
+                error!("failed to clear output: {}", e);
+                break;
+            }
+        }
         main_view.layout(output.size_constraint());
         main_view.render(&theme, true, &mut output);
-        output.end_frame();
+        match output.end_frame() {
+            Ok(_) => {}
+            Err(e) => {
+                error!("failed to end frame: {}", e);
+                break;
+            }
+        }
 
         select! {
             recv(input.source()) -> msg => {
@@ -172,7 +184,7 @@ fn main() {
                             InputEvent::KeyInput(key) if key.as_focus_update().is_some() => {
                                 ie = InputEvent::FocusUpdate(key.as_focus_update().unwrap());
                             },
-                            InputEvent::KeyInput(key) if key.keycode == Keycode::Char('q') && key.modifiers.CTRL => {
+                            InputEvent::KeyInput(key) if key.keycode == Keycode::Char('q') && key.modifiers.ctrl => {
                                 break 'main;
                             }
                             _ => {}

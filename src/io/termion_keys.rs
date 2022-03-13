@@ -36,7 +36,7 @@ impl From<TKey> for Key {
 
         if let Keycode::Char(c) = kc {
             if c.is_uppercase() {
-                md.SHIFT = true;
+                md.shift = true;
                 let lowercase_str = c.to_lowercase().to_string();
                 if lowercase_str.len() != 1 {
                     warn!("Unsupported lowercase mapping {}", lowercase_str);

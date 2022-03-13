@@ -52,7 +52,7 @@ impl<W: Write> TermionOutput<W> {
         }
     }
 
-    pub fn end_frame(&mut self) {
+    pub fn end_frame(&mut self) -> Result<(), std::io::Error> {
         if log::log_enabled!(log::Level::Debug) {
             let size: XY = terminal_size().unwrap().into();
             debug_assert!(
@@ -74,11 +74,10 @@ impl<W: Write> TermionOutput<W> {
             termion::color::Fg(termion::color::Reset),
             termion::color::Bg(termion::color::Black),
             termion::style::Reset
-        )
-            .unwrap();
+        )?;
 
         for y in 0..self.size.y {
-            write!(self.stdout, "{}", cursor::Goto(1, (y + 1) as u16));
+            write!(self.stdout, "{}", cursor::Goto(1, (y + 1) as u16))?;
 
             for x in 0..self.size.x {
                 let pos = (x, y).into();
@@ -100,18 +99,18 @@ impl<W: Write> TermionOutput<W> {
                         match style.effect {
                             //TODO
                             Effect::None => {
-                                write!(self.stdout, "{}", style::NoBold);
-                                write!(self.stdout, "{}", style::NoItalic);
-                                write!(self.stdout, "{}", style::NoUnderline);
+                                write!(self.stdout, "{}", style::NoBold)?;
+                                write!(self.stdout, "{}", style::NoItalic)?;
+                                write!(self.stdout, "{}", style::NoUnderline)?;
                             }
                             Effect::Bold => {
-                                write!(self.stdout, "{}", style::Bold);
+                                write!(self.stdout, "{}", style::Bold)?;
                             }
                             Effect::Italic => {
-                                write!(self.stdout, "{}", style::Italic);
+                                write!(self.stdout, "{}", style::Italic)?;
                             }
                             Effect::Underline => {
-                                write!(self.stdout, "{}", style::Underline);
+                                write!(self.stdout, "{}", style::Underline)?;
                             }
                         };
 
@@ -122,14 +121,14 @@ impl<W: Write> TermionOutput<W> {
                             bgcolor,
                             fgcolor,
                             grapheme
-                        );
+                        )?;
                     }
                     Cell::Continuation => {}
                 }
             }
         }
 
-        self.stdout.flush().unwrap();
+        self.stdout.flush()
     }
 }
 
@@ -146,8 +145,8 @@ impl<W: Write> Output for TermionOutput<W> {
         buffer.print_at(pos, style, text)
     }
 
-    fn clear(&mut self) {
-        write!(self.stdout, "{}", clear::All);
+    fn clear(&mut self) -> Result<(), std::io::Error> {
+        write!(self.stdout, "{}", clear::All)?;
 
         self.current_buffer = !self.current_buffer;
         let buffer = if self.current_buffer == false {

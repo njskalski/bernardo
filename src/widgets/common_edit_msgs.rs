@@ -32,22 +32,22 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
         Key { keycode, modifiers: _ } => {
             match keycode {
                 Keycode::Char(c) => Some(CommonEditMsg::Char(c)),
-                Keycode::ArrowUp => Some(CommonEditMsg::CursorUp { selecting: key.modifiers.SHIFT }),
-                Keycode::ArrowDown => Some(CommonEditMsg::CursorDown { selecting: key.modifiers.SHIFT }),
+                Keycode::ArrowUp => Some(CommonEditMsg::CursorUp { selecting: key.modifiers.shift }),
+                Keycode::ArrowDown => Some(CommonEditMsg::CursorDown { selecting: key.modifiers.shift }),
                 Keycode::ArrowLeft => {
-                    if key.modifiers.CTRL {
-                        Some(CommonEditMsg::WordBegin { selecting: key.modifiers.SHIFT })
+                    if key.modifiers.ctrl {
+                        Some(CommonEditMsg::WordBegin { selecting: key.modifiers.shift })
                     } else {
-                        Some(CommonEditMsg::CursorLeft { selecting: key.modifiers.SHIFT })
+                        Some(CommonEditMsg::CursorLeft { selecting: key.modifiers.shift })
                     }
-                },
+                }
                 Keycode::ArrowRight => {
-                    if key.modifiers.CTRL {
-                        Some(CommonEditMsg::WordEnd { selecting: key.modifiers.SHIFT })
+                    if key.modifiers.ctrl {
+                        Some(CommonEditMsg::WordEnd { selecting: key.modifiers.shift })
                     } else {
-                        Some(CommonEditMsg::CursorRight { selecting: key.modifiers.SHIFT })
+                        Some(CommonEditMsg::CursorRight { selecting: key.modifiers.shift })
                     }
-                },
+                }
                 Keycode::Enter => {
                     debug!("mapping Keycode:Enter to Char('\\n')");
                     Some(CommonEditMsg::Char('\n'))
@@ -57,10 +57,10 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
                     Some(CommonEditMsg::Char(' '))
                 }
                 Keycode::Backspace => Some(CommonEditMsg::Backspace),
-                Keycode::Home => Some(CommonEditMsg::LineBegin { selecting: key.modifiers.SHIFT }),
-                Keycode::End => Some(CommonEditMsg::LineEnd { selecting: key.modifiers.SHIFT }),
-                Keycode::PageUp => Some(CommonEditMsg::PageUp { selecting: key.modifiers.SHIFT }),
-                Keycode::PageDown => Some(CommonEditMsg::PageDown { selecting: key.modifiers.SHIFT }),
+                Keycode::Home => Some(CommonEditMsg::LineBegin { selecting: key.modifiers.shift }),
+                Keycode::End => Some(CommonEditMsg::LineEnd { selecting: key.modifiers.shift }),
+                Keycode::PageUp => Some(CommonEditMsg::PageUp { selecting: key.modifiers.shift }),
+                Keycode::PageDown => Some(CommonEditMsg::PageDown { selecting: key.modifiers.shift }),
                 Keycode::Tab => {
                     debug!("mapping Keycode:Tab to Char('\\t')");
                     Some(CommonEditMsg::Char('\t'))

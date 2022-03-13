@@ -1,4 +1,4 @@
-// use crate::io::style::{TextStyle, TextStyle_WhiteOnBlack};
+// use crate::io::style::{TextStyle, TEXT_STYLE_WHITE_ON_BLACK};
 // use unicode_segmentation::UnicodeSegmentation;
 // use unicode_width::UnicodeWidthStr;
 // use std::slice::Iter;
@@ -95,13 +95,13 @@
 // #[cfg(test)]
 // mod tests {
 //     use crate::primitives::styled_string::StyledString;
-//     use crate::io::style::TextStyle_WhiteOnBlack;
+//     use crate::io::style::TEXT_STYLE_WHITE_ON_BLACK;
 //     use crate::primitives::xy::XY;
 //
 //     fn simple_styled_string(text : &str) -> StyledString {
 //         StyledString::empty().with(
 //             text.to_string(),
-//             TextStyle_WhiteOnBlack,
+//             TEXT_STYLE_WHITE_ON_BLACK,
 //         )
 //     }
 //
@@ -125,7 +125,7 @@
 //
 //     #[test]
 //     fn styled_string_size_test3() {
-//         let ss = simple_styled_string("hel").with("lo\nworld".to_string(), TextStyle_WhiteOnBlack);
+//         let ss = simple_styled_string("hel").with("lo\nworld".to_string(), TEXT_STYLE_WHITE_ON_BLACK);
 //
 //         assert_eq!(ss.is_flat(), true);
 //         assert_eq!(ss.len(), 11);

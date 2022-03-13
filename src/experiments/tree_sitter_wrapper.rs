@@ -26,7 +26,7 @@ pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point
     return Box::new(move |offset: usize, point: Point| {
         if offset >= rope.len_bytes() {
             debug!("byte offset beyond rope length: {} >= {}", offset, rope.len_bytes());
-            return &EMPTY_SLICE
+            return &EMPTY_SLICE;
         }
 
         let point_from_offset = match byte_offset_to_point(rope, offset) {
@@ -51,7 +51,7 @@ pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point
         debug!("parser reading bytes [{}-{}) |{}|", offset, offset + result.len(), result.len());
 
         result
-    })
+    });
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -144,7 +144,13 @@ impl TreeSitterWrapper {
     pub fn new_parse(&self, lang_id: LangId, buffer: &dyn Buffer) -> Option<(Parser, Tree)> {
         let language = self.languages.get(&lang_id)?;
         let mut parser = Parser::new();
-        parser.set_language(language.clone());
+        match parser.set_language(language.clone()) {
+            Ok(_) => {}
+            Err(e) => {
+                error!("failed setting language: {}", e);
+                return None;
+            }
+        }
 
         let mut callback = buffer.callback_for_parser();
         let tree = parser.parse_with(&mut callback, None)?;

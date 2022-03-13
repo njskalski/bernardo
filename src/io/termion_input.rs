@@ -2,7 +2,7 @@ use std::io::Read;
 use std::thread;
 
 use crossbeam_channel::Receiver;
-use log::debug;
+use log::{debug, error};
 use termion::event::Event;
 use termion::input::TermReadEventsAndRaw;
 
@@ -28,7 +28,10 @@ impl TermionInput {
                     Ok((event, _data)) => match event {
                         Event::Key(key) => {
                             let my_key: Key = key.into();
-                            sender.send(InputEvent::KeyInput(my_key));
+                            sender.send(InputEvent::KeyInput(my_key)).unwrap_or_else(
+                                |e| {
+                                    error!("failed sending key: {}", e);
+                                });
                         }
                         Event::Mouse(me) => {
                             debug!("Ignoring mouse event {:?}", me);

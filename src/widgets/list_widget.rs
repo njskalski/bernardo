@@ -239,10 +239,10 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         return match input_event {
             InputEvent::KeyInput(key) => {
                 match key.keycode {
-                    Keycode::ArrowUp if key.modifiers.ALT == false => {
+                    Keycode::ArrowUp if key.modifiers.alt == false => {
                         Some(ListWidgetMsg::Arrow(Arrow::Up))
                     }
-                    Keycode::ArrowDown if key.modifiers.ALT == false => {
+                    Keycode::ArrowDown if key.modifiers.alt == false => {
                         Some(ListWidgetMsg::Arrow(Arrow::Down))
                     }
                     Keycode::ArrowLeft => {

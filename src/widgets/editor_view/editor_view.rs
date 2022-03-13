@@ -209,10 +209,10 @@ impl Widget for EditorView {
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         return match input_event {
             //TODO refactor the settings
-            InputEvent::KeyInput(key) if key.modifiers.CTRL && key.keycode == Keycode::Char('s') => {
+            InputEvent::KeyInput(key) if key.modifiers.ctrl && key.keycode == Keycode::Char('s') => {
                 Some(Box::new(EditorViewMsg::SaveAs))
             }
-            InputEvent::KeyInput(key) if key.modifiers.CTRL && key.keycode == Keycode::Char('h') => {
+            InputEvent::KeyInput(key) if key.modifiers.ctrl && key.keycode == Keycode::Char('h') => {
                 Some(Box::new(EditorViewMsg::Fuzzy))
             }
             InputEvent::KeyInput(key) if key_to_edit_msg(key).is_some() => {

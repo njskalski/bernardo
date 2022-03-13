@@ -31,17 +31,17 @@ pub enum Keycode {
 
 #[derive(Copy, Clone, Debug)]
 pub struct Modifiers {
-    pub ALT: bool,
-    pub CTRL: bool,
-    pub SHIFT: bool,
+    pub alt: bool,
+    pub ctrl: bool,
+    pub shift: bool,
 }
 
 impl Modifiers {
     pub fn new(alt: bool, ctrl: bool, shift: bool) -> Modifiers {
         Modifiers {
-            ALT: alt,
-            CTRL: ctrl,
-            SHIFT: shift,
+            alt,
+            ctrl,
+            shift,
         }
     }
 }
@@ -54,11 +54,11 @@ pub struct Key {
 
 impl Key {
     pub fn no_modifiers(&self) -> bool {
-        !(self.modifiers.ALT || self.modifiers.CTRL || self.modifiers.SHIFT)
+        !(self.modifiers.alt || self.modifiers.ctrl || self.modifiers.shift)
     }
 
     pub fn as_focus_update(&self) -> Option<FocusUpdate> {
-        if self.modifiers.ALT == false {
+        if self.modifiers.alt == false {
             return None;
         }
 

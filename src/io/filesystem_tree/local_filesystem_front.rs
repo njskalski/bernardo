@@ -139,11 +139,11 @@ impl LocalFilesystem {
                             full_path: path,
                             entries,
                         }
-                    ).map_err(|e| {
+                    ).unwrap_or_else(|e| {
                         error!("failed sending dir update for: {}", e);
                     });
 
-                    tick_sender.send(()).map_err(|e| {
+                    tick_sender.send(()).unwrap_or_else(|e| {
                         error!("failed sending fs tick: {}", e);
                     });
 

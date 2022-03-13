@@ -96,7 +96,7 @@ impl<W: Write> CrosstermOutput<W> {
                 let pos = XY::new(x, y);
 
                 if pos != curr_pos {
-                    self.stdout.execute(cursor::MoveTo(pos.x, pos.y));
+                    self.stdout.execute(cursor::MoveTo(pos.x, pos.y))?;
                     debug!("moving curr_pos: {} -> {}", pos, curr_pos);
                     curr_pos = pos;
                 }
@@ -173,14 +173,8 @@ impl<W: Write> Output for CrosstermOutput<W> {
         buffer.print_at(pos, style, text)
     }
 
-    fn clear(&mut self) {
-        match self.stdout.execute(Clear(ClearType::All)) {
-            Ok(_) => {}
-            Err(err) => {
-                warn!("failed to clear output, {}", err);
-            }
-        }
-
+    fn clear(&mut self) -> Result<(), std::io::Error> {
+        self.stdout.execute(Clear(ClearType::All))?;
 
         self.current_buffer = !self.current_buffer;
         let buffer = if self.current_buffer == false {

@@ -92,31 +92,31 @@ impl TextStyle {
     }
 }
 
-pub const TextStyle_WhiteOnBlack: TextStyle = TextStyle {
+pub const TEXT_STYLE_WHITE_ON_BLACK: TextStyle = TextStyle {
     foreground: Color { r: 255, g: 255, b: 255 },
     background: Color { r: 0, g: 0, b: 0 },
     effect: Effect::None,
 };
 
-pub const TextStyle_WhiteOnBlue: TextStyle = TextStyle {
+pub const TEXT_STYLE_WHITE_ON_BLUE: TextStyle = TextStyle {
     foreground: Color { r: 255, g: 255, b: 255 },
     background: Color { r: 100, g: 102, b: 237 },
     effect: Effect::None,
 };
 
-pub const TextStyle_WhiteOnYellow: TextStyle = TextStyle {
+pub const TEXT_STYLE_WHITE_ON_YELLOW: TextStyle = TextStyle {
     foreground: Color { r: 255, g: 255, b: 255 },
     background: Color { r: 237, g: 207, b: 126 },
     effect: Effect::None,
 };
 
-pub const TextStyle_WhiteOnBrightYellow: TextStyle = TextStyle {
+pub const TEXT_STYLE_WHITE_ON_BRIGHT_YELLOW: TextStyle = TextStyle {
     foreground: Color { r: 255, g: 255, b: 255 },
     background: Color { r: 237, g: 226, b: 164 },
     effect: Effect::None,
 };
 
-pub const TextStyle_WhiteOnRedish: TextStyle = TextStyle {
+pub const TEXT_STYLE_WHITE_ON_REDISH: TextStyle = TextStyle {
     foreground: Color { r: 255, g: 255, b: 255 },
     background: Color { r: 201, g: 81, b: 73 },
     effect: Effect::None,
