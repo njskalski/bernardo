@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use filesystem::FileSystem;
+use log::warn;
 use serde::{Deserialize, Serialize};
 
 use crate::io::style::{Effect, TextStyle};
@@ -26,7 +27,10 @@ impl Theme {
             "(" => ct.general_code_theme.parenthesis,
             ")" => ct.general_code_theme.parenthesis,
             "identifier" => ct.general_code_theme.identifier,
-            _ => None
+            _ => {
+                warn!("not matched code identifier \"{}\"", s);
+                None
+            }
         }
     }
 
