@@ -255,12 +255,13 @@ impl Widget for GenericDialog {
         match self.display_state.borrow().as_ref() {
             None => warn!("failed rendering GenericDialog without cached_sizes"),
             Some(cached_sizes) => {
+                let focused_child_id_op = self.get_focused().map(|f| f.id());
                 for wir in &cached_sizes.widget_sizes {
                     match self.get_subwidget(wir.wid) {
                         Some(widget) => {
                             let sub_output = &mut SubOutput::new(output, wir.rect);
                             widget.render(theme,
-                                          focused && cached_sizes.focus_group.get_focused() == widget.id(),
+                                          focused && focused_child_id_op == Some(wir.wid),
                                           sub_output,
                             );
                         },
