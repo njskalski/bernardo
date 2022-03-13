@@ -19,14 +19,11 @@
 
 // TODO change the selection to Option<usize> to ENFORCE the invariant by reducing the volume of data.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::slice::Iter;
 
-use crossbeam_channel::select;
-use log::{debug, error, warn};
+use log::{error, warn};
 
-use crate::primitives::rect::Rect;
-use crate::primitives::xy::ZERO;
 use crate::text::buffer::Buffer;
 
 const NEWLINE_LENGTH: usize = 1; // TODO(njskalski): add support for multisymbol newlines?
@@ -128,7 +125,7 @@ impl Cursor {
                     usize::min(old_pos, new_pos),
                     usize::max(old_pos, new_pos),
                 ))
-            },
+            }
             Some(sel) => {
                 /* and here'd be dragons:
                    so I need to cover a following scenario:
@@ -733,7 +730,7 @@ impl CursorSet {
             let (b, e) = match c.s {
                 None => {
                     if c.a == 0 {
-                        continue
+                        continue;
                     };
 
                     (c.a - 1, c.a)
@@ -772,7 +769,7 @@ impl CursorSet {
                         }
                         cursor.a = s.b;
                     }
-                },
+                }
                 None => {}
             }
         }
@@ -800,7 +797,7 @@ impl CursorSet {
 
         for c in self.set.iter() {
             match new_set.get(&c.a) {
-                None => { new_set.insert(c.a, c.clone()); },
+                None => { new_set.insert(c.a, c.clone()); }
                 Some(old_c) => {
                     // we replace only if old one has shorter selection than new one.
                     match (old_c.s, c.s) {
@@ -840,7 +837,7 @@ impl CursorSet {
                             curr_s.e = next.a;
                         }
                     }
-                    None => {},
+                    None => {}
                 }
             }
         }
@@ -867,7 +864,7 @@ impl CursorSet {
 
         for c in self.set.iter().rev() {
             match new_set.get(&c.a) {
-                None => { new_set.insert(c.a, c.clone()); },
+                None => { new_set.insert(c.a, c.clone()); }
                 Some(old_c) => {
                     // we replace only if old one has shorter selection than new one.
                     match (old_c.s, c.s) {

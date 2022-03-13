@@ -29,7 +29,6 @@ use crate::primitives::xy::ZERO;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
-use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 
 mod experiments;
 mod io;
@@ -95,7 +94,7 @@ fn main() {
     let mut main_view = MainView::new(tree_sitter, fsf.clone())
         .with_empty_editor();
 
-    let trash = Rc::new("trash".to_string());
+    // let trash = Rc::new("trash".to_string());
 
     // let mut main_view = SaveFileDialogWidget::new(fsf.clone()).with_something_to_save(Box::new(trash));
 
@@ -106,13 +105,10 @@ fn main() {
         view: &mut dyn Widget,
         ie: InputEvent,
     ) -> (bool, Option<Box<dyn AnyMsg>>) {
-        let my_id = view.id();
         let my_desc = format!("{:?}", &view).clone();
 
         let focused_child_op = view.get_focused_mut();
         let child_desc = format!("{:?}", &focused_child_op);
-
-        let active_child_id_op = focused_child_op.as_ref().map(|w| w.id());
 
         warn!("rtv0 {:?}: event {:?}, active_child: {:?}", my_desc, ie, child_desc);
 
@@ -134,7 +130,7 @@ fn main() {
                         my_desc, msg_from_child_text, &my_message_to_parent);
                     (true, my_message_to_parent)
                 }
-            }
+            };
         };
 
         // Either child did not consume (unwinding), or we're on the bottom of path.
