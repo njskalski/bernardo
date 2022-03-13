@@ -1,6 +1,6 @@
 // this is for test only
 
-use log::{debug, error};
+use log::error;
 use ropey::Rope;
 use tree_sitter::Point;
 

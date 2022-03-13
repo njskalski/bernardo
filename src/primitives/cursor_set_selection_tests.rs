@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 
-use log::error;
 use ropey::Rope;
 
 use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
@@ -118,7 +117,7 @@ fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
                 let end_pos = idx + 1; // the "end" is not inclusive, so we add +1.
                 add_cursor_end(end_pos, &cs.set()[cursor_idx], &mut output);
                 current_cursor_idx = Some(cursor_idx);
-            },
+            }
             (Some(new_cursor_idx), Some(prev_cursor_idx)) if new_cursor_idx != prev_cursor_idx => {
                 // this is hard, everything is selected, but the cursor changes.
                 // first, let's close the previous one. This will be a "beginning", since we're walking backwards.

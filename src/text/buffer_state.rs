@@ -1,20 +1,18 @@
 use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
-use std::ops::Range;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::string::String;
 
 use log::{debug, error, warn};
-use ropey::iter::Lines;
 use ropey::Rope;
-use tree_sitter::{InputEdit, Parser, Point, Tree, TreeCursor};
+use tree_sitter::{InputEdit, Parser, Point, Tree};
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::TreeSitterWrapper;
 use crate::experiments::tree_sitter_wrapper::{byte_offset_to_point, LangId};
 use crate::text::buffer::Buffer;
+use crate::TreeSitterWrapper;
 
 #[derive(Clone)]
 struct ParsingTuple {
@@ -300,7 +298,7 @@ impl Buffer for BufferState {
                 self.text.update_parse_on_insert(char_idx, char_idx + 1);
 
                 true
-            },
+            }
             Err(e) => {
                 warn!("failed inserting char {} because {}", char_idx, e);
                 false
@@ -316,7 +314,7 @@ impl Buffer for BufferState {
                 self.text.update_parse_on_insert(char_idx, char_idx + grapheme_len);
 
                 true
-            },
+            }
             Err(e) => {
                 warn!("failed inserting block {} (len {}) because {}", char_idx, grapheme_len, e);
                 false
@@ -335,7 +333,7 @@ impl Buffer for BufferState {
                 self.text.update_parse_on_delete(char_idx_begin, char_idx_end);
 
                 true
-            },
+            }
             Err(e) => {
                 warn!("failed removing char {:?}-{:?} because {}", char_idx_begin, char_idx_end, e);
                 false

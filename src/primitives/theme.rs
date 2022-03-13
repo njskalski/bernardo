@@ -1,14 +1,10 @@
-use std::collections::HashMap;
-use std::fs;
 use std::path::Path;
 
 use filesystem::FileSystem;
-use json;
-use log::debug;
 use serde::{Deserialize, Serialize};
 
 use crate::io::style::{Effect, TextStyle};
-use crate::primitives::color::{Color, WHITE};
+use crate::primitives::color::Color;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::is_default::IsDefault;
 
