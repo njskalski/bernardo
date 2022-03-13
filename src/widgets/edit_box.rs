@@ -7,7 +7,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
-use crate::primitives::cursor_set::{CursorSet, CursorStatus};
+use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::helpers;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
@@ -15,7 +15,6 @@ use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::common_edit_msgs::{apply_cme, CommonEditMsg, key_to_edit_msg};
-use crate::widgets::editor_view::msg::EditorViewMsg;
 
 const MIN_WIDTH: u16 = 12;
 const MAX_WIDTH: u16 = 80; //completely arbitrary

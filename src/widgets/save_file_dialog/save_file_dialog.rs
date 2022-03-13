@@ -9,18 +9,15 @@ I hope I will discover most of functional constraints while implementing it.
  */
 
 use std::borrow::Borrow;
-use std::fmt::Debug;
-use std::io::Error;
-use std::path;
-use std::path::{Path, PathBuf, StripPrefixError};
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use log::{debug, error, warn};
 
 use crate::{FsfRef, Keycode};
-use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
+use crate::experiments::focus_group::FocusUpdate;
 use crate::io::filesystem_tree::file_front::{FileFront, FilteredFileFront};
-use crate::io::filesystem_tree::filesystem_front::{FilesystemFront, SomethingToSave};
+use crate::io::filesystem_tree::filesystem_front::SomethingToSave;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
@@ -43,18 +40,14 @@ use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::generic_dialog::generic_dialog::GenericDialog;
 use crate::widgets::list_widget::ListWidget;
 use crate::widgets::save_file_dialog::dialogs::override_dialog;
-use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogMsg::Save;
 use crate::widgets::save_file_dialog::save_file_dialog_msg::SaveFileDialogMsg;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
-use crate::widgets::tree_view::tree_view_node::{MaybeBool, TreeViewNode};
 use crate::widgets::with_scroll::WithScroll;
 
 // TODO now it displays both files and directories in tree view, it should only directories
 
-
 const OK_LABEL: &'static str = "OK";
 const CANCEL_LABEL: &'static str = "CANCEL";
-
 
 pub struct SaveFileDialogWidget {
     id: WID,
@@ -287,7 +280,7 @@ impl SaveFileDialogWidget {
             Some(p) => p,
             None => {
                 error!("can't save of empty path. The OK button should have been blocked!");
-                return self.on_save_fail.map(|handle| handle(self, None)).flatten()
+                return self.on_save_fail.map(|handle| handle(self, None)).flatten();
             }
         };
 
@@ -309,7 +302,7 @@ impl SaveFileDialogWidget {
             Some(sts) => sts.get_bytes().map(|i| *i).collect(),
             None => {
                 error!("nothing to save");
-                return self.on_save_fail.map(|handler| handler(self, None)).flatten()
+                return self.on_save_fail.map(|handler| handler(self, None)).flatten();
             }
         };
 
@@ -317,7 +310,7 @@ impl SaveFileDialogWidget {
             Some(p) => p,
             None => {
                 error!("can't save of empty path. The OK button should have been blocked!");
-                return self.on_save_fail.map(|handler| handler(self, None)).flatten()
+                return self.on_save_fail.map(|handler| handler(self, None)).flatten();
             }
         };
 
@@ -380,7 +373,7 @@ impl Widget for SaveFileDialogWidget {
 
         // re-setting focus.
         match (focus_op, &mut self.display_state) {
-            (Some(focus), Some(ds)) => { ds.focus_group.set_focused(focus); },
+            (Some(focus), Some(ds)) => { ds.focus_group.set_focused(focus); }
             _ => {}
         };
 
@@ -393,7 +386,7 @@ impl Widget for SaveFileDialogWidget {
         return match input_event {
             InputEvent::FocusUpdate(focus_update) => {
                 Some(Box::new(SaveFileDialogMsg::FocusUpdateMsg(focus_update)))
-            },
+            }
             InputEvent::KeyInput(key) => {
                 match key.keycode {
                     Keycode::Esc => SaveFileDialogMsg::Cancel.someboxed(),
@@ -401,7 +394,7 @@ impl Widget for SaveFileDialogWidget {
                 }
             }
             _ => None,
-        }
+        };
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
@@ -520,7 +513,7 @@ impl Widget for SaveFileDialogWidget {
                                           focused && focused_child_id_op == Some(wir.wid),
                                           sub_output,
                             );
-                        },
+                        }
                         None => {
                             warn!("subwidget {} not found!", wir.wid);
                         }

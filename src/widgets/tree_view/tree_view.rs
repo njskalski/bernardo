@@ -1,12 +1,8 @@
-use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::rc::Rc;
 
-use env_logger::filter::Filter;
 use log::{debug, error, warn};
-use termion::event::Key;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -238,7 +234,7 @@ impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget
                 match key.keycode {
                     Keycode::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
                     Keycode::ArrowDown => Some(Box::new(TreeViewMsg::Arrow(Arrow::Down))),
-                    Keycode::Enter => { Some(Box::new(TreeViewMsg::HitEnter)) },
+                    Keycode::Enter => { Some(Box::new(TreeViewMsg::HitEnter)) }
                     _ => None,
                 }
             }

@@ -1,9 +1,4 @@
-use std::borrow::Borrow;
-use std::ops::Deref;
-use std::rc::Rc;
-
 use log::warn;
-use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::experiments::deref_str::DerefStr;
@@ -11,7 +6,6 @@ use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
-use crate::io::style::{Effect, TextStyle_WhiteOnBlack, TextStyle_WhiteOnBlue};
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
@@ -54,7 +48,7 @@ impl Widget for ButtonWidget {
                 _ => None
             }
             _ => None
-        }
+        };
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {

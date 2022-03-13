@@ -1,6 +1,4 @@
 use std::borrow::Borrow;
-use std::cell::RefCell;
-use std::f32::consts::E;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
@@ -160,7 +158,7 @@ impl Widget for MainView {
 
         // re-setting focus.
         match (focus_op, &mut self.display_state) {
-            (Some(focus), Some(ds)) => { ds.focus_group.set_focused(focus); },
+            (Some(focus), Some(ds)) => { ds.focus_group.set_focused(focus); }
             _ => {}
         };
 
@@ -173,9 +171,9 @@ impl Widget for MainView {
         return match input_event {
             InputEvent::FocusUpdate(focus_update) => {
                 Some(Box::new(MainViewMsg::FocusUpdateMsg(focus_update)))
-            },
+            }
             _ => None
-        }
+        };
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
@@ -238,7 +236,7 @@ impl Widget for MainView {
                                           cached_sizes.focus_group.get_focused() == widget.id(),
                                           sub_output,
                             );
-                        },
+                        }
                         None => {
                             warn!("subwidget {} not found!", wir.wid);
                         }

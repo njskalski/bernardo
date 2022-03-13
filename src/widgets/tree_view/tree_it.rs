@@ -13,9 +13,7 @@ use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::rc::Rc;
 
-use crate::io::keys::Key;
 use crate::widgets::tree_view::tree_view_node::{MaybeBool, TreeItFilter, TreeViewNode};
 
 type QueueType<Item> = Item;
@@ -65,10 +63,10 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> Iterator for T
                     match self.filter_op {
                         Some(filter) => {
                             if item.matching_self_or_children(filter.borrow(), self.filter_depth_op) == MaybeBool::False {
-                                continue
+                                continue;
                             }
-                        },
-                        None => {},
+                        }
+                        None => {}
                     }
 
                     self.queue.push(
@@ -77,7 +75,7 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> Iterator for T
                 }
             }
 
-            return Some((depth, node_ref))
+            return Some((depth, node_ref));
         }
 
         None
