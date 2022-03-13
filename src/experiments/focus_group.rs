@@ -10,7 +10,7 @@ get merged with some other component.
 use std::collections::HashMap;
 use std::fmt::Debug;
 
-use log::{debug, error};
+use log::error;
 
 use crate::widget::widget::WID;
 
@@ -150,7 +150,7 @@ impl FocusGroup for FocusGroupImpl {
 
     fn remove_item(&mut self, widget_id: WID) -> bool {
         if let Some(item) = self.nodes.remove(&widget_id) {
-            for (fu, id) in item.neighbours.iter() {
+            for (_fu, id) in item.neighbours.iter() {
                 self.nodes.get_mut(id).map(|node| {
                     let all_items: Vec<_> = node.neighbours.iter().map(|(a, b)| (*a, *b)).collect();
                     for (fu, neighbour) in all_items.iter() {

@@ -1,14 +1,10 @@
-use std::cell::RefCell;
-use std::io::{Read, Seek, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::rc::Rc;
 
 use crossbeam_channel::Receiver;
 use ropey::Rope;
 
 use crate::io::filesystem_tree::file_front::FileFront;
-use crate::text::buffer_state::BufferState;
-use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 pub type FsfRef = Rc<Box<dyn FilesystemFront>>;
 

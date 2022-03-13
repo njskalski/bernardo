@@ -1,12 +1,9 @@
 use std::borrow::Borrow;
-use std::cell::{BorrowMutError, RefCell, RefMut};
+use std::cell::RefCell;
 use std::collections::HashMap;
-use std::fs::{DirEntry, ReadDir};
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::fs::DirEntry;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::str::Utf8Error;
-use std::sync::{Arc, mpsc};
 use std::thread;
 
 use crossbeam_channel::{Receiver, Sender};
@@ -14,10 +11,8 @@ use filesystem::{FileSystem, OsFileSystem};
 use log::{debug, error, warn};
 use ropey::Rope;
 
-use crate::io::filesystem_tree::file_front::{FileChildrenCache, FileFront, FileType};
-use crate::io::filesystem_tree::filesystem_front::{FilesystemFront, SomethingToSave};
-use crate::text::buffer_state::BufferState;
-use crate::widgets::tree_view::tree_view_node::TreeViewNode;
+use crate::io::filesystem_tree::file_front::{FileChildrenCache, FileFront};
+use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
 
 // how many file paths should be available for immediate querying "at hand".
 // basically a default size of cache for fuzzy file search
@@ -217,7 +212,7 @@ impl FilesystemFront for LocalFilesystem {
                             }
                             Err(e) => {
                                 error!("failed reading file type for {:?}: {}", de.path(), e);
-                                continue
+                                continue;
                             }
                         }
                     }

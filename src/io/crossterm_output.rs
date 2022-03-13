@@ -1,9 +1,7 @@
 use std::io::Write;
 
 use crossterm::{cursor, ExecutableCommand, style, terminal};
-use crossterm::cursor::MoveTo;
-use crossterm::style::{Attribute, Color, ContentStyle, Print, PrintStyledContent, SetAttribute, SetAttributes, SetBackgroundColor, SetForegroundColor, StyledContent};
-use crossterm::style::Color::Reset;
+use crossterm::style::{Attribute, Color, Print, SetAttribute, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::{Clear, ClearType};
 use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;

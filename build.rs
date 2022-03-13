@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 fn main() {
@@ -18,6 +17,7 @@ fn build_c() {
     cc::Build::new()
         .include(&dir)
         .file(dir.join("parser.c"))
+        .warnings(false)
         .compile("tree-sitter-c");
 }
 
@@ -30,12 +30,14 @@ fn build_cpp() {
     cc::Build::new()
         .include(&dir)
         .file(dir.join("parser.c"))
+        .warnings(false)
         .compile("tree-sitter-cpp-parser");
 
     cc::Build::new()
         .cpp(true)
         .include(&dir)
         .file(dir.join("scanner.cc"))
+        .warnings(false)
         .compile("tree-sitter-cpp-scanner");
 }
 
@@ -48,12 +50,14 @@ fn build_elm() {
     cc::Build::new()
         .include(&dir)
         .file(dir.join("parser.c"))
+        .warnings(false)
         .compile("tree-sitter-elm-parser");
 
     cc::Build::new()
         .cpp(true)
         .include(&dir)
         .file(dir.join("scanner.cc"))
+        .warnings(false)
         .compile("tree-sitter-elm-scanner");
 }
 
@@ -65,6 +69,7 @@ fn build_go() {
     cc::Build::new()
         .include(&dir)
         .file(dir.join("parser.c"))
+        .warnings(false)
         .compile("tree-sitter-go");
 }
 
@@ -79,12 +84,14 @@ fn build_html() {
     cc::Build::new()
         .include(&dir)
         .file(dir.join("parser.c"))
+        .warnings(false)
         .compile("tree-sitter-html-parser");
 
     cc::Build::new()
         .cpp(true)
         .include(&dir)
         .file(dir.join("scanner.cc"))
+        .warnings(false)
         .compile("tree-sitter-html-scanner");
 }
 
@@ -98,5 +105,6 @@ fn build_rust() {
         .include(&dir)
         .file(dir.join("parser.c"))
         .file(dir.join("scanner.c"))
+        .warnings(false)
         .compile("tree-sitter-rust");
 }

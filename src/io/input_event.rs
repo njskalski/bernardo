@@ -1,6 +1,5 @@
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::keys::Key;
-use crate::primitives::arrow::Arrow;
 
 #[derive(Debug, Clone, Copy)]
 pub enum InputEvent {

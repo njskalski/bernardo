@@ -3,7 +3,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate maplit;
 
-use std::env::args;
+
 use std::io::stdout;
 use std::path::PathBuf;
 use std::rc::Rc;

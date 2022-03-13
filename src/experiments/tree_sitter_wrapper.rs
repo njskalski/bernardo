@@ -1,11 +1,8 @@
 use std::collections::HashMap;
-use std::f32::consts::E;
-use std::path::Path;
 
-use log::{debug, error, warn};
+use log::{debug, error};
 use ropey::Rope;
-use tree_sitter::{Language, LanguageError, Parser, Point, Tree};
-use tree_sitter_highlight::HighlightConfiguration;
+use tree_sitter::{Language, Parser, Point, Tree};
 
 use crate::text::buffer::Buffer;
 
@@ -25,7 +22,7 @@ pub fn byte_offset_to_point(rope: &Rope, byte_offset: usize) -> Option<Point> {
     }
 }
 
-pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<FnMut(usize, Point) -> &'a [u8] + 'a> {
+pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {
     return Box::new(move |offset: usize, point: Point| {
         if offset >= rope.len_bytes() {
             debug!("byte offset beyond rope length: {} >= {}", offset, rope.len_bytes());
@@ -144,8 +141,8 @@ impl TreeSitterWrapper {
     }
 
     // This should be called on loading a file. On update, ParserAndTree struct should be used.
-    pub fn new_parse(&self, langId: LangId, buffer: &dyn Buffer) -> Option<(Parser, Tree)> {
-        let language = self.languages.get(&langId)?;
+    pub fn new_parse(&self, lang_id: LangId, buffer: &dyn Buffer) -> Option<(Parser, Tree)> {
+        let language = self.languages.get(&lang_id)?;
         let mut parser = Parser::new();
         parser.set_language(language.clone());
 

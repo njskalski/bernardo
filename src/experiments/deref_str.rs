@@ -1,8 +1,6 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
-use ropey::Rope;
-
 pub trait DerefStr {
     fn as_ref_str(&self) -> &str;
 }

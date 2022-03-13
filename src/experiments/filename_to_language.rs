@@ -1,14 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::experiments::tree_sitter_wrapper::{LangId, LangId::C, LangId::CPP, LangId::ELM, LangId::HTML, LangId::RUST};
-
-// pub c: bool,
-// pub cpp: bool,
-// pub elm: bool,
-// pub go: bool,
-// pub html: bool,
-// pub rust: bool,
+use crate::experiments::tree_sitter_wrapper::LangId;
 
 lazy_static! {
     static ref EXT_TO_LANGUAGE : HashMap<&'static str, LangId> = hashmap! {
