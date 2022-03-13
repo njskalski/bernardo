@@ -197,7 +197,6 @@ impl Widget for EditBoxWidget {
                     None
                 }
             }
-            _ => None,
         };
     }
 

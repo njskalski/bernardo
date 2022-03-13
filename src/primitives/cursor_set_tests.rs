@@ -20,13 +20,10 @@ fn text_to_buffer_cursors(s: &str) -> (Rope, CursorSet) {
 
     dbg!(s);
 
-    let mut sel_begin: Option<usize> = None;
-    let mut sel_end: Option<usize> = None;
-
     for c in s.chars() {
         if c == '#' {
             cursors.push(text.len());
-            continue
+            continue;
         }
 
         text.push(c);
@@ -60,7 +57,7 @@ fn text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSet) {
                     );
                 }
             }
-            continue
+            continue;
         }
 
         if c == '[' || c == ']' {
@@ -170,13 +167,13 @@ fn buffer_cursors_to_text_3() {
 #[test]
 fn text_to_buffer_cursors_and_back() {
     let text = concat!(
-        "t#here was a man\n",
-        "called paul\n",
-        "#who went to a fancy\n",
-        "dr#ess ball\n",
-        "he just went for fun\n",
-        "dressed up as bone\n",
-        "and dog ea#t h#im up in the# hall.\n"
+    "t#here was a man\n",
+    "called paul\n",
+    "#who went to a fancy\n",
+    "dr#ess ball\n",
+    "he just went for fun\n",
+    "dressed up as bone\n",
+    "and dog ea#t h#im up in the# hall.\n"
     );
 
     let (buffer, cursors) = text_to_buffer_cursors(text);
@@ -365,23 +362,23 @@ fn single_cursor_move_down_by_some() {
 
     {
         let text = concat!(
-            "t#here was a man\n",
-            "called paul\n",
-            "who went to a fancy\n",
-            "dress ball\n",
-            "he just went for fun\n",
-            "dressed up as bone\n",
-            "and dog eat him up in the hall.\n"
+        "t#here was a man\n",
+        "called paul\n",
+        "who went to a fancy\n",
+        "dress ball\n",
+        "he just went for fun\n",
+        "dressed up as bone\n",
+        "and dog eat him up in the hall.\n"
         );
 
         let new_text = concat!(
-            "there was a man\n",
-            "called paul\n",
-            "who went to a fancy\n",
-            "d#ress ball\n",
-            "he just went for fun\n",
-            "dressed up as bone\n",
-            "and dog eat him up in the hall.\n"
+        "there was a man\n",
+        "called paul\n",
+        "who went to a fancy\n",
+        "d#ress ball\n",
+        "he just went for fun\n",
+        "dressed up as bone\n",
+        "and dog eat him up in the hall.\n"
         );
 
         assert_eq!(apply(text, f), new_text);
@@ -389,23 +386,23 @@ fn single_cursor_move_down_by_some() {
 
     {
         let text = concat!(
-            "t#here was a ma#n\n",
-            "calle#d paul\n",
-            "who went to a fancy\n",
-            "dress ball\n",
-            "he just went for fun\n",
-            "dressed up as bone\n",
-            "and dog eat him up in the hall.\n"
+        "t#here was a ma#n\n",
+        "calle#d paul\n",
+        "who went to a fancy\n",
+        "dress ball\n",
+        "he just went for fun\n",
+        "dressed up as bone\n",
+        "and dog eat him up in the hall.\n"
         );
 
         let new_text = concat!(
-            "there was a man\n",
-            "called paul\n",
-            "who went to a fancy\n",
-            "d#ress ball#\n",
-            "he ju#st went for fun\n",
-            "dressed up as bone\n",
-            "and dog eat him up in the hall.\n"
+        "there was a man\n",
+        "called paul\n",
+        "who went to a fancy\n",
+        "d#ress ball#\n",
+        "he ju#st went for fun\n",
+        "dressed up as bone\n",
+        "and dog eat him up in the hall.\n"
         );
 
         assert_eq!(apply(text, f), new_text);
@@ -486,13 +483,13 @@ fn single_cursor_move_up_by_some() {
 
     {
         let text = concat!(
-            "t#here was a man\n",
-            "called paul\n",
-            "who went to a fancy\n",
-            "dress ball\n",
-            "he just went for fun\n",
-            "d#ressed up as bone\n",
-            "and dog eat him up in the hall.#\n"
+        "t#here was a man\n",
+        "called paul\n",
+        "who went to a fancy\n",
+        "dress ball\n",
+        "he just went for fun\n",
+        "d#ressed up as bone\n",
+        "and dog eat him up in the hall.#\n"
         );
 
         let new_text = concat!(

@@ -167,7 +167,7 @@ impl FilesystemFront for LocalFilesystem {
         ) // TODO
     }
 
-    fn get_children(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<FileFront>>>) {
+    fn get_children(&self, _path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<FileFront>>>) {
         todo!()
     }
 
@@ -239,7 +239,7 @@ impl FilesystemFront for LocalFilesystem {
         self.fs.is_dir(path) || self.fs.is_file(path)
     }
 
-    fn todo_save_file_sync(&self, path: &Path, bytes: &dyn AsRef<[u8]>) -> Result<(), std::io::Error> {
+    fn todo_save_file_sync(&self, _path: &Path, _bytes: &dyn AsRef<[u8]>) -> Result<(), std::io::Error> {
         // TODO
         // Ok, so fs crate does NOT support appending, which is necessary for streaming etc.
         // Good thing I abstracted over it, will rewrite later.

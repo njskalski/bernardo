@@ -66,14 +66,13 @@ impl Widget for ButtonWidget {
                     self.on_hit.unwrap()(&self)
                 }
             }
-            _ => None,
         }
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let mut full_text = "[".to_string() + self.text.as_ref_str() + "]";
 
-        let mut style = if focused {
+        let style = if focused {
             theme.highlighted(true)
         } else {
             theme.ui.non_focused

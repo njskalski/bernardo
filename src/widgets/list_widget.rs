@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-use std::slice::SliceIndex;
 
 use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;
@@ -14,7 +13,6 @@ use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
-use crate::widgets::fuzzy_search::item_provider::Item;
 
 pub trait ListWidgetItem: Debug + Clone {
     //TODO change to static str?
@@ -109,7 +107,7 @@ impl<Item: ListWidgetItem> ListWidgetProvider<Item> for () {
         0
     }
 
-    fn get(&self, idx: usize) -> Option<Item> {
+    fn get(&self, _idx: usize) -> Option<Item> {
         None
     }
 }

@@ -297,7 +297,6 @@ impl Cursor {
         }
 
         let old_pos = self.a;
-        let mut first_move = true;
 
         if self.a < buffer.len_chars() {
             if word_determinant(self.a) {
@@ -574,7 +573,6 @@ impl CursorSet {
             }
 
             // at this point we know that 0 <= cur_line_idx <= last_line_idx
-            debug_assert!(0 <= cur_line_idx);
             debug_assert!(cur_line_idx <= last_line_idx);
             let new_line_idx = (cur_line_idx as isize + l) as usize;
 

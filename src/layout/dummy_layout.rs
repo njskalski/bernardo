@@ -43,7 +43,6 @@ impl Layout for DummyLayout {
     fn calc_sizes(&mut self, output_size: XY) -> Vec<WidgetIdRect> {
         if self.with_border {
             if output_size > (2, 2).into() {
-                let limited_output = XY::new(output_size.x - 2, output_size.y - 2);
                 let rect = Rect::new(XY::new(1, 1), self.size);
 
                 vec![WidgetIdRect {

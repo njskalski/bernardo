@@ -221,9 +221,8 @@ impl Widget for GenericDialog {
         return match our_msg.unwrap() {
             GenericDialogMsg::FocusUpdate(focus_update) => {
                 warn!("updating focus");
-                let fc = *focus_update;
                 self.display_state.as_mut().map(
-                    |mut ds| {
+                    |ds| {
                         let msg = ds.focus_group.update_focus(*focus_update);
                         warn!("focus updated {}", msg);
                         None

@@ -102,7 +102,7 @@ impl EditorView {
 
     fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
         if let Some(sd) = self.save_file_dialog.as_mut() {
-            let mut layout = HoverLayout::new(
+            let layout = HoverLayout::new(
                 &mut DummyLayout::new(self.wid, size),
                 &mut LeafLayout::new(sd),
                 Rect::new(XY::new(4, 4), XY::new(30, 15)), //TODO
