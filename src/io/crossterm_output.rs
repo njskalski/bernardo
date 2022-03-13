@@ -141,7 +141,7 @@ impl<W: Write> CrosstermOutput<W> {
                             // self.stdout.execute(SetAttribute(Attribute::Reset))?;
                             // self.stdout.execute(SetAttributes(attributes))?;
 
-                            
+
                             last_style = Some(*style);
                         }
 

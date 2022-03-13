@@ -1,6 +1,7 @@
+use std::ops::{Index, IndexMut};
+
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
-use std::ops::{Index, IndexMut};
 
 pub struct Buffer<T: Default + Clone> {
     size: XY,
@@ -17,7 +18,7 @@ impl<T: Default + Clone> Buffer<T> {
     fn flatten_index(&self, index: XY) -> usize {
         assert!(index.x < self.size.x, "{}, {}", index, self.size);
         assert!(index.y < self.size.y, "{}, {}", index, self.size);
-
+        
         (index.y * self.size.x + index.x) as usize
     }
 

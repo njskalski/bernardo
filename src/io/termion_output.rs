@@ -75,7 +75,7 @@ impl<W: Write> TermionOutput<W> {
             termion::color::Bg(termion::color::Black),
             termion::style::Reset
         )
-        .unwrap();
+            .unwrap();
 
         for y in 0..self.size.y {
             write!(self.stdout, "{}", cursor::Goto(1, (y + 1) as u16));
@@ -182,7 +182,7 @@ impl<W: Write> Drop for TermionOutput<W> {
             cursor::Goto(1, 1),
             cursor::Show
         )
-        .unwrap();
+            .unwrap();
         self.stdout.flush().unwrap();
     }
 }

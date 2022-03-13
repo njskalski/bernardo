@@ -1,6 +1,4 @@
 use crate::io::style::TextStyle;
-
-
 use crate::primitives::xy::XY;
 use crate::SizeConstraint;
 

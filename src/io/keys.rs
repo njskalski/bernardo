@@ -77,7 +77,7 @@ impl Keycode {
         return *self == Keycode::ArrowRight ||
             *self == Keycode::ArrowLeft ||
             *self == Keycode::ArrowUp ||
-            *self == Keycode::ArrowDown
+            *self == Keycode::ArrowDown;
     }
 }
 

@@ -1,18 +1,15 @@
-use std::io::{Read};
+use std::io::Read;
 use std::thread;
 
 use crossbeam_channel::Receiver;
 use log::debug;
-
 use termion::event::Event;
-use termion::input::{TermReadEventsAndRaw};
-
+use termion::input::TermReadEventsAndRaw;
 
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::input_source::InputSource;
-// use termion::event::Event::Key as TKey;
-use crate::io::keys::{Key};
+use crate::io::keys::Key;
 
 pub struct TermionInput {
     receiver: Receiver<InputEvent>,
@@ -50,7 +47,6 @@ impl TermionInput {
 
         TermionInput { receiver }
     }
-
 }
 
 impl Input for TermionInput {

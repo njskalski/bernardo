@@ -1,6 +1,6 @@
 use std::thread;
 
-use crossbeam_channel::{Receiver};
+use crossbeam_channel::Receiver;
 use crossterm::event::Event;
 use log::{debug, warn};
 

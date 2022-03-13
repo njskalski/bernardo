@@ -1,7 +1,6 @@
 use crate::io::output::Output;
 use crate::io::style::{TextStyle, TextStyle_WhiteOnBlack};
 use crate::primitives::rect::Rect;
-use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::SizeConstraint;
 
