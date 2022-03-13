@@ -218,8 +218,10 @@ impl Widget for GenericDialog {
 
         let our_msg = msg.as_msg::<GenericDialogMsg>();
         if our_msg.is_none() {
-            warn!("expecetd GenericDialogMsg, got {:?}", msg);
-            return None;
+            // this case makes sense here, we just pass the messages from buttons through.
+            // no warning.
+            debug!("generic_dialog passes through message {:?} to parent", msg);
+            return Some(msg);
         }
 
         return match our_msg.unwrap() {

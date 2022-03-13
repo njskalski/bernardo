@@ -461,6 +461,13 @@ impl Widget for SaveFileDialogWidget {
             SaveFileDialogMsg::Save => {
                 self.save_or_ask_for_override()
             }
+            SaveFileDialogMsg::CancelOverride => {
+                self.hover_dialog = None;
+                None
+            }
+            SaveFileDialogMsg::CancelOverride => {
+                self.save_positively()
+            }
             unknown_msg => {
                 warn!("SaveFileDialog.update : unknown message {:?}", unknown_msg);
                 None
