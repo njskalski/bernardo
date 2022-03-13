@@ -466,6 +466,7 @@ impl Widget for SaveFileDialogWidget {
                 None
             }
             SaveFileDialogMsg::CancelOverride => {
+                self.hover_dialog = None;
                 self.save_positively()
             }
             unknown_msg => {
