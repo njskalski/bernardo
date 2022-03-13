@@ -1,9 +1,6 @@
 // this widget is work in progress.
 // Items will most likely contain certain messages.
 
-use crossterm::style::ContentStyle;
-use unicode_segmentation::UnicodeSegmentation;
-
 use crate::AnyMsg;
 
 pub trait Item {

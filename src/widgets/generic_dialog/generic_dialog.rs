@@ -1,21 +1,16 @@
 use core::option::Option;
 use std::borrow::Borrow;
-use std::f32::consts::E;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::iter;
-use std::rc::Rc;
 
 use log::{debug, error, warn};
-use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Theme, Widget, ZERO};
+use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, Widget, ZERO};
 use crate::experiments::deref_str::DerefStr;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::keys::Key;
 use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::DisplayState;
-use crate::layout::dummy_layout::DummyLayout;
-use crate::layout::empty_layout::EmptyLayout;
 use crate::layout::frame_layout::FrameLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
@@ -23,8 +18,7 @@ use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::border::BorderStyle;
 use crate::primitives::helpers::fill_output;
 use crate::primitives::xy::XY;
-use crate::widget::any_msg::AsAny;
-use crate::widget::widget::{get_new_widget_id, WID, WidgetAction};
+use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::text_widget::TextWidget;
 
@@ -188,7 +182,7 @@ impl Widget for GenericDialog {
 
         // re-setting focus.
         match (focus_op, &mut self.display_state) {
-            (Some(focus), Some(ds)) => { ds.focus_group.set_focused(focus); },
+            (Some(focus), Some(ds)) => { ds.focus_group.set_focused(focus); }
             (None, Some(ds)) => {
                 self.buttons.first().map(|f| {
                     ds.focus_group.set_focused(f.id());
@@ -208,9 +202,9 @@ impl Widget for GenericDialog {
         return match input_event {
             InputEvent::FocusUpdate(focus_update) => {
                 Some(Box::new(GenericDialogMsg::FocusUpdate(focus_update)))
-            },
+            }
             _ => None,
-        }
+        };
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
@@ -243,7 +237,7 @@ impl Widget for GenericDialog {
                 warn!("GenericDialog.update : unknown message {:?}", unknown_msg);
                 None
             }
-        }
+        };
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
@@ -266,7 +260,7 @@ impl Widget for GenericDialog {
                                           focused && focused_child_id_op == Some(wir.wid),
                                           sub_output,
                             );
-                        },
+                        }
                         None => {
                             warn!("subwidget {} not found!", wir.wid);
                         }

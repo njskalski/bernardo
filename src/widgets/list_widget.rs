@@ -1,5 +1,3 @@
-use std::cmp::Ordering;
-use std::convert::Infallible;
 use std::fmt::Debug;
 use std::slice::SliceIndex;
 
@@ -101,7 +99,7 @@ pub enum ListWidgetMsg {
     End,
     PageUp,
     PageDown,
-    Noop
+    Noop,
 }
 
 impl AnyMsg for ListWidgetMsg {}
@@ -274,7 +272,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
                 }
             }
             _ => None
-        }.map(|m| Box::new(m) as Box<dyn AnyMsg>)
+        }.map(|m| Box::new(m) as Box<dyn AnyMsg>);
     }
 
 
@@ -298,7 +296,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
                                 } else {
                                     self.on_miss()
                                 }
-                            },
+                            }
                             Arrow::Down => {
                                 debug!("items {}, old_high {}", self.provider.len(), old_highlighted);
                                 if old_highlighted + 1 < self.provider.len() {
@@ -322,7 +320,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
             ListWidgetMsg::PageUp => { None }
             ListWidgetMsg::PageDown => { None }
             ListWidgetMsg::Noop => { None }
-        }
+        };
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {

@@ -1,16 +1,9 @@
-use std::fmt::Debug;
-use std::hash::Hash;
-
 use log::{debug, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget, ZERO};
-use crate::io::keys::Key;
 use crate::io::sub_output::SubOutput;
-use crate::layout::layout::WidgetIdRect;
-use crate::layout::leaf_layout::LeafLayout;
-use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::rect::Rect;
 use crate::primitives::theme::Theme;
@@ -176,7 +169,7 @@ impl Widget for FuzzySearchWidget {
                 }
             }
             _ => None,
-        }
+        };
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {

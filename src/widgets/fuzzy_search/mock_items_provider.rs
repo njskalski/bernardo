@@ -1,6 +1,4 @@
 pub mod mock {
-    use std::borrow::Borrow;
-
     use crate::AnyMsg;
     use crate::primitives::alphabet::mock::ALPHABET;
     use crate::widgets::editor_view::msg::EditorViewMsg;
@@ -15,8 +13,7 @@ pub mod mock {
     impl MockItemProvider {
         pub fn new(num_items: usize) -> Self {
             let mut items: Vec<String> = vec![];
-            let mut item_indices: Vec<usize> = vec![];
-
+            
             for i in 0..num_items {
                 let mut idx = i;
                 let mut item = String::default();

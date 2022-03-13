@@ -1,19 +1,17 @@
 use std::rc::Rc;
 
 use log::{error, warn};
-use termion::event::Event::Key;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, TreeSitterWrapper, Widget};
 use crate::io::filesystem_tree::filesystem_front::FsfRef;
-use crate::io::style::TextStyle;
 use crate::layout::dummy_layout::DummyLayout;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::arrow::Arrow;
-use crate::primitives::cursor_set::{CursorSet, CursorStatus};
+use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
 use crate::primitives::rect::Rect;
@@ -22,7 +20,7 @@ use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
 use crate::widget::widget::{get_new_widget_id, WID};
-use crate::widgets::common_edit_msgs::{apply_cme, cme_to_direction, CommonEditMsg, key_to_edit_msg};
+use crate::widgets::common_edit_msgs::{apply_cme, cme_to_direction, key_to_edit_msg};
 use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
 use crate::widgets::fuzzy_search::mock_items_provider::mock::MockItemProvider;
@@ -213,13 +211,13 @@ impl Widget for EditorView {
             //TODO refactor the settings
             InputEvent::KeyInput(key) if key.modifiers.CTRL && key.keycode == Keycode::Char('s') => {
                 Some(Box::new(EditorViewMsg::SaveAs))
-            },
+            }
             InputEvent::KeyInput(key) if key.modifiers.CTRL && key.keycode == Keycode::Char('h') => {
                 Some(Box::new(EditorViewMsg::Fuzzy))
-            },
+            }
             InputEvent::KeyInput(key) if key_to_edit_msg(key).is_some() => {
                 Some(Box::new(EditorViewMsg::EditMsg(key_to_edit_msg(key).unwrap())))
-            },
+            }
             _ => None,
         };
     }
@@ -299,11 +297,11 @@ impl Widget for EditorView {
 
     fn get_focused(&self) -> Option<&dyn Widget> {
         if self.save_file_dialog.is_some() {
-            return self.save_file_dialog.as_ref().map(|f| f as &dyn Widget)
+            return self.save_file_dialog.as_ref().map(|f| f as &dyn Widget);
         }
 
         if self.fuzzy_search.is_some() {
-            return self.fuzzy_search.as_ref().map(|f| f as &dyn Widget)
+            return self.fuzzy_search.as_ref().map(|f| f as &dyn Widget);
         }
 
         None
