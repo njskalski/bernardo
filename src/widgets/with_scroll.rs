@@ -115,6 +115,6 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn get_subwidget_mut(&mut self, wid: WID) -> Option<&mut dyn Widget> where Self: Sized {
-        self.get_subwidget_mut(wid)
+        self.widget.get_subwidget_mut(wid)
     }
 }

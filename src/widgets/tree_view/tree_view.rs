@@ -360,7 +360,7 @@ impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget
 
                 if highlighted_idx < higlighted.len() {
                     if higlighted[highlighted_idx] == grapheme_idx {
-                        local_style.with_background(theme.ui.focused_highlighted.background);
+                        local_style = local_style.with_background(theme.ui.focused_highlighted.background);
                     }
                 }
 

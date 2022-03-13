@@ -65,6 +65,10 @@ impl TextStyle {
         }
     }
 
+    pub fn set_foreground(&mut self, foreground: Color) {
+        self.foreground = foreground;
+    }
+
     pub fn with_background(self, background: Color) -> Self {
         Self {
             background,
@@ -72,11 +76,19 @@ impl TextStyle {
         }
     }
 
+    pub fn set_background(&mut self, background: Color) {
+        self.background = background;
+    }
+
     pub fn with_effect(self, effect: Effect) -> Self {
         Self {
             effect,
             ..self
         }
+    }
+
+    pub fn set_effect(&mut self, effect: Effect) {
+        self.effect = effect;
     }
 }
 
