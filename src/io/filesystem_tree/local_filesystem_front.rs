@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs::DirEntry;
@@ -92,7 +91,9 @@ impl LocalFilesystem {
     pub fn set_at_hand_limit(&self, new_at_hand_limit: usize) {
         self.internal_state.try_borrow_mut().map(|mut is| {
             is.at_hand_limit = new_at_hand_limit;
-        }).unwrap_or_else(|e| {})
+        }).unwrap_or_else(|e| {
+            error!("failed to acquire internal_state: {}", e);
+        })
     }
 
     pub fn with_at_hand_limit(self, new_at_hand_limit: usize) -> Self {

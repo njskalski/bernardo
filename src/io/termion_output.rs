@@ -87,14 +87,14 @@ impl<W: Write> TermionOutput<W> {
                 match cell {
                     Cell::Begin { style, grapheme } => {
                         let bgcolor = termion::color::Bg(termion::color::Rgb(
-                            style.background.R,
-                            style.background.G,
-                            style.background.B,
+                            style.background.r,
+                            style.background.g,
+                            style.background.b,
                         ));
                         let fgcolor = termion::color::Fg(termion::color::Rgb(
-                            style.foreground.R,
-                            style.foreground.G,
-                            style.foreground.B,
+                            style.foreground.r,
+                            style.foreground.g,
+                            style.foreground.b,
                         ));
 
                         match style.effect {

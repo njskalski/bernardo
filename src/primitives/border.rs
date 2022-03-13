@@ -3,31 +3,31 @@ use crate::io::style::TextStyle;
 use crate::primitives::xy::XY;
 
 pub struct BorderStyle {
-    pub UpperLeft: &'static str,
-    pub UpperRight: &'static str,
-    pub BottomLeft: &'static str,
-    pub BottomRight: &'static str,
-    pub HorizontalLine: &'static str,
-    pub VerticalLine: &'static str,
-    pub FullCross: &'static str,
-    pub CrossNoLeft: &'static str,
-    pub CrossNoTop: &'static str,
-    pub CrossNoRight: &'static str,
-    pub CrossNoBottom: &'static str,
+    pub upper_left: &'static str,
+    pub upper_right: &'static str,
+    pub bottom_left: &'static str,
+    pub bottom_right: &'static str,
+    pub horizontal_line: &'static str,
+    pub vertical_line: &'static str,
+    pub full_cross: &'static str,
+    pub cross_no_left: &'static str,
+    pub cross_no_top: &'static str,
+    pub cross_no_right: &'static str,
+    pub cross_no_bottom: &'static str,
 }
 
-pub const SingleBorderStyle: BorderStyle = BorderStyle {
-    UpperLeft: "┌",
-    UpperRight: "┐",
-    BottomLeft: "└",
-    BottomRight: "┘",
-    HorizontalLine: "─",
-    VerticalLine: "│",
-    FullCross: "┼",
-    CrossNoLeft: "├",
-    CrossNoTop: "┬",
-    CrossNoRight: "┤",
-    CrossNoBottom: "┴",
+pub const SINGLE_BORDER_STYLE: BorderStyle = BorderStyle {
+    upper_left: "┌",
+    upper_right: "┐",
+    bottom_left: "└",
+    bottom_right: "┘",
+    horizontal_line: "─",
+    vertical_line: "│",
+    full_cross: "┼",
+    cross_no_left: "├",
+    cross_no_top: "┬",
+    cross_no_right: "┤",
+    cross_no_bottom: "┴",
 };
 
 impl BorderStyle {
@@ -42,33 +42,33 @@ fn draw_full_rect(style: TextStyle, border_style: &BorderStyle, output: &mut dyn
     if size > XY::new(1, 1) {
         output.print_at(ZERO,
                         style,
-                        border_style.UpperLeft);
+                        border_style.upper_left);
         output.print_at(XY::new(0, size.y - 1),
                         style,
-                        border_style.BottomLeft);
+                        border_style.bottom_left);
         output.print_at(XY::new(size.x - 1, 0),
                         style,
-                        border_style.UpperRight);
+                        border_style.upper_right);
         output.print_at(XY::new(size.x - 1, size.y - 1),
                         style,
-                        border_style.BottomRight);
+                        border_style.bottom_right);
 
         for x in 1..size.x - 1 {
             output.print_at(XY::new(x, 0),
                             style,
-                            border_style.HorizontalLine);
+                            border_style.horizontal_line);
             output.print_at(XY::new(x, size.y - 1),
                             style,
-                            border_style.HorizontalLine);
+                            border_style.horizontal_line);
         }
 
         for y in 1..size.y - 1 {
             output.print_at(XY::new(0, y),
                             style,
-                            border_style.VerticalLine);
+                            border_style.vertical_line);
             output.print_at(XY::new(size.x - 1, y),
                             style,
-                            border_style.VerticalLine);
+                            border_style.vertical_line);
         }
     } else {
         for x in 0..size.x {
@@ -94,19 +94,19 @@ fn draw_full_rect(style: TextStyle, border_style: &BorderStyle, output: &mut dyn
 //             for x in rect.pos.x..rect.lower_right().x {
 //                 output.print_at(XY::new(x, rect.pos.y),
 //                                 text_style,
-//                                 border_style.VerticalLine);
+//                                 border_style.vertical_line);
 //                 output.print_at(XY::new(x, rect.lower_right().y - 1),
 //                                 text_style,
-//                                 border_style.VerticalLine);
+//                                 border_style.vertical_line);
 //             }
 //
 //             for y in 0..output.size().y {
 //                 output.print_at(XY::new(rect.pos.x, y),
 //                                 text_style,
-//                                 border_style.HorizontalLine);
+//                                 border_style.horizontal_line);
 //                 output.print_at(XY::new(rect.lower_right().x - 1, y),
 //                                 text_style,
-//                                 border_style.HorizontalLine);
+//                                 border_style.horizontal_line);
 //             }
 //
 //             for c in rect.corners() {

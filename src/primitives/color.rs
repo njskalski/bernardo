@@ -1,40 +1,39 @@
 use std::fmt::Formatter;
 
-use hex::FromHexError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde::de::{EnumAccess, Error, MapAccess, SeqAccess, Visitor};
+use serde::de::{Error, Visitor};
 
 #[derive(Clone, Copy, Eq, PartialOrd, PartialEq, Hash, Debug)]
 pub struct Color {
-    pub R: u8,
-    pub G: u8,
-    pub B: u8,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
 }
 
 impl Color {
     pub const fn new(r: u8, g: u8, b: u8) -> Self {
-        Color { R: r, G: g, B: b }
+        Color { r, g, b }
     }
 
     pub fn half(&self) -> Self {
-        Color { R: self.R / 2, G: self.R / 2, B: self.B / 2 }
+        Color { r: self.r / 2, g: self.r / 2, b: self.b / 2 }
     }
 
     pub fn interpolate(a: Color, b: Color) -> Color {
-        let r: u16 = (a.R as u16 + b.R as u16) / 2;
-        let g: u16 = (a.B as u16 + b.B as u16) / 2;
-        let b: u16 = (a.G as u16 + b.G as u16) / 2;
+        let r: u16 = (a.r as u16 + b.r as u16) / 2;
+        let g: u16 = (a.b as u16 + b.b as u16) / 2;
+        let b: u16 = (a.g as u16 + b.g as u16) / 2;
         Color {
-            R: r as u8,
-            G: g as u8,
-            B: b as u8,
+            r: r as u8,
+            g: g as u8,
+            b: b as u8,
         }
     }
 }
 
 impl Serialize for Color {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        serializer.serialize_str(&format!("#{:02X}{:02X}{:02X}", self.R, self.G, self.B))
+        serializer.serialize_str(&format!("#{:02X}{:02X}{:02X}", self.r, self.g, self.b))
     }
 }
 
@@ -60,11 +59,11 @@ impl<'de> Visitor<'de> for ColorVisitor {
         match hex::decode_to_slice(&v[1..], &mut decoded) {
             Ok(()) => {
                 Ok(Color {
-                    R: decoded[0],
-                    G: decoded[1],
-                    B: decoded[2],
+                    r: decoded[0],
+                    g: decoded[1],
+                    b: decoded[2],
                 })
-            },
+            }
             Err(e) => Err(E::custom(format!("failed hex decoding: {:?}", e))),
         }
     }
@@ -79,15 +78,15 @@ impl<'a> Deserialize<'a> for Color {
 impl From<(u8, u8, u8)> for Color {
     fn from(tuple: (u8, u8, u8)) -> Self {
         Color {
-            R: tuple.0,
-            G: tuple.1,
-            B: tuple.2,
+            r: tuple.0,
+            g: tuple.1,
+            b: tuple.2,
         }
     }
 }
 
-pub const BLACK: Color = Color { R: 0, G: 0, B: 0 };
-pub const WHITE: Color = Color { R: 255, G: 255, B: 255 };
+pub const BLACK: Color = Color { r: 0, g: 0, b: 0 };
+pub const WHITE: Color = Color { r: 255, g: 255, b: 255 };
 
 #[cfg(test)]
 mod tests {

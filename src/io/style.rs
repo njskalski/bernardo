@@ -81,31 +81,31 @@ impl TextStyle {
 }
 
 pub const TextStyle_WhiteOnBlack: TextStyle = TextStyle {
-    foreground: Color { R: 255, G: 255, B: 255 },
-    background: Color { R: 0, G: 0, B: 0 },
+    foreground: Color { r: 255, g: 255, b: 255 },
+    background: Color { r: 0, g: 0, b: 0 },
     effect: Effect::None,
 };
 
 pub const TextStyle_WhiteOnBlue: TextStyle = TextStyle {
-    foreground: Color { R: 255, G: 255, B: 255 },
-    background: Color { R: 100, G: 102, B: 237 },
+    foreground: Color { r: 255, g: 255, b: 255 },
+    background: Color { r: 100, g: 102, b: 237 },
     effect: Effect::None,
 };
 
 pub const TextStyle_WhiteOnYellow: TextStyle = TextStyle {
-    foreground: Color { R: 255, G: 255, B: 255 },
-    background: Color { R: 237, G: 207, B: 126 },
+    foreground: Color { r: 255, g: 255, b: 255 },
+    background: Color { r: 237, g: 207, b: 126 },
     effect: Effect::None,
 };
 
 pub const TextStyle_WhiteOnBrightYellow: TextStyle = TextStyle {
-    foreground: Color { R: 255, G: 255, B: 255 },
-    background: Color { R: 237, G: 226, B: 164 },
+    foreground: Color { r: 255, g: 255, b: 255 },
+    background: Color { r: 237, g: 226, b: 164 },
     effect: Effect::None,
 };
 
 pub const TextStyle_WhiteOnRedish: TextStyle = TextStyle {
-    foreground: Color { R: 255, G: 255, B: 255 },
-    background: Color { R: 201, G: 81, B: 73 },
+    foreground: Color { r: 255, g: 255, b: 255 },
+    background: Color { r: 201, g: 81, b: 73 },
     effect: Effect::None,
 };

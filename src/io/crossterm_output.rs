@@ -107,14 +107,14 @@ impl<W: Write> CrosstermOutput<W> {
                     Cell::Begin { style, grapheme } => {
                         if last_style != Some(*style) {
                             let bgcolor = Color::Rgb {
-                                r: style.background.R,
-                                g: style.background.G,
-                                b: style.background.B,
+                                r: style.background.r,
+                                g: style.background.g,
+                                b: style.background.b,
                             };
                             let fgcolor = Color::Rgb {
-                                r: style.foreground.R,
-                                g: style.foreground.G,
-                                b: style.foreground.B,
+                                r: style.foreground.r,
+                                g: style.foreground.g,
+                                b: style.foreground.b,
                             };
 
                             let mut attributes: style::Attributes = style::Attributes::default();

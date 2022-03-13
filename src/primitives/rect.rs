@@ -123,7 +123,7 @@ impl Rect {
 
 pub struct CornersIterator {
     of: Rect,
-    item: u8, // 0 is UpperLeft, 1 is UpperRight (clockwise). After 3 there is nothing.
+    item: u8, // 0 is upper_left, 1 is upper_right (clockwise). After 3 there is nothing.
 }
 
 impl CornersIterator {
@@ -190,6 +190,6 @@ impl Add<XY> for Rect {
 
 impl fmt::Display for Rect {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "R[{},{}]", self.pos, self.size)
+        write!(f, "r[{},{}]", self.pos, self.size)
     }
 }

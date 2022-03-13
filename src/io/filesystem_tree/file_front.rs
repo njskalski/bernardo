@@ -1,13 +1,11 @@
-use std::fmt;
-use std::borrow::Borrow;
 use std::cell::RefCell;
+use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use log::error;
 
-use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
 use crate::widgets::list_widget::{ListWidgetItem, ListWidgetProvider};
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
@@ -104,7 +102,7 @@ impl FileFront {
                 })
             }
             FileType::File => vec![],
-        }
+        };
     }
 }
 
@@ -149,7 +147,7 @@ impl TreeViewNode<PathBuf> for Rc<FileFront> {
                     None
                 })
             }
-        }
+        };
     }
 
     fn is_complete(&self) -> bool {

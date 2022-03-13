@@ -1,17 +1,19 @@
 /*
 Takes a collection of pairs widget_id - rect and builds a directed graph, where nodes correspond
-to widgets, and edges A-e->B correspond to "which widget gets focus from A on input e".
+to widgets, and edges A-e->b correspond to "which widget gets focus from A on input e".
 
 The graph is built using basic geometry.
  */
+use std::collections::HashMap;
+
 use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl, FocusUpdate};
 use crate::io::buffer::Buffer;
 use crate::layout::layout::WidgetIdRect;
 use crate::primitives::rect::Rect;
+use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::widget::widget::WID;
-use std::collections::HashMap;
-use crate::primitives::sized_xy::SizedXY;
+
 // use log::debug;
 
 fn fill(b: &mut Buffer<WID>, wid: WID, rect: &Rect) {
