@@ -87,9 +87,10 @@ struct LocalScope<'a> {
 struct HighlightIter<'a, F, T>
 where
     F: FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
-    T: TextProvider<'a> + 'a,
+    T: TextProvider<'a> + 'a ,
 {
     // source: &'a [u8],
+    tree : &'a Tree,
     text_provider : T,
     byte_offset: usize,
     highlighter: &'a mut Highlighter,
@@ -125,7 +126,7 @@ impl Highlighter {
     }
 
     /// Iterate over the highlighted regions for a given slice of source code.
-    pub fn highlight<'a, T : TextProvider<'a> + 'a>(
+    pub fn highlight<'a, T : TextProvider<'a> + 'a + Copy + ExactSizeIterator>(
         &'a mut self,
         tree : &'a Tree,
         config: &'a HighlightConfiguration,
@@ -151,6 +152,7 @@ impl Highlighter {
         )?;
         assert_ne!(layers.len(), 0);
         let mut result = HighlightIter {
+            tree,
             text_provider,
             byte_offset: 0,
             injection_callback,
@@ -623,7 +625,7 @@ T: TextProvider<'a> + 'a,
 impl<'a, F, T> Iterator for HighlightIter<'a, F, T>
 where
     F: FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
-T : TextProvider<'a>,
+    T : TextProvider<'a> + ExactSizeIterator,
 {
     type Item = Result<HighlightEvent, Error>;
 
@@ -648,12 +650,12 @@ T : TextProvider<'a>,
 
             // If none of the layers have any more highlight boundaries, terminate.
             if self.layers.is_empty() {
-                return if self.byte_offset < self.source.len() {
+                return if self.byte_offset < self.text_provider.len() {
                     let result = Some(Ok(HighlightEvent::Source {
                         start: self.byte_offset,
-                        end: self.source.len(),
+                        end: self.text_provider.len(),
                     }));
-                    self.byte_offset = self.source.len();
+                    self.byte_offset = self.text_provider.len();
                     result
                 } else {
                     None
@@ -683,7 +685,7 @@ T : TextProvider<'a>,
                 layer.highlight_end_stack.pop();
                 return self.emit_event(end_byte, Some(HighlightEvent::HighlightEnd));
             } else {
-                return self.emit_event(self.source.len(), None);
+                return self.emit_event(self.text_provider.len(), None);
             };
 
             let (mut match_, capture_index) = layer.captures.next().unwrap();
@@ -692,7 +694,7 @@ T : TextProvider<'a>,
             // If this capture represents an injection, then process the injection.
             if match_.pattern_index < layer.config.locals_pattern_index {
                 let (language_name, content_node, include_children) =
-                    injection_for_match(&layer.config, &layer.config.query, &match_, &self.source);
+                    injection_for_match(&layer.config, &layer.config.query, &match_, self.text_provider);
 
                 // Explicitly remove this match so that none of its other captures will remain
                 // in the stream of captures.
@@ -709,7 +711,8 @@ T : TextProvider<'a>,
                         );
                         if !ranges.is_empty() {
                             match HighlightIterLayer::new(
-                                self.source,
+                                self.tree,
+                                self.text_provider,
                                 self.highlighter,
                                 self.cancellation_flag,
                                 &mut self.injection_callback,
@@ -776,7 +779,7 @@ T : TextProvider<'a>,
                         }
                     }
 
-                    if let Ok(name) = str::from_utf8(&self.source[range.clone()]) {
+                    if let Ok(name) = str::from_utf8(&self.text_provider[range.clone()]) {
                         scope.local_defs.push(LocalDef {
                             name,
                             value_range,
