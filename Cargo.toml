@@ -28,7 +28,6 @@ lazy_static = "1.4.0"
 
 #tree sitter items
 tree-sitter = "0.20.2"
-tree-sitter-highlight = "0.20.1"
 tree-sitter-c = "0.20.1"
 tree-sitter-cpp = "0.20.0"
 tree-sitter-elm = "5.5.1"
@@ -36,6 +35,11 @@ tree-sitter-go = "0.19.1"
 tree-sitter-html = "0.19.0"
 tree-sitter-rust = "0.20.1"
 #TODO add more
+
+tree-sitter-highlight = { version = "0.20", path = "third-party/highlight"}
+
+
+
 
 [profile.dev]
 opt-level = 0
