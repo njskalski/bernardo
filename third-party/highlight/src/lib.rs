@@ -552,7 +552,7 @@ impl<'a, T : TextProvider<'a> + 'a> HighlightIterLayer<'a, T> {
     }
 }
 
-impl<'a, F, T : 'a> HighlightIter<'a, F, T>
+impl<'a, F, T> HighlightIter<'a, F, T>
 where
     F: FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
 T: TextProvider<'a> + 'a,
