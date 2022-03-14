@@ -165,7 +165,6 @@ pub extern "C" fn ts_highlight_buffer_line_count(this: *const TSHighlightBuffer)
     let this = unwrap_ptr(this);
     this.renderer.line_offsets.len() as u32
 }
-
 /*
 #[no_mangle]
 pub extern "C" fn ts_highlighter_highlight(
@@ -184,7 +183,7 @@ pub extern "C" fn ts_highlighter_highlight(
     let cancellation_flag = unsafe { cancellation_flag.as_ref() };
     this.highlight(source_code, scope_name, output, cancellation_flag)
 }
-*/
+ */
 
 /*
 impl TSHighlighter {

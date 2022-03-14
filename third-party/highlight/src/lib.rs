@@ -11,6 +11,21 @@ const CANCELLATION_CHECK_INTERVAL: usize = 100;
 const BUFFER_HTML_RESERVE_CAPACITY: usize = 10 * 1024;
 const BUFFER_LINES_RESERVE_CAPACITY: usize = 1000;
 
+struct RopeWrapper<'a>(&'a ropey::Rope);
+
+impl<'a> TextProvider<'a> for RopeWrapper<'a> {
+    type I = std::iter::Once<&'a [u8]>;
+    fn text(&mut self, node: Node<'_>) -> Self::I {
+        let char_begin = self.0.byte_to_char(node.start_byte());
+        let char_end = self.0.byte_to_char(node.end_byte());
+
+        let chars : Vec<u8> = self.0.slice(char_begin..char_end).bytes().collect();
+
+        std::iter::once(&chars)
+    }
+}
+
+
 /// Indicates which highlight should be applied to a region of source code.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Highlight(pub usize);
@@ -84,28 +99,25 @@ struct LocalScope<'a> {
     local_defs: Vec<LocalDef<'a>>,
 }
 
-struct HighlightIter<'a, F, T>
+struct HighlightIter<'a, F>
 where
     F: FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
-    T: TextProvider<'a> + 'a ,
 {
-    // source: &'a [u8],
-    tree : &'a Tree,
-    text_provider : T,
+    source: &'a ropey::Rope,
     byte_offset: usize,
     highlighter: &'a mut Highlighter,
     injection_callback: F,
     cancellation_flag: Option<&'a AtomicUsize>,
-    layers: Vec<HighlightIterLayer<'a, T>>,
+    layers: Vec<HighlightIterLayer<'a>>,
     iter_count: usize,
     next_event: Option<HighlightEvent>,
     last_highlight_range: Option<(usize, usize, usize)>,
 }
 
-struct HighlightIterLayer<'a, T : TextProvider<'a>> {
-    // _tree: Tree,
+struct HighlightIterLayer<'a> {
+    _tree: &'a Tree,
     cursor: QueryCursor,
-    captures: iter::Peekable<QueryCaptures<'a, 'a, T>>,
+    captures: iter::Peekable<QueryCaptures<'a, 'a, &'a [u8]>>,
     config: &'a HighlightConfiguration,
     highlight_end_stack: Vec<usize>,
     scope_stack: Vec<LocalScope<'a>>,
@@ -126,18 +138,17 @@ impl Highlighter {
     }
 
     /// Iterate over the highlighted regions for a given slice of source code.
-    pub fn highlight<'a, T : TextProvider<'a> + 'a + Copy + ExactSizeIterator>(
+    pub fn highlight<'a>(
         &'a mut self,
-        tree : &'a Tree,
         config: &'a HighlightConfiguration,
-        // source: &'a [u8],
-        text_provider : T,
+        tree : &'a Tree,
+        source: &'a ropey::Rope,
         cancellation_flag: Option<&'a AtomicUsize>,
         mut injection_callback: impl FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
     ) -> Result<impl Iterator<Item = Result<HighlightEvent, Error>> + 'a, Error> {
         let layers = HighlightIterLayer::new(
             tree,
-            text_provider,
+            source,
             self,
             cancellation_flag,
             &mut injection_callback,
@@ -152,8 +163,7 @@ impl Highlighter {
         )?;
         assert_ne!(layers.len(), 0);
         let mut result = HighlightIter {
-            tree,
-            text_provider,
+            source,
             byte_offset: 0,
             injection_callback,
             cancellation_flag,
@@ -327,16 +337,15 @@ impl HighlightConfiguration {
     }
 }
 
-impl<'a, T : TextProvider<'a> + 'a> HighlightIterLayer<'a, T> {
+impl<'a> HighlightIterLayer<'a> {
     /// Create a new 'layer' of highlighting for this document.
     ///
     /// In the even that the new layer contains "combined injections" (injections where multiple
     /// disjoint ranges are parsed as one syntax tree), these will be eagerly processed and
     /// added to the returned vector.
     fn new<F: FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a>(
-        // source: &'a [u8],
-        tree : &'a Tree,
-        source: T,
+        tree: &'a Tree,
+        source: &'a ropey::Rope,
         highlighter: &mut Highlighter,
         cancellation_flag: Option<&'a AtomicUsize>,
         injection_callback: &mut F,
@@ -366,7 +375,7 @@ impl<'a, T : TextProvider<'a> + 'a> HighlightIterLayer<'a, T> {
                     let mut injections_by_pattern_index =
                         vec![(None, Vec::new(), false); combined_injections_query.pattern_count()];
                     let matches =
-                        cursor.matches(combined_injections_query, tree.root_node(), source);
+                        cursor.matches(combined_injections_query, tree.root_node(), RopeWrapper(source));
                     for mat in matches {
                         let entry = &mut injections_by_pattern_index[mat.pattern_index];
                         let (language_name, content_node, include_children) =
@@ -403,7 +412,7 @@ impl<'a, T : TextProvider<'a> + 'a> HighlightIterLayer<'a, T> {
                 let cursor_ref =
                     unsafe { mem::transmute::<_, &'static mut QueryCursor>(&mut cursor) };
                 let captures = cursor_ref
-                    .captures(&config.query, tree_ref.root_node(), source)
+                    .captures(&config.query, tree_ref.root_node(), RopeWrapper(source))
                     .peekable();
 
                 result.push(HighlightIterLayer {
@@ -415,7 +424,7 @@ impl<'a, T : TextProvider<'a> + 'a> HighlightIterLayer<'a, T> {
                     }],
                     cursor,
                     depth,
-                    // _tree: tree,
+                    _tree: tree,
                     captures,
                     config,
                     ranges,
@@ -554,10 +563,9 @@ impl<'a, T : TextProvider<'a> + 'a> HighlightIterLayer<'a, T> {
     }
 }
 
-impl<'a, F, T> HighlightIter<'a, F, T>
+impl<'a, F> HighlightIter<'a, F>
 where
     F: FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
-T: TextProvider<'a> + 'a,
 {
     fn emit_event(
         &mut self,
@@ -603,7 +611,7 @@ T: TextProvider<'a> + 'a,
         }
     }
 
-    fn insert_layer(&mut self, mut layer: HighlightIterLayer<'a, T>) {
+    fn insert_layer(&mut self, mut layer: HighlightIterLayer<'a>) {
         if let Some(sort_key) = layer.sort_key() {
             let mut i = 1;
             while i < self.layers.len() {
@@ -622,10 +630,9 @@ T: TextProvider<'a> + 'a,
     }
 }
 
-impl<'a, F, T> Iterator for HighlightIter<'a, F, T>
+impl<'a, F> Iterator for HighlightIter<'a, F>
 where
     F: FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
-    T : TextProvider<'a> + ExactSizeIterator,
 {
     type Item = Result<HighlightEvent, Error>;
 
@@ -650,12 +657,12 @@ where
 
             // If none of the layers have any more highlight boundaries, terminate.
             if self.layers.is_empty() {
-                return if self.byte_offset < self.text_provider.len() {
+                return if self.byte_offset < self.source.len() {
                     let result = Some(Ok(HighlightEvent::Source {
                         start: self.byte_offset,
-                        end: self.text_provider.len(),
+                        end: self.source.len(),
                     }));
-                    self.byte_offset = self.text_provider.len();
+                    self.byte_offset = self.source.len();
                     result
                 } else {
                     None
@@ -685,7 +692,7 @@ where
                 layer.highlight_end_stack.pop();
                 return self.emit_event(end_byte, Some(HighlightEvent::HighlightEnd));
             } else {
-                return self.emit_event(self.text_provider.len(), None);
+                return self.emit_event(self.source.len(), None);
             };
 
             let (mut match_, capture_index) = layer.captures.next().unwrap();
@@ -694,7 +701,7 @@ where
             // If this capture represents an injection, then process the injection.
             if match_.pattern_index < layer.config.locals_pattern_index {
                 let (language_name, content_node, include_children) =
-                    injection_for_match(&layer.config, &layer.config.query, &match_, self.text_provider);
+                    injection_for_match(&layer.config, &layer.config.query, &match_, &self.source);
 
                 // Explicitly remove this match so that none of its other captures will remain
                 // in the stream of captures.
@@ -711,8 +718,7 @@ where
                         );
                         if !ranges.is_empty() {
                             match HighlightIterLayer::new(
-                                self.tree,
-                                self.text_provider,
+                                self.source,
                                 self.highlighter,
                                 self.cancellation_flag,
                                 &mut self.injection_callback,
@@ -779,7 +785,7 @@ where
                         }
                     }
 
-                    if let Ok(name) = str::from_utf8(&self.text_provider[range.clone()]) {
+                    if let Ok(name) = str::from_utf8(&self.source[range.clone()]) {
                         scope.local_defs.push(LocalDef {
                             name,
                             value_range,
@@ -1032,12 +1038,11 @@ impl HtmlRenderer {
     }
 }
 
-fn injection_for_match<'a, T : TextProvider<'a>>(
+fn injection_for_match<'a>(
     config: &HighlightConfiguration,
     query: &'a Query,
     query_match: &QueryMatch<'a, 'a>,
-    // source: &'a [u8],
-    text_source : T,
+    source: &'a ropey::Rope,
 ) -> (Option<&'a str>, Option<Node<'a>>, bool) {
     let content_capture_index = config.injection_content_capture_index;
     let language_capture_index = config.injection_language_capture_index;
@@ -1047,8 +1052,7 @@ fn injection_for_match<'a, T : TextProvider<'a>>(
     for capture in query_match.captures {
         let index = Some(capture.index);
         if index == language_capture_index {
-            // language_name = capture.node.utf8_text(source).ok();
-            language_name = str::from_utf8(&text_source[capture.node.start_byte()..capture.node.end_byte()]);
+            language_name = capture.node.utf8_text(source).ok();
         } else if index == content_capture_index {
             content_node = Some(capture.node);
         }
