@@ -4,6 +4,7 @@ pub use c_lib as c;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{iter, mem, ops, str, usize};
+use std::slice::Chunks;
 use thiserror::Error;
 use tree_sitter::{Language, LossyUtf8, Node, Parser, Point, Query, QueryCaptures, QueryCursor, QueryError, QueryMatch, Range, TextProvider, Tree};
 
@@ -12,16 +13,22 @@ const BUFFER_HTML_RESERVE_CAPACITY: usize = 10 * 1024;
 const BUFFER_LINES_RESERVE_CAPACITY: usize = 1000;
 
 struct RopeWrapper<'a>(&'a ropey::Rope);
+struct WrappedChunks<'a>(&'a ropey::iter::Chunks<'a>);
+
+impl <'a> Iterator  for WrappedChunks<'a> {
+    type Item = &'a[u8];
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|f| f.as_bytes())
+    }
+}
 
 impl<'a> TextProvider<'a> for RopeWrapper<'a> {
-    type I = std::iter::Once<&'a [u8]>;
+    type I = WrappedChunks<'a>;
     fn text(&mut self, node: Node<'_>) -> Self::I {
         let char_begin = self.0.byte_to_char(node.start_byte());
         let char_end = self.0.byte_to_char(node.end_byte());
 
-        let chars : Vec<u8> = self.0.slice(char_begin..char_end).bytes().collect();
-
-        std::iter::once(&chars)
+        WrappedChunks(&self.0.slice(char_begin..char_end).chunks())
     }
 }
 
