@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{iter, mem, ops, str, usize};
 use std::slice::Chunks;
 use thiserror::Error;
-use tree_sitter::{Language, LossyUtf8, Node, Parser, Point, Query, QueryCaptures, QueryCursor, QueryError, QueryMatch, Range, TextProvider, Tree};
+use tree_sitter::{Language, LossyUtf8, Node, Parser, Point, Query, QueryCaptures, QueryCursor, QueryError, QueryMatch, Range,  TextProvider, Tree};
 
 const CANCELLATION_CHECK_INTERVAL: usize = 100;
 const BUFFER_HTML_RESERVE_CAPACITY: usize = 10 * 1024;
@@ -30,6 +30,17 @@ impl<'a> TextProvider<'a> for &'a RopeWrapper<'a> {
 
         WrappedChunks(&self.0.slice(char_begin..char_end).chunks())
     }
+}
+
+// str::from_utf8(&self.source[range.clone()])
+fn str_utf8_from_rope(rope : &ropey::Rope, range : std::ops::Range<usize>) -> Result<String, ()> {
+    if range.end >= rope.len_bytes() {
+        return Err(());
+    }
+
+    let char_begin = rope.char_to_byte(range.start);
+    let char_end = rope.char_to_byte(range.end);
+    Ok(rope.slice(char_begin..char_end).to_string())
 }
 
 
@@ -110,6 +121,7 @@ struct HighlightIter<'a, F>
 where
     F: FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
 {
+    tree: &'a Tree,
     source: &'a ropey::Rope,
     byte_offset: usize,
     highlighter: &'a mut Highlighter,
@@ -122,7 +134,7 @@ where
 }
 
 struct HighlightIterLayer<'a> {
-    _tree: &'a Tree,
+    tree: &'a Tree,
     cursor: QueryCursor,
     captures: iter::Peekable<QueryCaptures<'a, 'a, &'a RopeWrapper<'a>>>,
     config: &'a HighlightConfiguration,
@@ -170,6 +182,7 @@ impl Highlighter {
         )?;
         assert_ne!(layers.len(), 0);
         let mut result = HighlightIter {
+            tree,
             source,
             byte_offset: 0,
             injection_callback,
@@ -431,7 +444,7 @@ impl<'a> HighlightIterLayer<'a> {
                     }],
                     cursor,
                     depth,
-                    _tree: tree,
+                    tree,
                     captures,
                     config,
                     ranges,
@@ -793,9 +806,12 @@ where
                         }
                     }
 
-                    if let Ok(name) = str::from_utf8(&self.source[range.clone()]) {
+
+
+                    // if let Ok(name) = str::from_utf8(&self.source[range.clone()]) {
+                    if let Ok(name) = str_utf8_from_rope(&self.source, range.clone()) {
                         scope.local_defs.push(LocalDef {
-                            name,
+                            name : &name,
                             value_range,
                             highlight: None,
                         });
@@ -808,7 +824,8 @@ where
                 else if Some(capture.index) == layer.config.local_ref_capture_index {
                     if definition_highlight.is_none() {
                         definition_highlight = None;
-                        if let Ok(name) = str::from_utf8(&self.source[range.clone()]) {
+                        // if let Ok(name) = str::from_utf8(&self.source[range.clone()]) {
+                        if let Ok(name) = str_utf8_from_rope(&self.source, range.clone()) {
                             for scope in layer.scope_stack.iter().rev() {
                                 if let Some(highlight) =
                                     scope.local_defs.iter().rev().find_map(|def| {
