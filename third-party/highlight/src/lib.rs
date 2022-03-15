@@ -22,7 +22,7 @@ impl <'a> Iterator  for WrappedChunks<'a> {
     }
 }
 
-impl<'a> TextProvider<'a> for RopeWrapper<'a> {
+impl<'a> TextProvider<'a> for &'a RopeWrapper<'a> {
     type I = WrappedChunks<'a>;
     fn text(&mut self, node: Node<'_>) -> Self::I {
         let char_begin = self.0.byte_to_char(node.start_byte());
@@ -124,7 +124,7 @@ where
 struct HighlightIterLayer<'a> {
     _tree: &'a Tree,
     cursor: QueryCursor,
-    captures: iter::Peekable<QueryCaptures<'a, 'a, &'a [u8]>>,
+    captures: iter::Peekable<QueryCaptures<'a, 'a, &'a RopeWrapper<'a>>>,
     config: &'a HighlightConfiguration,
     highlight_end_stack: Vec<usize>,
     scope_stack: Vec<LocalScope<'a>>,
@@ -382,7 +382,7 @@ impl<'a> HighlightIterLayer<'a> {
                     let mut injections_by_pattern_index =
                         vec![(None, Vec::new(), false); combined_injections_query.pattern_count()];
                     let matches =
-                        cursor.matches(combined_injections_query, tree.root_node(), RopeWrapper(source));
+                        cursor.matches(combined_injections_query, tree.root_node(), &RopeWrapper(source));
                     for mat in matches {
                         let entry = &mut injections_by_pattern_index[mat.pattern_index];
                         let (language_name, content_node, include_children) =
@@ -419,7 +419,7 @@ impl<'a> HighlightIterLayer<'a> {
                 let cursor_ref =
                     unsafe { mem::transmute::<_, &'static mut QueryCursor>(&mut cursor) };
                 let captures = cursor_ref
-                    .captures(&config.query, tree_ref.root_node(), RopeWrapper(source))
+                    .captures(&config.query, tree_ref.root_node(), &RopeWrapper(source))
                     .peekable();
 
                 result.push(HighlightIterLayer {
@@ -664,12 +664,12 @@ where
 
             // If none of the layers have any more highlight boundaries, terminate.
             if self.layers.is_empty() {
-                return if self.byte_offset < self.source.len() {
+                return if self.byte_offset < self.source.len_bytes() {
                     let result = Some(Ok(HighlightEvent::Source {
                         start: self.byte_offset,
-                        end: self.source.len(),
+                        end: self.source.len_bytes(),
                     }));
-                    self.byte_offset = self.source.len();
+                    self.byte_offset = self.source.len_bytes();
                     result
                 } else {
                     None
@@ -699,7 +699,7 @@ where
                 layer.highlight_end_stack.pop();
                 return self.emit_event(end_byte, Some(HighlightEvent::HighlightEnd));
             } else {
-                return self.emit_event(self.source.len(), None);
+                return self.emit_event(self.source.len_bytes(), None);
             };
 
             let (mut match_, capture_index) = layer.captures.next().unwrap();
@@ -725,6 +725,7 @@ where
                         );
                         if !ranges.is_empty() {
                             match HighlightIterLayer::new(
+                                self.tree,
                                 self.source,
                                 self.highlighter,
                                 self.cancellation_flag,
