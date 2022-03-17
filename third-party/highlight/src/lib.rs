@@ -33,14 +33,14 @@ impl<'a> TextProvider<'a> for RopeWrapper<'a> {
 }
 
 // str::from_utf8(&self.source[range.clone()])
-fn str_utf8_from_rope(rope : &ropey::Rope, range : std::ops::Range<usize>) -> Result<String, ()> {
+fn str_utf8_from_rope<'a>(rope : &'a ropey::Rope, range : std::ops::Range<usize>) -> Result<ropey::RopeSlice<'a>, ()> {
     if range.end >= rope.len_bytes() {
         return Err(());
     }
 
     let char_begin = rope.char_to_byte(range.start);
     let char_end = rope.char_to_byte(range.end);
-    Ok(rope.slice(char_begin..char_end).to_string())
+    Ok(rope.slice(char_begin..char_end).clone())
 }
 
 
@@ -105,7 +105,7 @@ pub struct HtmlRenderer {
 
 #[derive(Debug)]
 struct LocalDef<'a> {
-    name: &'a str,
+    name: ropey::RopeSlice<'a>,
     value_range: ops::Range<usize>,
     highlight: Option<Highlight>,
 }
@@ -811,7 +811,7 @@ where
                     // if let Ok(name) = str::from_utf8(&self.source[range.clone()]) {
                     if let Ok(name) = str_utf8_from_rope(&self.source, range.clone()) {
                         scope.local_defs.push(LocalDef {
-                            name : &name,
+                            name,
                             value_range,
                             highlight: None,
                         });
@@ -1078,7 +1078,7 @@ fn injection_for_match<'a>(
         let index = Some(capture.index);
         if index == language_capture_index {
             // language_name = capture.node.utf8_text(source).ok();
-            language_name = str_utf8_from_rope(source, capture.node.byte_range()).ok();
+            language_name = str_utf8_from_rope(source, capture.node.byte_range()).ok().map(|f| f.to_string());
         } else if index == content_capture_index {
             content_node = Some(capture.node);
         }
