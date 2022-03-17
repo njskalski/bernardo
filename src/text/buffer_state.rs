@@ -7,11 +7,17 @@ use std::string::String;
 use log::{debug, error, warn};
 use ropey::Rope;
 use tree_sitter::{InputEdit, Parser, Point, Tree};
+use tree_sitter_highlight::Highlighter;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::experiments::tree_sitter_wrapper::{byte_offset_to_point, LangId};
 use crate::text::buffer::Buffer;
 use crate::TreeSitterWrapper;
+
+struct ParserGroup {
+    pub parser: Parser,
+    pub highlighter: Highlighter,
+}
 
 #[derive(Clone)]
 struct ParsingTuple {
