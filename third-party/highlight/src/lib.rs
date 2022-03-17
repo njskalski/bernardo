@@ -13,7 +13,7 @@ const BUFFER_HTML_RESERVE_CAPACITY: usize = 10 * 1024;
 const BUFFER_LINES_RESERVE_CAPACITY: usize = 1000;
 
 struct RopeWrapper<'a>(&'a ropey::Rope);
-struct WrappedChunks<'a>(&'a ropey::iter::Chunks<'a>);
+struct WrappedChunks<'a>(ropey::iter::Chunks<'a>);
 
 impl <'a> Iterator  for WrappedChunks<'a> {
     type Item = &'a[u8];
@@ -22,13 +22,13 @@ impl <'a> Iterator  for WrappedChunks<'a> {
     }
 }
 
-impl<'a> TextProvider<'a> for &'a RopeWrapper<'a> {
+impl<'a> TextProvider<'a> for RopeWrapper<'a> {
     type I = WrappedChunks<'a>;
     fn text(&mut self, node: Node<'_>) -> Self::I {
         let char_begin = self.0.byte_to_char(node.start_byte());
         let char_end = self.0.byte_to_char(node.end_byte());
 
-        WrappedChunks(&self.0.slice(char_begin..char_end).chunks())
+        WrappedChunks(self.0.slice(char_begin..char_end).chunks())
     }
 }
 
@@ -136,7 +136,7 @@ where
 struct HighlightIterLayer<'a> {
     tree: &'a Tree,
     cursor: QueryCursor,
-    captures: iter::Peekable<QueryCaptures<'a, 'a, &'a RopeWrapper<'a>>>,
+    captures: iter::Peekable<QueryCaptures<'a, 'a, RopeWrapper<'a>>>,
     config: &'a HighlightConfiguration,
     highlight_end_stack: Vec<usize>,
     scope_stack: Vec<LocalScope<'a>>,
@@ -395,7 +395,7 @@ impl<'a> HighlightIterLayer<'a> {
                     let mut injections_by_pattern_index =
                         vec![(None, Vec::new(), false); combined_injections_query.pattern_count()];
                     let matches =
-                        cursor.matches(combined_injections_query, tree.root_node(), &RopeWrapper(source));
+                        cursor.matches(combined_injections_query, tree.root_node(), RopeWrapper(&source));
                     for mat in matches {
                         let entry = &mut injections_by_pattern_index[mat.pattern_index];
                         let (language_name, content_node, include_children) =
@@ -411,7 +411,7 @@ impl<'a> HighlightIterLayer<'a> {
                     for (lang_name, content_nodes, includes_children) in injections_by_pattern_index
                     {
                         if let (Some(lang_name), false) = (lang_name, content_nodes.is_empty()) {
-                            if let Some(next_config) = (injection_callback)(lang_name) {
+                            if let Some(next_config) = (injection_callback)(&lang_name) {
                                 let ranges = Self::intersect_ranges(
                                     &ranges,
                                     &content_nodes,
@@ -432,7 +432,7 @@ impl<'a> HighlightIterLayer<'a> {
                 let cursor_ref =
                     unsafe { mem::transmute::<_, &'static mut QueryCursor>(&mut cursor) };
                 let captures = cursor_ref
-                    .captures(&config.query, tree_ref.root_node(), &RopeWrapper(source))
+                    .captures(&config.query, tree_ref.root_node(), RopeWrapper(source))
                     .peekable();
 
                 result.push(HighlightIterLayer {
@@ -730,7 +730,7 @@ where
                 // If a language is found with the given name, then add a new language layer
                 // to the highlighted document.
                 if let (Some(language_name), Some(content_node)) = (language_name, content_node) {
-                    if let Some(config) = (self.injection_callback)(language_name) {
+                    if let Some(config) = (self.injection_callback)(&language_name) {
                         let ranges = HighlightIterLayer::intersect_ranges(
                             &self.layers[0].ranges,
                             &[content_node],
@@ -1068,16 +1068,17 @@ fn injection_for_match<'a>(
     query: &'a Query,
     query_match: &QueryMatch<'a, 'a>,
     source: &'a ropey::Rope,
-) -> (Option<&'a str>, Option<Node<'a>>, bool) {
+) -> (Option<String>, Option<Node<'a>>, bool) {
     let content_capture_index = config.injection_content_capture_index;
     let language_capture_index = config.injection_language_capture_index;
 
-    let mut language_name = None;
+    let mut language_name : Option<String> = None;
     let mut content_node = None;
     for capture in query_match.captures {
         let index = Some(capture.index);
         if index == language_capture_index {
-            language_name = capture.node.utf8_text(source).ok();
+            // language_name = capture.node.utf8_text(source).ok();
+            language_name = str_utf8_from_rope(source, capture.node.byte_range()).ok();
         } else if index == content_capture_index {
             content_node = Some(capture.node);
         }
@@ -1091,7 +1092,7 @@ fn injection_for_match<'a>(
             // that sets the injection.language key.
             "injection.language" => {
                 if language_name.is_none() {
-                    language_name = prop.value.as_ref().map(|s| s.as_ref())
+                    language_name = prop.value.as_ref().map(|s| s.to_string())
                 }
             }
 
