@@ -100,10 +100,15 @@ impl BufferState {
     }
 
     pub fn with_text_from_rope(self, rope: Rope, lang_id: Option<LangId>) -> Self {
+        let copy_rope = rope.clone();
         let mut text = Text::default().with_rope(rope);
 
         if let Some(lang_id) = lang_id {
-            if text.parse(self.tree_sitter.clone(), lang_id) {} else {
+            if text.parse(self.tree_sitter.clone(), lang_id) {
+                text.parsing.as_mut().map(|parsing| {
+                    parsing.try_reparse(&copy_rope);
+                });
+            } else {
                 error!("creation of parse_tuple failed");
             }
         }
