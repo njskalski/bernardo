@@ -17,7 +17,6 @@ use filesystem::OsFileSystem;
 use log::{debug, error, warn};
 use termion::raw::IntoRawMode;
 
-use crate::experiments::tree_sitter_wrapper::{LanguageSet, TreeSitterWrapper};
 use crate::io::crossterm_input::CrosstermInput;
 use crate::io::crossterm_output::CrosstermOutput;
 use crate::io::filesystem_tree::filesystem_front::FsfRef;
@@ -29,6 +28,8 @@ use crate::io::output::Output;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::ZERO;
+use crate::tsw::language_set::LanguageSet;
+use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
@@ -41,6 +42,7 @@ mod view;
 mod widget;
 mod text;
 mod widgets;
+mod tsw;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

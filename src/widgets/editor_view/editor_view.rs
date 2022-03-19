@@ -1,10 +1,11 @@
+use std::ops::Range;
 use std::rc::Rc;
 
 use log::{error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, TreeSitterWrapper, Widget};
+use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget};
 use crate::io::filesystem_tree::filesystem_front::FsfRef;
 use crate::layout::dummy_layout::DummyLayout;
 use crate::layout::hover_layout::HoverLayout;
@@ -19,6 +20,7 @@ use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
+use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::common_edit_msgs::{apply_cme, cme_to_direction, key_to_edit_msg};
 use crate::widgets::editor_view::msg::EditorViewMsg;
@@ -130,6 +132,10 @@ impl EditorView {
         let default = theme.default_text(focused);
         helpers::fill_output(default.background, output);
 
+        let char_range_op = self.todo_text.char_range(output);
+        let highlights = self.todo_text.highlight(char_range_op);
+        let mut highlight_iter = highlights.iter().peekable();
+
         for (line_idx, line) in self.todo_text.lines().enumerate()
             // skipping lines that cannot be visible, because they are before hint()
             .skip(output.size_constraint().hint().upper_left().y as usize)
@@ -147,6 +153,15 @@ impl EditorView {
             let mut x_offset: usize = 0;
             for (c_idx, c) in line.graphemes(true).into_iter().enumerate() {
                 let char_idx = line_begin + c_idx;
+
+                while let Some(item) = highlight_iter.peek() {
+                    if char_idx >= item.char_end {
+                        highlight_iter.next();
+                    } else {
+                        break;
+                    }
+                }
+
                 let cursor_status = self.cursors.get_cursor_status_for_char(char_idx);
                 let pos = XY::new(x_offset as u16, line_idx as u16);
 
@@ -154,11 +169,13 @@ impl EditorView {
                 let text = format!("{}", c);
                 let tr = if c == "\n" { NEWLINE } else { text.as_str() };
 
-                let x = self.todo_text.char_to_kind(char_idx);
-                let fg_color = x.map(|s| theme.name_to_theme(s)).flatten();
-
                 let mut style = default;
-                fg_color.map(|c| style = style.with_foreground(c));
+
+                if let Some(item) = highlight_iter.peek() {
+                    if let Some(color) = theme.name_to_theme(&item.identifier) {
+                        style = style.with_foreground(color);
+                    }
+                }
 
                 theme.cursor_background(cursor_status).map(|bg| {
                     style = style.with_background(bg);

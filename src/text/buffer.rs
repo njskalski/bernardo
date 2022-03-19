@@ -1,6 +1,6 @@
 use std::iter;
+use crate::tsw::lang_id::LangId;
 
-use crate::experiments::tree_sitter_wrapper::LangId;
 
 pub trait Buffer {
     fn len_lines(&self) -> usize;

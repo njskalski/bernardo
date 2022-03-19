@@ -1,39 +1,20 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use std::ops::Range;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
 use ropey::Rope;
-use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor, Tree};
+use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor, QueryMatches, Tree};
 use tree_sitter_highlight::{HighlightConfiguration, Highlighter, HighlightEvent, RopeWrapper};
 
 use crate::text::buffer::Buffer;
+use crate::tsw::lang_id::LangId;
+use crate::tsw::language_set::LanguageSet;
+use crate::tsw::parsing_tuple::ParsingTuple;
 
 static EMPTY_SLICE: [u8; 0] = [0; 0];
-
-lazy_static! {
-    static ref HIGHLIGHT_NAMES: Vec<&'static str> = vec![
-        "attribute",
-        "constant",
-        "function.builtin",
-        "function",
-        "keyword",
-        "operator",
-        "property",
-        "punctuation",
-        "punctuation.bracket",
-        "punctuation.delimiter",
-        "string",
-        "string.special",
-        "tag",
-        "type",
-        "type.builtin",
-        "variable",
-        "variable.builtin",
-        "variable.parameter",
-    ];
-}
 
 pub fn byte_offset_to_point(rope: &Rope, byte_offset: usize) -> Option<Point> {
     let char_idx = rope.try_byte_to_char(byte_offset).ok()?;
@@ -81,15 +62,6 @@ pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point
     });
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum LangId {
-    C,
-    CPP,
-    HTML,
-    ELM,
-    GO,
-    RUST,
-}
 
 extern "C" {
     fn tree_sitter_c() -> Language;
@@ -103,46 +75,6 @@ extern "C" {
 #[derive(Debug)]
 pub struct TreeSitterWrapper {
     languages: HashMap<LangId, Language>,
-}
-
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub struct LanguageSet {
-    pub c: bool,
-    pub cpp: bool,
-    pub elm: bool,
-    pub go: bool,
-    pub html: bool,
-    pub rust: bool,
-}
-
-#[derive(Clone)]
-pub struct ParsingTuple {
-    // none before first parse
-    pub tree: Option<Tree>,
-
-    pub lang_id: LangId,
-    pub parser: Rc<RefCell<Parser>>,
-    pub language: Language,
-    pub lang_highlight_query: &'static str,
-}
-
-impl Debug for ParsingTuple {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "lang_id {:?}", self.lang_id)
-    }
-}
-
-impl LanguageSet {
-    pub fn full() -> Self {
-        LanguageSet {
-            c: true,
-            cpp: true,
-            elm: true,
-            go: true,
-            html: true,
-            rust: true,
-        }
-    }
 }
 
 impl TreeSitterWrapper {
@@ -207,7 +139,21 @@ impl TreeSitterWrapper {
                 error!("failed setting language: {}", e);
                 return None;
             }
-        }
+        };
+
+        let query = match Query::new(
+            *language,
+            highlight_query) {
+            Ok(query) => query,
+            Err(e) => {
+                error!("failed to compile query {}", e);
+                return None;
+            }
+        };
+
+        let id_to_name: Vec<Rc<String>> = query.capture_names().iter().map(|cn| {
+            Rc::new(cn.to_owned())
+        }).collect();
 
         Some(
             ParsingTuple {
@@ -215,13 +161,64 @@ impl TreeSitterWrapper {
                 lang_id,
                 parser: Rc::new(RefCell::new(parser)),
                 language: language.clone(),
-                lang_highlight_query: highlight_query,
+                highlight_query: Rc::new(query),
+                id_to_name: Rc::new(id_to_name),
             }
         )
     }
 }
 
+pub struct HighlightItem {
+    pub char_begin: usize,
+    pub char_end: usize,
+    pub identifier: Rc<String>,
+}
+
 impl ParsingTuple {
+    // TODO I would prefer it to be an iterator, but I have no time to fix it.
+    pub fn highlight_iter<'a>(&'a self, rope: &'a ropey::Rope, char_range_op: Option<Range<usize>>) -> Option<Vec<HighlightItem>> {
+        if self.tree.is_none() {
+            return None;
+        }
+
+        let mut cursor = QueryCursor::new();
+
+        if let Some(char_range) = char_range_op {
+            let begin_byte = rope.try_char_to_byte(char_range.start).ok()?;
+            let end_byte = rope.try_char_to_byte(char_range.end).ok()?;
+
+            cursor.set_byte_range(begin_byte..end_byte);
+        };
+
+        let query_matches = cursor.matches(
+            &self.highlight_query,
+            self.tree.as_ref()?.root_node(),
+            RopeWrapper(&rope),
+        );
+
+        let mut results: Vec<HighlightItem> = vec![];
+        for m in query_matches {
+            if m.captures.len() != 1 {
+                warn!("unexpected number of captures (expected 1, got {})", m.captures.len());
+            }
+
+            for c in m.captures {
+                let begin_char = rope.try_byte_to_char(c.node.start_byte()).ok()?;
+                let end_char = rope.try_byte_to_char(c.node.end_byte()).ok()?;
+
+                let name = self.id_to_name.get(c.index as usize)?;
+
+                results.push(HighlightItem {
+                    char_begin: begin_char,
+                    char_end: end_char,
+                    identifier: name.clone(),
+                })
+            }
+        }
+
+        Some(results)
+    }
+
     pub fn try_reparse(&mut self, rope: &ropey::Rope) -> bool {
         let mut callback = rope.callback_for_parser();
         //TODO borrow_mut => try_borrow_mut
@@ -236,23 +233,20 @@ impl ParsingTuple {
 
         self.tree = Some(tree);
 
-        let query = match Query::new(
-            self.language,
-            self.lang_highlight_query) {
-            Ok(query) => query,
-            Err(e) => {
-                error!("failed to compile query {}", e);
-                return false;
-            }
-        };
-        debug!("cn: {:?}", query.capture_names());
-
-        for m in QueryCursor::new().matches(
-            &query,
+        for (idx, m) in QueryCursor::new().matches(
+            &self.highlight_query,
             self.tree.as_ref().unwrap().root_node(),
             RopeWrapper(&rope),
-        ) {
-            debug!("qm : {:?}", m);
+        ).enumerate() {
+            for (cidx, c) in m.captures.iter().enumerate() {
+                let name = &self.id_to_name[c.index as usize];
+                debug!("m[{}]c[{}] : [{}:{}) = {}",
+                    idx, cidx,
+                    c.node.start_byte(),
+                    c.node.end_byte(),
+                    name,
+                    );
+            }
         }
 
         true

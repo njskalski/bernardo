@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use log::{debug, error, warn};
 
-use crate::{AnyMsg, InputEvent, Output, SizeConstraint, TreeSitterWrapper, Widget};
+use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Widget};
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::io::filesystem_tree::file_front::FileFront;
 use crate::io::filesystem_tree::filesystem_front::FsfRef;
@@ -17,6 +17,7 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
+use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::main_view::msg::MainViewMsg;

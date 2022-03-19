@@ -1,6 +1,7 @@
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
+use std::ops::Range;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::string::String;
@@ -10,10 +11,12 @@ use ropey::Rope;
 use tree_sitter::{InputEdit, Parser, Point, Query, QueryCursor, Tree};
 use tree_sitter_highlight::{Highlighter, RopeWrapper};
 use unicode_segmentation::UnicodeSegmentation;
+use crate::Output;
 
-use crate::experiments::tree_sitter_wrapper::{byte_offset_to_point, LangId, ParsingTuple};
 use crate::text::buffer::Buffer;
-use crate::TreeSitterWrapper;
+use crate::tsw::lang_id::LangId;
+use crate::tsw::parsing_tuple::ParsingTuple;
+use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
 
 #[derive(Clone, Debug, Default)]
 struct Text {
@@ -32,40 +35,12 @@ impl Text {
     pub fn parse(&mut self, tree_sitter: Rc<TreeSitterWrapper>, lang_id: LangId) -> bool {
         if let Some(parsing_tuple) = tree_sitter.new_parse(lang_id, &self.rope) {
             self.parsing = Some(parsing_tuple);
+
             true
         } else {
             false
         }
     }
-
-    // fn try_reparse_after_tree_update(&mut self) {
-    //     let mut callback = self.rope.callback_for_parser();
-    //     if let Some(parsing) = self.parsing.as_mut() {
-    //         if !parsing.try_reparse(&self.rope) {
-    //             error!("try reparse failed");
-    //             return;
-    //         }
-    //
-    //         let query = match Query::new(
-    //             parsing.language,
-    //             parsing.lang_highlight_query) {
-    //             Ok(query) => query,
-    //             Err(e) => {
-    //                 error!("failed to compile query {}", e);
-    //                 return;
-    //             }
-    //         };
-    //
-    //         for m in QueryCursor::new().matches(
-    //             &query,
-    //             //TODO this unwrap is OK because above I do early exit if try_parse fails.
-    //             parsing.tree.as_ref().unwrap().root_node(),
-    //             RopeWrapper(&self.rope),
-    //         ) {
-    //             debug!("qm : {:?}", m);
-    //         }
-    //     }
-    // }
 }
 
 #[derive(Clone, Debug)]
@@ -95,6 +70,28 @@ impl BufferState {
         }
     }
 
+    pub fn char_range(&self, output: &mut dyn Output) -> Option<Range<usize>> {
+        let rope = &self.text.rope;
+
+        let first_line = output.size_constraint().hint().upper_left().y as usize;
+        let beyond_last_lane = output.size_constraint().hint().lower_right().y as usize + 1;
+
+        let first_char_idx = rope.try_line_to_char(first_line).ok()?;
+        let beyond_last_char_idx = rope.try_line_to_char(beyond_last_lane).ok()?;
+
+        Some(first_char_idx..beyond_last_char_idx)
+    }
+
+    pub fn highlight(&self, char_range_op: Option<Range<usize>>) -> Vec<HighlightItem> {
+        self.text.parsing.as_ref().map(|parsing| {
+            parsing.highlight_iter(&self.text.rope, char_range_op)
+        }).flatten().unwrap_or(vec![])
+    }
+
+    pub fn current_text(&self) -> &Text {
+        &self.text
+    }
+
     pub fn with_lang(self, lang_id: LangId) -> Self {
         Self {
             lang_id: Some(lang_id),
@@ -106,7 +103,7 @@ impl BufferState {
         let mut text = Text::default().with_rope(rope);
 
         if let Some(lang_id) = lang_id {
-            if !text.parse(self.tree_sitter.clone(), lang_id) {
+            if text.parse(self.tree_sitter.clone(), lang_id) {} else {
                 error!("creation of parse_tuple failed");
             }
         }
@@ -124,11 +121,6 @@ impl BufferState {
     fn clone_top(&mut self) {
         self.history.push(self.text.clone());
     }
-
-    // fn after_change(&mut self) {
-    //     // self.text.try_reparse_after_tree_update();
-    //     self.forward_history.clear();
-    // }
 
     pub fn prev(&mut self) -> bool {
         match self.history.pop() {
@@ -150,12 +142,6 @@ impl BufferState {
                 true
             }
         }
-    }
-
-    pub fn char_to_kind(&self, char_idx: usize) -> Option<&str> {
-        // let byte_idx = self.text.rope.try_char_to_byte(char_idx).ok()?;
-        // self.text.parsing.as_ref()?.tree.root_node().descendant_for_byte_range(byte_idx, byte_idx).map(|node| node.kind())
-        None
     }
 }
 

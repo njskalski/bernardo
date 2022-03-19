@@ -4,8 +4,8 @@ use log::error;
 use ropey::Rope;
 use tree_sitter::Point;
 
-use crate::experiments::tree_sitter_wrapper::pack_rope_with_callback;
 use crate::text::buffer::Buffer;
+use crate::tsw::tree_sitter_wrapper::pack_rope_with_callback;
 
 static EMPTY_SLICE: [u8; 0] = [0; 0];
 
