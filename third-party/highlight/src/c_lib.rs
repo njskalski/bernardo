@@ -15,10 +15,10 @@ pub struct TSHighlighter {
     carriage_return_index: Option<usize>,
 }
 
-pub struct TSHighlightBuffer {
-    highlighter: Highlighter,
-    renderer: HtmlRenderer,
-}
+// pub struct TSHighlightBuffer {
+//     highlighter: Highlighter,
+//     renderer: HtmlRenderer,
+// }
 
 #[repr(C)]
 pub enum ErrorCode {
@@ -124,47 +124,47 @@ pub extern "C" fn ts_highlighter_add_language(
     }
 }
 
-#[no_mangle]
-pub extern "C" fn ts_highlight_buffer_new() -> *mut TSHighlightBuffer {
-    Box::into_raw(Box::new(TSHighlightBuffer {
-        highlighter: Highlighter::new(),
-        renderer: HtmlRenderer::new(),
-    }))
-}
-
-#[no_mangle]
-pub extern "C" fn ts_highlighter_delete(this: *mut TSHighlighter) {
-    drop(unsafe { Box::from_raw(this) })
-}
-
-#[no_mangle]
-pub extern "C" fn ts_highlight_buffer_delete(this: *mut TSHighlightBuffer) {
-    drop(unsafe { Box::from_raw(this) })
-}
-
-#[no_mangle]
-pub extern "C" fn ts_highlight_buffer_content(this: *const TSHighlightBuffer) -> *const u8 {
-    let this = unwrap_ptr(this);
-    this.renderer.html.as_slice().as_ptr()
-}
-
-#[no_mangle]
-pub extern "C" fn ts_highlight_buffer_line_offsets(this: *const TSHighlightBuffer) -> *const u32 {
-    let this = unwrap_ptr(this);
-    this.renderer.line_offsets.as_slice().as_ptr()
-}
-
-#[no_mangle]
-pub extern "C" fn ts_highlight_buffer_len(this: *const TSHighlightBuffer) -> u32 {
-    let this = unwrap_ptr(this);
-    this.renderer.html.len() as u32
-}
-
-#[no_mangle]
-pub extern "C" fn ts_highlight_buffer_line_count(this: *const TSHighlightBuffer) -> u32 {
-    let this = unwrap_ptr(this);
-    this.renderer.line_offsets.len() as u32
-}
+// #[no_mangle]
+// pub extern "C" fn ts_highlight_buffer_new() -> *mut TSHighlightBuffer {
+//     Box::into_raw(Box::new(TSHighlightBuffer {
+//         highlighter: Highlighter::new(),
+//         renderer: HtmlRenderer::new(),
+//     }))
+// }
+//
+// #[no_mangle]
+// pub extern "C" fn ts_highlighter_delete(this: *mut TSHighlighter) {
+//     drop(unsafe { Box::from_raw(this) })
+// }
+//
+// #[no_mangle]
+// pub extern "C" fn ts_highlight_buffer_delete(this: *mut TSHighlightBuffer) {
+//     drop(unsafe { Box::from_raw(this) })
+// }
+//
+// #[no_mangle]
+// pub extern "C" fn ts_highlight_buffer_content(this: *const TSHighlightBuffer) -> *const u8 {
+//     let this = unwrap_ptr(this);
+//     this.renderer.html.as_slice().as_ptr()
+// }
+//
+// #[no_mangle]
+// pub extern "C" fn ts_highlight_buffer_line_offsets(this: *const TSHighlightBuffer) -> *const u32 {
+//     let this = unwrap_ptr(this);
+//     this.renderer.line_offsets.as_slice().as_ptr()
+// }
+//
+// #[no_mangle]
+// pub extern "C" fn ts_highlight_buffer_len(this: *const TSHighlightBuffer) -> u32 {
+//     let this = unwrap_ptr(this);
+//     this.renderer.html.len() as u32
+// }
+//
+// #[no_mangle]
+// pub extern "C" fn ts_highlight_buffer_line_count(this: *const TSHighlightBuffer) -> u32 {
+//     let this = unwrap_ptr(this);
+//     this.renderer.line_offsets.len() as u32
+// }
 /*
 #[no_mangle]
 pub extern "C" fn ts_highlighter_highlight(

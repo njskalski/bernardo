@@ -1,22 +1,24 @@
 pub mod c_lib;
 pub mod util;
+
 pub use c_lib as c;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{iter, mem, ops, str, usize};
 use std::slice::Chunks;
 use thiserror::Error;
-use tree_sitter::{Language, LossyUtf8, Node, Parser, Point, Query, QueryCaptures, QueryCursor, QueryError, QueryMatch, Range,  TextProvider, Tree};
+use tree_sitter::{Language, LossyUtf8, Node, Parser, Point, Query, QueryCaptures, QueryCursor, QueryError, QueryMatch, Range, TextProvider, Tree};
 
 const CANCELLATION_CHECK_INTERVAL: usize = 100;
 const BUFFER_HTML_RESERVE_CAPACITY: usize = 10 * 1024;
 const BUFFER_LINES_RESERVE_CAPACITY: usize = 1000;
 
-struct RopeWrapper<'a>(&'a ropey::Rope);
-struct WrappedChunks<'a>(ropey::iter::Chunks<'a>);
+pub struct RopeWrapper<'a>(pub &'a ropey::Rope);
 
-impl <'a> Iterator  for WrappedChunks<'a> {
-    type Item = &'a[u8];
+pub struct WrappedChunks<'a>(ropey::iter::Chunks<'a>);
+
+impl<'a> Iterator for WrappedChunks<'a> {
+    type Item = &'a [u8];
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|f| f.as_bytes())
     }
@@ -33,7 +35,7 @@ impl<'a> TextProvider<'a> for RopeWrapper<'a> {
 }
 
 // str::from_utf8(&self.source[range.clone()])
-fn str_utf8_from_rope<'a>(rope : &'a ropey::Rope, range : std::ops::Range<usize>) -> Result<ropey::RopeSlice<'a>, ()> {
+fn str_utf8_from_rope<'a>(rope: &'a ropey::Rope, range: std::ops::Range<usize>) -> Result<ropey::RopeSlice<'a>, ()> {
     if range.end >= rope.len_bytes() {
         return Err(());
     }
@@ -91,8 +93,8 @@ pub struct HighlightConfiguration {
 /// For the best performance `Highlighter` values should be reused between
 /// syntax highlighting calls. A separate highlighter is needed for each thread that
 /// is performing highlighting.
-pub struct Highlighter {
-    parser: Parser,
+pub struct Highlighter<'a> {
+    parser: &'a mut Parser,
     cursors: Vec<QueryCursor>,
 }
 
@@ -118,13 +120,13 @@ struct LocalScope<'a> {
 }
 
 struct HighlightIter<'a, F>
-where
-    F: FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
+    where
+        F: FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
 {
     tree: &'a Tree,
     source: &'a ropey::Rope,
     byte_offset: usize,
-    highlighter: &'a mut Highlighter,
+    highlighter: &'a mut Highlighter<'a>,
     injection_callback: F,
     cancellation_flag: Option<&'a AtomicUsize>,
     layers: Vec<HighlightIterLayer<'a>>,
@@ -144,10 +146,10 @@ struct HighlightIterLayer<'a> {
     depth: usize,
 }
 
-impl Highlighter {
-    pub fn new() -> Self {
+impl<'a> Highlighter<'a> {
+    pub fn new(parser: &'a mut Parser) -> Self {
         Highlighter {
-            parser: Parser::new(),
+            parser,
             cursors: Vec::new(),
         }
     }
@@ -157,14 +159,14 @@ impl Highlighter {
     }
 
     /// Iterate over the highlighted regions for a given slice of source code.
-    pub fn highlight<'a>(
+    pub fn highlight(
         &'a mut self,
         config: &'a HighlightConfiguration,
-        tree : &'a Tree,
+        tree: &'a Tree,
         source: &'a ropey::Rope,
         cancellation_flag: Option<&'a AtomicUsize>,
         mut injection_callback: impl FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
-    ) -> Result<impl Iterator<Item = Result<HighlightEvent, Error>> + 'a, Error> {
+    ) -> Result<impl Iterator<Item=Result<HighlightEvent, Error>> + 'a, Error> {
         let layers = HighlightIterLayer::new(
             tree,
             source,
@@ -377,17 +379,17 @@ impl<'a> HighlightIterLayer<'a> {
         let mut queue = Vec::new();
         loop {
             if highlighter.parser.set_included_ranges(&ranges).is_ok() {
-                highlighter
-                    .parser
-                    .set_language(config.language)
-                    .map_err(|_| Error::InvalidLanguage)?;
-
-                unsafe { highlighter.parser.set_cancellation_flag(cancellation_flag) };
-                // let tree = highlighter
+                // highlighter
                 //     .parser
-                //     .parse(source, None)
-                //     .ok_or(Error::Cancelled)?;
-                unsafe { highlighter.parser.set_cancellation_flag(None) };
+                //     .set_language(config.language)
+                //     .map_err(|_| Error::InvalidLanguage)?;
+
+                // unsafe { highlighter.parser.set_cancellation_flag(cancellation_flag) };
+                // // let tree = highlighter
+                // //     .parser
+                // //     .parse(source, None)
+                // //     .ok_or(Error::Cancelled)?;
+                // unsafe { highlighter.parser.set_cancellation_flag(None) };
                 let mut cursor = highlighter.cursors.pop().unwrap_or(QueryCursor::new());
 
                 // Process combined injections.
@@ -584,8 +586,8 @@ impl<'a> HighlightIterLayer<'a> {
 }
 
 impl<'a, F> HighlightIter<'a, F>
-where
-    F: FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
+    where
+        F: FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
 {
     fn emit_event(
         &mut self,
@@ -651,8 +653,8 @@ where
 }
 
 impl<'a, F> Iterator for HighlightIter<'a, F>
-where
-    F: FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
+    where
+        F: FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
 {
     type Item = Result<HighlightEvent, Error>;
 
@@ -807,7 +809,6 @@ where
                     }
 
 
-
                     // if let Ok(name) = str::from_utf8(&self.source[range.clone()]) {
                     if let Ok(name) = str_utf8_from_rope(&self.source, range.clone()) {
                         scope.local_defs.push(LocalDef {
@@ -828,13 +829,13 @@ where
                         if let Ok(name) = str_utf8_from_rope(&self.source, range.clone()) {
                             for scope in layer.scope_stack.iter().rev() {
                                 if let Some(highlight) =
-                                    scope.local_defs.iter().rev().find_map(|def| {
-                                        if def.name == name && range.start >= def.value_range.end {
-                                            Some(def.highlight)
-                                        } else {
-                                            None
-                                        }
-                                    })
+                                scope.local_defs.iter().rev().find_map(|def| {
+                                    if def.name == name && range.start >= def.value_range.end {
+                                        Some(def.highlight)
+                                    } else {
+                                        None
+                                    }
+                                })
                                 {
                                     reference_highlight = highlight;
                                     break;
@@ -948,12 +949,12 @@ impl HtmlRenderer {
 
     pub fn render<'a, F>(
         &mut self,
-        highlighter: impl Iterator<Item = Result<HighlightEvent, Error>>,
+        highlighter: impl Iterator<Item=Result<HighlightEvent, Error>>,
         source: &'a [u8],
         attribute_callback: &F,
     ) -> Result<(), Error>
-    where
-        F: Fn(Highlight) -> &'a [u8],
+        where
+            F: Fn(Highlight) -> &'a [u8],
     {
         let mut highlights = Vec::new();
         for event in highlighter {
@@ -981,7 +982,7 @@ impl HtmlRenderer {
         Ok(())
     }
 
-    pub fn lines(&self) -> impl Iterator<Item = &str> {
+    pub fn lines(&self) -> impl Iterator<Item=&str> {
         self.line_offsets
             .iter()
             .enumerate()
@@ -997,8 +998,8 @@ impl HtmlRenderer {
     }
 
     fn add_carriage_return<'a, F>(&mut self, attribute_callback: &F)
-    where
-        F: Fn(Highlight) -> &'a [u8],
+        where
+            F: Fn(Highlight) -> &'a [u8],
     {
         if let Some(highlight) = self.carriage_return_highlight {
             let attribute_string = (attribute_callback)(highlight);
@@ -1011,8 +1012,8 @@ impl HtmlRenderer {
     }
 
     fn start_highlight<'a, F>(&mut self, h: Highlight, attribute_callback: &F)
-    where
-        F: Fn(Highlight) -> &'a [u8],
+        where
+            F: Fn(Highlight) -> &'a [u8],
     {
         let attribute_string = (attribute_callback)(h);
         self.html.extend(b"<span");
@@ -1028,8 +1029,8 @@ impl HtmlRenderer {
     }
 
     fn add_text<'a, F>(&mut self, src: &[u8], highlights: &Vec<Highlight>, attribute_callback: &F)
-    where
-        F: Fn(Highlight) -> &'a [u8],
+        where
+            F: Fn(Highlight) -> &'a [u8],
     {
         let mut last_char_was_cr = false;
         for c in LossyUtf8::new(src).flat_map(|p| p.bytes()) {
@@ -1072,7 +1073,7 @@ fn injection_for_match<'a>(
     let content_capture_index = config.injection_content_capture_index;
     let language_capture_index = config.injection_language_capture_index;
 
-    let mut language_name : Option<String> = None;
+    let mut language_name: Option<String> = None;
     let mut content_node = None;
     for capture in query_match.captures {
         let index = Some(capture.index);

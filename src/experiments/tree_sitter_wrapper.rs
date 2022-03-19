@@ -1,12 +1,39 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
+use std::rc::Rc;
 
-use log::{debug, error};
+use log::{debug, error, warn};
 use ropey::Rope;
-use tree_sitter::{Language, Parser, Point, Tree};
+use tree_sitter::{InputEdit, Language, Parser, Point, Tree};
+use tree_sitter_highlight::{HighlightConfiguration, Highlighter, HighlightEvent};
 
 use crate::text::buffer::Buffer;
 
 static EMPTY_SLICE: [u8; 0] = [0; 0];
+
+lazy_static! {
+    static ref HIGHLIGHT_NAMES: Vec<&'static str> = vec![
+        "attribute",
+        "constant",
+        "function.builtin",
+        "function",
+        "keyword",
+        "operator",
+        "property",
+        "punctuation",
+        "punctuation.bracket",
+        "punctuation.delimiter",
+        "string",
+        "string.special",
+        "tag",
+        "type",
+        "type.builtin",
+        "variable",
+        "variable.builtin",
+        "variable.parameter",
+    ];
+}
 
 pub fn byte_offset_to_point(rope: &Rope, byte_offset: usize) -> Option<Point> {
     let char_idx = rope.try_byte_to_char(byte_offset).ok()?;
@@ -88,6 +115,22 @@ pub struct LanguageSet {
     pub rust: bool,
 }
 
+#[derive(Clone)]
+pub struct ParsingTuple {
+    pub tree: Tree,
+    pub lang_id: LangId,
+    pub parser: Rc<RefCell<Parser>>,
+    pub language: Language,
+    pub lang_highlight_query: &'static str,
+    first_parse: bool,
+}
+
+impl Debug for ParsingTuple {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "lang_id {:?}", self.lang_id)
+    }
+}
+
 impl LanguageSet {
     pub fn full() -> Self {
         LanguageSet {
@@ -140,9 +183,22 @@ impl TreeSitterWrapper {
         }
     }
 
+    pub fn highlight_query(&self, lang_id: LangId) -> Option<&'static str> {
+        match lang_id {
+            LangId::C => Some(tree_sitter_c::HIGHLIGHT_QUERY),
+            LangId::CPP => Some(tree_sitter_cpp::HIGHLIGHT_QUERY),
+            LangId::HTML => Some(tree_sitter_html::HIGHLIGHT_QUERY),
+            LangId::ELM => Some(tree_sitter_elm::HIGHLIGHTS_QUERY),
+            LangId::GO => Some(tree_sitter_go::HIGHLIGHT_QUERY),
+            LangId::RUST => Some(tree_sitter_rust::HIGHLIGHT_QUERY),
+            _ => None
+        }
+    }
+
     // This should be called on loading a file. On update, ParserAndTree struct should be used.
-    pub fn new_parse(&self, lang_id: LangId, buffer: &dyn Buffer) -> Option<(Parser, Tree)> {
+    pub fn new_parse(&self, lang_id: LangId, buffer: &ropey::Rope) -> Option<ParsingTuple> {
         let language = self.languages.get(&lang_id)?;
+        let highlight_query = self.highlight_query(lang_id)?;
         let mut parser = Parser::new();
         match parser.set_language(language.clone()) {
             Ok(_) => {}
@@ -153,13 +209,123 @@ impl TreeSitterWrapper {
         }
 
         let mut callback = buffer.callback_for_parser();
-        let tree = parser.parse_with(&mut callback, None)?;
+        let mut tree = parser.parse_with(&mut callback, None)?;
+
 
         Some(
-            (
-                parser,
+            ParsingTuple {
                 tree,
-            )
+                lang_id,
+                parser: Rc::new(RefCell::new(parser)),
+                language: language.clone(),
+                lang_highlight_query: highlight_query,
+                first_parse: true,
+            }
         )
+    }
+}
+
+impl ParsingTuple {
+    pub fn try_reparse(&mut self, rope: &ropey::Rope) -> bool {
+        let mut callback = rope.callback_for_parser();
+        //TODO borrow_mut => try_borrow_mut
+        let mut tree = match self.parser.borrow_mut().parse_with(
+            &mut callback,
+            if self.first_parse { None } else { Some(&self.tree) }) {
+            Some(t) => t,
+            None => {
+                error!("failed parse");
+                return false;
+            }
+        };
+
+        self.first_parse = false;
+        self.tree = tree;
+
+        true
+    }
+
+    pub(crate) fn update_parse_on_insert(&mut self, rope: &ropey::Rope, char_idx_begin: usize, char_idx_end: usize) -> bool {
+        if rope.len_chars() < char_idx_begin {
+            error!("rope.len_chars() < char_idx_begin: {} >= {}", rope.len_chars(), char_idx_begin);
+            return false;
+        }
+
+        let start_byte = match rope.try_char_to_byte(char_idx_begin) {
+            Ok(byte) => byte,
+            _ => return false,
+        };
+
+        let new_end_byte = match rope.try_char_to_byte(char_idx_end) {
+            Ok(byte) => byte,
+            _ => return false,
+        };
+
+        let start_point = match byte_offset_to_point(&rope, start_byte) {
+            Some(point) => point,
+            None => return false,
+        };
+
+        let new_end_point = match byte_offset_to_point(&rope, new_end_byte) {
+            Some(point) => point,
+            None => return false,
+        };
+
+        let input_edit = InputEdit {
+            start_byte,
+            old_end_byte: start_byte,
+            new_end_byte,
+            start_position: start_point,
+            old_end_position: start_point,
+            new_end_position: new_end_point,
+        };
+
+
+        self.tree.edit(&input_edit);
+        self.try_reparse(rope)
+    }
+
+    pub(crate) fn update_parse_on_delete(&mut self, rope: &ropey::Rope, char_idx_begin: usize, char_idx_end: usize) -> bool {
+        if char_idx_begin >= char_idx_end {
+            error!("char_idx_begin >= char_idx_end: {} >= {}", char_idx_begin, char_idx_end);
+            return false;
+        }
+
+        if rope.len_chars() < char_idx_begin {
+            error!("rope.len_chars() < char_idx_begin: {} >= {}", rope.len_chars(), char_idx_begin);
+            return false;
+        }
+
+        let start_byte = match rope.try_char_to_byte(char_idx_begin) {
+            Ok(byte) => byte,
+            _ => return false,
+        };
+
+        let old_end_byte = match rope.try_char_to_byte(char_idx_end) {
+            Ok(byte) => byte,
+            _ => return false,
+        };
+
+        let start_point = match byte_offset_to_point(&rope, start_byte) {
+            Some(point) => point,
+            None => return false,
+        };
+
+        let old_end_point = match byte_offset_to_point(&rope, old_end_byte) {
+            Some(point) => point,
+            None => return false,
+        };
+
+        let input_edit = InputEdit {
+            start_byte,
+            old_end_byte,
+            new_end_byte: start_byte,
+            start_position: start_point,
+            old_end_position: old_end_point,
+            new_end_position: start_point,
+        };
+
+        self.tree.edit(&input_edit);
+        self.try_reparse(rope)
     }
 }
