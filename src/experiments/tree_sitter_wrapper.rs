@@ -5,8 +5,8 @@ use std::rc::Rc;
 
 use log::{debug, error, warn};
 use ropey::Rope;
-use tree_sitter::{InputEdit, Language, Parser, Point, Tree};
-use tree_sitter_highlight::{HighlightConfiguration, Highlighter, HighlightEvent};
+use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor, Tree};
+use tree_sitter_highlight::{HighlightConfiguration, Highlighter, HighlightEvent, RopeWrapper};
 
 use crate::text::buffer::Buffer;
 
@@ -117,12 +117,13 @@ pub struct LanguageSet {
 
 #[derive(Clone)]
 pub struct ParsingTuple {
-    pub tree: Tree,
+    // none before first parse
+    pub tree: Option<Tree>,
+
     pub lang_id: LangId,
     pub parser: Rc<RefCell<Parser>>,
     pub language: Language,
     pub lang_highlight_query: &'static str,
-    first_parse: bool,
 }
 
 impl Debug for ParsingTuple {
@@ -208,18 +209,13 @@ impl TreeSitterWrapper {
             }
         }
 
-        let mut callback = buffer.callback_for_parser();
-        let mut tree = parser.parse_with(&mut callback, None)?;
-
-
         Some(
             ParsingTuple {
-                tree,
+                tree: None,
                 lang_id,
                 parser: Rc::new(RefCell::new(parser)),
                 language: language.clone(),
                 lang_highlight_query: highlight_query,
-                first_parse: true,
             }
         )
     }
@@ -229,9 +225,8 @@ impl ParsingTuple {
     pub fn try_reparse(&mut self, rope: &ropey::Rope) -> bool {
         let mut callback = rope.callback_for_parser();
         //TODO borrow_mut => try_borrow_mut
-        let mut tree = match self.parser.borrow_mut().parse_with(
-            &mut callback,
-            if self.first_parse { None } else { Some(&self.tree) }) {
+        let tree = match self.parser.borrow_mut().parse_with(
+            &mut callback, self.tree.as_ref()) {
             Some(t) => t,
             None => {
                 error!("failed parse");
@@ -239,13 +234,31 @@ impl ParsingTuple {
             }
         };
 
-        self.first_parse = false;
-        self.tree = tree;
+        self.tree = Some(tree);
+
+        let query = match Query::new(
+            self.language,
+            self.lang_highlight_query) {
+            Ok(query) => query,
+            Err(e) => {
+                error!("failed to compile query {}", e);
+                return false;
+            }
+        };
+        debug!("cn: {:?}", query.capture_names());
+
+        for m in QueryCursor::new().matches(
+            &query,
+            self.tree.as_ref().unwrap().root_node(),
+            RopeWrapper(&rope),
+        ) {
+            debug!("qm : {:?}", m);
+        }
 
         true
     }
 
-    pub(crate) fn update_parse_on_insert(&mut self, rope: &ropey::Rope, char_idx_begin: usize, char_idx_end: usize) -> bool {
+    pub fn update_parse_on_insert(&mut self, rope: &ropey::Rope, char_idx_begin: usize, char_idx_end: usize) -> bool {
         if rope.len_chars() < char_idx_begin {
             error!("rope.len_chars() < char_idx_begin: {} >= {}", rope.len_chars(), char_idx_begin);
             return false;
@@ -281,11 +294,11 @@ impl ParsingTuple {
         };
 
 
-        self.tree.edit(&input_edit);
+        self.tree.as_mut().map(|tree| tree.edit(&input_edit));
         self.try_reparse(rope)
     }
 
-    pub(crate) fn update_parse_on_delete(&mut self, rope: &ropey::Rope, char_idx_begin: usize, char_idx_end: usize) -> bool {
+    pub fn update_parse_on_delete(&mut self, rope: &ropey::Rope, char_idx_begin: usize, char_idx_end: usize) -> bool {
         if char_idx_begin >= char_idx_end {
             error!("char_idx_begin >= char_idx_end: {} >= {}", char_idx_begin, char_idx_end);
             return false;
@@ -325,7 +338,7 @@ impl ParsingTuple {
             new_end_position: start_point,
         };
 
-        self.tree.edit(&input_edit);
+        self.tree.as_mut().map(|tree| tree.edit(&input_edit));
         self.try_reparse(rope)
     }
 }

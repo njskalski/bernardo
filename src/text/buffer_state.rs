@@ -38,33 +38,34 @@ impl Text {
         }
     }
 
-    fn try_reparse_after_tree_update(&mut self) {
-        let mut callback = self.rope.callback_for_parser();
-        if let Some(parsing) = self.parsing.as_mut() {
-            if !parsing.try_reparse(&self.rope) {
-                error!("try reparse failed");
-            }
-
-
-            let query = match Query::new(
-                parsing.language,
-                parsing.lang_highlight_query) {
-                Ok(query) => query,
-                Err(e) => {
-                    error!("failed to compile query {}", e);
-                    return;
-                }
-            };
-
-            for m in QueryCursor::new().matches(
-                &query,
-                parsing.tree.root_node(),
-                RopeWrapper(&self.rope),
-            ) {
-                debug!("qm : {:?}", m);
-            }
-        }
-    }
+    // fn try_reparse_after_tree_update(&mut self) {
+    //     let mut callback = self.rope.callback_for_parser();
+    //     if let Some(parsing) = self.parsing.as_mut() {
+    //         if !parsing.try_reparse(&self.rope) {
+    //             error!("try reparse failed");
+    //             return;
+    //         }
+    //
+    //         let query = match Query::new(
+    //             parsing.language,
+    //             parsing.lang_highlight_query) {
+    //             Ok(query) => query,
+    //             Err(e) => {
+    //                 error!("failed to compile query {}", e);
+    //                 return;
+    //             }
+    //         };
+    //
+    //         for m in QueryCursor::new().matches(
+    //             &query,
+    //             //TODO this unwrap is OK because above I do early exit if try_parse fails.
+    //             parsing.tree.as_ref().unwrap().root_node(),
+    //             RopeWrapper(&self.rope),
+    //         ) {
+    //             debug!("qm : {:?}", m);
+    //         }
+    //     }
+    // }
 }
 
 #[derive(Clone, Debug)]
@@ -105,7 +106,9 @@ impl BufferState {
         let mut text = Text::default().with_rope(rope);
 
         if let Some(lang_id) = lang_id {
-            text.parse(self.tree_sitter.clone(), lang_id);
+            if !text.parse(self.tree_sitter.clone(), lang_id) {
+                error!("creation of parse_tuple failed");
+            }
         }
 
         Self {
@@ -122,9 +125,10 @@ impl BufferState {
         self.history.push(self.text.clone());
     }
 
-    fn after_change(&mut self) {
-        self.forward_history.clear();
-    }
+    // fn after_change(&mut self) {
+    //     // self.text.try_reparse_after_tree_update();
+    //     self.forward_history.clear();
+    // }
 
     pub fn prev(&mut self) -> bool {
         match self.history.pop() {

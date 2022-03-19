@@ -3,6 +3,8 @@ pub mod util;
 
 pub use c_lib as c;
 
+use log::debug;
+
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{iter, mem, ops, str, usize};
 use std::slice::Chunks;
@@ -29,6 +31,8 @@ impl<'a> TextProvider<'a> for RopeWrapper<'a> {
     fn text(&mut self, node: Node<'_>) -> Self::I {
         let char_begin = self.0.byte_to_char(node.start_byte());
         let char_end = self.0.byte_to_char(node.end_byte());
+
+        debug!("rope_wrapper reads [{}:{})", char_begin, char_end);
 
         WrappedChunks(self.0.slice(char_begin..char_end).chunks())
     }
