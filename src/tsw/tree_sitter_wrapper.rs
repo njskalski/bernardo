@@ -4,7 +4,7 @@ use std::fmt::{Debug};
 use std::ops::Range;
 use std::rc::Rc;
 
-use log::{debug, error, warn};
+use log::{error, warn};
 use ropey::Rope;
 use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor};
 

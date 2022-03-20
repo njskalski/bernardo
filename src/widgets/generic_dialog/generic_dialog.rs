@@ -201,7 +201,15 @@ impl Widget for GenericDialog {
 
         return match input_event {
             InputEvent::FocusUpdate(focus_update) => {
-                Some(Box::new(GenericDialogMsg::FocusUpdate(focus_update)))
+                let can_update = self.display_state.as_ref().map(|ds| {
+                    ds.focus_group.can_update_focus(focus_update)
+                }).unwrap_or(false);
+
+                if can_update {
+                    Some(Box::new(GenericDialogMsg::FocusUpdate(focus_update)))
+                } else {
+                    None
+                }
             }
             _ => None,
         };

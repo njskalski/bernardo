@@ -203,7 +203,15 @@ impl Widget for MainView {
                 None
             }
             MainViewMsg::TreeSelected { item } => {
-                self.open_file(item.id().as_path());
+                if self.open_file(item.id().as_path()) {
+                    if let (Some(ds), Some(editor)) = (&mut self.display_state, &self.editor) {
+                        if ds.focus_group.set_focused(editor.id()) {
+                            error!("failed to update focus after update file");
+                        }
+                    }
+                } else {
+                    error!("failed open_file");
+                }
 
                 None
             }

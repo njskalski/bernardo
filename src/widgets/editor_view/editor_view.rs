@@ -6,6 +6,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget};
 use crate::io::filesystem_tree::filesystem_front::FsfRef;
+use crate::io::sub_output::SubOutput;
 use crate::layout::dummy_layout::DummyLayout;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
@@ -103,21 +104,22 @@ impl EditorView {
 
     fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
         if let Some(sd) = self.save_file_dialog.as_mut() {
+            let rect = EditorView::get_hover_rect(size);
             let layout = HoverLayout::new(
                 &mut DummyLayout::new(self.wid, size),
                 &mut LeafLayout::new(sd),
-                Rect::new(XY::new(4, 4), XY::new(30, 15)), //TODO
+                rect,
             ).calc_sizes(size);
-
 
             return layout;
         }
 
         if let Some(fuzzy) = self.fuzzy_search.as_mut() {
+            let rect = EditorView::get_hover_rect(size);
             let layout = HoverLayout::new(
                 &mut DummyLayout::new(self.wid, size),
                 &mut LeafLayout::new(fuzzy),
-                Rect::new(XY::new(4, 4), XY::new(30, 15)), //TODO
+                rect,
             ).calc_sizes(size);
 
             return layout;
@@ -182,6 +184,10 @@ impl EditorView {
                     style = style.with_background(bg);
                 });
 
+                if !focused {
+                    style.foreground = style.foreground.half();
+                }
+
                 output.print_at(pos, style, tr);
 
                 x_offset += tr.width();
@@ -199,6 +205,17 @@ impl EditorView {
         });
 
         output.print_at(one_beyond_last_pos, style, BEYOND);
+    }
+
+    fn get_hover_rect(max_size: XY) -> Rect {
+        let margin = max_size / 10;
+        Rect::new(margin,
+                  max_size - margin * 2,
+        )
+    }
+
+    fn has_dialog(&self) -> bool {
+        self.fuzzy_search.is_some() || self.save_file_dialog.is_some()
     }
 }
 
@@ -298,14 +315,16 @@ impl Widget for EditorView {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        self.internal_render(theme, focused, output);
+        self.internal_render(theme, focused && !self.has_dialog(), output);
 
         if let Some(sd) = self.save_file_dialog.as_ref() {
-            sd.render(theme, focused, output);
+            let rect = EditorView::get_hover_rect(output.size_constraint().hint().size);
+            sd.render(theme, focused, &mut SubOutput::new(output, rect));
         }
 
         if let Some(fs) = self.fuzzy_search.as_ref() {
-            fs.render(theme, focused, output);
+            let rect = EditorView::get_hover_rect(output.size_constraint().hint().size);
+            fs.render(theme, focused, &mut SubOutput::new(output, rect));
         }
     }
 

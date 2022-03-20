@@ -194,13 +194,15 @@ impl SaveFileDialogWidget {
         match &mut self.hover_dialog {
             None => layout.calc_sizes(max_size),
             Some(dialog) => {
-                let size = dialog.min_size() * 3;
                 let mut leaf_dialog = LeafLayout::new(dialog);
+
+                let margins = max_size / 10;
+                // let mut margin_dialog = FrameLayout::new(&mut leaf_dialog, margins);
                 let layout = &mut HoverLayout::new(&mut layout,
                                                    &mut leaf_dialog,
                                                    Rect::new(
-                                                       XY::new(6, 3), // TODO
-                                                       size,
+                                                       margins, // TODO
+                                                       max_size - margins * 2,
                                                    ));
                 layout.calc_sizes(max_size)
             }
@@ -385,7 +387,15 @@ impl Widget for SaveFileDialogWidget {
 
         return match input_event {
             InputEvent::FocusUpdate(focus_update) => {
-                Some(Box::new(SaveFileDialogMsg::FocusUpdateMsg(focus_update)))
+                let can_update = self.display_state.as_ref().map(|ds| {
+                    ds.focus_group().can_update_focus(focus_update)
+                }).unwrap_or(false);
+
+                if can_update {
+                    Some(Box::new(SaveFileDialogMsg::FocusUpdateMsg(focus_update)))
+                } else {
+                    None
+                }
             }
             InputEvent::KeyInput(key) => {
                 match key.keycode {
@@ -411,8 +421,9 @@ impl Widget for SaveFileDialogWidget {
                 warn!("updating focus");
                 self.display_state.as_mut().map(
                     |ds| {
-                        let msg = ds.focus_group.update_focus(*focus_update);
-                        warn!("focus updated {}", msg);
+                        if !ds.focus_group.update_focus(*focus_update) {
+                            warn!("focus update accepted but failed");
+                        }
                         None
                     }
                 ).unwrap_or_else(|| {

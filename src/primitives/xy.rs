@@ -2,7 +2,7 @@ use std::cmp::{min, Ordering};
 use std::fmt;
 use std::fmt::Formatter;
 use std::hash::Hash;
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 
 use log::error;
 
@@ -39,6 +39,17 @@ impl XY {
 
     pub fn neighbours(&self) -> NeighboursIterator {
         NeighboursIterator::new(*self)
+    }
+}
+
+impl Div<u16> for XY {
+    type Output = XY;
+
+    fn div(self, rhs: u16) -> Self::Output {
+        XY::new(
+            self.x / rhs,
+            self.y / rhs,
+        )
     }
 }
 

@@ -2,7 +2,7 @@
 // there's a background layout and foreground layout.
 // Background is visible but inactive, foreground is visible.
 
-use log::warn;
+use log::{error};
 
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::primitives::rect::Rect;
@@ -35,12 +35,11 @@ impl<'a> Layout for HoverLayout<'a> {
         let mut result = self.parent.calc_sizes(output_size);
 
         if !(output_size > self.child_rect.lower_right()) {
-            warn!("not enough space to draw child {} at {}", self.child_rect, output_size);
+            error!("not enough space to draw child {} at {}", self.child_rect, output_size);
         } else {
             let mut partial: Vec<WidgetIdRect> = self.child.calc_sizes(self.child_rect.size).iter_mut().map(
                 |wir| wir.shifted(self.child_rect.pos)
             ).collect();
-
 
             result.append(&mut partial);
         }

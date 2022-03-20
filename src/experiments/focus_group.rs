@@ -36,6 +36,8 @@ pub trait FocusGroup: Debug {
      */
     fn update_focus(&mut self, focus_update: FocusUpdate) -> bool;
 
+    fn can_update_focus(&self, focus_update: FocusUpdate) -> bool;
+
     //TODO proper error reporting
     fn override_edges(&mut self, widget_id: WID, edges: Vec<(FocusUpdate, WID)>) -> bool;
     fn add_edge(&mut self, src_widget: WID, edge: FocusUpdate, target_widget: WID) -> bool;
@@ -124,6 +126,14 @@ impl FocusGroup for FocusGroupImpl {
             }
         }
     }
+
+    fn can_update_focus(&self, focus_update: FocusUpdate) -> bool {
+        let curr = self.nodes.get(&self.selected).unwrap();
+        let next_op = curr.neighbours.get(&focus_update);
+
+        next_op.is_some()
+    }
+
 
     fn override_edges(&mut self, widget_id: WID, edges: Vec<(FocusUpdate, WID)>) -> bool {
         match self.nodes.get_mut(&widget_id) {
