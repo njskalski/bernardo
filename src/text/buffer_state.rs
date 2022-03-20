@@ -1,15 +1,12 @@
-use std::borrow::BorrowMut;
-use std::cell::RefCell;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug};
 use std::ops::Range;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::string::String;
 
-use log::{debug, error, warn};
+use log::{error, warn};
 use ropey::Rope;
-use tree_sitter::{InputEdit, Parser, Point, Query, QueryCursor, Tree};
-use tree_sitter_highlight::{Highlighter, RopeWrapper};
+use tree_sitter::{Point};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::Output;
 
@@ -33,7 +30,7 @@ impl Text {
     }
 
     pub fn parse(&mut self, tree_sitter: Rc<TreeSitterWrapper>, lang_id: LangId) -> bool {
-        if let Some(parsing_tuple) = tree_sitter.new_parse(lang_id, &self.rope) {
+        if let Some(parsing_tuple) = tree_sitter.new_parse(lang_id) {
             self.parsing = Some(parsing_tuple);
 
             true
@@ -86,10 +83,6 @@ impl BufferState {
         self.text.parsing.as_ref().map(|parsing| {
             parsing.highlight_iter(&self.text.rope, char_range_op)
         }).flatten().unwrap_or(vec![])
-    }
-
-    pub fn current_text(&self) -> &Text {
-        &self.text
     }
 
     pub fn with_lang(self, lang_id: LangId) -> Self {

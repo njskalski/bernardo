@@ -37,10 +37,6 @@ tree-sitter-html = "0.19.0"
 tree-sitter-rust = "0.20.1"
 #TODO add more
 
-tree-sitter-highlight = { version = "0.20", path = "third-party/highlight" }
-
-
-
 
 [profile.dev]
 opt-level = 0

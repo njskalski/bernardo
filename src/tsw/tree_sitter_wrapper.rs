@@ -1,18 +1,18 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug};
 use std::ops::Range;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
 use ropey::Rope;
-use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor, QueryMatches, Tree};
-use tree_sitter_highlight::{HighlightConfiguration, Highlighter, HighlightEvent, RopeWrapper};
+use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor};
 
 use crate::text::buffer::Buffer;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::parsing_tuple::ParsingTuple;
+use crate::tsw::rope_wrappers::RopeWrapper;
 
 static EMPTY_SLICE: [u8; 0] = [0; 0];
 
@@ -129,7 +129,7 @@ impl TreeSitterWrapper {
     }
 
     // This should be called on loading a file. On update, ParserAndTree struct should be used.
-    pub fn new_parse(&self, lang_id: LangId, buffer: &ropey::Rope) -> Option<ParsingTuple> {
+    pub fn new_parse(&self, lang_id: LangId) -> Option<ParsingTuple> {
         let language = self.languages.get(&lang_id)?;
         let highlight_query = self.highlight_query(lang_id)?;
         let mut parser = Parser::new();
@@ -233,21 +233,21 @@ impl ParsingTuple {
 
         self.tree = Some(tree);
 
-        for (idx, m) in QueryCursor::new().matches(
-            &self.highlight_query,
-            self.tree.as_ref().unwrap().root_node(),
-            RopeWrapper(&rope),
-        ).enumerate() {
-            for (cidx, c) in m.captures.iter().enumerate() {
-                let name = &self.id_to_name[c.index as usize];
-                debug!("m[{}]c[{}] : [{}:{}) = {}",
-                    idx, cidx,
-                    c.node.start_byte(),
-                    c.node.end_byte(),
-                    name,
-                    );
-            }
-        }
+        // for (_idx, m) in QueryCursor::new().matches(
+        //     &self.highlight_query,
+        //     self.tree.as_ref().unwrap().root_node(),
+        //     RopeWrapper(&rope),
+        // ).enumerate() {
+        //     for (_cidx, c) in m.captures.iter().enumerate() {
+        //         // let name = &self.id_to_name[c.index as usize];
+        //         // debug!("m[{}]c[{}] : [{}:{}) = {}",
+        //         //     _idx, _cidx,
+        //         //     c.node.start_byte(),
+        //         //     c.node.end_byte(),
+        //         //     name,
+        //         //     );
+        //     }
+        // }
 
         true
     }
