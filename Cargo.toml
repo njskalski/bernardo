@@ -22,6 +22,7 @@ json = "0.12.4"
 ron = "0.7.0"
 serde = { version = "1", features = ["derive"] }
 hex = "0.4.3"
+syntect = "4.6.0"
 
 maplit = "1.0.2"
 lazy_static = "1.4.0"
@@ -36,7 +37,7 @@ tree-sitter-html = "0.19.0"
 tree-sitter-rust = "0.20.1"
 #TODO add more
 
-tree-sitter-highlight = { version = "0.20", path = "third-party/highlight"}
+tree-sitter-highlight = { version = "0.20", path = "third-party/highlight" }
 
 
 

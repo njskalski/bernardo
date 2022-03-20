@@ -171,9 +171,11 @@ impl EditorView {
 
                 let mut style = default;
 
-                if let Some(item) = highlight_iter.peek() {
-                    if let Some(color) = theme.name_to_theme(&item.identifier) {
-                        style = style.with_foreground(color);
+                if tr != NEWLINE { // TODO cleanup
+                    if let Some(item) = highlight_iter.peek() {
+                        if let Some(color) = theme.name_to_theme(&item.identifier) {
+                            style = style.with_foreground(color);
+                        }
                     }
                 }
 

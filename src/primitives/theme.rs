@@ -8,6 +8,7 @@ use crate::io::style::{Effect, TextStyle};
 use crate::primitives::color::Color;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::is_default::IsDefault;
+use crate::primitives::tmtheme::TmTheme;
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Theme {
@@ -15,20 +16,26 @@ pub struct Theme {
     pub general_code_theme: GeneralCodeTheme,
     #[serde(default, skip_serializing_if = "UiTheme::is_default")]
     pub ui: UiTheme,
+    // I do not serialize this, use the default value and always say "true" in comparison operator.
+    #[serde(default, skip_serializing)]
+    pub tm: TmTheme,
 }
 
 impl Theme {
     pub fn name_to_theme(&self, s: &str) -> Option<Color> {
-        let ct = &self;
+        if let Some(color) = self.tm.color_for_name(s) {
+            return Some(color);
+        }
+
         match s {
-            "string_literal" if ct.general_code_theme.string_literal.is_some() => ct.general_code_theme.string_literal,
-            "string_literal" | "literal" => ct.general_code_theme.literal,
-            "\"" => ct.general_code_theme.double_quote,
-            "\'" => ct.general_code_theme.single_quote,
-            "(" => ct.general_code_theme.parenthesis,
-            ")" => ct.general_code_theme.parenthesis,
-            "identifier" => ct.general_code_theme.identifier,
-            "::" | ">>" | "<<" | "<" | ">" => ct.general_code_theme.operator,
+            // "string_literal" if ct.general_code_theme.string_literal.is_some() => ct.general_code_theme.string_literal,
+            // "string_literal" | "literal" => ct.general_code_theme.literal,
+            // "\"" => ct.general_code_theme.double_quote,
+            // "\'" => ct.general_code_theme.single_quote,
+            // "(" => ct.general_code_theme.parenthesis,
+            // ")" => ct.general_code_theme.parenthesis,
+            // "identifier" => ct.general_code_theme.identifier,
+            // "::" | ">>" | "<<" | "<" | ">" => ct.general_code_theme.operator,
             _ => {
                 warn!("not matched code identifier \"{}\"", s);
                 None

@@ -18,3 +18,4 @@ pub mod cursor_set_rect;
 pub mod alphabet;
 
 pub mod is_default;
+pub mod tmtheme;
