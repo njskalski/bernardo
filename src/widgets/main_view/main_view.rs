@@ -116,7 +116,9 @@ impl MainView {
                             .with_buffer(
                                 BufferState::new(self.tree_sitter.clone())
                                     .with_text_from_rope(rope, lang_id)
-                            ),
+                            ).with_path_op(
+                            path.parent().map(|p| p.to_owned())
+                        ),
                         ScrollDirection::Both,
                     ));
                 true

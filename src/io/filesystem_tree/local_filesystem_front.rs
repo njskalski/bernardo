@@ -190,7 +190,7 @@ impl FilesystemFront for LocalFilesystem {
         };
 
         for msg in self.fs_channel.1.try_iter() {
-            debug!("ticking msg {:?}", msg);
+            // debug!("ticking msg {:?}", msg);
             match msg {
                 // TODO now everything is
                 FSUpdate::DirectoryUpdate { full_path, entries } => {

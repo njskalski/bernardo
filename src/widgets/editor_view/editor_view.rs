@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use log::{error, warn};
@@ -21,6 +22,7 @@ use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::common_edit_msgs::{apply_cme, cme_to_direction, key_to_edit_msg};
 use crate::widgets::editor_view::msg::EditorViewMsg;
@@ -49,6 +51,9 @@ pub struct EditorView {
     // TODO I should refactor that these two don't appear at the same time.
     save_file_dialog: Option<SaveFileDialogWidget>,
     fuzzy_search: Option<FuzzySearchWidget>,
+
+    // not sure if that should be a part of buffer or editor
+    path: Option<PathBuf>,
 }
 
 impl EditorView {
@@ -63,12 +68,27 @@ impl EditorView {
             fsf: fs,
             save_file_dialog: None,
             fuzzy_search: None,
+            path: None,
         }
     }
 
     pub fn with_buffer(self, buffer: BufferState) -> Self {
         EditorView {
             todo_text: buffer,
+            ..self
+        }
+    }
+
+    pub fn with_path(self, path: PathBuf) -> Self {
+        Self {
+            path: Some(path),
+            ..self
+        }
+    }
+
+    pub fn with_path_op(self, path_op: Option<PathBuf>) -> Self {
+        Self {
+            path: path_op,
             ..self
         }
     }
@@ -286,10 +306,13 @@ impl Widget for EditorView {
                 EditorViewMsg::SaveAs |
                 EditorViewMsg::Save => {
                     self.fuzzy_search = None;
-
-                    self.save_file_dialog = Some(SaveFileDialogWidget::new(
+                    let mut save_file_dialog = SaveFileDialogWidget::new(
                         self.fsf.clone(),
-                    ));
+                    ).with_on_cancel(|_| {
+                        EditorViewMsg::OnSaveAsCancel.someboxed()
+                    });
+                    self.path.as_ref().map(|p| save_file_dialog.set_path(&p));
+                    self.save_file_dialog = Some(save_file_dialog);
 
                     None
                 }
@@ -304,6 +327,10 @@ impl Widget for EditorView {
                 }
                 EditorViewMsg::FuzzyClose => {
                     self.fuzzy_search = None;
+                    None
+                }
+                EditorViewMsg::OnSaveAsCancel => {
+                    self.save_file_dialog = None;
                     None
                 }
                 _ => {

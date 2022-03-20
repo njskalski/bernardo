@@ -10,6 +10,7 @@ pub enum EditorViewMsg {
     FuzzyClose,
     Save,
     SaveAs,
+    OnSaveAsCancel,
 }
 
 

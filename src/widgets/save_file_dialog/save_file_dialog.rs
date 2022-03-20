@@ -28,6 +28,7 @@ use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::border::SINGLE_BORDER_STYLE;
 use crate::primitives::helpers::fill_output;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
@@ -78,11 +79,6 @@ pub struct SaveFileDialogWidget {
 impl SaveFileDialogWidget {
     pub fn new(fsf: FsfRef) -> Self {
         let tree = fsf.get_root();
-        // let just_dirs = FilteredFileFront::new(tree.clone(), |i| {
-        //     i.is_dir()
-        // });
-        //
-
         let filter = |f: &Rc<FileFront>| -> bool {
             f.is_dir()
         };
@@ -162,8 +158,13 @@ impl SaveFileDialogWidget {
         let tree_widget = &mut self.tree_widget;
         let list_widget = &mut self.list_widget;
         let edit_box = &mut self.edit_box;
+        let mut tree_layout = LeafLayout::new(tree_widget);
+        let mut empty_layout = EmptyLayout::new().with_size(XY::new(1, 1));
 
-        let mut left_column = LeafLayout::new(tree_widget);
+        let mut left_column = SplitLayout::new(SplitDirection::Vertical)
+            .with(SplitRule::Proportional(1.0), &mut tree_layout)
+            .with(SplitRule::Fixed(1), &mut empty_layout);
+
         let mut empty = EmptyLayout::new();
         let mut ok_box = LeafLayout::new(&mut self.ok_button);
         let mut cancel_box = LeafLayout::new(&mut self.cancel_button);
@@ -216,6 +217,7 @@ impl SaveFileDialogWidget {
         }
 
         let mut root_path = self.fsf.get_root().path().to_owned();
+        self.tree_widget.internal_mut().expanded_mut().insert(root_path.clone());
 
         match path.strip_prefix(&root_path) {
             Err(e) => {
@@ -223,13 +225,12 @@ impl SaveFileDialogWidget {
             }
             Ok(remainder) => {
                 for comp in remainder.components() {
+                    root_path = root_path.join(comp);
                     self.fsf.todo_expand(&root_path);
                     debug!("expanding subtree {:?}", root_path);
 
                     // TODO one can save some memory here
                     self.tree_widget.internal_mut().expanded_mut().insert(root_path.clone());
-
-                    root_path = root_path.join(comp);
                 }
             }
         }
@@ -237,6 +238,11 @@ impl SaveFileDialogWidget {
         self.root_path = path.to_owned();
 
         true
+    }
+
+    pub fn with_path(mut self, path: &Path) -> Self {
+        self.set_path(path);
+        self
     }
 
     pub fn set_on_cancel(&mut self, on_cancel: WidgetAction<Self>) {
@@ -399,6 +405,18 @@ impl Widget for SaveFileDialogWidget {
             InputEvent::KeyInput(key) => {
                 match key.keycode {
                     Keycode::Esc => SaveFileDialogMsg::Cancel.someboxed(),
+                    keycode if keycode.is_arrow() => {
+                        if let (Some(msg), Some(ds)) = (key.as_focus_update(), &self.display_state) {
+                            if ds.focus_group.can_update_focus(msg) {
+                                SaveFileDialogMsg::FocusUpdateMsg(msg).someboxed()
+                            } else {
+                                None
+                            }
+                        } else {
+                            error!("failed to cast arrow to focus update");
+                            None
+                        }
+                    }
                     _ => None
                 }
             }
@@ -508,6 +526,9 @@ impl Widget for SaveFileDialogWidget {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         fill_output(theme.ui.non_focused.background, output);
+
+        SINGLE_BORDER_STYLE.draw_edges(theme.default_text(focused),
+                                       output);
 
         match self.display_state.borrow().as_ref() {
             None => warn!("failed rendering save_file_dialog without cached_sizes"),
