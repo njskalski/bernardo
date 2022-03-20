@@ -33,7 +33,7 @@ pub fn byte_offset_to_point(rope: &Rope, byte_offset: usize) -> Option<Point> {
 pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {
     return Box::new(move |offset: usize, point: Point| {
         if offset >= rope.len_bytes() {
-            debug!("byte offset beyond rope length: {} >= {}", offset, rope.len_bytes());
+            // debug!("byte offset beyond rope length: {} >= {}", offset, rope.len_bytes());
             return &EMPTY_SLICE;
         }
 
@@ -56,7 +56,7 @@ pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point
         let cut_from_beginning = offset - chunk_byte_idx;
         let result = &chunk_as_bytes[cut_from_beginning..];
 
-        debug!("parser reading bytes [{}-{}) |{}|", offset, offset + result.len(), result.len());
+        // debug!("parser reading bytes [{}-{}) |{}|", offset, offset + result.len(), result.len());
 
         result
     });
