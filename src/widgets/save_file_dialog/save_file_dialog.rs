@@ -23,6 +23,7 @@ use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::DisplayState;
 use crate::layout::empty_layout::EmptyLayout;
+use crate::layout::frame_layout::FrameLayout;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
@@ -190,21 +191,19 @@ impl SaveFileDialogWidget {
                   &mut right_column,
             );
 
+        let frame = XY::new(1, 1);
 
-        match &mut self.hover_dialog {
-            None => layout.calc_sizes(max_size),
+        match self.hover_dialog.as_mut() {
+            None => FrameLayout::new(&mut layout, frame).calc_sizes(max_size),
             Some(dialog) => {
-                let mut leaf_dialog = LeafLayout::new(dialog);
-
-                let margins = max_size / 10;
-                // let mut margin_dialog = FrameLayout::new(&mut leaf_dialog, margins);
-                let layout = &mut HoverLayout::new(&mut layout,
-                                                   &mut leaf_dialog,
-                                                   Rect::new(
-                                                       margins, // TODO
-                                                       max_size - margins * 2,
-                                                   ));
-                layout.calc_sizes(max_size)
+                let margins = max_size / 15;
+                FrameLayout::new(&mut HoverLayout::new(&mut layout,
+                                                       &mut LeafLayout::new(dialog),
+                                                       Rect::new(
+                                                           margins, // TODO
+                                                           max_size - margins * 2,
+                                                       ),
+                ), frame).calc_sizes(max_size)
             }
         }
     }
