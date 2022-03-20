@@ -197,7 +197,7 @@ impl SaveFileDialogWidget {
         match self.hover_dialog.as_mut() {
             None => FrameLayout::new(&mut layout, frame).calc_sizes(max_size),
             Some(dialog) => {
-                let margins = max_size / 15;
+                let margins = max_size / 20;
                 FrameLayout::new(&mut HoverLayout::new(&mut layout,
                                                        &mut LeafLayout::new(dialog),
                                                        Rect::new(
@@ -216,10 +216,11 @@ impl SaveFileDialogWidget {
             return false;
         }
 
+        let dir_path = path.parent().unwrap_or(path);
         let mut root_path = self.fsf.get_root().path().to_owned();
         self.tree_widget.internal_mut().expanded_mut().insert(root_path.clone());
 
-        match path.strip_prefix(&root_path) {
+        match path.strip_prefix(&dir_path) {
             Err(e) => {
                 error!("supposed to set path to {:?}, but it's outside fs {:?}, because: {}", path, &root_path, e);
             }
@@ -233,6 +234,10 @@ impl SaveFileDialogWidget {
                     self.tree_widget.internal_mut().expanded_mut().insert(root_path.clone());
                 }
             }
+        }
+
+        if !self.tree_widget.internal_mut().set_selected(&root_path) {
+            error!("failed to select {:?}", root_path);
         }
 
         self.root_path = path.to_owned();

@@ -182,7 +182,7 @@ fn main() {
                     Ok(mut ie) => {
                         debug!("{:?}", ie);
                         match ie {
-                            InputEvent::KeyInput(key) if key.as_focus_update().is_some() => {
+                            InputEvent::KeyInput(key) if key.as_focus_update().is_some() && key.modifiers.alt => {
                                 ie = InputEvent::FocusUpdate(key.as_focus_update().unwrap());
                             },
                             InputEvent::KeyInput(key) if key.keycode == Keycode::Char('q') && key.modifiers.ctrl => {

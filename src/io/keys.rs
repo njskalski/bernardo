@@ -58,10 +58,6 @@ impl Key {
     }
 
     pub fn as_focus_update(&self) -> Option<FocusUpdate> {
-        if self.modifiers.alt == false {
-            return None;
-        }
-
         return match self.keycode {
             Keycode::ArrowUp => Some(FocusUpdate::Up),
             Keycode::ArrowDown => Some(FocusUpdate::Down),

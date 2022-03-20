@@ -171,7 +171,14 @@ impl Widget for EditBoxWidget {
                     Some(Box::new(EditBoxWidgetMsg::Hit))
                 } else {
                     match key_to_edit_msg(key_event) {
-                        Some(cem) => Some(Box::new(EditBoxWidgetMsg::CommonEditMsg(cem))),
+                        Some(cem) => match cem {
+                            CommonEditMsg::CursorUp { selecting: _ } |
+                            CommonEditMsg::CursorDown { selecting: _ } => None,
+                            CommonEditMsg::CursorLeft { selecting: _ } if self.cursor_set.as_single().map(|c| c.a == 0).unwrap_or(false) => None,
+                            CommonEditMsg::CursorRight { selecting: _ } if self.cursor_set.as_single()
+                                .map(|c| c.a > self.text.len_chars()).unwrap_or(false) => None,
+                            _ => Some(Box::new(EditBoxWidgetMsg::CommonEditMsg(cem))),
+                        }
                         None => None,
                     }
                 }

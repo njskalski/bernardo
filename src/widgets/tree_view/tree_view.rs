@@ -118,6 +118,21 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
         &self.expanded
     }
 
+    pub fn set_selected(&mut self, k: &Key) -> bool {
+        let mut pos = 0 as usize;
+        for (_, item) in self.items() {
+            if item.id() == k {
+                self.highlighted = pos;
+                return true;
+            }
+            pos += 1;
+        }
+
+        error!("failed to find item with key {:?}", k);
+
+        false
+    }
+
     fn size_from_items(&self) -> XY {
         self.items().fold(ZERO, |old_size, item| {
             // debug!("adding item (depth {}) {:?}", item.0, item.1);
