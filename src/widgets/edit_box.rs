@@ -172,6 +172,7 @@ impl Widget for EditBoxWidget {
                 } else {
                     match key_to_edit_msg(key_event) {
                         Some(cem) => match cem {
+                            // the 4 cases below are designed to NOT consume the event in case it cannot be used.
                             CommonEditMsg::CursorUp { selecting: _ } |
                             CommonEditMsg::CursorDown { selecting: _ } => None,
                             CommonEditMsg::CursorLeft { selecting: _ } if self.cursor_set.as_single().map(|c| c.a == 0).unwrap_or(false) => None,

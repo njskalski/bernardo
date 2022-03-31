@@ -1,6 +1,8 @@
+use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs::DirEntry;
+use std::hash::BuildHasher;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::thread;
@@ -9,9 +11,11 @@ use crossbeam_channel::{Receiver, Sender};
 use filesystem::{FileSystem, OsFileSystem};
 use log::{debug, error, warn};
 use ropey::Rope;
-
 use crate::io::filesystem_tree::file_front::{FileChildrenCache, FileFront};
+
 use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
+use crate::io::filesystem_tree::fsfref::FsfRef;
+use crate::widgets::fuzzy_search::item_provider::Item;
 
 // how many file paths should be available for immediate querying "at hand".
 // basically a default size of cache for fuzzy file search
@@ -21,6 +25,7 @@ const DEFAULT_FILES_PRELOADS: usize = 10 * 1024;
 pub enum SendFile {
     File(PathBuf),
     Directory(PathBuf),
+    // TODO add inotify events for filed being removed, renamed etc.
 }
 
 #[derive(Debug)]
@@ -31,18 +36,28 @@ pub enum FSUpdate {
     }
 }
 
+#[derive(Debug, Hash, Eq, PartialEq)]
+struct WrappedRcPath(Rc<PathBuf>);
+
+impl Borrow<Path> for WrappedRcPath {
+    fn borrow(&self) -> &Path {
+        self.0.as_path()
+    }
+}
+
 #[derive(Debug)]
 struct InternalState {
-    caches: HashMap<Rc<PathBuf>, Rc<RefCell<FileChildrenCache>>>,
+    children_cache: HashMap<Rc<PathBuf>, Rc<RefCell<FileChildrenCache>>>,
+    node_cache: HashMap<WrappedRcPath, Rc<FileFront>>,
     at_hand_limit: usize,
 }
 
 impl InternalState {
     fn get_or_create_cache(&mut self, path: &Rc<PathBuf>) -> Rc<RefCell<FileChildrenCache>> {
-        match self.caches.get(path) {
+        match self.children_cache.get(path) {
             None => {
                 let cache = Rc::new(RefCell::new(FileChildrenCache::default()));
-                self.caches.insert(path.clone(), cache.clone());
+                self.children_cache.insert(path.clone(), cache.clone());
                 cache
             }
             Some(cache) => cache.clone(),
@@ -53,16 +68,16 @@ impl InternalState {
 #[derive(Debug)]
 pub struct LocalFilesystem {
     fs: OsFileSystem,
-    root_node: Rc<FileFront>,
+    root_path: Rc<PathBuf>,
 
     fs_channel: (Sender<FSUpdate>, Receiver<FSUpdate>),
     tick_channel: (Sender<()>, Receiver<()>),
 
-    internal_state: RefCell<InternalState>,
+    internal_state: Rc<RefCell<InternalState>>,
 }
 
 impl LocalFilesystem {
-    pub fn new(root: PathBuf) -> Self {
+    pub fn new(root: PathBuf) -> FsfRef {
         // TODO check it's directory
 
         let root_cache = Rc::new(RefCell::new(FileChildrenCache {
@@ -71,21 +86,23 @@ impl LocalFilesystem {
         }));
 
         let root_path = Rc::new(root);
-        let root_node = FileFront::new_directory(root_path.clone(), root_cache.clone());
 
         let mut internal_state = InternalState {
-            caches: HashMap::default(),
+            children_cache: HashMap::default(),
+            node_cache: HashMap::default(),
             at_hand_limit: DEFAULT_FILES_PRELOADS,
         };
-        internal_state.caches.insert(root_path.clone(), root_cache.clone());
+        internal_state.children_cache.insert(root_path.clone(), root_cache.clone());
 
-        LocalFilesystem {
-            fs: OsFileSystem::new(),
-            root_node: Rc::new(root_node),
-            fs_channel: crossbeam_channel::unbounded::<FSUpdate>(),
-            tick_channel: crossbeam_channel::unbounded(),
-            internal_state: RefCell::new(internal_state),
-        }
+        FsfRef(
+            Rc::new(Box::new(LocalFilesystem {
+                fs: OsFileSystem::new(),
+                root_path,
+                fs_channel: crossbeam_channel::unbounded::<FSUpdate>(),
+                tick_channel: crossbeam_channel::unbounded(),
+                internal_state: Rc::new(RefCell::new(internal_state)),
+            }))
+        )
     }
 
     pub fn set_at_hand_limit(&self, new_at_hand_limit: usize) {
@@ -155,8 +172,28 @@ impl LocalFilesystem {
 }
 
 impl FilesystemFront for LocalFilesystem {
-    fn get_root(&self) -> Rc<FileFront> {
-        self.root_node.clone()
+    fn get_root_path(&self) -> &Rc<PathBuf> {
+        &self.root_path
+    }
+
+    fn get_file(&self, path: &Path) -> Option<Rc<FileFront>> {
+        let p: &Path = path;
+        if !p.starts_with(&*self.root_path) {
+            warn!("attempted to open a file from outside of filesystem: {:?}", p);
+            return None;
+        };
+
+        self.internal_state.try_borrow_mut().map(|is| {
+            if !is.node_cache.contains_key(path) {}
+
+            // is.node_cache.hasher().build_hasher().
+        });
+
+        // self.internal_state.try_borrow_mut().map(|is| {
+        //     is.ge
+        // });
+
+        None
     }
 
     fn todo_read_file(&self, path: &Path) -> Result<Rope, ()> {
@@ -172,8 +209,7 @@ impl FilesystemFront for LocalFilesystem {
     }
 
     fn todo_expand(&self, path: &Path) {
-        // TODO do refresh
-        self.start_fs_refresh(path)
+        self.start_fs_refresh(path);
     }
 
     fn tick_recv(&self) -> &Receiver<()> {
@@ -201,15 +237,11 @@ impl FilesystemFront for LocalFilesystem {
                     for de in entries.iter() {
                         match de.file_type() {
                             Ok(t) => {
-                                // TODO recycle old cache?
-                                let child_path = Rc::new(de.path());
-
-                                if t.is_dir() {
-                                    let child_cache = is.get_or_create_cache(&child_path);
-                                    items.push(Rc::new(FileFront::new_directory(child_path, child_cache)));
-                                } else {
-                                    items.push(Rc::new(FileFront::new_file(child_path.clone())))
-                                }
+                                self.get_file(&de.path()).map(|item| {
+                                    items.push(item);
+                                }).unwrap_or_else(|| {
+                                    error!("failed to get item for path {:?}", path);
+                                });
                             }
                             Err(e) => {
                                 error!("failed reading file type for {:?}: {}", de.path(), e);

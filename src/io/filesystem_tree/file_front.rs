@@ -5,33 +5,12 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use log::error;
+use crate::io::filesystem_tree::fsfref::FsfRef;
 
 use crate::widgets::list_widget::{ListWidgetItem, ListWidgetProvider};
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 type FilterType = fn(&Rc<FileFront>) -> bool;
-
-#[derive(Clone, Debug)]
-pub enum FileType {
-    File,
-    Directory { cache: Rc<RefCell<FileChildrenCache>> },
-}
-
-impl FileType {
-    pub fn is_file(&self) -> bool {
-        match self {
-            FileType::File => true,
-            FileType::Directory { .. } => false,
-        }
-    }
-
-    pub fn is_dir(&self) -> bool {
-        match self {
-            FileType::File => false,
-            FileType::Directory { .. } => true,
-        }
-    }
-}
 
 pub struct FileChildrenCache {
     pub complete: bool,
@@ -59,23 +38,14 @@ impl Default for FileChildrenCache {
 #[derive(Debug)]
 pub struct FileFront {
     path: Rc<PathBuf>,
-    file_type: FileType,
+    fsf: FsfRef,
 }
 
 impl FileFront {
-    pub fn new_file(path: Rc<PathBuf>) -> Self {
+    pub fn new(path: Rc<PathBuf>, fsf: FsfRef) -> FileFront {
         Self {
             path,
-            file_type: FileType::File,
-        }
-    }
-
-    pub fn new_directory(path: Rc<PathBuf>, cache: Rc<RefCell<FileChildrenCache>>) -> Self {
-        Self {
-            path,
-            file_type: FileType::Directory {
-                cache
-            },
+            fsf,
         }
     }
 
@@ -84,25 +54,15 @@ impl FileFront {
     }
 
     pub fn is_dir(&self) -> bool {
-        self.file_type.is_dir()
+        self.fsf.0.is_dir(&self.path)
     }
 
     pub fn is_file(&self) -> bool {
-        self.file_type.is_file()
+        self.fsf.0.is_file(&self.path)
     }
 
-    pub fn children(&self) -> Vec<Rc<FileFront>> {
-        return match &self.file_type {
-            FileType::Directory { cache } => {
-                cache.try_borrow().map(
-                    |cache| cache.children.iter().map(|f| f.clone()).collect::<Vec<_>>()
-                ).unwrap_or_else(|e| {
-                    error!("failed accessing file_front cache: {}", e);
-                    vec![]
-                })
-            }
-            FileType::File => vec![],
-        };
+    pub fn children(&self) -> Box<dyn Iterator<Item=Rc<FileFront>>> {
+        self.fsf.0.get_children(&self.path).1.into_iter()
     }
 }
 
@@ -116,52 +76,24 @@ impl TreeViewNode<PathBuf> for Rc<FileFront> {
     }
 
     fn is_leaf(&self) -> bool {
-        match self.file_type {
-            FileType::File => true,
-            FileType::Directory { .. } => false
-        }
+        self.is_file()
     }
 
     fn num_child(&self) -> (bool, usize) {
-        match &self.file_type {
-            FileType::File => (true, 0),
-            FileType::Directory { cache } => {
-                cache.try_borrow().map(
-                    |c| (c.complete, c.children.len())
-                ).unwrap_or_else(|_| {
-                    error!("failed to access cache");
-                    (false, 0)
-                })
-            }
+        if self.is_file() {
+            (true, 0)
+        } else {
+            let (done, items) = self.fsf.0.get_children(&self.path);
+            (done, items.count())
         }
     }
 
     fn get_child(&self, idx: usize) -> Option<Self> {
-        return match &self.file_type {
-            FileType::File => None,
-            FileType::Directory { cache } => {
-                cache.try_borrow().map(
-                    |c| c.children.get(idx).map(|f| f.clone())
-                ).unwrap_or_else(|_| {
-                    error!("failed to access cache");
-                    None
-                })
-            }
-        };
+        self.fsf.0.get_children(&self.path).1.nth(idx)
     }
 
     fn is_complete(&self) -> bool {
-        match &self.file_type {
-            FileType::File => true,
-            FileType::Directory { cache } => {
-                cache.try_borrow().map(
-                    |c| c.complete
-                ).unwrap_or_else(|_| {
-                    error!("failed to access cache");
-                    false
-                })
-            }
-        }
+        self.fsf.0.get_children(&self.path).0
     }
 }
 
@@ -210,10 +142,10 @@ impl FilteredFileFront {
 
 impl ListWidgetProvider<Rc<FileFront>> for FilteredFileFront {
     fn len(&self) -> usize {
-        self.ff.children().iter().filter(|x| (self.filter)(x)).count()
+        self.ff.children().filter(|x| (self.filter)(x)).count()
     }
 
     fn get(&self, idx: usize) -> Option<Rc<FileFront>> {
-        self.ff.children().iter().filter(|x| (self.filter)(x)).nth(idx).map(|f| f.clone())
+        self.ff.children().filter(|x| (self.filter)(x)).nth(idx).map(|f| f.clone())
     }
 }

@@ -14,10 +14,11 @@ use std::rc::Rc;
 
 use log::{debug, error, warn};
 
-use crate::{FsfRef, Keycode};
+use crate::Keycode;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::filesystem_tree::file_front::{FileFront, FilteredFileFront};
 use crate::io::filesystem_tree::filesystem_front::SomethingToSave;
+use crate::io::filesystem_tree::fsfref::FsfRef;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
@@ -112,7 +113,7 @@ impl SaveFileDialogWidget {
             |_| SaveFileDialogMsg::Cancel.someboxed()
         );
 
-        let path = fsf.get_root().path().to_owned();
+        let path = fsf.0.get_root().path().to_owned();
 
         SaveFileDialogWidget {
             id: get_new_widget_id(),
@@ -186,9 +187,9 @@ impl SaveFileDialogWidget {
                   &mut button_bar);
 
         let mut layout = SplitLayout::new(SplitDirection::Horizontal)
-            .with(SplitRule::Proportional(1.0),
+            .with(SplitRule::Proportional(2.0),
                   &mut left_column)
-            .with(SplitRule::Proportional(4.0),
+            .with(SplitRule::Proportional(3.0),
                   &mut right_column,
             );
 
@@ -208,7 +209,6 @@ impl SaveFileDialogWidget {
             }
         }
     }
-
 
     pub fn set_path(&mut self, path: &Path) -> bool {
         if !self.fsf.is_dir(path) {
@@ -238,9 +238,32 @@ impl SaveFileDialogWidget {
 
         if !self.tree_widget.internal_mut().set_selected(&root_path) {
             error!("failed to select {:?}", root_path);
+            return false;
         }
 
-        self.root_path = path.to_owned();
+
+        self.show_files_on_right_panel(&root_path)
+    }
+
+
+    fn show_files_on_right_panel(&mut self, directory: &Path) -> bool {
+        if !self.fsf.is_dir(directory) {
+            warn!("expected directory, got {:?}", directory);
+            return false;
+        }
+
+        let item = match self.fsf.get_file(directory) {
+            Some(i) => i,
+            None => {
+                warn!("failed retrieving {:?} from fsf", directory);
+                return false;
+            }
+        };
+
+        self.fsf.todo_expand(directory);
+        self.list_widget.set_provider(
+            Box::new(FilteredFileFront::new(item, |f| f.is_file()))
+        );
 
         true
     }
@@ -460,12 +483,9 @@ impl Widget for SaveFileDialogWidget {
                 None
             }
             SaveFileDialogMsg::TreeHighlighted(node) => {
-                self.fsf.todo_expand(node.path());
-                self.list_widget.set_provider(
-                    Box::new(FilteredFileFront::new(node.clone(),
-                                                    |f| f.is_file(),
-                    ))
-                );
+                if !self.set_path(node.path()) {
+                    warn!("failed to set path {:?}", node.path());
+                }
 
                 None
             }
