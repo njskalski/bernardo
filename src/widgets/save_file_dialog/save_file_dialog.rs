@@ -57,8 +57,8 @@ pub struct SaveFileDialogWidget {
 
     display_state: Option<DisplayState>,
 
-    tree_widget: WithScroll<TreeViewWidget<PathBuf, Rc<FileFront>>>,
-    list_widget: ListWidget<Rc<FileFront>>,
+    tree_widget: WithScroll<TreeViewWidget<PathBuf, FileFront>>,
+    list_widget: ListWidget<FileFront>,
     edit_box: EditBoxWidget,
 
     ok_button: ButtonWidget,
@@ -80,11 +80,11 @@ pub struct SaveFileDialogWidget {
 impl SaveFileDialogWidget {
     pub fn new(fsf: FsfRef) -> Self {
         let tree = fsf.get_root();
-        let filter = |f: &Rc<FileFront>| -> bool {
+        let filter = |f: &FileFront| -> bool {
             f.is_dir()
         };
 
-        let tree_widget = TreeViewWidget::<PathBuf, Rc<FileFront>>::new(tree)
+        let tree_widget = TreeViewWidget::<PathBuf, FileFront>::new(tree)
             .with_filter(filter, Some(0))
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
@@ -97,7 +97,7 @@ impl SaveFileDialogWidget {
 
         let scroll_tree_widget = WithScroll::new(tree_widget, ScrollDirection::Vertical);
 
-        let list_widget: ListWidget<Rc<FileFront>> = ListWidget::new().with_selection()
+        let list_widget: ListWidget<FileFront> = ListWidget::new().with_selection()
             .with_on_hit(|w| {
                 w.get_highlighted().map(|item| {
                     Some(SaveFileDialogMsg::FileListHit(item).boxed())
@@ -113,7 +113,7 @@ impl SaveFileDialogWidget {
             |_| SaveFileDialogMsg::Cancel.someboxed()
         );
 
-        let path = fsf.0.get_root().path().to_owned();
+        let path = fsf.get_root().path().to_owned();
 
         SaveFileDialogWidget {
             id: get_new_widget_id(),

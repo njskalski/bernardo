@@ -8,10 +8,10 @@ use crate::io::filesystem_tree::file_front::FileFront;
 pub enum SaveFileDialogMsg {
     FocusUpdateMsg(FocusUpdate),
     // Sent when a left hand-side file-tree subtree is expanded (default: on Enter key)
-    TreeExpanded(Rc<FileFront>),
+    TreeExpanded(FileFront),
     // Sent when a left hand-side file-tree subtree selection changed
-    TreeHighlighted(Rc<FileFront>),
-    FileListHit(Rc<FileFront>),
+    TreeHighlighted(FileFront),
+    FileListHit(FileFront),
     EditBoxHit,
 
     Cancel,

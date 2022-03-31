@@ -176,7 +176,7 @@ impl FilesystemFront for LocalFilesystem {
         &self.root_path
     }
 
-    fn get_file(&self, path: &Path) -> Option<Rc<FileFront>> {
+    fn get_file(&self, path: &Path) -> Option<FileFront> {
         let p: &Path = path;
         if !p.starts_with(&*self.root_path) {
             warn!("attempted to open a file from outside of filesystem: {:?}", p);
@@ -204,7 +204,7 @@ impl FilesystemFront for LocalFilesystem {
         ) // TODO
     }
 
-    fn get_children(&self, _path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<FileFront>>>) {
+    fn get_children(&self, _path: &Path) -> (bool, Box<dyn Iterator<Item=FileFront>>) {
         todo!()
     }
 
@@ -232,7 +232,7 @@ impl FilesystemFront for LocalFilesystem {
                 FSUpdate::DirectoryUpdate { full_path, entries } => {
                     let path = Rc::new(full_path);
 
-                    let mut items: Vec<Rc<FileFront>> = Vec::new();
+                    let mut items: Vec<FileFront> = Vec::new();
                     items.reserve(entries.len());
                     for de in entries.iter() {
                         match de.file_type() {

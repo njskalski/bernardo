@@ -10,11 +10,11 @@ use crate::io::filesystem_tree::fsfref::FsfRef;
 use crate::widgets::list_widget::{ListWidgetItem, ListWidgetProvider};
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
-type FilterType = fn(&Rc<FileFront>) -> bool;
+type FilterType = fn(&FileFront) -> bool;
 
 pub struct FileChildrenCache {
     pub complete: bool,
-    pub children: Vec<Rc<FileFront>>,
+    pub children: Vec<FileFront>,
 }
 
 impl Debug for FileChildrenCache {
@@ -35,14 +35,14 @@ impl Default for FileChildrenCache {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct FileFront {
     path: Rc<PathBuf>,
     fsf: FsfRef,
 }
 
 impl FileFront {
-    pub fn new(path: Rc<PathBuf>, fsf: FsfRef) -> FileFront {
+    pub fn new(fsf: FsfRef, path: Rc<PathBuf>) -> FileFront {
         Self {
             path,
             fsf,
@@ -61,12 +61,12 @@ impl FileFront {
         self.fsf.0.is_file(&self.path)
     }
 
-    pub fn children(&self) -> Box<dyn Iterator<Item=Rc<FileFront>>> {
+    pub fn children(&self) -> Box<dyn Iterator<Item=FileFront>> {
         self.fsf.0.get_children(&self.path).1.into_iter()
     }
 }
 
-impl TreeViewNode<PathBuf> for Rc<FileFront> {
+impl TreeViewNode<PathBuf> for FileFront {
     fn id(&self) -> &PathBuf {
         &self.path
     }
@@ -97,7 +97,7 @@ impl TreeViewNode<PathBuf> for Rc<FileFront> {
     }
 }
 
-impl ListWidgetItem for Rc<FileFront> {
+impl ListWidgetItem for FileFront {
     fn get_column_name(_idx: usize) -> &'static str {
         "name"
     }
@@ -121,7 +121,7 @@ impl ListWidgetItem for Rc<FileFront> {
 
 #[derive(Clone)]
 pub struct FilteredFileFront {
-    ff: Rc<FileFront>,
+    ff: FileFront,
     filter: FilterType,
 }
 
@@ -132,7 +132,7 @@ impl Debug for FilteredFileFront {
 }
 
 impl FilteredFileFront {
-    pub fn new(ff: Rc<FileFront>, filter: FilterType) -> Self {
+    pub fn new(ff: FileFront, filter: FilterType) -> Self {
         Self {
             ff,
             filter,
@@ -140,12 +140,12 @@ impl FilteredFileFront {
     }
 }
 
-impl ListWidgetProvider<Rc<FileFront>> for FilteredFileFront {
+impl ListWidgetProvider<FileFront> for FilteredFileFront {
     fn len(&self) -> usize {
         self.ff.children().filter(|x| (self.filter)(x)).count()
     }
 
-    fn get(&self, idx: usize) -> Option<Rc<FileFront>> {
+    fn get(&self, idx: usize) -> Option<FileFront> {
         self.ff.children().filter(|x| (self.filter)(x)).nth(idx).map(|f| f.clone())
     }
 }

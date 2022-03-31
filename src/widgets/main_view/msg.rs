@@ -10,10 +10,10 @@ pub enum MainViewMsg {
 
     // This is called whenever item in tree is "expanded" or "collapsed".
     // I'm moving entire ChildRc, because PathBuf would allocate, and passing &Path would unleash borrow checker hell.
-    TreeExpandedFlip { expanded: bool, item: Rc<FileFront> },
+    TreeExpandedFlip { expanded: bool, item: FileFront },
 
     // This is called whenever a file is selected.
-    TreeSelected { item: Rc<FileFront> },
+    TreeSelected { item: FileFront },
 }
 
 impl AnyMsg for MainViewMsg {}

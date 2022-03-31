@@ -28,7 +28,7 @@ impl SomethingToSave for Rc<String> {
 pub trait FilesystemFront: Debug {
     fn get_root_path(&self) -> &Rc<PathBuf>;
 
-    fn get_file(&self, path: &Path) -> Option<Rc<FileFront>>;
+    fn get_file(&self, path: &Path) -> Option<FileFront>;
 
     // This is a mock method. It should probably return a stream and should probably report errors.
     // One of many "nice to haves" of this editor, outside of scope of MVP, is "large files support",
@@ -37,7 +37,7 @@ pub trait FilesystemFront: Debug {
 
     // first argument says if the list is complete.
     // none = true, empty iterator
-    fn get_children(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<FileFront>>>);
+    fn get_children(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=FileFront>>);
 
     // This schedules refresh of subdirectory, fsf will "tick" once ready to refresh.
     fn todo_expand(&self, path: &Path);

@@ -1,3 +1,4 @@
+use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::rc::Rc;
 use crate::io::filesystem_tree::file_front::FileFront;
@@ -8,10 +9,10 @@ pub struct FsfRef(pub Rc<Box<dyn FilesystemFront>>);
 
 impl FsfRef {
     pub fn get_root(&self) -> FileFront {
-        FileFront {
-            fsf: self.clone(),
-            path: self.0.get_root_path().clone(),
-        }
+        FileFront::new(
+            self.clone(),
+            self.0.get_root_path().clone(),
+        )
     }
 }
 
@@ -26,5 +27,19 @@ impl Deref for FsfRef {
 
     fn deref(&self) -> &Self::Target {
         self.0.as_ref().as_ref()
+    }
+}
+
+impl PartialEq for FsfRef {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for FsfRef {}
+
+impl Hash for FsfRef {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Rc::as_ptr(&self.0).hash(state)
     }
 }

@@ -32,7 +32,7 @@ pub struct MainView {
     wid: WID,
     display_state: Option<DisplayState>,
 
-    tree_widget: WithScroll<TreeViewWidget<PathBuf, Rc<FileFront>>>,
+    tree_widget: WithScroll<TreeViewWidget<PathBuf, FileFront>>,
     no_editor: NoEditorWidget,
     editor: Option<WithScroll<EditorView>>,
     tree_sitter: Rc<TreeSitterWrapper>,
