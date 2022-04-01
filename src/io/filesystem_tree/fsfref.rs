@@ -25,6 +25,12 @@ impl FsfRef {
 
         (done, Box::new(new_it))
     }
+
+    pub fn get_item(&self, path: &Path) -> Option<FileFront> {
+        self.get_path(path).map(|p| {
+            FileFront::new(self.clone(), p)
+        })
+    }
 }
 
 impl AsRef<dyn FilesystemFront> for FsfRef {

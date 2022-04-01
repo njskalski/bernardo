@@ -70,7 +70,7 @@ pub struct SaveFileDialogWidget {
     on_save: Option<WidgetAction<Self>>,
     on_save_fail: Option<WidgetActionParam<Self, Option<std::io::Error>>>,
 
-    root_path: PathBuf,
+    root_path: Rc<PathBuf>,
 
     to_save: Option<Box<dyn SomethingToSave>>,
 
@@ -113,7 +113,7 @@ impl SaveFileDialogWidget {
             |_| SaveFileDialogMsg::Cancel.someboxed()
         );
 
-        let path = fsf.get_root().path().to_owned();
+        let path = fsf.get_root_path().clone();
 
         SaveFileDialogWidget {
             id: get_new_widget_id(),
@@ -210,13 +210,13 @@ impl SaveFileDialogWidget {
         }
     }
 
-    pub fn set_path(&mut self, path: &Path) -> bool {
-        if !self.fsf.is_dir(path) {
+    pub fn set_path(&mut self, path: &Rc<PathBuf>) -> bool {
+        if !self.fsf.is_dir(&path) {
             warn!("attempted to set path to non-dir: {:?}", path);
             return false;
         }
 
-        let dir_path = path.parent().unwrap_or(path);
+        let dir_path = path.parent().unwrap_or(&path);
         let mut root_path = self.fsf.get_root().path().to_owned();
         self.tree_widget.internal_mut().expanded_mut().insert(root_path.clone());
 
@@ -242,17 +242,19 @@ impl SaveFileDialogWidget {
         }
 
 
-        self.show_files_on_right_panel(&root_path)
+        self.fsf.get_path(&root_path).map(|rcp| {
+            self.show_files_on_right_panel(&rcp)
+        }).unwrap_or(false)
     }
 
 
-    fn show_files_on_right_panel(&mut self, directory: &Path) -> bool {
-        if !self.fsf.is_dir(directory) {
+    fn show_files_on_right_panel(&mut self, directory: &Rc<PathBuf>) -> bool {
+        if !self.fsf.is_dir(&directory) {
             warn!("expected directory, got {:?}", directory);
             return false;
         }
 
-        let item = match self.fsf.get_file(directory) {
+        let item = match self.fsf.get_item(directory) {
             Some(i) => i,
             None => {
                 warn!("failed retrieving {:?} from fsf", directory);
@@ -260,7 +262,7 @@ impl SaveFileDialogWidget {
             }
         };
 
-        self.fsf.todo_expand(directory);
+        self.fsf.todo_expand(&directory);
         self.list_widget.set_provider(
             Box::new(FilteredFileFront::new(item, |f| f.is_file()))
         );
@@ -268,7 +270,7 @@ impl SaveFileDialogWidget {
         true
     }
 
-    pub fn with_path(mut self, path: &Path) -> Self {
+    pub fn with_path(mut self, path: &Rc<PathBuf>) -> Self {
         self.set_path(path);
         self
     }
@@ -483,7 +485,7 @@ impl Widget for SaveFileDialogWidget {
                 None
             }
             SaveFileDialogMsg::TreeHighlighted(node) => {
-                if !self.set_path(node.path()) {
+                if !self.set_path(node.path_rc()) {
                     warn!("failed to set path {:?}", node.path());
                 }
 

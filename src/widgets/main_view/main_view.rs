@@ -101,7 +101,7 @@ impl MainView {
         res
     }
 
-    fn open_file(&mut self, path: &Path) -> bool {
+    fn open_file(&mut self, path: &Rc<PathBuf>) -> bool {
         debug!("opening file {:?}", path);
 
         // TODO this maybe needs to be moved to other place, but there is no other place yet.
@@ -117,7 +117,9 @@ impl MainView {
                                 BufferState::new(self.tree_sitter.clone())
                                     .with_text_from_rope(rope, lang_id)
                             ).with_path_op(
-                            path.parent().map(|p| p.to_owned())
+                            path.parent().map(|p|
+                                self.fs.get_item(p)
+                            ).flatten().map(|f| f.path_rc().clone())
                         ),
                         ScrollDirection::Both,
                     ));
@@ -205,7 +207,7 @@ impl Widget for MainView {
                 None
             }
             MainViewMsg::TreeSelected { item } => {
-                if self.open_file(item.id().as_path()) {
+                if self.open_file(item.path_rc()) {
                     if let (Some(ds), Some(editor)) = (&mut self.display_state, &self.editor) {
                         if ds.focus_group.set_focused(editor.id()) {
                             error!("failed to update focus after update file");

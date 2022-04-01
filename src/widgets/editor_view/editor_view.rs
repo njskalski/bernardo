@@ -53,7 +53,7 @@ pub struct EditorView {
     fuzzy_search: Option<FuzzySearchWidget>,
 
     // not sure if that should be a part of buffer or editor
-    path: Option<PathBuf>,
+    path: Option<Rc<PathBuf>>,
 }
 
 impl EditorView {
@@ -79,14 +79,14 @@ impl EditorView {
         }
     }
 
-    pub fn with_path(self, path: PathBuf) -> Self {
+    pub fn with_path(self, path: Rc<PathBuf>) -> Self {
         Self {
             path: Some(path),
             ..self
         }
     }
 
-    pub fn with_path_op(self, path_op: Option<PathBuf>) -> Self {
+    pub fn with_path_op(self, path_op: Option<Rc<PathBuf>>) -> Self {
         Self {
             path: path_op,
             ..self

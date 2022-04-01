@@ -53,6 +53,8 @@ pub trait FilesystemFront: Debug {
     fn is_dir(&self, path: &Path) -> bool;
     fn is_file(&self, path: &Path) -> bool;
 
+    fn is_within(&self, path: &Path) -> bool;
+
     fn exists(&self, path: &Path) -> bool;
 
     //TODO:

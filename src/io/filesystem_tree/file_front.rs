@@ -53,6 +53,8 @@ impl FileFront {
         &self.path
     }
 
+    pub fn path_rc(&self) -> &Rc<PathBuf> { &self.path }
+
     pub fn is_dir(&self) -> bool {
         self.fsf.0.is_dir(&self.path)
     }

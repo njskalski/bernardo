@@ -169,15 +169,6 @@ impl LocalFilesystem {
             }
         });
     }
-
-    fn is_within_root(&self, path: &Path) -> bool {
-        if !path.starts_with(&*self.root_path) {
-            warn!("attempted to open a file from outside of filesystem: {:?}", path);
-            false
-        } else {
-            true
-        }
-    }
 }
 
 impl FilesystemFront for LocalFilesystem {
@@ -187,7 +178,7 @@ impl FilesystemFront for LocalFilesystem {
 
     fn get_path(&self, path: &Path) -> Option<Rc<PathBuf>> {
         let p: &Path = path;
-        if !self.is_within_root(p) {
+        if !self.is_within(p) {
             return None;
         }
 
@@ -217,7 +208,7 @@ impl FilesystemFront for LocalFilesystem {
     }
 
     fn ls(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=&(dyn filesystem::DirEntry + '_)> + '_>) {
-        if !self.is_within_root(path) {
+        if !self.is_within(path) {
             return (true, Box::new(iter::empty()));
         }
 
@@ -305,6 +296,15 @@ impl FilesystemFront for LocalFilesystem {
         self.fs.is_dir(path)
     }
     fn is_file(&self, path: &Path) -> bool { self.fs.is_file(path) }
+
+    fn is_within(&self, path: &Path) -> bool {
+        if !path.starts_with(&*self.root_path) {
+            warn!("attempted to open a file from outside of filesystem: {:?}", path);
+            false
+        } else {
+            true
+        }
+    }
 
     fn exists(&self, path: &Path) -> bool {
         self.fs.is_dir(path) || self.fs.is_file(path)
