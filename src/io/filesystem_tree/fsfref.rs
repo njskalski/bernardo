@@ -19,9 +19,7 @@ impl FsfRef {
     pub fn get_children(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=FileFront> + '_>) {
         let (done, it) = self.ls(path);
         let new_it =
-            it.map(|i| self.get_path(&i.path())).flatten().map(|path| {
-                FileFront::new(self.clone(), path)
-            });
+            it.map(move |path| FileFront::new(self.clone(), path));
 
         (done, Box::new(new_it))
     }

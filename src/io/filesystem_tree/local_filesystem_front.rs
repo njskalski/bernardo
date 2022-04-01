@@ -6,6 +6,7 @@ use std::hash::BuildHasher;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::{iter, thread};
+use std::io::empty;
 
 use crossbeam_channel::{Receiver, Sender};
 use filesystem::{FileSystem, OsFileSystem};
@@ -207,7 +208,9 @@ impl FilesystemFront for LocalFilesystem {
         ) // TODO
     }
 
-    fn ls(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=&(dyn filesystem::DirEntry + '_)> + '_>) {
+    fn ls(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
+        //TODO add caching
+
         if !self.is_within(path) {
             return (true, Box::new(iter::empty()));
         }
@@ -222,18 +225,23 @@ impl FilesystemFront for LocalFilesystem {
                 error!("failed to read_dir {:?}: {}", path, e);
                 (true, Box::new(iter::empty()))
             }
-            Ok(read) => {
-                let iter = read.map(|direntry| {
-                    match direntry {
-                        Ok(de) => Some(&de as &dyn filesystem::DirEntry),
+            Ok(read_dir) => {
+                let mut items: Vec<Rc<PathBuf>> = vec![];
+
+                for item in read_dir {
+                    match item {
                         Err(e) => {
-                            error!("failed retrieving dir_entry: {}", e);
-                            None
+                            warn!("failed to open DirEntry: {}", e);
+                        }
+                        Ok(dir_entry) => {
+                            self.get_path(&dir_entry.path()).map(
+                                |rc| items.push(rc)
+                            );
                         }
                     }
-                }).flatten();
+                }
 
-                (true, Box::new(iter))
+                (true, Box::new(items.into_iter().map(|f| f.clone())))
             }
         }
     }

@@ -40,7 +40,7 @@ pub trait FilesystemFront: Debug {
     // none = true, empty iterator
     // fn get_children(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=FileFront>>);
 
-    fn ls(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=&(dyn filesystem::DirEntry + '_)> + '_>);
+    fn ls(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>);
 
     // This schedules refresh of subdirectory, fsf will "tick" once ready to refresh.
     fn todo_expand(&self, path: &Path);
