@@ -14,7 +14,7 @@ type FilterType = fn(&FileFront) -> bool;
 
 pub struct FileChildrenCache {
     pub complete: bool,
-    pub children: Vec<FileFront>,
+    pub children: Vec<Rc<PathBuf>>,
 }
 
 impl Debug for FileChildrenCache {
@@ -61,8 +61,8 @@ impl FileFront {
         self.fsf.0.is_file(&self.path)
     }
 
-    pub fn children(&self) -> Box<dyn Iterator<Item=FileFront>> {
-        self.fsf.0.get_children(&self.path).1.into_iter()
+    pub fn children(&self) -> Box<dyn Iterator<Item=FileFront> + '_> {
+        self.fsf.get_children(&self.path).1
     }
 }
 
@@ -83,17 +83,17 @@ impl TreeViewNode<PathBuf> for FileFront {
         if self.is_file() {
             (true, 0)
         } else {
-            let (done, items) = self.fsf.0.get_children(&self.path);
+            let (done, items) = self.fsf.get_children(&self.path);
             (done, items.count())
         }
     }
 
     fn get_child(&self, idx: usize) -> Option<Self> {
-        self.fsf.0.get_children(&self.path).1.nth(idx)
+        self.fsf.get_children(&self.path).1.nth(idx)
     }
 
     fn is_complete(&self) -> bool {
-        self.fsf.0.get_children(&self.path).0
+        self.fsf.get_children(&self.path).0
     }
 }
 

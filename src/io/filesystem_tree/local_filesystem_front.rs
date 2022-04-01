@@ -1,11 +1,11 @@
 use std::borrow::Borrow;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::DirEntry;
 use std::hash::BuildHasher;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::thread;
+use std::{iter, thread};
 
 use crossbeam_channel::{Receiver, Sender};
 use filesystem::{FileSystem, OsFileSystem};
@@ -48,7 +48,7 @@ impl Borrow<Path> for WrappedRcPath {
 #[derive(Debug)]
 struct InternalState {
     children_cache: HashMap<Rc<PathBuf>, Rc<RefCell<FileChildrenCache>>>,
-    node_cache: HashMap<WrappedRcPath, Rc<FileFront>>,
+    paths: HashSet<WrappedRcPath>,
     at_hand_limit: usize,
 }
 
@@ -89,7 +89,7 @@ impl LocalFilesystem {
 
         let mut internal_state = InternalState {
             children_cache: HashMap::default(),
-            node_cache: HashMap::default(),
+            paths: HashSet::default(),
             at_hand_limit: DEFAULT_FILES_PRELOADS,
         };
         internal_state.children_cache.insert(root_path.clone(), root_cache.clone());
@@ -169,6 +169,15 @@ impl LocalFilesystem {
             }
         });
     }
+
+    fn is_within_root(&self, path: &Path) -> bool {
+        if !path.starts_with(&*self.root_path) {
+            warn!("attempted to open a file from outside of filesystem: {:?}", path);
+            false
+        } else {
+            true
+        }
+    }
 }
 
 impl FilesystemFront for LocalFilesystem {
@@ -176,24 +185,27 @@ impl FilesystemFront for LocalFilesystem {
         &self.root_path
     }
 
-    fn get_file(&self, path: &Path) -> Option<FileFront> {
+    fn get_path(&self, path: &Path) -> Option<Rc<PathBuf>> {
         let p: &Path = path;
-        if !p.starts_with(&*self.root_path) {
-            warn!("attempted to open a file from outside of filesystem: {:?}", p);
+        if !self.is_within_root(p) {
             return None;
-        };
+        }
 
-        self.internal_state.try_borrow_mut().map(|is| {
-            if !is.node_cache.contains_key(path) {}
-
-            // is.node_cache.hasher().build_hasher().
-        });
-
-        // self.internal_state.try_borrow_mut().map(|is| {
-        //     is.ge
-        // });
-
-        None
+        match self.internal_state.try_borrow_mut() {
+            Ok(is) => {
+                if let Some(sp) = is.paths.get(path) {
+                    Some(sp.0.clone())
+                } else {
+                    // let rc = Rc::new(path.to_owned());
+                    // is.node_cache.
+                    None
+                }
+            }
+            Err(e) => {
+                error!("failed to acquire internal_state: {}", e);
+                None
+            }
+        }
     }
 
     fn todo_read_file(&self, path: &Path) -> Result<Rope, ()> {
@@ -204,8 +216,35 @@ impl FilesystemFront for LocalFilesystem {
         ) // TODO
     }
 
-    fn get_children(&self, _path: &Path) -> (bool, Box<dyn Iterator<Item=FileFront>>) {
-        todo!()
+    fn ls(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=&(dyn filesystem::DirEntry + '_)> + '_>) {
+        if !self.is_within_root(path) {
+            return (true, Box::new(iter::empty()));
+        }
+
+        if !self.fs.is_dir(path) {
+            warn!("trying to list a non-dir {:?}", path);
+            return (true, Box::new(iter::empty()));
+        }
+
+        match self.fs.read_dir(path) {
+            Err(e) => {
+                error!("failed to read_dir {:?}: {}", path, e);
+                (true, Box::new(iter::empty()))
+            }
+            Ok(read) => {
+                let iter = read.map(|direntry| {
+                    match direntry {
+                        Ok(de) => Some(&de as &dyn filesystem::DirEntry),
+                        Err(e) => {
+                            error!("failed retrieving dir_entry: {}", e);
+                            None
+                        }
+                    }
+                }).flatten();
+
+                (true, Box::new(iter))
+            }
+        }
     }
 
     fn todo_expand(&self, path: &Path) {
@@ -232,12 +271,12 @@ impl FilesystemFront for LocalFilesystem {
                 FSUpdate::DirectoryUpdate { full_path, entries } => {
                     let path = Rc::new(full_path);
 
-                    let mut items: Vec<FileFront> = Vec::new();
+                    let mut items: Vec<Rc<PathBuf>> = Vec::new();
                     items.reserve(entries.len());
                     for de in entries.iter() {
                         match de.file_type() {
                             Ok(t) => {
-                                self.get_file(&de.path()).map(|item| {
+                                self.get_path(&de.path()).map(|item| {
                                     items.push(item);
                                 }).unwrap_or_else(|| {
                                     error!("failed to get item for path {:?}", path);
