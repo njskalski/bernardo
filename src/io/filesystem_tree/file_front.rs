@@ -1,4 +1,4 @@
-use std::cell::{Ref, RefCell};
+use std::cell::{BorrowMutError, Ref, RefCell};
 use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::path::{Path, PathBuf};
@@ -6,6 +6,7 @@ use std::rc::Rc;
 
 use log::{error, warn};
 use crate::io::filesystem_tree::fsfref::FsfRef;
+use crate::io::filesystem_tree::LoadingState;
 
 use crate::widgets::list_widget::{ListWidgetItem, ListWidgetProvider};
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
@@ -13,7 +14,7 @@ use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 type FilterType = fn(&FileFront) -> bool;
 
 pub struct FileChildrenCache {
-    pub complete: bool,
+    pub loading_state: LoadingState,
     pub children: Vec<Rc<PathBuf>>,
 }
 
@@ -26,20 +27,31 @@ non-local types.
 pub struct FileChildrenCacheRef(pub Rc<RefCell<FileChildrenCache>>);
 
 impl FileChildrenCacheRef {
-    pub fn get_children(&self) -> (bool, Vec<Rc<PathBuf>>) {
+    pub fn get_children(&self) -> (LoadingState, Vec<Rc<PathBuf>>) {
         if let Ok(r) = self.0.try_borrow() {
-            (r.complete, r.children.clone())
+            (r.loading_state, r.children.clone())
         } else {
             warn!("failed to acquire cache ref");
-            (false, vec![])
+            (LoadingState::Error, vec![])
         }
+    }
+
+    pub fn set_loading_state(&self, loading_state: LoadingState) -> Result<(), BorrowMutError> {
+        self.0.try_borrow_mut().map(|mut c| c.loading_state = loading_state)
+    }
+
+    pub fn get_loading_state(&self) -> LoadingState {
+        self.0.try_borrow().map(|c| c.loading_state).unwrap_or({
+            error!("failed acquiring lock");
+            LoadingState::Error
+        })
     }
 }
 
 impl Debug for FileChildrenCache {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{} cache with {} items",
-               if self.complete { "complete" } else { "incomplete" },
+        write!(f, "{:?} cache with {} items",
+               self.loading_state,
                self.children.len(),
         )
     }
@@ -48,7 +60,7 @@ impl Debug for FileChildrenCache {
 impl Default for FileChildrenCache {
     fn default() -> Self {
         FileChildrenCache {
-            complete: false,
+            loading_state: LoadingState::NotStarted,
             children: vec![],
         }
     }
@@ -104,7 +116,14 @@ impl TreeViewNode<PathBuf> for FileFront {
         if self.is_file() {
             (true, 0)
         } else {
-            let (done, items) = self.fsf.get_children(&self.path);
+            let (loading_state, items) = self.fsf.get_children(&self.path);
+            //TODO escalate the LoadingState
+
+            let done = match loading_state {
+                LoadingState::Complete => true,
+                _ => false,
+            };
+
             (done, items.count())
         }
     }
@@ -114,7 +133,7 @@ impl TreeViewNode<PathBuf> for FileFront {
     }
 
     fn is_complete(&self) -> bool {
-        self.fsf.get_children(&self.path).0
+        self.fsf.get_children(&self.path).0 == LoadingState::Complete
     }
 }
 

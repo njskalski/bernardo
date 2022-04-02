@@ -1,5 +1,5 @@
 use std::borrow::Borrow;
-use std::cell::RefCell;
+use std::cell::{BorrowMutError, RefCell, RefMut};
 use std::collections::{HashMap, HashSet};
 use std::fs::DirEntry;
 use std::hash::BuildHasher;
@@ -16,6 +16,7 @@ use crate::io::filesystem_tree::file_front::{FileChildrenCache, FileChildrenCach
 
 use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
 use crate::io::filesystem_tree::fsfref::FsfRef;
+use crate::io::filesystem_tree::LoadingState;
 use crate::widgets::fuzzy_search::item_provider::Item;
 
 // TODOs:
@@ -79,6 +80,16 @@ impl InternalState {
     fn get_cache(&self, path: &Path) -> Option<FileChildrenCacheRef> {
         self.children_cache.get(path).map(|f| FileChildrenCacheRef(f.clone()))
     }
+
+    fn get_path(&mut self, path: &Path) -> Rc<PathBuf> {
+        if let Some(p) = self.paths.get(path) {
+            p.0.clone()
+        } else {
+            let rcp = Rc::new(path.to_owned());
+            self.paths.insert(WrappedRcPath(rcp.clone()));
+            rcp
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -97,7 +108,7 @@ impl LocalFilesystem {
         // TODO check it's directory
 
         let root_cache = Rc::new(RefCell::new(FileChildrenCache {
-            complete: false,
+            loading_state: LoadingState::NotStarted,
             children: vec![],
         }));
 
@@ -134,20 +145,20 @@ impl LocalFilesystem {
         self
     }
 
-    fn start_fs_refresh(&self, path: &Path) {
-        let path = path.to_owned();
-        let fs_sender = self.fs_channel.0.clone();
-        let tick_sender = self.tick_channel.0.clone();
+    fn start_dir_refresh(&self, path: &Path) {
         let fs = self.fs.clone();
 
+        if !fs.is_dir(&path) {
+            warn!("path {:?} is not a dir, ignoring list request", path);
+            return;
+        }
+
+        let fs_sender = self.fs_channel.0.clone();
+        let tick_sender = self.tick_channel.0.clone();
+
+        let path = path.to_owned();
+
         thread::spawn(move || {
-            if !fs.is_dir(&path) {
-                warn!("path {:?} is not a dir, ignoring list request", path);
-                return;
-            }
-
-            // TODO add partitioning
-
             match fs.read_dir(&path) {
                 Err(e) => {
                     error!("failed reading dir {:?}: {}", &path, e);
@@ -185,23 +196,6 @@ impl LocalFilesystem {
             }
         });
     }
-
-    // pub fn get_from_cache(&self, path: &Path) -> Option<FileChildrenCacheRef> {
-    //     match self.internal_state.try_borrow() {
-    //         Err(e) => {
-    //             error!("failed to acquire internal_state: {}", e);
-    //             None
-    //         }
-    //         Ok(is) => {
-    //             if let Some(c) = is.children_cache.get(path) {
-    //                 Some(c.clone())
-    //             } else {
-    //                 warn!("cache miss for {:?}", path);
-    //                 None
-    //             }
-    //         }
-    //     }
-    // }
 }
 
 impl FilesystemFront for LocalFilesystem {
@@ -241,29 +235,46 @@ impl FilesystemFront for LocalFilesystem {
     }
 
     // This returns from cache if possible. Triggers update.
-    fn get_children_paths(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
+    fn get_children_paths(&self, path: &Path) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
         if !self.is_within(path) {
             warn!("requested get_children outside filesystem: {:?}", path);
-            return (true, Box::new(iter::empty()));
+            return (LoadingState::Complete, Box::new(iter::empty()));
         }
 
-        if let Ok(is) = self.internal_state.try_borrow() {
+        let maybe_refresh = |mut is: RefMut<InternalState>| -> LoadingState {
+            let pathrc = is.get_path(path);
+            let cache = is.get_or_create_cache(&pathrc);
+
+            let loading_state = cache.get_loading_state();
+            match loading_state {
+                LoadingState::InProgress | LoadingState::Complete | LoadingState::Error => {}
+                LoadingState::NotStarted => {
+                    cache.set_loading_state(LoadingState::InProgress);
+                    self.start_dir_refresh(path);
+                }
+            }
+
+            loading_state
+        };
+
+        if let Ok(mut is) = self.internal_state.try_borrow_mut() {
             if let Some(cache_ref) = is.get_cache(path) {
-                let (complete, children) = cache_ref.get_children();
+                let (mut loading_state, children) = cache_ref.get_children();
 
-                debug!("reading from cache {:?} : got {} and {}", path, complete, children.len());
+                if loading_state != LoadingState::InProgress {
+                    loading_state = maybe_refresh(is);
+                }
+                debug!("reading from cache {:?} : got {} and {}", path, loading_state, children.len());
 
-                (complete, Box::new(children.into_iter()))
+                (loading_state, Box::new(children.into_iter()))
             } else {
                 warn!("no cache for item {:?}", path);
-
-                self.start_fs_refresh(path);
-
-                (true, Box::new(iter::empty()))
+                let loading_state = maybe_refresh(is);
+                (loading_state, Box::new(iter::empty()))
             }
         } else {
             error!("failed acquiring internal_state");
-            (false, Box::new(iter::empty()))
+            (LoadingState::Error, Box::new(iter::empty()))
         }
     }
 
@@ -302,7 +313,7 @@ impl FilesystemFront for LocalFilesystem {
                     if let Ok(mut is) = self.internal_state.try_borrow_mut() {
                         let cache = is.get_or_create_cache(&path);
                         cache.0.try_borrow_mut().map(|mut c| {
-                            c.complete = true;
+                            c.loading_state = LoadingState::Complete;
                             c.children = items;
                         }).unwrap_or_else(|e| {
                             error!("failed acquiring cache: {}", e);

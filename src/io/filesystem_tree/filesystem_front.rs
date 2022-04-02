@@ -16,6 +16,7 @@ use crossbeam_channel::Receiver;
 use ropey::Rope;
 
 use crate::io::filesystem_tree::file_front::FileFront;
+use crate::io::filesystem_tree::LoadingState;
 
 
 pub trait SomethingToSave {
@@ -49,8 +50,7 @@ pub trait FilesystemFront: Debug {
     fn todo_read_file(&self, path: &Path) -> Result<Rope, ()>;
 
     // first argument says if the list is complete.
-    // none = true, empty iterator
-    fn get_children_paths(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>);
+    fn get_children_paths(&self, path: &Path) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>);
 
     // fn ls(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>);
 

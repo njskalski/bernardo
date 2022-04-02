@@ -4,6 +4,7 @@ use std::path::Path;
 use std::rc::Rc;
 use crate::io::filesystem_tree::file_front::FileFront;
 use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
+use crate::io::filesystem_tree::LoadingState;
 
 #[derive(Clone, Debug)]
 pub struct FsfRef(pub Rc<Box<dyn FilesystemFront>>);
@@ -16,11 +17,11 @@ impl FsfRef {
         )
     }
 
-    pub fn get_children(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=FileFront> + '_>) {
-        let (done, it) = self.0.get_children_paths(path);
+    pub fn get_children(&self, path: &Path) -> (LoadingState, Box<dyn Iterator<Item=FileFront> + '_>) {
+        let (loading_state, it) = self.0.get_children_paths(path);
         let new_it = it.map(move |p| FileFront::new(self.clone(), p.clone()));
 
-        (done, Box::new(new_it))
+        (loading_state, Box::new(new_it))
     }
 
     pub fn get_item(&self, path: &Path) -> Option<FileFront> {
