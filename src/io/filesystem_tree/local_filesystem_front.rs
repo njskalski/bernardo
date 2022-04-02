@@ -12,11 +12,16 @@ use crossbeam_channel::{Receiver, Sender};
 use filesystem::{FileSystem, OsFileSystem};
 use log::{debug, error, warn};
 use ropey::Rope;
-use crate::io::filesystem_tree::file_front::{FileChildrenCache, FileFront};
+use crate::io::filesystem_tree::file_front::{FileChildrenCache, FileChildrenCacheRef, FileFront};
 
 use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
 use crate::io::filesystem_tree::fsfref::FsfRef;
 use crate::widgets::fuzzy_search::item_provider::Item;
+
+// TODOs:
+// - add removing items from cache
+// - add inotify support
+// - add building trie tree to enable fuzzy search
 
 // how many file paths should be available for immediate querying "at hand".
 // basically a default size of cache for fuzzy file search
@@ -46,23 +51,33 @@ impl Borrow<Path> for WrappedRcPath {
     }
 }
 
+impl Borrow<Rc<PathBuf>> for WrappedRcPath {
+    fn borrow(&self) -> &Rc<PathBuf> {
+        &self.0
+    }
+}
+
 #[derive(Debug)]
 struct InternalState {
-    children_cache: HashMap<Rc<PathBuf>, Rc<RefCell<FileChildrenCache>>>,
+    children_cache: HashMap<WrappedRcPath, Rc<RefCell<FileChildrenCache>>>,
     paths: HashSet<WrappedRcPath>,
     at_hand_limit: usize,
 }
 
 impl InternalState {
-    fn get_or_create_cache(&mut self, path: &Rc<PathBuf>) -> Rc<RefCell<FileChildrenCache>> {
+    fn get_or_create_cache(&mut self, path: &Rc<PathBuf>) -> FileChildrenCacheRef {
         match self.children_cache.get(path) {
             None => {
                 let cache = Rc::new(RefCell::new(FileChildrenCache::default()));
-                self.children_cache.insert(path.clone(), cache.clone());
-                cache
+                self.children_cache.insert(WrappedRcPath(path.clone()), cache.clone());
+                FileChildrenCacheRef(cache)
             }
-            Some(cache) => cache.clone(),
+            Some(cache) => FileChildrenCacheRef(cache.clone()),
         }
+    }
+
+    fn get_cache(&self, path: &Path) -> Option<FileChildrenCacheRef> {
+        self.children_cache.get(path).map(|f| FileChildrenCacheRef(f.clone()))
     }
 }
 
@@ -93,7 +108,7 @@ impl LocalFilesystem {
             paths: HashSet::default(),
             at_hand_limit: DEFAULT_FILES_PRELOADS,
         };
-        internal_state.children_cache.insert(root_path.clone(), root_cache.clone());
+        internal_state.children_cache.insert(WrappedRcPath(root_path.clone()), root_cache.clone());
 
         FsfRef(
             Rc::new(Box::new(LocalFilesystem {
@@ -170,6 +185,23 @@ impl LocalFilesystem {
             }
         });
     }
+
+    // pub fn get_from_cache(&self, path: &Path) -> Option<FileChildrenCacheRef> {
+    //     match self.internal_state.try_borrow() {
+    //         Err(e) => {
+    //             error!("failed to acquire internal_state: {}", e);
+    //             None
+    //         }
+    //         Ok(is) => {
+    //             if let Some(c) = is.children_cache.get(path) {
+    //                 Some(c.clone())
+    //             } else {
+    //                 warn!("cache miss for {:?}", path);
+    //                 None
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 impl FilesystemFront for LocalFilesystem {
@@ -184,13 +216,13 @@ impl FilesystemFront for LocalFilesystem {
         }
 
         match self.internal_state.try_borrow_mut() {
-            Ok(is) => {
+            Ok(mut is) => {
                 if let Some(sp) = is.paths.get(path) {
                     Some(sp.0.clone())
                 } else {
-                    // let rc = Rc::new(path.to_owned());
-                    // is.node_cache.
-                    None
+                    let rc = Rc::new(path.to_owned());
+                    is.paths.insert(WrappedRcPath(rc.clone()));
+                    Some(rc)
                 }
             }
             Err(e) => {
@@ -208,46 +240,31 @@ impl FilesystemFront for LocalFilesystem {
         ) // TODO
     }
 
-    fn ls(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
-        //TODO add caching
-
+    // This returns from cache if possible. Triggers update.
+    fn get_children_paths(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
         if !self.is_within(path) {
+            warn!("requested get_children outside filesystem: {:?}", path);
             return (true, Box::new(iter::empty()));
         }
 
-        if !self.fs.is_dir(path) {
-            warn!("trying to list a non-dir {:?}", path);
-            return (true, Box::new(iter::empty()));
-        }
+        if let Ok(is) = self.internal_state.try_borrow() {
+            if let Some(cache_ref) = is.get_cache(path) {
+                let (complete, children) = cache_ref.get_children();
 
-        match self.fs.read_dir(path) {
-            Err(e) => {
-                error!("failed to read_dir {:?}: {}", path, e);
+                debug!("reading from cache {:?} : got {} and {}", path, complete, children.len());
+
+                (complete, Box::new(children.into_iter()))
+            } else {
+                warn!("no cache for item {:?}", path);
+
+                self.start_fs_refresh(path);
+
                 (true, Box::new(iter::empty()))
             }
-            Ok(read_dir) => {
-                let mut items: Vec<Rc<PathBuf>> = vec![];
-
-                for item in read_dir {
-                    match item {
-                        Err(e) => {
-                            warn!("failed to open DirEntry: {}", e);
-                        }
-                        Ok(dir_entry) => {
-                            self.get_path(&dir_entry.path()).map(
-                                |rc| items.push(rc)
-                            );
-                        }
-                    }
-                }
-
-                (true, Box::new(items.into_iter().map(|f| f.clone())))
-            }
+        } else {
+            error!("failed acquiring internal_state");
+            (false, Box::new(iter::empty()))
         }
-    }
-
-    fn todo_expand(&self, path: &Path) {
-        self.start_fs_refresh(path);
     }
 
     fn tick_recv(&self) -> &Receiver<()> {
@@ -255,20 +272,14 @@ impl FilesystemFront for LocalFilesystem {
     }
 
     fn tick(&self) {
-        let mut is = match self.internal_state.try_borrow_mut() {
-            Ok(is) => is,
-            Err(e) => {
-                error!("failed acquiring internal_state: {}", e);
-                return;
-            }
-        };
-
         for msg in self.fs_channel.1.try_iter() {
             // debug!("ticking msg {:?}", msg);
             match msg {
-                // TODO now everything is
                 FSUpdate::DirectoryUpdate { full_path, entries } => {
-                    let path = Rc::new(full_path);
+                    let path = match self.get_path(&full_path) {
+                        Some(p) => p,
+                        None => { return; }
+                    };
 
                     let mut items: Vec<Rc<PathBuf>> = Vec::new();
                     items.reserve(entries.len());
@@ -278,23 +289,25 @@ impl FilesystemFront for LocalFilesystem {
                                 self.get_path(&de.path()).map(|item| {
                                     items.push(item);
                                 }).unwrap_or_else(|| {
-                                    error!("failed to get item for path {:?}", path);
+                                    error!("failed to get item for dir_entry: {:?}", de);
                                 });
                             }
                             Err(e) => {
-                                error!("failed reading file type for {:?}: {}", de.path(), e);
+                                error!("failed reading file type for dir_entry {:?}: {}", de, e);
                                 continue;
                             }
                         }
                     }
 
-                    let cache = is.get_or_create_cache(&path);
-                    cache.try_borrow_mut().map(|mut c| {
-                        c.complete = true;
-                        c.children = items;
-                    }).unwrap_or_else(|e| {
-                        error!("failed acquiring cache: {}", e);
-                    });
+                    if let Ok(mut is) = self.internal_state.try_borrow_mut() {
+                        let cache = is.get_or_create_cache(&path);
+                        cache.0.try_borrow_mut().map(|mut c| {
+                            c.complete = true;
+                            c.children = items;
+                        }).unwrap_or_else(|e| {
+                            error!("failed acquiring cache: {}", e);
+                        });
+                    }
                 }
             }
         }

@@ -227,7 +227,6 @@ impl SaveFileDialogWidget {
             Ok(remainder) => {
                 for comp in remainder.components() {
                     root_path = root_path.join(comp);
-                    self.fsf.todo_expand(&root_path);
                     debug!("expanding subtree {:?}", root_path);
 
                     // TODO one can save some memory here
@@ -262,7 +261,6 @@ impl SaveFileDialogWidget {
             }
         };
 
-        self.fsf.todo_expand(&directory);
         self.list_widget.set_provider(
             Box::new(FilteredFileFront::new(item, |f| f.is_file()))
         );
@@ -479,9 +477,6 @@ impl Widget for SaveFileDialogWidget {
                 })
             }
             SaveFileDialogMsg::TreeExpanded(node) => {
-                // TODO load data if necessary
-                self.fsf.todo_expand(node.path());
-
                 None
             }
             SaveFileDialogMsg::TreeHighlighted(node) => {

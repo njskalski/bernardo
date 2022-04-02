@@ -4,6 +4,14 @@ use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
+/*
+Reasons for this thing to exist (use cases in order of importance):
+- abstract over filesystem. I will need this for tests, and for remote filesystems.
+- inotify support. Refresh support for when filesystem is changed in the background.
+- fast queries. We need to execute "fuzzy search" over filenames. This requires precomputing a trie/patricia tree, and updating it on inotify.
+- async IO without async runtime. I will test for infinite files support and I want to access huge files over internet.
+ */
+
 use crossbeam_channel::Receiver;
 use ropey::Rope;
 
@@ -26,6 +34,10 @@ impl SomethingToSave for Rc<String> {
     }
 }
 
+/*
+Now FilesystemFront does not ever return a FileFront, because for that a FsfRef (Rc<Self>) is needed.
+So all methods that return FileFront are in Fsf implementation, and are filesystem agnostic.
+ */
 pub trait FilesystemFront: Debug {
     fn get_root_path(&self) -> &Rc<PathBuf>;
 
@@ -38,12 +50,12 @@ pub trait FilesystemFront: Debug {
 
     // first argument says if the list is complete.
     // none = true, empty iterator
-    // fn get_children(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=FileFront>>);
+    fn get_children_paths(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>);
 
-    fn ls(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>);
+    // fn ls(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>);
 
     // This schedules refresh of subdirectory, fsf will "tick" once ready to refresh.
-    fn todo_expand(&self, path: &Path);
+    // fn todo_expand(&self, path: &Path);
 
     // this is a channel where it waits for a tick.
     fn tick_recv(&self) -> &Receiver<()>;

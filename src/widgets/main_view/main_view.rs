@@ -201,9 +201,6 @@ impl Widget for MainView {
                 None
             }
             MainViewMsg::TreeExpandedFlip { expanded, item } => {
-                if *expanded {
-                    self.fs.todo_expand(item.id());
-                }
                 None
             }
             MainViewMsg::TreeSelected { item } => {

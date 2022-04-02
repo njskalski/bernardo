@@ -1,10 +1,10 @@
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use log::error;
+use log::{error, warn};
 use crate::io::filesystem_tree::fsfref::FsfRef;
 
 use crate::widgets::list_widget::{ListWidgetItem, ListWidgetProvider};
@@ -15,6 +15,25 @@ type FilterType = fn(&FileFront) -> bool;
 pub struct FileChildrenCache {
     pub complete: bool,
     pub children: Vec<Rc<PathBuf>>,
+}
+
+/*
+Why this exists:
+The cache is written on tick (inotify or blocking read) and read by everybody else. This means
+it must be Rc<RefCell<>> :(. And I wanted helper methods, which is not possible without wrapping the
+non-local types.
+ */
+pub struct FileChildrenCacheRef(pub Rc<RefCell<FileChildrenCache>>);
+
+impl FileChildrenCacheRef {
+    pub fn get_children(&self) -> (bool, Vec<Rc<PathBuf>>) {
+        if let Ok(r) = self.0.try_borrow() {
+            (r.complete, r.children.clone())
+        } else {
+            warn!("failed to acquire cache ref");
+            (false, vec![])
+        }
+    }
 }
 
 impl Debug for FileChildrenCache {
