@@ -6,12 +6,14 @@ use std::hash::BuildHasher;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::{iter, thread};
+use std::fmt::{Debug, Formatter};
 use std::io::empty;
 
 use crossbeam_channel::{Receiver, Sender};
 use filesystem::{FileSystem, OsFileSystem};
 use log::{debug, error, warn};
 use ropey::Rope;
+use simsearch::SimSearch;
 use crate::io::filesystem_tree::file_front::{FileChildrenCache, FileChildrenCacheRef, FileFront};
 
 use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
@@ -26,7 +28,7 @@ use crate::widgets::fuzzy_search::item_provider::Item;
 
 // how many file paths should be available for immediate querying "at hand".
 // basically a default size of cache for fuzzy file search
-const DEFAULT_FILES_PRELOADS: usize = 10 * 1024;
+const DEFAULT_FILES_PRELOADS: usize = 128 * 1024;
 
 #[derive(Debug)]
 pub enum SendFile {
@@ -43,7 +45,7 @@ pub enum FSUpdate {
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 struct WrappedRcPath(Rc<PathBuf>);
 
 impl Borrow<Path> for WrappedRcPath {
@@ -52,17 +54,47 @@ impl Borrow<Path> for WrappedRcPath {
     }
 }
 
+// impl Borrow<&Path> for WrappedRcPath {
+//     fn borrow(&self) -> &&Path {
+//         &self.0.as_path()
+//     }
+// }
+
 impl Borrow<Rc<PathBuf>> for WrappedRcPath {
     fn borrow(&self) -> &Rc<PathBuf> {
         &self.0
     }
 }
 
-#[derive(Debug)]
 struct InternalState {
     children_cache: HashMap<WrappedRcPath, Rc<RefCell<FileChildrenCache>>>,
-    paths: HashSet<WrappedRcPath>,
+    // I need to store some identifier, as search_index.remove requires it. I choose u128 so I can
+    // safely not reuse them.
+    paths: HashMap<WrappedRcPath, u128>,
     at_hand_limit: usize,
+
+    current_idx: u128,
+
+    //TODO this is experimental
+    search_index: simsearch::SimSearch<u128>,
+}
+
+impl Default for InternalState {
+    fn default() -> Self {
+        InternalState {
+            children_cache: HashMap::default(),
+            paths: HashMap::default(),
+            at_hand_limit: DEFAULT_FILES_PRELOADS,
+            current_idx: 1,
+            search_index: SimSearch::new(),
+        }
+    }
+}
+
+impl Debug for InternalState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "internal_state: {} paths, {} caches, current_idx = {}", self.paths.len(), self.children_cache.len(), self.current_idx)
+    }
 }
 
 impl InternalState {
@@ -81,13 +113,47 @@ impl InternalState {
         self.children_cache.get(path).map(|f| FileChildrenCacheRef(f.clone()))
     }
 
-    fn get_path(&mut self, path: &Path) -> Rc<PathBuf> {
-        if let Some(p) = self.paths.get(path) {
+    fn get_path(&self, path: &Path) -> Option<Rc<PathBuf>> {
+        self.paths.get_key_value(path).map(|(p, _)| p.0.clone())
+    }
+
+    fn remove_path(&mut self, path: &Path) -> bool {
+        if !self.paths.contains_key(path) {
+            return false;
+        }
+
+        let (key, value) = self.paths.get_key_value(path).map(|(a, b)| (a.0.clone(), *b)).unwrap();
+
+        if Rc::strong_count(&key) > 2 {
+            warn!("removing path with more than two strong referrers - possible leak?");
+        }
+
+        self.paths.remove(path);
+        self.search_index.delete(&value);
+
+        true
+    }
+
+    fn _create_path(&mut self, path: &Path) -> Rc<PathBuf> {
+        let rcp = Rc::new(path.to_owned());
+        let idx = self.current_idx;
+        self.current_idx += 1;
+
+        self.paths.insert(WrappedRcPath(rcp.clone()), idx);
+        rcp.to_str().map(|s| {
+            self.search_index.insert(idx, s);
+        }).unwrap_or_else(|| {
+            error!("failed to cast path to string, will not be present in index. Absolutely barbaric!");
+        });
+
+        rcp
+    }
+
+    fn get_or_create_path(&mut self, path: &Path) -> Rc<PathBuf> {
+        if let Some((p, _)) = self.paths.get_key_value(path) {
             p.0.clone()
         } else {
-            let rcp = Rc::new(path.to_owned());
-            self.paths.insert(WrappedRcPath(rcp.clone()));
-            rcp
+            self._create_path(path)
         }
     }
 }
@@ -114,11 +180,7 @@ impl LocalFilesystem {
 
         let root_path = Rc::new(root);
 
-        let mut internal_state = InternalState {
-            children_cache: HashMap::default(),
-            paths: HashSet::default(),
-            at_hand_limit: DEFAULT_FILES_PRELOADS,
-        };
+        let mut internal_state = InternalState::default();
         internal_state.children_cache.insert(WrappedRcPath(root_path.clone()), root_cache.clone());
 
         FsfRef(
@@ -209,15 +271,10 @@ impl FilesystemFront for LocalFilesystem {
             return None;
         }
 
+        // TODO I am not sure of this - get_or_create or just get?
         match self.internal_state.try_borrow_mut() {
             Ok(mut is) => {
-                if let Some(sp) = is.paths.get(path) {
-                    Some(sp.0.clone())
-                } else {
-                    let rc = Rc::new(path.to_owned());
-                    is.paths.insert(WrappedRcPath(rc.clone()));
-                    Some(rc)
-                }
+                Some(is.get_or_create_path(path))
             }
             Err(e) => {
                 error!("failed to acquire internal_state: {}", e);
@@ -242,7 +299,14 @@ impl FilesystemFront for LocalFilesystem {
         }
 
         let maybe_refresh = |mut is: RefMut<InternalState>| -> LoadingState {
-            let pathrc = is.get_path(path);
+            let pathrc = match is.get_path(path) {
+                Some(p) => p,
+                None => {
+                    error!("refreshing unknown path {:?}? Dropping.", path);
+                    return LoadingState::Error;
+                }
+            };
+
             let cache = is.get_or_create_cache(&pathrc);
 
             let loading_state = cache.get_loading_state();
@@ -318,6 +382,8 @@ impl FilesystemFront for LocalFilesystem {
                         }).unwrap_or_else(|e| {
                             error!("failed acquiring cache: {}", e);
                         });
+                    } else {
+                        error!("failed internal_state");
                     }
                 }
             }

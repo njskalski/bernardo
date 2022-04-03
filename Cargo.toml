@@ -23,6 +23,8 @@ ron = "0.7.0"
 serde = { version = "1", features = ["derive"] }
 hex = "0.4.3"
 syntect = "4.6.0"
+simsearch = "0.2.3"
+
 
 maplit = "1.0.2"
 lazy_static = "1.4.0"
