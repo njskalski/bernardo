@@ -385,6 +385,18 @@ impl FilesystemFront for LocalFilesystem {
         self.fs.is_dir(path) || self.fs.is_file(path)
     }
 
+    fn fuzzy_files_it(&self, query: String, limit: usize) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
+        self.internal_state.try_borrow().map(|is| {
+            let (loading_state, res_vec) = is.fuzzy_files_it(query, limit);
+            let iterator: Box<dyn Iterator<Item=Rc<PathBuf>>> = Box::new(res_vec.into_iter());
+
+            (loading_state, iterator)
+        }).unwrap_or_else(|e| {
+            error!("failed acquiring lock: {}", e);
+            (LoadingState::Error, Box::new(iter::empty()))
+        })
+    }
+
     fn todo_save_file_sync(&self, _path: &Path, _bytes: &dyn AsRef<[u8]>) -> Result<(), std::io::Error> {
         // TODO
         // Ok, so fs crate does NOT support appending, which is necessary for streaming etc.

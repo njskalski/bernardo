@@ -5,8 +5,9 @@ use std::fmt::{Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use log::{error, warn};
-use simsearch::SimSearch;
+use simsearch::{SearchOptions, SimSearch};
 use crate::fs::file_front::{FileChildrenCache, FileChildrenCacheRef};
+use crate::io::loading_state::LoadingState;
 
 // how many file paths should be available for immediate querying "at hand".
 // basically a default size of cache for fuzzy file search
@@ -32,6 +33,7 @@ pub struct InternalState {
     // I need to store some identifier, as search_index.remove requires it. I choose u128 so I can
     // safely not reuse them.
     paths: HashMap<WrappedRcPath, u128>,
+    rev_paths: HashMap<u128, WrappedRcPath>,
     pub at_hand_limit: usize, // TODO privatize
 
     current_idx: u128,
@@ -45,9 +47,11 @@ impl Default for InternalState {
         InternalState {
             children_cache: HashMap::default(),
             paths: HashMap::default(),
+            rev_paths: HashMap::default(),
             at_hand_limit: DEFAULT_FILES_PRELOADS,
             current_idx: 1,
-            search_index: SimSearch::new(),
+            //TODO to make case insensitive, we must fix highlighting
+            search_index: SimSearch::new_with(SearchOptions::new().case_sensitive(true)),
         }
     }
 }
@@ -85,11 +89,12 @@ impl InternalState {
 
         let (key, value) = self.paths.get_key_value(path).map(|(a, b)| (a.0.clone(), *b)).unwrap();
 
-        if Rc::strong_count(&key) > 2 {
-            warn!("removing path with more than two strong referrers - possible leak?");
+        if Rc::strong_count(&key) > 3 {
+            warn!("removing path with more than three strong referrers - possible leak?");
         }
 
         self.paths.remove(path);
+        self.rev_paths.remove(&value);
         self.search_index.delete(&value);
 
         true
@@ -101,6 +106,7 @@ impl InternalState {
         self.current_idx += 1;
 
         self.paths.insert(WrappedRcPath(rcp.clone()), idx);
+        self.rev_paths.insert(idx, WrappedRcPath(rcp.clone()));
         rcp.to_str().map(|s| {
             self.search_index.insert(idx, s);
         }).unwrap_or_else(|| {
@@ -116,5 +122,18 @@ impl InternalState {
         } else {
             self._create_path(path)
         }
+    }
+
+    pub fn fuzzy_files_it(&self, query: String, limit: usize) -> (LoadingState, Vec<Rc<PathBuf>>) {
+        let items = self.search_index.search(&query);
+        let paths: Vec<Rc<PathBuf>> = items.iter().take(limit).map(|i| {
+            let i2 = *i;
+            self.rev_paths.get(&i).map(|w| w.0.clone()).ok_or(move || {
+                error!("failed finding path for id {}", i2);
+            })
+        }).flatten().collect();
+
+        //TODO not implemented properly informing on loading state
+        (LoadingState::Complete, paths)
     }
 }

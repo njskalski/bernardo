@@ -70,6 +70,9 @@ pub trait FilesystemFront: Debug {
 
     fn exists(&self, path: &Path) -> bool;
 
+    // returns files that satisfy query (query is a substring of file name)
+    fn fuzzy_files_it(&self, query: String, limit: usize) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>);
+
     //TODO:
     // - backup mechanism (don't loose data on crash)
     // - streaming save
