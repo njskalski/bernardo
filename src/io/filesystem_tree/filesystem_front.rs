@@ -3,6 +3,8 @@ use std::fs::DirEntry;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 
 /*
 Reasons for this thing to exist (use cases in order of importance):
@@ -74,5 +76,7 @@ pub trait FilesystemFront: Debug {
     // - streaming save
     // - async save
     fn todo_save_file_sync(&self, path: &Path, bytes: &dyn AsRef<[u8]>) -> Result<(), std::io::Error>;
+
+    fn index_root(&self, cancellation_flag: Option<Arc<AtomicBool>>);
 }
 

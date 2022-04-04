@@ -74,26 +74,10 @@ fn main() {
         //TODO
         return;
     }
+    
 
-    // let input = TermionInput::new(stdin);
-    // let mut output = TermionOutput::new(stdout);
-
-    // let mut main_view = TwoButtonEdit::new();
-
-    // let stupid_tree = get_stupid_tree();
-    // let mut main_view = TreeViewWidget::new(Box::new(stupid_tree));
-
-    // let mut mock_list = get_mock_file_list();
-    // let mut main_view = ListWidget::<MockFile>::new().with_items(mock_list)
-    //     .with_selection();
-
-    // let mut main_view = TextEditorWidget::new();
-
-    // let fsp = LocalFilesystemProvider::new(PathBuf::from("/home/andrzej"));
-    // let boxed = Box::new(fsp);
-    // let mut main_view = SaveFileDialogWidget::new(boxed);
-
-    let fsf: FsfRef = LocalFilesystem::new(PathBuf::from("/home/andrzej/r"));
+    let fsf: FsfRef = LocalFilesystem::new(PathBuf::from("/home/andrzej/r/rust/bernardo"));
+    fsf.index_root(None);
 
     let mut main_view = MainView::new(tree_sitter, fsf.clone())
         .with_empty_editor();

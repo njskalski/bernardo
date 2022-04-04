@@ -74,10 +74,10 @@ impl<W: Write> CrosstermOutput<W> {
             );
         }
 
-        let buffer = if self.current_buffer == false {
-            &self.front_buffer
+        let (buffer, other_buffer) = if self.current_buffer == false {
+            (&self.front_buffer, &self.back_buffer)
         } else {
-            &self.back_buffer
+            (&self.back_buffer, &self.front_buffer)
         };
 
         self.stdout
@@ -95,62 +95,66 @@ impl<W: Write> CrosstermOutput<W> {
             for x in 0..self.size.x {
                 let pos = XY::new(x, y);
 
+                let cell = &buffer[pos];
+                let old_cell = &other_buffer[pos];
+
                 if pos != curr_pos {
                     self.stdout.execute(cursor::MoveTo(pos.x, pos.y))?;
                     debug!("moving curr_pos: {} -> {}", pos, curr_pos);
                     curr_pos = pos;
                 }
 
-                let cell = &buffer[pos];
-                match cell {
-                    Cell::Begin { style, grapheme } => {
-                        if last_style != Some(*style) {
-                            let bgcolor = Color::Rgb {
-                                r: style.background.r,
-                                g: style.background.g,
-                                b: style.background.b,
-                            };
-                            let fgcolor = Color::Rgb {
-                                r: style.foreground.r,
-                                g: style.foreground.g,
-                                b: style.foreground.b,
-                            };
+                if true {
+                    match cell {
+                        Cell::Begin { style, grapheme } => {
+                            if last_style != Some(*style) {
+                                let bgcolor = Color::Rgb {
+                                    r: style.background.r,
+                                    g: style.background.g,
+                                    b: style.background.b,
+                                };
+                                let fgcolor = Color::Rgb {
+                                    r: style.foreground.r,
+                                    g: style.foreground.g,
+                                    b: style.foreground.b,
+                                };
 
-                            let mut attributes: style::Attributes = style::Attributes::default();
-                            match style.effect {
-                                Effect::Bold => {
-                                    attributes.set(Attribute::Bold);
-                                }
-                                Effect::Italic => {
-                                    attributes.set(Attribute::Italic);
-                                }
-                                Effect::Underline => {
-                                    attributes.set(Attribute::Underlined);
-                                }
-                                _ => {}
-                            };
+                                let mut attributes: style::Attributes = style::Attributes::default();
+                                match style.effect {
+                                    Effect::Bold => {
+                                        attributes.set(Attribute::Bold);
+                                    }
+                                    Effect::Italic => {
+                                        attributes.set(Attribute::Italic);
+                                    }
+                                    Effect::Underline => {
+                                        attributes.set(Attribute::Underlined);
+                                    }
+                                    _ => {}
+                                };
 
-                            self.stdout.execute(SetBackgroundColor(Color::Reset))?;
-                            self.stdout.execute(SetBackgroundColor(bgcolor))?;
+                                self.stdout.execute(SetBackgroundColor(Color::Reset))?;
+                                self.stdout.execute(SetBackgroundColor(bgcolor))?;
 
-                            self.stdout.execute(SetForegroundColor(Color::Reset))?;
-                            self.stdout.execute(SetForegroundColor(fgcolor))?;
+                                self.stdout.execute(SetForegroundColor(Color::Reset))?;
+                                self.stdout.execute(SetForegroundColor(fgcolor))?;
 
-                            // TODO setting attributes breaks things colors.
-                            // self.stdout.execute(SetAttribute(Attribute::Reset))?;
-                            // self.stdout.execute(SetAttributes(attributes))?;
+                                // TODO setting attributes breaks things colors.
+                                // self.stdout.execute(SetAttribute(Attribute::Reset))?;
+                                // self.stdout.execute(SetAttributes(attributes))?;
 
 
-                            last_style = Some(*style);
+                                last_style = Some(*style);
+                            }
+
+                            self.stdout.execute(Print(grapheme))?;
+
+                            curr_pos.x += grapheme.width() as u16;
                         }
-
-                        self.stdout.execute(Print(grapheme))?;
-
-                        curr_pos.x += grapheme.width() as u16;
-                    }
-                    Cell::Continuation => {}
-                }
-            }
+                        Cell::Continuation => {}
+                    } // match
+                } // cell != old_cell
+            } // x
 
             curr_pos.y += 1;
             curr_pos.x = 0;

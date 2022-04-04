@@ -42,7 +42,7 @@ impl FileChildrenCacheRef {
 
     pub fn get_loading_state(&self) -> LoadingState {
         self.0.try_borrow().map(|c| c.loading_state).unwrap_or({
-            error!("failed acquiring lock");
+            error!("get_loading_state: failed acquiring lock");
             LoadingState::Error
         })
     }

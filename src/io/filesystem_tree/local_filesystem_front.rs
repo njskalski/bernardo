@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 use std::cell::{BorrowMutError, RefCell, RefMut};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::DirEntry;
 use std::hash::BuildHasher;
 use std::path::{Path, PathBuf};
@@ -8,6 +8,8 @@ use std::rc::Rc;
 use std::{iter, thread};
 use std::fmt::{Debug, Formatter};
 use std::io::empty;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crossbeam_channel::{Receiver, Sender};
 use filesystem::{FileSystem, OsFileSystem};
@@ -18,6 +20,7 @@ use crate::io::filesystem_tree::file_front::{FileChildrenCache, FileChildrenCach
 
 use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
 use crate::io::filesystem_tree::fsfref::FsfRef;
+use crate::io::filesystem_tree::internal_state::{InternalState, WrappedRcPath};
 use crate::io::filesystem_tree::LoadingState;
 use crate::widgets::fuzzy_search::item_provider::Item;
 
@@ -26,9 +29,6 @@ use crate::widgets::fuzzy_search::item_provider::Item;
 // - add inotify support
 // - add building trie tree to enable fuzzy search
 
-// how many file paths should be available for immediate querying "at hand".
-// basically a default size of cache for fuzzy file search
-const DEFAULT_FILES_PRELOADS: usize = 128 * 1024;
 
 #[derive(Debug)]
 pub enum SendFile {
@@ -45,116 +45,10 @@ pub enum FSUpdate {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
-struct WrappedRcPath(Rc<PathBuf>);
-
-impl Borrow<Path> for WrappedRcPath {
-    fn borrow(&self) -> &Path {
-        self.0.as_path()
-    }
-}
-
-// impl Borrow<&Path> for WrappedRcPath {
-//     fn borrow(&self) -> &&Path {
-//         &self.0.as_path()
-//     }
-// }
-
-impl Borrow<Rc<PathBuf>> for WrappedRcPath {
-    fn borrow(&self) -> &Rc<PathBuf> {
-        &self.0
-    }
-}
-
-struct InternalState {
-    children_cache: HashMap<WrappedRcPath, Rc<RefCell<FileChildrenCache>>>,
-    // I need to store some identifier, as search_index.remove requires it. I choose u128 so I can
-    // safely not reuse them.
-    paths: HashMap<WrappedRcPath, u128>,
-    at_hand_limit: usize,
-
-    current_idx: u128,
-
-    //TODO this is experimental
-    search_index: simsearch::SimSearch<u128>,
-}
-
-impl Default for InternalState {
-    fn default() -> Self {
-        InternalState {
-            children_cache: HashMap::default(),
-            paths: HashMap::default(),
-            at_hand_limit: DEFAULT_FILES_PRELOADS,
-            current_idx: 1,
-            search_index: SimSearch::new(),
-        }
-    }
-}
-
-impl Debug for InternalState {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "internal_state: {} paths, {} caches, current_idx = {}", self.paths.len(), self.children_cache.len(), self.current_idx)
-    }
-}
-
-impl InternalState {
-    fn get_or_create_cache(&mut self, path: &Rc<PathBuf>) -> FileChildrenCacheRef {
-        match self.children_cache.get(path) {
-            None => {
-                let cache = Rc::new(RefCell::new(FileChildrenCache::default()));
-                self.children_cache.insert(WrappedRcPath(path.clone()), cache.clone());
-                FileChildrenCacheRef(cache)
-            }
-            Some(cache) => FileChildrenCacheRef(cache.clone()),
-        }
-    }
-
-    fn get_cache(&self, path: &Path) -> Option<FileChildrenCacheRef> {
-        self.children_cache.get(path).map(|f| FileChildrenCacheRef(f.clone()))
-    }
-
-    fn get_path(&self, path: &Path) -> Option<Rc<PathBuf>> {
-        self.paths.get_key_value(path).map(|(p, _)| p.0.clone())
-    }
-
-    fn remove_path(&mut self, path: &Path) -> bool {
-        if !self.paths.contains_key(path) {
-            return false;
-        }
-
-        let (key, value) = self.paths.get_key_value(path).map(|(a, b)| (a.0.clone(), *b)).unwrap();
-
-        if Rc::strong_count(&key) > 2 {
-            warn!("removing path with more than two strong referrers - possible leak?");
-        }
-
-        self.paths.remove(path);
-        self.search_index.delete(&value);
-
-        true
-    }
-
-    fn _create_path(&mut self, path: &Path) -> Rc<PathBuf> {
-        let rcp = Rc::new(path.to_owned());
-        let idx = self.current_idx;
-        self.current_idx += 1;
-
-        self.paths.insert(WrappedRcPath(rcp.clone()), idx);
-        rcp.to_str().map(|s| {
-            self.search_index.insert(idx, s);
-        }).unwrap_or_else(|| {
-            error!("failed to cast path to string, will not be present in index. Absolutely barbaric!");
-        });
-
-        rcp
-    }
-
-    fn get_or_create_path(&mut self, path: &Path) -> Rc<PathBuf> {
-        if let Some((p, _)) = self.paths.get_key_value(path) {
-            p.0.clone()
-        } else {
-            self._create_path(path)
-        }
+#[derive(Debug)]
+pub enum FSRequest {
+    RefreshDir {
+        full_path: PathBuf
     }
 }
 
@@ -163,6 +57,7 @@ pub struct LocalFilesystem {
     fs: OsFileSystem,
     root_path: Rc<PathBuf>,
 
+    fs_request_channel: (Sender<FSRequest>, Receiver<FSRequest>),
     fs_channel: (Sender<FSUpdate>, Receiver<FSUpdate>),
     tick_channel: (Sender<()>, Receiver<()>),
 
@@ -173,22 +68,17 @@ impl LocalFilesystem {
     pub fn new(root: PathBuf) -> FsfRef {
         // TODO check it's directory
 
-        let root_cache = Rc::new(RefCell::new(FileChildrenCache {
-            loading_state: LoadingState::NotStarted,
-            children: vec![],
-        }));
-
-        let root_path = Rc::new(root);
-
         let mut internal_state = InternalState::default();
-        internal_state.children_cache.insert(WrappedRcPath(root_path.clone()), root_cache.clone());
+        let root_path = internal_state.get_or_create_path(&root);
+        internal_state.get_or_create_cache(&root_path);
 
         FsfRef(
             Rc::new(Box::new(LocalFilesystem {
                 fs: OsFileSystem::new(),
                 root_path,
+                fs_request_channel: crossbeam_channel::unbounded::<FSRequest>(),
                 fs_channel: crossbeam_channel::unbounded::<FSUpdate>(),
-                tick_channel: crossbeam_channel::unbounded(),
+                tick_channel: crossbeam_channel::bounded(1),
                 internal_state: Rc::new(RefCell::new(internal_state)),
             }))
         )
@@ -198,7 +88,7 @@ impl LocalFilesystem {
         self.internal_state.try_borrow_mut().map(|mut is| {
             is.at_hand_limit = new_at_hand_limit;
         }).unwrap_or_else(|e| {
-            error!("failed to acquire internal_state: {}", e);
+            error!("set_at_hand_limit: failed to acquire internal_state: {}", e);
         })
     }
 
@@ -258,6 +148,77 @@ impl LocalFilesystem {
             }
         });
     }
+
+    fn internal_index_root(&self, cancellation_flag: Option<Arc<AtomicBool>>) {
+        let fs = self.fs.clone();
+        let root_path = self.root_path.as_path().to_owned();
+        let channel = self.fs_channel.0.clone();
+        let tick_channel = self.tick_channel.0.clone();
+
+        // TODO add:
+        // - max message size
+        // - max depth?
+        // - ignore parameters
+
+        thread::spawn(move || {
+            let mut pipe: VecDeque<PathBuf> = VecDeque::new();
+            pipe.push_back(root_path);
+
+            while !pipe.is_empty() {
+                let head = pipe.pop_front().unwrap();
+                debug!("pipe len {}, processing {:?}", pipe.len(), &head);
+
+                let mut children: Vec<DirEntry> = vec![];
+
+                match fs.read_dir(&head) {
+                    Ok(read_dir) => {
+                        for item in read_dir {
+                            match item {
+                                Ok(dir_entry) => {
+                                    match dir_entry.file_type() {
+                                        Ok(ft) => {
+                                            if ft.is_dir() {
+                                                pipe.push_back(dir_entry.path());
+                                            }
+                                            children.push(dir_entry);
+                                        }
+                                        Err(e) => {
+                                            error!("failed retrieving file_type of {:?}: {}", dir_entry ,e);
+                                            break;
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("failed getting dir_entry: {}", e);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        error!("failed reading dir {:?}: {}", head, e);
+                        break;
+                    }
+                }
+
+                let msg = FSUpdate::DirectoryUpdate {
+                    full_path: head,
+                    entries: children,
+                };
+
+                if channel.send(msg).is_err() {
+                    break;
+                }
+                tick_channel.try_send(());
+
+                if cancellation_flag.as_ref().map(|c| c.load(Ordering::Relaxed)).unwrap_or(false) {
+                    break;
+                }
+            }
+
+            debug!("indexing done");
+        });
+    }
 }
 
 impl FilesystemFront for LocalFilesystem {
@@ -277,7 +238,7 @@ impl FilesystemFront for LocalFilesystem {
                 Some(is.get_or_create_path(path))
             }
             Err(e) => {
-                error!("failed to acquire internal_state: {}", e);
+                error!("get_path: failed to acquire internal_state: {}", e);
                 None
             }
         }
@@ -337,7 +298,7 @@ impl FilesystemFront for LocalFilesystem {
                 (loading_state, Box::new(iter::empty()))
             }
         } else {
-            error!("failed acquiring internal_state");
+            error!("get_children_paths: failed acquiring internal_state");
             (LoadingState::Error, Box::new(iter::empty()))
         }
     }
@@ -347,25 +308,27 @@ impl FilesystemFront for LocalFilesystem {
     }
 
     fn tick(&self) {
+        let mut is = match self.internal_state.try_borrow_mut() {
+            Ok(is) => is,
+            Err(e) => {
+                error!("tick: failed acquiring filesystem lock");
+                return;
+            }
+        };
+
         for msg in self.fs_channel.1.try_iter() {
             // debug!("ticking msg {:?}", msg);
             match msg {
                 FSUpdate::DirectoryUpdate { full_path, entries } => {
-                    let path = match self.get_path(&full_path) {
-                        Some(p) => p,
-                        None => { return; }
-                    };
+                    let path = is.get_or_create_path(&full_path);
 
                     let mut items: Vec<Rc<PathBuf>> = Vec::new();
                     items.reserve(entries.len());
                     for de in entries.iter() {
                         match de.file_type() {
                             Ok(t) => {
-                                self.get_path(&de.path()).map(|item| {
-                                    items.push(item);
-                                }).unwrap_or_else(|| {
-                                    error!("failed to get item for dir_entry: {:?}", de);
-                                });
+                                let de_path = is.get_or_create_path(&de.path());
+                                items.push(de_path);
                             }
                             Err(e) => {
                                 error!("failed reading file type for dir_entry {:?}: {}", de, e);
@@ -374,17 +337,15 @@ impl FilesystemFront for LocalFilesystem {
                         }
                     }
 
-                    if let Ok(mut is) = self.internal_state.try_borrow_mut() {
-                        let cache = is.get_or_create_cache(&path);
-                        cache.0.try_borrow_mut().map(|mut c| {
-                            c.loading_state = LoadingState::Complete;
-                            c.children = items;
-                        }).unwrap_or_else(|e| {
-                            error!("failed acquiring cache: {}", e);
-                        });
-                    } else {
-                        error!("failed internal_state");
-                    }
+                    debug!("ticking on is: {:?}", is);
+
+                    let cache = is.get_or_create_cache(&path);
+                    cache.0.try_borrow_mut().map(|mut c| {
+                        c.loading_state = LoadingState::Complete;
+                        c.children = items;
+                    }).unwrap_or_else(|e| {
+                        error!("failed acquiring cache: {}", e);
+                    });
                 }
             }
         }
@@ -414,5 +375,9 @@ impl FilesystemFront for LocalFilesystem {
         // Good thing I abstracted over it, will rewrite later.
         //self.fs.overwrite_file(path, &bytes)
         Ok(())
+    }
+
+    fn index_root(&self, cancellation_flag: Option<Arc<AtomicBool>>) {
+        self.internal_index_root(cancellation_flag)
     }
 }
