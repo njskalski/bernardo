@@ -13,7 +13,7 @@ pub mod mock {
     impl MockItemProvider {
         pub fn new(num_items: usize) -> Self {
             let mut items: Vec<String> = vec![];
-            
+
             for i in 0..num_items {
                 let mut idx = i;
                 let mut item = String::default();
@@ -55,7 +55,7 @@ pub mod mock {
             "mock"
         }
 
-        fn items<'a>(&'a self, query: String) -> Box<dyn Iterator<Item=&'a dyn Item> + '_> {
+        fn items<'a>(&'a self, query: String) -> Box<dyn Iterator<Item=&'a (dyn Item + 'a)> + '_> {
             Box::new(self.items.iter().filter(move |t| is_substring(t, &query)).map(|f| f as &dyn Item))
         }
     }

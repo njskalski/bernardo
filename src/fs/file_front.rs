@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use log::{error, warn};
+use crate::AnyMsg;
 use crate::fs::fsfref::FsfRef;
 use crate::io::loading_state::LoadingState;
 
@@ -187,5 +188,15 @@ impl ListWidgetProvider<FileFront> for FilteredFileFront {
 
     fn get(&self, idx: usize) -> Option<FileFront> {
         self.ff.children().filter(|x| (self.filter)(x)).nth(idx).map(|f| f.clone())
+    }
+}
+
+impl crate::widgets::fuzzy_search::item_provider::Item for FileFront {
+    fn display_name(&self) -> &str {
+        todo!()
+    }
+
+    fn on_hit(&self) -> Box<dyn AnyMsg> {
+        todo!()
     }
 }

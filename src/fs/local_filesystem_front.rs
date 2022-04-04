@@ -385,7 +385,7 @@ impl FilesystemFront for LocalFilesystem {
         self.fs.is_dir(path) || self.fs.is_file(path)
     }
 
-    fn fuzzy_files_it(&self, query: String, limit: usize) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
+    fn fuzzy_file_paths_it(&self, query: String, limit: usize) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
         self.internal_state.try_borrow().map(|is| {
             let (loading_state, res_vec) = is.fuzzy_files_it(query, limit);
             let iterator: Box<dyn Iterator<Item=Rc<PathBuf>>> = Box::new(res_vec.into_iter());
