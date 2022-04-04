@@ -76,7 +76,5 @@ pub trait FilesystemFront: Debug {
     // - streaming save
     // - async save
     fn todo_save_file_sync(&self, path: &Path, bytes: &dyn AsRef<[u8]>) -> Result<(), std::io::Error>;
-
-    fn index_root(&self, cancellation_flag: Option<Arc<AtomicBool>>);
 }
 

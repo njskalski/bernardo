@@ -74,10 +74,9 @@ fn main() {
         //TODO
         return;
     }
-    
+
 
     let fsf: FsfRef = LocalFilesystem::new(PathBuf::from("/home/andrzej/r/rust/bernardo"));
-    fsf.index_root(None);
 
     let mut main_view = MainView::new(tree_sitter, fsf.clone())
         .with_empty_editor();

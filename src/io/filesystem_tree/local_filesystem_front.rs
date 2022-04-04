@@ -10,8 +10,9 @@ use std::fmt::{Debug, Formatter};
 use std::io::empty;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::TryRecvError;
 
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::{Receiver, RecvError, Sender, SendError};
 use filesystem::{FileSystem, OsFileSystem};
 use log::{debug, error, warn};
 use ropey::Rope;
@@ -27,29 +28,23 @@ use crate::widgets::fuzzy_search::item_provider::Item;
 // TODOs:
 // - add removing items from cache
 // - add inotify support
-// - add building trie tree to enable fuzzy search
-
-
-#[derive(Debug)]
-pub enum SendFile {
-    File(PathBuf),
-    Directory(PathBuf),
-    // TODO add inotify events for filed being removed, renamed etc.
-}
 
 #[derive(Debug)]
 pub enum FSUpdate {
     DirectoryUpdate {
         full_path: PathBuf,
         entries: Vec<DirEntry>,
-    }
+    },
 }
 
 #[derive(Debug)]
 pub enum FSRequest {
     RefreshDir {
         full_path: PathBuf
-    }
+    },
+    PauseIndexing,
+    UnpauseIndexing,
+    KillIndexer,
 }
 
 #[derive(Debug)]
@@ -72,16 +67,18 @@ impl LocalFilesystem {
         let root_path = internal_state.get_or_create_path(&root);
         internal_state.get_or_create_cache(&root_path);
 
-        FsfRef(
-            Rc::new(Box::new(LocalFilesystem {
-                fs: OsFileSystem::new(),
-                root_path,
-                fs_request_channel: crossbeam_channel::unbounded::<FSRequest>(),
-                fs_channel: crossbeam_channel::unbounded::<FSUpdate>(),
-                tick_channel: crossbeam_channel::bounded(1),
-                internal_state: Rc::new(RefCell::new(internal_state)),
-            }))
-        )
+        let fs = LocalFilesystem {
+            fs: OsFileSystem::new(),
+            root_path,
+            fs_request_channel: crossbeam_channel::unbounded::<FSRequest>(),
+            fs_channel: crossbeam_channel::unbounded::<FSUpdate>(),
+            tick_channel: crossbeam_channel::bounded(1),
+            internal_state: Rc::new(RefCell::new(internal_state)),
+        };
+
+        fs.start_indexing_thread();
+
+        FsfRef(Rc::new(Box::new(fs)))
     }
 
     pub fn set_at_hand_limit(&self, new_at_hand_limit: usize) {
@@ -97,126 +94,167 @@ impl LocalFilesystem {
         self
     }
 
-    fn start_dir_refresh(&self, path: &Path) {
-        let fs = self.fs.clone();
-
-        if !fs.is_dir(&path) {
-            warn!("path {:?} is not a dir, ignoring list request", path);
-            return;
-        }
-
-        let fs_sender = self.fs_channel.0.clone();
-        let tick_sender = self.tick_channel.0.clone();
-
-        let path = path.to_owned();
-
-        thread::spawn(move || {
-            match fs.read_dir(&path) {
-                Err(e) => {
-                    error!("failed reading dir {:?}: {}", &path, e);
-                    return;
-                }
-                Ok(rd) => {
-                    let mut entries: Vec<DirEntry> = vec![];
-
-                    for de in rd {
-                        match de {
-                            Err(e) => {
-                                error!("failed reading_entry dir in {:?}: {}", &path, e);
-                            }
-                            Ok(de) => {
-                                entries.push(de);
-                            }
-                        }
-                    }
-
-                    fs_sender.send(
-                        FSUpdate::DirectoryUpdate {
-                            full_path: path,
-                            entries,
-                        }
-                    ).unwrap_or_else(|e| {
-                        error!("failed sending dir update for: {}", e);
-                    });
-
-                    tick_sender.send(()).unwrap_or_else(|e| {
-                        error!("failed sending fs tick: {}", e);
-                    });
-
-                    debug!("finished sending dir entries");
-                }
-            }
-        });
+    fn request_refresh(&self, path: &Path) -> bool {
+        self.fs_request_channel.0.try_send(
+            FSRequest::RefreshDir { full_path: path.to_owned() }
+        ).map_err(|e| {
+            error!("request_refresh: failed requesting dir refresh for {:?}: {}", path, e);
+        }).is_ok()
     }
 
-    fn internal_index_root(&self, cancellation_flag: Option<Arc<AtomicBool>>) {
-        let fs = self.fs.clone();
-        let root_path = self.root_path.as_path().to_owned();
-        let channel = self.fs_channel.0.clone();
-        let tick_channel = self.tick_channel.0.clone();
-
+    /*
+    Indexer is basically a thread that does following:
+    1) if we have a request to refresh a dir, this is what has highest priority
+    2) otherwise it indexes whatever is in the queue
+    3) if queue is empty, it waits for the dir
+     */
+    fn start_indexing_thread(&self) {
         // TODO add:
         // - max message size
-        // - max depth?
+        // - skip refresh if not updated
         // - ignore parameters
+        // - make sure only one is running?
+        // - add resuming on error?
+
+
+        let fs = self.fs.clone();
+        let root_path = self.root_path.as_path().to_owned();
+        let response_channel = self.fs_channel.0.clone();
+        let request_channel = self.fs_request_channel.1.clone();
+        let tick_channel = self.tick_channel.0.clone();
 
         thread::spawn(move || {
-            let mut pipe: VecDeque<PathBuf> = VecDeque::new();
-            pipe.push_back(root_path);
+            // what, how deep
+            let mut pipe: VecDeque<(PathBuf, Option<usize>)> = VecDeque::new();
+            pipe.push_back((root_path, None));
 
-            while !pipe.is_empty() {
-                let head = pipe.pop_front().unwrap();
-                debug!("pipe len {}, processing {:?}", pipe.len(), &head);
+            'indexing_loop:
+            loop {
+                let mut paused = false;
+
+                // returns whether the loop should be broken or not.
+                let mut process_request = |req: FSRequest, pipe: &mut VecDeque<(PathBuf, Option<usize>)>| -> bool {
+                    match req {
+                        FSRequest::RefreshDir {
+                            full_path
+                        } => {
+                            if !paused {
+                                debug!("pushing {:?} in front of request queue of len {}", &full_path, pipe.len());
+                                pipe.push_front((full_path, Some(0)));
+                            } else {
+                                debug!("ignoring request {:?} because paused", &full_path);
+                            }
+                            false
+                        }
+                        FSRequest::PauseIndexing => {
+                            debug!("pausing indexing.");
+                            pipe.clear();
+                            paused = true;
+                            false
+                        }
+                        FSRequest::UnpauseIndexing => {
+                            debug!("unpausing indexing.");
+                            paused = false;
+                            false
+                        }
+                        FSRequest::KillIndexer => {
+                            debug!("killing indexer thread");
+                            true
+                        }
+                    }
+                };
+
+                // first we drain request_channel, to put interrupting high-priority requests in the front.
+                while let Ok(req) = request_channel.try_recv() {
+                    let should_break_loop = process_request(req, &mut pipe);
+                    if should_break_loop {
+                        break 'indexing_loop;
+                    }
+                }
+
+                loop {
+                    match request_channel.recv() {
+                        Ok(req) => {
+                            let should_break_loop = process_request(req, &mut pipe);
+                            if should_break_loop {
+                                break 'indexing_loop;
+                            }
+                            if !pipe.is_empty() {
+                                break;
+                            }
+                        }
+                        Err(e) => {
+                            error!("failed retrieving indexing request: {}", e);
+                            break 'indexing_loop;
+                        }
+                    }
+                }
+
+                // if we got here, pipe is not empty. But that doesn't stop me from being paranoid.
+                let (mut what, mut how_deep): (PathBuf, Option<usize>) = match pipe.pop_front() {
+                    None => {
+                        error!("pipe should not be empty here, but it was!");
+                        break 'indexing_loop;
+                    }
+                    Some(head) => head,
+                };
+
+                debug!("pipe len {}, processing {:?}, depth: {:?}", pipe.len(), &what, how_deep);
+
 
                 let mut children: Vec<DirEntry> = vec![];
-
-                match fs.read_dir(&head) {
+                match fs.read_dir(&what) {
                     Ok(read_dir) => {
+                        'items_loop:
                         for item in read_dir {
                             match item {
                                 Ok(dir_entry) => {
                                     match dir_entry.file_type() {
                                         Ok(ft) => {
                                             if ft.is_dir() {
-                                                pipe.push_back(dir_entry.path());
+                                                if how_deep.map(|f| f > 0).unwrap_or(true) {
+                                                    pipe.push_back((dir_entry.path(),
+                                                                    how_deep.map(|f| f - 1))
+                                                    );
+                                                }
                                             }
                                             children.push(dir_entry);
                                         }
                                         Err(e) => {
                                             error!("failed retrieving file_type of {:?}: {}", dir_entry ,e);
-                                            break;
+                                            break 'items_loop;
                                         }
                                     }
                                 }
                                 Err(e) => {
                                     error!("failed getting dir_entry: {}", e);
-                                    break;
+                                    break 'items_loop;
                                 }
                             }
                         }
                     }
                     Err(e) => {
-                        error!("failed reading dir {:?}: {}", head, e);
-                        break;
+                        error!("failed reading dir {:?}: {}", &what, e);
                     }
                 }
 
                 let msg = FSUpdate::DirectoryUpdate {
-                    full_path: head,
+                    full_path: what,
                     entries: children,
                 };
 
-                if channel.send(msg).is_err() {
-                    break;
-                }
-                tick_channel.try_send(());
+                match response_channel.send(msg) {
+                    Err(e) => {
+                        debug!("failed sending response: {}", e);
+                        break 'indexing_loop;
+                    }
+                    _ => {}
+                };
 
-                if cancellation_flag.as_ref().map(|c| c.load(Ordering::Relaxed)).unwrap_or(false) {
-                    break;
-                }
+                tick_channel.try_send(());
             }
 
-            debug!("indexing done");
+            debug!("indexer thread finishes");
         });
     }
 }
@@ -259,43 +297,21 @@ impl FilesystemFront for LocalFilesystem {
             return (LoadingState::Complete, Box::new(iter::empty()));
         }
 
-        let maybe_refresh = |mut is: RefMut<InternalState>| -> LoadingState {
-            let pathrc = match is.get_path(path) {
-                Some(p) => p,
-                None => {
-                    error!("refreshing unknown path {:?}? Dropping.", path);
-                    return LoadingState::Error;
-                }
-            };
-
-            let cache = is.get_or_create_cache(&pathrc);
-
-            let loading_state = cache.get_loading_state();
-            match loading_state {
-                LoadingState::InProgress | LoadingState::Complete | LoadingState::Error => {}
-                LoadingState::NotStarted => {
-                    cache.set_loading_state(LoadingState::InProgress);
-                    self.start_dir_refresh(path);
-                }
-            }
-
-            loading_state
-        };
-
         if let Ok(mut is) = self.internal_state.try_borrow_mut() {
             if let Some(cache_ref) = is.get_cache(path) {
                 let (mut loading_state, children) = cache_ref.get_children();
 
-                if loading_state != LoadingState::InProgress {
-                    loading_state = maybe_refresh(is);
+                if loading_state != LoadingState::InProgress && loading_state != LoadingState::Complete {
+                    debug!("requesting refresh of {:?} because it's {:?}", path, loading_state);
+                    self.request_refresh(path);
                 }
-                debug!("reading from cache {:?} : got {} and {}", path, loading_state, children.len());
 
+                // debug!("reading from cache {:?} : got {} and {}", path, loading_state, children.len());
                 (loading_state, Box::new(children.into_iter()))
             } else {
                 warn!("no cache for item {:?}", path);
-                let loading_state = maybe_refresh(is);
-                (loading_state, Box::new(iter::empty()))
+                self.request_refresh(path);
+                (LoadingState::InProgress, Box::new(iter::empty()))
             }
         } else {
             error!("get_children_paths: failed acquiring internal_state");
@@ -375,9 +391,5 @@ impl FilesystemFront for LocalFilesystem {
         // Good thing I abstracted over it, will rewrite later.
         //self.fs.overwrite_file(path, &bytes)
         Ok(())
-    }
-
-    fn index_root(&self, cancellation_flag: Option<Arc<AtomicBool>>) {
-        self.internal_index_root(cancellation_flag)
     }
 }
