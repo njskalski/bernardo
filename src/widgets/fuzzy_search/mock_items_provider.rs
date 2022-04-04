@@ -2,7 +2,7 @@ pub mod mock {
     use crate::AnyMsg;
     use crate::primitives::alphabet::mock::ALPHABET;
     use crate::widgets::editor_view::msg::EditorViewMsg;
-    use crate::widgets::fuzzy_search::helpers::is_substring;
+    use crate::widgets::fuzzy_search::helpers::is_subsequence;
     use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 
     pub struct MockItemProvider {
@@ -56,7 +56,7 @@ pub mod mock {
         }
 
         fn items(&self, query: String) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
-            Box::new(self.items.iter().filter(move |t| is_substring(t, &query)).map(|f| Box::new(f.to_string()) as Box<dyn Item>))
+            Box::new(self.items.iter().filter(move |t| is_subsequence(t, &query)).map(|f| Box::new(f.to_string()) as Box<dyn Item>))
         }
     }
 }

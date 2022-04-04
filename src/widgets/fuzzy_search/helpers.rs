@@ -1,6 +1,6 @@
 use unicode_segmentation::UnicodeSegmentation;
 
-pub fn is_substring(item: &str, query: &str) -> bool {
+pub fn is_subsequence(item: &str, query: &str) -> bool {
     let mut query_it = query.graphemes(true).peekable();
 
     for g in item.graphemes(true) {
@@ -18,8 +18,8 @@ pub fn is_substring(item: &str, query: &str) -> bool {
 
 #[test]
 fn test_is_substring() {
-    assert_eq!(is_substring("abba", "c"), false);
-    assert_eq!(is_substring("abba", "bbb"), false);
-    assert_eq!(is_substring("abba", "aba"), true);
-    assert_eq!(is_substring("abba", "aa"), true);
+    assert_eq!(is_subsequence("abba", "c"), false);
+    assert_eq!(is_subsequence("abba", "bbb"), false);
+    assert_eq!(is_subsequence("abba", "aba"), true);
+    assert_eq!(is_subsequence("abba", "aa"), true);
 }

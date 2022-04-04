@@ -8,6 +8,7 @@ use log::{error, warn};
 use simsearch::{SearchOptions, SimSearch};
 use crate::fs::file_front::{FileChildrenCache, FileChildrenCacheRef};
 use crate::io::loading_state::LoadingState;
+use crate::widgets::fuzzy_search::helpers::is_subsequence;
 
 // how many file paths should be available for immediate querying "at hand".
 // basically a default size of cache for fuzzy file search
@@ -37,9 +38,6 @@ pub struct InternalState {
     pub at_hand_limit: usize, // TODO privatize
 
     current_idx: u128,
-
-    //TODO this is experimental
-    search_index: simsearch::SimSearch<u128>,
 }
 
 impl Default for InternalState {
@@ -50,8 +48,6 @@ impl Default for InternalState {
             rev_paths: HashMap::default(),
             at_hand_limit: DEFAULT_FILES_PRELOADS,
             current_idx: 1,
-            //TODO to make case insensitive, we must fix highlighting
-            search_index: SimSearch::new_with(SearchOptions::new().case_sensitive(true)),
         }
     }
 }
@@ -95,7 +91,7 @@ impl InternalState {
 
         self.paths.remove(path);
         self.rev_paths.remove(&value);
-        self.search_index.delete(&value);
+        // self.search_index.delete(&value);
 
         true
     }
@@ -107,11 +103,12 @@ impl InternalState {
 
         self.paths.insert(WrappedRcPath(rcp.clone()), idx);
         self.rev_paths.insert(idx, WrappedRcPath(rcp.clone()));
-        rcp.to_str().map(|s| {
-            self.search_index.insert(idx, s);
-        }).unwrap_or_else(|| {
-            error!("failed to cast path to string, will not be present in index. Absolutely barbaric!");
-        });
+        // rcp.to_str().map(|s| {
+        //     let x = s.replace("/", "");
+        //     self.search_index.insert(idx, &x);
+        // }).unwrap_or_else(|| {
+        //     error!("failed to cast path to string, will not be present in index. Absolutely barbaric!");
+        // });
 
         rcp
     }
@@ -125,13 +122,23 @@ impl InternalState {
     }
 
     pub fn fuzzy_files_it(&self, query: String, limit: usize) -> (LoadingState, Vec<Rc<PathBuf>>) {
-        let items = self.search_index.search(&query);
-        let paths: Vec<Rc<PathBuf>> = items.iter().take(limit).map(|i| {
-            let i2 = *i;
-            self.rev_paths.get(&i).map(|w| w.0.clone()).ok_or(move || {
-                error!("failed finding path for id {}", i2);
-            })
-        }).flatten().collect();
+        // let items = self.search_index.search(&query);
+        // let paths: Vec<Rc<PathBuf>> = items.iter().take(limit).map(|i| {
+        //     let i2 = *i;
+        //     self.rev_paths.get(&i).map(|w| w.0.clone()).ok_or(move || {
+        //         error!("failed finding path for id {}", i2);
+        //     })
+        // }).flatten().collect();
+
+        // TODO this is dumb as fuck, just to prove rest works
+        let mut paths: Vec<Rc<PathBuf>> = Vec::new();
+        for (wp, idx) in &self.paths {
+            if wp.0.to_str().map(|s| {
+                is_subsequence(s, &query)
+            }).unwrap_or(false) {
+                paths.push(wp.0.clone());
+            }
+        }
 
         //TODO not implemented properly informing on loading state
         (LoadingState::Complete, paths)
