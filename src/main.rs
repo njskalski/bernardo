@@ -13,14 +13,13 @@ use std::rc::Rc;
 
 use clap::Parser;
 use crossbeam_channel::select;
-use filesystem::OsFileSystem;
 use log::{debug, error, warn};
 use termion::raw::IntoRawMode;
 
 use crate::io::crossterm_input::CrosstermInput;
 use crate::io::crossterm_output::CrosstermOutput;
-use crate::io::filesystem_tree::fsfref::FsfRef;
-use crate::io::filesystem_tree::local_filesystem_front::LocalFilesystem;
+use fs::fsfref::FsfRef;
+use fs::local_filesystem_front::LocalFilesystem;
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
@@ -42,6 +41,7 @@ mod widget;
 mod text;
 mod widgets;
 mod tsw;
+mod fs;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -85,7 +85,7 @@ fn main() {
 
     // let mut main_view = SaveFileDialogWidget::new(fsf.clone()).with_something_to_save(Box::new(trash));
 
-    let theme = Theme::load_from_file(OsFileSystem::new(), &PathBuf::from("./themes/default.ron")).unwrap(); // TODO
+    let theme = Theme::load_from_file(filesystem::OsFileSystem::new(), &PathBuf::from("./themes/default.ron")).unwrap(); // TODO
 
     // returns (consumed, message_to_parent)
     fn recursive_treat_views(

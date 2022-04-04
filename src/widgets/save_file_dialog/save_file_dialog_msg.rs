@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::AnyMsg;
 use crate::experiments::focus_group::FocusUpdate;
-use crate::io::filesystem_tree::file_front::FileFront;
+use crate::fs::file_front::FileFront;
 
 #[derive(Clone, Debug)]
 pub enum SaveFileDialogMsg {

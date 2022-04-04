@@ -16,9 +16,9 @@ use log::{debug, error, warn};
 
 use crate::Keycode;
 use crate::experiments::focus_group::FocusUpdate;
-use crate::io::filesystem_tree::file_front::{FileFront, FilteredFileFront};
-use crate::io::filesystem_tree::filesystem_front::SomethingToSave;
-use crate::io::filesystem_tree::fsfref::FsfRef;
+use crate::fs::file_front::{FileFront, FilteredFileFront};
+use crate::fs::filesystem_front::SomethingToSave;
+use crate::fs::fsfref::FsfRef;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;

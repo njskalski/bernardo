@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use log::{error, warn};
-use crate::io::filesystem_tree::fsfref::FsfRef;
-use crate::io::filesystem_tree::LoadingState;
+use crate::fs::fsfref::FsfRef;
+use crate::io::loading_state::LoadingState;
 
 use crate::widgets::list_widget::{ListWidgetItem, ListWidgetProvider};
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;

@@ -2,9 +2,9 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::Path;
 use std::rc::Rc;
-use crate::io::filesystem_tree::file_front::FileFront;
-use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
-use crate::io::filesystem_tree::LoadingState;
+use crate::fs::file_front::FileFront;
+use crate::fs::filesystem_front::FilesystemFront;
+use crate::io::loading_state::LoadingState;
 
 #[derive(Clone, Debug)]
 pub struct FsfRef(pub Rc<Box<dyn FilesystemFront>>);

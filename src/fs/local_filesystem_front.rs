@@ -17,12 +17,12 @@ use filesystem::{FileSystem, OsFileSystem};
 use log::{debug, error, warn};
 use ropey::Rope;
 use simsearch::SimSearch;
-use crate::io::filesystem_tree::file_front::{FileChildrenCache, FileChildrenCacheRef, FileFront};
+use crate::fs::file_front::{FileChildrenCache, FileChildrenCacheRef, FileFront};
 
-use crate::io::filesystem_tree::filesystem_front::FilesystemFront;
-use crate::io::filesystem_tree::fsfref::FsfRef;
-use crate::io::filesystem_tree::internal_state::{InternalState, WrappedRcPath};
-use crate::io::filesystem_tree::LoadingState;
+use crate::fs::filesystem_front::FilesystemFront;
+use crate::fs::fsfref::FsfRef;
+use crate::fs::internal_state::{InternalState, WrappedRcPath};
+use crate::io::loading_state::LoadingState;
 use crate::widgets::fuzzy_search::item_provider::Item;
 
 // TODOs:
@@ -293,7 +293,7 @@ impl FilesystemFront for LocalFilesystem {
     // This returns from cache if possible. Triggers update.
     fn get_children_paths(&self, path: &Path) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
         if !self.is_within(path) {
-            warn!("requested get_children outside filesystem: {:?}", path);
+            warn!("requested get_children outside fs: {:?}", path);
             return (LoadingState::Complete, Box::new(iter::empty()));
         }
 
@@ -327,7 +327,7 @@ impl FilesystemFront for LocalFilesystem {
         let mut is = match self.internal_state.try_borrow_mut() {
             Ok(is) => is,
             Err(e) => {
-                error!("tick: failed acquiring filesystem lock");
+                error!("tick: failed acquiring fs lock");
                 return;
             }
         };
@@ -374,7 +374,7 @@ impl FilesystemFront for LocalFilesystem {
 
     fn is_within(&self, path: &Path) -> bool {
         if !path.starts_with(&*self.root_path) {
-            warn!("attempted to open a file from outside of filesystem: {:?}", path);
+            warn!("attempted to open a file from outside of fs: {:?}", path);
             false
         } else {
             true

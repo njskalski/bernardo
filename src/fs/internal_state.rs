@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use log::{error, warn};
 use simsearch::SimSearch;
-use crate::io::filesystem_tree::file_front::{FileChildrenCache, FileChildrenCacheRef};
+use crate::fs::file_front::{FileChildrenCache, FileChildrenCacheRef};
 
 // how many file paths should be available for immediate querying "at hand".
 // basically a default size of cache for fuzzy file search

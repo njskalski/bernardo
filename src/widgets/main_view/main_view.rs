@@ -6,8 +6,8 @@ use log::{debug, error, warn};
 
 use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Widget};
 use crate::experiments::filename_to_language::filename_to_language;
-use crate::io::filesystem_tree::file_front::FileFront;
-use crate::io::filesystem_tree::fsfref::FsfRef;
+use crate::fs::file_front::FileFront;
+use crate::fs::fsfref::FsfRef;
 use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::DisplayState;
 use crate::layout::layout::{Layout, WidgetIdRect};

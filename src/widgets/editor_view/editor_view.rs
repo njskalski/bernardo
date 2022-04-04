@@ -6,7 +6,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget};
-use crate::io::filesystem_tree::fsfref::FsfRef;
+use crate::fs::fsfref::FsfRef;
 use crate::io::sub_output::SubOutput;
 use crate::layout::dummy_layout::DummyLayout;
 use crate::layout::hover_layout::HoverLayout;

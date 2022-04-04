@@ -8,8 +8,8 @@ use std::sync::atomic::AtomicBool;
 
 /*
 Reasons for this thing to exist (use cases in order of importance):
-- abstract over filesystem. I will need this for tests, and for remote filesystems.
-- inotify support. Refresh support for when filesystem is changed in the background.
+- abstract over fs. I will need this for tests, and for remote filesystems.
+- inotify support. Refresh support for when fs is changed in the background.
 - fast queries. We need to execute "fuzzy search" over filenames. This requires precomputing a trie/patricia tree, and updating it on inotify.
 - async IO without async runtime. I will test for infinite files support and I want to access huge files over internet.
  */
@@ -17,9 +17,8 @@ Reasons for this thing to exist (use cases in order of importance):
 use crossbeam_channel::Receiver;
 use ropey::Rope;
 
-use crate::io::filesystem_tree::file_front::FileFront;
-use crate::io::filesystem_tree::LoadingState;
-
+use crate::fs::file_front::FileFront;
+use crate::io::loading_state::LoadingState;
 
 pub trait SomethingToSave {
     fn get_bytes(&self) -> Box<dyn Iterator<Item=&u8> + '_>;
@@ -39,7 +38,7 @@ impl SomethingToSave for Rc<String> {
 
 /*
 Now FilesystemFront does not ever return a FileFront, because for that a FsfRef (Rc<Self>) is needed.
-So all methods that return FileFront are in Fsf implementation, and are filesystem agnostic.
+So all methods that return FileFront are in Fsf implementation, and are fs agnostic.
  */
 pub trait FilesystemFront: Debug {
     fn get_root_path(&self) -> &Rc<PathBuf>;
