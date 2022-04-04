@@ -191,12 +191,3 @@ impl ListWidgetProvider<FileFront> for FilteredFileFront {
     }
 }
 
-impl crate::widgets::fuzzy_search::item_provider::Item for FileFront {
-    fn display_name(&self) -> &str {
-        todo!()
-    }
-
-    fn on_hit(&self) -> Box<dyn AnyMsg> {
-        todo!()
-    }
-}
