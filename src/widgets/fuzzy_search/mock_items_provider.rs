@@ -55,8 +55,8 @@ pub mod mock {
             "mock"
         }
 
-        fn items<'a>(&'a self, query: String) -> Box<dyn Iterator<Item=&'a (dyn Item + 'a)> + '_> {
-            Box::new(self.items.iter().filter(move |t| is_substring(t, &query)).map(|f| f as &dyn Item))
+        fn items(&self, query: String) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
+            Box::new(self.items.iter().filter(move |t| is_substring(t, &query)).map(|f| Box::new(f.to_string()) as Box<dyn Item>))
         }
     }
 }

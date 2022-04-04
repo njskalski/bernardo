@@ -91,11 +91,11 @@ struct ItemIter<'a> {
     context_shortcuts: &'a Vec<String>,
     query: String,
     pos: usize,
-    cur_iter: Option<Box<dyn Iterator<Item=&'a dyn Item> + 'a>>,
+    cur_iter: Option<Box<dyn Iterator<Item=Box<dyn Item + 'a>> + 'a>>,
 }
 
 impl<'a> Iterator for ItemIter<'a> {
-    type Item = &'a dyn Item;
+    type Item = Box<dyn Item + 'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.pos < self.providers.len() {
