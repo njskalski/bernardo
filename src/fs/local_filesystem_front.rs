@@ -29,6 +29,8 @@ use crate::widgets::fuzzy_search::item_provider::Item;
 // - add removing items from cache
 // - add inotify support
 
+const DEFAULT_MAX_DEPTH: usize = 256;
+
 #[derive(Debug)]
 pub enum FSUpdate {
     DirectoryUpdate {
@@ -40,7 +42,8 @@ pub enum FSUpdate {
 #[derive(Debug)]
 pub enum FSRequest {
     RefreshDir {
-        full_path: PathBuf
+        full_path: PathBuf,
+        max_depth: usize,
     },
     PauseIndexing,
     UnpauseIndexing,
@@ -96,7 +99,7 @@ impl LocalFilesystem {
 
     fn request_refresh(&self, path: &Path) -> bool {
         self.fs_request_channel.0.try_send(
-            FSRequest::RefreshDir { full_path: path.to_owned() }
+            FSRequest::RefreshDir { full_path: path.to_owned(), max_depth: 1 }
         ).map_err(|e| {
             error!("request_refresh: failed requesting dir refresh for {:?}: {}", path, e);
         }).is_ok()
@@ -125,22 +128,24 @@ impl LocalFilesystem {
 
         thread::spawn(move || {
             // what, how deep
-            let mut pipe: VecDeque<(PathBuf, Option<usize>)> = VecDeque::new();
-            pipe.push_back((root_path, None));
+            let mut pipe: VecDeque<(PathBuf, usize)> = VecDeque::new();
+            pipe.push_back((root_path, DEFAULT_MAX_DEPTH));
 
             'indexing_loop:
             loop {
                 let mut paused = false;
 
+                // I moved message processing here, because I call it twice (once after "try_recv" and once after "recv").
                 // returns whether the loop should be broken or not.
-                let mut process_request = |req: FSRequest, pipe: &mut VecDeque<(PathBuf, Option<usize>)>| -> bool {
+                let mut process_request = |req: FSRequest, pipe: &mut VecDeque<(PathBuf, usize)>| -> bool {
                     match req {
                         FSRequest::RefreshDir {
-                            full_path
+                            full_path,
+                            max_depth,
                         } => {
                             if !paused {
                                 debug!("pushing {:?} in front of request queue of len {}", &full_path, pipe.len());
-                                pipe.push_front((full_path, Some(0)));
+                                pipe.push_front((full_path, max_depth));
                             } else {
                                 debug!("ignoring request {:?} because paused", &full_path);
                             }
@@ -172,35 +177,37 @@ impl LocalFilesystem {
                     }
                 }
 
-                loop {
-                    match request_channel.recv() {
-                        Ok(req) => {
-                            let should_break_loop = process_request(req, &mut pipe);
-                            if should_break_loop {
+                // this is the only place where this thread "sleeps". It does it only when pipe is empty.
+                if pipe.is_empty() {
+                    loop {
+                        match request_channel.recv() {
+                            Ok(req) => {
+                                let should_break_loop = process_request(req, &mut pipe);
+                                if should_break_loop {
+                                    break 'indexing_loop;
+                                }
+                                if !pipe.is_empty() {
+                                    break;
+                                }
+                            }
+                            Err(e) => {
+                                error!("failed retrieving indexing request: {}", e);
                                 break 'indexing_loop;
                             }
-                            if !pipe.is_empty() {
-                                break;
-                            }
-                        }
-                        Err(e) => {
-                            error!("failed retrieving indexing request: {}", e);
-                            break 'indexing_loop;
                         }
                     }
                 }
 
                 // if we got here, pipe is not empty. But that doesn't stop me from being paranoid.
-                let (mut what, mut how_deep): (PathBuf, Option<usize>) = match pipe.pop_front() {
+                let (mut what, mut how_deep): (PathBuf, usize) = match pipe.pop_front() {
                     None => {
                         error!("pipe should not be empty here, but it was!");
                         break 'indexing_loop;
                     }
-                    Some(head) => head,
+                    Some((head, how_deep)) => (head, how_deep),
                 };
 
                 debug!("pipe len {}, processing {:?}, depth: {:?}", pipe.len(), &what, how_deep);
-
 
                 let mut children: Vec<DirEntry> = vec![];
                 match fs.read_dir(&what) {
@@ -212,9 +219,9 @@ impl LocalFilesystem {
                                     match dir_entry.file_type() {
                                         Ok(ft) => {
                                             if ft.is_dir() {
-                                                if how_deep.map(|f| f > 0).unwrap_or(true) {
+                                                if how_deep > 0 {
                                                     pipe.push_back((dir_entry.path(),
-                                                                    how_deep.map(|f| f - 1))
+                                                                    how_deep - 1)
                                                     );
                                                 }
                                             }

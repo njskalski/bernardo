@@ -7,9 +7,11 @@ use std::vec::IntoIter;
 use log::{debug, error};
 use crate::fs::file_front::FileFront;
 use crate::{AnyMsg, FsfRef};
+use crate::fs::constants::{NON_UTF8_ERROR_STR, NOT_A_FILENAME};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 
 pub type FileFrontToMsg = fn(&FileFront) -> Box<dyn AnyMsg>;
+
 
 // TODO add subdirectory
 pub struct FsfProvider {
@@ -33,9 +35,21 @@ impl AnyMsg for FileFrontMsg {}
 
 impl Item for FileFront {
     fn display_name(&self) -> &str {
-        self.path().to_str().unwrap_or_else(|| {
+        self.path().file_name().map(|oss| oss.to_str().unwrap_or_else(|| {
             error!("failed to cast path to string: {:?}", self.path());
-            "failed cast"
+            NON_UTF8_ERROR_STR
+        })).unwrap_or_else(|| {
+            error!("failed to extract a filename from: {:?}", self.path());
+            NOT_A_FILENAME
+        })
+    }
+
+    fn comment(&self) -> Option<&str> {
+        self.path().parent().map(|parent_path| {
+            parent_path.to_str().unwrap_or_else(|| {
+                error!("failed to cast path to string: {:?}", parent_path);
+                NON_UTF8_ERROR_STR
+            })
         })
     }
 

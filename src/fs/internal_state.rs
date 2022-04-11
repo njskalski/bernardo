@@ -130,7 +130,7 @@ impl InternalState {
     pub fn fuzzy_files_it(&self, query: String) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
         // TODO this is dumb as fuck, just to prove rest works
         let iter = self.paths.iter().filter(move |item| {
-            item.0.0.to_str().map(|s| is_subsequence(s, &query)).unwrap_or_else(|| {
+            item.0.0.file_name().map(|f| f.to_str()).flatten().map(|s| is_subsequence(s, &query)).unwrap_or_else(|| {
                 error!("fuzzy_files_it: path is not a utf-8 str");
                 false
             })

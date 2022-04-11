@@ -5,6 +5,7 @@ use crate::AnyMsg;
 
 pub trait Item {
     fn display_name(&self) -> &str;
+    fn comment(&self) -> Option<&str> { None }
     fn on_hit(&self) -> Box<dyn AnyMsg>;
 }
 
