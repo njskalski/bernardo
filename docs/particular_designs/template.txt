@@ -1,0 +1,7 @@
+This is a template for "particular designs".
+Particular design is a dump of my imagination detailing of what I want to achieve.
+
+How to invoke: ctrl-h <what keystroke>
+Valid in what context: editor window <where>
+Escalates to: None <what is the result of calling "escalate">
+

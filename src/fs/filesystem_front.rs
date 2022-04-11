@@ -71,6 +71,7 @@ pub trait FilesystemFront: Debug {
     fn exists(&self, path: &Path) -> bool;
 
     // returns files that satisfy query (query is a substring of file name)
+    // TODO would be great to not pass the limit ahead, but until I figure out how to wrap a Ref into an iterator, I don't know how.
     fn fuzzy_file_paths_it(&self, query: String, limit: usize) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>);
 
     //TODO:

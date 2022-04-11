@@ -10,5 +10,5 @@ pub trait Item {
 
 pub trait ItemsProvider {
     fn context_name(&self) -> &str;
-    fn items(&self, query: String) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_>;
+    fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_>;
 }

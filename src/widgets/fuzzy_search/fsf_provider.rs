@@ -49,13 +49,8 @@ impl ItemsProvider for FsfProvider {
         "fs"
     }
 
-    fn items(&self, query: String) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
-        // TODO since I have no limit on iterator, at this point I just ignore queries below 4 letters.
-        // if query.len() < 4 {
-        //     Box::new(iter::empty())
-        // } else {
-        let items = self.fsf.fuzzy_files_it(query, 100).1.map(|f| Box::new(f) as Box<dyn Item>);
+    fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
+        let items = self.fsf.fuzzy_files_it(query, limit).1.map(|f| Box::new(f) as Box<dyn Item>);
         Box::new(items)
-        // }
     }
 }

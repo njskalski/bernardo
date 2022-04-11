@@ -1,5 +1,5 @@
-use std::borrow::Borrow;
-use std::cell::{BorrowMutError, RefCell, RefMut};
+use std::borrow::{Borrow, BorrowMut};
+use std::cell::{BorrowMutError, Ref, RefCell, RefMut};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::DirEntry;
 use std::hash::BuildHasher;
@@ -386,11 +386,11 @@ impl FilesystemFront for LocalFilesystem {
     }
 
     fn fuzzy_file_paths_it(&self, query: String, limit: usize) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
-        self.internal_state.try_borrow().map(|is| {
-            let (loading_state, res_vec) = is.fuzzy_files_it(query, limit);
-            let iterator: Box<dyn Iterator<Item=Rc<PathBuf>>> = Box::new(res_vec.into_iter());
+        self.internal_state.try_borrow().map(|isref| {
+            let (loading_state, iter) = isref.fuzzy_files_it(query);
+            let processed_iter: Vec<Rc<PathBuf>> = iter.map(|item| item.clone()).collect();
 
-            (loading_state, iterator)
+            (loading_state, Box::new(processed_iter.into_iter()) as Box<dyn Iterator<Item=Rc<PathBuf>>>)
         }).unwrap_or_else(|e| {
             error!("failed acquiring lock: {}", e);
             (LoadingState::Error, Box::new(iter::empty()))

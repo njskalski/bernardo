@@ -1,4 +1,4 @@
-use log::{debug, warn};
+use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -20,10 +20,13 @@ pub struct FuzzySearchWidget {
     providers: Vec<Box<dyn ItemsProvider>>,
     context_shortcuts: Vec<String>,
 
+    last_height_limit: Option<u16>,
+
     highlighted: usize,
 
     on_close: WidgetAction<Self>,
     on_miss: Option<WidgetAction<Self>>,
+    // on_hit is a part of PROVIDER.
 }
 
 impl FuzzySearchWidget {
@@ -35,6 +38,7 @@ impl FuzzySearchWidget {
             edit,
             providers: vec![],
             context_shortcuts: vec![],
+            last_height_limit: None,
             highlighted: 0,
             on_close,
             on_miss: None,
@@ -76,11 +80,17 @@ impl FuzzySearchWidget {
     }
 
     fn items(&self) -> ItemIter {
+        let rows_limit = self.last_height_limit.unwrap_or_else(|| {
+            error!("items called before last_height_limit set, using 128 as 'safe default'");
+            128
+        });
+
         ItemIter {
             providers: &self.providers,
             context_shortcuts: &self.shortened_contexts(),
             query: self.edit.get_text().to_string(),
-            pos: 0,
+            rows_limit: rows_limit as usize,
+            provider_idx: 0,
             cur_iter: None,
         }
     }
@@ -90,26 +100,35 @@ struct ItemIter<'a> {
     providers: &'a Vec<Box<dyn ItemsProvider>>,
     context_shortcuts: &'a Vec<String>,
     query: String,
-    pos: usize,
+    rows_limit: usize,
+    provider_idx: usize,
     cur_iter: Option<Box<dyn Iterator<Item=Box<dyn Item + 'a>> + 'a>>,
 }
+
 
 impl<'a> Iterator for ItemIter<'a> {
     type Item = Box<dyn Item + 'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while self.pos < self.providers.len() {
+        if self.rows_limit == 0 {
+            return None;
+        }
+
+        while self.provider_idx < self.providers.len() {
             if self.cur_iter.is_none() {
-                self.cur_iter = Some(self.providers[self.pos].items(self.query.clone()));
+                self.cur_iter = Some(self.providers[self.provider_idx].items(self.query.clone(), self.rows_limit));
             }
 
             let iter = self.cur_iter.as_mut().unwrap();
 
             match iter.next() {
-                Some(item) => { return Some(item); }
+                Some(item) => {
+                    self.rows_limit -= 1;
+                    return Some(item);
+                }
                 None => {
                     self.cur_iter = None;
-                    self.pos += 1;
+                    self.provider_idx += 1;
                 }
             }
         }
@@ -133,6 +152,12 @@ impl Widget for FuzzySearchWidget {
     }
 
     fn layout(&mut self, _sc: SizeConstraint) -> XY {
+
+        // This is a reasonable assumption: I never want to display more elements in fuzzy search that
+        // can be displayed on a "physical" screen. Even if fuzzy is inside a scroll, the latest position
+        // I might be interested in is "lower_right().y".
+        self.last_height_limit = Some(_sc.hint().lower_right().y);
+
         let items_len = self.items().count() + 1;
 
         //TODO

@@ -58,6 +58,12 @@ impl Debug for InternalState {
     }
 }
 
+pub struct FuzzyFileIt<'a> {
+    is: &'a InternalState,
+    query: String,
+    _idx: usize,
+}
+
 impl InternalState {
     pub fn get_or_create_cache(&mut self, path: &Rc<PathBuf>) -> FileChildrenCacheRef {
         match self.children_cache.get(path) {
@@ -121,26 +127,16 @@ impl InternalState {
         }
     }
 
-    pub fn fuzzy_files_it(&self, query: String, limit: usize) -> (LoadingState, Vec<Rc<PathBuf>>) {
-        // let items = self.search_index.search(&query);
-        // let paths: Vec<Rc<PathBuf>> = items.iter().take(limit).map(|i| {
-        //     let i2 = *i;
-        //     self.rev_paths.get(&i).map(|w| w.0.clone()).ok_or(move || {
-        //         error!("failed finding path for id {}", i2);
-        //     })
-        // }).flatten().collect();
-
+    pub fn fuzzy_files_it(&self, query: String) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
         // TODO this is dumb as fuck, just to prove rest works
-        let mut paths: Vec<Rc<PathBuf>> = Vec::new();
-        for (wp, idx) in &self.paths {
-            if wp.0.to_str().map(|s| {
-                is_subsequence(s, &query)
-            }).unwrap_or(false) {
-                paths.push(wp.0.clone());
-            }
-        }
+        let iter = self.paths.iter().filter(move |item| {
+            item.0.0.to_str().map(|s| is_subsequence(s, &query)).unwrap_or_else(|| {
+                error!("fuzzy_files_it: path is not a utf-8 str");
+                false
+            })
+        }).map(|item| item.0.0.clone());
 
         //TODO not implemented properly informing on loading state
-        (LoadingState::Complete, paths)
+        (LoadingState::Complete, Box::new(iter))
     }
 }
