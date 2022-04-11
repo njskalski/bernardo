@@ -14,11 +14,20 @@ use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum DrawComment {
+    None,
+    Highlighted,
+    All,
+}
+
 pub struct FuzzySearchWidget {
     id: WID,
     edit: EditBoxWidget,
     providers: Vec<Box<dyn ItemsProvider>>,
     context_shortcuts: Vec<String>,
+
+    draw_comment: DrawComment,
 
     last_height_limit: Option<u16>,
 
@@ -36,8 +45,9 @@ impl FuzzySearchWidget {
         Self {
             id: get_new_widget_id(),
             edit,
-            providers: vec![],
-            context_shortcuts: vec![],
+            providers: Vec::default(),
+            context_shortcuts: Vec::default(),
+            draw_comment: DrawComment::None,
             last_height_limit: None,
             highlighted: 0,
             on_close,
@@ -62,6 +72,17 @@ impl FuzzySearchWidget {
             context_shortcuts,
             ..self
         }
+    }
+
+    pub fn with_draw_comment_setting(self, draw_context_setting: DrawComment) -> Self {
+        Self {
+            draw_comment: draw_context_setting,
+            ..self
+        }
+    }
+
+    pub fn set_draw_comment_setting(&mut self, draw_context_setting: DrawComment) {
+        self.draw_comment = draw_context_setting;
     }
 
     pub fn on_miss(self, on_miss: WidgetAction<Self>) -> Self {
@@ -219,7 +240,7 @@ impl Widget for FuzzySearchWidget {
                         }
                     }
                     Navigation::ArrowDown => {
-                        if self.highlighted < self.items().count() + 1 {
+                        if self.highlighted + 1 < self.items().count() {
                             self.highlighted += 1;
                         }
                     }
@@ -243,10 +264,9 @@ impl Widget for FuzzySearchWidget {
                                            Rect::new(ZERO, XY::new(self.width(), 1)));
 
         self.edit.render(theme, focused, &mut suboutput);
-
-        //
-
         let query = self.edit.get_text().to_string();
+
+        let mut y = 1 as u16;
 
         for (item_idx, item) in self.items().enumerate() {
             let mut query_it = query.graphemes(true).peekable();
@@ -254,24 +274,23 @@ impl Widget for FuzzySearchWidget {
 
             let selected_line = item_idx == self.highlighted;
 
+            let style = if selected_line {
+                theme.highlighted(focused)
+            } else {
+                theme.default_text(focused)
+            };
+
             for g in item.display_name().graphemes(true) {
                 let selected_grapheme = query_it.peek().map(|f| *f == g).unwrap_or(false);
-
-                let mut style = if selected_line {
-                    theme.highlighted(focused)
-                } else {
-                    theme.default_text(focused)
-                };
-
-                if selected_grapheme {
+                let grapheme_style = if selected_grapheme {
                     theme.cursor_background(CursorStatus::WithinSelection).map(|bg| {
-                        style = style.with_background(bg);
-                    });
-                }
+                        style.with_background(bg)
+                    }).unwrap_or(style)
+                } else { style };
 
                 output.print_at(
-                    XY::new(x, item_idx as u16 + 1),
-                    style,
+                    XY::new(x, y),
+                    grapheme_style,
                     g,
                 );
 
@@ -280,6 +299,37 @@ impl Widget for FuzzySearchWidget {
                     query_it.next();
                 }
             }
+
+            //TODO cast overflow
+            for x in (item.display_name().width_cjk() as u16)..self.width() {
+                output.print_at(XY::new(x as u16, y),
+                                style,
+                                " ");
+            }
+
+            if self.draw_comment == DrawComment::All || (self.draw_comment == DrawComment::Highlighted && selected_line) {
+                if let Some(comment) = item.comment() {
+                    let mut x = 0 as u16;
+                    for g in comment.graphemes(true) {
+                        output.print_at(XY::new(x, y + 1),
+                                        style,
+                                        g);
+                        x += g.width_cjk() as u16; //TODO overflow
+                    }
+                    //TODO cast overflow
+                    for x in (comment.width_cjk() as u16)..self.width() {
+                        output.print_at(XY::new(x as u16, y + 1),
+                                        style,
+                                        " ");
+                    }
+                }
+            }
+
+            y += match self.draw_comment {
+                DrawComment::None => 1,
+                DrawComment::Highlighted => if selected_line && item.comment().is_some() { 2 } else { 1 },
+                DrawComment::All => if item.comment().is_some() { 2 } else { 1 },
+            };
         }
     }
 }

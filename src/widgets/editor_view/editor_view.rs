@@ -27,7 +27,7 @@ use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::common_edit_msgs::{apply_cme, cme_to_direction, key_to_edit_msg};
 use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::fuzzy_search::fsf_provider::FsfProvider;
-use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
+use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
 use crate::widgets::fuzzy_search::mock_items_provider::mock::MockItemProvider;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 
@@ -322,7 +322,7 @@ impl Widget for EditorView {
                         |_| Some(Box::new(EditorViewMsg::FuzzyClose))
                     ).with_provider(
                         Box::new(FsfProvider::new(self.fsf.clone()))
-                    ));
+                    ).with_draw_comment_setting(DrawComment::Highlighted));
 
                     None
                 }
