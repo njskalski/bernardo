@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use ignore::gitignore::Gitignore;
 use log::{error, warn};
 use simsearch::{SearchOptions, SimSearch};
 use crate::fs::file_front::{FileChildrenCache, FileChildrenCacheRef};
@@ -38,6 +39,8 @@ pub struct InternalState {
     pub at_hand_limit: usize, // TODO privatize
 
     current_idx: u128,
+
+    gitignores: HashMap<WrappedRcPath, ignore::gitignore::Gitignore>,
 }
 
 impl Default for InternalState {
@@ -48,6 +51,7 @@ impl Default for InternalState {
             rev_paths: HashMap::default(),
             at_hand_limit: DEFAULT_FILES_PRELOADS,
             current_idx: 1,
+            gitignores: HashMap::default(),
         }
     }
 }
@@ -127,7 +131,23 @@ impl InternalState {
         }
     }
 
-    pub fn fuzzy_files_it(&self, query: String) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
+    pub fn set_gitignore_for_path(&mut self, path: &Path, gitignore: Option<ignore::gitignore::Gitignore>) {
+        match gitignore {
+            None => {
+                if self.gitignores.remove(path).is_none() {
+                    warn!("cleared absent gitignore at {:?}", path);
+                }
+            }
+            Some(gi) => {
+                let gp = self.get_or_create_path(path);
+                if self.gitignores.insert(WrappedRcPath(gp), gi).is_some() {
+                    warn!("replaced gitignore at {:?}", path);
+                }
+            }
+        }
+    }
+
+    pub fn fuzzy_files_it(&self, query: Strig) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
         // TODO this is dumb as fuck, just to prove rest works
         let iter = self.paths.iter().filter(move |item| {
             item.0.0.file_name().map(|f| f.to_str()).flatten().map(|s| is_subsequence(s, &query)).unwrap_or_else(|| {

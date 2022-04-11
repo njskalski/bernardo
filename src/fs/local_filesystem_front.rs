@@ -30,12 +30,17 @@ use crate::widgets::fuzzy_search::item_provider::Item;
 // - add inotify support
 
 const DEFAULT_MAX_DEPTH: usize = 256;
+const GITIGNORE_FILENAME: &'static str = ".gitignore";
 
 #[derive(Debug)]
 pub enum FSUpdate {
     DirectoryUpdate {
         full_path: PathBuf,
         entries: Vec<DirEntry>,
+    },
+    GitignoreFile {
+        full_path: PathBuf,
+        gitignore: ignore::gitignore::Gitignore,
     },
 }
 
@@ -209,6 +214,8 @@ impl LocalFilesystem {
 
                 debug!("pipe len {}, processing {:?}, depth: {:?}", pipe.len(), &what, how_deep);
 
+                let mut gitignore_found = false;
+
                 let mut children: Vec<DirEntry> = vec![];
                 match fs.read_dir(&what) {
                     Ok(read_dir) => {
@@ -225,6 +232,10 @@ impl LocalFilesystem {
                                                     );
                                                 }
                                             }
+                                            if ft.is_file() && &dir_entry.file_name() == GITIGNORE_FILENAME {
+                                                gitignore_found = true
+                                            }
+
                                             children.push(dir_entry);
                                         }
                                         Err(e) => {
@@ -245,6 +256,24 @@ impl LocalFilesystem {
                     }
                 }
 
+                if gitignore_found {
+                    let gitignore_path = what.clone().join(GITIGNORE_FILENAME);
+                    let (gitignore, error_op) = ignore::gitignore::Gitignore::new(&gitignore_path);
+                    match error_op {
+                        Some(err) => {
+                            error!("got errors parsing gitignore at {:?}: {}", gitignore_path, err);
+                        }
+                        None => {
+                            response_channel.try_send(FSUpdate::GitignoreFile {
+                                full_path: gitignore_path,
+                                gitignore,
+                            }).map_err(|e| {
+                                error!("failed sending gitignore file: {}", e);
+                            });
+                        }
+                    }
+                }
+
                 let msg = FSUpdate::DirectoryUpdate {
                     full_path: what,
                     entries: children,
@@ -257,6 +286,7 @@ impl LocalFilesystem {
                     }
                     _ => {}
                 };
+
 
                 tick_channel.try_send(());
             }
@@ -370,6 +400,9 @@ impl FilesystemFront for LocalFilesystem {
                         error!("failed acquiring cache: {}", e);
                     });
                 }
+                FSUpdate::GitignoreFile { full_path, gitignore } => {
+                    is.set_gitignore_for_path(&full_path, Some(gitignore));
+                }
             }
         }
     }
@@ -392,7 +425,7 @@ impl FilesystemFront for LocalFilesystem {
         self.fs.is_dir(path) || self.fs.is_file(path)
     }
 
-    fn fuzzy_file_paths_it(&self, query: String, limit: usize) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
+    fn fuzzy_file_paths_it(&self, query: String, limit: usize, respect_ignores: bool) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
         self.internal_state.try_borrow().map(|isref| {
             let (loading_state, iter) = isref.fuzzy_files_it(query);
             let processed_iter: Vec<Rc<PathBuf>> = iter.map(|item| item.clone()).collect();

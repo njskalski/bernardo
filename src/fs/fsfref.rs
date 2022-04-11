@@ -32,8 +32,8 @@ impl FsfRef {
         })
     }
 
-    pub fn fuzzy_files_it(&self, query: String, limit: usize) -> (LoadingState, Box<dyn Iterator<Item=FileFront> + '_>) {
-        let (state, mut it) = self.0.fuzzy_file_paths_it(query, limit);
+    pub fn fuzzy_files_it(&self, query: String, limit: usize, respect_ignores: bool) -> (LoadingState, Box<dyn Iterator<Item=FileFront> + '_>) {
+        let (state, mut it) = self.0.fuzzy_file_paths_it(query, limit, respect_ignores);
         (state, Box::new(it.map(move |path| FileFront::new(self.clone(), path))))
     }
 }
