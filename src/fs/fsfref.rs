@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::hash::{Hash, Hasher};
 use std::iter;
 use std::ops::Deref;

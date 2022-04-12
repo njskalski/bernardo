@@ -321,7 +321,7 @@ impl Widget for EditorView {
                     self.fuzzy_search = Some(FuzzySearchWidget::new(
                         |_| Some(Box::new(EditorViewMsg::FuzzyClose))
                     ).with_provider(
-                        Box::new(FsfProvider::new(self.fsf.clone()))
+                        Box::new(FsfProvider::new(self.fsf.clone()).with_ignores_filter())
                     ).with_draw_comment_setting(DrawComment::Highlighted));
 
                     None

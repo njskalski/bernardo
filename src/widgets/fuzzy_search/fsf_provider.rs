@@ -16,12 +16,21 @@ pub type FileFrontToMsg = fn(&FileFront) -> Box<dyn AnyMsg>;
 // TODO add subdirectory
 pub struct FsfProvider {
     fsf: FsfRef,
+    consider_ignores: bool,
 }
 
 impl FsfProvider {
     pub fn new(fsf: FsfRef) -> Self {
         Self {
-            fsf
+            fsf,
+            consider_ignores: false,
+        }
+    }
+
+    pub fn with_ignores_filter(self) -> Self {
+        Self {
+            consider_ignores: true,
+            ..self
         }
     }
 }
@@ -64,7 +73,7 @@ impl ItemsProvider for FsfProvider {
     }
 
     fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
-        let items = self.fsf.fuzzy_files_it(query, limit, true).1.map(|f| Box::new(f) as Box<dyn Item>);
+        let items = self.fsf.fuzzy_files_it(query, limit, self.consider_ignores).1.map(|f| Box::new(f) as Box<dyn Item>);
         Box::new(items)
     }
 }

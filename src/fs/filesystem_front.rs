@@ -73,7 +73,10 @@ pub trait FilesystemFront: Debug {
     // returns files that satisfy query (query is a substring of file name)
     // TODO would be great to not pass the limit ahead, but until I figure out how to wrap a Ref into an iterator, I don't know how.
     // TODO now the fuzzy search actually slows everything down a lot, because it's retriggered each keystroke. I should cache the results.
+    // TODO Gitignore benefits from processing files in particular order, which I (now) completely ignore. Some optimisation will be necessary.
     fn fuzzy_file_paths_it(&self, query: String, limit: usize, respect_ignores: bool) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>);
+
+    fn is_ignored(&self, path: &Path) -> bool;
 
     //TODO:
     // - backup mechanism (don't loose data on crash)

@@ -4,9 +4,11 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use filesystem::{FileSystem, OsFileSystem};
 use ignore::gitignore::Gitignore;
-use log::{error, warn};
+use log::{debug, error, warn};
 use simsearch::{SearchOptions, SimSearch};
+use crate::fs::constants::is_sham;
 use crate::fs::file_front::{FileChildrenCache, FileChildrenCacheRef};
 use crate::io::loading_state::LoadingState;
 use crate::widgets::fuzzy_search::helpers::is_subsequence;
@@ -31,6 +33,8 @@ impl Borrow<Rc<PathBuf>> for WrappedRcPath {
 }
 
 pub struct InternalState {
+    root_path: PathBuf,
+    fs: filesystem::OsFileSystem,
     children_cache: HashMap<WrappedRcPath, Rc<RefCell<FileChildrenCache>>>,
     // I need to store some identifier, as search_index.remove requires it. I choose u128 so I can
     // safely not reuse them.
@@ -43,9 +47,11 @@ pub struct InternalState {
     gitignores: HashMap<WrappedRcPath, ignore::gitignore::Gitignore>,
 }
 
-impl Default for InternalState {
-    fn default() -> Self {
+impl InternalState {
+    pub fn new(root_path: PathBuf) -> Self {
         InternalState {
+            root_path,
+            fs: OsFileSystem::new(),
             children_cache: HashMap::default(),
             paths: HashMap::default(),
             rev_paths: HashMap::default(),
@@ -58,7 +64,7 @@ impl Default for InternalState {
 
 impl Debug for InternalState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "internal_state: {} paths, {} caches, current_idx = {}", self.paths.len(), self.children_cache.len(), self.current_idx)
+        write!(f, "internal_state: {:?} root_path {} paths, {} caches, current_idx = {}", self.root_path, self.paths.len(), self.children_cache.len(), self.current_idx)
     }
 }
 
@@ -113,12 +119,6 @@ impl InternalState {
 
         self.paths.insert(WrappedRcPath(rcp.clone()), idx);
         self.rev_paths.insert(idx, WrappedRcPath(rcp.clone()));
-        // rcp.to_str().map(|s| {
-        //     let x = s.replace("/", "");
-        //     self.search_index.insert(idx, &x);
-        // }).unwrap_or_else(|| {
-        //     error!("failed to cast path to string, will not be present in index. Absolutely barbaric!");
-        // });
 
         rcp
     }
@@ -131,23 +131,30 @@ impl InternalState {
         }
     }
 
-    pub fn set_gitignore_for_path(&mut self, path: &Path, gitignore: Option<ignore::gitignore::Gitignore>) {
-        match gitignore {
-            None => {
-                if self.gitignores.remove(path).is_none() {
-                    warn!("cleared absent gitignore at {:?}", path);
-                }
-            }
-            Some(gi) => {
-                let gp = self.get_or_create_path(path);
-                if self.gitignores.insert(WrappedRcPath(gp), gi).is_some() {
-                    warn!("replaced gitignore at {:?}", path);
-                }
-            }
+    pub fn clear_gitignore(&mut self, path: &Path) {
+        if !path.starts_with(&self.root_path) {
+            error!("clearing gitignore outside the root path: {:?} outside {:?}", path, self.root_path);
+            // this is not fatal.
+        }
+
+        if self.gitignores.remove(path).is_none() {
+            warn!("cleared absent gitignore at {:?}", path);
         }
     }
 
-    pub fn fuzzy_files_it(&self, query: Strig) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
+    pub fn set_gitignore(&mut self, gitignore: Gitignore) {
+        if !gitignore.path().starts_with(&self.root_path) {
+            error!("attempted to set a gitignore for path outside root path: {:?} outside {:?}", gitignore.path(), self.root_path);
+            return;
+        }
+
+        let gp = self.get_or_create_path(gitignore.path());
+        if self.gitignores.insert(WrappedRcPath(gp.clone()), gitignore).is_some() {
+            warn!("replaced gitignore at {:?}", gp);
+        }
+    }
+
+    pub fn fuzzy_files_it(&self, query: String) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
         // TODO this is dumb as fuck, just to prove rest works
         let iter = self.paths.iter().filter(move |item| {
             item.0.0.file_name().map(|f| f.to_str()).flatten().map(|s| is_subsequence(s, &query)).unwrap_or_else(|| {
@@ -158,5 +165,41 @@ impl InternalState {
 
         //TODO not implemented properly informing on loading state
         (LoadingState::Complete, Box::new(iter))
+    }
+
+    /*
+    Returns the most significant .gitignore file (one that is deepest on path from path to root).
+     */
+    pub fn get_gitignore(&self, path: &Path) -> Option<&ignore::gitignore::Gitignore> {
+        if !path.starts_with(&self.root_path) {
+            warn!("requested gitignore for a path outside root path: {:?}", path);
+            return None;
+        }
+        for p in path.ancestors().skip(1) {
+            if !p.starts_with(&self.root_path) {
+                break;
+            }
+            if let Some(x) = self.gitignores.get(p) {
+                return Some(x);
+            }
+        }
+        None
+    }
+
+    /*
+    This should return true for all paths covered by gitignore and analogues of other scms,
+    and other sham like ".git", ".idea", ".cache" etc., generally everything until we escalate.
+     */
+    pub fn is_ignored(&self, path: &Path) -> bool {
+        if is_sham(path) {
+            return true;
+        }
+
+        let is_dir = self.fs.is_dir(path);
+        self.get_gitignore(path).map(|gitignore| {
+            let x = gitignore.matched_path_or_any_parents(path, is_dir).is_ignore();
+            debug!("filtering: {} of {:?}", x, &path);
+            x
+        }).unwrap_or(false)
     }
 }

@@ -39,7 +39,7 @@ pub enum FSUpdate {
         entries: Vec<DirEntry>,
     },
     GitignoreFile {
-        full_path: PathBuf,
+        // gitignore contains path.
         gitignore: ignore::gitignore::Gitignore,
     },
 }
@@ -71,7 +71,7 @@ impl LocalFilesystem {
     pub fn new(root: PathBuf) -> FsfRef {
         // TODO check it's directory
 
-        let mut internal_state = InternalState::default();
+        let mut internal_state = InternalState::new(root.clone());
         let root_path = internal_state.get_or_create_path(&root);
         internal_state.get_or_create_cache(&root_path);
 
@@ -256,6 +256,7 @@ impl LocalFilesystem {
                     }
                 }
 
+                // this could be lower, but then I would have to call .clone() on what *always*, as opposed to *rarely*
                 if gitignore_found {
                     let gitignore_path = what.clone().join(GITIGNORE_FILENAME);
                     let (gitignore, error_op) = ignore::gitignore::Gitignore::new(&gitignore_path);
@@ -265,7 +266,6 @@ impl LocalFilesystem {
                         }
                         None => {
                             response_channel.try_send(FSUpdate::GitignoreFile {
-                                full_path: gitignore_path,
                                 gitignore,
                             }).map_err(|e| {
                                 error!("failed sending gitignore file: {}", e);
@@ -400,8 +400,8 @@ impl FilesystemFront for LocalFilesystem {
                         error!("failed acquiring cache: {}", e);
                     });
                 }
-                FSUpdate::GitignoreFile { full_path, gitignore } => {
-                    is.set_gitignore_for_path(&full_path, Some(gitignore));
+                FSUpdate::GitignoreFile { gitignore } => {
+                    is.set_gitignore(gitignore);
                 }
             }
         }
@@ -428,12 +428,26 @@ impl FilesystemFront for LocalFilesystem {
     fn fuzzy_file_paths_it(&self, query: String, limit: usize, respect_ignores: bool) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
         self.internal_state.try_borrow().map(|isref| {
             let (loading_state, iter) = isref.fuzzy_files_it(query);
-            let processed_iter: Vec<Rc<PathBuf>> = iter.map(|item| item.clone()).collect();
 
-            (loading_state, Box::new(processed_iter.into_iter()) as Box<dyn Iterator<Item=Rc<PathBuf>>>)
+            let items: Vec<Rc<PathBuf>> = if respect_ignores {
+                iter.filter(|item| isref.is_ignored(item) == false).take(limit).map(|f| f.clone()).collect()
+            } else {
+                iter.take(limit).map(|f| f.clone()).collect()
+            };
+
+            (loading_state, Box::new(items.into_iter()) as Box<dyn Iterator<Item=Rc<PathBuf>>>)
         }).unwrap_or_else(|e| {
             error!("failed acquiring lock: {}", e);
             (LoadingState::Error, Box::new(iter::empty()))
+        })
+    }
+
+    fn is_ignored(&self, path: &Path) -> bool {
+        self.internal_state.try_borrow_mut().map(|isref| {
+            isref.is_ignored(path)
+        }).unwrap_or_else(|e| {
+            error!("failed acquiring lock: {}", e);
+            false
         })
     }
 
