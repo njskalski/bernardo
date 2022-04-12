@@ -1,8 +1,0 @@
-terminal:
-  # This can be any image that has the necessary runtime environment for your project.
-  image: rust:1.56.1
-  before_script:
-    - apt update
-  script: sleep 60
-  # variables:
-  #   RUST_BACKTRACE: 1
