@@ -9,7 +9,6 @@ rust-latest:
   stage: build
   image: rust:latest
   script:
-    - git s
     - cargo build --verbose
     - cargo test --verbose
 
