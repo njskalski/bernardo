@@ -1,2 +1,2 @@
 pub mod main_view;
-mod msg;
+pub mod msg;

@@ -14,6 +14,8 @@ use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};
 
+const DEFAULT_WIDTH: u16 = 16;
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum DrawComment {
     None,
@@ -36,6 +38,8 @@ pub struct FuzzySearchWidget {
     on_close: WidgetAction<Self>,
     on_miss: Option<WidgetAction<Self>>,
     // on_hit is a part of PROVIDER.
+
+    width: u16,
 }
 
 impl FuzzySearchWidget {
@@ -52,6 +56,7 @@ impl FuzzySearchWidget {
             highlighted: 0,
             on_close,
             on_miss: None,
+            width: DEFAULT_WIDTH,
         }
     }
 
@@ -97,7 +102,7 @@ impl FuzzySearchWidget {
     }
 
     fn width(&self) -> u16 {
-        16
+        self.width
     }
 
     fn items(&self) -> ItemIter {
@@ -172,17 +177,24 @@ impl Widget for FuzzySearchWidget {
         XY::new(16, 5)
     }
 
-    fn layout(&mut self, _sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
 
         // This is a reasonable assumption: I never want to display more elements in fuzzy search that
         // can be displayed on a "physical" screen. Even if fuzzy is inside a scroll, the latest position
         // I might be interested in is "lower_right().y".
-        self.last_height_limit = Some(_sc.hint().lower_right().y);
+        self.last_height_limit = Some(sc.hint().lower_right().y);
 
-        let items_len = self.items().count() + 1;
+        self.edit.layout(sc);
+        self.width = sc.hint().size.x;
+
+        let items_len = match self.draw_comment {
+            DrawComment::None => self.items().count() + 1,
+            DrawComment::Highlighted => self.items().count() + 2,
+            DrawComment::All => self.items().count() * 2 + 1,
+        };
 
         //TODO
-        XY::new(16, items_len as u16)
+        XY::new(self.width, items_len as u16)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

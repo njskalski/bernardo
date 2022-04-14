@@ -14,6 +14,10 @@ pub enum MainViewMsg {
 
     // This is called whenever a file is selected.
     TreeSelected { item: FileFront },
+
+    // Open fuzzy files
+    FuzzyFiles,
+    FuzzyClose,
 }
 
 impl AnyMsg for MainViewMsg {}

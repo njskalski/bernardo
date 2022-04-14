@@ -1,9 +1,10 @@
 pub mod mock {
-    use crate::AnyMsg;
+    use crate::{AnyMsg, MainView};
     use crate::primitives::alphabet::mock::ALPHABET;
     use crate::widgets::editor_view::msg::EditorViewMsg;
     use crate::widgets::fuzzy_search::helpers::is_subsequence;
     use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
+    use crate::widgets::main_view::msg::MainViewMsg;
 
     pub struct MockItemProvider {
         num_items: usize,
@@ -46,7 +47,7 @@ pub mod mock {
         }
 
         fn on_hit(&self) -> Box<dyn AnyMsg> {
-            Box::new(EditorViewMsg::FuzzyClose)
+            Box::new(MainViewMsg::FuzzyClose)
         }
     }
 

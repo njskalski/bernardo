@@ -28,6 +28,13 @@ impl WidgetIdRect {
     }
 }
 
+/*
+Shit, I kinda forgot to decide (or what I decided) whether the calc size tries to *fill* the constraints
+    or remain self-constrained.
+
+    Hmm, if it was self-constrained, why would I need a separate method from "min_size"?
+ */
+
 pub trait Layout {
     fn is_leaf(&self) -> bool {
         false

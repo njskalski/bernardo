@@ -49,9 +49,7 @@ pub struct EditorView {
 
     fsf: FsfRef,
 
-    // TODO I should refactor that these two don't appear at the same time.
     save_file_dialog: Option<SaveFileDialogWidget>,
-    fuzzy_search: Option<FuzzySearchWidget>,
 
     // not sure if that should be a part of buffer or editor
     path: Option<Rc<PathBuf>>,
@@ -68,7 +66,6 @@ impl EditorView {
             tree_sitter,
             fsf: fs,
             save_file_dialog: None,
-            fuzzy_search: None,
             path: None,
         }
     }
@@ -129,17 +126,6 @@ impl EditorView {
             let layout = HoverLayout::new(
                 &mut DummyLayout::new(self.wid, size),
                 &mut LeafLayout::new(sd),
-                rect,
-            ).calc_sizes(size);
-
-            return layout;
-        }
-
-        if let Some(fuzzy) = self.fuzzy_search.as_mut() {
-            let rect = EditorView::get_hover_rect(size);
-            let layout = HoverLayout::new(
-                &mut DummyLayout::new(self.wid, size),
-                &mut LeafLayout::new(fuzzy),
                 rect,
             ).calc_sizes(size);
 
@@ -236,7 +222,17 @@ impl EditorView {
     }
 
     fn has_dialog(&self) -> bool {
-        self.fuzzy_search.is_some() || self.save_file_dialog.is_some()
+        self.save_file_dialog.is_some()
+    }
+
+    fn open_save_as_dialog(&mut self) {
+        let mut save_file_dialog = SaveFileDialogWidget::new(
+            self.fsf.clone(),
+        ).with_on_cancel(|_| {
+            EditorViewMsg::OnSaveAsCancel.someboxed()
+        });
+        self.path.as_ref().map(|p| save_file_dialog.set_path(&p));
+        self.save_file_dialog = Some(save_file_dialog);
     }
 }
 
@@ -267,9 +263,6 @@ impl Widget for EditorView {
             //TODO refactor the settings
             InputEvent::KeyInput(key) if key.modifiers.ctrl && key.keycode == Keycode::Char('s') => {
                 Some(Box::new(EditorViewMsg::SaveAs))
-            }
-            InputEvent::KeyInput(key) if key.modifiers.ctrl && key.keycode == Keycode::Char('h') => {
-                Some(Box::new(EditorViewMsg::Fuzzy))
             }
             InputEvent::KeyInput(key) if key_to_edit_msg(key).is_some() => {
                 Some(Box::new(EditorViewMsg::EditMsg(key_to_edit_msg(key).unwrap())))
@@ -306,28 +299,7 @@ impl Widget for EditorView {
                 }
                 EditorViewMsg::SaveAs |
                 EditorViewMsg::Save => {
-                    self.fuzzy_search = None;
-                    let mut save_file_dialog = SaveFileDialogWidget::new(
-                        self.fsf.clone(),
-                    ).with_on_cancel(|_| {
-                        EditorViewMsg::OnSaveAsCancel.someboxed()
-                    });
-                    self.path.as_ref().map(|p| save_file_dialog.set_path(&p));
-                    self.save_file_dialog = Some(save_file_dialog);
-
-                    None
-                }
-                EditorViewMsg::Fuzzy => {
-                    self.fuzzy_search = Some(FuzzySearchWidget::new(
-                        |_| Some(Box::new(EditorViewMsg::FuzzyClose))
-                    ).with_provider(
-                        Box::new(FsfProvider::new(self.fsf.clone()).with_ignores_filter())
-                    ).with_draw_comment_setting(DrawComment::Highlighted));
-
-                    None
-                }
-                EditorViewMsg::FuzzyClose => {
-                    self.fuzzy_search = None;
+                    self.open_save_as_dialog();
                     None
                 }
                 EditorViewMsg::OnSaveAsCancel => {
@@ -349,11 +321,6 @@ impl Widget for EditorView {
             let rect = EditorView::get_hover_rect(output.size_constraint().hint().size);
             sd.render(theme, focused, &mut SubOutput::new(output, rect));
         }
-
-        if let Some(fs) = self.fuzzy_search.as_ref() {
-            let rect = EditorView::get_hover_rect(output.size_constraint().hint().size);
-            fs.render(theme, focused, &mut SubOutput::new(output, rect));
-        }
     }
 
     fn anchor(&self) -> XY {
@@ -365,10 +332,6 @@ impl Widget for EditorView {
             return self.save_file_dialog.as_ref().map(|f| f as &dyn Widget);
         }
 
-        if self.fuzzy_search.is_some() {
-            return self.fuzzy_search.as_ref().map(|f| f as &dyn Widget);
-        }
-
         None
     }
 
@@ -376,11 +339,7 @@ impl Widget for EditorView {
         if self.save_file_dialog.is_some() {
             return self.save_file_dialog.as_mut().map(|f| f as &mut dyn Widget);
         }
-
-        if self.fuzzy_search.is_some() {
-            return self.fuzzy_search.as_mut().map(|f| f as &mut dyn Widget);
-        }
-
+        
         None
     }
 }

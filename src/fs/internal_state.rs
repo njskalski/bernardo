@@ -197,9 +197,7 @@ impl InternalState {
 
         let is_dir = self.fs.is_dir(path);
         self.get_gitignore(path).map(|gitignore| {
-            let x = gitignore.matched_path_or_any_parents(path, is_dir).is_ignore();
-            debug!("filtering: {} of {:?}", x, &path);
-            x
+            gitignore.matched_path_or_any_parents(path, is_dir).is_ignore()
         }).unwrap_or(false)
     }
 }

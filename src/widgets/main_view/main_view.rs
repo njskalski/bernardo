@@ -3,16 +3,20 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use log::{debug, error, warn};
+use syntect::html::IncludeBackground::No;
 
-use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Widget};
+use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget};
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::fs::file_front::FileFront;
 use crate::fs::fsfref::FsfRef;
 use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::DisplayState;
+use crate::layout::dummy_layout::DummyLayout;
+use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
@@ -20,6 +24,9 @@ use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::editor_view::editor_view::EditorView;
+use crate::widgets::editor_view::msg::EditorViewMsg;
+use crate::widgets::fuzzy_search::fsf_provider::FsfProvider;
+use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
@@ -27,6 +34,10 @@ use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 use crate::widgets::with_scroll::WithScroll;
 
 const MIN_VIEW_SIZE: XY = XY::new(32, 10);
+
+pub enum HoverItem {
+    FuzzySearch(FuzzySearchWidget),
+}
 
 pub struct MainView {
     wid: WID,
@@ -37,7 +48,9 @@ pub struct MainView {
     editor: Option<WithScroll<EditorView>>,
     tree_sitter: Rc<TreeSitterWrapper>,
 
-    fs: FsfRef,
+    fsf: FsfRef,
+
+    hover: Option<HoverItem>,
 }
 
 impl MainView {
@@ -64,7 +77,8 @@ impl MainView {
             no_editor: NoEditorWidget::new(),
             editor: None,
             tree_sitter,
-            fs,
+            fsf: fs,
+            hover: None,
         }
     }
 
@@ -72,7 +86,7 @@ impl MainView {
         MainView {
             editor: Some(
                 WithScroll::new(
-                    EditorView::new(self.tree_sitter.clone(), self.fs.clone()),
+                    EditorView::new(self.tree_sitter.clone(), self.fsf.clone()),
                     ScrollDirection::Both,
                 )
             ),
@@ -80,23 +94,43 @@ impl MainView {
         }
     }
 
+    fn get_hover_rect(max_size: XY) -> Rect {
+        let margin = max_size / 10;
+        Rect::new(margin,
+                  max_size - margin * 2,
+        )
+    }
+
     fn internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {
         let tree_widget = &mut self.tree_widget;
-        let _no_editor = &mut self.no_editor;
 
         let mut left_column = LeafLayout::new(tree_widget);
         let mut right_column = self.editor.as_mut()
             .map(|editor| LeafLayout::new(editor))
             .unwrap_or(LeafLayout::new(&mut self.no_editor));
 
-        let mut layout = SplitLayout::new(SplitDirection::Horizontal)
+        let mut bg_layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0),
                   &mut left_column)
             .with(SplitRule::Proportional(4.0),
                   &mut right_column,
             );
 
-        let res = layout.calc_sizes(max_size);
+
+        let res = if let Some(hover) = &mut self.hover {
+            match hover {
+                HoverItem::FuzzySearch(fuzzy) => {
+                    let rect = MainView::get_hover_rect(max_size);
+                    HoverLayout::new(
+                        &mut bg_layout,
+                        &mut LeafLayout::new(fuzzy),
+                        rect,
+                    ).calc_sizes(max_size)
+                }
+            }
+        } else {
+            bg_layout.calc_sizes(max_size)
+        };
 
         res
     }
@@ -108,17 +142,17 @@ impl MainView {
 
         let lang_id = filename_to_language(path);
 
-        match self.fs.todo_read_file(path) {
+        match self.fsf.todo_read_file(path) {
             Ok(rope) => {
                 self.editor = Some(
                     WithScroll::new(
-                        EditorView::new(self.tree_sitter.clone(), self.fs.clone())
+                        EditorView::new(self.tree_sitter.clone(), self.fsf.clone())
                             .with_buffer(
                                 BufferState::new(self.tree_sitter.clone())
                                     .with_text_from_rope(rope, lang_id)
                             ).with_path_op(
                             path.parent().map(|p|
-                                self.fs.get_item(p)
+                                self.fsf.get_item(p)
                             ).flatten().map(|f| f.path_rc().clone())
                         ),
                         ScrollDirection::Both,
@@ -130,6 +164,16 @@ impl MainView {
                 false
             }
         }
+    }
+
+    fn open_fuzzy_search_in_files(&mut self) {
+        self.hover = Some(
+            HoverItem::FuzzySearch(FuzzySearchWidget::new(
+                |_| Some(Box::new(MainViewMsg::FuzzyClose))
+            ).with_provider(
+                Box::new(FsfProvider::new(self.fsf.clone()).with_ignores_filter())
+            ).with_draw_comment_setting(DrawComment::Highlighted))
+        );
     }
 }
 
@@ -177,6 +221,9 @@ impl Widget for MainView {
             InputEvent::FocusUpdate(focus_update) => {
                 Some(Box::new(MainViewMsg::FocusUpdateMsg(focus_update)))
             }
+            InputEvent::KeyInput(key) if key.modifiers.ctrl && key.keycode == Keycode::Char('h') => {
+                Some(Box::new(MainViewMsg::FuzzyFiles))
+            }
             _ => None
         };
     }
@@ -216,26 +263,51 @@ impl Widget for MainView {
 
                 None
             }
-            unknown_msg => {
-                warn!("SaveFileDialog.update : unknown message {:?}", unknown_msg);
+            MainViewMsg::FuzzyFiles => {
+                self.open_fuzzy_search_in_files();
+                None
+            }
+            MainViewMsg::FuzzyClose => {
+                if self.hover.is_none() {
+                    error!("expected self.hover to be not None.");
+                }
+
+                self.hover = None;
                 None
             }
         };
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(|wid| self.get_subwidget(wid)).flatten()
+        // that's not how I would write it, but borrow checker does not appreciate my style.
+        if self.hover.is_some() {
+            return match self.hover.as_ref().unwrap() {
+                HoverItem::FuzzySearch(fuzzy) => Some(fuzzy),
+            };
+        } else {
+            let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+            wid_op.map(move |wid| self.get_subwidget(wid)).flatten()
+        }
     }
 
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
+        if self.hover.is_some() {
+            return match self.hover.as_mut().unwrap() {
+                HoverItem::FuzzySearch(fuzzy) => Some(fuzzy),
+            };
+        } else {
+            let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+            wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
+        }
     }
 
-    fn render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
+    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let focused_id_op = self.get_focused().map(|f| f.id());
         match self.display_state.borrow().as_ref() {
-            None => warn!("failed rendering main_view without cached_sizes"),
+            None => {
+                warn!("failed rendering main_view without cached_sizes");
+                return;
+            }
             Some(cached_sizes) => {
                 // debug!("widget_sizes : {:?}", cached_sizes.widget_sizes);
                 for wir in &cached_sizes.widget_sizes {
@@ -243,7 +315,7 @@ impl Widget for MainView {
                         Some(widget) => {
                             let sub_output = &mut SubOutput::new(output, wir.rect);
                             widget.render(theme,
-                                          cached_sizes.focus_group.get_focused() == widget.id(),
+                                          Some(widget.id()) == focused_id_op,
                                           sub_output,
                             );
                         }
@@ -257,16 +329,38 @@ impl Widget for MainView {
     }
 
     fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
-        match &mut self.editor {
-            None => Box::new(vec![&mut self.tree_widget as &mut dyn Widget, &mut self.no_editor].into_iter()),
-            Some(editor) => Box::new(vec![&mut self.tree_widget as &mut dyn Widget, editor].into_iter())
-        }
+        let mut items = vec![&mut self.tree_widget as &mut dyn Widget, &mut self.no_editor];
+
+        if let Some(editor) = &mut self.editor {
+            items.push(editor);
+        };
+
+        if self.hover.is_some() {
+            match self.hover.as_mut().unwrap() {
+                HoverItem::FuzzySearch(fuzzy) => {
+                    items.push(fuzzy);
+                }
+            }
+        };
+
+        Box::new(items.into_iter())
     }
 
     fn subwidgets(&self) -> Box<dyn Iterator<Item=&dyn Widget> + '_> where Self: Sized {
-        match &self.editor {
-            None => Box::new(vec![&self.tree_widget as &dyn Widget, &self.no_editor].into_iter()),
-            Some(editor) => Box::new(vec![&self.tree_widget as &dyn Widget, editor].into_iter())
-        }
+        let mut items = vec![&self.tree_widget as &dyn Widget, &self.no_editor];
+
+        if let Some(editor) = &self.editor {
+            items.push(editor);
+        };
+
+        if self.hover.is_some() {
+            match self.hover.as_ref().unwrap() {
+                HoverItem::FuzzySearch(fuzzy) => {
+                    items.push(fuzzy);
+                }
+            }
+        };
+
+        Box::new(items.into_iter())
     }
 }
