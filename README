@@ -1,6 +1,8 @@
 If you see this on github, then it's a manual sync mirror that I often forget to push to.
 The up-to-date version is at https://gitlab.com/njskalski/bernardo
 
+And here is the website describing what it is: https://njskalski.gitlab.io/triarii
+
 This project is of a commandline, keyboard-only widget library called Bernardo TUI.
 
 The priorities are:
