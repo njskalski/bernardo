@@ -1,6 +1,8 @@
 use std::fmt::Debug;
+use std::path::PathBuf;
 
 use crate::AnyMsg;
+use crate::fs::file_front::FileFront;
 use crate::widgets::common_edit_msgs::CommonEditMsg;
 
 #[derive(Clone, Debug)]
@@ -9,6 +11,7 @@ pub enum EditorViewMsg {
     Save,
     SaveAs,
     OnSaveAsCancel,
+    OnSaveAsHit { ff: FileFront },
 }
 
 

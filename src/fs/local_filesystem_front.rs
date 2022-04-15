@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::{io, iter, thread};
 use std::fmt::{Debug, Formatter};
-use std::io::{empty, Read};
+use std::io::{empty, Error, Read, Write};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::TryRecvError;
@@ -19,7 +19,7 @@ use ropey::Rope;
 use simsearch::SimSearch;
 use crate::fs::file_front::{FileChildrenCache, FileChildrenCacheRef, FileFront};
 
-use crate::fs::filesystem_front::{FilesystemFront, ReadError};
+use crate::fs::filesystem_front::{FilesystemFront, ReadError, SomethingToSave};
 use crate::fs::fsfref::FsfRef;
 use crate::fs::internal_state::{InternalState, WrappedRcPath};
 use crate::io::loading_state::LoadingState;
@@ -457,6 +457,17 @@ impl FilesystemFront for LocalFilesystem {
         // Ok, so fs crate does NOT support appending, which is necessary for streaming etc.
         // Good thing I abstracted over it, will rewrite later.
         //self.fs.overwrite_file(path, &bytes)
+        Ok(())
+    }
+
+    // TODO add is_within test?
+    fn overwrite_file(&self, path: &Path, source: &dyn SomethingToSave) -> Result<(), std::io::Error> {
+        let mut file = std::fs::File::create(path)?;
+
+        for slice in source.get_slices() {
+            file.write_all(slice)?;
+        };
+
         Ok(())
     }
 }

@@ -67,12 +67,10 @@ pub struct SaveFileDialogWidget {
     fsf: FsfRef,
 
     on_cancel: Option<WidgetAction<Self>>,
-    on_save: Option<WidgetAction<Self>>,
+    on_save: Option<WidgetActionParam<Self, FileFront>>,
     on_save_fail: Option<WidgetActionParam<Self, Option<std::io::Error>>>,
 
     root_path: Rc<PathBuf>,
-
-    to_save: Option<Box<dyn SomethingToSave>>,
 
     hover_dialog: Option<GenericDialog>,
 }
@@ -128,20 +126,8 @@ impl SaveFileDialogWidget {
             on_save_fail: None,
             on_cancel: None,
             root_path: path,
-            to_save: None,
             hover_dialog: None,
         }
-    }
-
-    pub fn with_something_to_save(self, to_save: Box<dyn SomethingToSave>) -> Self {
-        Self {
-            to_save: Some(to_save),
-            ..self
-        }
-    }
-
-    pub fn set_something_to_save(&mut self, to_save: Option<Box<dyn SomethingToSave>>) {
-        self.to_save = to_save;
     }
 
     pub fn with_on_save_fail(self, on_save_fail: WidgetActionParam<Self, Option<std::io::Error>>) -> Self {
@@ -284,11 +270,11 @@ impl SaveFileDialogWidget {
         }
     }
 
-    pub fn set_on_save(&mut self, on_save: WidgetAction<Self>) {
+    pub fn set_on_save(&mut self, on_save: WidgetActionParam<Self, FileFront>) {
         self.on_save = Some(on_save);
     }
 
-    pub fn with_on_save(self, on_save: WidgetAction<Self>) -> Self {
+    pub fn with_on_save(self, on_save: WidgetActionParam<Self, FileFront>) -> Self {
         Self {
             on_save: Some(on_save),
             ..self
@@ -319,8 +305,6 @@ impl SaveFileDialogWidget {
             }
         };
 
-        warn!("will save to {:?}", path);
-
         if self.fsf.exists(&path) {
             let filename = self.edit_box.get_text().to_string();
 
@@ -333,31 +317,13 @@ impl SaveFileDialogWidget {
 
     // Returns op message to parent, so it can be called from 'update'
     fn save_positively(&self) -> Option<Box<dyn AnyMsg>> {
-        let bytes: Vec<u8> = match &self.to_save {
-            Some(sts) => sts.get_bytes().map(|i| *i).collect(),
-            None => {
-                error!("nothing to save");
-                return self.on_save_fail.map(|handler| handler(self, None)).flatten();
-            }
-        };
-
-        let path = match self.get_path() {
-            Some(p) => p,
-            None => {
-                error!("can't save of empty path. The OK button should have been blocked!");
-                return self.on_save_fail.map(|handler| handler(self, None)).flatten();
-            }
-        };
-
-        match self.fsf.todo_save_file_sync(path.as_path(), &bytes) {
-            Ok(_) => {
-                self.on_save.map(|handler| handler(self)).flatten()
-            }
-            Err(e) => {
-                error!("save error: {}", e);
-                self.on_save_fail.map(|handler| handler(self, Some(e))).flatten()
-            }
-        }
+        let ff = self.fsf.get_item(&self.get_path().unwrap()).unwrap();//TODO
+        self.on_save.map(|on_save| {
+            on_save(self, ff)
+        }).unwrap_or_else(|| {
+            error!("attempted to save, but on_save not set");
+            None
+        })
     }
 }
 

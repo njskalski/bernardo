@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use std::fs::DirEntry;
-use std::io;
+use std::{io, iter};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -28,18 +28,26 @@ pub enum ReadError {
 }
 
 pub trait SomethingToSave {
-    fn get_bytes(&self) -> Box<dyn Iterator<Item=&u8> + '_>;
+    fn get_slices(&self) -> Box<dyn Iterator<Item=&[u8]> + '_>;
 }
 
 impl SomethingToSave for Vec<u8> {
-    fn get_bytes(&self) -> Box<dyn Iterator<Item=&u8> + '_> {
-        Box::new(self.iter())
+    fn get_slices(&self) -> Box<dyn Iterator<Item=&[u8]> + '_> {
+        Box::new(
+            iter::once(
+                self.as_slice()
+            )
+        )
     }
 }
 
 impl SomethingToSave for Rc<String> {
-    fn get_bytes(&self) -> Box<dyn Iterator<Item=&u8> + '_> {
-        Box::new(self.as_bytes().iter())
+    fn get_slices(&self) -> Box<dyn Iterator<Item=&[u8]> + '_> {
+        Box::new(
+            iter::once(
+                self.as_bytes()
+            )
+        )
     }
 }
 
@@ -50,6 +58,10 @@ So all methods that return FileFront are in Fsf implementation, and are fs agnos
 pub trait FilesystemFront: Debug {
     fn get_root_path(&self) -> &Rc<PathBuf>;
 
+    /*
+    Converts path to Rc<PathBuf>, creating it if necessary.
+    Fails ONLY if the given path is outside root.
+     */
     fn get_path(&self, path: &Path) -> Option<Rc<PathBuf>>;
 
     fn read_whole_file(&self, path: &Path) -> Result<Rope, ReadError>;
@@ -90,5 +102,7 @@ pub trait FilesystemFront: Debug {
     // - streaming save
     // - async save
     fn todo_save_file_sync(&self, path: &Path, bytes: &dyn AsRef<[u8]>) -> Result<(), std::io::Error>;
+
+    fn overwrite_file(&self, path: &Path, source: &dyn SomethingToSave) -> Result<(), std::io::Error>;
 }
 

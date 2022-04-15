@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use log::{error, warn};
@@ -42,7 +42,7 @@ pub struct EditorView {
 
     last_size: Option<XY>,
 
-    todo_text: BufferState,
+    buffer: BufferState,
 
     anchor: XY,
     tree_sitter: Rc<TreeSitterWrapper>,
@@ -61,6 +61,8 @@ pub struct EditorView {
     This represents "where the save as dialog should start". If none, we'll use the fsf root.
      */
     path: Option<Rc<PathBuf>>,
+
+    // TODO merge path and fsf fields?
 }
 
 impl EditorView {
@@ -69,7 +71,7 @@ impl EditorView {
             wid: get_new_widget_id(),
             cursors: CursorSet::single(),
             last_size: None,
-            todo_text: BufferState::new(tree_sitter.clone()),
+            buffer: BufferState::new(tree_sitter.clone()),
             anchor: ZERO,
             tree_sitter,
             fsf,
@@ -80,7 +82,7 @@ impl EditorView {
 
     pub fn with_buffer(self, buffer: BufferState) -> Self {
         EditorView {
-            todo_text: buffer,
+            buffer: buffer,
             ..self
         }
     }
@@ -103,7 +105,7 @@ impl EditorView {
     // follow the "anchor" with least possible change.
     fn update_anchor(&mut self, last_move_direction: Arrow) {
         // TODO test
-        let cursor_rect = cursor_set_to_rect(&self.cursors, &self.todo_text);
+        let cursor_rect = cursor_set_to_rect(&self.cursors, &self.buffer);
         match last_move_direction {
             Arrow::Up => {
                 if self.anchor.y > cursor_rect.upper_left().y {
@@ -148,11 +150,11 @@ impl EditorView {
         let default = theme.default_text(focused);
         helpers::fill_output(default.background, output);
 
-        let char_range_op = self.todo_text.char_range(output);
-        let highlights = self.todo_text.highlight(char_range_op);
+        let char_range_op = self.buffer.char_range(output);
+        let highlights = self.buffer.highlight(char_range_op);
         let mut highlight_iter = highlights.iter().peekable();
 
-        for (line_idx, line) in self.todo_text.lines().enumerate()
+        for (line_idx, line) in self.buffer.lines().enumerate()
             // skipping lines that cannot be visible, because they are before hint()
             .skip(output.size_constraint().hint().upper_left().y as usize)
         {
@@ -161,7 +163,7 @@ impl EditorView {
                 break;
             }
 
-            let line_begin = match self.todo_text.line_to_char(line_idx) {
+            let line_begin = match self.buffer.line_to_char(line_idx) {
                 Some(begin) => begin,
                 None => continue,
             };
@@ -209,9 +211,9 @@ impl EditorView {
             }
         }
 
-        let one_beyond_limit = self.todo_text.len_chars();
-        let last_line = self.todo_text.char_to_line(one_beyond_limit).unwrap();//TODO
-        let x_beyond_last = one_beyond_limit - self.todo_text.line_to_char(last_line).unwrap(); //TODO
+        let one_beyond_limit = self.buffer.len_chars();
+        let last_line = self.buffer.char_to_line(one_beyond_limit).unwrap();//TODO
+        let x_beyond_last = one_beyond_limit - self.buffer.line_to_char(last_line).unwrap(); //TODO
 
         let one_beyond_last_pos = XY::new(x_beyond_last as u16, last_line as u16);
         let mut style = default;
@@ -238,9 +240,31 @@ impl EditorView {
             self.fsf.clone(),
         ).with_on_cancel(|_| {
             EditorViewMsg::OnSaveAsCancel.someboxed()
+        }).with_on_save(|_, ff| {
+            EditorViewMsg::OnSaveAsHit { ff }.someboxed()
         });
         self.path.as_ref().map(|p| save_file_dialog.set_path(&p));
         self.save_file_dialog = Some(save_file_dialog);
+    }
+
+    fn positively_save_raw(&mut self, path: &Path) {
+        let ff = match self.fsf.get_item(path) {
+            None => {
+                error!("attempted saving beyond root path");
+                return;
+            }
+            Some(p) => p,
+        };
+
+        // setting the file path
+        self.buffer.set_file_front(Some(ff.clone()));
+
+        // updating the "save as dialog" starting position
+        ff.parent().map(|f| {
+            self.path = Some(ff.path_rc().clone())
+        }).unwrap_or_else(|| {
+            error!("failed setting save_as_dialog starting position - most likely parent is outside fsf root");
+        });
     }
 }
 
@@ -296,7 +320,7 @@ impl Widget for EditorView {
                     };
 
                     // page_height as usize is safe, since page_height is u16 and usize is larger.
-                    let _noop = apply_cme(*cem, &mut self.cursors, &mut self.todo_text, page_height as usize);
+                    let _noop = apply_cme(*cem, &mut self.cursors, &mut self.buffer, page_height as usize);
 
                     match cme_to_direction(*cem) {
                         None => {}
@@ -314,8 +338,14 @@ impl Widget for EditorView {
                     self.save_file_dialog = None;
                     None
                 }
-                _ => {
-                    warn!("unhandled message {:?}", msg);
+                // _ => {
+                //     warn!("unhandled message {:?}", msg);
+                //     None
+                // }
+                EditorViewMsg::OnSaveAsHit { ff } => {
+                    ff.overwrite_with(&self.buffer);
+                    // TODO handle errors
+                    self.save_file_dialog = None;
                     None
                 }
             }

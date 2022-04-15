@@ -7,7 +7,7 @@ use std::rc::Rc;
 use log::{error, warn};
 use ropey::Rope;
 use crate::AnyMsg;
-use crate::fs::filesystem_front::ReadError;
+use crate::fs::filesystem_front::{ReadError, SomethingToSave};
 use crate::fs::fsfref::FsfRef;
 use crate::io::loading_state::LoadingState;
 
@@ -107,6 +107,17 @@ impl FileFront {
 
     pub fn read_whole_file(&self) -> Result<Rope, ReadError> {
         self.fsf.read_whole_file(self.path())
+    }
+
+    /*
+    Fails only if parent is outside root
+     */
+    pub fn parent(&self) -> Option<FileFront> {
+        self.path.parent().map(|f| self.fsf.get_item(f)).flatten()
+    }
+
+    pub fn overwrite_with(&self, source: &dyn SomethingToSave) -> Result<(), io::Error> {
+        self.fsf.overwrite_file(self.path(), source)
     }
 }
 

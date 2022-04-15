@@ -8,6 +8,8 @@ use log::{error, warn};
 use ropey::Rope;
 use tree_sitter::{Point};
 use unicode_segmentation::UnicodeSegmentation;
+use crate::fs::file_front::FileFront;
+use crate::fs::filesystem_front::SomethingToSave;
 use crate::Output;
 
 use crate::text::buffer::Buffer;
@@ -51,7 +53,7 @@ pub struct BufferState {
 
     lang_id: Option<LangId>,
 
-    file_path: Option<PathBuf>,
+    file: Option<FileFront>,
 }
 
 impl BufferState {
@@ -62,7 +64,7 @@ impl BufferState {
             history: vec![],
             forward_history: vec![],
 
-            file_path: None,
+            file: None,
             lang_id: None,
         }
     }
@@ -90,6 +92,17 @@ impl BufferState {
             lang_id: Some(lang_id),
             ..self
         }
+    }
+
+    pub fn with_file_front(self, ff: FileFront) -> Self {
+        Self {
+            file: Some(ff),
+            ..self
+        }
+    }
+
+    pub fn set_file_front(&mut self, ff_op: Option<FileFront>) {
+        self.file = ff_op;
     }
 
     pub fn with_text_from_rope(self, rope: Rope, lang_id: Option<LangId>) -> Self {
@@ -149,6 +162,7 @@ impl Buffer for BufferState {
     }
     fn lines(&self) -> Box<dyn Iterator<Item=String> + '_> {
         // TODO this will fail for large files
+        // TODO Hmm, I am also not sure what will happen if a line is between two slices.
         Box::new(self.text.rope.lines().map(|f| f.to_string()))
     }
 
@@ -254,5 +268,11 @@ impl Buffer for BufferState {
 
     fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {
         self.text.rope.callback_for_parser()
+    }
+}
+
+impl SomethingToSave for BufferState {
+    fn get_slices(&self) -> Box<dyn Iterator<Item=&[u8]> + '_> {
+        Box::new(self.text.rope.chunks().map(|chunk| chunk.as_bytes()))
     }
 }
