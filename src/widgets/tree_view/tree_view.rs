@@ -196,7 +196,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
     }
 
     pub fn items(&self) -> TreeIt<Key, Item> {
-        TreeIt::new(&self.root_node, &self.expanded, &self.filter_op, self.filter_depth_op)
+        TreeIt::new(&self.root_node, &self.expanded, self.filter_op.as_ref(), self.filter_depth_op)
     }
 
     pub fn get_highlighted(&self) -> (u16, Item) {

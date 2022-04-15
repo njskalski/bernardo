@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod test {
+    use std::collections::HashSet;
     use crate::widget::stupid_tree::get_stupid_tree;
     use crate::widgets::tree_view::tree_it::TreeIt;
+    use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
     #[test]
     fn tree_it_test_1() {
@@ -12,7 +14,7 @@ mod test {
         expanded.insert(1);
 
         let try_out = |expanded_ref: &HashSet<usize>| {
-            let items: Vec<(u16, String)> = TreeIt::new(&root, expanded_ref)
+            let items: Vec<(u16, String)> = TreeIt::new(&root, expanded_ref, None, None)
                 .map(|(d, f)| (d, format!("{:?}", f.id())))
                 .collect();
             let max_len = items.iter().fold(
