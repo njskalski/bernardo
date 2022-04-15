@@ -57,6 +57,7 @@ pub struct SaveFileDialogWidget {
 
     display_state: Option<DisplayState>,
 
+    // TODO PathBuf -> WrappedRcPath? See profiler.
     tree_widget: WithScroll<TreeViewWidget<PathBuf, FileFront>>,
     list_widget: ListWidget<FileFront>,
     edit_box: EditBoxWidget,
@@ -68,7 +69,6 @@ pub struct SaveFileDialogWidget {
 
     on_cancel: Option<WidgetAction<Self>>,
     on_save: Option<WidgetActionParam<Self, FileFront>>,
-    on_save_fail: Option<WidgetActionParam<Self, Option<std::io::Error>>>,
 
     root_path: Rc<PathBuf>,
 
@@ -123,22 +123,10 @@ impl SaveFileDialogWidget {
             cancel_button,
             fsf,
             on_save: None,
-            on_save_fail: None,
             on_cancel: None,
             root_path: path,
             hover_dialog: None,
         }
-    }
-
-    pub fn with_on_save_fail(self, on_save_fail: WidgetActionParam<Self, Option<std::io::Error>>) -> Self {
-        Self {
-            on_save_fail: Some(on_save_fail),
-            ..self
-        }
-    }
-
-    pub fn set_on_save_fail(&mut self, on_save_fail_op: Option<WidgetActionParam<Self, Option<std::io::Error>>>) {
-        self.on_save_fail = on_save_fail_op;
     }
 
     fn internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {
@@ -196,26 +184,46 @@ impl SaveFileDialogWidget {
         }
     }
 
+    /*
+    Sets the path of expanded nodes in save file dialog, and potentially filename.
+    If set to a dir, only tree will be expanded.
+    If set to a file, both tree will be expanded, and editbox filled.
+     */
     pub fn set_path(&mut self, path: &Rc<PathBuf>) -> bool {
-        if !self.fsf.is_dir(&path) {
-            warn!("attempted to set path to non-dir: {:?}", path);
-            return false;
+        debug!("setting path to {:?}", path);
+
+        let (mut dir, filename): (PathBuf, Option<&str>) = if self.fsf.is_dir(path) {
+            (path.to_path_buf(), None)
+        } else {
+            (path.parent().map(|f| f.to_path_buf()).unwrap_or_else(|| {
+                warn!("failed to extract parent of {:?}, defaulting to fsf.root", path);
+                self.fsf.get_root_path().to_path_buf()
+            }), path.file_name().map(|s| s.to_str()).unwrap_or_else(|| {
+                warn!("filename at end of {:?} is not UTF-8", path);
+                None
+            }))
+        };
+
+        if !dir.starts_with(self.fsf.get_root_path().as_path()) {
+            error!("attempted to set path to non-root location {:?}, defaulting to fsf.root", dir);
+            dir = self.fsf.get_root_path().to_path_buf();
         }
 
-        let dir_path = path.parent().unwrap_or(&path);
-        let mut root_path = self.fsf.get_root().path().to_owned();
+        // now I will be stripping pieces of dir path and expanding each of them (bottom-up)
+        self.tree_widget.internal_mut().expanded_mut().insert(dir.to_path_buf());
+
+        let mut root_path = self.fsf.get_root_path().to_path_buf();
         self.tree_widget.internal_mut().expanded_mut().insert(root_path.clone());
 
-        match path.strip_prefix(&dir_path) {
+        match dir.strip_prefix(&root_path) {
             Err(e) => {
                 error!("supposed to set path to {:?}, but it's outside fs {:?}, because: {}", path, &root_path, e);
+                return false;
             }
             Ok(remainder) => {
                 for comp in remainder.components() {
                     root_path = root_path.join(comp);
-                    debug!("expanding subtree {:?}", root_path);
-
-                    // TODO one can save some memory here
+                    debug!("expanding subtree {:?}", &root_path);
                     self.tree_widget.internal_mut().expanded_mut().insert(root_path.clone());
                 }
             }
@@ -226,6 +234,7 @@ impl SaveFileDialogWidget {
             return false;
         }
 
+        filename.map(|f| self.edit_box.set_text(f));
 
         self.fsf.get_path(&root_path).map(|rcp| {
             self.show_files_on_right_panel(&rcp)
@@ -301,7 +310,7 @@ impl SaveFileDialogWidget {
             Some(p) => p,
             None => {
                 error!("can't save of empty path. The OK button should have been blocked!");
-                return self.on_save_fail.map(|handle| handle(self, None)).flatten();
+                return None;
             }
         };
 

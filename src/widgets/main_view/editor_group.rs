@@ -83,6 +83,7 @@ impl EditorGroup {
                 .with_buffer(
                     BufferState::new(tree_sitter)
                         .with_text_from_rope(file_contents, lang_id_op)
+                        .with_file_front(ff.clone())
                 ).with_path_op(
                 ff.path().parent().map(|p|
                     ff.fsf().get_item(p)

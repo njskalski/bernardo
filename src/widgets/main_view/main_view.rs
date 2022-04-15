@@ -44,6 +44,7 @@ pub struct MainView {
     wid: WID,
     display_state: Option<DisplayState>,
 
+    // TODO PathBuf -> WrappedRcPath? See profiler.
     tree_widget: WithScroll<TreeViewWidget<PathBuf, FileFront>>,
 
     editors: EditorGroup,

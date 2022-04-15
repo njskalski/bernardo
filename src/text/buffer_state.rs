@@ -94,15 +94,19 @@ impl BufferState {
         }
     }
 
+    pub fn set_file_front(&mut self, ff_op: Option<FileFront>) {
+        self.file = ff_op;
+    }
+
+    pub fn get_file_front(&self) -> Option<&FileFront> {
+        self.file.as_ref()
+    }
+
     pub fn with_file_front(self, ff: FileFront) -> Self {
         Self {
             file: Some(ff),
             ..self
         }
-    }
-
-    pub fn set_file_front(&mut self, ff_op: Option<FileFront>) {
-        self.file = ff_op;
     }
 
     pub fn with_text_from_rope(self, rope: Rope, lang_id: Option<LangId>) -> Self {

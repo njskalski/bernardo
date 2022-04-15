@@ -71,6 +71,7 @@ impl Default for FileChildrenCache {
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct FileFront {
+    // TODO I have not decided or forgot what I decided, whether this path is relative to fsf root or not.
     path: Rc<PathBuf>,
     fsf: FsfRef,
 }

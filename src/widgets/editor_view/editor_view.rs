@@ -58,9 +58,11 @@ pub struct EditorView {
     save_file_dialog: Option<SaveFileDialogWidget>,
 
     /*
-    This represents "where the save as dialog should start". If none, we'll use the fsf root.
+    This represents "where the save as dialog should start", but only in case the file_front on buffer_state is None.
+    If none, we'll use the fsf root.
+    See get_save_file_dialog_path for details.
      */
-    path: Option<Rc<PathBuf>>,
+    start_path: Option<Rc<PathBuf>>,
 
     // TODO merge path and fsf fields?
 }
@@ -76,7 +78,7 @@ impl EditorView {
             tree_sitter,
             fsf,
             save_file_dialog: None,
-            path: None,
+            start_path: None,
         }
     }
 
@@ -89,14 +91,14 @@ impl EditorView {
 
     pub fn with_path(self, path: Rc<PathBuf>) -> Self {
         Self {
-            path: Some(path),
+            start_path: Some(path),
             ..self
         }
     }
 
     pub fn with_path_op(self, path_op: Option<Rc<PathBuf>>) -> Self {
         Self {
-            path: path_op,
+            start_path: path_op,
             ..self
         }
     }
@@ -242,8 +244,7 @@ impl EditorView {
             EditorViewMsg::OnSaveAsCancel.someboxed()
         }).with_on_save(|_, ff| {
             EditorViewMsg::OnSaveAsHit { ff }.someboxed()
-        });
-        self.path.as_ref().map(|p| save_file_dialog.set_path(&p));
+        }).with_path(self.get_save_file_dialog_path());
         self.save_file_dialog = Some(save_file_dialog);
     }
 
@@ -261,10 +262,26 @@ impl EditorView {
 
         // updating the "save as dialog" starting position
         ff.parent().map(|f| {
-            self.path = Some(ff.path_rc().clone())
+            self.start_path = Some(ff.path_rc().clone())
         }).unwrap_or_else(|| {
             error!("failed setting save_as_dialog starting position - most likely parent is outside fsf root");
         });
+    }
+
+    /*
+    This returns a (absolute) file path to be used with save_file_dialog. It can but does not have to
+    contain filename part.
+     */
+    fn get_save_file_dialog_path(&self) -> &Rc<PathBuf> {
+        if let Some(ff) = self.buffer.get_file_front() {
+            return ff.path_rc();
+        };
+
+        if let Some(sp) = self.start_path.as_ref() {
+            return sp;
+        }
+
+        self.fsf.get_root_path()
     }
 }
 
