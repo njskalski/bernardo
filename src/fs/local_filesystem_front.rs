@@ -5,9 +5,9 @@ use std::fs::DirEntry;
 use std::hash::BuildHasher;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::{iter, thread};
+use std::{io, iter, thread};
 use std::fmt::{Debug, Formatter};
-use std::io::empty;
+use std::io::{empty, Read};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::TryRecvError;
@@ -19,7 +19,7 @@ use ropey::Rope;
 use simsearch::SimSearch;
 use crate::fs::file_front::{FileChildrenCache, FileChildrenCacheRef, FileFront};
 
-use crate::fs::filesystem_front::FilesystemFront;
+use crate::fs::filesystem_front::{FilesystemFront, ReadError};
 use crate::fs::fsfref::FsfRef;
 use crate::fs::internal_state::{InternalState, WrappedRcPath};
 use crate::io::loading_state::LoadingState;
@@ -319,12 +319,13 @@ impl FilesystemFront for LocalFilesystem {
         }
     }
 
-    fn todo_read_file(&self, path: &Path) -> Result<Rope, ()> {
-        self.fs.read_file_to_string(path).map(
-            |s| Rope::from(s)
-        ).map_err(|e|
-            error!("failed to read file {:?} : {}", path, e)
-        ) // TODO
+    fn read_whole_file(&self, path: &Path) -> Result<Rope, ReadError> {
+        let mut file = std::fs::File::open(path).map_err(|ioe| ReadError::IoError(ioe))?;
+        let mut buf: Vec<u8> = Vec::default();
+        file.read_to_end(&mut buf);
+        let s = std::str::from_utf8(&buf).map_err(|ue| ReadError::Utf8Error(ue))?;
+
+        Ok(Rope::from_str(s))
     }
 
     // This returns from cache if possible. Triggers update.

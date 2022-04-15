@@ -1,11 +1,13 @@
 use std::cell::{BorrowMutError, Ref, RefCell};
-use std::fmt;
+use std::{fmt, io};
 use std::fmt::{Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use log::{error, warn};
+use ropey::Rope;
 use crate::AnyMsg;
+use crate::fs::filesystem_front::ReadError;
 use crate::fs::fsfref::FsfRef;
 use crate::io::loading_state::LoadingState;
 
@@ -97,6 +99,14 @@ impl FileFront {
 
     pub fn children(&self) -> Box<dyn Iterator<Item=FileFront> + '_> {
         self.fsf.get_children(&self.path).1
+    }
+
+    pub fn fsf(&self) -> &FsfRef {
+        &self.fsf
+    }
+
+    pub fn read_whole_file(&self) -> Result<Rope, ReadError> {
+        self.fsf.read_whole_file(self.path())
     }
 }
 

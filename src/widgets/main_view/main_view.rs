@@ -25,8 +25,9 @@ use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::editor_view::msg::EditorViewMsg;
-use crate::widgets::fuzzy_search::fsf_provider::FsfProvider;
+use crate::widgets::fuzzy_search::fsf_provider::{FileFrontMsg, FsfProvider};
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
+use crate::widgets::main_view::editor_group::EditorGroup;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
@@ -44,8 +45,9 @@ pub struct MainView {
     display_state: Option<DisplayState>,
 
     tree_widget: WithScroll<TreeViewWidget<PathBuf, FileFront>>,
-    no_editor: NoEditorWidget,
-    editor: Option<WithScroll<EditorView>>,
+
+    editors: EditorGroup,
+
     tree_sitter: Rc<TreeSitterWrapper>,
 
     fsf: FsfRef,
@@ -74,24 +76,16 @@ impl MainView {
             wid: get_new_widget_id(),
             display_state: None,
             tree_widget: WithScroll::new(tree, ScrollDirection::Vertical),
-            no_editor: NoEditorWidget::new(),
-            editor: None,
+            editors: EditorGroup::default(),
             tree_sitter,
             fsf: fs,
             hover: None,
         }
     }
 
-    pub fn with_empty_editor(self) -> Self {
-        MainView {
-            editor: Some(
-                WithScroll::new(
-                    EditorView::new(self.tree_sitter.clone(), self.fsf.clone()),
-                    ScrollDirection::Both,
-                )
-            ),
-            ..self
-        }
+    pub fn with_empty_editor(mut self) -> Self {
+        self.editors.open_empty(self.tree_sitter.clone(), self.fsf.clone(), true);
+        self
     }
 
     fn get_hover_rect(max_size: XY) -> Rect {
@@ -105,9 +99,7 @@ impl MainView {
         let tree_widget = &mut self.tree_widget;
 
         let mut left_column = LeafLayout::new(tree_widget);
-        let mut right_column = self.editor.as_mut()
-            .map(|editor| LeafLayout::new(editor))
-            .unwrap_or(LeafLayout::new(&mut self.no_editor));
+        let mut right_column = LeafLayout::new(self.editors.curr_editor_mut());
 
         let mut bg_layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0),
@@ -135,35 +127,10 @@ impl MainView {
         res
     }
 
-    fn open_file(&mut self, path: &Rc<PathBuf>) -> bool {
-        debug!("opening file {:?}", path);
-
-        // TODO this maybe needs to be moved to other place, but there is no other place yet.
-
-        let lang_id = filename_to_language(path);
-
-        match self.fsf.todo_read_file(path) {
-            Ok(rope) => {
-                self.editor = Some(
-                    WithScroll::new(
-                        EditorView::new(self.tree_sitter.clone(), self.fsf.clone())
-                            .with_buffer(
-                                BufferState::new(self.tree_sitter.clone())
-                                    .with_text_from_rope(rope, lang_id)
-                            ).with_path_op(
-                            path.parent().map(|p|
-                                self.fsf.get_item(p)
-                            ).flatten().map(|f| f.path_rc().clone())
-                        ),
-                        ScrollDirection::Both,
-                    ));
-                true
-            }
-            Err(_) => {
-                error!("failed to load file {:?}", path);
-                false
-            }
-        }
+    fn open_file(&mut self, ff: FileFront) -> bool {
+        debug!("opening file {:?}", ff.path());
+        // TODO show error?
+        self.editors.open_file(self.tree_sitter.clone(), ff, true).is_ok()
     }
 
     fn open_fuzzy_search_in_files(&mut self) {
@@ -175,6 +142,23 @@ impl MainView {
             ).with_draw_comment_setting(DrawComment::Highlighted))
         );
     }
+
+    // TODO
+    // fn set_focus_on_editor(&mut self) {
+    //     if let Some(wid) = self.curr_editor().map(|w| w.id()) {
+    //         if let Some(ds) = &mut self.display_state {
+    //             if ds.focus_group.set_focused(wid) {
+    //                 error!("failed to update focus to {}", wid);
+    //             }
+    //         }
+    //     } else {
+    //         if let Some(ds) = &mut self.display_state {
+    //             if ds.focus_group.set_focused(self.no_editor.id()) {
+    //                 error!("failed to update focus to no_editor {}", self.no_editor.id());
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 impl Widget for MainView {
@@ -222,7 +206,7 @@ impl Widget for MainView {
                 Some(Box::new(MainViewMsg::FocusUpdateMsg(focus_update)))
             }
             InputEvent::KeyInput(key) if key.modifiers.ctrl && key.keycode == Keycode::Char('h') => {
-                Some(Box::new(MainViewMsg::FuzzyFiles))
+                Some(Box::new(MainViewMsg::OpenFuzzyFiles))
             }
             _ => None
         };
@@ -231,51 +215,57 @@ impl Widget for MainView {
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         debug!("main_view.update {:?}", msg);
 
-        let our_msg = msg.as_msg::<MainViewMsg>();
-        if our_msg.is_none() {
-            warn!("expecetd MainViewMsg, got {:?}", msg);
-            return None;
+        if let Some(main_view_msg) = msg.as_msg::<MainViewMsg>() {
+            return match main_view_msg {
+                MainViewMsg::FocusUpdateMsg(focus_update) => {
+                    warn!("updating focus");
+                    let fc = *focus_update;
+                    let ds: &mut DisplayState = self.display_state.as_mut().unwrap();
+                    let fg = &mut ds.focus_group;
+                    let msg = fg.update_focus(fc);
+                    warn!("focus updated {}", msg);
+                    None
+                }
+                MainViewMsg::TreeExpandedFlip { expanded, item } => {
+                    None
+                }
+                MainViewMsg::TreeSelected { item } => {
+                    if self.open_file(item.clone()) {
+                        // self.set_focus_on_editor();
+                    } else {
+                        error!("failed open_file");
+                    }
+
+                    None
+                }
+                MainViewMsg::OpenFuzzyFiles => {
+                    self.open_fuzzy_search_in_files();
+                    None
+                }
+                MainViewMsg::FuzzyClose => {
+                    if self.hover.is_none() {
+                        error!("expected self.hover to be not None.");
+                    }
+
+                    self.hover = None;
+                    None
+                }
+            };
+        };
+
+        if let Some(fuzzy_file_msg) = msg.as_msg::<FileFrontMsg>() {
+            return match fuzzy_file_msg {
+                FileFrontMsg::Hit(file_front) => {
+                    self.open_file(file_front.clone());
+                    self.hover = None;
+                    // self.set_focus_on_editor();
+                    None
+                }
+            };
         }
 
-        return match our_msg.unwrap() {
-            MainViewMsg::FocusUpdateMsg(focus_update) => {
-                warn!("updating focus");
-                let fc = *focus_update;
-                let ds: &mut DisplayState = self.display_state.as_mut().unwrap();
-                let fg = &mut ds.focus_group;
-                let msg = fg.update_focus(fc);
-                warn!("focus updated {}", msg);
-                None
-            }
-            MainViewMsg::TreeExpandedFlip { expanded, item } => {
-                None
-            }
-            MainViewMsg::TreeSelected { item } => {
-                if self.open_file(item.path_rc()) {
-                    if let (Some(ds), Some(editor)) = (&mut self.display_state, &self.editor) {
-                        if ds.focus_group.set_focused(editor.id()) {
-                            error!("failed to update focus after update file");
-                        }
-                    }
-                } else {
-                    error!("failed open_file");
-                }
-
-                None
-            }
-            MainViewMsg::FuzzyFiles => {
-                self.open_fuzzy_search_in_files();
-                None
-            }
-            MainViewMsg::FuzzyClose => {
-                if self.hover.is_none() {
-                    error!("expected self.hover to be not None.");
-                }
-
-                self.hover = None;
-                None
-            }
-        };
+        warn!("expecetd MainViewMsg | FuzzyFileMsg, got {:?}", msg);
+        None
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
@@ -329,11 +319,7 @@ impl Widget for MainView {
     }
 
     fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
-        let mut items = vec![&mut self.tree_widget as &mut dyn Widget, &mut self.no_editor];
-
-        if let Some(editor) = &mut self.editor {
-            items.push(editor);
-        };
+        let mut items = vec![&mut self.tree_widget as &mut dyn Widget, self.editors.curr_editor_mut()];
 
         if self.hover.is_some() {
             match self.hover.as_mut().unwrap() {
@@ -347,11 +333,7 @@ impl Widget for MainView {
     }
 
     fn subwidgets(&self) -> Box<dyn Iterator<Item=&dyn Widget> + '_> where Self: Sized {
-        let mut items = vec![&self.tree_widget as &dyn Widget, &self.no_editor];
-
-        if let Some(editor) = &self.editor {
-            items.push(editor);
-        };
+        let mut items = vec![&self.tree_widget as &dyn Widget, self.editors.curr_editor()];
 
         if self.hover.is_some() {
             match self.hover.as_ref().unwrap() {

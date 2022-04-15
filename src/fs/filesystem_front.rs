@@ -1,8 +1,10 @@
 use std::fmt::Debug;
 use std::fs::DirEntry;
+use std::io;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::str::Utf8Error;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
@@ -19,6 +21,11 @@ use ropey::Rope;
 
 use crate::fs::file_front::FileFront;
 use crate::io::loading_state::LoadingState;
+
+pub enum ReadError {
+    IoError(io::Error),
+    Utf8Error(Utf8Error),
+}
 
 pub trait SomethingToSave {
     fn get_bytes(&self) -> Box<dyn Iterator<Item=&u8> + '_>;
@@ -45,10 +52,10 @@ pub trait FilesystemFront: Debug {
 
     fn get_path(&self, path: &Path) -> Option<Rc<PathBuf>>;
 
-    // This is a mock method. It should probably return a stream and should probably report errors.
+    fn read_whole_file(&self, path: &Path) -> Result<Rope, ReadError>;
+
     // One of many "nice to haves" of this editor, outside of scope of MVP, is "large files support",
     // that I want to test with infinite file generator behind an interface here.
-    fn todo_read_file(&self, path: &Path) -> Result<Rope, ()>;
 
     // first argument says if the list is complete.
     fn get_children_paths(&self, path: &Path) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>);

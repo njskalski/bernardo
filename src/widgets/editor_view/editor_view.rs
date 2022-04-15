@@ -47,16 +47,24 @@ pub struct EditorView {
     anchor: XY,
     tree_sitter: Rc<TreeSitterWrapper>,
 
+    /*
+    resist the urge to remove fsf from editor. It's used to facilitate "save as dialog".
+    You CAN be working on two different filesystems at the same time, and save as dialog is specific to it.
+
+    One thing to address is: "what if I have file from filesystem A, and I want to "save as" to B?". But that's beyond MVP, so I don't think about it now.
+     */
     fsf: FsfRef,
 
     save_file_dialog: Option<SaveFileDialogWidget>,
 
-    // not sure if that should be a part of buffer or editor
+    /*
+    This represents "where the save as dialog should start". If none, we'll use the fsf root.
+     */
     path: Option<Rc<PathBuf>>,
 }
 
 impl EditorView {
-    pub fn new(tree_sitter: Rc<TreeSitterWrapper>, fs: FsfRef) -> EditorView {
+    pub fn new(tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef) -> EditorView {
         EditorView {
             wid: get_new_widget_id(),
             cursors: CursorSet::single(),
@@ -64,7 +72,7 @@ impl EditorView {
             todo_text: BufferState::new(tree_sitter.clone()),
             anchor: ZERO,
             tree_sitter,
-            fsf: fs,
+            fsf,
             save_file_dialog: None,
             path: None,
         }
@@ -339,7 +347,7 @@ impl Widget for EditorView {
         if self.save_file_dialog.is_some() {
             return self.save_file_dialog.as_mut().map(|f| f as &mut dyn Widget);
         }
-        
+
         None
     }
 }
