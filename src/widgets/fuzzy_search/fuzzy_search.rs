@@ -1,3 +1,4 @@
+use std::cmp::{max, min};
 use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -194,7 +195,7 @@ impl Widget for FuzzySearchWidget {
         };
 
         //TODO
-        XY::new(self.width, items_len as u16)
+        XY::new(self.width, min(items_len as u16, sc.hint().lower_right().y))
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

@@ -60,7 +60,7 @@ impl Mul<usize> for XY {
         let x = rhs * self.x as usize;
         let y = rhs * self.y as usize;
         if x > u16::MAX as usize || y > u16::MAX as usize {
-            error!("mult would exceed u16 limit, using 0 as fallback: {} * {}", self, rhs);
+            error!("mult would exceed u16 limit, using u16::MAX as fallback: {} * {}", self, rhs);
         }
 
         let x = min(x, u16::MAX as usize) as u16;

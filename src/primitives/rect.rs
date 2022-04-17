@@ -190,6 +190,6 @@ impl Add<XY> for Rect {
 
 impl fmt::Display for Rect {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "r[{},{}]", self.pos, self.size)
+        write!(f, "r[{},{} ({})]", self.pos, self.size, self.lower_right())
     }
 }
