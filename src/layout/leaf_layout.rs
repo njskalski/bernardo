@@ -36,7 +36,7 @@ impl<'a> Layout for LeafLayout<'a> {
     fn calc_sizes(&mut self, output_size: XY) -> Vec<WidgetIdRect> {
         let wid = self.widget.id();
 
-        if self.with_border {
+        let res = if self.with_border {
             if output_size > (2, 2).into() {
                 let limited_output = XY::new(output_size.x - 2, output_size.y - 2);
                 let size = self.widget.layout(SizeConstraint::simple(limited_output));
@@ -58,6 +58,12 @@ impl<'a> Layout for LeafLayout<'a> {
                 wid,
                 rect,
             }]
+        };
+
+        for wid in &res {
+            debug_assert!(output_size >= wid.rect.lower_right());
         }
+
+        res
     }
 }

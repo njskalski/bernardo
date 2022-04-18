@@ -7,7 +7,7 @@ use std::vec::IntoIter;
 use log::{debug, error};
 use crate::fs::file_front::FileFront;
 use crate::{AnyMsg, FsfRef};
-use crate::fs::constants::{NON_UTF8_ERROR_STR, NOT_A_FILENAME};
+use crate::fs::constants::{NON_UTF8_ERROR_STR, NOT_A_FILENAME, OUTSIDE_ROOT};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 
 pub type FileFrontToMsg = fn(&FileFront) -> Box<dyn AnyMsg>;
@@ -54,12 +54,17 @@ impl Item for FileFront {
     }
 
     fn comment(&self) -> Option<&str> {
-        self.path().parent().map(|parent_path| {
-            parent_path.to_str().unwrap_or_else(|| {
-                error!("failed to cast path to string: {:?}", parent_path);
-                NON_UTF8_ERROR_STR
-            })
-        })
+        self.path().strip_prefix(self.fsf().get_root_path().as_path()).map(
+            |stripped_path| {
+                stripped_path.to_str().unwrap_or_else(|| {
+                    error!("failed to cast path to string: {:?}", stripped_path);
+                    NON_UTF8_ERROR_STR
+                })
+            }
+        ).map_err(|e| {
+            error!("Strip prefix error {}. File {:?} outside root?", e, self.path());
+            OUTSIDE_ROOT
+        }).ok()
     }
 
     fn on_hit(&self) -> Box<dyn AnyMsg> {

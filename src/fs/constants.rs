@@ -2,6 +2,7 @@ use std::path::Path;
 
 pub const NON_UTF8_ERROR_STR: &'static str = "FAILED UTF-8 CAST";
 pub const NOT_A_FILENAME: &'static str = "NOT A FILENAME";
+pub const OUTSIDE_ROOT: &'static str = "OUTSIDE ROOT";
 
 pub fn is_sham(path: &Path) -> bool {
     for ancestor in path.ancestors() {
