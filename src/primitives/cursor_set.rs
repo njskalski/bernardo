@@ -16,8 +16,11 @@
 
 // Newline is always an end of previous line, not a beginning of new.
 
-
 // TODO change the selection to Option<usize> to ENFORCE the invariant by reducing the volume of data.
+// TODO decide: introduce a special cursor to derive from while in "dropping_cursor" mode?
+
+// INVARIANTS:
+// - non-empty
 
 use std::collections::HashMap;
 use std::slice::Iter;
@@ -354,6 +357,7 @@ impl CursorSet {
         }
     }
 
+    #[cfg(test)]
     pub fn new(set: Vec<Cursor>) -> Self {
         CursorSet { set }
     }
@@ -839,6 +843,8 @@ impl CursorSet {
                 }
             }
         }
+
+        debug_assert!(!self.set.is_empty());
     }
 
     // Reduces cursors after a move right.
@@ -905,6 +911,8 @@ impl CursorSet {
                 _ => {}
             }
         }
+        
+        debug_assert!(!self.set.is_empty());
     }
 
     pub fn word_begin<F: Fn(usize) -> bool>(&mut self, selecting: bool, word_determinant: &F) -> bool {

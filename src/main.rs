@@ -5,7 +5,8 @@
 extern crate lazy_static;
 #[macro_use]
 extern crate maplit;
-
+#[macro_use]
+extern crate matches;
 
 use std::io::stdout;
 use std::path::PathBuf;

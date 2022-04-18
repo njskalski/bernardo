@@ -12,6 +12,9 @@ pub enum EditorViewMsg {
     SaveAs,
     OnSaveAsCancel,
     OnSaveAsHit { ff: FileFront },
+
+    ToCursorDropMode,
+    ToEditMode,
 }
 
 

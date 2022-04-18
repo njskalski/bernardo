@@ -12,6 +12,10 @@ use crate::primitives::tmtheme::TmTheme;
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Theme {
+    /*
+    This is supposed to be a fallback theme for code where tree-sitter fails to recognize and parse.
+    Not sure if I will keep it. Not used now.
+     */
     #[serde(default, skip_serializing_if = "GeneralCodeTheme::is_default")]
     pub general_code_theme: GeneralCodeTheme,
     #[serde(default, skip_serializing_if = "UiTheme::is_default")]
@@ -27,20 +31,9 @@ impl Theme {
             return Some(color);
         }
 
-        match s {
-            // "string_literal" if ct.general_code_theme.string_literal.is_some() => ct.general_code_theme.string_literal,
-            // "string_literal" | "literal" => ct.general_code_theme.literal,
-            // "\"" => ct.general_code_theme.double_quote,
-            // "\'" => ct.general_code_theme.single_quote,
-            // "(" => ct.general_code_theme.parenthesis,
-            // ")" => ct.general_code_theme.parenthesis,
-            // "identifier" => ct.general_code_theme.identifier,
-            // "::" | ">>" | "<<" | "<" | ">" => ct.general_code_theme.operator,
-            _ => {
-                warn!("not matched code identifier \"{}\"", s);
-                None
-            }
-        }
+
+        warn!("not matched code identifier \"{}\"", s);
+        None
     }
 
     pub fn default_text(&self, focused: bool) -> TextStyle {
@@ -71,6 +64,10 @@ impl Theme {
         self.ui.cursors.foreground
     }
 
+    pub fn special_cursor_background(&self) -> Color {
+        self.ui.cursors.primary_anchor_background
+    }
+
     pub fn header(&self, focused: bool) -> TextStyle {
         if focused {
             self.ui.header
@@ -88,6 +85,8 @@ pub struct UiTheme {
     pub non_focused_highlighted: TextStyle,
     pub header: TextStyle,
     pub cursors: CursorsSettings,
+    // not sure if I should not rearrange this
+    pub mode_2_background: Color,
 }
 
 lazy_static!(
@@ -110,6 +109,8 @@ lazy_static!(
 
     static ref HEADER_BACKGROUND : Color = *HIGHLIGHTED_FOCUSED_BACKGROUND;
     static ref HEADER_FOREGROUND : Color = ron::from_str("\"#FB4931\"").unwrap();
+
+    static ref MODE2_BACKGROUND : Color = ron::from_str("\"#122322\"").unwrap();
 );
 
 impl Default for UiTheme {
@@ -146,6 +147,7 @@ impl Default for UiTheme {
                 background: *CURSORS_BACKGROUND,
                 foreground: Some(*CURSORS_FOREGROUND),
             },
+            mode_2_background: *MODE2_BACKGROUND,
         }
     }
 }

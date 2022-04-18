@@ -13,7 +13,8 @@ use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::arrow::Arrow;
-use crate::primitives::cursor_set::CursorSet;
+use crate::primitives::color::Color;
+use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
 use crate::primitives::rect::Rect;
@@ -25,6 +26,7 @@ use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::common_edit_msgs::{apply_cme, cme_to_direction, key_to_edit_msg};
+use crate::widgets::editor_view::editor_view::EditorState::DroppingCursor;
 use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::fuzzy_search::fsf_provider::FsfProvider;
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
@@ -35,6 +37,26 @@ const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
 
 const NEWLINE: &'static str = "⏎";
 const BEYOND: &'static str = "⇱";
+
+#[derive(Debug)]
+enum EditorState {
+    Editing,
+    /*
+    Dropping cursor mode works in a following way:
+    we have a special cursor (different color) and background is different (to tell apart "mode").
+    we move this special cursor with arrows and whenever hit ENTER a new cursor is created/removed
+    under the position of special cursor.
+
+    moving special cursor with ctrl (jumping words) and code navigation shall work normally.
+    furthermore, typing leads to search-and-highlight, as opposed to editing events.
+
+    Due to limited time resources, at this moment I will not solve an issue of dropping a cursor
+    more than one character beyond the buffer.
+     */
+    DroppingCursor {
+        special_cursor: Cursor
+    },
+}
 
 pub struct EditorView {
     wid: WID,
@@ -65,6 +87,8 @@ pub struct EditorView {
     start_path: Option<Rc<PathBuf>>,
 
     // TODO merge path and fsf fields?
+
+    state: EditorState,
 }
 
 impl EditorView {
@@ -79,6 +103,7 @@ impl EditorView {
             fsf,
             save_file_dialog: None,
             start_path: None,
+            state: EditorState::Editing,
         }
     }
 
@@ -149,7 +174,13 @@ impl EditorView {
     }
 
     fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let default = theme.default_text(focused);
+        let default = match self.state {
+            EditorState::Editing => { theme.default_text(focused) }
+            EditorState::DroppingCursor { .. } => {
+                theme.default_text(focused).with_background(theme.ui.mode_2_background)
+            }
+        };
+
         helpers::fill_output(default.background, output);
 
         let char_range_op = self.buffer.char_range(output);
@@ -160,7 +191,7 @@ impl EditorView {
             // skipping lines that cannot be visible, because they are before hint()
             .skip(output.size_constraint().hint().upper_left().y as usize)
         {
-            // skipping lines that cannot be visible, because larger than the hint()
+            // skipping lines that cannot be visible, because the are after the hint()
             if line_idx >= output.size_constraint().hint().lower_right().y as usize {
                 break;
             }
@@ -199,8 +230,8 @@ impl EditorView {
                     }
                 }
 
-                theme.cursor_background(cursor_status).map(|bg| {
-                    style = style.with_background(bg);
+                self.pos_to_cursor(theme, char_idx).map(|fg| {
+                    style = style.with_background(fg);
                 });
 
                 if !focused {
@@ -219,8 +250,8 @@ impl EditorView {
 
         let one_beyond_last_pos = XY::new(x_beyond_last as u16, last_line as u16);
         let mut style = default;
-        theme.cursor_background(self.cursors.get_cursor_status_for_char(one_beyond_limit)).map(|bg| {
-            style = style.with_background(bg);
+        self.pos_to_cursor(theme, one_beyond_limit).map(|fg| {
+            style = style.with_background(fg);
         });
 
         output.print_at(one_beyond_last_pos, style, BEYOND);
@@ -283,6 +314,38 @@ impl EditorView {
 
         self.fsf.get_root_path()
     }
+
+    pub fn enter_dropping_cursor_mode(&mut self) {
+        debug_assert_matches!(self.state, EditorState::Editing);
+        self.state = EditorState::DroppingCursor {
+            special_cursor: self.cursors.iter().next().map(|c| *c).unwrap_or_else(|| {
+                error!("empty cursor set!");
+                Cursor::single()
+            })
+        };
+    }
+
+    pub fn enter_editing_mode(&mut self) {
+        debug_assert_matches!(self.state, EditorState::DroppingCursor { special_cursor});
+        self.state = EditorState::Editing;
+    }
+
+
+    fn pos_to_cursor(&self, theme: &Theme, char_idx: usize) -> Option<Color> {
+        match &self.state {
+            EditorState::DroppingCursor { special_cursor } => {
+                match special_cursor.get_cursor_status_for_char(char_idx) {
+                    CursorStatus::UnderCursor => {
+                        return Some(theme.ui.cursors.primary_anchor_background);
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        };
+
+        theme.cursor_background(self.cursors.get_cursor_status_for_char(char_idx))
+    }
 }
 
 impl Widget for EditorView {
@@ -308,13 +371,20 @@ impl Widget for EditorView {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        return match input_event {
+        return match (&self.state, input_event) {
             //TODO refactor the settings
-            InputEvent::KeyInput(key) if key.modifiers.ctrl && key.keycode == Keycode::Char('s') => {
-                Some(Box::new(EditorViewMsg::SaveAs))
+            (_, InputEvent::KeyInput(key)) if key.modifiers.ctrl && key.keycode == Keycode::Char('s') => {
+                EditorViewMsg::SaveAs.someboxed()
             }
-            InputEvent::KeyInput(key) if key_to_edit_msg(key).is_some() => {
-                Some(Box::new(EditorViewMsg::EditMsg(key_to_edit_msg(key).unwrap())))
+            (&EditorState::Editing, InputEvent::KeyInput(key))  if !key.modifiers.ctrl && key_to_edit_msg(key).is_some() => {
+                EditorViewMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
+            }
+            // TODO temp
+            (&EditorState::Editing, InputEvent::KeyInput(key)) if key.modifiers.ctrl && key.keycode == Keycode::Char('e') => {
+                EditorViewMsg::ToCursorDropMode.someboxed()
+            }
+            (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Esc => {
+                EditorViewMsg::ToEditMode.someboxed()
             }
             _ => None,
         };
@@ -363,6 +433,14 @@ impl Widget for EditorView {
                     ff.overwrite_with(&self.buffer);
                     // TODO handle errors
                     self.save_file_dialog = None;
+                    None
+                }
+                EditorViewMsg::ToCursorDropMode => {
+                    self.enter_dropping_cursor_mode();
+                    None
+                }
+                EditorViewMsg::ToEditMode => {
+                    self.enter_editing_mode();
                     None
                 }
             }
