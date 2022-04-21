@@ -21,6 +21,9 @@
 
 // INVARIANTS:
 // - non-empty
+// - cursors are distinct
+// - cursors have their anchors either on begin or on end, and they all have the anchor on the same side
+// - cursors DO NOT OVERLAP
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -212,7 +215,7 @@ impl Cursor {
     }
 
     // Returns FALSE if noop.
-    pub fn home(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
+    pub fn move_home(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
         let old_pos = self.a;
         let line = rope.char_to_line(self.a).unwrap(); //TODO
         let new_pos = rope.line_to_char(line).unwrap(); //TODO
@@ -243,7 +246,7 @@ impl Cursor {
     }
 
     // Returns FALSE if noop.
-    pub fn end(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
+    pub fn move_end(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
         let old_pos = self.a;
         let next_line = rope.char_to_line(self.a).unwrap() + 1; // TODO
 
@@ -359,6 +362,30 @@ impl Cursor {
      */
     pub fn is_simple(&self) -> bool {
         self.s.is_none()
+    }
+
+    pub fn check_invariant(&self) -> bool {
+        if let Some(s) = self.s {
+            s.b == self.a || s.e == self.a
+        } else {
+            true
+        }
+    }
+
+    pub fn anchor_left(&self) -> bool {
+        self.s.map(|s| s.b == self.a).unwrap_or(false)
+    }
+
+    pub fn anchor_right(&self) -> bool {
+        self.s.map(|s| s.e == self.a).unwrap_or(false)
+    }
+
+    pub fn get_begin(&self) -> usize {
+        self.s.map(|s| s.b).unwrap_or(self.a)
+    }
+
+    pub fn get_end(&self) -> usize {
+        self.s.map(|s| s.e).unwrap_or(self.a)
     }
 }
 
@@ -748,7 +775,7 @@ impl CursorSet {
     }
 
     // Returns FALSE if results in no-op
-    pub fn home(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
+    pub fn move_home(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
         if self.max_cursor_pos() > rope.len_chars() {
             error!("buffer shorter than cursor positions. Returning prematurely to avoid crash.");
             return false;
@@ -757,7 +784,7 @@ impl CursorSet {
         let mut res = false;
 
         for c in self.set.iter_mut() {
-            res |= c.home(rope, selecting);
+            res |= c.move_home(rope, selecting);
         };
 
         self.reduce_left();
@@ -766,7 +793,7 @@ impl CursorSet {
     }
 
     // Returns FALSE if results in noop.
-    pub fn end(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
+    pub fn move_end(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
         if self.max_cursor_pos() > rope.len_chars() {
             error!("buffer shorter than cursor positions. Returning prematurely to avoid crash.");
             return false;
@@ -775,7 +802,7 @@ impl CursorSet {
         let mut res = false;
 
         for c in self.set.iter_mut() {
-            res |= c.end(rope, selecting);
+            res |= c.move_end(rope, selecting);
         };
 
         // reducing - we just pick ones that are furthest left
@@ -1060,9 +1087,56 @@ impl CursorSet {
         if self.get_cursor_status_for_char(cursor.a) == CursorStatus::None {
             self.set.push(cursor);
             self.set.sort();
+
+            debug_assert!(self.check_invariants());
             true
         } else {
             false
         }
+    }
+
+    pub fn check_invariants(&self) -> bool {
+        // at least one
+        if self.set.is_empty() {
+            error!("cursor_set empty");
+            return false;
+        }
+
+        for c in &self.set {
+            if !c.check_invariant() {
+                return false;
+            }
+        }
+
+
+        // sorted, and anchors on the same side
+        // TODO change to is_sorted once stabilized
+        for idx in 1..self.set.len() {
+            if self.set[idx - 1].cmp(&self.set[idx]) != Ordering::Less {
+                error!("cursor[{}] = {:?} >= {:?} = cursor[{}]", idx - 1, self.set[idx-1], self.set[idx], idx);
+                return false;
+            }
+        }
+
+        let mut anchor_left = false;
+        let mut anchor_right = false;
+        for c in &self.set {
+            anchor_left |= c.anchor_left();
+            anchor_right |= c.anchor_right();
+        }
+        if anchor_left && anchor_right {
+            error!("invariant \"anchors on the same side\" failed.");
+            return false;
+        }
+
+        // at this point I know they are sorted and anchor-aligned. All I need to do is to check if begin is after previous end.
+        for idx in 1..self.set.len() {
+            if self.set[idx - 1].get_end() > self.set[idx].get_begin() {
+                error!("cursor[{}].get_end() = {} > {} = cursor[{}].get_begin()", idx - 1, self.set[idx-1].get_end(), self.set[idx].get_begin(), idx);
+                return false;
+            }
+        }
+
+        true
     }
 }

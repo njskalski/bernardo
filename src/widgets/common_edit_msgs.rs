@@ -6,6 +6,10 @@ use crate::primitives::arrow::Arrow;
 use crate::primitives::cursor_set::CursorSet;
 use crate::text::buffer::Buffer;
 
+/*
+So I don't have to reimplement basic edit properties for multiple widgets, I moved all (cursor, content) related code here.
+ */
+
 // this is a completely arbitrary number against which I compare Page length, to avoid under/overflow while casting to isize safely.
 const PAGE_HEIGHT_LIMIT: usize = 2000;
 
@@ -126,9 +130,9 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
 
 // Returns FALSE if the command results in no-op.
 pub fn apply_cem(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, page_height: usize) -> bool {
-    match cem {
+    let res = match cem {
         CommonEditMsg::Char(char) => {
-            for c in cs.iter() {
+            for c in cs.iter().rev() {
                 if cfg!(debug_assertions) {
                     if c.a > rope.len_chars() {
                         error!("cursor beyond length of rope: {} > {}", c.a, rope.len_chars());
@@ -156,10 +160,10 @@ pub fn apply_cem(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, 
             cs.backspace(rope)
         }
         CommonEditMsg::LineBegin { selecting } => {
-            cs.home(rope, selecting)
+            cs.move_home(rope, selecting)
         }
         CommonEditMsg::LineEnd { selecting } => {
-            cs.end(rope, selecting)
+            cs.move_end(rope, selecting)
         }
         CommonEditMsg::WordBegin { selecting } => {
             cs.word_begin_default(rope, selecting)
@@ -201,7 +205,11 @@ pub fn apply_cem(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, 
             debug!("unhandled common edit msg {:?}", e);
             false
         }
-    }
+    };
+
+    debug_assert!(cs.check_invariants());
+
+    res
 }
 
 // This maps a cme into a direction that the cursor has (probably) moved. It's used to update
