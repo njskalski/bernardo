@@ -10,7 +10,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::widget::{get_new_widget_id, WID, WidgetAction};
-use crate::widgets::common_edit_msgs::key_to_edit_msg;
+use crate::primitives::common_edit_msgs::key_to_edit_msg;
 use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};

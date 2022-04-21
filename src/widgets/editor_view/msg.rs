@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use crate::AnyMsg;
 use crate::fs::file_front::FileFront;
 use crate::primitives::cursor_set::Cursor;
-use crate::widgets::common_edit_msgs::CommonEditMsg;
+use crate::primitives::common_edit_msgs::CommonEditMsg;
 
 #[derive(Clone, Debug)]
 pub enum EditorViewMsg {

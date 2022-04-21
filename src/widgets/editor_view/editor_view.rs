@@ -25,7 +25,7 @@ use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
-use crate::widgets::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};
+use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};
 use crate::widgets::editor_view::editor_view::EditorState::DroppingCursor;
 use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::fuzzy_search::fsf_provider::FsfProvider;

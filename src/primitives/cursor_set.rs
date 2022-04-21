@@ -20,7 +20,7 @@
 // TODO decide: introduce a special cursor to derive from while in "dropping_cursor" mode?
 
 // INVARIANTS:
-// - non-empty
+// - non-empty //TODO I forgot why. Either remove this requirement or write down why.
 // - cursors are distinct
 // - cursors have their anchors either on begin or on end, and they all have the anchor on the same side
 // - cursors DO NOT OVERLAP

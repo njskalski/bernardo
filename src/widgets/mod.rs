@@ -6,7 +6,6 @@ pub mod no_editor;
 pub mod with_scroll;
 pub mod main_view;
 pub mod editor_view;
-pub mod common_edit_msgs;
 pub mod list_widget;
 pub mod fuzzy_search;
 pub mod generic_dialog;

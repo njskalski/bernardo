@@ -8,7 +8,7 @@
 // it points to a character that will be replaced/preceded, not succeeded
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use std::borrow::Borrow;
 
     use ropey::Rope;
@@ -16,7 +16,7 @@ mod tests {
     // use serde::de::Unexpected::Str;
     use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
 
-    fn text_to_buffer_cursors(s: &str) -> (Rope, CursorSet) {
+    pub fn text_to_buffer_cursors(s: &str) -> (Rope, CursorSet) {
         let mut cursors: Vec<usize> = vec![];
         let mut text = String::new();
 
@@ -39,7 +39,7 @@ mod tests {
     }
 
     // cursors start with [ or # and end with ] or #, having exactly one #, and exactly one of [ or ]
-    fn text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSet) {
+    pub fn text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSet) {
         let text = String::new();
 
         let mut cursors: Vec<Cursor> = vec![];
@@ -82,7 +82,7 @@ mod tests {
         (Rope::from(text), CursorSet::new(cursors))
     }
 
-    fn buffer_cursors_to_text<T: Borrow<Rope>>(b: T, cs: &CursorSet) -> String {
+    pub fn buffer_cursors_to_text<T: Borrow<Rope>>(b: T, cs: &CursorSet) -> String {
         let mut output = String::new();
         let mut anchors: Vec<usize> = cs.set().iter().map(|c| c.a).collect();
         anchors.sort();

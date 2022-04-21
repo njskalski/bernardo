@@ -19,3 +19,5 @@ pub mod alphabet;
 
 pub mod is_default;
 pub mod tmtheme;
+pub mod common_edit_msgs;
+mod common_edit_msgs_tests;
