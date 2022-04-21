@@ -346,6 +346,16 @@ impl EditorView {
 
         theme.cursor_background(self.cursors.get_cursor_status_for_char(char_idx))
     }
+
+    fn height(&self) -> u16 {
+        match self.last_size {
+            Some(xy) => xy.y,
+            None => {
+                error!("requested height before layout, using {} as page_height instead", MIN_EDITOR_SIZE.y);
+                MIN_EDITOR_SIZE.y
+            }
+        }
+    }
 }
 
 impl Widget for EditorView {
@@ -414,16 +424,9 @@ impl Widget for EditorView {
                 warn!("expecetd EditorViewMsg, got {:?}", msg);
                 None
             }
-            Some(msg) => match msg {
-                EditorViewMsg::EditMsg(cem) => {
-                    let page_height = match self.last_size {
-                        Some(xy) => xy.y,
-                        None => {
-                            error!("received {:?} before retrieving last_size, using {} as page_height instead", cem, MIN_EDITOR_SIZE.y);
-                            MIN_EDITOR_SIZE.y
-                        }
-                    };
-
+            Some(msg) => match (&self.state, msg) {
+                (&EditorState::Editing, EditorViewMsg::EditMsg(cem)) => {
+                    let page_height = self.height();
                     // page_height as usize is safe, since page_height is u16 and usize is larger.
                     let _noop = apply_cem(*cem, &mut self.cursors, &mut self.buffer, page_height as usize);
 
@@ -434,31 +437,31 @@ impl Widget for EditorView {
 
                     None
                 }
-                EditorViewMsg::SaveAs |
-                EditorViewMsg::Save => {
+                (_, EditorViewMsg::SaveAs) |
+                (_, EditorViewMsg::Save) => {
                     self.open_save_as_dialog();
                     None
                 }
-                EditorViewMsg::OnSaveAsCancel => {
+                (_, EditorViewMsg::OnSaveAsCancel) => {
                     self.save_file_dialog = None;
                     None
                 }
-                EditorViewMsg::OnSaveAsHit { ff } => {
+                (_, EditorViewMsg::OnSaveAsHit { ff }) => {
                     ff.overwrite_with(&self.buffer);
                     // TODO handle errors
                     self.save_file_dialog = None;
                     None
                 }
-                EditorViewMsg::ToCursorDropMode => {
+                (&EditorState::Editing, EditorViewMsg::ToCursorDropMode) => {
                     self.cursors.simplify();
                     self.enter_dropping_cursor_mode();
                     None
                 }
-                EditorViewMsg::ToEditMode => {
+                (&EditorState::DroppingCursor { .. }, EditorViewMsg::ToEditMode) => {
                     self.enter_editing_mode();
                     None
                 }
-                EditorViewMsg::DropCursor { cursor } => {
+                (&EditorState::DroppingCursor { special_cursor }, EditorViewMsg::DropCursor { cursor }) => {
                     if !self.cursors.are_simple() {
                         warn!("Cursors were supposed to be simple at this point. Fixing, but there was error.");
                         self.cursors.simplify();
@@ -470,7 +473,18 @@ impl Widget for EditorView {
 
                     None
                 }
-                EditorViewMsg::DropCursorMove { cem } => {}
+                (&EditorState::DroppingCursor { mut special_cursor }, EditorViewMsg::DropCursorMove { cem }) => {
+                    let mut set = CursorSet::singleton(special_cursor);
+                    // TODO make sure this had no changing effect?
+                    let height = self.height();
+                    apply_cem(*cem, &mut set, &mut self.buffer, height as usize);
+                    self.state = EditorState::DroppingCursor { special_cursor: *set.as_single().unwrap() };
+                    None
+                }
+                (editor_state, msg) => {
+                    error!("Unhandled combination of editor state {:?} and msg {:?}", editor_state, msg);
+                    None
+                }
             }
         };
     }

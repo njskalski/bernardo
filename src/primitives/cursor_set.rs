@@ -358,7 +358,7 @@ impl Cursor {
     This one IGNORES preferred column
      */
     pub fn is_simple(&self) -> bool {
-        self.s.is_some()
+        self.s.is_none()
     }
 }
 
@@ -416,6 +416,15 @@ impl CursorSet {
     #[cfg(test)]
     pub fn new(set: Vec<Cursor>) -> Self {
         CursorSet { set }
+    }
+
+    /*
+    This is singleton in set theory sense, not "design pattern"
+     */
+    pub fn singleton(cursor: Cursor) -> Self {
+        CursorSet {
+            set: vec![cursor]
+        }
     }
 
     pub fn set(&self) -> &Vec<Cursor> {
