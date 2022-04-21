@@ -91,9 +91,16 @@ impl MainView {
 
     fn get_hover_rect(max_size: XY) -> Rect {
         let margin = max_size / 10;
-        Rect::new(margin,
-                  max_size - margin * 2,
-        )
+        let res = Rect::new(margin,
+                            max_size - margin * 2,
+        );
+
+        //edge case when... wtf
+        if !(res.lower_right() >= max_size) {
+            res.size.cut(SizeConstraint::simple(max_size));
+        }
+
+        res
     }
 
     fn internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {

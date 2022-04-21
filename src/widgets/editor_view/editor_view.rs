@@ -386,6 +386,15 @@ impl Widget for EditorView {
             (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Esc => {
                 EditorViewMsg::ToEditMode.someboxed()
             }
+            (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Enter => {
+                debug_assert!(special_cursor.is_simple());
+
+                if self.cursors.get_cursor_status_for_char(special_cursor.a) != CursorStatus::UnderCursor {
+                    EditorViewMsg::DropCursor { cursor: special_cursor }.someboxed()
+                } else {
+                    None
+                }
+            }
             _ => None,
         };
     }
@@ -425,10 +434,6 @@ impl Widget for EditorView {
                     self.save_file_dialog = None;
                     None
                 }
-                // _ => {
-                //     warn!("unhandled message {:?}", msg);
-                //     None
-                // }
                 EditorViewMsg::OnSaveAsHit { ff } => {
                     ff.overwrite_with(&self.buffer);
                     // TODO handle errors
@@ -436,6 +441,7 @@ impl Widget for EditorView {
                     None
                 }
                 EditorViewMsg::ToCursorDropMode => {
+                    self.cursors.simplify();
                     self.enter_dropping_cursor_mode();
                     None
                 }
@@ -443,21 +449,20 @@ impl Widget for EditorView {
                     self.enter_editing_mode();
                     None
                 }
+                EditorViewMsg::DropCursor { cursor } => {
+                    if !self.cursors.are_simple() {
+                        warn!("Cursors were supposed to be simple at this point. Fixing, but there was error.");
+                        self.cursors.simplify();
+                    }
+
+                    if !self.cursors.add_cursor(*cursor) {
+                        warn!("Failed to add cursor {:?} to set", cursor);
+                    }
+
+                    None
+                }
             }
         };
-    }
-
-    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        self.internal_render(theme, focused && !self.has_dialog(), output);
-
-        if let Some(sd) = self.save_file_dialog.as_ref() {
-            let rect = EditorView::get_hover_rect(output.size_constraint().hint().size);
-            sd.render(theme, focused, &mut SubOutput::new(output, rect));
-        }
-    }
-
-    fn anchor(&self) -> XY {
-        self.anchor
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
@@ -474,5 +479,18 @@ impl Widget for EditorView {
         }
 
         None
+    }
+
+    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        self.internal_render(theme, focused && !self.has_dialog(), output);
+
+        if let Some(sd) = self.save_file_dialog.as_ref() {
+            let rect = EditorView::get_hover_rect(output.size_constraint().hint().size);
+            sd.render(theme, focused, &mut SubOutput::new(output, rect));
+        }
+    }
+
+    fn anchor(&self) -> XY {
+        self.anchor
     }
 }

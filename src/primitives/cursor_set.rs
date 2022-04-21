@@ -22,6 +22,7 @@
 // INVARIANTS:
 // - non-empty
 
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::slice::Iter;
 
@@ -62,6 +63,20 @@ impl Selection {
 
     pub fn within(self, char_idx: usize) -> bool {
         char_idx >= self.b && char_idx < self.e
+    }
+}
+
+impl PartialOrd<Self> for Selection {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(Ord::cmp(self, other))
+    }
+}
+
+impl Ord for Selection {
+    fn cmp(&self, other: &Self) -> Ordering {
+        Ord::cmp(&self.b, &other.b).then(
+            Ord::cmp(&self.e, &other.e)
+        )
     }
 }
 
@@ -319,6 +334,47 @@ impl Cursor {
         debug_assert!(old_pos <= self.a);
 
         old_pos != self.a
+    }
+
+    /*
+    Drops selection and preferred column.
+     */
+    pub fn simplify(&mut self) -> bool {
+        let mut res = false;
+        if self.preferred_column.is_some() {
+            self.preferred_column = None;
+            res = true;
+        }
+
+        if self.s.is_some() {
+            self.s = None;
+            res = true;
+        }
+
+        res
+    }
+
+    /*
+    This one IGNORES preferred column
+     */
+    pub fn is_simple(&self) -> bool {
+        self.s.is_some()
+    }
+}
+
+impl PartialOrd<Self> for Cursor {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(Ord::cmp(self, other))
+    }
+}
+
+impl Ord for Cursor {
+    fn cmp(&self, other: &Self) -> Ordering {
+        Ord::cmp(&self.a, &other.a).then(
+            Ord::cmp(&self.s, &other.s).then(
+                Ord::cmp(&self.preferred_column, &other.preferred_column)
+            )
+        )
     }
 }
 
@@ -911,7 +967,7 @@ impl CursorSet {
                 _ => {}
             }
         }
-        
+
         debug_assert!(!self.set.is_empty());
     }
 
@@ -962,5 +1018,42 @@ impl CursorSet {
                 }
             },
         )
+    }
+
+    /*
+    Drops selection and preferred column, used while jumping to "dropping cursor mode"
+     */
+    pub fn simplify(&mut self) -> bool {
+        let mut res = false;
+        for c in &mut self.set {
+            res |= c.simplify();
+        }
+        res
+    }
+
+    /*
+    Considers only selection, ignores preferred column.
+     */
+    pub fn are_simple(&self) -> bool {
+        for c in &self.set {
+            if !c.is_simple() {
+                return false;
+            }
+        }
+        true
+    }
+
+    /*
+    Adds cursor, returns true if such cursor did not exist.
+     */
+    pub fn add_cursor(&mut self, cursor: Cursor) -> bool {
+        debug_assert!(self.are_simple());
+        if self.get_cursor_status_for_char(cursor.a) == CursorStatus::None {
+            self.set.push(cursor);
+            self.set.sort();
+            true
+        } else {
+            false
+        }
     }
 }
