@@ -13,15 +13,26 @@ mod tests {
     #[test]
     fn single_cursor_write() {
         assert_eq!(text_to_text("ab#ba", CommonEditMsg::Char('c')), "abc#ba");
+        assert_eq!(text_to_text("#abba", CommonEditMsg::Char('c')), "c#abba");
+        assert_eq!(text_to_text("abba#", CommonEditMsg::Char('c')), "abbac#");
     }
 
     #[test]
     fn single_cursor_backspace() {
         assert_eq!(text_to_text("ab#ba", CommonEditMsg::Backspace), "a#ba");
+        assert_eq!(text_to_text("#abba", CommonEditMsg::Backspace), "#abba");
+        assert_eq!(text_to_text("abba#", CommonEditMsg::Backspace), "abb#");
     }
 
     #[test]
     fn single_cursor_delete() {
         assert_eq!(text_to_text("ab#da", CommonEditMsg::Delete), "ab#a");
+        assert_eq!(text_to_text("abda#", CommonEditMsg::Delete), "abda#");
+        assert_eq!(text_to_text("#abda", CommonEditMsg::Delete), "#bda");
+    }
+
+    #[test]
+    fn multi_cursor_write() {
+        assert_eq!(text_to_text("abc#abc#", CommonEditMsg::Char('d')), "abcd#abcd#");
     }
 }

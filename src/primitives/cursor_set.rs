@@ -123,6 +123,11 @@ impl Cursor {
         }
     }
 
+    pub fn advance_and_clear(&mut self, advance_by: usize) {
+        self.a += advance_by;
+        self.clear_both();
+    }
+
     // Updates selection, had it changed.
     // old_pos is one of selection ends.
     // new_pos is where THAT end is moved.
@@ -456,6 +461,14 @@ impl CursorSet {
 
     pub fn set(&self) -> &Vec<Cursor> {
         &self.set
+    }
+
+    // This is supposed to be called after insert
+    pub fn advance_and_clear_all(&mut self, advance_by: usize) {
+        for cidx in 0..self.set.len() {
+            // TODO overflow
+            self.set[cidx].advance_and_clear(advance_by * (cidx + 1));
+        }
     }
 
     // Returns only element OR None if the set is NOT a singleton.

@@ -141,8 +141,9 @@ pub fn apply_cem(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, 
 
                 rope.insert_char(c.a, char);
             };
-
-            cs.move_right_by(rope, 1, false)
+            cs.advance_and_clear_all(1);
+            debug_assert!(cs.check_invariants());
+            true
         }
         CommonEditMsg::CursorUp { selecting } => {
             cs.move_vertically_by(rope, -1, selecting)
