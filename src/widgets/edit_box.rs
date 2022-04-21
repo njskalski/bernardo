@@ -14,7 +14,7 @@ use crate::primitives::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
-use crate::widgets::common_edit_msgs::{apply_cme, CommonEditMsg, key_to_edit_msg};
+use crate::widgets::common_edit_msgs::{apply_cem, CommonEditMsg, key_to_edit_msg};
 
 const MIN_WIDTH: u16 = 12;
 const MAX_WIDTH: u16 = 80; //completely arbitrary
@@ -200,7 +200,7 @@ impl Widget for EditBoxWidget {
         return match our_msg.unwrap() {
             EditBoxWidgetMsg::Hit => self.event_hit(),
             EditBoxWidgetMsg::CommonEditMsg(cem) => {
-                if apply_cme(*cem, &mut self.cursor_set, &mut self.text, 1) {
+                if apply_cem(*cem, &mut self.cursor_set, &mut self.text, 1) {
                     self.event_changed()
                 } else {
                     None

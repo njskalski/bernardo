@@ -26,6 +26,58 @@ pub enum CommonEditMsg {
     Delete,
 }
 
+impl CommonEditMsg {
+    pub fn is_selecting(&self) -> bool {
+        match self {
+            CommonEditMsg::CursorUp { selecting } => *selecting,
+            CommonEditMsg::CursorDown { selecting } => *selecting,
+            CommonEditMsg::CursorLeft { selecting } => *selecting,
+            CommonEditMsg::CursorRight { selecting } => *selecting,
+            CommonEditMsg::LineBegin { selecting } => *selecting,
+            CommonEditMsg::LineEnd { selecting } => *selecting,
+            CommonEditMsg::WordBegin { selecting } => *selecting,
+            CommonEditMsg::WordEnd { selecting } => *selecting,
+            CommonEditMsg::PageUp { selecting } => *selecting,
+            CommonEditMsg::PageDown { selecting } => *selecting,
+            _ => false,
+        }
+    }
+
+    pub fn without_selection(&self) -> Self {
+        match self {
+            CommonEditMsg::CursorUp { .. } => CommonEditMsg::CursorUp { selecting: false },
+            CommonEditMsg::CursorDown { .. } => CommonEditMsg::CursorDown { selecting: false },
+            CommonEditMsg::CursorLeft { .. } => CommonEditMsg::CursorLeft { selecting: false },
+            CommonEditMsg::CursorRight { .. } => CommonEditMsg::CursorRight { selecting: false },
+            CommonEditMsg::LineBegin { .. } => CommonEditMsg::LineBegin { selecting: false },
+            CommonEditMsg::LineEnd { .. } => CommonEditMsg::LineEnd { selecting: false },
+            CommonEditMsg::WordBegin { .. } => CommonEditMsg::WordBegin { selecting: false },
+            CommonEditMsg::WordEnd { .. } => CommonEditMsg::WordEnd { selecting: false },
+            CommonEditMsg::PageUp { .. } => CommonEditMsg::PageUp { selecting: false },
+            CommonEditMsg::PageDown { .. } => CommonEditMsg::PageDown { selecting: false },
+            x => *x,
+        }
+    }
+
+    pub fn is_editing(&self) -> bool {
+        match self {
+            CommonEditMsg::CursorUp { .. } => false,
+            CommonEditMsg::CursorDown { .. } => false,
+            CommonEditMsg::CursorLeft { .. } => false,
+            CommonEditMsg::CursorRight { .. } => false,
+            CommonEditMsg::LineBegin { .. } => false,
+            CommonEditMsg::LineEnd { .. } => false,
+            CommonEditMsg::WordBegin { .. } => false,
+            CommonEditMsg::WordEnd { .. } => false,
+            CommonEditMsg::PageUp { .. } => false,
+            CommonEditMsg::PageDown { .. } => false,
+            CommonEditMsg::Char(..) => true,
+            CommonEditMsg::Backspace => true,
+            CommonEditMsg::Delete => true,
+        }
+    }
+}
+
 // This is where the mapping of keys to Msgs is
 pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
     match key {
@@ -73,7 +125,7 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
 }
 
 // Returns FALSE if the command results in no-op.
-pub fn apply_cme(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, page_height: usize) -> bool {
+pub fn apply_cem(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, page_height: usize) -> bool {
     match cem {
         CommonEditMsg::Char(char) => {
             for c in cs.iter() {

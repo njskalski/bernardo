@@ -25,7 +25,7 @@ use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
-use crate::widgets::common_edit_msgs::{apply_cme, cme_to_direction, key_to_edit_msg};
+use crate::widgets::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};
 use crate::widgets::editor_view::editor_view::EditorState::DroppingCursor;
 use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::fuzzy_search::fsf_provider::FsfProvider;
@@ -395,6 +395,15 @@ impl Widget for EditorView {
                     None
                 }
             }
+            // TODO change to if let Some() when it's stabilized
+            (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
+                let cem = key_to_edit_msg(key).unwrap();
+                if !cem.is_editing() {
+                    EditorViewMsg::DropCursorMove { cem }.someboxed()
+                } else {
+                    None
+                }
+            }
             _ => None,
         };
     }
@@ -416,7 +425,7 @@ impl Widget for EditorView {
                     };
 
                     // page_height as usize is safe, since page_height is u16 and usize is larger.
-                    let _noop = apply_cme(*cem, &mut self.cursors, &mut self.buffer, page_height as usize);
+                    let _noop = apply_cem(*cem, &mut self.cursors, &mut self.buffer, page_height as usize);
 
                     match cme_to_direction(*cem) {
                         None => {}
@@ -461,6 +470,7 @@ impl Widget for EditorView {
 
                     None
                 }
+                EditorViewMsg::DropCursorMove { cem } => {}
             }
         };
     }

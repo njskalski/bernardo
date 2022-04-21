@@ -18,6 +18,7 @@ pub enum EditorViewMsg {
     ToEditMode,
 
     DropCursor { cursor: Cursor },
+    DropCursorMove { cem: CommonEditMsg },
 }
 
 
