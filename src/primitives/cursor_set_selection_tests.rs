@@ -43,7 +43,7 @@ pub mod tests {
             }
 
             if c == '#' {
-                assert!(other_part.is_none());
+                assert!(other_part.is_none(), "either # or pair : ( and ]");
                 cursors.push(Cursor::new(idx));
                 continue;
             }

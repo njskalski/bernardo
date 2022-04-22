@@ -46,6 +46,6 @@ mod tests {
 
     #[test]
     fn scenario_1_1() {
-        assert_eq!(text_to_text("a#b]\na#b]\na#b]\na#b]\n", CommonEditMsg::Char('x')), "ax#\nax#\nax#\nax#\n");
+        assert_eq!(text_to_text("a[b)\na[b)\na[b)\na[b)\n", CommonEditMsg::Char('x')), "ax#\nax#\nax#\nax#\n");
     }
 }
