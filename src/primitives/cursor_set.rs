@@ -27,7 +27,7 @@
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::slice::Iter;
+use std::slice::{Iter, IterMut};
 
 use log::{error, warn};
 
@@ -123,9 +123,36 @@ impl Cursor {
         }
     }
 
-    pub fn advance_and_clear(&mut self, advance_by: usize) {
-        self.a += advance_by;
-        self.clear_both();
+    pub fn shift_by(&mut self, shift: isize) -> bool {
+        if shift < 0 {
+            let abs_shift = shift.unsigned_abs();
+
+            if self.a < abs_shift || self.s.map(|sel| sel.b < abs_shift).unwrap_or(false) {
+                error!("attempted to substract {} from {:?}, ignoring completely.", shift, self);
+                return false;
+            }
+        }
+
+        self.a = (shift + self.a as isize) as usize;
+        if let Some(sel) = self.s {
+            self.s = Some(Selection::new((shift + sel.b as isize) as usize, (shift + sel.e as isize) as usize));
+        }
+
+        true
+    }
+
+    pub fn advance_and_clear(&mut self, advance_by: isize) -> bool {
+        if advance_by < 0 && self.a < advance_by.unsigned_abs() {
+            error!("attempted to substract {} from {}, using 0 as failsafe.", advance_by, self.a);
+            self.a = 0;
+            self.clear_both();
+            false
+        } else {
+            // TODO overflow?
+            self.a = (advance_by + self.a as isize) as usize;
+            self.clear_both();
+            true
+        }
     }
 
     // Updates selection, had it changed.
@@ -464,12 +491,12 @@ impl CursorSet {
     }
 
     // This is supposed to be called after insert
-    pub fn advance_and_clear_all(&mut self, advance_by: usize) {
-        for cidx in 0..self.set.len() {
-            // TODO overflow
-            self.set[cidx].advance_and_clear(advance_by * (cidx + 1));
-        }
-    }
+    // pub fn advance_and_clear_all(&mut self, advance_by: usize) {
+    //     for cidx in 0..self.set.len() {
+    //         // TODO overflow
+    //         self.set[cidx].advance_and_clear(advance_by * (cidx + 1));
+    //     }
+    // }
 
     // Returns only element OR None if the set is NOT a singleton.
     pub fn as_single(&self) -> Option<&Cursor> {
@@ -785,6 +812,10 @@ impl CursorSet {
 
     pub fn iter(&self) -> Iter<'_, Cursor> {
         self.set.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut<'_, Cursor> {
+        self.set.iter_mut()
     }
 
     // Returns FALSE if results in no-op

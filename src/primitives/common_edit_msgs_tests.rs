@@ -34,7 +34,7 @@ mod tests {
 
     #[test]
     fn multi_cursor_write() {
-        assert_eq!(text_to_text("abc#abc#", CommonEditMsg::Char('d')), "abcd#abcd#");
+        assert_eq!(text_to_text("abc#abc#a", CommonEditMsg::Char('d')), "abcd#abcd#a");
     }
 
     #[test]

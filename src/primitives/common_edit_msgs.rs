@@ -1,4 +1,4 @@
-use log::{debug, error};
+use log::{debug, error, warn};
 
 use crate::io::keys::Key;
 use crate::Keycode;
@@ -132,16 +132,41 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
 pub fn apply_cem(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, page_height: usize) -> bool {
     let res = match cem {
         CommonEditMsg::Char(char) => {
-            for c in cs.iter().rev() {
+            let mut modifier: isize = 0;
+            for c in cs.iter_mut() {
+                c.shift_by(modifier);
+
                 if cfg!(debug_assertions) {
+                    // equal is OK.
                     if c.a > rope.len_chars() {
                         error!("cursor beyond length of rope: {} > {}", c.a, rope.len_chars());
+                        continue;
                     }
                 }
 
                 rope.insert_char(c.a, char);
+                c.shift_by(1);
+                modifier += 1;
+
+                // whatever was selected, it's gone.
+                if let Some(sel) = c.s {
+                    if !rope.remove(sel.b, sel.e) {
+                        warn!("expected to remove non-empty item substring but failed");
+                    }
+
+                    // TODO underflow/overflow
+                    let change = (sel.e - sel.b) as isize;
+                    modifier -= change;
+
+                    if c.anchor_right() {
+                        c.shift_by(change);
+                    }
+                }
+
+                c.clear_both();
+
+                debug_assert!(c.check_invariant());
             };
-            cs.advance_and_clear_all(1);
             debug_assert!(cs.check_invariants());
             true
         }
