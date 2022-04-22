@@ -1,12 +1,8 @@
 use std::fmt::Debug;
-use std::fs::DirEntry;
 use std::{io, iter};
-use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::str::Utf8Error;
-use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
 
 /*
 Reasons for this thing to exist (use cases in order of importance):
@@ -19,7 +15,6 @@ Reasons for this thing to exist (use cases in order of importance):
 use crossbeam_channel::Receiver;
 use ropey::Rope;
 
-use crate::fs::file_front::FileFront;
 use crate::io::loading_state::LoadingState;
 
 pub enum ReadError {

@@ -27,9 +27,7 @@ use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};
 use crate::widgets::editor_view::msg::EditorViewMsg;
-use crate::widgets::fuzzy_search::mock_items_provider::mock::MockItemProvider;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
-
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
 
@@ -324,7 +322,7 @@ impl EditorView {
     }
 
     pub fn enter_editing_mode(&mut self) {
-        debug_assert_matches!(self.state, EditorState::DroppingCursor { special_cursor});
+        debug_assert_matches!(self.state, EditorState::DroppingCursor { .. });
         self.state = EditorState::Editing;
     }
 

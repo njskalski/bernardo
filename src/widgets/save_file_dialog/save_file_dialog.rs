@@ -450,7 +450,7 @@ impl Widget for SaveFileDialogWidget {
                     None
                 })
             }
-            SaveFileDialogMsg::TreeExpanded(node) => {
+            SaveFileDialogMsg::TreeExpanded(..) => {
                 None
             }
             SaveFileDialogMsg::TreeHighlighted(node) => {

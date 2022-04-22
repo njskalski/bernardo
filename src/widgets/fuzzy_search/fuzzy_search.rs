@@ -1,4 +1,4 @@
-use std::cmp::{max, min};
+use std::cmp::min;
 use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;

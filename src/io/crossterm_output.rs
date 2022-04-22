@@ -74,7 +74,7 @@ impl<W: Write> CrosstermOutput<W> {
             );
         }
 
-        let (buffer, other_buffer) = if self.current_buffer == false {
+        let (buffer, _other_buffer) = if self.current_buffer == false {
             (&self.front_buffer, &self.back_buffer)
         } else {
             (&self.back_buffer, &self.front_buffer)
@@ -96,7 +96,7 @@ impl<W: Write> CrosstermOutput<W> {
                 let pos = XY::new(x, y);
 
                 let cell = &buffer[pos];
-                let old_cell = &other_buffer[pos];
+                // let old_cell = &other_buffer[pos];
 
                 if pos != curr_pos {
                     self.stdout.execute(cursor::MoveTo(pos.x, pos.y))?;

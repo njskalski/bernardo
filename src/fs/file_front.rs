@@ -1,4 +1,4 @@
-use std::cell::{BorrowMutError, Ref, RefCell};
+use std::cell::{BorrowMutError, RefCell};
 use std::{fmt, io};
 use std::fmt::{Debug, Formatter};
 use std::path::{Path, PathBuf};
@@ -6,7 +6,6 @@ use std::rc::Rc;
 
 use log::{error, warn};
 use ropey::Rope;
-use crate::AnyMsg;
 use crate::fs::filesystem_front::{ReadError, SomethingToSave};
 use crate::fs::fsfref::FsfRef;
 use crate::io::loading_state::LoadingState;

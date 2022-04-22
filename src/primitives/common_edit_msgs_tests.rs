@@ -1,9 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg};
-    use crate::primitives::cursor_set::CursorSet;
     use crate::primitives::cursor_set_selection_tests::tests::{buffer_cursors_sel_to_text, text_to_buffer_cursors_with_selections};
-    use crate::text::buffer::Buffer;
 
     fn text_to_text(text: &str, cem: CommonEditMsg) -> String {
         let (mut buffer, mut cs) = text_to_buffer_cursors_with_selections(text);
@@ -43,7 +41,7 @@ mod tests {
     fn scenario_1() {
         assert_eq!(text_to_text("#\n#\n#\n#\n", CommonEditMsg::Char('a')), "a#\na#\na#\na#\n");
         assert_eq!(text_to_text("a#\na#\na#\na#\n", CommonEditMsg::Char('b')), "ab#\nab#\nab#\nab#\n");
-        assert_eq!(text_to_text("ab#\nab#\nab#\nab#\n", CommonEditMsg::CursorLeft { selecting: true }), "a#b]\na#b]\na#b]\na#b]\n");
+        assert_eq!(text_to_text("ab#\nab#\nab#\nab#\n", CommonEditMsg::CursorLeft { selecting: true }), "a[b)\na[b)\na[b)\na[b)\n");
     }
 
     #[test]

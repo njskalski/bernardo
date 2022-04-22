@@ -1,13 +1,10 @@
-use std::borrow::Borrow;
 use std::hash::{Hash, Hasher};
-use std::iter;
 use std::ops::Deref;
 use std::path::Path;
 use std::rc::Rc;
 use crate::fs::file_front::FileFront;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::io::loading_state::LoadingState;
-use crate::widgets::fuzzy_search::item_provider::Item;
 
 #[derive(Clone, Debug)]
 pub struct FsfRef(pub Rc<Box<dyn FilesystemFront>>);
@@ -34,7 +31,7 @@ impl FsfRef {
     }
 
     pub fn fuzzy_files_it(&self, query: String, limit: usize, respect_ignores: bool) -> (LoadingState, Box<dyn Iterator<Item=FileFront> + '_>) {
-        let (state, mut it) = self.0.fuzzy_file_paths_it(query, limit, respect_ignores);
+        let (state, it) = self.0.fuzzy_file_paths_it(query, limit, respect_ignores);
         (state, Box::new(it.map(move |path| FileFront::new(self.clone(), path))))
     }
 }

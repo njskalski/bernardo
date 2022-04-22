@@ -1,29 +1,21 @@
-use std::borrow::{Borrow, BorrowMut};
-use std::cell::{BorrowMutError, Ref, RefCell, RefMut};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::{iter, thread};
+use std::cell::RefCell;
+use std::collections::VecDeque;
+use std::fmt::Debug;
 use std::fs::DirEntry;
-use std::hash::BuildHasher;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::{io, iter, thread};
-use std::fmt::{Debug, Formatter};
-use std::io::{empty, Error, Read, Write};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::TryRecvError;
 
-use crossbeam_channel::{Receiver, RecvError, Sender, SendError};
+use crossbeam_channel::{Receiver, Sender};
 use filesystem::{FileSystem, OsFileSystem};
 use log::{debug, error, warn};
 use ropey::Rope;
-use simsearch::SimSearch;
-use crate::fs::file_front::{FileChildrenCache, FileChildrenCacheRef, FileFront};
 
 use crate::fs::filesystem_front::{FilesystemFront, ReadError, SomethingToSave};
 use crate::fs::fsfref::FsfRef;
-use crate::fs::internal_state::{InternalState, WrappedRcPath};
+use crate::fs::internal_state::InternalState;
 use crate::io::loading_state::LoadingState;
-use crate::widgets::fuzzy_search::item_provider::Item;
 
 // TODOs:
 // - add removing items from cache
@@ -204,7 +196,7 @@ impl LocalFilesystem {
                 }
 
                 // if we got here, pipe is not empty. But that doesn't stop me from being paranoid.
-                let (mut what, mut how_deep): (PathBuf, usize) = match pipe.pop_front() {
+                let (what, how_deep): (PathBuf, usize) = match pipe.pop_front() {
                     None => {
                         error!("pipe should not be empty here, but it was!");
                         break 'indexing_loop;
@@ -335,9 +327,9 @@ impl FilesystemFront for LocalFilesystem {
             return (LoadingState::Complete, Box::new(iter::empty()));
         }
 
-        if let Ok(mut is) = self.internal_state.try_borrow_mut() {
+        if let Ok(is) = self.internal_state.try_borrow_mut() {
             if let Some(cache_ref) = is.get_cache(path) {
-                let (mut loading_state, children) = cache_ref.get_children();
+                let (loading_state, children) = cache_ref.get_children();
 
                 if loading_state != LoadingState::InProgress && loading_state != LoadingState::Complete {
                     debug!("requesting refresh of {:?} because it's {:?}", path, loading_state);
@@ -364,7 +356,7 @@ impl FilesystemFront for LocalFilesystem {
     fn tick(&self) {
         let mut is = match self.internal_state.try_borrow_mut() {
             Ok(is) => is,
-            Err(e) => {
+            Err(..) => {
                 error!("tick: failed acquiring fs lock");
                 return;
             }
@@ -380,7 +372,7 @@ impl FilesystemFront for LocalFilesystem {
                     items.reserve(entries.len());
                     for de in entries.iter() {
                         match de.file_type() {
-                            Ok(t) => {
+                            Ok(..) => {
                                 let de_path = is.get_or_create_path(&de.path());
                                 items.push(de_path);
                             }

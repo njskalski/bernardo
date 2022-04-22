@@ -1,7 +1,6 @@
 pub mod mock {
-    use crate::{AnyMsg, MainView};
+    use crate::AnyMsg;
     use crate::primitives::alphabet::mock::ALPHABET;
-    use crate::widgets::editor_view::msg::EditorViewMsg;
     use crate::widgets::fuzzy_search::helpers::is_subsequence;
     use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
     use crate::widgets::main_view::msg::MainViewMsg;
