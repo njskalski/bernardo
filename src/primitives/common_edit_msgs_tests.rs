@@ -5,18 +5,12 @@ mod tests {
     use crate::primitives::cursor_set_selection_tests::tests::{buffer_cursors_sel_to_text, text_to_buffer_cursors_with_selections};
     use crate::text::buffer::Buffer;
 
-    pub fn apply_mut_sel(input: &str, f: fn(&mut CursorSet, &mut dyn Buffer) -> ()) -> String {
-        let (mut bs, mut cs) = text_to_buffer_cursors_with_selections(input);
-        f(&mut cs, &mut bs);
-        buffer_cursors_sel_to_text(&bs, &cs)
-    }
-
     fn text_to_text(text: &str, cem: CommonEditMsg) -> String {
         let (mut buffer, mut cs) = text_to_buffer_cursors_with_selections(text);
         debug_assert!(cs.check_invariants());
         apply_cem(cem, &mut cs, &mut buffer, 4);
         debug_assert!(cs.check_invariants());
-        buffer.to_string()
+        buffer_cursors_sel_to_text(&buffer, &cs)
     }
 
     #[test]
