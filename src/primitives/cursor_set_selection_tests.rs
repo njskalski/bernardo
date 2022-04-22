@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use std::collections::HashSet;
 
     use ropey::Rope;
@@ -9,7 +9,7 @@ mod tests {
 
     // In this variant, a cursor is represented by a pair [ ) or ( ], with [ or ] marking the anchor.
 // No overlaps allowed.
-    fn text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSet) {
+    pub fn text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSet) {
         let mut text = String::new();
         let mut cursors: Vec<Cursor> = vec![];
         let mut other_part: Option<usize> = None;
@@ -56,13 +56,13 @@ mod tests {
         (Rope::from(text), CursorSet::new(cursors))
     }
 
-    fn apply_sel(input: &str, f: fn(&mut CursorSet, &dyn Buffer) -> ()) -> String {
+    pub fn apply_sel(input: &str, f: fn(&mut CursorSet, &dyn Buffer) -> ()) -> String {
         let (bs, mut cs) = text_to_buffer_cursors_with_selections(input);
         f(&mut cs, &bs);
         buffer_cursors_sel_to_text(&bs, &cs)
     }
 
-    fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
+    pub fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
         // first we validate there is no overlaps. I initially wanted to sort beginnings and ends, but
         // since ends are exclusive, the false-positives could appear this way. So I'll just color
         // the vector.

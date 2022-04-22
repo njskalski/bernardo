@@ -26,12 +26,10 @@ use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};
-use crate::widgets::editor_view::editor_view::EditorState::DroppingCursor;
 use crate::widgets::editor_view::msg::EditorViewMsg;
-use crate::widgets::fuzzy_search::fsf_provider::FsfProvider;
-use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
 use crate::widgets::fuzzy_search::mock_items_provider::mock::MockItemProvider;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
+
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
 
@@ -213,7 +211,7 @@ impl EditorView {
                     }
                 }
 
-                let cursor_status = self.cursors.get_cursor_status_for_char(char_idx);
+                // let cursor_status = self.cursors.get_cursor_status_for_char(char_idx);
                 let pos = XY::new(x_offset as u16, line_idx as u16);
 
                 // TODO optimise
@@ -292,7 +290,7 @@ impl EditorView {
         self.buffer.set_file_front(Some(ff.clone()));
 
         // updating the "save as dialog" starting position
-        ff.parent().map(|f| {
+        ff.parent().map(|_f| {
             self.start_path = Some(ff.path_rc().clone())
         }).unwrap_or_else(|| {
             error!("failed setting save_as_dialog starting position - most likely parent is outside fsf root");

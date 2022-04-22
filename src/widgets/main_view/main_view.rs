@@ -1,17 +1,14 @@
 use std::borrow::Borrow;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
-use syntect::html::IncludeBackground::No;
 
 use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget};
-use crate::experiments::filename_to_language::filename_to_language;
 use crate::fs::file_front::FileFront;
 use crate::fs::fsfref::FsfRef;
 use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::DisplayState;
-use crate::layout::dummy_layout::DummyLayout;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
@@ -20,16 +17,12 @@ use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
-use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::widget::{get_new_widget_id, WID};
-use crate::widgets::editor_view::editor_view::EditorView;
-use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::fuzzy_search::fsf_provider::{FileFrontMsg, FsfProvider};
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
 use crate::widgets::main_view::editor_group::EditorGroup;
 use crate::widgets::main_view::msg::MainViewMsg;
-use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 use crate::widgets::with_scroll::WithScroll;

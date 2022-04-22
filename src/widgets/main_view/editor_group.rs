@@ -1,4 +1,3 @@
-use std::io;
 use std::rc::Rc;
 use log::error;
 use crate::primitives::scroll::ScrollDirection;

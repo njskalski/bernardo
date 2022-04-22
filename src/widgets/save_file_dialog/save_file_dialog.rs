@@ -9,7 +9,7 @@ I hope I will discover most of functional constraints while implementing it.
  */
 
 use std::borrow::Borrow;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
@@ -17,7 +17,6 @@ use log::{debug, error, warn};
 use crate::Keycode;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::fs::file_front::{FileFront, FilteredFileFront};
-use crate::fs::filesystem_front::SomethingToSave;
 use crate::fs::fsfref::FsfRef;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;

@@ -1,13 +1,22 @@
 #[cfg(test)]
 mod tests {
     use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg};
-    use crate::primitives::cursor_set_tests::tests::{buffer_cursors_to_text, text_to_buffer_cursors};
+    use crate::primitives::cursor_set::CursorSet;
+    use crate::primitives::cursor_set_selection_tests::tests::{buffer_cursors_sel_to_text, text_to_buffer_cursors_with_selections};
+    use crate::text::buffer::Buffer;
+
+    pub fn apply_mut_sel(input: &str, f: fn(&mut CursorSet, &mut dyn Buffer) -> ()) -> String {
+        let (mut bs, mut cs) = text_to_buffer_cursors_with_selections(input);
+        f(&mut cs, &mut bs);
+        buffer_cursors_sel_to_text(&bs, &cs)
+    }
 
     fn text_to_text(text: &str, cem: CommonEditMsg) -> String {
-        let (mut buffer, mut cursors) = text_to_buffer_cursors(text);
-        debug_assert!(cursors.check_invariants());
-        apply_cem(cem, &mut cursors, &mut buffer, 4);
-        buffer_cursors_to_text(&buffer, &cursors)
+        let (mut buffer, mut cs) = text_to_buffer_cursors_with_selections(text);
+        debug_assert!(cs.check_invariants());
+        apply_cem(cem, &mut cs, &mut buffer, 4);
+        debug_assert!(cs.check_invariants());
+        buffer.to_string()
     }
 
     #[test]
@@ -34,5 +43,17 @@ mod tests {
     #[test]
     fn multi_cursor_write() {
         assert_eq!(text_to_text("abc#abc#", CommonEditMsg::Char('d')), "abcd#abcd#");
+    }
+
+    #[test]
+    fn scenario_1() {
+        assert_eq!(text_to_text("#\n#\n#\n#\n", CommonEditMsg::Char('a')), "a#\na#\na#\na#\n");
+        assert_eq!(text_to_text("a#\na#\na#\na#\n", CommonEditMsg::Char('b')), "ab#\nab#\nab#\nab#\n");
+        assert_eq!(text_to_text("ab#\nab#\nab#\nab#\n", CommonEditMsg::CursorLeft { selecting: true }), "a#b]\na#b]\na#b]\na#b]\n");
+    }
+
+    #[test]
+    fn scenario_1_1() {
+        assert_eq!(text_to_text("a#b]\na#b]\na#b]\na#b]\n", CommonEditMsg::Char('x')), "ax#\nax#\nax#\nax#\n");
     }
 }

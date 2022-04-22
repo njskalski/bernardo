@@ -14,7 +14,7 @@ use std::rc::Rc;
 
 use clap::Parser;
 use crossbeam_channel::select;
-use log::{debug, error, warn};
+use log::{debug, error};
 use termion::raw::IntoRawMode;
 
 use crate::io::crossterm_input::CrosstermInput;
