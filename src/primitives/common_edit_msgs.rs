@@ -132,6 +132,7 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
 pub fn apply_cem(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, page_height: usize) -> bool {
     let res = match cem {
         CommonEditMsg::Char(char) => {
+            let mut res = false;
             let mut modifier: isize = 0;
             for c in cs.iter_mut() {
                 c.shift_by(modifier);
@@ -144,13 +145,20 @@ pub fn apply_cem(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, 
                     }
                 }
 
-                rope.insert_char(c.a, char);
+                if rope.insert_char(c.a, char) {
+                    res |= true;
+                } else {
+                    warn!("expected to insert a character at {}, but failed", c.a);
+                }
+
                 c.shift_by(1);
                 modifier += 1;
 
                 // whatever was selected, it's gone.
                 if let Some(sel) = c.s {
-                    if !rope.remove(sel.b, sel.e) {
+                    if rope.remove(sel.b, sel.e) {
+                        res |= true;
+                    } else {
                         warn!("expected to remove non-empty item substring but failed");
                     }
 
@@ -167,8 +175,9 @@ pub fn apply_cem(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, 
 
                 debug_assert!(c.check_invariant());
             };
+            cs.reduce_right();
             debug_assert!(cs.check_invariants());
-            true
+            res
         }
         CommonEditMsg::CursorUp { selecting } => {
             cs.move_vertically_by(rope, -1, selecting)
@@ -183,7 +192,53 @@ pub fn apply_cem(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, 
             cs.move_right(rope, selecting)
         }
         CommonEditMsg::Backspace => {
-            cs.backspace(rope)
+            let mut res = false;
+            let mut modifier: isize = 0;
+            for c in cs.iter_mut() {
+                c.shift_by(modifier);
+
+                if cfg!(debug_assertions) {
+                    // equal is OK.
+                    if c.a > rope.len_chars() {
+                        error!("cursor beyond length of rope: {} > {}", c.a, rope.len_chars());
+                        continue;
+                    }
+                }
+
+                if let Some(sel) = c.s {
+                    if rope.remove(sel.b, sel.e) {
+                        res |= true;
+                    } else {
+                        warn!("expected to remove non-empty item substring but failed");
+                    }
+
+                    // TODO underflow/overflow
+                    let change = (sel.e - sel.b) as isize;
+                    modifier -= change;
+
+                    if c.anchor_right() {
+                        c.shift_by(change);
+                    }
+                } else {
+                    if c.a == 0 {
+                        continue;
+                    }
+
+                    if rope.remove(c.a - 1, c.a) {
+                        res |= true;
+                    } else {
+                        warn!("expected to remove char but failed");
+                    }
+                    modifier -= 1;
+                    c.shift_by(-1);
+                }
+                c.clear_both();
+                debug_assert!(c.check_invariant());
+            };
+
+            cs.reduce_left();
+            debug_assert!(cs.check_invariants());
+            res
         }
         CommonEditMsg::LineBegin { selecting } => {
             cs.move_home(rope, selecting)
@@ -215,16 +270,50 @@ pub fn apply_cem(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, 
         }
         CommonEditMsg::Delete => {
             let mut res = false;
-            for c in cs.iter() {
+            let mut modifier: isize = 0;
+            for c in cs.iter_mut() {
+                c.shift_by(modifier);
+
                 if cfg!(debug_assertions) {
+                    // equal is OK.
                     if c.a > rope.len_chars() {
                         error!("cursor beyond length of rope: {} > {}", c.a, rope.len_chars());
+                        continue;
                     }
                 }
 
-                res |= rope.remove(c.a, c.a + 1);
+                if let Some(sel) = c.s {
+                    if rope.remove(sel.b, sel.e) {
+                        res |= true;
+                    } else {
+                        warn!("expected to remove non-empty item substring but failed");
+                    }
+
+                    let change = (sel.e - sel.b) as isize;
+                    modifier -= change;
+
+                    if c.anchor_right() {
+                        c.shift_by(change);
+                    }
+                } else {
+                    if c.a == rope.len_chars() {
+                        continue;
+                    }
+
+                    if rope.remove(c.a, c.a + 1) {
+                        res |= true;
+                    } else {
+                        warn!("expected to remove char but failed");
+                    }
+                    modifier -= 1;
+                    // c.shift_by(1);
+                }
+                c.clear_both();
+                debug_assert!(c.check_invariant());
             };
 
+            cs.reduce_left();
+            debug_assert!(cs.check_invariants());
             res
         }
         e => {

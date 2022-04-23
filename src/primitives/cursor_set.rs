@@ -398,7 +398,7 @@ impl Cursor {
 
     pub fn check_invariant(&self) -> bool {
         if let Some(s) = self.s {
-            s.b == self.a || s.e == self.a
+            s.b != s.e && (s.b == self.a || s.e == self.a)
         } else {
             true
         }
@@ -855,38 +855,6 @@ impl CursorSet {
         res
     }
 
-    pub fn backspace(&mut self, rope: &mut dyn Buffer) -> bool {
-        if self.max_cursor_pos() > rope.len_chars() {
-            error!("buffer shorter than cursor positions. Returning prematurely to avoid crash.");
-            return false;
-        }
-
-        let mut res = false;
-
-        // this has to be reverse iterator, otherwise the indices are messed up.
-        for c in self.set.iter_mut().rev() {
-            let (b, e) = match c.s {
-                None => {
-                    if c.a == 0 {
-                        continue;
-                    };
-
-                    (c.a - 1, c.a)
-                }
-                Some(sel) => (sel.b, sel.e),
-            };
-
-            res |= rope.remove(b, e);
-
-            c.clear_both();
-            c.a = b;
-        }
-
-        self.reduce_left();
-
-        res
-    }
-
     // this is a helper function, that moves cursors' .a to begin or end of selection.
     // returns whether operation had any impact on set or not.
     fn normalize_anchor(&mut self, right: bool) -> bool {
@@ -919,7 +887,7 @@ impl CursorSet {
     // When two anchors collide, keeps the one with longer selection.
     // When anchors are different, but selections overlap, I SHORTEN THE EARLIER SELECTION, because
     // I assume there have been a move LEFT with selection on.
-    fn reduce_left(&mut self) {
+    pub fn reduce_left(&mut self) {
         if self.set.len() == 1 {
             return;
         }
@@ -988,7 +956,7 @@ impl CursorSet {
     // When two anchors collide, keeps the one with longer selection.
     // When anchors are different, but selections overlap, I SHORTEN THE LATER SELECTION, because
     // I assume there have been a move RIGHT with selection on.
-    fn reduce_right(&mut self) {
+    pub fn reduce_right(&mut self) {
         if self.set.len() == 1 {
             return;
         }

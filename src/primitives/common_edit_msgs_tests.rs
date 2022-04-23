@@ -42,10 +42,21 @@ mod tests {
         assert_eq!(text_to_text("#\n#\n#\n#\n", CommonEditMsg::Char('a')), "a#\na#\na#\na#\n");
         assert_eq!(text_to_text("a#\na#\na#\na#\n", CommonEditMsg::Char('b')), "ab#\nab#\nab#\nab#\n");
         assert_eq!(text_to_text("ab#\nab#\nab#\nab#\n", CommonEditMsg::CursorLeft { selecting: true }), "a[b)\na[b)\na[b)\na[b)\n");
+        assert_eq!(text_to_text("a[b)\na[b)\na[b)\na[b)\n", CommonEditMsg::Char('x')), "ax#\nax#\nax#\nax#\n");
+        assert_eq!(text_to_text("ax#\nax#\nax#\nax#\n", CommonEditMsg::WordBegin { selecting: true }), "[ax)\n[ax)\n[ax)\n[ax)\n");
+        assert_eq!(text_to_text("[ax)\n[ax)\n[ax)\n[ax)\n", CommonEditMsg::Char('u')), "u#\nu#\nu#\nu#\n");
+        assert_eq!(text_to_text("u#\nu#\nu#\nu#\n", CommonEditMsg::Backspace), "#\n#\n#\n#\n");
+        assert_eq!(text_to_text("#\n#\n#\n#\n", CommonEditMsg::Backspace), "#\n");
     }
 
     #[test]
-    fn scenario_1_1() {
-        assert_eq!(text_to_text("a[b)\na[b)\na[b)\na[b)\n", CommonEditMsg::Char('x')), "ax#\nax#\nax#\nax#\n");
+    fn multi_cursor_backspace() {
+        assert_eq!(text_to_text("#\n#\n#\n#\n", CommonEditMsg::Backspace), "#\n");
+    }
+
+    #[test]
+    fn multi_cursor_delete() {
+        assert_eq!(text_to_text("#ab#ab#ab#ab", CommonEditMsg::Delete), "#b#b#b#b");
+        assert_eq!(text_to_text("#\n#\n#\n#\n", CommonEditMsg::Delete), "#");
     }
 }
