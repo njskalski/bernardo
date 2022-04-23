@@ -382,9 +382,6 @@ impl Widget for EditorView {
             (_, InputEvent::KeyInput(key)) if key.modifiers.ctrl && key.keycode == Keycode::Char('s') => {
                 EditorViewMsg::SaveAs.someboxed()
             }
-            (&EditorState::Editing, InputEvent::KeyInput(key))  if !key.modifiers.ctrl && key_to_edit_msg(key).is_some() => {
-                EditorViewMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
-            }
             // TODO temp
             (&EditorState::Editing, InputEvent::KeyInput(key)) if key.modifiers.ctrl && key.keycode == Keycode::Char('e') => {
                 EditorViewMsg::ToCursorDropMode.someboxed()
@@ -409,6 +406,9 @@ impl Widget for EditorView {
                 } else {
                     None
                 }
+            }
+            (&EditorState::Editing, InputEvent::KeyInput(key))  if key_to_edit_msg(key).is_some() => {
+                EditorViewMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
             }
             _ => None,
         };

@@ -306,7 +306,6 @@ pub fn apply_cem(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, 
                         warn!("expected to remove char but failed");
                     }
                     modifier -= 1;
-                    // c.shift_by(1);
                 }
                 c.clear_both();
                 debug_assert!(c.check_invariant());
