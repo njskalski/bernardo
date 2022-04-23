@@ -105,11 +105,11 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
                     }
                 }
                 Keycode::Enter => {
-                    debug!("mapping Keycode:Enter to Char('\\n')");
+                    // debug!("mapping Keycode:Enter to Char('\\n')");
                     Some(CommonEditMsg::Char('\n'))
                 }
                 Keycode::Space => {
-                    debug!("mapping Keycode:Space to Char(' ')");
+                    // debug!("mapping Keycode:Space to Char(' ')");
                     Some(CommonEditMsg::Char(' '))
                 }
                 Keycode::Backspace => Some(CommonEditMsg::Backspace),
@@ -118,7 +118,7 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
                 Keycode::PageUp => Some(CommonEditMsg::PageUp { selecting: key.modifiers.shift }),
                 Keycode::PageDown => Some(CommonEditMsg::PageDown { selecting: key.modifiers.shift }),
                 Keycode::Tab => {
-                    debug!("mapping Keycode:Tab to Char('\\t')");
+                    // debug!("mapping Keycode:Tab to Char('\\t')");
                     Some(CommonEditMsg::Char('\t'))
                 }
                 Keycode::Delete => Some(CommonEditMsg::Delete),

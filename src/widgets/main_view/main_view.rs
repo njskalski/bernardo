@@ -200,7 +200,7 @@ impl Widget for MainView {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        debug!("main_view.on_input {:?}", input_event);
+        // debug!("main_view.on_input {:?}", input_event);
 
         return match input_event {
             InputEvent::FocusUpdate(focus_update) => {
@@ -214,17 +214,17 @@ impl Widget for MainView {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        debug!("main_view.update {:?}", msg);
+        // debug!("main_view.update {:?}", msg);
 
         if let Some(main_view_msg) = msg.as_msg::<MainViewMsg>() {
             return match main_view_msg {
                 MainViewMsg::FocusUpdateMsg(focus_update) => {
-                    warn!("updating focus");
+                    // warn!("updating focus");
                     let fc = *focus_update;
                     let ds: &mut DisplayState = self.display_state.as_mut().unwrap();
                     let fg = &mut ds.focus_group;
                     let msg = fg.update_focus(fc);
-                    warn!("focus updated {}", msg);
+                    // warn!("focus updated {}", msg);
                     None
                 }
                 MainViewMsg::TreeExpandedFlip { expanded, item } => {

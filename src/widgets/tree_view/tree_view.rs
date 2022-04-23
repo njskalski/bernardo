@@ -242,7 +242,7 @@ impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        debug!("tree_view.on_input {:?}", input_event);
+        // debug!("tree_view.on_input {:?}", input_event);
 
         return match input_event {
             InputEvent::KeyInput(key) => {

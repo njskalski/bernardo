@@ -204,7 +204,7 @@ impl LocalFilesystem {
                     Some((head, how_deep)) => (head, how_deep),
                 };
 
-                debug!("pipe len {}, processing {:?}, depth: {:?}", pipe.len(), &what, how_deep);
+                // debug!("pipe len {}, processing {:?}, depth: {:?}", pipe.len(), &what, how_deep);
 
                 let mut gitignore_found = false;
 
@@ -383,7 +383,7 @@ impl FilesystemFront for LocalFilesystem {
                         }
                     }
 
-                    debug!("ticking on is: {:?}", is);
+                    // debug!("ticking on is: {:?}", is);
 
                     let cache = is.get_or_create_cache(&path);
                     cache.0.try_borrow_mut().map(|mut c| {

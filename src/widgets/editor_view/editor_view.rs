@@ -245,12 +245,14 @@ impl EditorView {
         let x_beyond_last = one_beyond_limit - self.buffer.line_to_char(last_line).unwrap(); //TODO
 
         let one_beyond_last_pos = XY::new(x_beyond_last as u16, last_line as u16);
-        let mut style = default;
-        self.pos_to_cursor(theme, one_beyond_limit).map(|fg| {
-            style = style.with_background(fg);
-        });
 
-        output.print_at(one_beyond_last_pos, style, BEYOND);
+        if one_beyond_last_pos < output.size_constraint().hint().lower_right() {
+            let mut style = default;
+            self.pos_to_cursor(theme, one_beyond_limit).map(|fg| {
+                style = style.with_background(fg);
+            });
+            output.print_at(one_beyond_last_pos, style, BEYOND);
+        }
     }
 
     fn get_hover_rect(max_size: XY) -> Rect {

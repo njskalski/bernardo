@@ -1,3 +1,5 @@
+use log::error;
+use unicode_width::UnicodeWidthStr;
 use crate::io::output::Output;
 use crate::io::style::{TEXT_STYLE_WHITE_ON_BLACK, TextStyle};
 use crate::primitives::rect::Rect;
@@ -23,6 +25,19 @@ impl<'a> SubOutput<'a> {
 
 impl Output for SubOutput<'_> {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
+        let end_pos = pos + (text.width_cjk() as u16, 0);
+
+        if cfg!(debug_assertions) {
+            debug_assert!(pos < self.frame.lower_right() && end_pos <= self.frame.lower_right(),
+                          "drawing outside the sub-output: ({} to {}) at {}",
+                          pos, end_pos, self.frame.lower_right());
+        } else {
+            if !(pos < self.frame.lower_right() && end_pos <= self.frame.lower_right()) {
+                error!("drawing outside the sub-output: ({} to {}) at {}",
+                    pos, end_pos, self.frame.lower_right());
+            }
+        }
+
         // TODO add grapheme cutting
         self.output.print_at(self.frame.pos + pos, style, text)
     }

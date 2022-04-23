@@ -161,10 +161,10 @@ fn main() {
 
         select! {
             recv(input.source()) -> msg => {
-                debug!("processing input: {:?}", msg);
+                // debug!("processing input: {:?}", msg);
                 match msg {
                     Ok(mut ie) => {
-                        debug!("{:?}", ie);
+                        // debug!("msg ie {:?}", ie);
                         match ie {
                             InputEvent::KeyInput(key) if key.as_focus_update().is_some() && key.modifiers.alt => {
                                 ie = InputEvent::FocusUpdate(key.as_focus_update().unwrap());
@@ -183,7 +183,7 @@ fn main() {
                 };
             }
             recv(fsf.tick_recv()) -> msg => {
-                debug!("processing tick: {:?}", msg);
+                // debug!("processing tick: {:?}", msg);
                 msg.map(|_| fsf.tick()).unwrap_or_else(|e| {
                     error!("failed receiving fsf_tick: {}", e);
                 });
