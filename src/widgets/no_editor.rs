@@ -35,15 +35,15 @@ impl Widget for NoEditorWidget {
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         let mut x = 0;
-        if sc.hint().size.x >= NO_EDIT_TEXT.len() as u16 {
-            x = (sc.hint().size.x - NO_EDIT_TEXT.len() as u16) / 2;
+        if sc.visible_hint().size.x >= NO_EDIT_TEXT.len() as u16 {
+            x = (sc.visible_hint().size.x - NO_EDIT_TEXT.len() as u16) / 2;
         };
 
-        let y = sc.hint().size.y / 2;
+        let y = sc.visible_hint().size.y / 2;
 
         self.text_pos = XY::new(x, y);
 
-        sc.hint().size
+        sc.visible_hint().size
     }
 
     fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> { None }

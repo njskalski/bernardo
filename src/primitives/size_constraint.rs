@@ -17,22 +17,22 @@ pub struct SizeConstraint {
     y: Option<u16>,
 
     // this corresponds to actual screen pos and size (visible part).
-    rect: Rect,
+    visible: Rect,
 }
 
 impl Display for SizeConstraint {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let x = match self.x {
-            Some(x) => format!("{} (hint {})", x, self.rect.size.x),
-            None => format!("unlimited (hint {})", self.rect.size.x),
+            Some(x) => format!("{} (hint {})", x, self.visible.size.x),
+            None => format!("unlimited (hint {})", self.visible.size.x),
         };
 
         let y = match self.y {
-            Some(y) => format!("{} (hint {})", y, self.rect.size.y),
-            None => format!("unlimited (hint {})", self.rect.size.y)
+            Some(y) => format!("{} (hint {})", y, self.visible.size.y),
+            None => format!("unlimited (hint {})", self.visible.size.y)
         };
 
-        write!(f, "sc:[{}, {}][off {}]", x, y, self.rect.pos)
+        write!(f, "sc:[{}, {}][off {}]", x, y, self.visible.pos)
     }
 }
 
@@ -41,7 +41,7 @@ impl SizeConstraint {
         SizeConstraint {
             x,
             y,
-            rect,
+            visible: rect,
         }
     }
 
@@ -49,7 +49,7 @@ impl SizeConstraint {
         SizeConstraint {
             x: Some(xy.x),
             y: Some(xy.y),
-            rect: Rect::new(ZERO, xy),
+            visible: Rect::new(ZERO, xy),
         }
     }
 
@@ -64,8 +64,8 @@ impl SizeConstraint {
     // This corresponds to VISIBLE PART of output. It is used for two things:
     // - drawing optimisation
     // - layouting views that want to "fill" the visible part.
-    pub fn hint(&self) -> &Rect {
-        &self.rect
+    pub fn visible_hint(&self) -> &Rect {
+        &self.visible
     }
 
     pub fn bigger_equal_than(&self, xy: XY) -> bool {

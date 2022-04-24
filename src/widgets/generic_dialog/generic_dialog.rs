@@ -172,7 +172,7 @@ impl Widget for GenericDialog {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let size = sc.hint().size;
+        let size = sc.visible_hint().size;
         let wirs = self.internal_layout(size);
 
         let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());

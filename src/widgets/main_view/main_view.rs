@@ -100,7 +100,7 @@ impl MainView {
         let tree_widget = &mut self.tree_widget;
 
         let mut left_column = LeafLayout::new(tree_widget);
-        let mut right_column = LeafLayout::new(self.editors.curr_editor_mut());
+        let mut right_column = LeafLayout::new(self.editors.curr_wrapped_editor_mut());
 
         let mut bg_layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0),
@@ -176,7 +176,7 @@ impl Widget for MainView {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let max_size = sc.hint().size;
+        let max_size = sc.visible_hint().size;
 
         // TODO this lazy relayouting kills resizing on data change.
         // TODO relayouting destroys focus selection.
@@ -320,7 +320,7 @@ impl Widget for MainView {
     }
 
     fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
-        let mut items = vec![&mut self.tree_widget as &mut dyn Widget, self.editors.curr_editor_mut()];
+        let mut items = vec![&mut self.tree_widget as &mut dyn Widget, self.editors.curr_wrapped_editor_mut()];
 
         if self.hover.is_some() {
             match self.hover.as_mut().unwrap() {
@@ -334,7 +334,7 @@ impl Widget for MainView {
     }
 
     fn subwidgets(&self) -> Box<dyn Iterator<Item=&dyn Widget> + '_> where Self: Sized {
-        let mut items = vec![&self.tree_widget as &dyn Widget, self.editors.curr_editor()];
+        let mut items = vec![&self.tree_widget as &dyn Widget, self.editors.curr_wrapped_editor()];
 
         if self.hover.is_some() {
             match self.hover.as_ref().unwrap() {

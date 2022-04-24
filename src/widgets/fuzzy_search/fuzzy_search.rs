@@ -183,10 +183,10 @@ impl Widget for FuzzySearchWidget {
         // This is a reasonable assumption: I never want to display more elements in fuzzy search that
         // can be displayed on a "physical" screen. Even if fuzzy is inside a scroll, the latest position
         // I might be interested in is "lower_right().y".
-        self.last_height_limit = Some(sc.hint().lower_right().y);
+        self.last_height_limit = Some(sc.visible_hint().lower_right().y);
 
         self.edit.layout(sc);
-        self.width = sc.hint().size.x;
+        self.width = sc.visible_hint().size.x;
 
         let items_len = match self.draw_comment {
             DrawComment::None => self.items().count() + 1,
@@ -195,7 +195,7 @@ impl Widget for FuzzySearchWidget {
         };
 
         //TODO
-        XY::new(self.width, min(items_len as u16, sc.hint().lower_right().y))
+        XY::new(self.width, min(items_len as u16, sc.visible_hint().lower_right().y))
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

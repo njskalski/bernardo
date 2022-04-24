@@ -154,7 +154,7 @@ impl Widget for EditBoxWidget {
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         debug_assert!(sc.bigger_equal_than(self.min_size()));
 
-        let x = sc.hint().size.x;
+        let x = sc.visible_hint().size.x;
         self.display_state.width = x;
 
         XY::new(x, 1)

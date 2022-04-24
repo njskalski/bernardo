@@ -222,7 +222,7 @@ impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
         debug_assert!(sc.bigger_equal_than(self.min_size()));
 
         let from_items = self.min_size();
-        let mut res = sc.hint().size;
+        let mut res = sc.visible_hint().size;
 
         if from_items.x > res.x && sc.x().is_none() {
             res.x = from_items.x;

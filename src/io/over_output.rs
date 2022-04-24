@@ -33,10 +33,10 @@ impl<'a> OverOutput<'a> {
 impl Output for OverOutput<'_> {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
         if !self.size_constraint.bigger_equal_than(
-            self.size_constraint.hint().lower_right()
+            self.size_constraint.visible_hint().lower_right()
         ) {
             warn!("hint (visible part) beyond output space. Most likely layouting error. Hint: {}, output: {}",
-                self.size_constraint.hint(),
+                self.size_constraint.visible_hint(),
                 self.size_constraint,
             );
         }
@@ -46,7 +46,7 @@ impl Output for OverOutput<'_> {
             return;
         }
 
-        if pos.y < self.size_constraint.hint().upper_left().y {
+        if pos.y < self.size_constraint.visible_hint().upper_left().y {
             debug!("early exit 1");
             return;
         }
@@ -59,7 +59,7 @@ impl Output for OverOutput<'_> {
 
         let mut x_offset: i32 = 0;
         for grapheme in text.graphemes(true).into_iter() {
-            let x = x_offset + pos.x as i32 - self.size_constraint.hint().upper_left().x as i32;
+            let x = x_offset + pos.x as i32 - self.size_constraint.visible_hint().upper_left().x as i32;
             if x < 0 {
                 continue;
             }
@@ -79,7 +79,7 @@ impl Output for OverOutput<'_> {
                 None => {}
             }
 
-            let y = pos.y - self.size_constraint.hint().upper_left().y; // >= 0, tested above and < u16::MAX since no addition.
+            let y = pos.y - self.size_constraint.visible_hint().upper_left().y; // >= 0, tested above and < u16::MAX since no addition.
             let local_pos = XY::new(x as u16, y);
 
             self.output.print_at(local_pos, style, grapheme);

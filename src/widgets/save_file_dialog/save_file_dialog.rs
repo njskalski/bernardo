@@ -350,7 +350,7 @@ impl Widget for SaveFileDialogWidget {
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         // TODO this entire function is a makeshift and experiment
-        let max_size = sc.hint().size;
+        let max_size = sc.visible_hint().size;
 
         // TODO this lazy relayouting kills resizing on data change.
         // if self.display_state.as_ref().map(|x| x.for_size == max_size) == Some(true) {

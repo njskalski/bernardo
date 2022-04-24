@@ -29,7 +29,7 @@ impl Default for EditorGroup {
 }
 
 impl EditorGroup {
-    pub fn curr_editor(&self) -> &dyn Widget {
+    pub fn curr_wrapped_editor(&self) -> &dyn Widget {
         if self.editors.len() == 0 {
             &self.no_editor
         } else {
@@ -38,11 +38,11 @@ impl EditorGroup {
                 return &self.no_editor;
             }
 
-            self.editors[self.current].internal()
+            &self.editors[self.current]
         }
     }
 
-    pub fn curr_editor_mut(&mut self) -> &mut dyn Widget {
+    pub fn curr_wrapped_editor_mut(&mut self) -> &mut dyn Widget {
         if self.editors.len() == 0 {
             &mut self.no_editor
         } else {
@@ -51,7 +51,7 @@ impl EditorGroup {
                 self.current = 0;
             }
 
-            self.editors[self.current].internal_mut()
+            &mut self.editors[self.current]
         }
     }
 
@@ -60,7 +60,7 @@ impl EditorGroup {
             WithScroll::new(
                 EditorView::new(tree_sitter, fsf),
                 ScrollDirection::Both,
-            )
+            ).with_line_no()
         );
 
         let res = self.editors.len() - 1;
@@ -89,7 +89,8 @@ impl EditorGroup {
                 ).flatten().map(|f| f.path_rc().clone())
             ),
             ScrollDirection::Both,
-        ));
+        ).with_line_no()
+        );
 
         let res = self.editors.len() - 1;
 

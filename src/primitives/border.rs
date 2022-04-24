@@ -38,7 +38,7 @@ impl BorderStyle {
 
 
 fn draw_full_rect(style: TextStyle, border_style: &BorderStyle, output: &mut dyn Output) {
-    let size = output.size_constraint().hint().size;
+    let size = output.size_constraint().visible_hint().size;
     if size > XY::new(1, 1) {
         output.print_at(ZERO,
                         style,

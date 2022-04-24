@@ -26,6 +26,9 @@ pub trait Widget {
     fn min_size(&self) -> XY;
 
     // This is guaranteed to be called before render.
+    // There is an invariant that I encourage you to keep, that .layout DOES NOT use ANY data from
+    // previous .layout call, to make the calls order independent. If display state spills from one frame
+    // to another, an entire new class of errors emerges, that I refuse to handle.
     fn layout(&mut self, sc: SizeConstraint) -> XY;
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.
@@ -72,7 +75,7 @@ pub trait Widget {
     fn get_subwidget(&self, wid: WID) -> Option<&dyn Widget> where Self: Sized {
         for widget in self.subwidgets() {
             if widget.id() == wid {
-                return Some(widget)
+                return Some(widget);
             }
         }
 
@@ -82,7 +85,7 @@ pub trait Widget {
     fn get_subwidget_mut(&mut self, wid: WID) -> Option<&mut dyn Widget> where Self: Sized {
         for widget in self.subwidgets_mut() {
             if widget.id() == wid {
-                return Some(widget)
+                return Some(widget);
             }
         }
 

@@ -71,7 +71,7 @@ fn main() {
     let input = CrosstermInput::new();
     let mut output = CrosstermOutput::new(stdout);
 
-    if output.size_constraint().hint().size == ZERO {
+    if output.size_constraint().visible_hint().size == ZERO {
         //TODO
         return;
     }

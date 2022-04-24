@@ -228,7 +228,7 @@ impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         let from_items = self.size_from_items();
-        let mut res = sc.hint().size;
+        let mut res = sc.visible_hint().size;
 
         if from_items.x > res.x && sc.x().is_none() {
             res.x = from_items.x;
@@ -317,10 +317,10 @@ impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget
 
         for (item_idx, (depth, node)) in self.items().enumerate()
             // skipping lines that cannot be visible, because they are before hint()
-            .skip(output.size_constraint().hint().upper_left().y as usize) {
+            .skip(output.size_constraint().visible_hint().upper_left().y as usize) {
 
             // skipping lines that cannot be visible, because larger than the hint()
-            if item_idx >= output.size_constraint().hint().lower_right().y as usize {
+            if item_idx >= output.size_constraint().visible_hint().lower_right().y as usize {
                 break;
             }
 
@@ -364,7 +364,7 @@ impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget
                 }
 
                 let x = desired_pos_x as u16;
-                if x >= output.size_constraint().hint().lower_right().x {
+                if x >= output.size_constraint().visible_hint().lower_right().x {
                     break;
                 }
 

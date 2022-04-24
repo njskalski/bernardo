@@ -71,8 +71,8 @@ impl BufferState {
     pub fn char_range(&self, output: &mut dyn Output) -> Option<Range<usize>> {
         let rope = &self.text.rope;
 
-        let first_line = output.size_constraint().hint().upper_left().y as usize;
-        let beyond_last_lane = output.size_constraint().hint().lower_right().y as usize + 1;
+        let first_line = output.size_constraint().visible_hint().upper_left().y as usize;
+        let beyond_last_lane = output.size_constraint().visible_hint().lower_right().y as usize + 1;
 
         let first_char_idx = rope.try_line_to_char(first_line).ok()?;
         let beyond_last_char_idx = rope.try_line_to_char(beyond_last_lane).ok()?;

@@ -185,10 +185,10 @@ impl EditorView {
 
         for (line_idx, line) in self.buffer.lines().enumerate()
             // skipping lines that cannot be visible, because they are before hint()
-            .skip(output.size_constraint().hint().upper_left().y as usize)
+            .skip(output.size_constraint().visible_hint().upper_left().y as usize)
         {
             // skipping lines that cannot be visible, because the are after the hint()
-            if line_idx >= output.size_constraint().hint().lower_right().y as usize {
+            if line_idx >= output.size_constraint().visible_hint().lower_right().y as usize {
                 break;
             }
 
@@ -226,9 +226,14 @@ impl EditorView {
                     }
                 }
 
-                self.pos_to_cursor(theme, char_idx).map(|fg| {
-                    style = style.with_background(fg);
+
+                self.pos_to_cursor(theme, char_idx).map(|mut bg| {
+                    if !focused {
+                        bg = bg.half();
+                    }
+                    style = style.with_background(bg);
                 });
+
 
                 if !focused {
                     style.foreground = style.foreground.half();
@@ -246,11 +251,16 @@ impl EditorView {
 
         let one_beyond_last_pos = XY::new(x_beyond_last as u16, last_line as u16);
 
-        if one_beyond_last_pos < output.size_constraint().hint().lower_right() {
+        if one_beyond_last_pos < output.size_constraint().visible_hint().lower_right() {
             let mut style = default;
-            self.pos_to_cursor(theme, one_beyond_limit).map(|fg| {
-                style = style.with_background(fg);
+
+            self.pos_to_cursor(theme, one_beyond_limit).map(|mut bg| {
+                if !focused {
+                    bg = bg.half();
+                }
+                style = style.with_background(bg);
             });
+
             output.print_at(one_beyond_last_pos, style, BEYOND);
         }
     }
@@ -370,7 +380,7 @@ impl Widget for EditorView {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let size = sc.hint().size;
+        let size = sc.visible_hint().size;
         self.last_size = Some(size);
 
         self.internal_layout(size);
@@ -409,7 +419,7 @@ impl Widget for EditorView {
                     None
                 }
             }
-            (&EditorState::Editing, InputEvent::KeyInput(key))  if key_to_edit_msg(key).is_some() => {
+            (&EditorState::Editing, InputEvent::KeyInput(key)) if !key.modifiers.ctrl && key_to_edit_msg(key).is_some() => {
                 EditorViewMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
             }
             _ => None,
@@ -507,7 +517,7 @@ impl Widget for EditorView {
         self.internal_render(theme, focused && !self.has_dialog(), output);
 
         if let Some(sd) = self.save_file_dialog.as_ref() {
-            let rect = EditorView::get_hover_rect(output.size_constraint().hint().size);
+            let rect = EditorView::get_hover_rect(output.size_constraint().visible_hint().size);
             sd.render(theme, focused, &mut SubOutput::new(output, rect));
         }
     }
