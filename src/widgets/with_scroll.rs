@@ -87,7 +87,7 @@ impl<W: Widget> WithScroll<W> {
          */
 
         let lower_right = self.scroll.offset + sc.visible_hint().lower_right();
-        let width = format!("{}", lower_right.y).len() as u16 + 1;
+        let width = format!("{}", lower_right.y).len() as u16 + 2;
         width
     }
 
@@ -105,7 +105,7 @@ impl<W: Widget> WithScroll<W> {
 
         for idx in 0..output.size_constraint().visible_hint().size.y {
             let line_no_base_0 = start_idx + idx;
-            let item = format!("{}", line_no_base_0 + 1);
+            let item = format!("{} ", line_no_base_0 + 1);
             let num_digits = item.len() as u16;
             let offset = margin_width - num_digits;
 

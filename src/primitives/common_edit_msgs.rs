@@ -28,6 +28,11 @@ pub enum CommonEditMsg {
     PageUp { selecting: bool },
     PageDown { selecting: bool },
     Delete,
+
+    Copy,
+    Paste,
+    Undo,
+    Redo,
 }
 
 impl CommonEditMsg {
@@ -78,6 +83,10 @@ impl CommonEditMsg {
             CommonEditMsg::Char(..) => true,
             CommonEditMsg::Backspace => true,
             CommonEditMsg::Delete => true,
+            CommonEditMsg::Copy => false,
+            CommonEditMsg::Paste => true,
+            CommonEditMsg::Undo => true,
+            CommonEditMsg::Redo => true,
         }
     }
 }
@@ -85,8 +94,12 @@ impl CommonEditMsg {
 // This is where the mapping of keys to Msgs is
 pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
     match key {
-        Key { keycode, modifiers: _ } => {
+        Key { keycode, modifiers } => {
             match keycode {
+                Keycode::Char('c') if modifiers.ctrl => Some(CommonEditMsg::Copy),
+                Keycode::Char('v') if modifiers.ctrl => Some(CommonEditMsg::Paste),
+                Keycode::Char('z') if modifiers.ctrl => Some(CommonEditMsg::Undo),
+                Keycode::Char('x') if modifiers.ctrl => Some(CommonEditMsg::Redo),
                 Keycode::Char(c) => Some(CommonEditMsg::Char(c)),
                 Keycode::ArrowUp => Some(CommonEditMsg::CursorUp { selecting: key.modifiers.shift }),
                 Keycode::ArrowDown => Some(CommonEditMsg::CursorDown { selecting: key.modifiers.shift }),
@@ -343,5 +356,9 @@ pub fn cme_to_direction(cme: CommonEditMsg) -> Option<Arrow> {
         CommonEditMsg::PageUp { .. } => Some(Arrow::Up),
         CommonEditMsg::PageDown { .. } => Some(Arrow::Down),
         CommonEditMsg::Delete => None,
+        CommonEditMsg::Copy => None,
+        CommonEditMsg::Paste => Some(Arrow::Right),
+        CommonEditMsg::Undo => None,
+        CommonEditMsg::Redo => None,
     }
 }
