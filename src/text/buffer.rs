@@ -1,10 +1,14 @@
 use std::iter;
+use std::iter::Peekable;
+use std::marker::PhantomData;
+use streaming_iterator::StreamingIterator;
 use crate::tsw::lang_id::LangId;
 
 
 pub trait Buffer {
     fn len_lines(&self) -> usize;
-    fn lines(&self) -> Box<dyn iter::Iterator<Item=String> + '_>;
+
+    fn new_lines(&self) -> LinesIter;
 
     fn is_editable(&self) -> bool;
 
@@ -30,10 +34,56 @@ pub trait Buffer {
     fn try_parse(&mut self, _lang_id: LangId) -> bool { false }
 }
 
+pub struct LinesIter<'a> {
+    line: String,
+    iter: Box<dyn Iterator<Item=char> + 'a>,
+    done: bool,
+}
+
+impl<'a> LinesIter<'a> {
+    pub fn new<T: Iterator<Item=char> + 'a>(iter: T) -> Self {
+        LinesIter {
+            line: String::new(),
+            iter: Box::new(iter),
+            done: false,
+        }
+    }
+}
+
+impl<'a> StreamingIterator for LinesIter<'a> {
+    type Item = String;
+
+    fn advance(&mut self) {
+        self.line.clear();
+
+        loop {
+            if let Some(char) = self.iter.next() {
+                self.line.push(char);
+
+                if char == '\n' {
+                    break;
+                }
+            } else {
+                self.done = true;
+                break;
+            }
+        }
+    }
+
+    fn get(&self) -> Option<&Self::Item> {
+        if self.done && self.line.is_empty() {
+            None
+        } else {
+            Some(&self.line)
+        }
+    }
+}
+
 pub fn buffer_to_string(b: &dyn Buffer) -> String {
     let mut output = String::new();
 
-    for line in b.lines() {
+    let mut line_it = b.new_lines();
+    while let Some(line) = line_it.next() {
         output += line.as_str()
     }
 

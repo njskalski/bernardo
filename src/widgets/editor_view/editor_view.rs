@@ -2,10 +2,12 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use log::{error, warn};
+use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget};
+use crate::experiments::clipboard::ClipboardRef;
 use crate::fs::fsfref::FsfRef;
 use crate::io::sub_output::SubOutput;
 use crate::layout::dummy_layout::DummyLayout;
@@ -80,6 +82,8 @@ pub struct EditorView {
      */
     fsf: FsfRef,
 
+    clipboard: ClipboardRef,
+
     save_file_dialog: Option<SaveFileDialogWidget>,
 
     /*
@@ -95,7 +99,7 @@ pub struct EditorView {
 }
 
 impl EditorView {
-    pub fn new(tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef) -> EditorView {
+    pub fn new(tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> EditorView {
         EditorView {
             wid: get_new_widget_id(),
             cursors: CursorSet::single(),
@@ -104,6 +108,7 @@ impl EditorView {
             anchor: ZERO,
             tree_sitter,
             fsf,
+            clipboard,
             save_file_dialog: None,
             start_path: None,
             state: EditorState::Editing,
@@ -190,10 +195,16 @@ impl EditorView {
         let highlights = self.buffer.highlight(char_range_op);
         let mut highlight_iter = highlights.iter().peekable();
 
-        for (line_idx, line) in self.buffer.lines().enumerate()
-            // skipping lines that cannot be visible, because they are before hint()
-            .skip(output.size_constraint().visible_hint().upper_left().y as usize)
-        {
+        let lines_to_skip = output.size_constraint().visible_hint().upper_left().y as usize;
+
+        let mut lines_it = self.buffer.new_lines().skip(lines_to_skip);
+        // skipping lines that cannot be visible, because they are before hint()
+        let mut line_idx = lines_to_skip;
+
+        // for (line_idx, line) in self.buffer.new_lines().enumerate()
+        //     // skipping lines that cannot be visible, because they are before hint()
+        //     .skip(output.size_constraint().visible_hint().upper_left().y as usize)
+        while let Some(line) = lines_it.next() {
             // skipping lines that cannot be visible, because the are after the hint()
             if line_idx >= output.size_constraint().visible_hint().lower_right().y as usize {
                 break;
@@ -250,6 +261,8 @@ impl EditorView {
 
                 x_offset += tr.width();
             }
+
+            line_idx += 1;
         }
 
         let one_beyond_limit = self.buffer.len_chars();
@@ -465,7 +478,7 @@ impl Widget for EditorView {
                 (&EditorState::Editing, EditorViewMsg::EditMsg(cem)) => {
                     let page_height = self.height();
                     // page_height as usize is safe, since page_height is u16 and usize is larger.
-                    let _noop = apply_cem(*cem, &mut self.cursors, &mut self.buffer, page_height as usize);
+                    let _noop = apply_cem(*cem, &mut self.cursors, &mut self.buffer, page_height as usize, Some(&self.clipboard));
 
                     match cme_to_direction(*cem) {
                         None => {}
@@ -517,7 +530,7 @@ impl Widget for EditorView {
                     let mut set = CursorSet::singleton(special_cursor);
                     // TODO make sure this had no changing effect?
                     let height = self.height();
-                    apply_cem(*cem, &mut set, &mut self.buffer, height as usize);
+                    apply_cem(*cem, &mut set, &mut self.buffer, height as usize, Some(&self.clipboard));
                     self.state = EditorState::DroppingCursor { special_cursor: *set.as_single().unwrap() };
                     None
                 }

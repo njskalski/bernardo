@@ -21,6 +21,7 @@ use crate::io::crossterm_input::CrosstermInput;
 use crate::io::crossterm_output::CrosstermOutput;
 use fs::fsfref::FsfRef;
 use fs::local_filesystem_front::LocalFilesystem;
+use crate::experiments::clipboard::get_me_some_clipboard;
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
@@ -77,7 +78,6 @@ fn main() {
 
     let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
 
-
     let stdout = stdout();
     let stdout = stdout.lock().into_raw_mode().unwrap();
     // let stdin = stdin();
@@ -93,10 +93,10 @@ fn main() {
         return;
     }
 
-
     let fsf: FsfRef = LocalFilesystem::new(PathBuf::from("/home/andrzej/r/rust/bernardo"));
+    let clipboard = get_me_some_clipboard();
 
-    let mut main_view = MainView::new(tree_sitter, fsf.clone());
+    let mut main_view = MainView::new(tree_sitter, fsf.clone(), clipboard);
 
     // let trash = Rc::new("trash".to_string());
 

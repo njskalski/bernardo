@@ -1,4 +1,5 @@
 use log::{debug, error, warn};
+use crate::experiments::clipboard::ClipboardRef;
 
 use crate::io::keys::Key;
 use crate::Keycode;
@@ -141,56 +142,67 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
     }
 }
 
+fn insert_to_rope(cs: &mut CursorSet,
+                  rope: &mut dyn Buffer,
+                  what: &str) -> bool {
+    let mut res = false;
+    let mut modifier: isize = 0;
+    for c in cs.iter_mut() {
+        c.shift_by(modifier);
+
+        if cfg!(debug_assertions) {
+            // equal is OK.
+            if c.a > rope.len_chars() {
+                error!("cursor beyond length of rope: {} > {}", c.a, rope.len_chars());
+                continue;
+            }
+        }
+
+        if rope.insert_block(c.a, what) {
+            res |= true;
+        } else {
+            warn!("expected to insert {} characters at {}, but failed", what.len(), c.a);
+        }
+
+        c.shift_by(what.len() as isize);
+        modifier += what.len() as isize;
+
+        // whatever was selected, it's gone.
+        if let Some(sel) = c.s {
+            if rope.remove(sel.b, sel.e) {
+                res |= true;
+            } else {
+                warn!("expected to remove non-empty item substring but failed");
+            }
+
+            // TODO underflow/overflow
+            let change = (sel.e - sel.b) as isize;
+            modifier -= change;
+
+            if c.anchor_right() {
+                c.shift_by(change);
+            }
+        }
+
+        c.clear_both();
+
+        debug_assert!(c.check_invariant());
+    };
+    cs.reduce_right();
+    debug_assert!(cs.check_invariants());
+    res
+}
+
 // Returns FALSE if the command results in no-op.
-pub fn apply_cem(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, page_height: usize) -> bool {
+pub fn apply_cem(cem: CommonEditMsg,
+                 cs: &mut CursorSet,
+                 rope: &mut dyn Buffer,
+                 page_height: usize,
+                 clipboard: Option<&ClipboardRef>) -> bool {
     let res = match cem {
         CommonEditMsg::Char(char) => {
-            let mut res = false;
-            let mut modifier: isize = 0;
-            for c in cs.iter_mut() {
-                c.shift_by(modifier);
-
-                if cfg!(debug_assertions) {
-                    // equal is OK.
-                    if c.a > rope.len_chars() {
-                        error!("cursor beyond length of rope: {} > {}", c.a, rope.len_chars());
-                        continue;
-                    }
-                }
-
-                if rope.insert_char(c.a, char) {
-                    res |= true;
-                } else {
-                    warn!("expected to insert a character at {}, but failed", c.a);
-                }
-
-                c.shift_by(1);
-                modifier += 1;
-
-                // whatever was selected, it's gone.
-                if let Some(sel) = c.s {
-                    if rope.remove(sel.b, sel.e) {
-                        res |= true;
-                    } else {
-                        warn!("expected to remove non-empty item substring but failed");
-                    }
-
-                    // TODO underflow/overflow
-                    let change = (sel.e - sel.b) as isize;
-                    modifier -= change;
-
-                    if c.anchor_right() {
-                        c.shift_by(change);
-                    }
-                }
-
-                c.clear_both();
-
-                debug_assert!(c.check_invariant());
-            };
-            cs.reduce_right();
-            debug_assert!(cs.check_invariants());
-            res
+            // TODO optimise
+            insert_to_rope(cs, rope, char.to_string().as_str())
         }
         CommonEditMsg::CursorUp { selecting } => {
             cs.move_vertically_by(rope, -1, selecting)
@@ -328,6 +340,16 @@ pub fn apply_cem(cem: CommonEditMsg, cs: &mut CursorSet, rope: &mut dyn Buffer, 
             debug_assert!(cs.check_invariants());
             res
         }
+        // CommonEditMsg::Copy => {
+        //     if cs.set().len() == 1 {
+        //         false
+        //     } else if cs.set().len() > 1 {} else {
+        //         false
+        //     }
+        // }
+        // CommonEditMsg::Paste => {}
+        // CommonEditMsg::Undo => {}
+        // CommonEditMsg::Redo => {}
         e => {
             debug!("unhandled common edit msg {:?}", e);
             false

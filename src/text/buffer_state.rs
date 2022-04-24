@@ -5,13 +5,14 @@ use std::string::String;
 
 use log::{debug, error, warn};
 use ropey::Rope;
+use streaming_iterator::StreamingIterator;
 use tree_sitter::{Point};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::fs::file_front::FileFront;
 use crate::fs::filesystem_front::SomethingToSave;
 use crate::Output;
 
-use crate::text::buffer::Buffer;
+use crate::text::buffer::{Buffer, LinesIter};
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
@@ -163,11 +164,11 @@ impl Buffer for BufferState {
     fn len_lines(&self) -> usize {
         self.text.rope.len_lines()
     }
-    fn lines(&self) -> Box<dyn Iterator<Item=String> + '_> {
-        // TODO this will fail for large files
-        // TODO Hmm, I am also not sure what will happen if a line is between two slices.
-        Box::new(self.text.rope.lines().map(|f| f.to_string()))
+
+    fn new_lines(&self) -> LinesIter {
+        self.text.rope.new_lines()
     }
+
 
     fn is_editable(&self) -> bool {
         true

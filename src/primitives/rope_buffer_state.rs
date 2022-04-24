@@ -2,9 +2,10 @@
 
 use log::error;
 use ropey::Rope;
+use streaming_iterator::StreamingIterator;
 use tree_sitter::Point;
 
-use crate::text::buffer::Buffer;
+use crate::text::buffer::{Buffer, LinesIter};
 use crate::tsw::tree_sitter_wrapper::pack_rope_with_callback;
 
 static EMPTY_SLICE: [u8; 0] = [0; 0];
@@ -14,8 +15,8 @@ impl Buffer for Rope {
         self.len_lines()
     }
 
-    fn lines(&self) -> Box<dyn Iterator<Item=String> + '_> {
-        Box::new(self.lines().map(|f| f.to_string()))
+    fn new_lines(&self) -> LinesIter {
+        LinesIter::new(self.chars())
     }
 
     fn is_editable(&self) -> bool {

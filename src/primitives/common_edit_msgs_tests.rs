@@ -6,7 +6,7 @@ mod tests {
     fn text_to_text(text: &str, cem: CommonEditMsg) -> String {
         let (mut buffer, mut cs) = text_to_buffer_cursors_with_selections(text);
         debug_assert!(cs.check_invariants());
-        apply_cem(cem, &mut cs, &mut buffer, 4);
+        apply_cem(cem, &mut cs, &mut buffer, 4, None);
         debug_assert!(cs.check_invariants());
         buffer_cursors_sel_to_text(&buffer, &cs)
     }

@@ -2,6 +2,7 @@ use std::rc::Rc;
 use log::error;
 use crate::primitives::scroll::ScrollDirection;
 use crate::{FsfRef, TreeSitterWrapper, Widget};
+use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::fs::file_front::FileFront;
 use crate::fs::filesystem_front::ReadError;
@@ -41,10 +42,10 @@ impl EditorGroup {
         self.editors.get_mut(idx)
     }
 
-    pub fn open_empty(&mut self, tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef) -> usize {
+    pub fn open_empty(&mut self, tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> usize {
         self.editors.push(
             WithScroll::new(
-                EditorView::new(tree_sitter, fsf),
+                EditorView::new(tree_sitter, fsf, clipboard),
                 ScrollDirection::Both,
             ).with_line_no()
         );
@@ -55,12 +56,12 @@ impl EditorGroup {
     }
 
     // TODO is it on error escalation path after failed read?
-    pub fn open_file(&mut self, tree_sitter: Rc<TreeSitterWrapper>, ff: FileFront) -> Result<usize, ReadError> {
+    pub fn open_file(&mut self, tree_sitter: Rc<TreeSitterWrapper>, ff: FileFront, clipboard: ClipboardRef) -> Result<usize, ReadError> {
         let file_contents = ff.read_whole_file()?;
         let lang_id_op = filename_to_language(ff.path());
 
         self.editors.push(WithScroll::new(
-            EditorView::new(tree_sitter.clone(), ff.fsf().clone())
+            EditorView::new(tree_sitter.clone(), ff.fsf().clone(), clipboard)
                 .with_buffer(
                     BufferState::new(tree_sitter)
                         .with_text_from_rope(file_contents, lang_id_op)

@@ -5,6 +5,7 @@ use std::rc::Rc;
 use log::{debug, error, warn};
 
 use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget};
+use crate::experiments::clipboard::ClipboardRef;
 use crate::fs::file_front::FileFront;
 use crate::fs::fsfref::FsfRef;
 use crate::io::sub_output::SubOutput;
@@ -50,16 +51,17 @@ pub struct MainView {
     editors: EditorGroup,
     no_editor: NoEditorWidget,
 
+    // Providers
     tree_sitter: Rc<TreeSitterWrapper>,
-
     fsf: FsfRef,
+    clipboard: ClipboardRef,
 
     hover: Option<HoverItem>,
 }
 
 impl MainView {
-    pub fn new(tree_sitter: Rc<TreeSitterWrapper>, fs: FsfRef) -> MainView {
-        let root_node = fs.get_root();
+    pub fn new(tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> MainView {
+        let root_node = fsf.get_root();
         let tree = TreeViewWidget::new(root_node)
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
@@ -81,7 +83,8 @@ impl MainView {
             editors: EditorGroup::default(),
             no_editor: NoEditorWidget::default(),
             tree_sitter,
-            fsf: fs,
+            fsf,
+            clipboard,
             hover: None,
         }
     }
@@ -92,7 +95,7 @@ impl MainView {
     }
 
     fn open_empty_editor_and_focus(&mut self) {
-        let idx = self.editors.open_empty(self.tree_sitter.clone(), self.fsf.clone());
+        let idx = self.editors.open_empty(self.tree_sitter.clone(), self.fsf.clone(), self.clipboard.clone());
         self.display_state.focus = Focus::Editor;
         self.display_state.curr_editor_idx = Some(idx);
     }
@@ -156,7 +159,7 @@ impl MainView {
             self.display_state.curr_editor_idx = Some(idx);
             true
         } else {
-            self.editors.open_file(self.tree_sitter.clone(), ff).map(|idx| {
+            self.editors.open_file(self.tree_sitter.clone(), ff, self.clipboard.clone()).map(|idx| {
                 self.display_state.focus = Focus::Editor;
                 self.display_state.curr_editor_idx = Some(idx);
             }).is_ok()
