@@ -227,9 +227,7 @@ impl Widget for MainView {
                     None
                 }
                 MainViewMsg::TreeSelected { item } => {
-                    if self.open_file(item.clone()) {
-                        // self.set_focus_on_editor();
-                    } else {
+                    if !self.open_file(item.clone()) {
                         error!("failed open_file");
                     }
 
@@ -257,9 +255,20 @@ impl Widget for MainView {
         if let Some(fuzzy_file_msg) = msg.as_msg::<FileFrontMsg>() {
             return match fuzzy_file_msg {
                 FileFrontMsg::Hit(file_front) => {
-                    self.open_file(file_front.clone());
-                    self.hover = None;
-                    None
+                    if file_front.is_file() {
+                        self.open_file(file_front.clone());
+                        self.hover = None;
+                        None
+                    } else if file_front.is_dir() {
+                        if !self.tree_widget.internal_mut().set_path(file_front.fsf(), file_front.path_rc()) {
+                            error!("failed to set path")
+                        }
+                        self.hover = None;
+                        None
+                    } else {
+                        error!("ff {:?} is neither file nor dir!", file_front.path());
+                        None
+                    }
                 }
             };
         }

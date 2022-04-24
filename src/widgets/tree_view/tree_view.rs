@@ -133,18 +133,28 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
         false
     }
 
-    fn size_from_items(&self) -> XY {
-        self.items().fold(ZERO, |old_size, item| {
-            // debug!("adding item (depth {}) {:?}", item.0, item.1);
+    fn size_from_items(&self, sc: SizeConstraint) -> XY {
+        let mut size = ZERO;
 
-            XY::new(
+        for item in self.items() {
+            if size.y == sc.visible_hint().lower_right().y {
+                break;
+            }
+
+            size = XY::new(
                 // depth * 2 + 1 + label_length
-                old_size
+                size
                     .x
                     .max(item.0 * 2 + 1 + item.1.label().width() as u16), // TODO fight overflow here.
-                old_size.y + 1,
-            )
-        })
+                size.y + 1,
+            );
+        }
+
+        if size.x > sc.visible_hint().size.x {
+            size.x = sc.visible_hint().size.x;
+        }
+
+        size
     }
 
     pub fn with_on_flip_expand(self, on_flip_expand: WidgetAction<TreeViewWidget<Key, Item>>) -> Self {
@@ -214,20 +224,11 @@ impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget
     }
 
     fn min_size(&self) -> XY {
-        let mut from_items = self.size_from_items();
-
-        if from_items.x < 5 {
-            from_items.x = 5;
-        };
-        if from_items.y < 1 {
-            from_items.y = 1;
-        };
-
-        from_items
+        XY::new(5, 1) //completely arbitrary
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let from_items = self.size_from_items();
+        let from_items = self.size_from_items(sc);
         let mut res = sc.visible_hint().size;
 
         if from_items.x > res.x && sc.x().is_none() {
