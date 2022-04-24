@@ -3,7 +3,7 @@ use std::ops::Range;
 use std::rc::Rc;
 use std::string::String;
 
-use log::{error, warn};
+use log::{debug, error, warn};
 use ropey::Rope;
 use tree_sitter::{Point};
 use unicode_segmentation::UnicodeSegmentation;
@@ -199,7 +199,7 @@ impl Buffer for BufferState {
 
                 self.text.parsing.as_mut().map_or_else(
                     || {
-                        error!("failed to acquire parse_tuple 1");
+                        debug!("failed to acquire parse_tuple 1");
                     },
                     |r| {
                         r.update_parse_on_insert(&rope_clone, char_idx, char_idx + 1);
@@ -223,7 +223,7 @@ impl Buffer for BufferState {
 
                 self.text.parsing.as_mut().map_or_else(
                     || {
-                        error!("failed to acquire parse_tuple 2");
+                        debug!("failed to acquire parse_tuple 2");
                     },
                     |r| {
                         r.update_parse_on_insert(&rope_clone, char_idx, char_idx + grapheme_len);
@@ -250,7 +250,7 @@ impl Buffer for BufferState {
 
                 self.text.parsing.as_mut().map_or_else(
                     || {
-                        error!("failed to acquire parse_tuple 3");
+                        debug!("failed to acquire parse_tuple 3");
                     },
                     |r| {
                         r.update_parse_on_delete(&rope_clone, char_idx_begin, char_idx_end);

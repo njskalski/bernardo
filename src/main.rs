@@ -51,12 +51,27 @@ struct Args {
     pub verbosity: clap_verbosity_flag::Verbosity,
 }
 
+const debug_params: &'static [(&'static str, log::LevelFilter)] = &[
+    // this is for git ignore
+    ("globset", log::LevelFilter::Error),
+    // I have no clue where it comes from, and I don't care so I suppress it
+    ("mio::poll", log::LevelFilter::Error),
+    // this is for "recursive_treat_views", which is the heart and backbone of Bernardo.
+    ("recursive_treat_views", log::LevelFilter::Error),
+    ("bernardo::widgets::main_view::main_view", log::LevelFilter::Info),
+    ("bernardo::text::buffer_state", log::LevelFilter::Info),
+];
 
 fn main() {
     let args = Args::parse();
-    env_logger::builder()
-        .filter_level(args.verbosity.log_level_filter())
-        .init();
+    let mut logger_builder = env_logger::builder();
+    // global logger setting
+    logger_builder.filter_level(args.verbosity.log_level_filter());
+    // specific logger settings
+    for item in debug_params {
+        logger_builder.filter(Some(item.0), item.1);
+    }
+    logger_builder.init();
 
     let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
 
@@ -97,14 +112,14 @@ fn main() {
         let focused_child_op = view.get_focused_mut();
         let child_desc = format!("{:?}", &focused_child_op);
 
-        debug!("rtv0 {:?}: event {:?}, active_child: {:?}", my_desc, ie, child_desc);
+        debug!(target: "recursive_treat_views", "{:?}: event {:?}, active_child: {:?}", my_desc, ie, child_desc);
 
         // first, dig as deep as possible.
         let (child_have_consumed, message_from_child_op) = match focused_child_op {
             Some(focused_child) => recursive_treat_views(focused_child, ie),
             None => (false, None)
         };
-        debug!("rtv1 {:?}: event {:?}, active_child: {:?}, child_consumed: {}, message_from_child: {:?}",
+        debug!(target: "recursive_treat_views", "{:?}: event {:?}, active_child: {:?}, child_consumed: {}, message_from_child: {:?}",
             my_desc, ie, child_desc, child_have_consumed, &message_from_child_op);
 
         if child_have_consumed {
@@ -113,7 +128,7 @@ fn main() {
                 Some(message_from_child) => {
                     let msg_from_child_text = format!("{:?}", &message_from_child);
                     let my_message_to_parent = view.update(message_from_child);
-                    debug!("rtv3 {:?}: message_from_child: {:?} sent to me, responding {:?} to parent",
+                    debug!(target: "recursive_treat_views", "{:?}: message_from_child: {:?} sent to me, responding {:?} to parent",
                         my_desc, msg_from_child_text, &my_message_to_parent);
                     (true, my_message_to_parent)
                 }
@@ -124,15 +139,15 @@ fn main() {
         // We're here to consume the Input.
         match view.on_input(ie) {
             None => {
-                debug!("rtv4 {:?}: did not consume {:?} either.", my_desc, ie);
+                debug!(target: "recursive_treat_views", "{:?}: did not consume {:?} either.", my_desc, ie);
                 // we did not see this input as useful, unfolding the recursion:
                 // no consume, no message.
                 (false, None)
             }
             Some(internal_message) => {
-                debug!("rtv5 {:?}: consumed {:?} and am pushing {:?} to myself", my_desc, ie, internal_message);
+                debug!(target: "recursive_treat_views", "{:?}: consumed {:?} and am pushing {:?} to myself", my_desc, ie, internal_message);
                 let message_to_parent = view.update(internal_message);
-                debug!("rtv6 {:?}: send {:?} to parent", my_desc, message_to_parent);
+                debug!(target: "recursive_treat_views", "{:?}: send {:?} to parent", my_desc, message_to_parent);
                 // (message_to_parent.is_some(), message_to_parent)
                 (true, message_to_parent)
             }

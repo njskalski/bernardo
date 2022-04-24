@@ -37,6 +37,10 @@ pub enum HoverItem {
 
 pub struct MainView {
     wid: WID,
+    /*
+    I use a simplified "display state" model, not the GenericFocusGroup approach, to see how much effort the Generic one saves.
+    caveat: whenever focusing on editor, make sure to set curr_editor_index as well. It's a temporary solution, so I don't wrap it.
+     */
     display_state: MainViewDisplayState,
 
     // TODO PathBuf -> WrappedRcPath? See profiler.
