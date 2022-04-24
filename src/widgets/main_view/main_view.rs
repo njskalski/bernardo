@@ -82,9 +82,14 @@ impl MainView {
     }
 
     pub fn with_empty_editor(mut self) -> Self {
+        self.open_empty_editor_and_focus();
+        self
+    }
+
+    fn open_empty_editor_and_focus(&mut self) {
         let idx = self.editors.open_empty(self.tree_sitter.clone(), self.fsf.clone());
         self.display_state.focus = Focus::Editor;
-        self
+        self.display_state.curr_editor_idx = Some(idx);
     }
 
     fn get_hover_rect(max_size: XY) -> Rect {
@@ -181,7 +186,7 @@ impl Widget for MainView {
         // debug!("main_view.on_input {:?}", input_event);
 
         return match input_event {
-            InputEvent::FocusUpdate(focus_update) => {
+            InputEvent::FocusUpdate(focus_update) if self.display_state.will_accept_update_focus(focus_update) => {
                 Some(Box::new(MainViewMsg::FocusUpdateMsg(focus_update)))
             }
             InputEvent::KeyInput(key) if key.modifiers.ctrl && key.keycode == Keycode::Char('h') => {

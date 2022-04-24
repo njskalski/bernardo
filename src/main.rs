@@ -79,8 +79,7 @@ fn main() {
 
     let fsf: FsfRef = LocalFilesystem::new(PathBuf::from("/home/andrzej/r/rust/bernardo"));
 
-    let mut main_view = MainView::new(tree_sitter, fsf.clone())
-        .with_empty_editor();
+    let mut main_view = MainView::new(tree_sitter, fsf.clone());
 
     // let trash = Rc::new("trash".to_string());
 
@@ -98,15 +97,15 @@ fn main() {
         let focused_child_op = view.get_focused_mut();
         let child_desc = format!("{:?}", &focused_child_op);
 
-        // warn!("rtv0 {:?}: event {:?}, active_child: {:?}", my_desc, ie, child_desc);
+        debug!("rtv0 {:?}: event {:?}, active_child: {:?}", my_desc, ie, child_desc);
 
         // first, dig as deep as possible.
         let (child_have_consumed, message_from_child_op) = match focused_child_op {
             Some(focused_child) => recursive_treat_views(focused_child, ie),
             None => (false, None)
         };
-        // warn!("rtv1 {:?}: event {:?}, active_child: {:?}, child_consumed: {}, message_from_child: {:?}",
-        //     my_desc, ie, child_desc, child_have_consumed, &message_from_child_op);
+        debug!("rtv1 {:?}: event {:?}, active_child: {:?}, child_consumed: {}, message_from_child: {:?}",
+            my_desc, ie, child_desc, child_have_consumed, &message_from_child_op);
 
         if child_have_consumed {
             return match message_from_child_op {
@@ -114,8 +113,8 @@ fn main() {
                 Some(message_from_child) => {
                     let msg_from_child_text = format!("{:?}", &message_from_child);
                     let my_message_to_parent = view.update(message_from_child);
-                    // debug!("rtv3 {:?}: message_from_child: {:?} sent to me, responding {:?} to parent",
-                    //     my_desc, msg_from_child_text, &my_message_to_parent);
+                    debug!("rtv3 {:?}: message_from_child: {:?} sent to me, responding {:?} to parent",
+                        my_desc, msg_from_child_text, &my_message_to_parent);
                     (true, my_message_to_parent)
                 }
             };
@@ -125,15 +124,15 @@ fn main() {
         // We're here to consume the Input.
         match view.on_input(ie) {
             None => {
-                // debug!("rtv4 {:?}: did not consume {:?} either.", my_desc, ie);
+                debug!("rtv4 {:?}: did not consume {:?} either.", my_desc, ie);
                 // we did not see this input as useful, unfolding the recursion:
                 // no consume, no message.
                 (false, None)
             }
             Some(internal_message) => {
-                // debug!("rtv5 {:?}: consumed {:?} and am pushing {:?} to myself", my_desc, ie, internal_message);
+                debug!("rtv5 {:?}: consumed {:?} and am pushing {:?} to myself", my_desc, ie, internal_message);
                 let message_to_parent = view.update(internal_message);
-                // debug!("rtv6 {:?}: send {:?} to parent", my_desc, message_to_parent);
+                debug!("rtv6 {:?}: send {:?} to parent", my_desc, message_to_parent);
                 // (message_to_parent.is_some(), message_to_parent)
                 (true, message_to_parent)
             }
