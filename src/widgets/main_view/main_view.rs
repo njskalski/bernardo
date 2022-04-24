@@ -18,6 +18,7 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::fuzzy_search::fsf_provider::{FileFrontMsg, FsfProvider};
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
@@ -191,10 +192,13 @@ impl Widget for MainView {
 
         return match input_event {
             InputEvent::FocusUpdate(focus_update) if self.display_state.will_accept_update_focus(focus_update) => {
-                Some(Box::new(MainViewMsg::FocusUpdateMsg(focus_update)))
+                MainViewMsg::FocusUpdateMsg(focus_update).someboxed()
+            }
+            InputEvent::KeyInput(key) if key.modifiers.ctrl && key.keycode == Keycode::Char('n') => {
+                MainViewMsg::OpenNewFile.someboxed()
             }
             InputEvent::KeyInput(key) if key.modifiers.ctrl && key.keycode == Keycode::Char('h') => {
-                Some(Box::new(MainViewMsg::OpenFuzzyFiles))
+                MainViewMsg::OpenFuzzyFiles.someboxed()
             }
             _ => None
         };
@@ -234,6 +238,10 @@ impl Widget for MainView {
                     }
 
                     self.hover = None;
+                    None
+                }
+                MainViewMsg::OpenNewFile => {
+                    self.open_empty_editor_and_focus();
                     None
                 }
             };

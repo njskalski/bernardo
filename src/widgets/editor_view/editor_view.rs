@@ -34,6 +34,13 @@ const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
 const NEWLINE: &'static str = "⏎";
 const BEYOND: &'static str = "⇱";
 
+/*
+TODO:
+- display save error (and write tests)
+- support for files with more than u16 lines
+- I should probably remember "milestones" every several mb of file for big files.
+ */
+
 #[derive(Debug)]
 enum EditorState {
     Editing,
@@ -276,6 +283,17 @@ impl EditorView {
         self.save_file_dialog.is_some()
     }
 
+    /*
+    This attempts to save current file, but in case that's not possible (filename unknown) proceeds to open_save_as_dialog() below
+     */
+    fn save_or_save_as(&mut self) {
+        if let Some(ff) = self.buffer.get_file_front() {
+            ff.overwrite_with(&self.buffer);
+        } else {
+            self.open_save_as_dialog()
+        }
+    }
+
     fn open_save_as_dialog(&mut self) {
         let mut save_file_dialog = SaveFileDialogWidget::new(
             self.fsf.clone(),
@@ -392,6 +410,9 @@ impl Widget for EditorView {
         return match (&self.state, input_event) {
             //TODO refactor the settings
             (_, InputEvent::KeyInput(key)) if key.modifiers.ctrl && key.keycode == Keycode::Char('s') => {
+                EditorViewMsg::Save.someboxed()
+            }
+            (_, InputEvent::KeyInput(key)) if key.modifiers.ctrl && key.keycode == Keycode::Char('d') => {
                 EditorViewMsg::SaveAs.someboxed()
             }
             // TODO temp
@@ -445,9 +466,12 @@ impl Widget for EditorView {
 
                     None
                 }
-                (_, EditorViewMsg::SaveAs) |
-                (_, EditorViewMsg::Save) => {
+                (_, EditorViewMsg::SaveAs) => {
                     self.open_save_as_dialog();
+                    None
+                }
+                (_, EditorViewMsg::Save) => {
+                    self.save_or_save_as();
                     None
                 }
                 (_, EditorViewMsg::OnSaveAsCancel) => {
