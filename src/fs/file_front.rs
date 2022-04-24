@@ -68,12 +68,28 @@ impl Default for FileChildrenCache {
     }
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Hash)]
 pub struct FileFront {
     // TODO I have not decided or forgot what I decided, whether this path is relative to fsf root or not.
     path: Rc<PathBuf>,
     fsf: FsfRef,
 }
+
+impl PartialEq for FileFront {
+    fn eq(&self, other: &Self) -> bool {
+        let same_thing: bool = self.fsf == other.fsf && self.path == other.path;
+
+        if cfg!(debug_assertions) {
+            if self.path.as_ref() == other.path.as_ref() && !same_thing {
+                error!("found duplicate of PathBuf {:?}, which was supposed to be impossible. We have a leak.", self.path.as_path());
+            }
+        }
+
+        same_thing
+    }
+}
+
+impl Eq for FileFront {}
 
 impl FileFront {
     pub fn new(fsf: FsfRef, path: Rc<PathBuf>) -> FileFront {

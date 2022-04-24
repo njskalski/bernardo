@@ -78,4 +78,16 @@ impl EditorGroup {
 
         Ok(res)
     }
+
+    pub fn get_if_open(&self, ff: &FileFront) -> Option<usize> {
+        for (idx, editor) in self.editors.iter().enumerate() {
+            if let Some(cff) = editor.internal().buffer_state().get_file_front() {
+                if cff == ff {
+                    return Some(idx);
+                }
+            }
+        }
+
+        None
+    }
 }

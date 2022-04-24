@@ -382,6 +382,14 @@ impl EditorView {
             }
         }
     }
+
+    pub fn buffer_state(&self) -> &BufferState {
+        &self.buffer
+    }
+
+    pub fn buffer_state_mut(&mut self) -> &mut BufferState {
+        &mut self.buffer
+    }
 }
 
 impl Widget for EditorView {

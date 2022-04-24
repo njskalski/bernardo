@@ -150,10 +150,17 @@ impl MainView {
 
     fn open_file(&mut self, ff: FileFront) -> bool {
         debug!("opening file {:?}", ff.path());
-        self.editors.open_file(self.tree_sitter.clone(), ff).map(|idx| {
+
+        if let Some(idx) = self.editors.get_if_open(&ff) {
             self.display_state.focus = Focus::Editor;
             self.display_state.curr_editor_idx = Some(idx);
-        }).is_ok()
+            true
+        } else {
+            self.editors.open_file(self.tree_sitter.clone(), ff).map(|idx| {
+                self.display_state.focus = Focus::Editor;
+                self.display_state.curr_editor_idx = Some(idx);
+            }).is_ok()
+        }
     }
 
     fn open_fuzzy_search_in_files(&mut self) {
@@ -252,7 +259,6 @@ impl Widget for MainView {
                 FileFrontMsg::Hit(file_front) => {
                     self.open_file(file_front.clone());
                     self.hover = None;
-                    // self.set_focus_on_editor();
                     None
                 }
             };
