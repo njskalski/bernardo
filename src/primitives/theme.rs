@@ -108,7 +108,7 @@ lazy_static!(
     static ref CURSORS_FOREGROUND : Color = ron::from_str("\"#FFC4A3\"").unwrap();
 
     static ref HEADER_BACKGROUND : Color = *HIGHLIGHTED_FOCUSED_BACKGROUND;
-    static ref HEADER_FOREGROUND : Color = ron::from_str("\"#FB4931\"").unwrap();
+    static ref HEADER_FOREGROUND : Color = ron::from_str("\"#AC5894\"").unwrap();
 
     static ref MODE2_BACKGROUND : Color = ron::from_str("\"#122322\"").unwrap();
 );

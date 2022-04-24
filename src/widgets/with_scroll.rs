@@ -4,6 +4,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Widget};
 use crate::io::over_output::OverOutput;
 use crate::io::sub_output::SubOutput;
+use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::{Scroll, ScrollDirection};
 use crate::primitives::theme::Theme;
@@ -86,8 +87,46 @@ impl<W: Widget> WithScroll<W> {
          */
 
         let lower_right = self.scroll.offset + sc.visible_hint().lower_right();
-        let width = format!("{}", lower_right.y).width_cjk() as u16 + 1;
+        let width = format!("{}", lower_right.y).len() as u16 + 1;
         width
+    }
+
+    fn render_line_no(&self, margin_width: u16, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        debug_assert!(self.line_no);
+        let start_idx = self.scroll.offset.y;
+
+        let style = if focused {
+            theme.ui.header
+        } else {
+            theme.ui.header.half()
+        }.with_background(theme.default_text(focused).background);
+
+        // let anchor_row = self.widget.anchor().y;
+
+        for idx in 0..output.size_constraint().visible_hint().size.y {
+            let line_no_base_0 = start_idx + idx;
+            let item = format!("{}", line_no_base_0 + 1);
+            let num_digits = item.len() as u16;
+            let offset = margin_width - num_digits;
+
+            // let style = if line_no_base_0 == anchor_row {
+            //     style.with_background(theme.ui.cursors.background)
+            // } else { style };
+
+            for px in 0..offset {
+                output.print_at(
+                    XY::new(px, idx),
+                    style,
+                    " ",
+                )
+            }
+
+            output.print_at(
+                XY::new(offset, idx),
+                style,
+                &item,
+            );
+        }
     }
 }
 
@@ -133,6 +172,10 @@ impl<W: Widget> Widget for WithScroll<W> {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let (margin_width, new_sc) = self.nested_sc(output.size_constraint());
+
+        if margin_width > 0 {
+            self.render_line_no(margin_width, theme, focused, output);
+        }
 
         // This is narrowing the scope to make margin for line_no
         let mut sub_output: Option<SubOutput> = if self.line_no {

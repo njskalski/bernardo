@@ -19,6 +19,7 @@ impl ScrollDirection {
 }
 
 pub struct Scroll {
+    // TODO we DO need a vertical scroll of usize, 65k is not enough.
     pub offset: XY,
     pub direction: ScrollDirection,
 }

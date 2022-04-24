@@ -25,6 +25,7 @@ hex = "0.4.3"
 syntect = "4.6.0"
 simsearch = "0.2.3"
 ignore = "0.4.18"
+num = "0.4.0"
 
 maplit = "1.0.2"
 lazy_static = "1.4.0"
