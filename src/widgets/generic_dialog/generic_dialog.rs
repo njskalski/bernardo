@@ -10,7 +10,7 @@ use crate::experiments::deref_str::DerefStr;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::keys::Key;
 use crate::io::sub_output::SubOutput;
-use crate::layout::display_state::DisplayState;
+use crate::layout::display_state::GenericDisplayState;
 use crate::layout::frame_layout::FrameLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
@@ -32,7 +32,7 @@ const CANCEL_LABEL: &'static str = "Cancel";
 pub struct GenericDialog {
     wid: WID,
 
-    display_state: Option<DisplayState>,
+    display_state: Option<GenericDisplayState>,
 
     text_widget: TextWidget,
 
@@ -176,7 +176,7 @@ impl Widget for GenericDialog {
         let wirs = self.internal_layout(size);
 
         let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        let mut ds = DisplayState::new(size, wirs);
+        let mut ds = GenericDisplayState::new(size, wirs);
         ds.focus_group.remove_item(self.text_widget.id());
         self.display_state = Some(ds);
 

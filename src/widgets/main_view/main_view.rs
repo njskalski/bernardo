@@ -8,7 +8,7 @@ use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget};
 use crate::fs::file_front::FileFront;
 use crate::fs::fsfref::FsfRef;
 use crate::io::sub_output::SubOutput;
-use crate::layout::display_state::DisplayState;
+use crate::layout::display_state::GenericDisplayState;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
@@ -21,8 +21,10 @@ use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::fuzzy_search::fsf_provider::{FileFrontMsg, FsfProvider};
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
+use crate::widgets::main_view::display_state::{Focus, MainViewDisplayState};
 use crate::widgets::main_view::editor_group::EditorGroup;
 use crate::widgets::main_view::msg::MainViewMsg;
+use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 use crate::widgets::with_scroll::WithScroll;
@@ -35,12 +37,13 @@ pub enum HoverItem {
 
 pub struct MainView {
     wid: WID,
-    display_state: Option<DisplayState>,
+    display_state: MainViewDisplayState,
 
     // TODO PathBuf -> WrappedRcPath? See profiler.
     tree_widget: WithScroll<TreeViewWidget<PathBuf, FileFront>>,
 
     editors: EditorGroup,
+    no_editor: NoEditorWidget,
 
     tree_sitter: Rc<TreeSitterWrapper>,
 
@@ -68,9 +71,10 @@ impl MainView {
 
         MainView {
             wid: get_new_widget_id(),
-            display_state: None,
+            display_state: MainViewDisplayState::default(),
             tree_widget: WithScroll::new(tree, ScrollDirection::Vertical),
             editors: EditorGroup::default(),
+            no_editor: NoEditorWidget::default(),
             tree_sitter,
             fsf: fs,
             hover: None,
@@ -78,7 +82,8 @@ impl MainView {
     }
 
     pub fn with_empty_editor(mut self) -> Self {
-        self.editors.open_empty(self.tree_sitter.clone(), self.fsf.clone(), true);
+        let idx = self.editors.open_empty(self.tree_sitter.clone(), self.fsf.clone());
+        self.display_state.focus = Focus::Editor;
         self
     }
 
@@ -100,7 +105,12 @@ impl MainView {
         let tree_widget = &mut self.tree_widget;
 
         let mut left_column = LeafLayout::new(tree_widget);
-        let mut right_column = LeafLayout::new(self.editors.curr_wrapped_editor_mut());
+        let mut editor_or_not = match self.display_state.curr_editor_idx {
+            None => &mut self.no_editor as &mut dyn Widget,
+            Some(idx) => self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut self.no_editor),
+        };
+
+        let mut right_column = LeafLayout::new(editor_or_not);
 
         let mut bg_layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0),
@@ -130,8 +140,10 @@ impl MainView {
 
     fn open_file(&mut self, ff: FileFront) -> bool {
         debug!("opening file {:?}", ff.path());
-        // TODO show error?
-        self.editors.open_file(self.tree_sitter.clone(), ff, true).is_ok()
+        self.editors.open_file(self.tree_sitter.clone(), ff).map(|idx| {
+            self.display_state.focus = Focus::Editor;
+            self.display_state.curr_editor_idx = Some(idx);
+        }).is_ok()
     }
 
     fn open_fuzzy_search_in_files(&mut self) {
@@ -143,23 +155,6 @@ impl MainView {
             ).with_draw_comment_setting(DrawComment::Highlighted))
         );
     }
-
-    // TODO
-    // fn set_focus_on_editor(&mut self) {
-    //     if let Some(wid) = self.curr_editor().map(|w| w.id()) {
-    //         if let Some(ds) = &mut self.display_state {
-    //             if ds.focus_group.set_focused(wid) {
-    //                 error!("failed to update focus to {}", wid);
-    //             }
-    //         }
-    //     } else {
-    //         if let Some(ds) = &mut self.display_state {
-    //             if ds.focus_group.set_focused(self.no_editor.id()) {
-    //                 error!("failed to update focus to no_editor {}", self.no_editor.id());
-    //             }
-    //         }
-    //     }
-    // }
 }
 
 impl Widget for MainView {
@@ -177,25 +172,8 @@ impl Widget for MainView {
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         let max_size = sc.visible_hint().size;
-
-        // TODO this lazy relayouting kills resizing on data change.
-        // TODO relayouting destroys focus selection.
-
         let res_sizes = self.internal_layout(max_size);
-
-        // debug!("size {}, res_sizes {:?}", max_size, res_sizes);
-
-        // Retention of focus. Not sure if it should be here.
-        let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-
-        self.display_state = Some(DisplayState::new(max_size, res_sizes));
-
-        // re-setting focus.
-        match (focus_op, &mut self.display_state) {
-            (Some(focus), Some(ds)) => { ds.focus_group.set_focused(focus); }
-            _ => {}
-        };
-
+        self.display_state.wirs = res_sizes;
         max_size
     }
 
@@ -219,12 +197,10 @@ impl Widget for MainView {
         if let Some(main_view_msg) = msg.as_msg::<MainViewMsg>() {
             return match main_view_msg {
                 MainViewMsg::FocusUpdateMsg(focus_update) => {
-                    // warn!("updating focus");
-                    let fc = *focus_update;
-                    let ds: &mut DisplayState = self.display_state.as_mut().unwrap();
-                    let fg = &mut ds.focus_group;
-                    let msg = fg.update_focus(fc);
-                    // warn!("focus updated {}", msg);
+                    if !self.display_state.update_focus(*focus_update) {
+                        error!("failed to accept focus update")
+                    }
+
                     None
                 }
                 MainViewMsg::TreeExpandedFlip { expanded, item } => {
@@ -276,8 +252,16 @@ impl Widget for MainView {
                 HoverItem::FuzzySearch(fuzzy) => Some(fuzzy),
             };
         } else {
-            let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-            wid_op.map(move |wid| self.get_subwidget(wid)).flatten()
+            match self.display_state.focus {
+                Focus::Tree => Some(&self.tree_widget as &dyn Widget),
+                Focus::Editor => {
+                    self.display_state.curr_editor_idx.map(|idx| {
+                        self.editors.get(idx).map(|w| w as &dyn Widget).unwrap_or(
+                            &self.no_editor
+                        )
+                    })
+                }
+            }
         }
     }
 
@@ -287,40 +271,51 @@ impl Widget for MainView {
                 HoverItem::FuzzySearch(fuzzy) => Some(fuzzy),
             };
         } else {
-            let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-            wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
+            match self.display_state.focus {
+                Focus::Tree => Some(&mut self.tree_widget as &mut dyn Widget),
+                Focus::Editor => {
+                    Some(match self.display_state.curr_editor_idx {
+                        None => &mut self.no_editor as &mut dyn Widget,
+                        Some(idx) => self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(
+                            &mut self.no_editor
+                        )
+                    })
+                }
+            }
         }
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let focused_id_op = self.get_focused().map(|f| f.id());
-        match self.display_state.borrow().as_ref() {
-            None => {
-                warn!("failed rendering main_view without cached_sizes");
-                return;
-            }
-            Some(cached_sizes) => {
-                // debug!("widget_sizes : {:?}", cached_sizes.widget_sizes);
-                for wir in &cached_sizes.widget_sizes {
-                    match self.get_subwidget(wir.wid) {
-                        Some(widget) => {
-                            let sub_output = &mut SubOutput::new(output, wir.rect);
-                            widget.render(theme,
-                                          Some(widget.id()) == focused_id_op,
-                                          sub_output,
-                            );
-                        }
-                        None => {
-                            warn!("subwidget {} not found!", wir.wid);
-                        }
-                    }
+        if self.display_state.wirs.is_empty() {
+            error!("call to render before layout");
+            return;
+        }
+
+        for wir in &self.display_state.wirs {
+            match self.get_subwidget(wir.wid) {
+                Some(widget) => {
+                    let sub_output = &mut SubOutput::new(output, wir.rect);
+                    widget.render(theme,
+                                  Some(widget.id()) == focused_id_op,
+                                  sub_output,
+                    );
+                }
+                None => {
+                    warn!("subwidget {} not found!", wir.wid);
                 }
             }
         }
     }
 
     fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
-        let mut items = vec![&mut self.tree_widget as &mut dyn Widget, self.editors.curr_wrapped_editor_mut()];
+        let mut items = vec![&mut self.tree_widget as &mut dyn Widget];
+
+        let editor_or_not = match self.display_state.curr_editor_idx {
+            None => &mut self.no_editor as &mut dyn Widget,
+            Some(idx) => self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut self.no_editor),
+        };
+        items.push(editor_or_not);
 
         if self.hover.is_some() {
             match self.hover.as_mut().unwrap() {
@@ -334,7 +329,13 @@ impl Widget for MainView {
     }
 
     fn subwidgets(&self) -> Box<dyn Iterator<Item=&dyn Widget> + '_> where Self: Sized {
-        let mut items = vec![&self.tree_widget as &dyn Widget, self.editors.curr_wrapped_editor()];
+        let mut items = vec![&self.tree_widget as &dyn Widget];
+
+        let editor_or_not = match self.display_state.curr_editor_idx {
+            None => &self.no_editor as &dyn Widget,
+            Some(idx) => self.editors.get(idx).map(|w| w as &dyn Widget).unwrap_or(&self.no_editor),
+        };
+        items.push(editor_or_not);
 
         if self.hover.is_some() {
             match self.hover.as_ref().unwrap() {

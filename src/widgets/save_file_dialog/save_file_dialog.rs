@@ -21,7 +21,7 @@ use crate::fs::fsfref::FsfRef;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
-use crate::layout::display_state::DisplayState;
+use crate::layout::display_state::GenericDisplayState;
 use crate::layout::empty_layout::EmptyLayout;
 use crate::layout::frame_layout::FrameLayout;
 use crate::layout::hover_layout::HoverLayout;
@@ -54,7 +54,7 @@ const CANCEL_LABEL: &'static str = "CANCEL";
 pub struct SaveFileDialogWidget {
     id: WID,
 
-    display_state: Option<DisplayState>,
+    display_state: Option<GenericDisplayState>,
 
     // TODO PathBuf -> WrappedRcPath? See profiler.
     tree_widget: WithScroll<TreeViewWidget<PathBuf, FileFront>>,
@@ -365,7 +365,7 @@ impl Widget for SaveFileDialogWidget {
         // Retention of focus. Not sure if it should be here.
         let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
 
-        let mut ds = DisplayState::new(max_size, res_sizes);
+        let mut ds = GenericDisplayState::new(max_size, res_sizes);
         ds.focus_group_mut().add_edge(self.tree_widget.id(), FocusUpdate::Right, self.list_widget.id());
         ds.focus_group_mut().add_edge(self.list_widget.id(), FocusUpdate::Left, self.tree_widget.id());
 

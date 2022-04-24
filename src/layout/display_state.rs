@@ -9,13 +9,13 @@ use crate::primitives::xy::XY;
 // I'll consider that in a next step.
 
 #[derive(Debug)]
-pub struct DisplayState {
+pub struct GenericDisplayState {
     pub for_size: XY,
     pub widget_sizes: Vec<WidgetIdRect>,
     pub focus_group: Box<dyn FocusGroup>,
 }
 
-impl DisplayState {
+impl GenericDisplayState {
     pub fn focus_group_mut(&mut self) -> &mut dyn FocusGroup {
         self.focus_group.as_mut()
     }
@@ -26,7 +26,7 @@ impl DisplayState {
 
     pub fn new(for_size: XY, widget_sizes: Vec<WidgetIdRect>) -> Self {
         let focus_group = from_wirs(&widget_sizes, Some(for_size));
-        DisplayState {
+        GenericDisplayState {
             for_size,
             widget_sizes,
             focus_group: Box::new(focus_group),

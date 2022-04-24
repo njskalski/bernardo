@@ -11,8 +11,8 @@ pub struct NoEditorWidget {
     text_pos: XY,
 }
 
-impl NoEditorWidget {
-    pub fn new() -> Self {
+impl Default for NoEditorWidget {
+    fn default() -> Self {
         NoEditorWidget {
             wid: get_new_widget_id(),
             text_pos: ZERO,

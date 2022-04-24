@@ -12,50 +12,36 @@ use crate::widgets::with_scroll::WithScroll;
 
 // This "class" was made separate to made borrow-checker realize, that it is not a violation of safety
 // to borrow from it AND main_view mutably at the same time.
+
+// Also, this is very much work in progress.
 pub struct EditorGroup {
     editors: Vec<WithScroll<EditorView>>,
-    no_editor: NoEditorWidget,
-    current: usize,
 }
 
 impl Default for EditorGroup {
     fn default() -> Self {
         Self {
             editors: Vec::new(),
-            no_editor: NoEditorWidget::new(),
-            current: 0,
         }
     }
 }
 
 impl EditorGroup {
-    pub fn curr_wrapped_editor(&self) -> &dyn Widget {
-        if self.editors.len() == 0 {
-            &self.no_editor
-        } else {
-            if self.current >= self.editors.len() {
-                error!("current >= editors.len()");
-                return &self.no_editor;
-            }
-
-            &self.editors[self.current]
+    pub fn get(&self, idx: usize) -> Option<&WithScroll<EditorView>> {
+        if idx > self.editors.len() {
+            error!("requested non-existent editor {}", idx);
         }
+        self.editors.get(idx)
     }
 
-    pub fn curr_wrapped_editor_mut(&mut self) -> &mut dyn Widget {
-        if self.editors.len() == 0 {
-            &mut self.no_editor
-        } else {
-            if self.current >= self.editors.len() {
-                error!("current >= editors.len(), fixing it, but that should not happen");
-                self.current = 0;
-            }
-
-            &mut self.editors[self.current]
+    pub fn get_mut(&mut self, idx: usize) -> Option<&mut WithScroll<EditorView>> {
+        if idx > self.editors.len() {
+            error!("requested non-existent mut editor {}", idx);
         }
+        self.editors.get_mut(idx)
     }
 
-    pub fn open_empty(&mut self, tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, set_current: bool) -> usize {
+    pub fn open_empty(&mut self, tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef) -> usize {
         self.editors.push(
             WithScroll::new(
                 EditorView::new(tree_sitter, fsf),
@@ -65,15 +51,11 @@ impl EditorGroup {
 
         let res = self.editors.len() - 1;
 
-        if set_current {
-            self.current = res;
-        };
-
         res
     }
 
     // TODO is it on error escalation path after failed read?
-    pub fn open_file(&mut self, tree_sitter: Rc<TreeSitterWrapper>, ff: FileFront, set_current: bool) -> Result<usize, ReadError> {
+    pub fn open_file(&mut self, tree_sitter: Rc<TreeSitterWrapper>, ff: FileFront) -> Result<usize, ReadError> {
         let file_contents = ff.read_whole_file()?;
         let lang_id_op = filename_to_language(ff.path());
 
@@ -93,10 +75,6 @@ impl EditorGroup {
         );
 
         let res = self.editors.len() - 1;
-
-        if set_current {
-            self.current = res;
-        };
 
         Ok(res)
     }
