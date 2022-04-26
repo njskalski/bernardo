@@ -461,7 +461,7 @@ impl Widget for EditorView {
                     None
                 }
             }
-            (&EditorState::Editing, InputEvent::KeyInput(key)) if !key.modifiers.ctrl && key_to_edit_msg(key).is_some() => {
+            (&EditorState::Editing, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
                 EditorViewMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
             }
             _ => None,

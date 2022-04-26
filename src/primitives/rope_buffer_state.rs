@@ -1,6 +1,7 @@
 // this is for test only
 
 use log::error;
+use ropey::iter::Chars;
 use ropey::Rope;
 use streaming_iterator::StreamingIterator;
 use tree_sitter::Point;
@@ -54,6 +55,10 @@ impl Buffer for Rope {
 
     fn char_at(&self, char_idx: usize) -> Option<char> {
         self.get_char(char_idx)
+    }
+
+    fn chars(&self) -> Chars {
+        ropey::Rope::chars(self)
     }
 
     fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {

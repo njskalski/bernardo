@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::string::String;
 
 use log::{debug, error, warn};
+use ropey::iter::Chars;
 use ropey::Rope;
 use streaming_iterator::StreamingIterator;
 use tree_sitter::{Point};
@@ -268,6 +269,10 @@ impl Buffer for BufferState {
 
     fn char_at(&self, char_idx: usize) -> Option<char> {
         self.text.rope.char_at(char_idx)
+    }
+
+    fn chars(&self) -> Chars {
+        self.text.rope.chars()
     }
 
     fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {

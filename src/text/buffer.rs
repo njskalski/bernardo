@@ -1,6 +1,7 @@
 use std::iter;
 use std::iter::Peekable;
 use std::marker::PhantomData;
+use ropey::iter::Chars;
 use streaming_iterator::StreamingIterator;
 use crate::tsw::lang_id::LangId;
 
@@ -26,6 +27,8 @@ pub trait Buffer {
     fn remove(&mut self, char_idx_begin: usize, char_idx_end: usize) -> bool;
 
     fn char_at(&self, char_idx: usize) -> Option<char>;
+
+    fn chars(&self) -> Chars;
 
     fn char_to_kind(&self, _char_idx: usize) -> Option<&str> { None }
 

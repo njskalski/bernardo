@@ -144,10 +144,12 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
 
 fn insert_to_rope(cs: &mut CursorSet,
                   rope: &mut dyn Buffer,
+                  // if None, all cursors will input the same. If Some(idx) only this cursor will insert and rest will get updated.
+                  specific_cursor: Option<usize>,
                   what: &str) -> bool {
     let mut res = false;
     let mut modifier: isize = 0;
-    for c in cs.iter_mut() {
+    for (cursor_idx, c) in cs.iter_mut().enumerate() {
         c.shift_by(modifier);
 
         if cfg!(debug_assertions) {
@@ -158,35 +160,37 @@ fn insert_to_rope(cs: &mut CursorSet,
             }
         }
 
-        if rope.insert_block(c.a, what) {
-            res |= true;
-        } else {
-            warn!("expected to insert {} characters at {}, but failed", what.len(), c.a);
-        }
-
-        c.shift_by(what.len() as isize);
-        modifier += what.len() as isize;
-
-        // whatever was selected, it's gone.
-        if let Some(sel) = c.s {
-            if rope.remove(sel.b, sel.e) {
+        if specific_cursor.map(|idx| idx == cursor_idx).unwrap_or(true) {
+            if rope.insert_block(c.a, what) {
                 res |= true;
             } else {
-                warn!("expected to remove non-empty item substring but failed");
+                warn!("expected to insert {} characters at {}, but failed", what.len(), c.a);
             }
 
-            // TODO underflow/overflow
-            let change = (sel.e - sel.b) as isize;
-            modifier -= change;
+            c.shift_by(what.len() as isize);
+            modifier += what.len() as isize;
 
-            if c.anchor_right() {
-                c.shift_by(change);
+            // whatever was selected, it's gone.
+            if let Some(sel) = c.s {
+                if rope.remove(sel.b, sel.e) {
+                    res |= true;
+                } else {
+                    warn!("expected to remove non-empty item substring but failed");
+                }
+
+                // TODO underflow/overflow
+                let change = (sel.e - sel.b) as isize;
+                modifier -= change;
+
+                if c.anchor_right() {
+                    c.shift_by(change);
+                }
             }
+
+            c.clear_both();
+
+            debug_assert!(c.check_invariant());
         }
-
-        c.clear_both();
-
-        debug_assert!(c.check_invariant());
     };
     cs.reduce_right();
     debug_assert!(cs.check_invariants());
@@ -202,7 +206,7 @@ pub fn apply_cem(cem: CommonEditMsg,
     let res = match cem {
         CommonEditMsg::Char(char) => {
             // TODO optimise
-            insert_to_rope(cs, rope, char.to_string().as_str())
+            insert_to_rope(cs, rope, None, char.to_string().as_str())
         }
         CommonEditMsg::CursorUp { selecting } => {
             cs.move_vertically_by(rope, -1, selecting)
@@ -340,14 +344,56 @@ pub fn apply_cem(cem: CommonEditMsg,
             debug_assert!(cs.check_invariants());
             res
         }
-        // CommonEditMsg::Copy => {
-        //     if cs.set().len() == 1 {
-        //         false
-        //     } else if cs.set().len() > 1 {} else {
-        //         false
-        //     }
-        // }
-        // CommonEditMsg::Paste => {}
+        CommonEditMsg::Copy => {
+            if let Some(clipboard) = clipboard {
+                let mut contents = String::new();
+                for c in cs.iter() {
+                    if !contents.is_empty() {
+                        contents.push('\n');
+                    }
+
+                    if let Some(sel) = c.s {
+                        for c in rope.chars().skip(sel.b).take(sel.e - sel.b) {
+                            contents.push(c);
+                        }
+                    }
+                }
+
+                clipboard.set(contents)
+            } else {
+                warn!("copy without a clipboard, ignoring");
+                false
+            }
+        }
+        CommonEditMsg::Paste => {
+            if let Some(clipboard) = clipboard {
+                let cursor_count = cs.set().len();
+                let contents = clipboard.get();
+                if contents.is_empty() {
+                    warn!("not pasting empty contents");
+                    false
+                } else {
+                    let split_lines = contents.lines().count() == cursor_count;
+                    // easy, each cursor gets full copy
+                    if !split_lines {
+                        insert_to_rope(cs, rope, None, &contents)
+                    } else {
+                        let mut res = false;
+                        let mut it = contents.lines();
+                        let mut common_idx: usize = 0;
+                        while let Some(line) = it.next() {
+                            res |= insert_to_rope(cs, rope, Some(common_idx), line);
+                            common_idx += 1;
+                        }
+
+                        res
+                    }
+                }
+            } else {
+                warn!("paste without a clipboard, ignoring");
+                false
+            }
+        }
         // CommonEditMsg::Undo => {}
         // CommonEditMsg::Redo => {}
         e => {

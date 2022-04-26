@@ -268,7 +268,10 @@ impl Cursor {
             self.a = new_pos;
             if selecting {
                 self.update_select(new_pos, old_pos);
+            } else {
+                self.clear_selection();
             }
+            
             self.preferred_column = None;
 
             true
@@ -304,11 +307,15 @@ impl Cursor {
             self.a = new_pos;
             if selecting {
                 self.update_select(old_pos, new_pos);
+            } else {
+                self.clear_selection();
             }
             self.preferred_column = None;
 
             true
         };
+
+        debug_assert!(self.check_invariant());
 
         res
     }
@@ -337,7 +344,9 @@ impl Cursor {
 
         if selecting {
             self.update_select(old_pos, self.a);
-        };
+        } else {
+            self.clear_selection();
+        }
 
         debug_assert!(old_pos >= self.a);
 
@@ -364,6 +373,8 @@ impl Cursor {
 
         if selecting {
             self.update_select(old_pos, self.a);
+        } else {
+            self.clear_selection();
         }
 
         debug_assert!(old_pos <= self.a);
@@ -488,6 +499,10 @@ impl CursorSet {
 
     pub fn set(&self) -> &Vec<Cursor> {
         &self.set
+    }
+
+    pub fn set_mut(&mut self) -> &mut Vec<Cursor> {
+        &mut self.set
     }
 
     // This is supposed to be called after insert

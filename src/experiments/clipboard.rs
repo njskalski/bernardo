@@ -22,6 +22,10 @@ pub fn get_me_some_clipboard() -> ClipboardRef {
     }
 }
 
+pub fn get_me_fake_clipboard() -> ClipboardRef {
+    Rc::new(Box::new(FakeClipboard::default()))
+}
+
 struct DefaultClipboard {
     clipboard: RefCell<arboard::Clipboard>,
 }

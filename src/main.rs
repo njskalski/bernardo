@@ -63,6 +63,9 @@ const debug_params: &'static [(&'static str, log::LevelFilter)] = &[
     ("bernardo::widgets::main_view::main_view", log::LevelFilter::Warn),
     ("bernardo::widgets::fuzzy_search::fuzzy_search", log::LevelFilter::Warn),
     ("bernardo::widgets::edit_box", log::LevelFilter::Warn),
+
+    // This guy leaves a lot of data in trace, it seems like it spawns a new thread. I think it deserves profiling.
+    ("arboard::x11_clipboard", log::LevelFilter::Warn),
 ];
 
 fn main() {
