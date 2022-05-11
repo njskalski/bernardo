@@ -343,6 +343,10 @@ impl Widget for FuzzySearchWidget {
                 DrawComment::Highlighted => if selected_line && item.comment().is_some() { 2 } else { 1 },
                 DrawComment::All => if item.comment().is_some() { 2 } else { 1 },
             };
+
+            if y >= output.size_constraint().visible_hint().lower_right().y {
+                break;
+            }
         }
     }
 }
