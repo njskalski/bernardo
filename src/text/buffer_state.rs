@@ -12,6 +12,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use crate::fs::file_front::FileFront;
 use crate::fs::filesystem_front::SomethingToSave;
 use crate::Output;
+use crate::primitives::cursor_set::CursorSet;
 
 use crate::text::buffer::{Buffer, LinesIter};
 use crate::tsw::lang_id::LangId;
@@ -22,12 +23,20 @@ use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
 struct Text {
     pub rope: Rope,
     pub parsing: Option<ParsingTuple>,
+    pub cursor_set: CursorSet,
 }
 
 impl Text {
     pub fn with_rope(self, rope: Rope) -> Self {
         Self {
             rope,
+            ..self
+        }
+    }
+
+    pub fn with_cursor_set(self, cursor_set: CursorSet) -> Self {
+        Self {
+            cursor_set,
             ..self
         }
     }
@@ -134,31 +143,9 @@ impl BufferState {
         self.lang_id = lang_id;
     }
 
-    fn clone_top(&mut self) {
-        self.history.push(self.text.clone());
-    }
+    pub fn current_text(&self) -> &Text { &self.text }
 
-    pub fn prev(&mut self) -> bool {
-        match self.history.pop() {
-            None => false,
-            Some(r) => {
-                self.forward_history.push(self.text.clone());
-                self.text = r;
-                true
-            }
-        }
-    }
-
-    pub fn next(&mut self) -> bool {
-        match self.forward_history.pop() {
-            None => false,
-            Some(r) => {
-                self.history.push(self.text.clone());
-                self.text = r;
-                true
-            }
-        }
-    }
+    pub fn current_text_mut(&mut self) -> &mut Text { &mut self.text }
 }
 
 impl Buffer for BufferState {
@@ -277,6 +264,48 @@ impl Buffer for BufferState {
 
     fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {
         self.text.rope.callback_for_parser()
+    }
+
+    fn can_undo(&self) -> bool {
+        !self.history.is_empty()
+    }
+
+    fn can_redo(&self) -> bool {
+        !self.forward_history.is_empty()
+    }
+
+    fn undo(&mut self) -> bool {
+        if let Some(text) = self.history.pop() {
+            //TODO sure of that?
+            if self.set_milestone() {
+                self.forward_history.push(self.text.clone());
+            }
+
+            self.text = text;
+            true
+        } else { false }
+    }
+
+    fn redo(&mut self) -> bool {
+        if let Some(text) = self.forward_history.pop() {
+            self.text = text;
+            true
+        } else { false }
+    }
+
+    /*
+    This creates new milestone to undo/redo. The reason for it is that potentially multiple edits inform a single milestone.
+     */
+    fn set_milestone(&mut self) -> bool {
+        if let Some(text) = self.history.first() {
+            if text.rope == self.text.rope {
+                warn!("not setting milestone, no change since last history");
+                return false;
+            }
+        }
+
+        self.history.push(self.text.clone());
+        true
     }
 }
 

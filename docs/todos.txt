@@ -11,6 +11,10 @@ make input handling reusable
     plugin.
 
 //TODO scrolling is now limited to u16 number of lines!
+    I guess the solution to it is a separate widget for longer files, we don't want to enable parsing of more than
+    65k lines files, how ofthen does that need to happen?
 
 //TODO
      change every new_idx < sth.size() - 1  => to => new_idx + 1 < sth.size() to avoid underflow if sth.size is 0
+
+// TODO ogarnij smallvec do cursor set

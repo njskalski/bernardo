@@ -65,7 +65,6 @@ enum EditorState {
 
 pub struct EditorView {
     wid: WID,
-    cursors: CursorSet,
 
     last_size: Option<XY>,
 
@@ -102,7 +101,6 @@ impl EditorView {
     pub fn new(tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> EditorView {
         EditorView {
             wid: get_new_widget_id(),
-            cursors: CursorSet::single(),
             last_size: None,
             buffer: BufferState::new(tree_sitter.clone()),
             anchor: ZERO,
@@ -140,7 +138,8 @@ impl EditorView {
     // follow the "anchor" with least possible change.
     fn update_anchor(&mut self, last_move_direction: Arrow) {
         // TODO test
-        let cursor_rect = cursor_set_to_rect(&self.cursors, &self.buffer);
+        // TODO cleanup - now cursor_set is part of buffer, we can move cursor_set_to_rect method there
+        let cursor_rect = cursor_set_to_rect(&self.buffer.current_text().cursor_set, &self.buffer);
         match last_move_direction {
             Arrow::Up => {
                 if self.anchor.y > cursor_rect.upper_left().y {
@@ -402,6 +401,10 @@ impl EditorView {
 
     pub fn buffer_state_mut(&mut self) -> &mut BufferState {
         &mut self.buffer
+    }
+
+    pub fn cursors(&self) -> &CursorSet {
+        &self.buffer.current_text().cursor_set
     }
 }
 

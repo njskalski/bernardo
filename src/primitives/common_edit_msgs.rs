@@ -394,11 +394,11 @@ pub fn apply_cem(cem: CommonEditMsg,
                 false
             }
         }
-        // CommonEditMsg::Undo => {}
-        // CommonEditMsg::Redo => {}
-        e => {
-            debug!("unhandled common edit msg {:?}", e);
-            false
+        CommonEditMsg::Undo => {
+            rope.undo()
+        }
+        CommonEditMsg::Redo => {
+            rope.redo()
         }
     };
 

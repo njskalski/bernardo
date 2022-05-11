@@ -5,6 +5,7 @@ use ropey::iter::Chars;
 use streaming_iterator::StreamingIterator;
 use crate::tsw::lang_id::LangId;
 
+//TODO create tests for undo/redo/set milestone
 
 pub trait Buffer {
     fn len_lines(&self) -> usize;
@@ -35,6 +36,21 @@ pub trait Buffer {
     fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, tree_sitter::Point) -> &'a [u8] + 'a>;
 
     fn try_parse(&mut self, _lang_id: LangId) -> bool { false }
+
+    fn can_undo(&self) -> bool { false }
+    fn can_redo(&self) -> bool { false }
+
+    /*
+    In order for redo to work, undo implies "set_milestone"
+     */
+    fn undo(&mut self) -> bool { false }
+    fn redo(&mut self) -> bool { false }
+
+    /*
+    This creates new milestone to undo/redo. The reason for it is that potentially multiple edits inform a single milestone.
+    Returns false only if buffer have not changed since last milestone.
+     */
+    fn set_milestone(&mut self) -> bool { false }
 }
 
 pub struct LinesIter<'a> {
