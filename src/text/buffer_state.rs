@@ -116,6 +116,7 @@ impl BufferState {
 
         let mut res = Self {
             history: vec![text],
+            history_pos: 0,
             ..self
         };
 
@@ -155,6 +156,13 @@ impl BufferState {
     }
 
     pub fn apply_cem(&mut self, cem: CommonEditMsg, page_height: usize, clipboard: Option<&ClipboardRef>) -> bool {
+        match cem {
+            CommonEditMsg::Undo | CommonEditMsg::Redo => {}
+            _ => {
+                self.set_milestone();
+            }
+        }
+
         // TODO optimise
         let mut cursors = self.text().cursor_set.clone();
         let (diff_len_chars, any_change) = apply_cem(cem.clone(), &mut cursors, self, page_height as usize, clipboard);
@@ -166,10 +174,8 @@ impl BufferState {
             _ => {
                 self.text_mut().cursor_set = cursors;
 
-                if any_change {
-                    // if self.diff_oracle.update_with(diff_len_chars) {
-                    self.set_milestone();
-                    // }
+                if diff_len_chars == 0 {
+                    self.strip_milestone();
                 }
             }
         }
@@ -186,7 +192,16 @@ impl BufferState {
     fn set_milestone(&mut self) -> bool {
         self.history.truncate(self.history_pos + 1);
         self.history.push(self.history[self.history_pos].clone());
+        self.history_pos += 1;
         true
+    }
+
+    // to be used only in apply_cem
+    fn strip_milestone(&mut self) {
+        debug_assert!(self.history_pos + 1 == self.history.len());
+        debug_assert!(self.history_pos > 0);
+        self.history_pos -= 1;
+        self.history.truncate(self.history_pos + 1);
     }
 
     pub fn text(&self) -> &Text {
@@ -331,6 +346,7 @@ impl Buffer for BufferState {
     }
 
     fn undo(&mut self) -> bool {
+        debug!("UNDO pos {} len {}", self.history_pos, self.history.len());
         if self.history_pos > 0 {
             self.history_pos -= 1;
             true
@@ -338,6 +354,7 @@ impl Buffer for BufferState {
     }
 
     fn redo(&mut self) -> bool {
+        debug!("REDO pos {} len {}", self.history_pos, self.history.len());
         if self.history_pos + 1 < self.history.len() {
             self.history_pos += 1;
             true
