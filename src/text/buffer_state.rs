@@ -2,6 +2,7 @@ use std::fmt::{Debug};
 use std::ops::Range;
 use std::rc::Rc;
 use std::string::String;
+use std::time::SystemTime;
 
 use log::{debug, error, warn};
 use ropey::iter::Chars;
@@ -27,6 +28,7 @@ pub struct Text {
     pub parsing: Option<ParsingTuple>,
     pub cursor_set: CursorSet,
 }
+
 
 impl Text {
     pub fn with_rope(self, rope: Rope) -> Self {
