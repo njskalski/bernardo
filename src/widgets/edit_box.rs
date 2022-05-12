@@ -200,7 +200,7 @@ impl Widget for EditBoxWidget {
         return match our_msg.unwrap() {
             EditBoxWidgetMsg::Hit => self.event_hit(),
             EditBoxWidgetMsg::CommonEditMsg(cem) => {
-                if apply_cem(*cem, &mut self.cursor_set, &mut self.text, 1, None) {
+                if apply_cem(*cem, &mut self.cursor_set, &mut self.text, 1, None).1 {
                     self.event_changed()
                 } else {
                     None

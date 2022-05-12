@@ -64,8 +64,18 @@ impl Selection {
         }
     }
 
-    pub fn within(self, char_idx: usize) -> bool {
+    pub fn within(&self, char_idx: usize) -> bool {
         char_idx >= self.b && char_idx < self.e
+    }
+    
+    pub fn len(&self) -> usize {
+        debug_assert!(self.b < self.e);
+        if self.b >= self.e {
+            error!("selection with begin > end, returning 0 for length: {:?}", self);
+            0
+        } else {
+            self.e - self.b
+        }
     }
 }
 

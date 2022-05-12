@@ -10,6 +10,7 @@ use crate::primitives::cursor_set::CursorSet;
 const MIN_CHARS: usize = 10;
 const MIN_DURATION: Duration = Duration::from_secs(3);
 
+#[derive(Clone, Debug)]
 pub struct DiffOracle {
     last_timestamp: SystemTime,
     total_change_chars: usize,
@@ -46,27 +47,8 @@ impl DiffOracle {
     /*
     returns, whether the new milestone should be created or not
      */
-    pub fn update_with(&mut self, cem: &CommonEditMsg, cs: &CursorSet, clipboard: Option<&ClipboardRef>) -> bool {
-        match cem {
-            CommonEditMsg::Char(_) => {
-                self.total_change_chars += cs.set().len();
-            }
-            CommonEditMsg::CursorUp { .. } => {}
-            CommonEditMsg::CursorDown { .. } => {}
-            CommonEditMsg::CursorLeft { .. } => {}
-            CommonEditMsg::CursorRight { .. } => {}
-            CommonEditMsg::Backspace => {}
-            CommonEditMsg::LineBegin { .. } => {}
-            CommonEditMsg::LineEnd { .. } => {}
-            CommonEditMsg::WordBegin { .. } => {}
-            CommonEditMsg::WordEnd { .. } => {}
-            CommonEditMsg::PageUp { .. } => {}
-            CommonEditMsg::PageDown { .. } => {}
-            CommonEditMsg::Delete => {}
-            CommonEditMsg::Copy => {}
-            CommonEditMsg::Paste => {}
-            CommonEditMsg::Undo => {}
-            CommonEditMsg::Redo => {}
-        }
+    pub fn update_with(&mut self, diff_len_char : usize,) -> bool {
+        self.total_change_chars += diff_len_char;
+        self.internal_trigger()
     }
 }

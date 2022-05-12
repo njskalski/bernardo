@@ -18,6 +18,7 @@ use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg};
 use crate::primitives::cursor_set::CursorSet;
 
 use crate::text::buffer::{Buffer, LinesIter};
+use crate::text::diff_oracle::DiffOracle;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
@@ -56,11 +57,13 @@ impl Text {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct BufferState {
     tree_sitter: Rc<TreeSitterWrapper>,
 
     text: Text,
+    // for lack of a better name, this object decides whether to create a milestone or not.
+    diff_oracle: DiffOracle,
 
     history: Vec<Text>,
     forward_history: Vec<Text>,
@@ -75,6 +78,7 @@ impl BufferState {
         BufferState {
             tree_sitter,
             text: Text::default(),
+            diff_oracle: DiffOracle::default(),
             history: vec![],
             forward_history: vec![],
 
@@ -154,11 +158,16 @@ impl BufferState {
     pub fn apply_cem(&mut self, cem: CommonEditMsg, page_height: usize, clipboard: Option<&ClipboardRef>) -> bool {
         // TODO optimise
         let mut cursors = self.text.cursor_set.clone();
-        let res = apply_cem(cem, &mut cursors, self, page_height as usize, clipboard);
+        let (diff_len_chars, any_change) = apply_cem(cem, &mut cursors, self, page_height as usize, clipboard);
         self.text.cursor_set = cursors;
 
-        self.set_milestone();
-        res
+        if any_change {
+            if self.diff_oracle.update_with(diff_len_chars) {
+                self.set_milestone();
+            }
+        }
+
+        any_change
     }
 
     // This should be called after insert/delete. Forward history makes sense only when un-doing.

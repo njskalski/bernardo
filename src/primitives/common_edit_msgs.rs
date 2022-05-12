@@ -142,14 +142,23 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
     }
 }
 
+/*
+returns tuple
+    char changed (I aim at "Levenstein distance", but I have not tested that)
+    whether any change happened (to text or cursors)
+ */
+// TODO assumptions that filelen < usize all over the place, assumption that diff < usize
 fn insert_to_rope(cs: &mut CursorSet,
                   rope: &mut dyn Buffer,
                   // if None, all cursors will input the same. If Some(idx) only this cursor will insert and rest will get updated.
                   specific_cursor: Option<usize>,
-                  what: &str) -> bool {
+                  what: &str) -> (usize, bool) {
     let mut res = false;
     let mut modifier: isize = 0;
+    let mut diff_len: usize = 0;
     for (cursor_idx, c) in cs.iter_mut().enumerate() {
+        let mut cursor_specific_diff_len: usize = 0;
+
         c.shift_by(modifier);
 
         if cfg!(debug_assertions) {
@@ -163,6 +172,7 @@ fn insert_to_rope(cs: &mut CursorSet,
         if specific_cursor.map(|idx| idx == cursor_idx).unwrap_or(true) {
             if rope.insert_block(c.a, what) {
                 res |= true;
+                cursor_specific_diff_len = what.len();
             } else {
                 warn!("expected to insert {} characters at {}, but failed", what.len(), c.a);
             }
@@ -174,6 +184,7 @@ fn insert_to_rope(cs: &mut CursorSet,
             if let Some(sel) = c.s {
                 if rope.remove(sel.b, sel.e) {
                     res |= true;
+                    cursor_specific_diff_len = std::cmp::max(cursor_specific_diff_len, sel.len());
                 } else {
                     warn!("expected to remove non-empty item substring but failed");
                 }
@@ -188,41 +199,44 @@ fn insert_to_rope(cs: &mut CursorSet,
             }
 
             c.clear_both();
-
+            diff_len += cursor_specific_diff_len;
             debug_assert!(c.check_invariant());
         }
     };
     cs.reduce_right();
     debug_assert!(cs.check_invariants());
-    res
+    (diff_len, res)
 }
 
-// Returns FALSE if the command results in no-op.
+// Returns tuple:
+//      first is number of chars that changed (inserted, removed, changed), or 0 in case of UNDO/REDO
+//      FALSE iff the command results in no-op.
 pub fn apply_cem(cem: CommonEditMsg,
                  cs: &mut CursorSet,
                  rope: &mut dyn Buffer,
                  page_height: usize,
-                 clipboard: Option<&ClipboardRef>) -> bool {
+                 clipboard: Option<&ClipboardRef>) -> (usize, bool) {
     let res = match cem {
         CommonEditMsg::Char(char) => {
             // TODO optimise
             insert_to_rope(cs, rope, None, char.to_string().as_str())
         }
         CommonEditMsg::CursorUp { selecting } => {
-            cs.move_vertically_by(rope, -1, selecting)
+            (0, cs.move_vertically_by(rope, -1, selecting))
         }
         CommonEditMsg::CursorDown { selecting } => {
-            cs.move_vertically_by(rope, 1, selecting)
+            (0, cs.move_vertically_by(rope, 1, selecting))
         }
         CommonEditMsg::CursorLeft { selecting } => {
-            cs.move_left(selecting)
+            (0, cs.move_left(selecting))
         }
         CommonEditMsg::CursorRight { selecting } => {
-            cs.move_right(rope, selecting)
+            (0, cs.move_right(rope, selecting))
         }
         CommonEditMsg::Backspace => {
             let mut res = false;
             let mut modifier: isize = 0;
+            let mut diff_len: usize = 0;
             for c in cs.iter_mut() {
                 c.shift_by(modifier);
 
@@ -237,6 +251,7 @@ pub fn apply_cem(cem: CommonEditMsg,
                 if let Some(sel) = c.s {
                     if rope.remove(sel.b, sel.e) {
                         res |= true;
+                        diff_len += sel.len();
                     } else {
                         warn!("expected to remove non-empty item substring but failed");
                     }
@@ -255,6 +270,7 @@ pub fn apply_cem(cem: CommonEditMsg,
 
                     if rope.remove(c.a - 1, c.a) {
                         res |= true;
+                        diff_len += 1;
                     } else {
                         warn!("expected to remove char but failed");
                     }
@@ -267,39 +283,40 @@ pub fn apply_cem(cem: CommonEditMsg,
 
             cs.reduce_left();
             debug_assert!(cs.check_invariants());
-            res
+            (diff_len, res)
         }
         CommonEditMsg::LineBegin { selecting } => {
-            cs.move_home(rope, selecting)
+            (0, cs.move_home(rope, selecting))
         }
         CommonEditMsg::LineEnd { selecting } => {
-            cs.move_end(rope, selecting)
+            (0, cs.move_end(rope, selecting))
         }
         CommonEditMsg::WordBegin { selecting } => {
-            cs.word_begin_default(rope, selecting)
+            (0, cs.word_begin_default(rope, selecting))
         }
         CommonEditMsg::WordEnd { selecting } => {
-            cs.word_end_default(rope, selecting)
+            (0, cs.word_end_default(rope, selecting))
         }
         CommonEditMsg::PageUp { selecting } => {
             if page_height > PAGE_HEIGHT_LIMIT {
                 error!("received PageUp of page_height {}, ignoring.", page_height);
-                false
+                (0, false)
             } else {
-                cs.move_vertically_by(rope, -(page_height as isize), selecting)
+                (0, cs.move_vertically_by(rope, -(page_height as isize), selecting))
             }
         }
         CommonEditMsg::PageDown { selecting } => {
             if page_height > PAGE_HEIGHT_LIMIT {
                 error!("received PageDown of page_height {}, ignoring.", page_height);
-                false
+                (0, false)
             } else {
-                cs.move_vertically_by(rope, page_height as isize, selecting)
+                (0, cs.move_vertically_by(rope, page_height as isize, selecting))
             }
         }
         CommonEditMsg::Delete => {
             let mut res = false;
             let mut modifier: isize = 0;
+            let mut diff_len: usize = 0;
             for c in cs.iter_mut() {
                 c.shift_by(modifier);
 
@@ -314,6 +331,7 @@ pub fn apply_cem(cem: CommonEditMsg,
                 if let Some(sel) = c.s {
                     if rope.remove(sel.b, sel.e) {
                         res |= true;
+                        diff_len += sel.len();
                     } else {
                         warn!("expected to remove non-empty item substring but failed");
                     }
@@ -331,6 +349,7 @@ pub fn apply_cem(cem: CommonEditMsg,
 
                     if rope.remove(c.a, c.a + 1) {
                         res |= true;
+                        diff_len += 1;
                     } else {
                         warn!("expected to remove char but failed");
                     }
@@ -342,7 +361,7 @@ pub fn apply_cem(cem: CommonEditMsg,
 
             cs.reduce_left();
             debug_assert!(cs.check_invariants());
-            res
+            (diff_len, res)
         }
         CommonEditMsg::Copy => {
             if let Some(clipboard) = clipboard {
@@ -359,10 +378,10 @@ pub fn apply_cem(cem: CommonEditMsg,
                     }
                 }
 
-                clipboard.set(contents)
+                (0, clipboard.set(contents))
             } else {
                 warn!("copy without a clipboard, ignoring");
-                false
+                (0, false)
             }
         }
         CommonEditMsg::Paste => {
@@ -371,7 +390,7 @@ pub fn apply_cem(cem: CommonEditMsg,
                 let contents = clipboard.get();
                 if contents.is_empty() {
                     warn!("not pasting empty contents");
-                    false
+                    (0, false)
                 } else {
                     let split_lines = contents.lines().count() == cursor_count;
                     // easy, each cursor gets full copy
@@ -381,24 +400,27 @@ pub fn apply_cem(cem: CommonEditMsg,
                         let mut res = false;
                         let mut it = contents.lines();
                         let mut common_idx: usize = 0;
+                        let mut diff_len: usize = 0;
                         while let Some(line) = it.next() {
-                            res |= insert_to_rope(cs, rope, Some(common_idx), line);
+                            let (dl, r) = insert_to_rope(cs, rope, Some(common_idx), line);
+                            res |= r;
+                            diff_len += dl;
                             common_idx += 1;
                         }
 
-                        res
+                        (diff_len, res)
                     }
                 }
             } else {
                 warn!("paste without a clipboard, ignoring");
-                false
+                (0, false)
             }
         }
         CommonEditMsg::Undo => {
-            rope.undo()
+            (0, rope.undo())
         }
         CommonEditMsg::Redo => {
-            rope.redo()
+            (0, rope.redo())
         }
     };
 
