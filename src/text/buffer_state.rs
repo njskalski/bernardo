@@ -156,6 +156,9 @@ impl BufferState {
     }
 
     pub fn apply_cem(&mut self, cem: CommonEditMsg, page_height: usize, clipboard: Option<&ClipboardRef>) -> bool {
+        /*
+        TODO the fact that Undo/Redo requires special handling here a lot suggests that maybe these shouldn't be CEMs. But it works now.
+         */
         match cem {
             CommonEditMsg::Undo | CommonEditMsg::Redo => {}
             _ => {
