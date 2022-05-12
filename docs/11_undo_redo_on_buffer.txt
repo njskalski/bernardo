@@ -1,0 +1,9 @@
+There is a decision to make, what is the minimal change that justifies having a undo-option. Now I just do it every char.
+That's probably overkill.
+
+And then, if I undo, then edit, I need to clear redo-list (called forward_history). This can be done TO buffer object
+or BY buffer object.
+
+The question is: should editor (widget) OR the buffer itself decide, when establish the milestones.
+
+I guess pushing it to buffer state is cleaner than keeping it in widget.

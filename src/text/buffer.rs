@@ -39,18 +39,8 @@ pub trait Buffer {
 
     fn can_undo(&self) -> bool { false }
     fn can_redo(&self) -> bool { false }
-
-    /*
-    In order for redo to work, undo implies "set_milestone"
-     */
     fn undo(&mut self) -> bool { false }
     fn redo(&mut self) -> bool { false }
-
-    /*
-    This creates new milestone to undo/redo. The reason for it is that potentially multiple edits inform a single milestone.
-    Returns false only if buffer have not changed since last milestone.
-     */
-    fn set_milestone(&mut self) -> bool { false }
 }
 
 pub struct LinesIter<'a> {

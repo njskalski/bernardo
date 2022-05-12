@@ -481,7 +481,7 @@ impl Widget for EditorView {
                 (&EditorState::Editing, EditorViewMsg::EditMsg(cem)) => {
                     let page_height = self.height();
                     // page_height as usize is safe, since page_height is u16 and usize is larger.
-                    let _noop = self.buffer.apply_cem(*cem, page_height as usize, Some(&self.clipboard));
+                    let changed = self.buffer.apply_cem(*cem, page_height as usize, Some(&self.clipboard));
 
                     match cme_to_direction(*cem) {
                         None => {}

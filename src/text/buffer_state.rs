@@ -154,7 +154,33 @@ impl BufferState {
         let mut cursors = self.text.cursor_set.clone();
         let res = apply_cem(cem, &mut cursors, self, page_height as usize, clipboard);
         self.text.cursor_set = cursors;
+
+        self.set_milestone();
         res
+    }
+
+    // This should be called after insert/delete. Forward history makes sense only when un-doing.
+    fn drop_forward_history(&mut self) {
+        self.forward_history.clear()
+    }
+
+    /*
+    This creates new milestone to undo/redo. The reason for it is that potentially multiple edits inform a single milestone.
+    Returns false only if buffer have not changed since last milestone.
+
+    set_milestone implies and executes drop_forward_history
+     */
+    fn set_milestone(&mut self) -> bool {
+        if let Some(text) = self.history.first() {
+            if text.rope == self.text.rope {
+                warn!("not setting milestone, no change since last history");
+                return false;
+            }
+        }
+
+        self.history.push(self.text.clone());
+        self.drop_forward_history();
+        true
     }
 }
 
@@ -204,6 +230,8 @@ impl Buffer for BufferState {
                         r.update_parse_on_insert(&rope_clone, char_idx, char_idx + 1);
                     });
 
+                self.drop_forward_history();
+
                 true
             }
             Err(e) => {
@@ -227,6 +255,8 @@ impl Buffer for BufferState {
                     |r| {
                         r.update_parse_on_insert(&rope_clone, char_idx, char_idx + grapheme_len);
                     });
+
+                self.drop_forward_history();
 
                 true
             }
@@ -254,6 +284,8 @@ impl Buffer for BufferState {
                     |r| {
                         r.update_parse_on_delete(&rope_clone, char_idx_begin, char_idx_end);
                     });
+
+                self.drop_forward_history();
 
                 true
             }
@@ -288,6 +320,7 @@ impl Buffer for BufferState {
         if let Some(text) = self.history.pop() {
             //TODO sure of that?
             if self.set_milestone() {
+                //TODO create forward history only if there was an actual change
                 self.forward_history.push(self.text.clone());
             }
 
@@ -301,21 +334,6 @@ impl Buffer for BufferState {
             self.text = text;
             true
         } else { false }
-    }
-
-    /*
-    This creates new milestone to undo/redo. The reason for it is that potentially multiple edits inform a single milestone.
-     */
-    fn set_milestone(&mut self) -> bool {
-        if let Some(text) = self.history.first() {
-            if text.rope == self.text.rope {
-                warn!("not setting milestone, no change since last history");
-                return false;
-            }
-        }
-
-        self.history.push(self.text.clone());
-        true
     }
 }
 
