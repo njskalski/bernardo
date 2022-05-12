@@ -139,7 +139,7 @@ impl EditorView {
     fn update_anchor(&mut self, last_move_direction: Arrow) {
         // TODO test
         // TODO cleanup - now cursor_set is part of buffer, we can move cursor_set_to_rect method there
-        let cursor_rect = cursor_set_to_rect(&self.buffer.current_text().cursor_set, &self.buffer);
+        let cursor_rect = cursor_set_to_rect(&self.buffer.text().cursor_set, &self.buffer);
         match last_move_direction {
             Arrow::Up => {
                 if self.anchor.y > cursor_rect.upper_left().y {
@@ -404,7 +404,7 @@ impl EditorView {
     }
 
     pub fn cursors(&self) -> &CursorSet {
-        &self.buffer.current_text().cursor_set
+        &self.buffer.text().cursor_set
     }
 }
 
@@ -518,12 +518,12 @@ impl Widget for EditorView {
                     None
                 }
                 (&EditorState::DroppingCursor { special_cursor }, EditorViewMsg::DropCursor { cursor }) => {
-                    if !self.buffer.current_text().cursor_set.are_simple() {
+                    if !self.buffer.text().cursor_set.are_simple() {
                         warn!("Cursors were supposed to be simple at this point. Fixing, but there was error.");
-                        self.buffer.current_text_mut().cursor_set.simplify();
+                        self.buffer.text_mut().cursor_set.simplify();
                     }
 
-                    if !self.buffer.current_text_mut().cursor_set.add_cursor(*cursor) {
+                    if !self.buffer.text_mut().cursor_set.add_cursor(*cursor) {
                         warn!("Failed to add cursor {:?} to set", cursor);
                     }
 

@@ -61,12 +61,8 @@ impl Text {
 pub struct BufferState {
     tree_sitter: Rc<TreeSitterWrapper>,
 
-    text: Text,
-    // for lack of a better name, this object decides whether to create a milestone or not.
-    diff_oracle: DiffOracle,
-
     history: Vec<Text>,
-    forward_history: Vec<Text>,
+    history_pos: usize,
 
     lang_id: Option<LangId>,
 
@@ -77,16 +73,12 @@ impl BufferState {
     pub fn new(tree_sitter: Rc<TreeSitterWrapper>) -> BufferState {
         let mut res = BufferState {
             tree_sitter,
-            text: Text::default(),
-            diff_oracle: DiffOracle::default(),
-            history: vec![],
-            forward_history: vec![],
+            history: vec![Text::default()],
+            history_pos: 0,
 
             file: None,
             lang_id: None,
         };
-
-        res.set_milestone();
 
         res
     }
@@ -123,18 +115,15 @@ impl BufferState {
         }
 
         let mut res = Self {
-            text,
+            history: vec![text],
             ..self
         };
-
-        res.history.clear();
-        res.set_milestone();
 
         res
     }
 
     pub fn char_range(&self, output: &mut dyn Output) -> Option<Range<usize>> {
-        let rope = &self.text.rope;
+        let rope = &self.text().rope;
 
         let first_line = output.size_constraint().visible_hint().upper_left().y as usize;
         let beyond_last_lane = output.size_constraint().visible_hint().lower_right().y as usize + 1;
@@ -145,9 +134,11 @@ impl BufferState {
         Some(first_char_idx..beyond_last_char_idx)
     }
 
+    // TODO move to text?
     pub fn highlight(&self, char_range_op: Option<Range<usize>>) -> Vec<HighlightItem> {
-        self.text.parsing.as_ref().map(|parsing| {
-            parsing.highlight_iter(&self.text.rope, char_range_op)
+        let text = self.text();
+        text.parsing.as_ref().map(|parsing| {
+            parsing.highlight_iter(&text.rope, char_range_op)
         }).flatten().unwrap_or(vec![])
     }
 
@@ -163,13 +154,9 @@ impl BufferState {
         self.lang_id = lang_id;
     }
 
-    pub fn current_text(&self) -> &Text { &self.text }
-
-    pub fn current_text_mut(&mut self) -> &mut Text { &mut self.text }
-
     pub fn apply_cem(&mut self, cem: CommonEditMsg, page_height: usize, clipboard: Option<&ClipboardRef>) -> bool {
         // TODO optimise
-        let mut cursors = self.text.cursor_set.clone();
+        let mut cursors = self.text().cursor_set.clone();
         let (diff_len_chars, any_change) = apply_cem(cem.clone(), &mut cursors, self, page_height as usize, clipboard);
 
         //undo/redo invalidates cursors copy, so I need to watch for those
@@ -177,22 +164,17 @@ impl BufferState {
         match cem {
             CommonEditMsg::Undo | CommonEditMsg::Redo => {}
             _ => {
-                self.text.cursor_set = cursors;
+                self.text_mut().cursor_set = cursors;
 
                 if any_change {
-                    if self.diff_oracle.update_with(diff_len_chars) {
-                        self.set_milestone();
-                    }
+                    // if self.diff_oracle.update_with(diff_len_chars) {
+                    self.set_milestone();
+                    // }
                 }
             }
         }
 
         any_change
-    }
-
-    // This should be called after insert/delete. Forward history makes sense only when un-doing.
-    fn drop_forward_history(&mut self) {
-        self.forward_history.clear()
     }
 
     /*
@@ -202,26 +184,29 @@ impl BufferState {
     set_milestone implies and executes drop_forward_history
      */
     fn set_milestone(&mut self) -> bool {
-        if let Some(text) = self.history.first() {
-            if text.rope == self.text.rope {
-                warn!("not setting milestone, no change since last history");
-                return false;
-            }
-        }
-
-        self.history.push(self.text.clone());
-        self.drop_forward_history();
+        self.history.truncate(self.history_pos + 1);
+        self.history.push(self.history[self.history_pos].clone());
         true
+    }
+
+    pub fn text(&self) -> &Text {
+        debug_assert!(self.history.len() >= self.history_pos);
+        &self.history[self.history_pos]
+    }
+
+    pub fn text_mut(&mut self) -> &mut Text {
+        debug_assert!(self.history.len() >= self.history_pos);
+        &mut self.history[self.history_pos]
     }
 }
 
 impl Buffer for BufferState {
     fn len_lines(&self) -> usize {
-        self.text.rope.len_lines()
+        self.text().rope.len_lines()
     }
 
     fn new_lines(&self) -> LinesIter {
-        self.text.rope.new_lines()
+        self.text().rope.new_lines()
     }
 
 
@@ -230,38 +215,37 @@ impl Buffer for BufferState {
     }
 
     fn len_chars(&self) -> usize {
-        self.text.rope.len_chars()
+        self.text().rope.len_chars()
     }
 
     fn char_to_line(&self, char_idx: usize) -> Option<usize> {
-        match self.text.rope.try_char_to_line(char_idx) {
+        match self.text().rope.try_char_to_line(char_idx) {
             Ok(idx) => Some(idx),
             Err(_) => None,
         }
     }
 
     fn line_to_char(&self, line_idx: usize) -> Option<usize> {
-        match self.text.rope.try_line_to_char(line_idx) {
+        match self.text().rope.try_line_to_char(line_idx) {
             Ok(idx) => Some(idx),
             Err(_) => None,
         }
     }
 
     fn insert_char(&mut self, char_idx: usize, ch: char) -> bool {
-        match self.text.rope.try_insert_char(char_idx, ch) {
+        let text = self.text_mut();
+        match text.rope.try_insert_char(char_idx, ch) {
             Ok(_) => {
                 // TODO maybe this method should be moved to text object.
-                let rope_clone = self.text.rope.clone();
+                let rope_clone = text.rope.clone();
 
-                self.text.parsing.as_mut().map_or_else(
+                text.parsing.as_mut().map_or_else(
                     || {
                         debug!("failed to acquire parse_tuple 1");
                     },
                     |r| {
                         r.update_parse_on_insert(&rope_clone, char_idx, char_idx + 1);
                     });
-
-                self.drop_forward_history();
 
                 true
             }
@@ -275,19 +259,19 @@ impl Buffer for BufferState {
     fn insert_block(&mut self, char_idx: usize, block: &str) -> bool {
         // TODO maybe blocks will be more performant?
         let grapheme_len = block.graphemes(true).count();
-        match self.text.rope.try_insert(char_idx, block) {
-            Ok(_) => {
-                let rope_clone = self.text.rope.clone();
+        let text = self.text_mut();
 
-                self.text.parsing.as_mut().map_or_else(
+        match text.rope.try_insert(char_idx, block) {
+            Ok(_) => {
+                let rope_clone = text.rope.clone();
+
+                text.parsing.as_mut().map_or_else(
                     || {
                         debug!("failed to acquire parse_tuple 2");
                     },
                     |r| {
                         r.update_parse_on_insert(&rope_clone, char_idx, char_idx + grapheme_len);
                     });
-
-                self.drop_forward_history();
 
                 true
             }
@@ -304,19 +288,18 @@ impl Buffer for BufferState {
             return false;
         }
 
-        match self.text.rope.try_remove(char_idx_begin..char_idx_end) {
+        let text = self.text_mut();
+        match text.rope.try_remove(char_idx_begin..char_idx_end) {
             Ok(_) => {
-                let rope_clone = self.text.rope.clone();
+                let rope_clone = text.rope.clone();
 
-                self.text.parsing.as_mut().map_or_else(
+                text.parsing.as_mut().map_or_else(
                     || {
                         debug!("failed to acquire parse_tuple 3");
                     },
                     |r| {
                         r.update_parse_on_delete(&rope_clone, char_idx_begin, char_idx_end);
                     });
-
-                self.drop_forward_history();
 
                 true
             }
@@ -328,41 +311,35 @@ impl Buffer for BufferState {
     }
 
     fn char_at(&self, char_idx: usize) -> Option<char> {
-        self.text.rope.char_at(char_idx)
+        self.text().rope.char_at(char_idx)
     }
 
     fn chars(&self) -> Chars {
-        self.text.rope.chars()
+        self.text().rope.chars()
     }
 
     fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {
-        self.text.rope.callback_for_parser()
+        self.text().rope.callback_for_parser()
     }
 
     fn can_undo(&self) -> bool {
-        !self.history.is_empty()
+        self.history_pos > 0
     }
 
     fn can_redo(&self) -> bool {
-        !self.forward_history.is_empty()
+        self.history_pos + 1 < self.history.len()
     }
 
     fn undo(&mut self) -> bool {
-        if let Some(text) = self.history.pop() {
-            //TODO sure of that?
-            if self.set_milestone() {
-                //TODO create forward history only if there was an actual change
-                self.forward_history.push(self.text.clone());
-            }
-
-            self.text = text;
+        if self.history_pos > 0 {
+            self.history_pos -= 1;
             true
         } else { false }
     }
 
     fn redo(&mut self) -> bool {
-        if let Some(text) = self.forward_history.pop() {
-            self.text = text;
+        if self.history_pos + 1 < self.history.len() {
+            self.history_pos += 1;
             true
         } else { false }
     }
@@ -370,6 +347,6 @@ impl Buffer for BufferState {
 
 impl SomethingToSave for BufferState {
     fn get_slices(&self) -> Box<dyn Iterator<Item=&[u8]> + '_> {
-        Box::new(self.text.rope.chunks().map(|chunk| chunk.as_bytes()))
+        Box::new(self.text().rope.chunks().map(|chunk| chunk.as_bytes()))
     }
 }
