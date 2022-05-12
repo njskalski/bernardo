@@ -9,9 +9,11 @@ use ropey::Rope;
 use streaming_iterator::StreamingIterator;
 use tree_sitter::{Point};
 use unicode_segmentation::UnicodeSegmentation;
+use crate::experiments::clipboard::ClipboardRef;
 use crate::fs::file_front::FileFront;
 use crate::fs::filesystem_front::SomethingToSave;
 use crate::Output;
+use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg};
 use crate::primitives::cursor_set::CursorSet;
 
 use crate::text::buffer::{Buffer, LinesIter};
@@ -20,7 +22,7 @@ use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
 
 #[derive(Clone, Debug, Default)]
-struct Text {
+pub struct Text {
     pub rope: Rope,
     pub parsing: Option<ParsingTuple>,
     pub cursor_set: CursorSet,
@@ -146,6 +148,14 @@ impl BufferState {
     pub fn current_text(&self) -> &Text { &self.text }
 
     pub fn current_text_mut(&mut self) -> &mut Text { &mut self.text }
+
+    pub fn apply_cem(&mut self, cem: CommonEditMsg, page_height: usize, clipboard: Option<&ClipboardRef>) -> bool {
+        // TODO optimise
+        let mut cursors = self.text.cursor_set.clone();
+        let res = apply_cem(cem, &mut cursors, self, page_height as usize, clipboard);
+        self.text.cursor_set = cursors;
+        res
+    }
 }
 
 impl Buffer for BufferState {

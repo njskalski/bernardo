@@ -356,8 +356,8 @@ impl EditorView {
     pub fn enter_dropping_cursor_mode(&mut self) {
         debug_assert_matches!(self.state, EditorState::Editing);
         self.state = EditorState::DroppingCursor {
-            special_cursor: self.cursors.iter().next().map(|c| *c).unwrap_or_else(|| {
-                error!("empty cursor set!");
+            special_cursor: self.cursors().iter().next().map(|c| *c).unwrap_or_else(|| {
+                warn!("empty cursor set!");
                 Cursor::single()
             })
         };
@@ -382,7 +382,7 @@ impl EditorView {
             _ => {}
         };
 
-        theme.cursor_background(self.cursors.get_cursor_status_for_char(char_idx))
+        theme.cursor_background(self.cursors().get_cursor_status_for_char(char_idx))
     }
 
     fn height(&self) -> u16 {
@@ -449,7 +449,7 @@ impl Widget for EditorView {
             (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Enter => {
                 debug_assert!(special_cursor.is_simple());
 
-                if self.cursors.get_cursor_status_for_char(special_cursor.a) != CursorStatus::UnderCursor {
+                if self.cursors().get_cursor_status_for_char(special_cursor.a) != CursorStatus::UnderCursor {
                     EditorViewMsg::DropCursor { cursor: special_cursor }.someboxed()
                 } else {
                     None
@@ -481,7 +481,7 @@ impl Widget for EditorView {
                 (&EditorState::Editing, EditorViewMsg::EditMsg(cem)) => {
                     let page_height = self.height();
                     // page_height as usize is safe, since page_height is u16 and usize is larger.
-                    let _noop = apply_cem(*cem, &mut self.cursors, &mut self.buffer, page_height as usize, Some(&self.clipboard));
+                    let _noop = self.buffer.apply_cem(*cem, page_height as usize, Some(&self.clipboard));
 
                     match cme_to_direction(*cem) {
                         None => {}
@@ -509,7 +509,7 @@ impl Widget for EditorView {
                     None
                 }
                 (&EditorState::Editing, EditorViewMsg::ToCursorDropMode) => {
-                    self.cursors.simplify();
+                    // self.cursors.simplify(); //TODO I removed it, but I don't know why it was here in the first place
                     self.enter_dropping_cursor_mode();
                     None
                 }
@@ -518,12 +518,12 @@ impl Widget for EditorView {
                     None
                 }
                 (&EditorState::DroppingCursor { special_cursor }, EditorViewMsg::DropCursor { cursor }) => {
-                    if !self.cursors.are_simple() {
+                    if !self.buffer.current_text().cursor_set.are_simple() {
                         warn!("Cursors were supposed to be simple at this point. Fixing, but there was error.");
-                        self.cursors.simplify();
+                        self.buffer.current_text_mut().cursor_set.simplify();
                     }
 
-                    if !self.cursors.add_cursor(*cursor) {
+                    if !self.buffer.current_text_mut().cursor_set.add_cursor(*cursor) {
                         warn!("Failed to add cursor {:?} to set", cursor);
                     }
 
