@@ -75,7 +75,7 @@ pub struct BufferState {
 
 impl BufferState {
     pub fn new(tree_sitter: Rc<TreeSitterWrapper>) -> BufferState {
-        BufferState {
+        let mut res = BufferState {
             tree_sitter,
             text: Text::default(),
             diff_oracle: DiffOracle::default(),
@@ -84,7 +84,53 @@ impl BufferState {
 
             file: None,
             lang_id: None,
+        };
+
+        res.set_milestone();
+
+        res
+    }
+
+    pub fn with_lang(self, lang_id: LangId) -> Self {
+        Self {
+            lang_id: Some(lang_id),
+            ..self
         }
+    }
+
+    pub fn with_file_front(self, ff: FileFront) -> Self {
+        Self {
+            file: Some(ff),
+            ..self
+        }
+    }
+
+    /*
+    This is expected to be used only in construction, it clears the history.
+     */
+    pub fn with_text_from_rope(self, rope: Rope, lang_id: Option<LangId>) -> Self {
+        let copy_rope = rope.clone();
+        let mut text = Text::default().with_rope(rope);
+
+        if let Some(lang_id) = lang_id {
+            if text.parse(self.tree_sitter.clone(), lang_id) {
+                text.parsing.as_mut().map(|parsing| {
+                    parsing.try_reparse(&copy_rope);
+                });
+            } else {
+                error!("creation of parse_tuple failed");
+            }
+        }
+
+        let mut res = Self {
+            text,
+            ..self
+        };
+
+        res.history.clear();
+        res.set_milestone();
+
+        res
     }
 
     pub fn char_range(&self, output: &mut dyn Output) -> Option<Range<usize>> {
@@ -105,46 +151,12 @@ impl BufferState {
         }).flatten().unwrap_or(vec![])
     }
 
-    pub fn with_lang(self, lang_id: LangId) -> Self {
-        Self {
-            lang_id: Some(lang_id),
-            ..self
-        }
-    }
-
     pub fn set_file_front(&mut self, ff_op: Option<FileFront>) {
         self.file = ff_op;
     }
 
     pub fn get_file_front(&self) -> Option<&FileFront> {
         self.file.as_ref()
-    }
-
-    pub fn with_file_front(self, ff: FileFront) -> Self {
-        Self {
-            file: Some(ff),
-            ..self
-        }
-    }
-
-    pub fn with_text_from_rope(self, rope: Rope, lang_id: Option<LangId>) -> Self {
-        let copy_rope = rope.clone();
-        let mut text = Text::default().with_rope(rope);
-
-        if let Some(lang_id) = lang_id {
-            if text.parse(self.tree_sitter.clone(), lang_id) {
-                text.parsing.as_mut().map(|parsing| {
-                    parsing.try_reparse(&copy_rope);
-                });
-            } else {
-                error!("creation of parse_tuple failed");
-            }
-        }
-
-        Self {
-            text,
-            ..self
-        }
     }
 
     pub fn set_lang(&mut self, lang_id: Option<LangId>) {
@@ -158,12 +170,20 @@ impl BufferState {
     pub fn apply_cem(&mut self, cem: CommonEditMsg, page_height: usize, clipboard: Option<&ClipboardRef>) -> bool {
         // TODO optimise
         let mut cursors = self.text.cursor_set.clone();
-        let (diff_len_chars, any_change) = apply_cem(cem, &mut cursors, self, page_height as usize, clipboard);
-        self.text.cursor_set = cursors;
+        let (diff_len_chars, any_change) = apply_cem(cem.clone(), &mut cursors, self, page_height as usize, clipboard);
 
-        if any_change {
-            if self.diff_oracle.update_with(diff_len_chars) {
-                self.set_milestone();
+        //undo/redo invalidates cursors copy, so I need to watch for those
+
+        match cem {
+            CommonEditMsg::Undo | CommonEditMsg::Redo => {}
+            _ => {
+                self.text.cursor_set = cursors;
+
+                if any_change {
+                    if self.diff_oracle.update_with(diff_len_chars) {
+                        self.set_milestone();
+                    }
+                }
             }
         }
 
