@@ -46,12 +46,21 @@ pub enum Keycode {
     Unhandled,
 }
 
-
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Modifiers {
     pub alt: bool,
     pub ctrl: bool,
     pub shift: bool,
+}
+
+impl Default for Modifiers {
+    fn default() -> Self {
+        Modifiers {
+            alt: false,
+            ctrl: false,
+            shift: false,
+        }
+    }
 }
 
 impl Modifiers {
@@ -84,6 +93,39 @@ impl Key {
             _ => None
         };
     }
+
+    pub fn with_alt(self) -> Self {
+        Key {
+            modifiers : Modifiers {
+                alt: true,
+                ctrl: self.modifiers.ctrl,
+                shift: self.modifiers.shift,
+            },
+            ..self
+        }
+    }
+
+    pub fn with_ctrl(self) -> Self {
+        Key {
+            modifiers : Modifiers {
+                alt: self.modifiers.alt,
+                ctrl: true,
+                shift: self.modifiers.shift,
+            },
+            ..self
+        }
+    }
+
+    pub fn with_shift(self) -> Self {
+        Key {
+            modifiers : Modifiers {
+                alt: self.modifiers.alt,
+                ctrl: self.modifiers.ctrl,
+                shift: true,
+            },
+            ..self
+        }
+    }
 }
 
 impl Keycode {
@@ -92,6 +134,13 @@ impl Keycode {
             *self == Keycode::ArrowLeft ||
             *self == Keycode::ArrowUp ||
             *self == Keycode::ArrowDown;
+    }
+
+    pub fn to_key(self) -> Key {
+        Key {
+            keycode: self,
+            modifiers: Modifiers::default(),
+        }
     }
 }
 
