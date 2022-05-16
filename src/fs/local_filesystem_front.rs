@@ -311,7 +311,7 @@ impl FilesystemFront for LocalFilesystem {
         }
     }
 
-    fn read_whole_file(&self, path: &Path) -> Result<Rope, ReadError> {
+    fn read_entire_file_to_rope(&self, path: &Path) -> Result<Rope, ReadError> {
         let mut file = std::fs::File::open(path).map_err(|ioe| ReadError::IoError(ioe))?;
         let mut buf: Vec<u8> = Vec::default();
         file.read_to_end(&mut buf);
@@ -319,6 +319,15 @@ impl FilesystemFront for LocalFilesystem {
 
         Ok(Rope::from_str(s))
     }
+
+    fn read_entire_file_bytes(&self, path: &Path) -> Result<Vec<u8>, ReadError> {
+        let mut file = std::fs::File::open(path).map_err(|ioe| ReadError::IoError(ioe))?;
+        let mut buf: Vec<u8> = Vec::default();
+        file.read_to_end(&mut buf);
+
+        Ok(buf)
+    }
+
 
     // This returns from cache if possible. Triggers update.
     fn get_children_paths(&self, path: &Path) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {

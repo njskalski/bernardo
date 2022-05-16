@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter, write};
 use std::{io, iter};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -17,10 +17,19 @@ use ropey::Rope;
 
 use crate::io::loading_state::LoadingState;
 
+#[derive(Debug)]
 pub enum ReadError {
     IoError(io::Error),
     Utf8Error(Utf8Error),
 }
+
+impl Display for ReadError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for ReadError {}
 
 pub trait SomethingToSave {
     fn get_slices(&self) -> Box<dyn Iterator<Item=&[u8]> + '_>;
@@ -31,6 +40,16 @@ impl SomethingToSave for Vec<u8> {
         Box::new(
             iter::once(
                 self.as_slice()
+            )
+        )
+    }
+}
+
+impl SomethingToSave for &str {
+    fn get_slices(&self) -> Box<dyn Iterator<Item=&[u8]> + '_> {
+        Box::new(
+            iter::once(
+                self.as_bytes()
             )
         )
     }
@@ -59,7 +78,9 @@ pub trait FilesystemFront: Debug {
      */
     fn get_path(&self, path: &Path) -> Option<Rc<PathBuf>>;
 
-    fn read_whole_file(&self, path: &Path) -> Result<Rope, ReadError>;
+    fn read_entire_file_to_rope(&self, path: &Path) -> Result<Rope, ReadError>;
+
+    fn read_entire_file_bytes(&self, path: &Path) -> Result<Vec<u8>, ReadError>;
 
     // One of many "nice to haves" of this editor, outside of scope of MVP, is "large files support",
     // that I want to test with infinite file generator behind an interface here.

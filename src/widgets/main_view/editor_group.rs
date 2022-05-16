@@ -57,7 +57,7 @@ impl EditorGroup {
 
     // TODO is it on error escalation path after failed read?
     pub fn open_file(&mut self, tree_sitter: Rc<TreeSitterWrapper>, ff: FileFront, clipboard: ClipboardRef) -> Result<usize, ReadError> {
-        let file_contents = ff.read_whole_file()?;
+        let file_contents = ff.read_entire_file_to_rope()?;
         let lang_id_op = filename_to_language(ff.path());
 
         self.editors.push(WithScroll::new(

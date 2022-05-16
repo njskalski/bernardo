@@ -44,6 +44,7 @@ mod text;
 mod widgets;
 mod tsw;
 mod fs;
+mod config;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -105,7 +106,7 @@ fn main() {
 
     // let mut main_view = SaveFileDialogWidget::new(fsf.clone()).with_something_to_save(Box::new(trash));
 
-    let theme = Theme::load_from_file(filesystem::OsFileSystem::new(), &PathBuf::from("./themes/default.ron")).unwrap(); // TODO
+    let theme = Theme::load_from_file(&PathBuf::from("./themes/default.ron")).unwrap();
 
     // returns (consumed, message_to_parent)
     fn recursive_treat_views(

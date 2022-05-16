@@ -121,8 +121,12 @@ impl FileFront {
         &self.fsf
     }
 
-    pub fn read_whole_file(&self) -> Result<Rope, ReadError> {
-        self.fsf.read_whole_file(self.path())
+    pub fn read_entire_file_to_rope(&self) -> Result<Rope, ReadError> {
+        self.fsf.read_entire_file_to_rope(self.path())
+    }
+
+    pub fn read_entire_file_to_bytes(&self) -> Result<Vec<u8>, ReadError> {
+        self.fsf.read_entire_file_bytes(self.path())
     }
 
     /*

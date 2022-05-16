@@ -1,8 +1,12 @@
+use std::fmt::{Display, Formatter};
 use std::path::Path;
+use std::str::Utf8Error;
 
 use filesystem::FileSystem;
 use log::warn;
 use serde::{Deserialize, Serialize};
+use crate::fs::file_front::FileFront;
+use crate::fs::filesystem_front::ReadError;
 
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::color::Color;
@@ -12,12 +16,6 @@ use crate::primitives::tmtheme::TmTheme;
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Theme {
-    /*
-    This is supposed to be a fallback theme for code where tree-sitter fails to recognize and parse.
-    Not sure if I will keep it. Not used now.
-     */
-    #[serde(default, skip_serializing_if = "GeneralCodeTheme::is_default")]
-    pub general_code_theme: GeneralCodeTheme,
     #[serde(default, skip_serializing_if = "UiTheme::is_default")]
     pub ui: UiTheme,
     // I do not serialize this, use the default value and always say "true" in comparison operator.
@@ -161,128 +159,81 @@ pub struct CursorsSettings {
     pub foreground: Option<Color>,
 }
 
+#[derive(Debug)]
+pub enum LoadError {
+    ReadError(ReadError),
+    DeserializationError(ron::Error),
+}
+
+impl From<ron::Error> for LoadError {
+    fn from(e: ron::Error) -> Self {
+        LoadError::DeserializationError(e)
+    }
+}
+
+impl From<ReadError> for LoadError {
+    fn from(re: ReadError) -> Self {
+        LoadError::ReadError(re)
+    }
+}
+
+impl From<std::io::Error> for LoadError {
+    fn from(ioe: std::io::Error) -> Self {
+        LoadError::ReadError(ReadError::IoError(ioe))
+    }
+}
+
+impl From<std::str::Utf8Error> for LoadError {
+    fn from(ue: Utf8Error) -> Self {
+        LoadError::ReadError(ReadError::Utf8Error(ue))
+    }
+}
+
+impl Display for LoadError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for LoadError {}
+
+#[derive(Debug)]
+pub enum SaveError {
+    SerializationError(ron::Error),
+    IoError(std::io::Error),
+}
+
+impl From<ron::Error> for SaveError {
+    fn from(e: ron::Error) -> Self {
+        SaveError::SerializationError(e)
+    }
+}
+
+impl From<std::io::Error> for SaveError {
+    fn from(ioe: std::io::Error) -> Self {
+        SaveError::IoError(ioe)
+    }
+}
+
 impl Theme {
-    pub fn with_general_code_theme(self, general_code_theme: GeneralCodeTheme) -> Self {
-        Self {
-            general_code_theme,
-            ..self
-        }
+    /*
+    uses default filesystem (std). It is actually needed, it's unlikely that we want the theme config to be in 
+     */
+    pub fn load_from_file(path: &Path) -> Result<Self, LoadError> {
+        let b = std::fs::read(path)?;
+        let s = std::str::from_utf8(&b)?;
+        let item = ron::from_str(s)?;
+        Ok(item)
     }
 
-    pub fn load_from_file<T: FileSystem>(fs: T, path: &Path) -> Result<Self, ron::Error> {
-        let data = fs.read_file_to_string(path)?;
-        ron::from_str(&data)
-    }
-}
-
-#[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
-pub struct GeneralCodeTheme {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub identifier: Option<Color>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub string_literal: Option<Color>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub literal: Option<Color>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub type_identifier: Option<Color>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub parenthesis: Option<Color>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub bracket: Option<Color>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub double_quote: Option<Color>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub single_quote: Option<Color>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub operator: Option<Color>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub keyword: Option<Color>,
-}
-
-impl GeneralCodeTheme {
-    pub fn is_default(&self) -> bool {
-        self == &Self::default()
+    pub fn load_from_ff(ff: &FileFront) -> Result<Self, LoadError> {
+        let s = ff.read_entire_file_to_rope()?.to_string();
+        Ok(ron::from_str(s.as_str())?)
     }
 
-    pub fn with_identifier(self, c: Color) -> Self {
-        Self {
-            identifier: Some(c),
-            ..self
-        }
-    }
-
-    pub fn with_string_literal(self, c: Color) -> Self {
-        Self {
-            string_literal: Some(c),
-            ..self
-        }
-    }
-
-    pub fn with_type_identifier(self, c: Color) -> Self {
-        Self {
-            type_identifier: Some(c),
-            ..self
-        }
-    }
-
-    pub fn with_parenthesis(self, c: Color) -> Self {
-        Self {
-            parenthesis: Some(c),
-            ..self
-        }
-    }
-
-    pub fn with_bracket(self, c: Color) -> Self {
-        Self {
-            bracket: Some(c),
-            ..self
-        }
-    }
-
-    pub fn with_double_quote(self, c: Color) -> Self {
-        Self {
-            double_quote: Some(c),
-            ..self
-        }
-    }
-
-    pub fn with_single_quote(self, c: Color) -> Self {
-        Self {
-            single_quote: Some(c),
-            ..self
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::primitives::color::{BLACK, WHITE};
-
-    use super::*;
-
-    #[test]
-    fn test_serialize_general() {
-        assert_eq!(ron::to_string(&GeneralCodeTheme::default()), Ok("()".to_string()));
-
-        assert_eq!(ron::to_string(
-            &GeneralCodeTheme::default()
-                .with_identifier(BLACK)),
-                   Ok(r##"(identifier:Some("#000000"))"##.to_string()));
-
-        assert_eq!(ron::to_string(
-            &GeneralCodeTheme::default()
-                .with_string_literal(WHITE)
-                .with_bracket(WHITE)),
-                   Ok(r##"(string_literal:Some("#FFFFFF"),bracket:Some("#FFFFFF"))"##.to_string()));
-    }
-
-    #[test]
-    fn test_deserialize_theme() {
-        assert_eq!(ron::from_str(r##"()"##), Ok(Theme::default()));
-
-        assert_eq!(ron::from_str(r##"(general_code_theme:(identifier:Some("#000000")))"##),
-                   Ok(Theme::default().with_general_code_theme(
-                       GeneralCodeTheme::default().with_identifier(BLACK)
-                   )));
+    pub fn save_to_ff(&self, ff: &FileFront) -> Result<(), SaveError> {
+        let item_s = ron::to_string(self)?;
+        ff.overwrite_with(&item_s.as_str())?;
+        Ok(())
     }
 }
