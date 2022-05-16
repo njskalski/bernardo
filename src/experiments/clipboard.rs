@@ -1,6 +1,5 @@
-use std::cell::{BorrowError, Ref, RefCell};
+use std::cell::{ RefCell};
 use std::rc::Rc;
-use arboard::Error;
 use log::error;
 
 const EMPTY_STRING: String = String::new();
@@ -91,7 +90,7 @@ impl Default for FakeClipboard {
 impl Clipboard for FakeClipboard {
     fn get(&self) -> String {
         match self.contents.try_borrow() {
-            Ok(mut clipboard) => {
+            Ok(clipboard) => {
                 clipboard.clone()
             }
             Err(e) => {

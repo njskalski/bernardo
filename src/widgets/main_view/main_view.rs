@@ -16,7 +16,7 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
-use crate::primitives::theme::Theme;
+use crate::config::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::any_msg::AsAny;

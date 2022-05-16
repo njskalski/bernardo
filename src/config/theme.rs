@@ -1,12 +1,10 @@
 use std::fmt::{Display, Formatter};
 use std::path::Path;
-use std::str::Utf8Error;
-
-use filesystem::FileSystem;
 use log::warn;
 use serde::{Deserialize, Serialize};
+use crate::config::load_error::LoadError;
+use crate::config::save_error::SaveError;
 use crate::fs::file_front::FileFront;
-use crate::fs::filesystem_front::ReadError;
 
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::color::Color;
@@ -159,65 +157,9 @@ pub struct CursorsSettings {
     pub foreground: Option<Color>,
 }
 
-#[derive(Debug)]
-pub enum LoadError {
-    ReadError(ReadError),
-    DeserializationError(ron::Error),
-}
-
-impl From<ron::Error> for LoadError {
-    fn from(e: ron::Error) -> Self {
-        LoadError::DeserializationError(e)
-    }
-}
-
-impl From<ReadError> for LoadError {
-    fn from(re: ReadError) -> Self {
-        LoadError::ReadError(re)
-    }
-}
-
-impl From<std::io::Error> for LoadError {
-    fn from(ioe: std::io::Error) -> Self {
-        LoadError::ReadError(ReadError::IoError(ioe))
-    }
-}
-
-impl From<std::str::Utf8Error> for LoadError {
-    fn from(ue: Utf8Error) -> Self {
-        LoadError::ReadError(ReadError::Utf8Error(ue))
-    }
-}
-
-impl Display for LoadError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl std::error::Error for LoadError {}
-
-#[derive(Debug)]
-pub enum SaveError {
-    SerializationError(ron::Error),
-    IoError(std::io::Error),
-}
-
-impl From<ron::Error> for SaveError {
-    fn from(e: ron::Error) -> Self {
-        SaveError::SerializationError(e)
-    }
-}
-
-impl From<std::io::Error> for SaveError {
-    fn from(ioe: std::io::Error) -> Self {
-        SaveError::IoError(ioe)
-    }
-}
-
 impl Theme {
     /*
-    uses default filesystem (std). It is actually needed, it's unlikely that we want the theme config to be in 
+    uses default filesystem (std). It is actually needed, it's unlikely that we want the theme config to be in
      */
     pub fn load_from_file(path: &Path) -> Result<Self, LoadError> {
         let b = std::fs::read(path)?;

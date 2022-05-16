@@ -27,7 +27,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::size_constraint::SizeConstraint;
-use crate::primitives::theme::Theme;
+use config::theme::Theme;
 use crate::primitives::xy::ZERO;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
