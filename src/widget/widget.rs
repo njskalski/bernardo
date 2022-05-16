@@ -6,7 +6,7 @@ use log::{debug, error};
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::size_constraint::SizeConstraint;
-use crate::primitives::theme::Theme;
+use crate::config::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 

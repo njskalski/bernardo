@@ -7,7 +7,7 @@ use crate::io::sub_output::SubOutput;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::{Scroll, ScrollDirection};
-use crate::primitives::theme::Theme;
+use crate::config::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::widget::WID;
 

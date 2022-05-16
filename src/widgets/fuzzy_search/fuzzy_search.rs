@@ -7,7 +7,7 @@ use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget, ZERO};
 use crate::io::sub_output::SubOutput;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::rect::Rect;
-use crate::primitives::theme::Theme;
+use crate::config::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::widget::{get_new_widget_id, WID, WidgetAction};
 use crate::primitives::common_edit_msgs::key_to_edit_msg;
