@@ -334,7 +334,7 @@ mod tests {
                 ctrl: true,
                 shift: false,
             },
-        }), Ok(r#""q""#.to_string()));
+        }), Ok(r#""CTRL+x""#.to_string()));
     }
 
     #[test]

@@ -102,8 +102,8 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
                 Keycode::Char('z') if modifiers.just_ctrl() => Some(CommonEditMsg::Undo),
                 Keycode::Char('x') if modifiers.just_ctrl() => Some(CommonEditMsg::Redo),
                 Keycode::Char(c) if modifiers.is_empty() => Some(CommonEditMsg::Char(c)),
-                Keycode::ArrowUp if modifiers.is_empty() || modifiers.just_shift() => Some(CommonEditMsg::CursorUp { selecting: key.modifiers.shift }),
-                Keycode::ArrowDown if modifiers.is_empty() || modifiers.just_shift() => Some(CommonEditMsg::CursorDown { selecting: key.modifiers.shift }),
+                Keycode::ArrowUp => Some(CommonEditMsg::CursorUp { selecting: key.modifiers.shift }),
+                Keycode::ArrowDown => Some(CommonEditMsg::CursorDown { selecting: key.modifiers.shift }),
                 Keycode::ArrowLeft => {
                     if key.modifiers.ctrl {
                         Some(CommonEditMsg::WordBegin { selecting: key.modifiers.shift })
