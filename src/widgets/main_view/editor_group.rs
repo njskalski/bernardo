@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use log::error;
 use crate::primitives::scroll::ScrollDirection;
-use crate::{FsfRef, TreeSitterWrapper, Widget};
+use crate::{ConfigRef, FsfRef, TreeSitterWrapper, Widget};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::fs::file_front::FileFront;
@@ -17,17 +17,17 @@ use crate::widgets::with_scroll::WithScroll;
 // Also, this is very much work in progress.
 pub struct EditorGroup {
     editors: Vec<WithScroll<EditorView>>,
-}
-
-impl Default for EditorGroup {
-    fn default() -> Self {
-        Self {
-            editors: Vec::new(),
-        }
-    }
+    config: ConfigRef,
 }
 
 impl EditorGroup {
+    pub fn new(config: ConfigRef) -> EditorGroup {
+        EditorGroup {
+            editors: Vec::new(),
+            config,
+        }
+    }
+
     pub fn get(&self, idx: usize) -> Option<&WithScroll<EditorView>> {
         if idx > self.editors.len() {
             error!("requested non-existent editor {}", idx);
@@ -45,7 +45,7 @@ impl EditorGroup {
     pub fn open_empty(&mut self, tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> usize {
         self.editors.push(
             WithScroll::new(
-                EditorView::new(tree_sitter, fsf, clipboard),
+                EditorView::new(self.config.clone(), tree_sitter, fsf, clipboard),
                 ScrollDirection::Both,
             ).with_line_no()
         );
@@ -61,7 +61,7 @@ impl EditorGroup {
         let lang_id_op = filename_to_language(ff.path());
 
         self.editors.push(WithScroll::new(
-            EditorView::new(tree_sitter.clone(), ff.fsf().clone(), clipboard)
+            EditorView::new(self.config.clone(), tree_sitter.clone(), ff.fsf().clone(), clipboard)
                 .with_buffer(
                     BufferState::new(tree_sitter)
                         .with_text_from_rope(file_contents, lang_id_op)

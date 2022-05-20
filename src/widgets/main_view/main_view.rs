@@ -84,7 +84,7 @@ impl MainView {
             wid: get_new_widget_id(),
             display_state: MainViewDisplayState::default(),
             tree_widget: WithScroll::new(tree, ScrollDirection::Vertical),
-            editors: EditorGroup::default(),
+            editors: EditorGroup::new(config.clone()),
             no_editor: NoEditorWidget::default(),
             tree_sitter,
             fsf,

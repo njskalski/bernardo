@@ -38,12 +38,16 @@ impl Default for Global {
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Editor {
+    pub save: Key,
+    pub save_as: Key,
     pub enter_cursor_drop_mode: Key,
 }
 
 impl Default for Editor {
     fn default() -> Self {
         Editor {
+            save: Keycode::Char('s').to_key().with_ctrl(),
+            save_as: Keycode::Char('d').to_key().with_ctrl(),
             enter_cursor_drop_mode: Keycode::Char('e').to_key().with_ctrl(),
         }
     }

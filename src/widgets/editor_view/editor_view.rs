@@ -432,16 +432,16 @@ impl Widget for EditorView {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        let c = &self.config.keyboard_config.editor;
         return match (&self.state, input_event) {
             //TODO refactor the settings
-            (_, InputEvent::KeyInput(key)) if key.modifiers.ctrl && key.keycode == Keycode::Char('s') => {
+            (_, InputEvent::KeyInput(key)) if key == c.save => {
                 EditorViewMsg::Save.someboxed()
             }
-            (_, InputEvent::KeyInput(key)) if key.modifiers.ctrl && key.keycode == Keycode::Char('d') => {
+            (_, InputEvent::KeyInput(key)) if key == c.save_as => {
                 EditorViewMsg::SaveAs.someboxed()
             }
-            // TODO temp
-            (&EditorState::Editing, InputEvent::KeyInput(key)) if key.modifiers.ctrl && key.keycode == Keycode::Char('e') => {
+            (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.enter_cursor_drop_mode => {
                 EditorViewMsg::ToCursorDropMode.someboxed()
             }
             (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Esc => {

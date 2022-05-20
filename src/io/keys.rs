@@ -71,6 +71,22 @@ impl Modifiers {
             shift,
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        !(self.alt || self.ctrl || self.shift)
+    }
+
+    pub fn just_alt(&self) -> bool {
+        self.alt && !self.ctrl && !self.shift
+    }
+
+    pub fn just_ctrl(&self) -> bool {
+        !self.alt && self.ctrl && !self.shift
+    }
+
+    pub fn just_shift(&self) -> bool {
+        !self.alt && !self.ctrl && self.shift
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
