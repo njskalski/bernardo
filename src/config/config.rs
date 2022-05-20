@@ -8,7 +8,7 @@ use crate::Keycode;
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Config {
-    pub keyboard_config : KeyboardConfig
+    pub keyboard_config: KeyboardConfig,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -23,6 +23,7 @@ pub struct KeyboardConfig {
 pub struct Global {
     pub close: Key,
     pub fuzzy_file: Key,
+    pub new_buffer: Key,
 }
 
 impl Default for Global {
@@ -30,6 +31,7 @@ impl Default for Global {
         Global {
             close: Keycode::Char('q').to_key().with_ctrl(),
             fuzzy_file: Keycode::Char('h').to_key().with_ctrl(),
+            new_buffer: Keycode::Char('n').to_key().with_ctrl(),
         }
     }
 }
@@ -61,7 +63,7 @@ impl Config {
     }
 
     pub fn save_to_file(&self, path: &Path) -> Result<(), SaveError> {
-        let item_s = ron::to_string(self)?;
+        let item_s = ron::ser::to_string_pretty(self, ron::ser::PrettyConfig::new())?;
         std::fs::write(path, item_s)?;
         Ok(())
     }

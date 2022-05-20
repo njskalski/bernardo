@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use log::{debug, error, warn};
 
-use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget};
+use crate::{AnyMsg, ConfigRef, InputEvent, Keycode, Output, SizeConstraint, Widget};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::fs::file_front::FileFront;
 use crate::fs::fsfref::FsfRef;
@@ -55,12 +55,16 @@ pub struct MainView {
     tree_sitter: Rc<TreeSitterWrapper>,
     fsf: FsfRef,
     clipboard: ClipboardRef,
+    config: ConfigRef,
 
     hover: Option<HoverItem>,
 }
 
 impl MainView {
-    pub fn new(tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> MainView {
+    pub fn new(config: ConfigRef,
+               tree_sitter: Rc<TreeSitterWrapper>,
+               fsf: FsfRef,
+               clipboard: ClipboardRef) -> MainView {
         let root_node = fsf.get_root();
         let tree = TreeViewWidget::new(root_node)
             .with_on_flip_expand(|widget| {
@@ -85,6 +89,7 @@ impl MainView {
             tree_sitter,
             fsf,
             clipboard,
+            config,
             hover: None,
         }
     }
@@ -204,10 +209,10 @@ impl Widget for MainView {
             InputEvent::FocusUpdate(focus_update) if self.display_state.will_accept_update_focus(focus_update) => {
                 MainViewMsg::FocusUpdateMsg(focus_update).someboxed()
             }
-            InputEvent::KeyInput(key) if key.modifiers.ctrl && key.keycode == Keycode::Char('n') => {
+            InputEvent::KeyInput(key) if key == self.config.keyboard_config.global.new_buffer => {
                 MainViewMsg::OpenNewFile.someboxed()
             }
-            InputEvent::KeyInput(key) if key.modifiers.ctrl && key.keycode == Keycode::Char('h') => {
+            InputEvent::KeyInput(key) if key == self.config.keyboard_config.global.fuzzy_file => {
                 MainViewMsg::OpenFuzzyFiles.someboxed()
             }
             _ => None

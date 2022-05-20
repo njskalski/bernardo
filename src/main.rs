@@ -170,6 +170,8 @@ fn main() {
         }
     }
 
+    let config_ref = ConfigRef::new(config.unwrap());
+
     let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
 
     let stdout = stdout();
@@ -190,7 +192,7 @@ fn main() {
     let fsf: FsfRef = LocalFilesystem::new(PathBuf::from("/home/andrzej/r/rust/bernardo"));
     let clipboard = get_me_some_clipboard();
 
-    let mut main_view = MainView::new(tree_sitter, fsf.clone(), clipboard);
+    let mut main_view = MainView::new(config_ref.clone(), tree_sitter, fsf.clone(), clipboard);
 
     // let trash = Rc::new("trash".to_string());
 

@@ -6,7 +6,7 @@ use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget};
+use crate::{AnyMsg, ConfigRef, InputEvent, Keycode, Output, SizeConstraint, Widget};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::fs::fsfref::FsfRef;
 use crate::io::sub_output::SubOutput;
@@ -80,8 +80,8 @@ pub struct EditorView {
     One thing to address is: "what if I have file from filesystem A, and I want to "save as" to B?". But that's beyond MVP, so I don't think about it now.
      */
     fsf: FsfRef,
-
     clipboard: ClipboardRef,
+    config: ConfigRef,
 
     save_file_dialog: Option<SaveFileDialogWidget>,
 
@@ -98,7 +98,7 @@ pub struct EditorView {
 }
 
 impl EditorView {
-    pub fn new(tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> EditorView {
+    pub fn new(config: ConfigRef, tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> EditorView {
         EditorView {
             wid: get_new_widget_id(),
             last_size: None,
@@ -106,6 +106,7 @@ impl EditorView {
             anchor: ZERO,
             tree_sitter,
             fsf,
+            config,
             clipboard,
             save_file_dialog: None,
             start_path: None,
