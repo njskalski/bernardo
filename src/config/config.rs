@@ -1,29 +1,28 @@
+use std::path::Path;
+use std::rc::Rc;
 use serde::{Deserialize, Serialize};
+use crate::config::load_error::LoadError;
+use crate::config::save_error::SaveError;
 use crate::io::keys::Key;
 use crate::Keycode;
 
-
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Config {
-    // #[serde(default, skip_serializing_if = "UiTheme::is_default")]
-    // pub ui: UiTheme,
-    // // I do not serialize this, use the default value and always say "true" in comparison operator.
-    // #[serde(default, skip_serializing)]
-    // pub tm: TmTheme,
+    pub keyboard_config : KeyboardConfig
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct KeyboardConfig {
     #[serde(default)]
-    global: Global,
+    pub global: Global,
     #[serde(default)]
-    editor: Editor,
+    pub editor: Editor,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Global {
-    close: Key,
-    fuzzy_file: Key,
+    pub close: Key,
+    pub fuzzy_file: Key,
 }
 
 impl Default for Global {
@@ -37,7 +36,7 @@ impl Default for Global {
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Editor {
-    enter_cursor_drop_mode: Key,
+    pub enter_cursor_drop_mode: Key,
 }
 
 impl Default for Editor {
@@ -45,5 +44,25 @@ impl Default for Editor {
         Editor {
             enter_cursor_drop_mode: Keycode::Char('e').to_key().with_ctrl(),
         }
+    }
+}
+
+pub type ConfigRef = Rc<Config>;
+
+impl Config {
+    /*
+    uses default filesystem (std). It is actually needed, it's unlikely that we want the theme config to be in
+     */
+    pub fn load_from_file(path: &Path) -> Result<Self, LoadError> {
+        let b = std::fs::read(path)?;
+        let s = std::str::from_utf8(&b)?;
+        let item: Config = ron::from_str(s)?;
+        Ok(item)
+    }
+
+    pub fn save_to_file(&self, path: &Path) -> Result<(), SaveError> {
+        let item_s = ron::to_string(self)?;
+        std::fs::write(path, item_s)?;
+        Ok(())
     }
 }

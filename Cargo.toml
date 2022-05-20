@@ -6,7 +6,7 @@ edition = "2018"
 license = "GPLv3"
 
 [dependencies]
-clap = "3.0.13"
+clap = { version = "3.0.13", features = ["derive"] }
 clap-verbosity-flag = "0.4.1"
 log = "0.4.14"
 crossbeam-channel = "0.5.1"
@@ -32,6 +32,7 @@ streaming-iterator = "0.1.5"
 maplit = "1.0.2"
 lazy_static = "1.4.0"
 matches = "0.1.9"
+dirs = "4.0.0"
 
 #tree sitter items
 tree-sitter = "0.20.2"
