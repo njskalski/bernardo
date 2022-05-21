@@ -11,3 +11,4 @@ pub mod fuzzy_search;
 pub mod generic_dialog;
 pub mod text_widget;
 pub mod file_tree_view;
+pub mod open_buffers_list;

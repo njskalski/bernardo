@@ -7,4 +7,6 @@ pub enum InputEvent {
     // state might have changed, update and redraw if necessary
     KeyInput(Key),
     FocusUpdate(FocusUpdate),
+    // primary feature - everything bar with escalation
+    EverythingBarTrigger
 }

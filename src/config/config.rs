@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::rc::Rc;
 use serde::{Deserialize, Serialize};
+
 use crate::config::load_error::LoadError;
 use crate::config::save_error::SaveError;
 use crate::io::keys::Key;
@@ -25,6 +26,7 @@ pub struct Global {
     pub fuzzy_file: Key,
     pub new_buffer: Key,
     pub browse_buffers: Key,
+    pub everything_bar: Key,
 }
 
 impl Default for Global {
@@ -34,6 +36,9 @@ impl Default for Global {
             fuzzy_file: Keycode::Char('h').to_key().with_ctrl(),
             new_buffer: Keycode::Char('n').to_key().with_ctrl(),
             browse_buffers: Keycode::Char('w').to_key().with_ctrl(),
+            // This is the most important feature of them all.
+            // In order to support it EVERYWHERE it will need to be converted to InputEvent
+            everything_bar: Keycode::Char('e').to_key().with_ctrl(),
         }
     }
 }
@@ -50,7 +55,7 @@ impl Default for Editor {
         Editor {
             save: Keycode::Char('s').to_key().with_ctrl(),
             save_as: Keycode::Char('d').to_key().with_ctrl(),
-            enter_cursor_drop_mode: Keycode::Char('e').to_key().with_ctrl(),
+            enter_cursor_drop_mode: Keycode::Char('r').to_key().with_ctrl(),
         }
     }
 }

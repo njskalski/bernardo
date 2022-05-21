@@ -277,7 +277,11 @@ fn main() {
                             InputEvent::KeyInput(key) if key.as_focus_update().is_some() && key.modifiers.alt => {
                                 ie = InputEvent::FocusUpdate(key.as_focus_update().unwrap());
                             },
-                            InputEvent::KeyInput(key) if key.keycode == Keycode::Char('q') && key.modifiers.ctrl => {
+                            InputEvent::KeyInput(key) if key == config_ref.keyboard_config.global.everything_bar => {
+                                ie = InputEvent::EverythingBarTrigger;
+                            }
+                            // TODO move to message, to handle signals in the same way?
+                            InputEvent::KeyInput(key) if key == config_ref.keyboard_config.global.close => {
                                 break 'main;
                             }
                             _ => {}
