@@ -24,6 +24,7 @@ pub struct Global {
     pub close: Key,
     pub fuzzy_file: Key,
     pub new_buffer: Key,
+    pub browse_buffers: Key,
 }
 
 impl Default for Global {
@@ -32,6 +33,7 @@ impl Default for Global {
             close: Keycode::Char('q').to_key().with_ctrl(),
             fuzzy_file: Keycode::Char('h').to_key().with_ctrl(),
             new_buffer: Keycode::Char('n').to_key().with_ctrl(),
+            browse_buffers: Keycode::Char('w').to_key().with_ctrl(),
         }
     }
 }

@@ -1,0 +1,27 @@
+triple ctrl-h, enter, first two being dirs.
+
+thread 'main' panicked at 'assertion failed: output_size >= wid.rect.lower_right()', src/layout/leaf_layout.rs:64:13
+stack backtrace:
+   0: rust_begin_unwind
+             at /rustc/7737e0b5c4103216d6fd8cf941b7ab9bdbaace7c/library/std/src/panicking.rs:584:5
+   1: core::panicking::panic_fmt
+             at /rustc/7737e0b5c4103216d6fd8cf941b7ab9bdbaace7c/library/core/src/panicking.rs:143:14
+   2: core::panicking::panic
+             at /rustc/7737e0b5c4103216d6fd8cf941b7ab9bdbaace7c/library/core/src/panicking.rs:48:5
+   3: <bernardo::layout::leaf_layout::LeafLayout as bernardo::layout::layout::Layout>::calc_sizes
+             at ./src/layout/leaf_layout.rs:64:13
+   4: <bernardo::layout::split_layout::SplitLayout as bernardo::layout::layout::Layout>::calc_sizes
+             at ./src/layout/split_layout.rs:190:24
+   5: <bernardo::layout::hover_layout::HoverLayout as bernardo::layout::layout::Layout>::calc_sizes
+             at ./src/layout/hover_layout.rs:35:26
+   6: bernardo::widgets::main_view::main_view::MainView::internal_layout
+             at ./src/widgets/main_view/main_view.rs:145:21
+   7: <bernardo::widgets::main_view::main_view::MainView as bernardo::widget::widget::Widget>::layout
+             at ./src/widgets/main_view/main_view.rs:200:25
+   8: bernardo::main
+             at ./src/main.rs:264:9
+   9: core::ops::function::FnOnce::call_once
+             at /rustc/7737e0b5c4103216d6fd8cf941b7ab9bdbaace7c/library/core/src/ops/function.rs:227:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+[2022-05-20T04:39:34Z ERROR bernardo::fs::local_filesystem_front] failed retrieving indexing request: receiving on an empty and disconnected channel
+

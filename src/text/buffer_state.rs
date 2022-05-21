@@ -177,7 +177,7 @@ impl BufferState {
             _ => {
                 self.text_mut().cursor_set = cursors;
 
-                if diff_len_chars == 0 {
+                if !any_change {
                     self.strip_milestone();
                 }
             }

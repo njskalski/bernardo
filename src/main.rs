@@ -64,14 +64,10 @@ struct Args {
     #[clap(flatten)]
     pub verbosity: clap_verbosity_flag::Verbosity,
 
-    #[clap(subcommand)]
-    pub command: Option<Command>,
+    #[clap(short = 'r', long="reconfigure")]
+    pub reconfigure: bool,
 }
 
-#[derive(Subcommand, Debug, Eq, PartialEq)]
-enum Command {
-    Reconfig,
-}
 
 const debug_params: &'static [(&'static str, log::LevelFilter)] = &[
     // this is for git ignore
@@ -111,7 +107,7 @@ fn main() {
 
     // Here we either create first config, or re-create it.
     let mut config: Option<Config> = None;
-    if args.command.map(|c| c == Command::Reconfig).unwrap_or(false) || !config_exists {
+    if args.reconfigure || !config_exists {
         if config_exists {
             let secs = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
                 Ok(n) => n.as_secs(),

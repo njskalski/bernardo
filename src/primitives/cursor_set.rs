@@ -67,7 +67,7 @@ impl Selection {
     pub fn within(&self, char_idx: usize) -> bool {
         char_idx >= self.b && char_idx < self.e
     }
-    
+
     pub fn len(&self) -> usize {
         debug_assert!(self.b < self.e);
         if self.b >= self.e {
@@ -281,7 +281,7 @@ impl Cursor {
             } else {
                 self.clear_selection();
             }
-            
+
             self.preferred_column = None;
 
             true
@@ -1181,5 +1181,25 @@ impl CursorSet {
         }
 
         true
+    }
+
+    pub fn len(&self) -> usize {
+        self.set.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.set.is_empty()
+    }
+
+    pub fn remove_by_anchor(&mut self, anchor_char: usize) -> bool {
+        for i in 0..self.set.len() {
+            if self.set[i].a == anchor_char {
+                self.set.remove(i);
+                debug_assert!(self.check_invariants());
+                return true;
+            }
+        }
+
+        false
     }
 }

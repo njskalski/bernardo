@@ -14,6 +14,12 @@ So I don't have to reimplement basic edit properties for multiple widgets, I mov
 // this is a completely arbitrary number against which I compare Page length, to avoid under/overflow while casting to isize safely.
 const PAGE_HEIGHT_LIMIT: usize = 2000;
 
+/*
+I am beginning to think, CEM should be broken into several smaller types, like:
+move
+edit
+undo/redo
+ */
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum CommonEditMsg {
     Char(char),

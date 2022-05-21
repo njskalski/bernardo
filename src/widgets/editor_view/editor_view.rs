@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use log::{error, warn};
+use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -450,11 +450,7 @@ impl Widget for EditorView {
             (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Enter => {
                 debug_assert!(special_cursor.is_simple());
 
-                if self.cursors().get_cursor_status_for_char(special_cursor.a) != CursorStatus::UnderCursor {
-                    EditorViewMsg::DropCursor { cursor: special_cursor }.someboxed()
-                } else {
-                    None
-                }
+                EditorViewMsg::DropCursorFlip { cursor: special_cursor }.someboxed()
             }
             // TODO change to if let Some() when it's stabilized
             (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
@@ -518,15 +514,34 @@ impl Widget for EditorView {
                     self.enter_editing_mode();
                     None
                 }
-                (&EditorState::DroppingCursor { special_cursor }, EditorViewMsg::DropCursor { cursor }) => {
+                (&EditorState::DroppingCursor { special_cursor }, EditorViewMsg::DropCursorFlip { cursor }) => {
+                    debug_assert!(special_cursor.is_simple());
+
                     if !self.buffer.text().cursor_set.are_simple() {
-                        warn!("Cursors were supposed to be simple at this point. Fixing, but there was error.");
+                        warn!("Cursors were supposed to be simple at this point. Recovering, but there was error.");
                         self.buffer.text_mut().cursor_set.simplify();
                     }
 
-                    if !self.buffer.text_mut().cursor_set.add_cursor(*cursor) {
-                        warn!("Failed to add cursor {:?} to set", cursor);
+                    let has_cursor = self.buffer.text().cursor_set.get_cursor_status_for_char(special_cursor.a) == CursorStatus::UnderCursor;
+
+                    if has_cursor {
+                        let cs = &mut self.buffer.text_mut().cursor_set;
+
+                        // We don't remove a single cursor, to not invalidate invariant
+                        if cs.len() > 1 {
+                            if !cs.remove_by_anchor(special_cursor.a) {
+                                warn!("Failed to remove cursor by anchor {}, ignoring request", special_cursor.a);
+                            }
+                        } else {
+                            debug!("Not removing a single cursor at {}", special_cursor.a);
+                        }
+                    } else {
+                        if !self.buffer.text_mut().cursor_set.add_cursor(*cursor) {
+                            warn!("Failed to add cursor {:?} to set", cursor);
+                        }
                     }
+
+                    debug_assert!(self.buffer.text().cursor_set.check_invariants());
 
                     None
                 }

@@ -16,7 +16,8 @@ pub enum EditorViewMsg {
     ToCursorDropMode,
     ToEditMode,
 
-    DropCursor { cursor: Cursor },
+    DropCursorFlip { cursor: Cursor },
+    // not sure if this can't be simplified, why separate message?
     DropCursorMove { cem: CommonEditMsg },
 }
 
