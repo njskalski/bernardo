@@ -17,7 +17,7 @@ pub fn is_subsequence(item: &str, query: &str) -> bool {
 }
 
 #[test]
-fn test_is_substring() {
+fn test_is_subsequence() {
     assert_eq!(is_subsequence("abba", "c"), false);
     assert_eq!(is_subsequence("abba", "bbb"), false);
     assert_eq!(is_subsequence("abba", "aba"), true);

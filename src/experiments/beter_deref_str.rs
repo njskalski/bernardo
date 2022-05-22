@@ -9,12 +9,18 @@ pub enum BetterDerefStr<'a> {
 }
 
 impl<'a> BetterDerefStr<'a> {
-    fn as_ref_str(&self) -> &str {
+    pub fn as_ref_str(&self) -> &str {
         match self {
             BetterDerefStr::String(s) => s.as_str(),
             BetterDerefStr::Rc(s) => s.as_str(),
             BetterDerefStr::Arc(s) => s.as_str(),
             BetterDerefStr::Str(s) => s,
         }
+    }
+}
+
+impl<'a> From<&'static str> for BetterDerefStr<'a> {
+    fn from(s: &'static str) -> Self {
+        BetterDerefStr::Str(s)
     }
 }

@@ -1,5 +1,6 @@
 pub mod mock {
     use crate::AnyMsg;
+    use crate::experiments::beter_deref_str::BetterDerefStr;
     use crate::primitives::alphabet::mock::ALPHABET;
     use crate::widgets::fuzzy_search::helpers::is_subsequence;
     use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
@@ -41,8 +42,8 @@ pub mod mock {
     }
 
     impl Item for String {
-        fn display_name(&self) -> &str {
-            self.as_str()
+        fn display_name(&self) -> BetterDerefStr {
+            BetterDerefStr::Str(self.as_str())
         }
 
         fn on_hit(&self) -> Box<dyn AnyMsg> {

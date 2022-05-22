@@ -225,6 +225,14 @@ impl Widget for MainView {
             InputEvent::KeyInput(key) if key == self.config.keyboard_config.global.fuzzy_file => {
                 MainViewMsg::OpenFuzzyFiles.someboxed()
             }
+            InputEvent::KeyInput(key) if key == self.config.keyboard_config.global.browse_buffers => {
+                if self.editors.is_empty() {
+                    debug!("ignoring browse_buffers request - no editors open.");
+                    None
+                } else {
+                    MainViewMsg::OpenFuzzyBuffers.someboxed()
+                }
+            }
             _ => None
         };
     }
@@ -272,11 +280,13 @@ impl Widget for MainView {
                     None
                 }
                 MainViewMsg::FuzzyBuffersHit { pos } => {
-                    if self.editors.len() >= *pos {
+                    if *pos >= self.editors.len() {
                         error!("received FuzzyBufferHit for an index {} and len is {}, ignoring", pos, self.editors.len());
                     } else {
                         self.display_state.curr_editor_idx = Some(*pos);
                     }
+                    // removing the dialog
+                    self.hover = None;
 
                     None
                 }
