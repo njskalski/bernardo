@@ -47,4 +47,8 @@ pub trait Layout {
     receive information about their new sizes before render.
      */
     fn calc_sizes(&mut self, output_size: XY) -> Vec<WidgetIdRect>;
+
+    fn boxed(self) -> Box<dyn Layout> {
+        Box::new(self) as Box<dyn Layout>
+    }
 }
