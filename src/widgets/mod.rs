@@ -5,7 +5,7 @@ pub mod edit_box;
 pub mod no_editor;
 pub mod with_scroll;
 pub mod main_view;
-pub mod editor_view;
+pub mod editor_widget;
 pub mod list_widget;
 pub mod fuzzy_search;
 pub mod generic_dialog;

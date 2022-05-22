@@ -18,3 +18,5 @@ make input handling reusable
      change every new_idx < sth.size() - 1  => to => new_idx + 1 < sth.size() to avoid underflow if sth.size is 0
 
 // TODO ogarnij smallvec do cursor set
+
+// TODO remove the second Box in definition of fuzzy file item provider, just return &dyn Item

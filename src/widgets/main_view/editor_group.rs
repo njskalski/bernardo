@@ -9,7 +9,7 @@ use crate::fs::file_front::FileFront;
 use crate::fs::filesystem_front::ReadError;
 use crate::text::buffer_state::BufferState;
 use crate::widget::any_msg::AsAny;
-use crate::widgets::editor_view::editor_view::EditorView;
+use crate::widgets::editor_widget::editor_widget::EditorView;
 use crate::widgets::fuzzy_search::helpers::is_subsequence;
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::main_view::msg::MainViewMsg;

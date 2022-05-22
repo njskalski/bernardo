@@ -6,7 +6,7 @@ use crate::primitives::cursor_set::Cursor;
 use crate::primitives::common_edit_msgs::CommonEditMsg;
 
 #[derive(Clone, Debug)]
-pub enum EditorViewMsg {
+pub enum EditorWidgetMsg {
     EditMsg(CommonEditMsg),
     Save,
     SaveAs,
@@ -22,4 +22,4 @@ pub enum EditorViewMsg {
 }
 
 
-impl AnyMsg for EditorViewMsg {}
+impl AnyMsg for EditorWidgetMsg {}

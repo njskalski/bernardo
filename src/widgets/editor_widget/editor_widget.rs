@@ -28,7 +28,7 @@ use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};
-use crate::widgets::editor_view::msg::EditorViewMsg;
+use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
@@ -311,9 +311,9 @@ impl EditorView {
         let mut save_file_dialog = SaveFileDialogWidget::new(
             self.fsf.clone(),
         ).with_on_cancel(|_| {
-            EditorViewMsg::OnSaveAsCancel.someboxed()
+            EditorWidgetMsg::OnSaveAsCancel.someboxed()
         }).with_on_save(|_, ff| {
-            EditorViewMsg::OnSaveAsHit { ff }.someboxed()
+            EditorWidgetMsg::OnSaveAsHit { ff }.someboxed()
         }).with_path(self.get_save_file_dialog_path());
         self.save_file_dialog = Some(save_file_dialog);
     }
@@ -415,7 +415,7 @@ impl Widget for EditorView {
     }
 
     fn typename(&self) -> &'static str {
-        "editor_view"
+        "editor_widget"
     }
 
     fn min_size(&self) -> XY {
@@ -436,46 +436,46 @@ impl Widget for EditorView {
         return match (&self.state, input_event) {
             //TODO refactor the settings
             (_, InputEvent::KeyInput(key)) if key == c.save => {
-                EditorViewMsg::Save.someboxed()
+                EditorWidgetMsg::Save.someboxed()
             }
             (_, InputEvent::KeyInput(key)) if key == c.save_as => {
-                EditorViewMsg::SaveAs.someboxed()
+                EditorWidgetMsg::SaveAs.someboxed()
             }
             (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.enter_cursor_drop_mode => {
-                EditorViewMsg::ToCursorDropMode.someboxed()
+                EditorWidgetMsg::ToCursorDropMode.someboxed()
             }
             (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Esc => {
-                EditorViewMsg::ToEditMode.someboxed()
+                EditorWidgetMsg::ToEditMode.someboxed()
             }
             (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Enter => {
                 debug_assert!(special_cursor.is_simple());
 
-                EditorViewMsg::DropCursorFlip { cursor: special_cursor }.someboxed()
+                EditorWidgetMsg::DropCursorFlip { cursor: special_cursor }.someboxed()
             }
             // TODO change to if let Some() when it's stabilized
             (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
                 let cem = key_to_edit_msg(key).unwrap();
                 if !cem.is_editing() {
-                    EditorViewMsg::DropCursorMove { cem }.someboxed()
+                    EditorWidgetMsg::DropCursorMove { cem }.someboxed()
                 } else {
                     None
                 }
             }
             (&EditorState::Editing, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
-                EditorViewMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
+                EditorWidgetMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
             }
             _ => None,
         };
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        return match msg.as_msg::<EditorViewMsg>() {
+        return match msg.as_msg::<EditorWidgetMsg>() {
             None => {
                 warn!("expecetd EditorViewMsg, got {:?}", msg);
                 None
             }
             Some(msg) => match (&self.state, msg) {
-                (&EditorState::Editing, EditorViewMsg::EditMsg(cem)) => {
+                (&EditorState::Editing, EditorWidgetMsg::EditMsg(cem)) => {
                     let page_height = self.height();
                     // page_height as usize is safe, since page_height is u16 and usize is larger.
                     let changed = self.buffer.apply_cem(*cem, page_height as usize, Some(&self.clipboard));
@@ -487,34 +487,34 @@ impl Widget for EditorView {
 
                     None
                 }
-                (_, EditorViewMsg::SaveAs) => {
+                (_, EditorWidgetMsg::SaveAs) => {
                     self.open_save_as_dialog();
                     None
                 }
-                (_, EditorViewMsg::Save) => {
+                (_, EditorWidgetMsg::Save) => {
                     self.save_or_save_as();
                     None
                 }
-                (_, EditorViewMsg::OnSaveAsCancel) => {
+                (_, EditorWidgetMsg::OnSaveAsCancel) => {
                     self.save_file_dialog = None;
                     None
                 }
-                (_, EditorViewMsg::OnSaveAsHit { ff }) => {
+                (_, EditorWidgetMsg::OnSaveAsHit { ff }) => {
                     ff.overwrite_with(&self.buffer);
                     // TODO handle errors
                     self.save_file_dialog = None;
                     None
                 }
-                (&EditorState::Editing, EditorViewMsg::ToCursorDropMode) => {
+                (&EditorState::Editing, EditorWidgetMsg::ToCursorDropMode) => {
                     // self.cursors.simplify(); //TODO I removed it, but I don't know why it was here in the first place
                     self.enter_dropping_cursor_mode();
                     None
                 }
-                (&EditorState::DroppingCursor { .. }, EditorViewMsg::ToEditMode) => {
+                (&EditorState::DroppingCursor { .. }, EditorWidgetMsg::ToEditMode) => {
                     self.enter_editing_mode();
                     None
                 }
-                (&EditorState::DroppingCursor { special_cursor }, EditorViewMsg::DropCursorFlip { cursor }) => {
+                (&EditorState::DroppingCursor { special_cursor }, EditorWidgetMsg::DropCursorFlip { cursor }) => {
                     debug_assert!(special_cursor.is_simple());
 
                     if !self.buffer.text().cursor_set.are_simple() {
@@ -545,7 +545,7 @@ impl Widget for EditorView {
 
                     None
                 }
-                (&EditorState::DroppingCursor { mut special_cursor }, EditorViewMsg::DropCursorMove { cem }) => {
+                (&EditorState::DroppingCursor { mut special_cursor }, EditorWidgetMsg::DropCursorMove { cem }) => {
                     let mut set = CursorSet::singleton(special_cursor);
                     // TODO make sure this had no changing effect?
                     let height = self.height();
