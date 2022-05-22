@@ -9,7 +9,7 @@ use crate::fs::file_front::FileFront;
 use crate::fs::filesystem_front::ReadError;
 use crate::text::buffer_state::BufferState;
 use crate::widget::any_msg::AsAny;
-use crate::widgets::editor_widget::editor_widget::EditorView;
+use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::fuzzy_search::helpers::is_subsequence;
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::main_view::msg::MainViewMsg;
@@ -20,7 +20,7 @@ use crate::widgets::with_scroll::WithScroll;
 
 // Also, this is very much work in progress.
 pub struct EditorGroup {
-    editors: Vec<WithScroll<EditorView>>,
+    editors: Vec<WithScroll<EditorWidget>>,
     config: ConfigRef,
 }
 
@@ -32,14 +32,14 @@ impl EditorGroup {
         }
     }
 
-    pub fn get(&self, idx: usize) -> Option<&WithScroll<EditorView>> {
+    pub fn get(&self, idx: usize) -> Option<&WithScroll<EditorWidget>> {
         if idx > self.editors.len() {
             error!("requested non-existent editor {}", idx);
         }
         self.editors.get(idx)
     }
 
-    pub fn get_mut(&mut self, idx: usize) -> Option<&mut WithScroll<EditorView>> {
+    pub fn get_mut(&mut self, idx: usize) -> Option<&mut WithScroll<EditorWidget>> {
         if idx > self.editors.len() {
             error!("requested non-existent mut editor {}", idx);
         }
@@ -49,7 +49,7 @@ impl EditorGroup {
     pub fn open_empty(&mut self, tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> usize {
         self.editors.push(
             WithScroll::new(
-                EditorView::new(self.config.clone(), tree_sitter, fsf, clipboard),
+                EditorWidget::new(self.config.clone(), tree_sitter, fsf, clipboard),
                 ScrollDirection::Both,
             ).with_line_no()
         );
@@ -65,7 +65,7 @@ impl EditorGroup {
         let lang_id_op = filename_to_language(ff.path());
 
         self.editors.push(WithScroll::new(
-            EditorView::new(self.config.clone(), tree_sitter.clone(), ff.fsf().clone(), clipboard)
+            EditorWidget::new(self.config.clone(), tree_sitter.clone(), ff.fsf().clone(), clipboard)
                 .with_buffer(
                     BufferState::new(tree_sitter)
                         .with_text_from_rope(file_contents, lang_id_op)

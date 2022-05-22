@@ -63,7 +63,7 @@ enum EditorState {
     },
 }
 
-pub struct EditorView {
+pub struct EditorWidget {
     wid: WID,
 
     last_size: Option<XY>,
@@ -97,9 +97,9 @@ pub struct EditorView {
     state: EditorState,
 }
 
-impl EditorView {
-    pub fn new(config: ConfigRef, tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> EditorView {
-        EditorView {
+impl EditorWidget {
+    pub fn new(config: ConfigRef, tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> EditorWidget {
+        EditorWidget {
             wid: get_new_widget_id(),
             last_size: None,
             buffer: BufferState::new(tree_sitter.clone()),
@@ -115,7 +115,7 @@ impl EditorView {
     }
 
     pub fn with_buffer(self, buffer: BufferState) -> Self {
-        EditorView {
+        EditorWidget {
             buffer: buffer,
             ..self
         }
@@ -167,7 +167,7 @@ impl EditorView {
 
     fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
         if let Some(sd) = self.save_file_dialog.as_mut() {
-            let rect = EditorView::get_hover_rect(size);
+            let rect = EditorWidget::get_hover_rect(size);
             let layout = HoverLayout::new(
                 &mut DummyLayout::new(self.wid, size),
                 &mut LeafLayout::new(sd),
@@ -409,7 +409,7 @@ impl EditorView {
     }
 }
 
-impl Widget for EditorView {
+impl Widget for EditorWidget {
     fn id(&self) -> WID {
         self.wid
     }
@@ -581,7 +581,7 @@ impl Widget for EditorView {
         self.internal_render(theme, focused && !self.has_dialog(), output);
 
         if let Some(sd) = self.save_file_dialog.as_ref() {
-            let rect = EditorView::get_hover_rect(output.size_constraint().visible_hint().size);
+            let rect = EditorWidget::get_hover_rect(output.size_constraint().visible_hint().size);
             sd.render(theme, focused, &mut SubOutput::new(output, rect));
         }
     }
