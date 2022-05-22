@@ -83,17 +83,6 @@ pub struct EditorWidget {
     clipboard: ClipboardRef,
     config: ConfigRef,
 
-    save_file_dialog: Option<SaveFileDialogWidget>,
-
-    /*
-    This represents "where the save as dialog should start", but only in case the file_front on buffer_state is None.
-    If none, we'll use the fsf root.
-    See get_save_file_dialog_path for details.
-     */
-    start_path: Option<Rc<PathBuf>>,
-
-    // TODO merge path and fsf fields?
-
     state: EditorState,
 }
 
@@ -108,8 +97,6 @@ impl EditorWidget {
             fsf,
             config,
             clipboard,
-            save_file_dialog: None,
-            start_path: None,
             state: EditorState::Editing,
         }
     }
@@ -117,20 +104,6 @@ impl EditorWidget {
     pub fn with_buffer(self, buffer: BufferState) -> Self {
         EditorWidget {
             buffer: buffer,
-            ..self
-        }
-    }
-
-    pub fn with_path(self, path: Rc<PathBuf>) -> Self {
-        Self {
-            start_path: Some(path),
-            ..self
-        }
-    }
-
-    pub fn with_path_op(self, path_op: Option<Rc<PathBuf>>) -> Self {
-        Self {
-            start_path: path_op,
             ..self
         }
     }
@@ -163,22 +136,6 @@ impl EditorWidget {
                 }
             }
         }
-    }
-
-    fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
-        if let Some(sd) = self.save_file_dialog.as_mut() {
-            let rect = EditorWidget::get_hover_rect(size);
-            let layout = HoverLayout::new(
-                &mut DummyLayout::new(self.wid, size),
-                &mut LeafLayout::new(sd),
-                rect,
-            ).calc_sizes(size);
-
-            return layout;
-        }
-
-        let mut layout = DummyLayout::new(self.wid, size);
-        layout.calc_sizes(size)
     }
 
     fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
@@ -285,75 +242,6 @@ impl EditorWidget {
         }
     }
 
-    fn get_hover_rect(max_size: XY) -> Rect {
-        let margin = max_size / 10;
-        Rect::new(margin,
-                  max_size - margin * 2,
-        )
-    }
-
-    fn has_dialog(&self) -> bool {
-        self.save_file_dialog.is_some()
-    }
-
-    /*
-    This attempts to save current file, but in case that's not possible (filename unknown) proceeds to open_save_as_dialog() below
-     */
-    fn save_or_save_as(&mut self) {
-        if let Some(ff) = self.buffer.get_file_front() {
-            ff.overwrite_with(&self.buffer);
-        } else {
-            self.open_save_as_dialog()
-        }
-    }
-
-    fn open_save_as_dialog(&mut self) {
-        let mut save_file_dialog = SaveFileDialogWidget::new(
-            self.fsf.clone(),
-        ).with_on_cancel(|_| {
-            EditorWidgetMsg::OnSaveAsCancel.someboxed()
-        }).with_on_save(|_, ff| {
-            EditorWidgetMsg::OnSaveAsHit { ff }.someboxed()
-        }).with_path(self.get_save_file_dialog_path());
-        self.save_file_dialog = Some(save_file_dialog);
-    }
-
-    fn positively_save_raw(&mut self, path: &Path) {
-        let ff = match self.fsf.get_item(path) {
-            None => {
-                error!("attempted saving beyond root path");
-                return;
-            }
-            Some(p) => p,
-        };
-
-        // setting the file path
-        self.buffer.set_file_front(Some(ff.clone()));
-
-        // updating the "save as dialog" starting position
-        ff.parent().map(|_f| {
-            self.start_path = Some(ff.path_rc().clone())
-        }).unwrap_or_else(|| {
-            error!("failed setting save_as_dialog starting position - most likely parent is outside fsf root");
-        });
-    }
-
-    /*
-    This returns a (absolute) file path to be used with save_file_dialog. It can but does not have to
-    contain filename part.
-     */
-    fn get_save_file_dialog_path(&self) -> &Rc<PathBuf> {
-        if let Some(ff) = self.buffer.get_file_front() {
-            return ff.path_rc();
-        };
-
-        if let Some(sp) = self.start_path.as_ref() {
-            return sp;
-        }
-
-        self.fsf.get_root_path()
-    }
-
     pub fn enter_dropping_cursor_mode(&mut self) {
         debug_assert_matches!(self.state, EditorState::Editing);
         self.state = EditorState::DroppingCursor {
@@ -407,6 +295,14 @@ impl EditorWidget {
     pub fn cursors(&self) -> &CursorSet {
         &self.buffer.text().cursor_set
     }
+
+    pub fn buffer(&self) -> &BufferState {
+        &self.buffer
+    }
+
+    pub fn buffer_mut(&mut self) -> &mut BufferState {
+        &mut self.buffer
+    }
 }
 
 impl Widget for EditorWidget {
@@ -425,9 +321,6 @@ impl Widget for EditorWidget {
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         let size = sc.visible_hint().size;
         self.last_size = Some(size);
-
-        self.internal_layout(size);
-
         size
     }
 
@@ -487,24 +380,6 @@ impl Widget for EditorWidget {
 
                     None
                 }
-                (_, EditorWidgetMsg::SaveAs) => {
-                    self.open_save_as_dialog();
-                    None
-                }
-                (_, EditorWidgetMsg::Save) => {
-                    self.save_or_save_as();
-                    None
-                }
-                (_, EditorWidgetMsg::OnSaveAsCancel) => {
-                    self.save_file_dialog = None;
-                    None
-                }
-                (_, EditorWidgetMsg::OnSaveAsHit { ff }) => {
-                    ff.overwrite_with(&self.buffer);
-                    // TODO handle errors
-                    self.save_file_dialog = None;
-                    None
-                }
                 (&EditorState::Editing, EditorWidgetMsg::ToCursorDropMode) => {
                     // self.cursors.simplify(); //TODO I removed it, but I don't know why it was here in the first place
                     self.enter_dropping_cursor_mode();
@@ -561,29 +436,13 @@ impl Widget for EditorWidget {
         };
     }
 
-    fn get_focused(&self) -> Option<&dyn Widget> {
-        if self.save_file_dialog.is_some() {
-            return self.save_file_dialog.as_ref().map(|f| f as &dyn Widget);
-        }
-
-        None
-    }
-
-    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        if self.save_file_dialog.is_some() {
-            return self.save_file_dialog.as_mut().map(|f| f as &mut dyn Widget);
-        }
-
-        None
-    }
-
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        self.internal_render(theme, focused && !self.has_dialog(), output);
+        self.internal_render(theme, focused, output);
 
-        if let Some(sd) = self.save_file_dialog.as_ref() {
-            let rect = EditorWidget::get_hover_rect(output.size_constraint().visible_hint().size);
-            sd.render(theme, focused, &mut SubOutput::new(output, rect));
-        }
+        // if let Some(sd) = self.save_file_dialog.as_ref() {
+        //     let rect = EditorWidget::get_hover_rect(output.size_constraint().visible_hint().size);
+        //     sd.render(theme, focused, &mut SubOutput::new(output, rect));
+        // }
     }
 
     fn anchor(&self) -> XY {

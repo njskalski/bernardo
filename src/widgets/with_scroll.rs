@@ -75,6 +75,13 @@ impl<W: Widget> WithScroll<W> {
         &self.widget
     }
 
+    pub fn mutate_internal<F : Fn(W) -> W>(self, mutator: F) -> Self {
+        Self {
+            widget : mutator(self.widget),
+            ..self
+        }
+    }
+
     fn line_count_margin_width(&self, sc: SizeConstraint) -> u16 {
         /*
         there's a little chicken-egg problem here: to determine width of line_no margin I need to know

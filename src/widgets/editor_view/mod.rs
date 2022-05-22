@@ -1,2 +1,2 @@
 mod msg;
-mod editor_view;
+pub mod editor_view;

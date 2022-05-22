@@ -9,6 +9,7 @@ use crate::fs::file_front::FileFront;
 use crate::fs::filesystem_front::ReadError;
 use crate::text::buffer_state::BufferState;
 use crate::widget::any_msg::AsAny;
+use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::fuzzy_search::helpers::is_subsequence;
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
@@ -20,7 +21,7 @@ use crate::widgets::with_scroll::WithScroll;
 
 // Also, this is very much work in progress.
 pub struct EditorGroup {
-    editors: Vec<WithScroll<EditorWidget>>,
+    editors: Vec<EditorView>,
     config: ConfigRef,
 }
 
@@ -32,14 +33,14 @@ impl EditorGroup {
         }
     }
 
-    pub fn get(&self, idx: usize) -> Option<&WithScroll<EditorWidget>> {
+    pub fn get(&self, idx: usize) -> Option<&EditorView> {
         if idx > self.editors.len() {
             error!("requested non-existent editor {}", idx);
         }
         self.editors.get(idx)
     }
 
-    pub fn get_mut(&mut self, idx: usize) -> Option<&mut WithScroll<EditorWidget>> {
+    pub fn get_mut(&mut self, idx: usize) -> Option<&mut EditorView> {
         if idx > self.editors.len() {
             error!("requested non-existent mut editor {}", idx);
         }
@@ -48,10 +49,7 @@ impl EditorGroup {
 
     pub fn open_empty(&mut self, tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> usize {
         self.editors.push(
-            WithScroll::new(
-                EditorWidget::new(self.config.clone(), tree_sitter, fsf, clipboard),
-                ScrollDirection::Both,
-            ).with_line_no()
+                EditorView::new(self.config.clone(), tree_sitter, fsf, clipboard),
         );
 
         let res = self.editors.len() - 1;
@@ -64,8 +62,8 @@ impl EditorGroup {
         let file_contents = ff.read_entire_file_to_rope()?;
         let lang_id_op = filename_to_language(ff.path());
 
-        self.editors.push(WithScroll::new(
-            EditorWidget::new(self.config.clone(), tree_sitter.clone(), ff.fsf().clone(), clipboard)
+        self.editors.push(
+            EditorView::new(self.config.clone(), tree_sitter.clone(), ff.fsf().clone(), clipboard)
                 .with_buffer(
                     BufferState::new(tree_sitter)
                         .with_text_from_rope(file_contents, lang_id_op)
@@ -75,8 +73,6 @@ impl EditorGroup {
                     ff.fsf().get_item(p)
                 ).flatten().map(|f| f.path_rc().clone())
             ),
-            ScrollDirection::Both,
-        ).with_line_no()
         );
 
         let res = self.editors.len() - 1;
