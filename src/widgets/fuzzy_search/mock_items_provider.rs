@@ -46,7 +46,7 @@ pub mod mock {
         }
 
         fn on_hit(&self) -> Box<dyn AnyMsg> {
-            Box::new(MainViewMsg::FuzzyClose)
+            Box::new(MainViewMsg::ClozeHover)
         }
     }
 

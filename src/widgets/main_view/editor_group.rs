@@ -1,14 +1,14 @@
 use std::rc::Rc;
-use log::error;
+use log::{error, warn};
 use crate::primitives::scroll::ScrollDirection;
-use crate::{ConfigRef, FsfRef, TreeSitterWrapper, Widget};
+use crate::{AnyMsg, ConfigRef, FsfRef, TreeSitterWrapper, Widget};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::fs::file_front::FileFront;
 use crate::fs::filesystem_front::ReadError;
 use crate::text::buffer_state::BufferState;
 use crate::widgets::editor_view::editor_view::EditorView;
-use crate::widgets::no_editor::NoEditorWidget;
+use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::with_scroll::WithScroll;
 
 // This "class" was made separate to made borrow-checker realize, that it is not a violation of safety
@@ -90,5 +90,72 @@ impl EditorGroup {
         }
 
         None
+    }
+
+    pub fn get_buffer_list_provider(&self) -> Box<dyn ItemsProvider> {
+        let mut free_id = 0 as u16;
+        let mut buffer_descs: Vec<BufferDesc> = self.editors.iter().enumerate().map(|(idx, item)| {
+            match item.internal().buffer_state().get_file_front() {
+                None => {
+                    free_id += 1;
+                    BufferDesc::Unnamed { pos: idx, id: free_id }
+                }
+                Some(ff) => BufferDesc::File {
+                    pos: idx,
+                    ff: ff.clone(),
+                }
+            }
+        }).collect();
+
+
+        Box::new(
+            BufferNamesProvider {
+                descs: buffer_descs
+            }
+        )
+    }
+
+    pub fn len(&self) -> usize {
+        self.editors.len()
+    }
+}
+
+enum BufferDesc {
+    // pos is position in editors vector
+    File { pos: usize, ff: FileFront },
+    /*
+    id corresponds to display name, pos to position in EditorGroup.editors vector
+     */
+    Unnamed { pos: usize, id: u16 },
+}
+
+impl Item for BufferDesc {
+    fn display_name(&self) -> &str {
+        match self {
+            BufferDesc::File { pos, ff } => ff.display_file_name(),
+            BufferDesc::Unnamed { pos, id } => &format!("Unnamed #{}", id),
+        }
+    }
+
+    fn comment(&self) -> Option<&str> {
+        todo!()
+    }
+
+    fn on_hit(&self) -> Box<dyn AnyMsg> {
+        todo!()
+    }
+}
+
+pub struct BufferNamesProvider {
+    descs: Vec<BufferDesc>,
+}
+
+impl ItemsProvider for BufferNamesProvider {
+    fn context_name(&self) -> &str {
+        "buffers"
+    }
+
+    fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
+        todo!()
     }
 }

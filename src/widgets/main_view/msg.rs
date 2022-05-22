@@ -17,7 +17,12 @@ pub enum MainViewMsg {
 
     // Open fuzzy files
     OpenFuzzyFiles,
-    FuzzyClose,
+    // Used by OpenOpenBuffers too
+    ClozeHover,
+
+    // Open "open buffers"
+    OpenFuzzyBuffers,
+    FuzzyBuffersHit { pos: usize }
 }
 
 impl AnyMsg for MainViewMsg {}

@@ -39,27 +39,11 @@ impl AnyMsg for FileFrontMsg {}
 
 impl Item for FileFront {
     fn display_name(&self) -> &str {
-        self.path().file_name().map(|oss| oss.to_str().unwrap_or_else(|| {
-            error!("failed to cast path to string: {:?}", self.path());
-            NON_UTF8_ERROR_STR
-        })).unwrap_or_else(|| {
-            error!("failed to extract a filename from: {:?}", self.path());
-            NOT_A_FILENAME
-        })
+        self.display_file_name()
     }
 
     fn comment(&self) -> Option<&str> {
-        self.path().strip_prefix(self.fsf().get_root_path().as_path()).map(
-            |stripped_path| {
-                stripped_path.to_str().unwrap_or_else(|| {
-                    error!("failed to cast path to string: {:?}", stripped_path);
-                    NON_UTF8_ERROR_STR
-                })
-            }
-        ).map_err(|e| {
-            error!("Strip prefix error {}. File {:?} outside root?", e, self.path());
-            OUTSIDE_ROOT
-        }).ok()
+        Some(self.display_last_dir_name(true))
     }
 
     fn on_hit(&self) -> Box<dyn AnyMsg> {

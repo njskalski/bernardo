@@ -174,9 +174,19 @@ impl MainView {
     fn open_fuzzy_search_in_files(&mut self) {
         self.hover = Some(
             HoverItem::FuzzySearch(FuzzySearchWidget::new(
-                |_| Some(Box::new(MainViewMsg::FuzzyClose))
+                |_| Some(Box::new(MainViewMsg::ClozeHover))
             ).with_provider(
                 Box::new(FsfProvider::new(self.fsf.clone()).with_ignores_filter())
+            ).with_draw_comment_setting(DrawComment::Highlighted))
+        );
+    }
+
+    fn open_fuzzy_buffer_list(&mut self) {
+        self.hover = Some(
+            HoverItem::FuzzySearch(FuzzySearchWidget::new(
+                |_| Some(Box::new(MainViewMsg::ClozeHover))
+            ).with_provider(
+                self.editors.get_buffer_list_provider()
             ).with_draw_comment_setting(DrawComment::Highlighted))
         );
     }
@@ -245,7 +255,7 @@ impl Widget for MainView {
                     self.open_fuzzy_search_in_files();
                     None
                 }
-                MainViewMsg::FuzzyClose => {
+                MainViewMsg::ClozeHover => {
                     if self.hover.is_none() {
                         error!("expected self.hover to be not None.");
                     }
@@ -253,8 +263,21 @@ impl Widget for MainView {
                     self.hover = None;
                     None
                 }
+                MainViewMsg::OpenFuzzyBuffers => {
+                    self.open_fuzzy_buffer_list();
+                    None
+                }
                 MainViewMsg::OpenNewFile => {
                     self.open_empty_editor_and_focus();
+                    None
+                }
+                MainViewMsg::FuzzyBuffersHit { pos } => {
+                    if self.editors.len() >= *pos {
+                        error!("received FuzzyBufferHit for an index {} and len is {}, ignoring", pos, self.editors.len());
+                    } else {
+                        self.display_state.curr_editor_idx = Some(*pos);
+                    }
+
                     None
                 }
             };

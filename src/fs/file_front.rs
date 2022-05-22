@@ -1,7 +1,7 @@
 use std::cell::{BorrowMutError, RefCell};
 use std::{fmt, io};
 use std::fmt::{Debug, Formatter};
-use std::path::{Path, PathBuf};
+use std::path::{Path, PathBuf, StripPrefixError};
 use std::rc::Rc;
 
 use log::{error, warn};
@@ -138,6 +138,44 @@ impl FileFront {
 
     pub fn overwrite_with(&self, source: &dyn SomethingToSave) -> Result<(), io::Error> {
         self.fsf.overwrite_file(self.path(), source)
+    }
+
+    pub fn display_file_name(&self) -> &str {
+        self.path().file_name().map(|oss| oss.to_str().unwrap_or_else(|| {
+            error!("failed to cast path to string: {:?}", self.path());
+            crate::fs::constants::NON_UTF8_ERROR_STR
+        })).unwrap_or_else(|| {
+            error!("failed to extract a filename from: {:?}", self.path());
+            crate::fs::constants::NOT_A_FILENAME
+        })
+    }
+
+    //TODO tests
+    pub fn display_last_dir_name(&self, strip_prefix: bool) -> &str {
+        let path = if self.is_dir() {
+            self.path.as_path()
+        } else {
+            match self.path.parent() {
+                None => self.path.as_path(),
+                Some(p) => p
+            }
+        };
+
+        let path = if strip_prefix {
+            let prefix = self.fsf.get_root_path().as_path();
+            match path.strip_prefix(prefix) {
+                Ok(p) => p,
+                Err(e) => {
+                    warn!("failed stripping prefix {:?} from {:?}", prefix, path);
+                    path
+                }
+            }
+        } else { path };
+
+        path.to_str().unwrap_or_else(|| {
+            error!("failed to cast path to string: {:?}", self.path());
+            crate::fs::constants::NON_UTF8_ERROR_STR
+        })
     }
 }
 
