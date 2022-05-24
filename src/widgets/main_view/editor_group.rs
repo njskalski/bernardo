@@ -82,7 +82,7 @@ impl EditorGroup {
 
     pub fn get_if_open(&self, ff: &FileFront) -> Option<usize> {
         for (idx, editor) in self.editors.iter().enumerate() {
-            if let Some(cff) = editor.internal().buffer_state().get_file_front() {
+            if let Some(cff) = editor.buffer_state().get_file_front() {
                 if cff == ff {
                     return Some(idx);
                 }
@@ -95,7 +95,7 @@ impl EditorGroup {
     pub fn get_buffer_list_provider(&self) -> Box<dyn ItemsProvider> {
         let mut free_id = 0 as u16;
         let buffer_descs: Vec<BufferDesc> = self.editors.iter().enumerate().map(|(idx, item)| {
-            match item.internal().buffer_state().get_file_front() {
+            match item.buffer_state().get_file_front() {
                 None => {
                     free_id += 1;
                     BufferDesc::Unnamed { pos: idx, id: free_id }

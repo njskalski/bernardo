@@ -75,7 +75,7 @@ impl<W: Widget> WithScroll<W> {
         &self.widget
     }
 
-    pub fn mutate_internal<F : Fn(W) -> W>(self, mutator: F) -> Self {
+    pub fn mutate_internal<F : FnOnce(W) -> W>(self, mutator: F) -> Self {
         Self {
             widget : mutator(self.widget),
             ..self

@@ -43,6 +43,7 @@ pub struct EditBoxWidget {
     display_state: EditBoxDisplayState,
 }
 
+
 impl EditBoxWidget {
     pub fn new() -> Self {
         EditBoxWidget {
@@ -272,3 +273,10 @@ pub enum EditBoxWidgetMsg {
 }
 
 impl AnyMsg for EditBoxWidgetMsg {}
+
+
+impl Default for EditBoxWidget {
+    fn default() -> Self {
+        EditBoxWidget::new()
+    }
+}

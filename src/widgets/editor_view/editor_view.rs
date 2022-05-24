@@ -9,26 +9,38 @@ use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
+use crate::primitives::xy;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
+use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::with_scroll::WithScroll;
 
+#[derive(Copy)]
+enum EditorFocus {
+    Editor,
+    Find,
+    Replace,
+}
+
 enum EditorViewState {
     Simple,
     SaveFileDialog(SaveFileDialogWidget),
-    Find,
-    FindReplace,
+    Find(EditorFocus),
+    FindReplace(EditorFocus),
 }
 
 pub struct EditorView {
     wid: WID,
 
     editor: WithScroll<EditorWidget>,
+    find_box: EditBoxWidget,
+    replace_box: EditBoxWidget,
+
     /*
     resist the urge to remove fsf from editor. It's used to facilitate "save as dialog".
     You CAN be working on two different filesystems at the same time, and save as dialog is specific to it.
@@ -62,6 +74,8 @@ impl EditorView {
         EditorView {
             wid: get_new_widget_id(),
             editor: WithScroll::new(editor, ScrollDirection::Vertical).with_line_no(),
+            find_box: EditBoxWidget::default(),
+            replace_box: EditBoxWidget::default(),
             fsf,
             config,
             state: EditorViewState::Simple,
@@ -84,8 +98,10 @@ impl EditorView {
     }
 
     pub fn with_buffer(self, buffer: BufferState) -> Self {
+        let editor = self.editor.mutate_internal(move |b| b.with_buffer(buffer));
+
         EditorView {
-            editor: self.editor.mutate_internal(|b| b.with_buffer(buffer)),
+            editor,
             ..self
         }
     }
@@ -98,25 +114,24 @@ impl EditorView {
     }
 
     fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
-        let mut layout: Box<dyn Layout> = match &mut self.state {
+        let res = match &mut self.state {
             EditorViewState::Simple => {
-                Box::new(LeafLayout::new(&mut self.editor))
+                LeafLayout::new(&mut self.editor).calc_sizes(size)
             }
             EditorViewState::SaveFileDialog(save_file_dialog) => {
                 let rect = Self::get_hover_rect(size);
-                Box::new(HoverLayout::new(
+                HoverLayout::new(
                     &mut DummyLayout::new(self.wid, size),
                     &mut LeafLayout::new(&mut self.editor),
                     rect,
-                ))
+                ).calc_sizes(size)
             }
             // EditorViewState::Find => {}
             // EditorViewState::FindReplace => {}
             //TODO remove
-            _ => DummyLayout::new(self.wid, size).boxed(),
+            _ => DummyLayout::new(self.wid, size).calc_sizes(size),
         };
 
-        let res = layout.calc_sizes(size);
         res
     }
 
@@ -191,6 +206,40 @@ impl EditorView {
     fn set_state_simple(&mut self) {
         self.state = EditorViewState::Simple;
     }
+
+    pub fn buffer_state(&self) -> &BufferState {
+        self.editor.internal().buffer_state()
+    }
+
+    pub fn buffer_state_mut(&mut self) -> &mut BufferState {
+        self.editor.internal_mut().buffer_state_mut()
+    }
+
+    fn focused_widget_from_focus(&self, focus: EditorFocus) -> &dyn Widget {
+        match focus {
+            EditorFocus::Editor => &self.editor as &dyn Widget,
+            EditorFocus::Find => &self.find_box,
+            EditorFocus::Replace => &self.replace_box,
+        }
+    }
+
+    fn focused_widget_from_focus_mut(&mut self, focus: EditorFocus) -> &mut dyn Widget {
+        match focus {
+            EditorFocus::Editor => &mut self.editor as &mut dyn Widget,
+            EditorFocus::Find => &mut self.find_box,
+            EditorFocus::Replace => &mut self.replace_box,
+        }
+    }
+
+    fn wid_to_focus(&self, wid: WID) -> Option<EditorFocus> {
+        if self.editor.id() == wid {
+            Some(EditorFocus::Editor)
+        } else if self.find_box.id() == wid {
+            Some(EditorFocus::Find)
+        } else if self.replace_box.id() == wid {
+            Some(EditorFocus::Replace)
+        } else { None }
+    }
 }
 
 impl Widget for EditorView {
@@ -240,42 +289,92 @@ impl Widget for EditorView {
                     None
                 }
             }
-        }
+        };
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
-        todo!()
+        match &self.state {
+            EditorViewState::Simple => Some(&self.editor),
+            EditorViewState::SaveFileDialog(dialog) => Some(dialog),
+            EditorViewState::Find(focus) => Some(self.focused_widget_from_focus(*focus)),
+            EditorViewState::FindReplace(focus) => Some(self.focused_widget_from_focus(*focus))
+        }
     }
 
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        todo!()
+        match &mut self.state {
+            EditorViewState::Simple => Some(&mut self.editor),
+            EditorViewState::SaveFileDialog(dialog) => Some(dialog),
+            EditorViewState::Find(focus) => Some(self.focused_widget_from_focus_mut(*focus)),
+            EditorViewState::FindReplace(focus) => Some(self.focused_widget_from_focus_mut(*focus))
+        }
     }
 
     fn set_focused(&mut self, wid: WID) -> bool {
-        todo!()
+        match &self.state {
+            EditorViewState::Simple => self.wid == wid,
+            EditorViewState::SaveFileDialog(dialog) => dialog.id() == wid,
+            EditorViewState::Find(focus) => {
+                if self.editor.id() == wid {
+                    self.state = EditorViewState::Find(EditorFocus::Editor);
+                    true
+                } else if self.find_box.id() == wid {
+                    self.state = EditorViewState::Find(EditorFocus::Find);
+                    true
+                } else { false }
+            }
+            EditorViewState::FindReplace(focus) => {
+                if self.editor.id() == wid {
+                    self.state = EditorViewState::FindReplace(EditorFocus::Editor);
+                    true
+                } else if self.find_box.id() == wid {
+                    self.state = EditorViewState::FindReplace(EditorFocus::Find);
+                    true
+                } else if self.replace_box.id() == wid {
+                    self.state = EditorViewState::FindReplace(EditorFocus::Find);
+                    true
+                } else { false }
+            }
+        }
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        todo!()
+        let wirs = self.internal_layout(output.size_constraint().visible_hint().size);
     }
 
     fn anchor(&self) -> XY {
-        todo!()
+        xy::ZERO
     }
 
     fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
-        todo!()
+        let mut res: Vec<&mut dyn Widget> = vec![&mut self.editor];
+
+        match &mut self.state {
+            EditorViewState::Simple => {}
+            EditorViewState::SaveFileDialog(dialog) => res.push(dialog),
+            EditorViewState::Find(_) => res.push(&mut self.find_box),
+            EditorViewState::FindReplace(_) => {
+                res.push(&mut self.find_box);
+                res.push(&mut self.replace_box);
+            }
+        };
+
+        Box::new(res.into_iter())
     }
 
     fn subwidgets(&self) -> Box<dyn Iterator<Item=&dyn Widget> + '_> where Self: Sized {
-        todo!()
-    }
+        let mut res: Vec<&dyn Widget> = vec![&self.editor];
 
-    fn get_subwidget(&self, wid: WID) -> Option<&dyn Widget> where Self: Sized {
-        todo!()
-    }
+        match &self.state {
+            EditorViewState::Simple => {}
+            EditorViewState::SaveFileDialog(dialog) => res.push(dialog),
+            EditorViewState::Find(_) => res.push(&self.find_box),
+            EditorViewState::FindReplace(_) => {
+                res.push(&self.find_box);
+                res.push(&self.replace_box);
+            }
+        };
 
-    fn get_subwidget_mut(&mut self, wid: WID) -> Option<&mut dyn Widget> where Self: Sized {
-        todo!()
+        Box::new(res.into_iter())
     }
 }
