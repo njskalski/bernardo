@@ -1,0 +1,33 @@
+It ocured to me, that maybe focus should not be stored in widgets.
+
+Maybe the widgets should just return the rects of not-blocked (by hover), receiving objects, and user should be able to
+move "focus" between a flattened collection of those?
+
+I mean, after all I have the invariant they do not occlude.
+
+This would fix the paradox, when two rows and two columns do not enable the focus to move "circularly" around, as long
+as the focus is stored in view.
+
+If we move the focus to flattened structure, that would play really nice with idea of "anchor" or "special cursor".
+
+It could lead to issues in situation like this
+
+*--------*---------*---------*
+|        |                   |
+|        |                   |
+|        *---------*---------*
+|        |         |         |
+|        |         |         |
+*--------*---------*         |
+|                  |         |
+*------------------*---------*
+
+where middle rectangle is hard to access in flat hierarchy.
+But it's also impossible to define with current layouts.
+
+So focus path is defined only in terms of:
+
+User "looks at" XY, and path of escalation is defined only by "parent" relation.
+
+This is completely different than how it is implemented right now (24 may)
+so it will most likely not hit alpha.
