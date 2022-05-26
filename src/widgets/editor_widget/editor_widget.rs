@@ -327,13 +327,6 @@ impl Widget for EditorWidget {
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         let c = &self.config.keyboard_config.editor;
         return match (&self.state, input_event) {
-            //TODO refactor the settings
-            (_, InputEvent::KeyInput(key)) if key == c.save => {
-                EditorWidgetMsg::Save.someboxed()
-            }
-            (_, InputEvent::KeyInput(key)) if key == c.save_as => {
-                EditorWidgetMsg::SaveAs.someboxed()
-            }
             (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.enter_cursor_drop_mode => {
                 EditorWidgetMsg::ToCursorDropMode.someboxed()
             }

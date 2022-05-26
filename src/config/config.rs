@@ -48,6 +48,10 @@ pub struct Editor {
     pub save: Key,
     pub save_as: Key,
     pub enter_cursor_drop_mode: Key,
+
+    pub find: Key,
+    pub replace: Key,
+    pub close_find_replace: Key,
 }
 
 impl Default for Editor {
@@ -56,6 +60,9 @@ impl Default for Editor {
             save: Keycode::Char('s').to_key().with_ctrl(),
             save_as: Keycode::Char('d').to_key().with_ctrl(),
             enter_cursor_drop_mode: Keycode::Char('r').to_key().with_ctrl(),
+            find: Keycode::Char('f').to_key().with_ctrl(),
+            replace: Keycode::Char('r').to_key().with_ctrl(),
+            close_find_replace: Keycode::Esc.to_key(),
         }
     }
 }

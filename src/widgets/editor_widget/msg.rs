@@ -8,10 +8,6 @@ use crate::primitives::common_edit_msgs::CommonEditMsg;
 #[derive(Clone, Debug)]
 pub enum EditorWidgetMsg {
     EditMsg(CommonEditMsg),
-    Save,
-    SaveAs,
-    OnSaveAsCancel,
-    OnSaveAsHit { ff: FileFront },
 
     ToCursorDropMode,
     ToEditMode,

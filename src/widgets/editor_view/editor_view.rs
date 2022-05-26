@@ -1,12 +1,16 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use log::{error, warn};
-use crate::{AnyMsg, ConfigRef, FsfRef, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
+use crate::{AnyMsg, ConfigRef, FsfRef, InputEvent, Keycode, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
 use crate::experiments::clipboard::ClipboardRef;
+use crate::experiments::focus_group::FocusUpdate;
+use crate::io::sub_output::SubOutput;
+use crate::layout::display_state::GenericDisplayState;
 use crate::layout::dummy_layout::DummyLayout;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
+use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::xy;
@@ -17,25 +21,21 @@ use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
+use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::with_scroll::WithScroll;
 
-#[derive(Copy)]
-enum EditorFocus {
-    Editor,
-    Find,
-    Replace,
-}
 
 enum EditorViewState {
     Simple,
-    SaveFileDialog(SaveFileDialogWidget),
-    Find(EditorFocus),
-    FindReplace(EditorFocus),
+    Find,
+    FindReplace,
 }
 
 pub struct EditorView {
     wid: WID,
+
+    display_state: Option<GenericDisplayState>,
 
     editor: WithScroll<EditorWidget>,
     find_box: EditBoxWidget,
@@ -51,6 +51,7 @@ pub struct EditorView {
     config: ConfigRef,
 
     state: EditorViewState,
+    hover_dialog: Option<SaveFileDialogWidget>,
 
     /*
     This represents "where the save as dialog should start", but only in case the file_front on buffer_state is None.
@@ -73,12 +74,14 @@ impl EditorView {
                                        clipboard.clone());
         EditorView {
             wid: get_new_widget_id(),
+            display_state: None,
             editor: WithScroll::new(editor, ScrollDirection::Vertical).with_line_no(),
             find_box: EditBoxWidget::default(),
             replace_box: EditBoxWidget::default(),
             fsf,
             config,
             state: EditorViewState::Simple,
+            hover_dialog: None,
             start_path: None,
         }
     }
@@ -114,25 +117,30 @@ impl EditorView {
     }
 
     fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
-        let res = match &mut self.state {
+        let mut editor_layout = LeafLayout::new(&mut self.editor);
+        let mut find_layout = LeafLayout::new(&mut self.find_box);
+        let mut replace_layout = LeafLayout::new(&mut self.replace_box);
+
+        let mut background: Box<dyn Layout> = match &mut self.state {
             EditorViewState::Simple => {
-                LeafLayout::new(&mut self.editor).calc_sizes(size)
+                Box::new(editor_layout)
             }
-            EditorViewState::SaveFileDialog(save_file_dialog) => {
-                let rect = Self::get_hover_rect(size);
-                HoverLayout::new(
-                    &mut DummyLayout::new(self.wid, size),
-                    &mut LeafLayout::new(&mut self.editor),
-                    rect,
-                ).calc_sizes(size)
+            EditorViewState::Find => {
+                Box::new(SplitLayout::new(SplitDirection::Vertical)
+                    .with(SplitRule::Proportional(1.0), &mut editor_layout)
+                    .with(SplitRule::Fixed(1), &mut find_layout)
+                )
             }
-            // EditorViewState::Find => {}
-            // EditorViewState::FindReplace => {}
-            //TODO remove
-            _ => DummyLayout::new(self.wid, size).calc_sizes(size),
+            EditorViewState::FindReplace => {
+                Box::new(SplitLayout::new(SplitDirection::Vertical)
+                    .with(SplitRule::Proportional(1.0), &mut editor_layout)
+                    .with(SplitRule::Fixed(1), &mut find_layout)
+                    .with(SplitRule::Fixed(1), &mut replace_layout)
+                )
+            }
         };
 
-        res
+        background.calc_sizes(size)
     }
 
     /*
@@ -214,32 +222,6 @@ impl EditorView {
     pub fn buffer_state_mut(&mut self) -> &mut BufferState {
         self.editor.internal_mut().buffer_state_mut()
     }
-
-    fn focused_widget_from_focus(&self, focus: EditorFocus) -> &dyn Widget {
-        match focus {
-            EditorFocus::Editor => &self.editor as &dyn Widget,
-            EditorFocus::Find => &self.find_box,
-            EditorFocus::Replace => &self.replace_box,
-        }
-    }
-
-    fn focused_widget_from_focus_mut(&mut self, focus: EditorFocus) -> &mut dyn Widget {
-        match focus {
-            EditorFocus::Editor => &mut self.editor as &mut dyn Widget,
-            EditorFocus::Find => &mut self.find_box,
-            EditorFocus::Replace => &mut self.replace_box,
-        }
-    }
-
-    fn wid_to_focus(&self, wid: WID) -> Option<EditorFocus> {
-        if self.editor.id() == wid {
-            Some(EditorFocus::Editor)
-        } else if self.find_box.id() == wid {
-            Some(EditorFocus::Find)
-        } else if self.replace_box.id() == wid {
-            Some(EditorFocus::Replace)
-        } else { None }
-    }
 }
 
 impl Widget for EditorView {
@@ -256,11 +238,74 @@ impl Widget for EditorView {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        todo!()
+        //This is copied from SaveFileDialog, and should be replaced when focus is removed from widgets.
+        let max_size = sc.visible_hint().size;
+        let res_sizes = self.internal_layout(max_size);
+
+        let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+
+        let mut ds = GenericDisplayState::new(max_size, res_sizes);
+
+        match &self.state {
+            EditorViewState::Find => {
+                ds.focus_group.add_edge(self.editor.id(), FocusUpdate::Down, self.find_box.id());
+                ds.focus_group.add_edge(self.find_box.id(), FocusUpdate::Up, self.editor.id());
+            }
+            EditorViewState::FindReplace => {
+                ds.focus_group.add_edge(self.editor.id(), FocusUpdate::Down, self.find_box.id());
+                ds.focus_group.add_edge(self.find_box.id(), FocusUpdate::Up, self.editor.id());
+
+                ds.focus_group.add_edge(self.find_box.id(), FocusUpdate::Down, self.replace_box.id());
+                ds.focus_group.add_edge(self.replace_box.id(), FocusUpdate::Up, self.find_box.id());
+            }
+            _ => {}
+        }
+
+        self.display_state = Some(ds);
+
+        // re-setting focus.
+        match (focus_op, &mut self.display_state) {
+            (Some(focus), Some(ds)) => { ds.focus_group.set_focused(focus); }
+            _ => {}
+        };
+
+        max_size
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        todo!()
+        let c = &self.config.keyboard_config.editor;
+        return match input_event {
+            InputEvent::FocusUpdate(focus_update) => {
+                let can_update = self.display_state.as_ref().map(|ds| {
+                    ds.focus_group().can_update_focus(focus_update)
+                }).unwrap_or(false);
+
+                if can_update {
+                    Some(Box::new(EditorViewMsg::FocusUpdateMsg(focus_update)))
+                } else {
+                    None
+                }
+            }
+            InputEvent::KeyInput(key) if key == c.save => {
+                EditorViewMsg::Save.someboxed()
+            }
+            InputEvent::KeyInput(key) if key == c.save_as => {
+                EditorViewMsg::SaveAs.someboxed()
+            }
+            InputEvent::KeyInput(key) if key == c.find => {
+                EditorViewMsg::ToFind.someboxed()
+            }
+            InputEvent::KeyInput(key) if key == c.replace => {
+                EditorViewMsg::ToFindReplace.someboxed()
+            }
+            InputEvent::KeyInput(key) if key == c.find => {
+                EditorViewMsg::ToFind.someboxed()
+            }
+            InputEvent::KeyInput(key) if key == c.close_find_replace => {
+                EditorViewMsg::ToSimple.someboxed()
+            }
+            _ => None,
+        };
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
@@ -288,58 +333,68 @@ impl Widget for EditorView {
                     self.set_state_simple();
                     None
                 }
+                EditorViewMsg::FocusUpdateMsg(focus_update) => {
+                    warn!("updating focus");
+                    self.display_state.as_mut().map(
+                        |ds| {
+                            if !ds.focus_group.update_focus(*focus_update) {
+                                warn!("focus update accepted but failed");
+                            }
+                            None
+                        }
+                    ).unwrap_or_else(|| {
+                        error!("failed retrieving display_state");
+                        None
+                    })
+                }
+                EditorViewMsg::ToSimple => {
+                    self.state = EditorViewState::Simple;
+                    self.find_box.clear();
+                    self.replace_box.clear();
+                    None
+                }
+                EditorViewMsg::ToFind => {
+                    self.state = EditorViewState::Find;
+                    self.replace_box.clear();
+                    None
+                }
+                EditorViewMsg::ToFindReplace => {
+                    self.state = EditorViewState::FindReplace;
+                    None
+                }
             }
         };
     }
 
-    fn get_focused(&self) -> Option<&dyn Widget> {
-        match &self.state {
-            EditorViewState::Simple => Some(&self.editor),
-            EditorViewState::SaveFileDialog(dialog) => Some(dialog),
-            EditorViewState::Find(focus) => Some(self.focused_widget_from_focus(*focus)),
-            EditorViewState::FindReplace(focus) => Some(self.focused_widget_from_focus(*focus))
-        }
-    }
-
-    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        match &mut self.state {
-            EditorViewState::Simple => Some(&mut self.editor),
-            EditorViewState::SaveFileDialog(dialog) => Some(dialog),
-            EditorViewState::Find(focus) => Some(self.focused_widget_from_focus_mut(*focus)),
-            EditorViewState::FindReplace(focus) => Some(self.focused_widget_from_focus_mut(*focus))
-        }
-    }
-
     fn set_focused(&mut self, wid: WID) -> bool {
-        match &self.state {
-            EditorViewState::Simple => self.wid == wid,
-            EditorViewState::SaveFileDialog(dialog) => dialog.id() == wid,
-            EditorViewState::Find(focus) => {
-                if self.editor.id() == wid {
-                    self.state = EditorViewState::Find(EditorFocus::Editor);
-                    true
-                } else if self.find_box.id() == wid {
-                    self.state = EditorViewState::Find(EditorFocus::Find);
-                    true
-                } else { false }
-            }
-            EditorViewState::FindReplace(focus) => {
-                if self.editor.id() == wid {
-                    self.state = EditorViewState::FindReplace(EditorFocus::Editor);
-                    true
-                } else if self.find_box.id() == wid {
-                    self.state = EditorViewState::FindReplace(EditorFocus::Find);
-                    true
-                } else if self.replace_box.id() == wid {
-                    self.state = EditorViewState::FindReplace(EditorFocus::Find);
-                    true
-                } else { false }
-            }
+        if let Some(ds) = &mut self.display_state {
+            ds.focus_group_mut().set_focused(wid)
+        } else {
+            error!("set_focused with no display state.");
+            false
         }
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let wirs = self.internal_layout(output.size_constraint().visible_hint().size);
+        if let Some(cached_sizes) = &self.display_state {
+            let focused_child_id_op = self.get_focused().map(|f| f.id());
+            for wir in &cached_sizes.widget_sizes {
+                match self.get_subwidget(wir.wid) {
+                    Some(widget) => {
+                        let sub_output = &mut SubOutput::new(output, wir.rect);
+                        widget.render(theme,
+                                      focused && focused_child_id_op == Some(wir.wid),
+                                      sub_output,
+                        );
+                    }
+                    None => {
+                        warn!("subwidget {} not found!", wir.wid);
+                    }
+                }
+            }
+        } else {
+            error!("render absent display state");
+        }
     }
 
     fn anchor(&self) -> XY {
@@ -351,13 +406,16 @@ impl Widget for EditorView {
 
         match &mut self.state {
             EditorViewState::Simple => {}
-            EditorViewState::SaveFileDialog(dialog) => res.push(dialog),
-            EditorViewState::Find(_) => res.push(&mut self.find_box),
-            EditorViewState::FindReplace(_) => {
+            EditorViewState::Find => res.push(&mut self.find_box),
+            EditorViewState::FindReplace => {
                 res.push(&mut self.find_box);
                 res.push(&mut self.replace_box);
             }
         };
+
+        if let Some(hd) = &mut self.hover_dialog {
+            res.push(hd);
+        }
 
         Box::new(res.into_iter())
     }
@@ -367,14 +425,41 @@ impl Widget for EditorView {
 
         match &self.state {
             EditorViewState::Simple => {}
-            EditorViewState::SaveFileDialog(dialog) => res.push(dialog),
-            EditorViewState::Find(_) => res.push(&self.find_box),
-            EditorViewState::FindReplace(_) => {
+            EditorViewState::Find => res.push(&self.find_box),
+            EditorViewState::FindReplace => {
                 res.push(&self.find_box);
                 res.push(&self.replace_box);
             }
         };
 
+        if let Some(hd) = &self.hover_dialog {
+            res.push(hd);
+        }
+
+
         Box::new(res.into_iter())
+    }
+
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        if let Some(hd) = &self.hover_dialog {
+            return Some(hd);
+        }
+
+        match &self.state {
+            EditorViewState::Simple => Some(&self.editor),
+            _ => {
+                let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+                wid_op.map(|wid| self.get_subwidget(wid)).flatten()
+            }
+        }
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        if self.hover_dialog.is_some() {
+            return self.hover_dialog.as_mut().map(|f| f as &mut dyn Widget);
+        }
+
+        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
     }
 }

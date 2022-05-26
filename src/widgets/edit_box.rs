@@ -113,6 +113,10 @@ impl EditBoxWidget {
         self.cursor_set.move_end(&self.text, false);
     }
 
+    pub fn clear(&mut self) {
+        self.text = Rope::new();
+    }
+
     fn event_changed(&self) -> Option<Box<dyn AnyMsg>> {
         if self.on_change.is_some() {
             self.on_change.unwrap()(self)
