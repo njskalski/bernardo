@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use log::{error, warn};
+use syntect::html::IncludeBackground::No;
 use crate::{AnyMsg, ConfigRef, FsfRef, InputEvent, Keycode, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::focus_group::FocusUpdate;
@@ -140,7 +141,16 @@ impl EditorView {
             }
         };
 
-        background.calc_sizes(size)
+        match self.hover_dialog.as_mut() {
+            None => background.calc_sizes(size),
+            Some(dialog) => {
+                let rect = Self::get_hover_rect(size);
+                HoverLayout::new(&mut *background,
+                                 &mut LeafLayout::new(dialog),
+                                 rect,
+                ).calc_sizes(size)
+            }
+        }
     }
 
     /*
@@ -164,13 +174,15 @@ impl EditorView {
             }
         }
 
-        let mut save_file_dialog = SaveFileDialogWidget::new(
+        let save_file_dialog = SaveFileDialogWidget::new(
             self.fsf.clone(),
         ).with_on_cancel(|_| {
             EditorViewMsg::OnSaveAsCancel.someboxed()
         }).with_on_save(|_, ff| {
             EditorViewMsg::OnSaveAsHit { ff }.someboxed()
         }).with_path(self.get_save_file_dialog_path());
+
+        self.hover_dialog = Some(save_file_dialog);
     }
 
     fn positively_save_raw(&mut self, path: &Path) {
@@ -209,10 +221,6 @@ impl EditorView {
         }
 
         self.fsf.get_root_path()
-    }
-
-    fn set_state_simple(&mut self) {
-        self.state = EditorViewState::Simple;
     }
 
     pub fn buffer_state(&self) -> &BufferState {
@@ -324,13 +332,13 @@ impl Widget for EditorView {
                     None
                 }
                 EditorViewMsg::OnSaveAsCancel => {
-                    self.set_state_simple();
+                    self.hover_dialog = None;
                     None
                 }
                 EditorViewMsg::OnSaveAsHit { ff } => {
                     // TODO handle errors
                     ff.overwrite_with(self.editor.internal().buffer());
-                    self.set_state_simple();
+                    self.hover_dialog = None;
                     None
                 }
                 EditorViewMsg::FocusUpdateMsg(focus_update) => {
@@ -351,6 +359,7 @@ impl Widget for EditorView {
                     self.state = EditorViewState::Simple;
                     self.find_box.clear();
                     self.replace_box.clear();
+                    self.hover_dialog = None;
                     None
                 }
                 EditorViewMsg::ToFind => {
