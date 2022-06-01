@@ -5,6 +5,7 @@ to widgets, and edges A-e->b correspond to "which widget gets focus from A on in
 The graph is built using basic geometry.
  */
 use std::collections::HashMap;
+use log::error;
 
 use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl, FocusUpdate};
 use crate::io::buffer::Buffer;
@@ -134,6 +135,11 @@ pub fn get_full_size(widgets_and_positions: &Vec<(WID, Option<Rect>)>) -> XY {
 pub fn from_wirs(wirs: &Vec<WidgetIdRect>, output_size_op: Option<XY>) -> FocusGroupImpl {
     let mut widgets_and_positions: Vec<(WID, Option<Rect>)> = vec![];
     for wir in wirs {
+        if wir.rect.is_deformed() {
+            error!("skipping deformed wir {:?}", wir);
+            continue;
+        }
+
         widgets_and_positions.push((wir.wid, Some(wir.rect)))
     }
     from_geometry(&widgets_and_positions, output_size_op)

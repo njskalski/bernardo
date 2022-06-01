@@ -55,6 +55,16 @@ impl Text {
             false
         }
     }
+
+    /*
+    semantics:
+    takes first cursor, and then moves it to the end of first occurrence of pattern after it's initial position.
+     */
+    pub fn find_once(&mut self, pattern: &str) {
+        let initial_position = self.cursor_set.supercursor().a;
+
+
+    }
 }
 
 #[derive(Debug)]

@@ -20,3 +20,5 @@ make input handling reusable
 // TODO ogarnij smallvec do cursor set
 
 // TODO remove the second Box in definition of fuzzy file item provider, just return &dyn Item
+
+// TODO change Rope to Buffer in Edit Box, but block newlines

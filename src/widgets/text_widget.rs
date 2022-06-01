@@ -22,7 +22,7 @@ impl TextWidget {
         let mut size = ZERO;
         for (idx, line) in self.text.as_ref_str().lines().enumerate() {
             size.x = size.x.max(line.width_cjk() as u16); // TODO
-            size.y = idx as u16;
+            size.y = (idx + 1) as u16; //TODO
         }
 
         size

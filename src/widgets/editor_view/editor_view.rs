@@ -24,6 +24,7 @@ use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
+use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::WithScroll;
 
 
@@ -40,7 +41,9 @@ pub struct EditorView {
 
     editor: WithScroll<EditorWidget>,
     find_box: EditBoxWidget,
+    find_label: TextWidget,
     replace_box: EditBoxWidget,
+    replace_label: TextWidget,
 
     /*
     resist the urge to remove fsf from editor. It's used to facilitate "save as dialog".
@@ -73,12 +76,18 @@ impl EditorView {
                                        tree_sitter,
                                        fsf.clone(),
                                        clipboard.clone());
+
+        let find_label = TextWidget::new(Box::new("pattern"));
+        let replace_label = TextWidget::new(Box::new("replace"));
+
         EditorView {
             wid: get_new_widget_id(),
             display_state: None,
             editor: WithScroll::new(editor, ScrollDirection::Vertical).with_line_no(),
             find_box: EditBoxWidget::default(),
+            find_label,
             replace_box: EditBoxWidget::default(),
+            replace_label,
             fsf,
             config,
             state: EditorViewState::Simple,
@@ -119,8 +128,20 @@ impl EditorView {
 
     fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
         let mut editor_layout = LeafLayout::new(&mut self.editor);
-        let mut find_layout = LeafLayout::new(&mut self.find_box);
-        let mut replace_layout = LeafLayout::new(&mut self.replace_box);
+        let mut find_text_layout = LeafLayout::new(&mut self.find_label);
+        let mut find_box_layout = LeafLayout::new(&mut self.find_box);
+        let mut find_layout =
+            SplitLayout::new(SplitDirection::Horizontal)
+                .with(SplitRule::Fixed(7), &mut find_text_layout)
+                .with(SplitRule::Proportional(1.0), &mut find_box_layout);
+
+        let mut replace_box_layout = LeafLayout::new(&mut self.replace_box);
+        let mut replace_text_layout = LeafLayout::new(&mut self.replace_label);
+        let mut replace_layout =
+            SplitLayout::new(SplitDirection::Horizontal)
+                .with(SplitRule::Fixed(7), &mut replace_text_layout)
+                .with(SplitRule::Proportional(1.0), &mut replace_box_layout);
+
 
         let mut background: Box<dyn Layout> = match &mut self.state {
             EditorViewState::Simple => {
@@ -229,6 +250,14 @@ impl EditorView {
 
     pub fn buffer_state_mut(&mut self) -> &mut BufferState {
         self.editor.internal_mut().buffer_state_mut()
+    }
+
+    fn find_once(&mut self, phrase: &String) -> bool {
+        // let buffer = self.editor.internal().buffer_state_mut();
+
+
+
+        false
     }
 }
 
@@ -371,6 +400,10 @@ impl Widget for EditorView {
                     self.state = EditorViewState::FindReplace;
                     None
                 }
+                EditorViewMsg::Find { phrase } => {
+                    self.find_once(phrase);
+                    None
+                }
             }
         };
     }
@@ -415,10 +448,15 @@ impl Widget for EditorView {
 
         match &mut self.state {
             EditorViewState::Simple => {}
-            EditorViewState::Find => res.push(&mut self.find_box),
+            EditorViewState::Find => {
+                res.push(&mut self.find_box);
+                res.push(&mut self.find_label);
+            }
             EditorViewState::FindReplace => {
                 res.push(&mut self.find_box);
+                res.push(&mut self.find_label);
                 res.push(&mut self.replace_box);
+                res.push(&mut self.replace_label);
             }
         };
 
@@ -434,10 +472,15 @@ impl Widget for EditorView {
 
         match &self.state {
             EditorViewState::Simple => {}
-            EditorViewState::Find => res.push(&self.find_box),
+            EditorViewState::Find => {
+                res.push(&self.find_box);
+                res.push(&self.find_label);
+            }
             EditorViewState::FindReplace => {
                 res.push(&self.find_box);
+                res.push(&self.find_label);
                 res.push(&self.replace_box);
+                res.push(&self.replace_label);
             }
         };
 

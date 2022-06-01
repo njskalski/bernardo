@@ -20,10 +20,17 @@
 // TODO decide: introduce a special cursor to derive from while in "dropping_cursor" mode?
 
 // INVARIANTS:
-// - non-empty //TODO I forgot why. Either remove this requirement or write down why.
+// - non-empty
+//      this is so I can use cursor for anchoring and call "supercursor" easily
 // - cursors are distinct
 // - cursors have their anchors either on begin or on end, and they all have the anchor on the same side
 // - cursors DO NOT OVERLAP
+// - cursors are SORTED by their anchor
+
+// TODO add invariants:
+// - sort cursors by anchor (they don't overlap, so it's easy)
+// - (maybe) add "supercursor", which is always the first or the last, depending on which direction they were moved.
+//      it would help with anchoring.
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -34,6 +41,8 @@ use log::{error, warn};
 use crate::text::buffer::Buffer;
 
 const NEWLINE_LENGTH: usize = 1; // TODO(njskalski): add support for multisymbol newlines?
+
+const ZERO_CURSOR: Cursor = Cursor::new(0);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CursorStatus {
@@ -111,7 +120,7 @@ impl Cursor {
         }
     }
 
-    pub fn new(anc: usize) -> Self {
+    pub const fn new(anc: usize) -> Self {
         Cursor {
             s: None,
             a: anc,
@@ -1187,10 +1196,6 @@ impl CursorSet {
         self.set.len()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.set.is_empty()
-    }
-
     pub fn remove_by_anchor(&mut self, anchor_char: usize) -> bool {
         for i in 0..self.set.len() {
             if self.set[i].a == anchor_char {
@@ -1201,5 +1206,15 @@ impl CursorSet {
         }
 
         false
+    }
+
+    pub fn supercursor(&self) -> &Cursor {
+        //TODO this should vary, depending on which direction cursors were moved last. Now it just points to first one.
+
+        // this succeeds, because of invariants
+        self.set.first().unwrap_or_else(|| {
+            error!("invariant broken, empty cursor_set.");
+            &ZERO_CURSOR
+        })
     }
 }
