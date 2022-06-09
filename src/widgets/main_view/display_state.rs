@@ -1,7 +1,5 @@
-use log::debug;
-use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
+use crate::experiments::focus_group::FocusUpdate;
 use crate::layout::layout::WidgetIdRect;
-use crate::widget::widget::WID;
 
 // TODO add multi column
 #[derive(Debug, Eq, PartialEq)]

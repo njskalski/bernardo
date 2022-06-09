@@ -66,7 +66,7 @@ struct Args {
 }
 
 
-const debug_params: &'static [(&'static str, log::LevelFilter)] = &[
+const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     // this is for git ignore
     ("globset", log::LevelFilter::Error),
     // I have no clue where it comes from, and I don't care so I suppress it
@@ -89,7 +89,7 @@ fn main() {
     let mut logger_builder = env_logger::builder();
     logger_builder.filter_level(args.verbosity.log_level_filter());
     // specific logger settings
-    for item in debug_params {
+    for item in DEBUG_PARAMS {
         logger_builder.filter(Some(item.0), item.1);
     }
     logger_builder.init();

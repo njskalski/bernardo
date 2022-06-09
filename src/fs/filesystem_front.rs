@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display, Formatter, write};
+use std::fmt::{Debug, Display, Formatter};
 use std::{io, iter};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;

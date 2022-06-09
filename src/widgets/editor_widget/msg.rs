@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 
 use crate::AnyMsg;
-use crate::fs::file_front::FileFront;
 use crate::primitives::cursor_set::Cursor;
 use crate::primitives::common_edit_msgs::CommonEditMsg;
 

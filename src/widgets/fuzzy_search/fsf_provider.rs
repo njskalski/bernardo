@@ -1,9 +1,7 @@
 use std::fmt::Debug;
-use log::error;
 use crate::fs::file_front::FileFront;
 use crate::{AnyMsg, FsfRef};
 use crate::experiments::beter_deref_str::BetterDerefStr;
-use crate::fs::constants::{NON_UTF8_ERROR_STR, NOT_A_FILENAME, OUTSIDE_ROOT};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 
 pub type FileFrontToMsg = fn(&FileFront) -> Box<dyn AnyMsg>;

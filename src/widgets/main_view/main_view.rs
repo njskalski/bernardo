@@ -356,7 +356,7 @@ impl Widget for MainView {
         }
     }
 
-    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+    fn render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
         let focused_id_op = self.get_focused().map(|f| f.id());
         if self.display_state.wirs.is_empty() {
             error!("call to render before layout");

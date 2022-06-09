@@ -1,7 +1,7 @@
 use std::cell::{BorrowMutError, RefCell};
 use std::{fmt, io};
 use std::fmt::{Debug, Formatter};
-use std::path::{Path, PathBuf, StripPrefixError};
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use log::{error, warn};
@@ -165,7 +165,7 @@ impl FileFront {
             let prefix = self.fsf.get_root_path().as_path();
             match path.strip_prefix(prefix) {
                 Ok(p) => p,
-                Err(e) => {
+                Err(_e) => {
                     warn!("failed stripping prefix {:?} from {:?}", prefix, path);
                     path
                 }

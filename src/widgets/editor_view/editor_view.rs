@@ -1,13 +1,11 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use log::{error, warn};
-use syntect::html::IncludeBackground::No;
-use crate::{AnyMsg, ConfigRef, FsfRef, InputEvent, Keycode, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
+use crate::{AnyMsg, ConfigRef, FsfRef, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::GenericDisplayState;
-use crate::layout::dummy_layout::DummyLayout;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
@@ -22,7 +20,6 @@ use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
-use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::WithScroll;
@@ -252,7 +249,7 @@ impl EditorView {
         self.editor.internal_mut().buffer_state_mut()
     }
 
-    fn find_once(&mut self, phrase: &String) -> bool {
+    fn find_once(&mut self, _phrase: &String) -> bool {
         // let buffer = self.editor.internal().buffer_state_mut();
 
 

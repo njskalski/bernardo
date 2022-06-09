@@ -13,7 +13,8 @@ impl TreeViewWidget<PathBuf, FileFront> {
     pub fn set_path(&mut self, fsf: &FsfRef, path: &Rc<PathBuf>) -> bool {
         debug!("setting path to {:?}", path);
 
-        let (mut dir, filename): (PathBuf, Option<&str>) = if fsf.is_dir(path) {
+        // TODO(cleanup) why do I need the _filename again?
+        let (mut dir, _filename): (PathBuf, Option<&str>) = if fsf.is_dir(path) {
             (path.to_path_buf(), None)
         } else {
             (path.parent().map(|f| f.to_path_buf()).unwrap_or_else(|| {

@@ -52,7 +52,7 @@ impl<W: Widget> WithScroll<W> {
         let margin_width = self.line_count_margin_width(sc);
         let with_margin = self.line_no && sc.strictly_bigger_than(XY::new(margin_width, 0));
 
-        let mut new_sc = SizeConstraint::new(
+        let new_sc = SizeConstraint::new(
             if self.scroll.direction.free_x() { None } else {
                 sc.x().map(/* this works because strictly_bigger_than above */ |x|
                     if with_margin {

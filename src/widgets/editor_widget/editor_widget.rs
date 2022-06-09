@@ -1,4 +1,3 @@
-use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use log::{debug, error, warn};
@@ -9,17 +8,11 @@ use unicode_width::UnicodeWidthStr;
 use crate::{AnyMsg, ConfigRef, InputEvent, Keycode, Output, SizeConstraint, Widget};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::fs::fsfref::FsfRef;
-use crate::io::sub_output::SubOutput;
-use crate::layout::dummy_layout::DummyLayout;
-use crate::layout::hover_layout::HoverLayout;
-use crate::layout::layout::{Layout, WidgetIdRect};
-use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
 use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
-use crate::primitives::rect::Rect;
 use crate::config::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
@@ -29,7 +22,6 @@ use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
-use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
 
@@ -413,7 +405,7 @@ impl Widget for EditorWidget {
 
                     None
                 }
-                (&EditorState::DroppingCursor { mut special_cursor }, EditorWidgetMsg::DropCursorMove { cem }) => {
+                (&EditorState::DroppingCursor { special_cursor }, EditorWidgetMsg::DropCursorMove { cem }) => {
                     let mut set = CursorSet::singleton(special_cursor);
                     // TODO make sure this had no changing effect?
                     let height = self.height();

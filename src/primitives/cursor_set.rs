@@ -141,6 +141,7 @@ impl Cursor {
 
         Cursor {
             s: Some(selection),
+            a,
             ..self
         }
     }
