@@ -190,7 +190,7 @@ impl FromStr for Keycode {
             // "Null" => Ok(Keycode::
             "Esc" => Ok(Keycode::Esc),
             other => {
-                if other.starts_with("F") || other.starts_with("f") {
+                if (other.starts_with("F") || other.starts_with("f")) && other.len() > 1 {
                     match u8::from_str(&other[1..]) {
                         Ok(i) => if i < 16 {
                             Ok(Keycode::F(i))
@@ -360,5 +360,29 @@ mod tests {
                     shift: false,
                 },
             }));
+    }
+
+    #[test]
+    fn test_key_ser_de() {
+        let keys = vec![
+            Keycode::Char('s').to_key().with_ctrl(),
+            Keycode::Char('d').to_key().with_ctrl(),
+            Keycode::Char('e').to_key().with_ctrl(),
+            Keycode::Char('f').to_key().with_ctrl(),
+            Keycode::Char('r').to_key().with_ctrl(),
+            Keycode::Esc.to_key(),
+        ];
+
+        for key in keys {
+            let r = ron::to_string(&key);
+            assert_eq!(r.as_ref().err(), None);
+            let s = r.unwrap();
+
+            let kr = ron::from_str::<Key>(&s);
+            assert_eq!(kr.as_ref().err(), None, "{}", s);
+            let k = kr.unwrap();
+
+            assert_eq!(key, k);
+        }
     }
 }

@@ -5,7 +5,7 @@ pub mod tests {
     use ropey::Rope;
 
     use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
-    use crate::text::buffer::{Buffer, buffer_to_string};
+    use crate::text::buffer::Buffer;
 
     // In this variant, a cursor is represented by a pair [ ) or ( ], with [ or ] marking the anchor.
 // No overlaps allowed.
@@ -86,7 +86,7 @@ pub mod tests {
         // to reconstruct the coding string. I just have to remember to do it from the end, as any
         // insertion will invalidate all subsequent indices.
 
-        let mut output = buffer_to_string(b);
+        let mut output = b.to_string();
         // cursor_idx (aka color), pos
         let mut current_cursor_idx: Option<usize> = None;
 

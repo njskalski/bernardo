@@ -4,6 +4,7 @@ use log::{error, warn};
 use crate::{AnyMsg, ConfigRef, FsfRef, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::focus_group::FocusUpdate;
+use crate::experiments::regex_search::FindError;
 use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::GenericDisplayState;
 use crate::layout::hover_layout::HoverLayout;
@@ -74,8 +75,8 @@ impl EditorView {
                                        fsf.clone(),
                                        clipboard.clone());
 
-        let find_label = TextWidget::new(Box::new("pattern"));
-        let replace_label = TextWidget::new(Box::new("replace"));
+        let find_label = TextWidget::new(Box::new("pattern: "));
+        let replace_label = TextWidget::new(Box::new("replace: "));
 
         EditorView {
             wid: get_new_widget_id(),
@@ -249,12 +250,15 @@ impl EditorView {
         self.editor.internal_mut().buffer_state_mut()
     }
 
-    fn find_once(&mut self, _phrase: &String) -> bool {
-        // let buffer = self.editor.internal().buffer_state_mut();
-
-
-
-        false
+    fn find_once(&mut self, phrase: &String) -> bool {
+        match self.buffer_state_mut().find_once(phrase) {
+            Ok(r) => r,
+            Err(e) => {
+                // TODO handle?
+                error!("failed looking for {}", phrase);
+                false
+            }
+        }
     }
 }
 
@@ -405,6 +409,29 @@ impl Widget for EditorView {
         };
     }
 
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        if let Some(hd) = &self.hover_dialog {
+            return Some(hd);
+        }
+
+        match &self.state {
+            EditorViewState::Simple => Some(&self.editor),
+            _ => {
+                let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+                wid_op.map(|wid| self.get_subwidget(wid)).flatten()
+            }
+        }
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        if self.hover_dialog.is_some() {
+            return self.hover_dialog.as_mut().map(|f| f as &mut dyn Widget);
+        }
+
+        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
+    }
+
     fn set_focused(&mut self, wid: WID) -> bool {
         if let Some(ds) = &mut self.display_state {
             ds.focus_group_mut().set_focused(wid)
@@ -487,28 +514,5 @@ impl Widget for EditorView {
 
 
         Box::new(res.into_iter())
-    }
-
-    fn get_focused(&self) -> Option<&dyn Widget> {
-        if let Some(hd) = &self.hover_dialog {
-            return Some(hd);
-        }
-
-        match &self.state {
-            EditorViewState::Simple => Some(&self.editor),
-            _ => {
-                let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-                wid_op.map(|wid| self.get_subwidget(wid)).flatten()
-            }
-        }
-    }
-
-    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        if self.hover_dialog.is_some() {
-            return self.hover_dialog.as_mut().map(|f| f as &mut dyn Widget);
-        }
-
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
     }
 }

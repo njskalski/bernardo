@@ -86,3 +86,35 @@ impl Config {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_global_ser_de() {
+        let d = Global::default();
+        let item = ron::ser::to_string_pretty(&d, ron::ser::PrettyConfig::new());
+        assert_eq!(item.as_ref().err(), None);
+        let read = ron::from_str::<Global>(item.as_ref().unwrap());
+        assert_eq!(read.as_ref().err(), None);
+    }
+
+    #[test]
+    fn test_editor_ser_de() {
+        let d = Editor::default();
+        let item = ron::ser::to_string_pretty(&d, ron::ser::PrettyConfig::new());
+        assert_eq!(item.as_ref().err(), None);
+        let read = ron::from_str::<Editor>(item.as_ref().unwrap());
+        assert_eq!(read.as_ref().err(), None);
+    }
+
+    #[test]
+    fn test_config_ser_de() {
+        let d = Config::default();
+        let item = ron::ser::to_string_pretty(&d, ron::ser::PrettyConfig::new());
+        assert_eq!(item.as_ref().err(), None);
+        let read = ron::from_str::<Config>(item.as_ref().unwrap());
+        assert_eq!(read.as_ref().err(), None);
+    }
+}

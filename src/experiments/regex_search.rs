@@ -1,6 +1,10 @@
 use regex::Regex;
 use crate::text::buffer::Buffer;
 
+/*
+I wasted hours trying to do regex search on the
+ */
+
 pub enum FindError {
     RegexPatternFail,
     CharToByteFail,
