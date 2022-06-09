@@ -5,17 +5,18 @@ use std::string::String;
 use std::time::SystemTime;
 
 use log::{debug, error, warn};
-use ropey::iter::Chars;
+use ropey::iter::{Chars, Chunks};
 use ropey::Rope;
 use streaming_iterator::StreamingIterator;
 use tree_sitter::{Point};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::experiments::clipboard::ClipboardRef;
+use crate::experiments::regex_search::{FindError, regex_find, RegexMatches};
 use crate::fs::file_front::FileFront;
 use crate::fs::filesystem_front::SomethingToSave;
 use crate::Output;
 use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg};
-use crate::primitives::cursor_set::CursorSet;
+use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
 
 use crate::text::buffer::{Buffer, LinesIter};
 use crate::text::diff_oracle::DiffOracle;
@@ -62,8 +63,6 @@ impl Text {
      */
     pub fn find_once(&mut self, pattern: &str) {
         let initial_position = self.cursor_set.supercursor().a;
-
-
     }
 }
 
@@ -81,7 +80,7 @@ pub struct BufferState {
 
 impl BufferState {
     pub fn new(tree_sitter: Rc<TreeSitterWrapper>) -> BufferState {
-        let mut res = BufferState {
+        let res = BufferState {
             tree_sitter,
             history: vec![Text::default()],
             history_pos: 0,
@@ -124,7 +123,7 @@ impl BufferState {
             }
         }
 
-        let mut res = Self {
+        let res = Self {
             history: vec![text],
             history_pos: 0,
             ..self
@@ -178,7 +177,7 @@ impl BufferState {
 
         // TODO optimise
         let mut cursors = self.text().cursor_set.clone();
-        let (diff_len_chars, any_change) = apply_cem(cem.clone(), &mut cursors, self, page_height as usize, clipboard);
+        let (_diff_len_chars, any_change) = apply_cem(cem.clone(), &mut cursors, self, page_height as usize, clipboard);
 
         //undo/redo invalidates cursors copy, so I need to watch for those
 
@@ -198,9 +197,9 @@ impl BufferState {
 
     /*
     This creates new milestone to undo/redo. The reason for it is that potentially multiple edits inform a single milestone.
-    Returns false only if buffer have not changed since last milestone.
+    Returns false only if buffer have not changed since last milestone (TODO: that part is not implemented).
 
-    set_milestone implies and executes drop_forward_history
+    set_milestone drops "forward history".
      */
     fn set_milestone(&mut self) -> bool {
         self.history.truncate(self.history_pos + 1);
@@ -226,6 +225,37 @@ impl BufferState {
         debug_assert!(self.history.len() >= self.history_pos);
         &mut self.history[self.history_pos]
     }
+
+    /*
+    This is an action destructive to cursor set - it uses only the supercursor.anchor as starting point for
+    search.
+
+    returns Ok(true) iff there was an occurrence
+     */
+    pub fn find_once(&mut self, pattern: &str) -> Result<bool, FindError> {
+        let start_pos = self.text().cursor_set.supercursor().a;
+        let mut matches = regex_find(
+            pattern,
+            &self.text().rope,
+            Some(start_pos),
+        )?;
+
+        if let Some(m) = matches.next() {
+            let new_cursors = CursorSet::singleton(
+                Cursor::new(m.1).with_selection(Selection::new(m.0, m.1))
+            );
+
+            if !self.set_milestone() {
+                error!("failed to set milestone in find_once");
+            }
+
+            self.text_mut().cursor_set = new_cursors;
+
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
 }
 
 impl Buffer for BufferState {
@@ -233,10 +263,9 @@ impl Buffer for BufferState {
         self.text().rope.len_lines()
     }
 
-    fn new_lines(&self) -> LinesIter {
-        self.text().rope.new_lines()
+    fn lines(&self) -> LinesIter {
+        LinesIter::new(self.text().rope.chars())
     }
-
 
     fn is_editable(&self) -> bool {
         true
@@ -244,6 +273,10 @@ impl Buffer for BufferState {
 
     fn len_chars(&self) -> usize {
         self.text().rope.len_chars()
+    }
+
+    fn len_bytes(&self) -> usize {
+        self.text().rope.len_bytes()
     }
 
     fn char_to_line(&self, char_idx: usize) -> Option<usize> {
@@ -258,6 +291,14 @@ impl Buffer for BufferState {
             Ok(idx) => Some(idx),
             Err(_) => None,
         }
+    }
+
+    fn byte_to_char(&self, byte_idx: usize) -> Option<usize> {
+        self.text().rope.try_byte_to_char(byte_idx).ok()
+    }
+
+    fn char_to_byte(&self, char_idx: usize) -> Option<usize> {
+        self.text().rope.try_char_to_byte(char_idx).ok()
     }
 
     fn insert_char(&mut self, char_idx: usize, ch: char) -> bool {
@@ -344,6 +385,10 @@ impl Buffer for BufferState {
 
     fn chars(&self) -> Chars {
         self.text().rope.chars()
+    }
+
+    fn chunks(&self) -> Chunks {
+        self.text().rope.chunks()
     }
 
     fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {

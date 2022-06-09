@@ -154,7 +154,7 @@ impl EditorWidget {
 
         let lines_to_skip = output.size_constraint().visible_hint().upper_left().y as usize;
 
-        let mut lines_it = self.buffer.new_lines().skip(lines_to_skip);
+        let mut lines_it = self.buffer.lines().skip(lines_to_skip);
         // skipping lines that cannot be visible, because they are before hint()
         let mut line_idx = lines_to_skip;
 

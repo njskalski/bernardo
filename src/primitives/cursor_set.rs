@@ -18,6 +18,7 @@
 
 // TODO change the selection to Option<usize> to ENFORCE the invariant by reducing the volume of data.
 // TODO decide: introduce a special cursor to derive from while in "dropping_cursor" mode?
+// TODO add "invariant protectors" to cursor set and warnings/errors, maybe add tests.
 
 // INVARIANTS:
 // - non-empty
@@ -129,6 +130,15 @@ impl Cursor {
     }
 
     pub fn with_selection(self, selection: Selection) -> Self {
+        debug_assert!(selection.b == self.a || selection.e == self.a);
+
+        let a = if selection.e == self.a || selection.b == self.a {
+            self.a
+        } else {
+            warn!("Attempted setting selection not respecting invariant. Moving anchor to re-establish it.");
+            selection.e
+        };
+
         Cursor {
             s: Some(selection),
             ..self

@@ -1,9 +1,8 @@
 // this is for test only
 
 use log::error;
-use ropey::iter::Chars;
+use ropey::iter::{Chars, Chunks};
 use ropey::Rope;
-use streaming_iterator::StreamingIterator;
 use tree_sitter::Point;
 
 use crate::text::buffer::{Buffer, LinesIter};
@@ -16,7 +15,7 @@ impl Buffer for Rope {
         self.len_lines()
     }
 
-    fn new_lines(&self) -> LinesIter {
+    fn lines(&self) -> LinesIter {
         LinesIter::new(self.chars())
     }
 
@@ -28,12 +27,24 @@ impl Buffer for Rope {
         self.len_chars()
     }
 
+    fn len_bytes(&self) -> usize {
+        self.len_bytes()
+    }
+
     fn char_to_line(&self, char_idx: usize) -> Option<usize> {
         self.try_char_to_line(char_idx).ok()
     }
 
     fn line_to_char(&self, line_idx: usize) -> Option<usize> {
         self.try_line_to_char(line_idx).ok()
+    }
+
+    fn byte_to_char(&self, byte_idx: usize) -> Option<usize> {
+        self.try_byte_to_char(byte_idx).ok()
+    }
+
+    fn char_to_byte(&self, char_idx: usize) -> Option<usize> {
+        self.try_char_to_byte(char_idx).ok()
     }
 
     fn insert_char(&mut self, char_idx: usize, ch: char) -> bool {
@@ -59,6 +70,10 @@ impl Buffer for Rope {
 
     fn chars(&self) -> Chars {
         ropey::Rope::chars(self)
+    }
+
+    fn chunks(&self) -> Chunks {
+        ropey::Rope::chunks(self)
     }
 
     fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {

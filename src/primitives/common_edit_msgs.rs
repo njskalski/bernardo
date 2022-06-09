@@ -1,4 +1,4 @@
-use log::{debug, error, warn};
+use log::{error, warn};
 use crate::experiments::clipboard::ClipboardRef;
 
 use crate::io::keys::Key;

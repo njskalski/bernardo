@@ -1,14 +1,8 @@
-use std::fmt::{Display, format, Formatter};
-use std::num::ParseIntError;
+use std::fmt::{format, Formatter};
 use std::str::FromStr;
-
-use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Visitor;
-use ron::Error;
-use crate::experiments::deref_str::DerefStr;
-
 use crate::experiments::focus_group::FocusUpdate;
-use crate::Keycode::{ArrowDown, ArrowUp};
 
 // TODO (hardening) here potentially impossible combinations, like ALT+LeftAlt are deserializable, should be fixed someday
 // TODO (hardening) also, for some reason console does not support combinations like shift+ctrl+s, I need to warn users to not try that
@@ -112,7 +106,7 @@ impl Key {
 
     pub fn with_alt(self) -> Self {
         Key {
-            modifiers : Modifiers {
+            modifiers: Modifiers {
                 alt: true,
                 ctrl: self.modifiers.ctrl,
                 shift: self.modifiers.shift,
@@ -123,7 +117,7 @@ impl Key {
 
     pub fn with_ctrl(self) -> Self {
         Key {
-            modifiers : Modifiers {
+            modifiers: Modifiers {
                 alt: self.modifiers.alt,
                 ctrl: true,
                 shift: self.modifiers.shift,
@@ -134,7 +128,7 @@ impl Key {
 
     pub fn with_shift(self) -> Self {
         Key {
-            modifiers : Modifiers {
+            modifiers: Modifiers {
                 alt: self.modifiers.alt,
                 ctrl: self.modifiers.ctrl,
                 shift: true,

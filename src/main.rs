@@ -9,12 +9,12 @@ extern crate maplit;
 extern crate matches;
 
 use std::io::stdout;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::exit;
 use std::rc::Rc;
 use std::time::SystemTime;
 
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use crossbeam_channel::select;
 use log::{debug, error};
 use termion::raw::IntoRawMode;
@@ -38,9 +38,6 @@ use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
 use dirs;
-use crate::config::load_error::LoadError;
-use crate::config::save_error::SaveError;
-use crate::fs::filesystem_front::ReadError;
 
 mod experiments;
 mod io;
@@ -64,7 +61,7 @@ struct Args {
     #[clap(flatten)]
     pub verbosity: clap_verbosity_flag::Verbosity,
 
-    #[clap(short = 'r', long="reconfigure")]
+    #[clap(short = 'r', long = "reconfigure")]
     pub reconfigure: bool,
 }
 
