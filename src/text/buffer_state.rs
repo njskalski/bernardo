@@ -1,17 +1,14 @@
 use std::fmt::{Debug};
 use std::ops::Range;
 use std::rc::Rc;
-use std::string::String;
-use std::time::SystemTime;
 
 use log::{debug, error, warn};
 use ropey::iter::{Chars, Chunks};
 use ropey::Rope;
-use streaming_iterator::StreamingIterator;
 use tree_sitter::{Point};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::experiments::clipboard::ClipboardRef;
-use crate::experiments::regex_search::{FindError, regex_find, RegexMatches};
+use crate::experiments::regex_search::{FindError, regex_find};
 use crate::fs::file_front::FileFront;
 use crate::fs::filesystem_front::SomethingToSave;
 use crate::Output;
@@ -19,7 +16,6 @@ use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg};
 use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
 
 use crate::text::buffer::{Buffer, LinesIter};
-use crate::text::diff_oracle::DiffOracle;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
@@ -58,11 +54,30 @@ impl Text {
     }
 
     /*
-    semantics:
-    takes first cursor, and then moves it to the end of first occurrence of pattern after it's initial position.
+    This is an action destructive to cursor set - it uses only the supercursor.anchor as starting point for
+    search.
+
+    returns Ok(true) iff there was an occurrence
      */
-    pub fn find_once(&mut self, pattern: &str) {
-        let initial_position = self.cursor_set.supercursor().a;
+    pub fn find_once(&mut self, pattern: &str) -> Result<bool, FindError> {
+        let start_pos = self.cursor_set.supercursor().a;
+        let mut matches = regex_find(
+            pattern,
+            &self.rope,
+            Some(start_pos),
+        )?;
+
+        if let Some(m) = matches.next() {
+            let new_cursors = CursorSet::singleton(
+                Cursor::new(m.1).with_selection(Selection::new(m.0, m.1))
+            );
+
+            self.cursor_set = new_cursors;
+
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 }
 
@@ -233,27 +248,22 @@ impl BufferState {
     returns Ok(true) iff there was an occurrence
      */
     pub fn find_once(&mut self, pattern: &str) -> Result<bool, FindError> {
-        let start_pos = self.text().cursor_set.supercursor().a;
-        let mut matches = regex_find(
-            pattern,
-            &self.text().rope,
-            Some(start_pos),
-        )?;
+        self.set_milestone();
 
-        if let Some(m) = matches.next() {
-            let new_cursors = CursorSet::singleton(
-                Cursor::new(m.1).with_selection(Selection::new(m.0, m.1))
-            );
-
-            if !self.set_milestone() {
-                error!("failed to set milestone in find_once");
+        match self.text_mut().find_once(pattern) {
+            Err(e) => {
+                // not even started the search: strip milestone and propagate error.
+                self.strip_milestone();
+                Err(e)
             }
-
-            self.text_mut().cursor_set = new_cursors;
-
-            Ok(true)
-        } else {
-            Ok(false)
+            Ok(false) => {
+                // there was no occurrences, so nothing changed - strip milestone.
+                self.strip_milestone();
+                Ok(false)
+            }
+            Ok(true) => {
+                Ok(true)
+            }
         }
     }
 }

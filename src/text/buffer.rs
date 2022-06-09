@@ -1,7 +1,4 @@
 use std::fmt::{Debug, Formatter};
-use std::iter;
-use std::iter::Peekable;
-use std::marker::PhantomData;
 use ropey::iter::{Chars, Chunks};
 use streaming_iterator::StreamingIterator;
 use crate::experiments::deref_str::DerefStr;

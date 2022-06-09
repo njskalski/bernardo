@@ -1,10 +1,9 @@
-use log::{debug, error, warn};
-use unicode_width::UnicodeWidthStr;
+use log::{error};
 
 use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Widget};
 use crate::io::over_output::OverOutput;
 use crate::io::sub_output::SubOutput;
-use crate::primitives::cursor_set::CursorStatus;
+
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::{Scroll, ScrollDirection};
 use crate::config::theme::Theme;
@@ -75,9 +74,9 @@ impl<W: Widget> WithScroll<W> {
         &self.widget
     }
 
-    pub fn mutate_internal<F : FnOnce(W) -> W>(self, mutator: F) -> Self {
+    pub fn mutate_internal<F: FnOnce(W) -> W>(self, mutator: F) -> Self {
         Self {
-            widget : mutator(self.widget),
+            widget: mutator(self.widget),
             ..self
         }
     }

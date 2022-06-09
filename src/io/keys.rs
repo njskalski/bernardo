@@ -1,4 +1,4 @@
-use std::fmt::{format, Formatter};
+use std::fmt::Formatter;
 use std::str::FromStr;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Visitor;

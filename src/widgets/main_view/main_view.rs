@@ -1,15 +1,13 @@
-use std::borrow::Borrow;
 use std::path::PathBuf;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
 
-use crate::{AnyMsg, ConfigRef, InputEvent, Keycode, Output, SizeConstraint, Widget};
+use crate::{AnyMsg, ConfigRef, InputEvent, Output, SizeConstraint, Widget};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::fs::file_front::FileFront;
 use crate::fs::fsfref::FsfRef;
 use crate::io::sub_output::SubOutput;
-use crate::layout::display_state::GenericDisplayState;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
@@ -123,7 +121,7 @@ impl MainView {
         let tree_widget = &mut self.tree_widget;
 
         let mut left_column = LeafLayout::new(tree_widget);
-        let mut editor_or_not = match self.display_state.curr_editor_idx {
+        let editor_or_not = match self.display_state.curr_editor_idx {
             None => &mut self.no_editor as &mut dyn Widget,
             Some(idx) => self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut self.no_editor),
         };

@@ -1,20 +1,16 @@
 use std::rc::Rc;
-use log::{error, warn};
-use crate::primitives::scroll::ScrollDirection;
-use crate::{AnyMsg, ConfigRef, FsfRef, TreeSitterWrapper, Widget};
+use log::{error};
+use crate::{AnyMsg, ConfigRef, FsfRef, TreeSitterWrapper};
 use crate::experiments::beter_deref_str::BetterDerefStr;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::fs::file_front::FileFront;
 use crate::fs::filesystem_front::ReadError;
 use crate::text::buffer_state::BufferState;
-use crate::widget::any_msg::AsAny;
 use crate::widgets::editor_view::editor_view::EditorView;
-use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::fuzzy_search::helpers::is_subsequence;
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::main_view::msg::MainViewMsg;
-use crate::widgets::with_scroll::WithScroll;
 
 // This "class" was made separate to made borrow-checker realize, that it is not a violation of safety
 // to borrow from it AND main_view mutably at the same time.
@@ -49,7 +45,7 @@ impl EditorGroup {
 
     pub fn open_empty(&mut self, tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> usize {
         self.editors.push(
-                EditorView::new(self.config.clone(), tree_sitter, fsf, clipboard),
+            EditorView::new(self.config.clone(), tree_sitter, fsf, clipboard),
         );
 
         let res = self.editors.len() - 1;
