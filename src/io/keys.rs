@@ -198,7 +198,7 @@ impl FromStr for Keycode {
                         Err(_) => Err(())
                     }
                 } else if other.len() == 1 {
-                    let x = other.chars().next().unwrap();
+                    let x = other.chars().next().unwrap().to_lowercase().next().unwrap();
                     Ok(Keycode::Char(x))
                 } else { Err(()) }
             }
