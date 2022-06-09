@@ -5,6 +5,7 @@ pub enum BetterDerefStr<'a> {
     String(String),
     Rc(Rc<String>),
     Arc(Arc<String>),
+    StaticStr(&'static str),
     Str(&'a str),
 }
 
@@ -14,6 +15,7 @@ impl<'a> BetterDerefStr<'a> {
             BetterDerefStr::String(s) => s.as_str(),
             BetterDerefStr::Rc(s) => s.as_str(),
             BetterDerefStr::Arc(s) => s.as_str(),
+            BetterDerefStr::StaticStr(s) => s,
             BetterDerefStr::Str(s) => s,
         }
     }
@@ -21,6 +23,6 @@ impl<'a> BetterDerefStr<'a> {
 
 impl<'a> From<&'static str> for BetterDerefStr<'a> {
     fn from(s: &'static str) -> Self {
-        BetterDerefStr::Str(s)
+        BetterDerefStr::StaticStr(s)
     }
 }

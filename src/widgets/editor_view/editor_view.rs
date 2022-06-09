@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use log::{error, warn};
+use unicode_width::UnicodeWidthStr;
 use crate::{AnyMsg, ConfigRef, FsfRef, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::focus_group::FocusUpdate;
@@ -25,6 +26,8 @@ use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::WithScroll;
 
+const PATTERN: &'static str = "pattern: ";
+const REPLACE: &'static str = "replace: ";
 
 enum EditorViewState {
     Simple,
@@ -75,8 +78,8 @@ impl EditorView {
                                        fsf.clone(),
                                        clipboard.clone());
 
-        let find_label = TextWidget::new(Box::new("pattern: "));
-        let replace_label = TextWidget::new(Box::new("replace: "));
+        let find_label = TextWidget::new(Box::new(PATTERN));
+        let replace_label = TextWidget::new(Box::new(REPLACE));
 
         EditorView {
             wid: get_new_widget_id(),
@@ -130,14 +133,14 @@ impl EditorView {
         let mut find_box_layout = LeafLayout::new(&mut self.find_box);
         let mut find_layout =
             SplitLayout::new(SplitDirection::Horizontal)
-                .with(SplitRule::Fixed(7), &mut find_text_layout)
+                .with(SplitRule::Fixed(PATTERN.width_cjk()), &mut find_text_layout)
                 .with(SplitRule::Proportional(1.0), &mut find_box_layout);
 
         let mut replace_box_layout = LeafLayout::new(&mut self.replace_box);
         let mut replace_text_layout = LeafLayout::new(&mut self.replace_label);
         let mut replace_layout =
             SplitLayout::new(SplitDirection::Horizontal)
-                .with(SplitRule::Fixed(7), &mut replace_text_layout)
+                .with(SplitRule::Fixed(REPLACE.width_cjk()), &mut replace_text_layout)
                 .with(SplitRule::Proportional(1.0), &mut replace_box_layout);
 
 
