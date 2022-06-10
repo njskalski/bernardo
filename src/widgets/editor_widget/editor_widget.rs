@@ -209,9 +209,15 @@ impl EditorWidget {
                 output.print_at(pos, style, tr);
 
                 x_offset += tr.width();
+                if x_offset as u16 >= output.size_constraint().visible_hint().lower_right().x {
+                    break;
+                }
             }
 
             line_idx += 1;
+            if line_idx as u16 >= output.size_constraint().visible_hint().lower_right().y {
+                break;
+            }
         }
 
         let one_beyond_limit = self.buffer.len_chars();

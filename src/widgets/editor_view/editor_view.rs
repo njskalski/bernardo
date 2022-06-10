@@ -29,6 +29,7 @@ use crate::widgets::with_scroll::WithScroll;
 const PATTERN: &'static str = "pattern: ";
 const REPLACE: &'static str = "replace: ";
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum EditorViewState {
     Simple,
     Find,
@@ -398,10 +399,19 @@ impl Widget for EditorView {
                 EditorViewMsg::ToFind => {
                     self.state = EditorViewState::Find;
                     self.replace_box.clear();
+                    self.set_focused(self.find_box.id());
                     None
                 }
                 EditorViewMsg::ToFindReplace => {
+                    let old_state = self.state;
                     self.state = EditorViewState::FindReplace;
+
+                    if old_state == EditorViewState::Find {
+                        self.set_focused(self.replace_box.id());
+                    } else {
+                        self.set_focused(self.find_box.id());
+                    }
+
                     None
                 }
                 EditorViewMsg::Find { phrase } => {
