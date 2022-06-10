@@ -177,7 +177,7 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let (margin_width, new_sc) = self.nested_sc(output.size_constraint());
+        let (margin_width, mut new_sc) = self.nested_sc(output.size_constraint());
 
         if margin_width > 0 {
             self.render_line_no(margin_width, theme, focused, output);
@@ -190,10 +190,11 @@ impl<W: Widget> Widget for WithScroll<W> {
             let parent_size = output.size_constraint().visible_hint().size;
             // TODO this should be safe after layout, but I might want to add a no-panic default.
             let frame = Rect::new(shift, parent_size - shift);
+            let suboutput = SubOutput::new(output, frame);
 
-            Some(
-                SubOutput::new(output, frame)
-            )
+            new_sc = suboutput.size_constraint();
+
+            Some(suboutput)
         } else {
             None
         };

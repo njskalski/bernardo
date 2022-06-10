@@ -32,6 +32,7 @@ impl<'a> OverOutput<'a> {
 
 impl Output for OverOutput<'_> {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
+        // TODO: I have no clue why this was failing
         if !self.size_constraint.bigger_equal_than(
             self.size_constraint.visible_hint().lower_right()
         ) {
