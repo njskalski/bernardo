@@ -65,6 +65,9 @@ pub struct EditorView {
     See get_save_file_dialog_path for details.
      */
     start_path: Option<Rc<PathBuf>>,
+
+    // this is a workaround to set focus into something not visible yet in next frame.
+    deferred_focus: Option<WID>,
 }
 
 impl EditorView {
@@ -95,6 +98,7 @@ impl EditorView {
             state: EditorViewState::Simple,
             hover_dialog: None,
             start_path: None,
+            deferred_focus: None,
         }
     }
 
@@ -264,6 +268,13 @@ impl EditorView {
             }
         }
     }
+
+    fn set_deferred_focus(&mut self, wid: WID) {
+        if self.deferred_focus.is_some() {
+            warn!("overriding deferred focus before it was flushed!")
+        }
+        self.deferred_focus = Some(self.find_box.id())
+    }
 }
 
 impl Widget for EditorView {
@@ -303,14 +314,18 @@ impl Widget for EditorView {
             _ => {}
         }
 
+        if let Some(wid) = &self.deferred_focus {
+            if !ds.focus_group.set_focused(*wid) {
+                error!("failed to set a deferred focus");
+            }
+            self.deferred_focus = None;
+        } else if let Some(wid) = focus_op {
+            if !ds.focus_group.set_focused(wid) {
+                error!("failed to reset focus");
+            }
+        }
+
         self.display_state = Some(ds);
-
-        // re-setting focus.
-        match (focus_op, &mut self.display_state) {
-            (Some(focus), Some(ds)) => { ds.focus_group.set_focused(focus); }
-            _ => {}
-        };
-
         max_size
     }
 
@@ -394,12 +409,13 @@ impl Widget for EditorView {
                     self.find_box.clear();
                     self.replace_box.clear();
                     self.hover_dialog = None;
+                    self.set_focused(self.editor.id());
                     None
                 }
                 EditorViewMsg::ToFind => {
                     self.state = EditorViewState::Find;
                     self.replace_box.clear();
-                    self.set_focused(self.find_box.id());
+                    self.set_deferred_focus(self.find_box.id());
                     None
                 }
                 EditorViewMsg::ToFindReplace => {
@@ -407,9 +423,9 @@ impl Widget for EditorView {
                     self.state = EditorViewState::FindReplace;
 
                     if old_state == EditorViewState::Find {
-                        self.set_focused(self.replace_box.id());
+                        self.set_deferred_focus(self.replace_box.id());
                     } else {
-                        self.set_focused(self.find_box.id());
+                        self.set_deferred_focus(self.find_box.id());
                     }
 
                     None
@@ -427,16 +443,15 @@ impl Widget for EditorView {
             return Some(hd);
         }
 
-        match &self.state {
-            EditorViewState::Simple => Some(&self.editor),
-            _ => {
-                let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-                wid_op.map(|wid| self.get_subwidget(wid)).flatten()
-            }
-        }
+        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+        wid_op.map(|wid| self.get_subwidget(wid)).flatten()
     }
 
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        // if let Some(hd) = &mut self.hover_dialog {
+        //     return Some(hd as &mut dyn Widget);
+        // }
+        // it has to be written badly, because otherwise borrowchecker is sad.
         if self.hover_dialog.is_some() {
             return self.hover_dialog.as_mut().map(|f| f as &mut dyn Widget);
         }

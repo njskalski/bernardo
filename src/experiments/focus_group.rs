@@ -29,7 +29,7 @@ pub trait FocusGroup: Debug {
 
     fn get_focused(&self) -> WID;
     fn set_focused(&mut self, wid: WID) -> bool;
-
+    
     /*
     returns whether focus got updated or not. It is designed to give a sound feedback, not for
     the purpose of escalation. There will be no "focus escalation".
@@ -64,7 +64,7 @@ impl FocusGraphNode {
 #[derive(Debug)]
 pub struct FocusGroupImpl {
     nodes: HashMap<WID, FocusGraphNode>,
-    selected: usize,
+    selected: WID,
 }
 
 impl FocusGroupImpl {

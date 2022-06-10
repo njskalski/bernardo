@@ -33,4 +33,8 @@ This is completely different than how it is implemented right now (24 may)
 so it will most likely not hit alpha.
 
 Another requirement to keep in mind if "set focus" that needs to succeed even if called BEFORE the redraw (meaning it
-can be poiting to something that hasn't been drawn yet), but it would be great if there was a fallback (in case focus is lost).
+can be poiting to something that hasn't been drawn yet), but it would be great if there was a fallback (in case focus is
+lost).
+
+Now it's done in "deferred focus", but I guess at this time I am approaching the moment where I have enough data to
+rethink.
