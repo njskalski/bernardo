@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use crossterm::{cursor, ExecutableCommand, style, terminal};
+use crossterm::{cursor, ExecutableCommand, QueueableCommand, style, terminal};
 use crossterm::style::{Attribute, Color, Print, SetAttribute, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::{Clear, ClearType};
 use log::{debug, warn};
@@ -57,12 +57,12 @@ impl<W: Write> CrosstermOutput<W> {
 
     fn reset_cursor(&mut self) -> Result<(), std::io::Error> {
         self.stdout
-            .execute(Clear(ClearType::All))?
-            .execute(SetForegroundColor(Color::Reset))?
-            .execute(SetBackgroundColor(Color::Reset))?
-            .execute(SetAttribute(Attribute::Reset))?
-            .execute(cursor::MoveTo(0, 0))?
-            .execute(cursor::Show)?;
+            .queue(Clear(ClearType::All))?
+            .queue(SetForegroundColor(Color::Reset))?
+            .queue(SetBackgroundColor(Color::Reset))?
+            .queue(SetAttribute(Attribute::Reset))?
+            .queue(cursor::MoveTo(0, 0))?
+            .queue(cursor::Show)?;
         Ok(())
     }
 
@@ -82,15 +82,15 @@ impl<W: Write> CrosstermOutput<W> {
         };
 
         self.stdout
-            .execute(Clear(ClearType::All))?
-            .execute(SetForegroundColor(Color::Reset))?
-            .execute(SetBackgroundColor(Color::Reset))?
-            .execute(SetAttribute(Attribute::Reset))?;
+            .queue(Clear(ClearType::All))?
+            .queue(SetForegroundColor(Color::Reset))?
+            .queue(SetBackgroundColor(Color::Reset))?
+            .queue(SetAttribute(Attribute::Reset))?;
 
         let mut last_style: Option<TextStyle> = None;
         let mut curr_pos: XY = ZERO;
 
-        self.stdout.execute(cursor::MoveTo(0, 0))?;
+        self.stdout.queue(cursor::MoveTo(0, 0))?;
 
         for y in 0..self.size.y {
             for x in 0..self.size.x {
@@ -100,7 +100,7 @@ impl<W: Write> CrosstermOutput<W> {
                 // let old_cell = &other_buffer[pos];
 
                 if pos != curr_pos {
-                    self.stdout.execute(cursor::MoveTo(pos.x, pos.y))?;
+                    self.stdout.queue(cursor::MoveTo(pos.x, pos.y))?;
                     debug!("moving curr_pos: {} -> {}", pos, curr_pos);
                     curr_pos = pos;
                 }
@@ -134,21 +134,21 @@ impl<W: Write> CrosstermOutput<W> {
                                     _ => {}
                                 };
 
-                                self.stdout.execute(SetBackgroundColor(Color::Reset))?;
-                                self.stdout.execute(SetBackgroundColor(bgcolor))?;
+                                self.stdout.queue(SetBackgroundColor(Color::Reset))?;
+                                self.stdout.queue(SetBackgroundColor(bgcolor))?;
 
-                                self.stdout.execute(SetForegroundColor(Color::Reset))?;
-                                self.stdout.execute(SetForegroundColor(fgcolor))?;
+                                self.stdout.queue(SetForegroundColor(Color::Reset))?;
+                                self.stdout.queue(SetForegroundColor(fgcolor))?;
 
                                 // TODO setting attributes breaks things colors.
-                                // self.stdout.execute(SetAttribute(Attribute::Reset))?;
-                                // self.stdout.execute(SetAttributes(attributes))?;
+                                // self.stdout.queue(SetAttribute(Attribute::Reset))?;
+                                // self.stdout.queue(SetAttributes(attributes))?;
 
 
                                 last_style = Some(*style);
                             }
 
-                            self.stdout.execute(Print(grapheme))?;
+                            self.stdout.queue(Print(grapheme))?;
 
                             curr_pos.x += grapheme.width() as u16;
                         }
@@ -179,7 +179,7 @@ impl<W: Write> Output for CrosstermOutput<W> {
     }
 
     fn clear(&mut self) -> Result<(), std::io::Error> {
-        self.stdout.execute(Clear(ClearType::All))?;
+        self.stdout.queue(Clear(ClearType::All))?;
 
         self.current_buffer = !self.current_buffer;
         let buffer = if self.current_buffer == false {
