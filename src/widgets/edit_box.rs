@@ -225,7 +225,9 @@ impl Widget for EditBoxWidget {
         let mut x: usize = 0;
         for (char_idx, g) in self.text.to_string().graphemes(true).enumerate() {
             let style = match theme.cursor_background(self.cursor_set.get_cursor_status_for_char(char_idx)) {
-                Some(bg) => primary_style.with_background(bg),
+                Some(bg) => {
+                    primary_style.with_background(if focused { bg } else { bg.half() })
+                }
                 None => primary_style,
             };
             output.print_at(
@@ -238,7 +240,9 @@ impl Widget for EditBoxWidget {
         // one character after
         {
             let style = match theme.cursor_background(self.cursor_set.get_cursor_status_for_char(self.text.len_chars())) {
-                Some(bg) => primary_style.with_background(bg),
+                Some(bg) => {
+                    primary_style.with_background(if focused { bg } else { bg.half() })
+                }
                 None => primary_style,
             };
             output.print_at(

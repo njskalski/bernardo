@@ -73,7 +73,8 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("mio::poll", log::LevelFilter::Error),
     // this is for "recursive_treat_views", which is the heart and backbone of Bernardo.
     ("recursive_treat_views", log::LevelFilter::Error),
-    ("bernardo::text::buffer_state", log::LevelFilter::Debug),
+    ("bernardo::text::buffer_state", log::LevelFilter::Warn),
+    ("bernardo::tsw::tree_sitter_wrapper", log::LevelFilter::Error),
     ("bernardo::widgets::main_view::main_view", log::LevelFilter::Warn),
     ("bernardo::widgets::fuzzy_search::fuzzy_search", log::LevelFilter::Warn),
     ("bernardo::widgets::edit_box", log::LevelFilter::Warn),

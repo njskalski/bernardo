@@ -107,7 +107,7 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
                 Keycode::Char('v') if modifiers.just_ctrl() => Some(CommonEditMsg::Paste),
                 Keycode::Char('z') if modifiers.just_ctrl() => Some(CommonEditMsg::Undo),
                 Keycode::Char('x') if modifiers.just_ctrl() => Some(CommonEditMsg::Redo),
-                Keycode::Char(c) if modifiers.is_empty() => Some(CommonEditMsg::Char(c)),
+                Keycode::Char(c) if modifiers.is_empty() || modifiers.just_shift() => Some(CommonEditMsg::Char(c)),
                 Keycode::ArrowUp => Some(CommonEditMsg::CursorUp { selecting: key.modifiers.shift }),
                 Keycode::ArrowDown => Some(CommonEditMsg::CursorDown { selecting: key.modifiers.shift }),
                 Keycode::ArrowLeft => {
