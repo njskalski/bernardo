@@ -27,8 +27,8 @@ mod tests {
 
     #[test]
     fn single_cursor_block_replace() {
-        assert_eq!(text_to_text("ab[ba)", CommonEditMsg::Block("hello".to_string()), None), "abhello#");
-        assert_eq!(text_to_text("ab(ba]", CommonEditMsg::Block("hello".to_string()), None), "abhello#");
+        // assert_eq!(text_to_text("ab[ba)x", CommonEditMsg::Block("hello".to_string()), None), "abhello#x");
+        assert_eq!(text_to_text("ab(ba]x", CommonEditMsg::Block("hello".to_string()), None), "abhello#x");
     }
 
     #[test]

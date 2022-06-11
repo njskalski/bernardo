@@ -191,11 +191,15 @@ fn insert_to_rope(cs: &mut CursorSet,
                 let change = (sel.e - sel.b) as isize;
                 modifier -= change;
 
-                if c.anchor_right() {
+                // this is necessary, because otherwise shift below may fail. I copy out, since later there is no anchor.
+                let was_anchor_right = c.anchor_right();
+                c.clear_selection();
+
+                if was_anchor_right {
                     c.shift_by(-change);
                 }
             }
-            c.clear_both();
+            c.clear_pc();
 
             if rope.insert_block(c.a, what) {
                 res |= true;
