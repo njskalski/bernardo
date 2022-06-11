@@ -20,6 +20,18 @@ mod tests {
     }
 
     #[test]
+    fn single_cursor_block_write() {
+        assert_eq!(text_to_text("ab#ba", CommonEditMsg::Block("hello".to_string()), None), "abhello#ba");
+        assert_eq!(text_to_text("#abba", CommonEditMsg::Block("hello".to_string()), None), "hello#abba");
+    }
+
+    #[test]
+    fn single_cursor_block_replace() {
+        assert_eq!(text_to_text("ab[ba)", CommonEditMsg::Block("hello".to_string()), None), "abhello#");
+        assert_eq!(text_to_text("ab(ba]", CommonEditMsg::Block("hello".to_string()), None), "abhello#");
+    }
+
+    #[test]
     fn single_cursor_backspace() {
         assert_eq!(text_to_text("ab#ba", CommonEditMsg::Backspace, None), "a#ba");
         assert_eq!(text_to_text("#abba", CommonEditMsg::Backspace, None), "#abba");
@@ -36,6 +48,13 @@ mod tests {
     #[test]
     fn multi_cursor_write() {
         assert_eq!(text_to_text("abc#abc#a", CommonEditMsg::Char('d'), None), "abcd#abcd#a");
+        assert_eq!(text_to_text("abc#abc#a", CommonEditMsg::Block("hello".to_string()), None), "abchello#abchello#a");
+    }
+
+    #[test]
+    fn multi_cursor_block_selection() {
+        assert_eq!(text_to_text("(ab]c(ab]c", CommonEditMsg::Block("hello".to_string()), None), "hello#chello#c");
+        assert_eq!(text_to_text("[ab)c[ab)c", CommonEditMsg::Block("hello".to_string()), None), "hello#chello#c");
     }
 
     #[test]
