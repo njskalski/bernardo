@@ -178,16 +178,6 @@ fn insert_to_rope(cs: &mut CursorSet,
         }
 
         if specific_cursor.map(|idx| idx == cursor_idx).unwrap_or(true) {
-            if rope.insert_block(c.a, what) {
-                res |= true;
-                cursor_specific_diff_len = what.len();
-            } else {
-                warn!("expected to insert {} characters at {}, but failed", what.len(), c.a);
-            }
-
-            c.shift_by(what.len() as isize);
-            modifier += what.len() as isize;
-
             // whatever was selected, it's gone.
             if let Some(sel) = c.s {
                 if rope.remove(sel.b, sel.e) {
@@ -202,12 +192,22 @@ fn insert_to_rope(cs: &mut CursorSet,
                 modifier -= change;
 
                 if c.anchor_right() {
-                    c.shift_by(change);
+                    c.shift_by(-change);
                 }
             }
-
             c.clear_both();
+
+            if rope.insert_block(c.a, what) {
+                res |= true;
+                cursor_specific_diff_len = std::cmp::max(cursor_specific_diff_len, what.len());
+            } else {
+                warn!("expected to insert {} characters at {}, but failed", what.len(), c.a);
+            }
+
+            c.shift_by(what.len() as isize);
+            modifier += what.len() as isize;
             diff_len += cursor_specific_diff_len;
+
             debug_assert!(c.check_invariant());
         }
     };
