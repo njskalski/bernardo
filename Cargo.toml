@@ -51,8 +51,8 @@ debug = 2
 lto = false
 
 [profile.release]
-#TODO add pipeline that removes that, it's for profiling only
-debug = true
+#uncomment for profiling
+#debug = true
 
 
 #https://github.com/tree-sitter/tree-sitter/tree/master/lib/binding_rust

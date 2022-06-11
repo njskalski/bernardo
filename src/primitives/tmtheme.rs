@@ -1,7 +1,12 @@
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use syntect::highlighting::{Highlighter, ThemeSet};
+use std::rc::Rc;
+use log::warn;
+use owning_ref::{BoxRef, OwningRef};
+use syntect::highlighting::{Highlighter, HighlightState, ThemeSet};
 use serde::{Serialize, Deserialize};
-use syntect::parsing::Scope;
+use syntect::parsing::{Scope, ScopeStack};
 use crate::primitives::color::Color;
 
 impl Into<Color> for syntect::highlighting::Color {
@@ -10,21 +15,30 @@ impl Into<Color> for syntect::highlighting::Color {
     }
 }
 
-#[derive(Deserialize, Serialize)]
 pub struct TmTheme {
-    pub tm: ThemeSet,
+    theme: syntect::highlighting::Theme,
+
+    cache: RefCell<HashMap<String, Color>>,
 }
+
 
 impl TmTheme {
     pub fn color_for_name(&self, name: &str) -> Option<Color> {
-        //TODO
-        let tm = self.tm.themes.get("base16-eighties.dark")?;
-        let highlighter = Highlighter::new(tm);
+        if let Some(color) = self.cache.borrow().get(&*name) {
+            return Some(*color);
+        }
 
-        let scope = Scope::new(name).ok()?;
-        let style = highlighter.style_for_stack(&[scope]);
+        // this is slow, so I cache
+        let highlighter = Highlighter::new(&self.theme);
 
-        Some(style.foreground.into())
+        let color = match Scope::new(name) {
+            Ok(scope) => highlighter.style_for_stack(&[scope]).foreground,
+            Err(_) => highlighter.get_default().foreground,
+        };
+
+
+        self.cache.borrow_mut().insert(name.to_string(), color.into());
+        Some(color.into())
     }
 }
 
@@ -44,8 +58,11 @@ impl Debug for TmTheme {
 
 impl Default for TmTheme {
     fn default() -> Self {
+        let tm = ThemeSet::load_defaults().themes.get("base16-eighties.dark").unwrap().clone();
+
         TmTheme {
-            tm: ThemeSet::load_defaults(),
+            theme: tm,
+            cache: RefCell::new(HashMap::new()),
         }
     }
 }

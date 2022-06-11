@@ -18,7 +18,7 @@ pub struct Theme {
     #[serde(default)]
     pub ui: UiTheme,
     // I do not serialize this, use the default value and always say "true" in comparison operator.
-    #[serde(default, skip_serializing)]
+    #[serde(default, skip)]
     pub tm: TmTheme,
 }
 
