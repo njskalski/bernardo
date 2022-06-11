@@ -4,6 +4,7 @@ use crossterm::{cursor, ExecutableCommand, style, terminal};
 use crossterm::style::{Attribute, Color, Print, SetAttribute, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::{Clear, ClearType};
 use log::{debug, warn};
+use termion::raw::IntoRawMode;
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::buffer_output::BufferOutput;

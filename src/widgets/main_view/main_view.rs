@@ -154,7 +154,7 @@ impl MainView {
         res
     }
 
-    fn open_file(&mut self, ff: FileFront) -> bool {
+    pub fn open_file(&mut self, ff: FileFront) -> bool {
         debug!("opening file {:?}", ff.path());
 
         if let Some(idx) = self.editors.get_if_open(&ff) {

@@ -1,5 +1,6 @@
 use std::{iter, thread};
 use std::cell::RefCell;
+use std::cmp::Ordering;
 use std::collections::VecDeque;
 use std::fmt::Debug;
 use std::fs::DirEntry;
@@ -7,7 +8,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::{Receiver, RecvError, Sender};
 use filesystem::{FileSystem, OsFileSystem};
 use log::{debug, error, warn};
 use ropey::Rope;
@@ -188,7 +189,7 @@ impl LocalFilesystem {
                                 }
                             }
                             Err(e) => {
-                                error!("failed retrieving indexing request: {}", e);
+                                debug!("failed retrieving indexing request: {}", e);
                                 break 'indexing_loop;
                             }
                         }
@@ -244,7 +245,8 @@ impl LocalFilesystem {
                         }
                     }
                     Err(e) => {
-                        error!("failed reading dir {:?}: {}", &what, e);
+                        // TODO I get too many os error 24 too many files open, tuning this one out to release alfa
+                        warn!("failed reading dir {:?}: {}", &what, e);
                     }
                 }
 
@@ -392,6 +394,8 @@ impl FilesystemFront for LocalFilesystem {
                         }
                     }
 
+                    items.sort();
+
                     // debug!("ticking on is: {:?}", is);
 
                     let cache = is.get_or_create_cache(&path);
@@ -472,3 +476,11 @@ impl FilesystemFront for LocalFilesystem {
         Ok(())
     }
 }
+// too tired
+// fn sort_files(a : &Rc<PathBuf>, b: &Rc<PathBuf>) -> Ordering {
+//     let A = a.to_string_lossy();
+//     let B = b.to_string_lossy();
+//
+//
+// }
+

@@ -81,12 +81,23 @@ impl<'a> SplitLayout<'a> {
         }
 
         let unit = leftover as f32 / sum_props;
+        let mut biggest_idx = 0;
 
         for (idx, child) in self.children.iter().enumerate() {
             if let SplitRule::Proportional(p) = child.split_rule {
                 amounts[idx] = (unit * p) as usize;
+
+                if idx > 0 {
+                    if amounts[idx] > amounts[biggest_idx] {
+                        biggest_idx = idx;
+                    }
+                }
             }
         }
+
+        let sum_ = amounts.iter().fold(0 as usize, |a, b| a + *b);
+        let difference = free_axis - sum_;
+        amounts[biggest_idx] += difference;
 
         let mut res: Vec<Rect> = Vec::new();
         res.reserve(amounts.len());
@@ -210,3 +221,6 @@ impl<'a> Layout for SplitLayout<'a> {
         res
     }
 }
+
+#[cfg(test)]
+pub mod tests {}

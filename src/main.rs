@@ -77,6 +77,12 @@ fn main() {
 
     let mut main_view = MainView::new(config_ref.clone(), tree_sitter, fsf.clone(), clipboard);
 
+    for f in files.iter() {
+        if !fsf.get_item(f).map(|ff| main_view.open_file(ff)).unwrap_or(false) {
+            error!("failed opening file {:?}", f);
+        }
+    }
+
     // returns (consumed, message_to_parent)
     fn recursive_treat_views(
         view: &mut dyn Widget,
