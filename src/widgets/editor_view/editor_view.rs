@@ -16,6 +16,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::xy;
 use crate::primitives::xy::XY;
+use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
@@ -85,13 +86,20 @@ impl EditorView {
         let find_label = TextWidget::new(Box::new(PATTERN));
         let replace_label = TextWidget::new(Box::new(REPLACE));
 
+        let find_box = EditBoxWidget::new().with_on_hit(|w| {
+            EditorViewMsg::FindHit.someboxed()
+        });
+        let replace_box = EditBoxWidget::new().with_on_hit(|_| {
+            EditorViewMsg::ReplaceHit.someboxed()
+        });
+
         EditorView {
             wid: get_new_widget_id(),
             display_state: None,
             editor: WithScroll::new(editor, ScrollDirection::Vertical).with_line_no(),
-            find_box: EditBoxWidget::default(),
+            find_box,
             find_label,
-            replace_box: EditBoxWidget::default(),
+            replace_box,
             replace_label,
             fsf,
             config,
@@ -254,13 +262,9 @@ impl EditorView {
         self.editor.internal().buffer_state()
     }
 
-    pub fn buffer_state_mut(&mut self) -> &mut BufferState {
-        self.editor.internal_mut().buffer_state_mut()
-    }
-
     fn find_once(&mut self, phrase: &String) -> bool {
-        match self.buffer_state_mut().find_once(phrase) {
-            Ok(r) => r,
+        match self.editor.internal_mut().find_once(phrase) {
+            Ok(changed) => changed,
             Err(e) => {
                 // TODO handle?
                 error!("failed looking for {}", phrase);
@@ -430,8 +434,17 @@ impl Widget for EditorView {
 
                     None
                 }
-                EditorViewMsg::Find { phrase } => {
-                    self.find_once(phrase);
+                EditorViewMsg::FindHit => {
+                    let phrase = self.find_box.get_text().to_string();
+                    if !phrase.is_empty() {
+                        self.find_once(&phrase);
+                    }
+                    None
+                }
+                EditorViewMsg::ReplaceHit => {
+                    let phrase = self.find_box.get_text().to_string();
+                    let with = self.replace_box.get_text().to_string();
+                    if !phrase.is_empty() && !with.is_empty() {}
                     None
                 }
             }
@@ -492,7 +505,7 @@ impl Widget for EditorView {
     }
 
     fn anchor(&self) -> XY {
-        xy::ZERO
+        self.editor.internal().anchor()
     }
 
     fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {

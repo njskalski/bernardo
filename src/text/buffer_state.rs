@@ -5,6 +5,7 @@ use std::rc::Rc;
 use log::{debug, error, warn};
 use ropey::iter::{Chars, Chunks};
 use ropey::Rope;
+use streaming_iterator::StreamingIterator;
 use tree_sitter::{Point};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::experiments::clipboard::ClipboardRef;
@@ -68,6 +69,11 @@ impl Text {
         )?;
 
         if let Some(m) = matches.next() {
+            if m.0 == m.1 {
+                error!("empty find, this should not be possible");
+                return Ok(false);
+            }
+
             let new_cursors = CursorSet::singleton(
                 Cursor::new(m.1).with_selection(Selection::new(m.0, m.1))
             );
@@ -265,6 +271,19 @@ impl BufferState {
                 Ok(true)
             }
         }
+    }
+}
+
+impl ToString for BufferState {
+    fn to_string(&self) -> String {
+        let mut output = String::new();
+
+        let mut line_it = self.lines();
+        while let Some(line) = line_it.next() {
+            output += line.as_str()
+        }
+
+        output
     }
 }
 

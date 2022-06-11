@@ -52,6 +52,12 @@ impl<W: Widget> WithScroll<W> {
         let margin_width = self.line_count_margin_width(sc);
         let with_margin = self.line_no && sc.strictly_bigger_than(XY::new(margin_width, 0));
 
+        let visible_part_size = if with_margin {
+            XY::new(sc.visible_hint().size.x - margin_width, sc.visible_hint().size.y)
+        } else {
+            sc.visible_hint().size
+        };
+
         let new_sc = SizeConstraint::new(
             if self.scroll.direction.free_x() { None } else {
                 sc.x().map(/* this works because strictly_bigger_than above */ |x|
@@ -60,7 +66,7 @@ impl<W: Widget> WithScroll<W> {
                     } else { x })
             },
             if self.scroll.direction.free_y() { None } else { sc.y() },
-            Rect::new(self.scroll.offset, sc.visible_hint().size),
+            Rect::new(self.scroll.offset, visible_part_size),
         );
 
         (if with_margin { margin_width } else { 0 }, new_sc)
@@ -151,13 +157,13 @@ impl<W: Widget> Widget for WithScroll<W> {
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         let (_margin_width, new_sc) = self.nested_sc(sc);
-        let full_size = self.widget.layout(new_sc);
+        let _full_size = self.widget.layout(new_sc);
 
         // again, in case of nesting I could not just use hint.size
         self.scroll.follow_anchor(new_sc.visible_hint().size,
                                   self.widget.anchor());
 
-        full_size.cut(new_sc)
+        sc.visible_hint().size
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -191,8 +197,6 @@ impl<W: Widget> Widget for WithScroll<W> {
             // TODO this should be safe after layout, but I might want to add a no-panic default.
             let frame = Rect::new(shift, parent_size - shift);
             let suboutput = SubOutput::new(output, frame);
-
-            new_sc = suboutput.size_constraint();
 
             Some(suboutput)
         } else {

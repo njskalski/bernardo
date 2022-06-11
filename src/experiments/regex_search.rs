@@ -5,8 +5,10 @@ use crate::text::buffer::Buffer;
 I wasted hours trying to do regex search on the
  */
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum FindError {
     RegexPatternFail,
+    EmptyPattern,
     CharToByteFail,
 }
 
@@ -23,6 +25,10 @@ pub struct RegexMatches {
 This will work with both regexes and simple strings.
  */
 pub fn regex_find<'a>(pattern: &'a str, rope: &'a dyn Buffer, start_pos_chars: Option<usize>) -> Result<RegexMatches, FindError> {
+    if pattern.is_empty() {
+        return Err(FindError::EmptyPattern);
+    }
+
     let mut all_bytes = String::new();
     for chunk in rope.chunks() {
         all_bytes += chunk;

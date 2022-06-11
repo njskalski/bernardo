@@ -14,6 +14,7 @@ use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
 use crate::config::theme::Theme;
+use crate::experiments::regex_search::FindError;
 use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
@@ -301,6 +302,15 @@ impl EditorWidget {
     pub fn buffer_mut(&mut self) -> &mut BufferState {
         &mut self.buffer
     }
+
+    pub fn find_once(&mut self, phrase: &String) -> Result<bool, FindError> {
+        let res = self.buffer.find_once(phrase);
+        if res == Ok(true) {
+            // TODO handle "restart from the top"
+            self.update_anchor(Arrow::Down);
+        }
+        res
+    }
 }
 
 impl Widget for EditorWidget {
@@ -429,11 +439,6 @@ impl Widget for EditorWidget {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         self.internal_render(theme, focused, output);
-
-        // if let Some(sd) = self.save_file_dialog.as_ref() {
-        //     let rect = EditorWidget::get_hover_rect(output.size_constraint().visible_hint().size);
-        //     sd.render(theme, focused, &mut SubOutput::new(output, rect));
-        // }
     }
 
     fn anchor(&self) -> XY {

@@ -19,7 +19,8 @@ pub enum EditorViewMsg {
     semantics: starts from first cursor, finds the FIRST position of string phrase, and then stays on the first character position,
     no highlight
      */
-    Find { phrase: String },
+    FindHit,
+    ReplaceHit,
 }
 
 

@@ -104,6 +104,10 @@ impl EditBoxWidget {
         &self.text
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.text.len_bytes() == 0 //TODO
+    }
+
     pub fn set_text<'a, T: Into<&'a str>>(&mut self, text: T) {
         self.text = Rope::from(text.into());
         self.cursor_set.move_home(&self.text, false);

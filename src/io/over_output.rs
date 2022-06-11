@@ -55,12 +55,12 @@ impl Output for OverOutput<'_> {
 
         if !self.size_constraint().bigger_equal_than(pos) {
             debug!("drawing beyond output, early exit. pos: {} sc: {}", pos, self.size_constraint());
-            return;
+            // return;
         }
 
         let mut x_offset: i32 = 0;
         for grapheme in text.graphemes(true).into_iter() {
-            let x = x_offset + pos.x as i32 - self.size_constraint.visible_hint().upper_left().x as i32;
+            let x = pos.x as i32 + x_offset - self.size_constraint.visible_hint().upper_left().x as i32;
             if x < 0 {
                 continue;
             }
@@ -68,16 +68,10 @@ impl Output for OverOutput<'_> {
                 warn!("got grapheme x position that would overflow u16::MAX, not drawing.");
                 continue;
             }
-
             let x = x as u16;
 
-            match self.output.size_constraint().x() {
-                Some(max_x) => {
-                    if x >= max_x {
-                        break;
-                    }
-                }
-                None => {}
+            if self.output.size_constraint().x().map(|max_x| max_x <= x).unwrap_or(true) {
+                break;
             }
 
             let y = pos.y - self.size_constraint.visible_hint().upper_left().y; // >= 0, tested above and < u16::MAX since no addition.

@@ -1,3 +1,8 @@
+// BIG CHANGES TO DO:
+
+update max_size in widget.layout, to inform widget whether it should self-constrain OR take as much space as possible.
+hard case to handle: "use as much as you can X" when "X is unbound because of scrolling"
+
 make input handling reusable
     There will be maaaany widgets handling input.
 
@@ -17,8 +22,8 @@ make input handling reusable
 //TODO
      change every new_idx < sth.size() - 1  => to => new_idx + 1 < sth.size() to avoid underflow if sth.size is 0
 
-// TODO ogarnij smallvec do cursor set
+// TODO use smallvec to optimise cursor set
 
-// TODO remove the second Box in definition of fuzzy file item provider, just return &dyn Item
+// TODO remove the second Box in definition of fuzzy file item provider, just return &dyn Item - tried twice, failed twice
 
 // TODO change Rope to Buffer in Edit Box, but block newlines

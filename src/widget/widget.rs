@@ -26,6 +26,9 @@ pub trait Widget {
     fn min_size(&self) -> XY;
 
     // This is guaranteed to be called before render.
+    // It seems that I settled for "take as much space as available" not "take as little as possible", but I don't recall
+    // exact moment when this decision was made. TODO: Truth is, that should be a parameter.
+
     // There is an invariant that I encourage you to keep, that .layout DOES NOT use ANY data from
     // previous .layout call, to make the calls order independent. If display state spills from one frame
     // to another, an entire new class of errors emerges, that I refuse to handle.

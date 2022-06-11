@@ -6,7 +6,7 @@ use crate::tsw::lang_id::LangId;
 
 //TODO create tests for undo/redo/set milestone
 
-pub trait Buffer {
+pub trait Buffer: ToString {
     fn len_lines(&self) -> usize;
 
     fn lines(&self) -> LinesIter;
@@ -45,17 +45,6 @@ pub trait Buffer {
     fn can_redo(&self) -> bool { false }
     fn undo(&mut self) -> bool { false }
     fn redo(&mut self) -> bool { false }
-
-    fn to_string(&self) -> String {
-        let mut output = String::new();
-
-        let mut line_it = self.lines();
-        while let Some(line) = line_it.next() {
-            output += line.as_str()
-        }
-
-        output
-    }
 }
 
 pub struct LinesIter<'a> {
