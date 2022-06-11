@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use log::{error, warn};
+use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 use crate::{AnyMsg, ConfigRef, FsfRef, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
 use crate::experiments::clipboard::ClipboardRef;
@@ -12,8 +12,10 @@ use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::common_edit_msgs::CommonEditMsg;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
+use crate::primitives::search_pattern::SearchPattern;
 use crate::primitives::xy;
 use crate::primitives::xy::XY;
 use crate::text::buffer::Buffer;
@@ -56,6 +58,8 @@ pub struct EditorView {
      */
     fsf: FsfRef,
     config: ConfigRef,
+    // this is necessary since there are multiple clipboard receivers within this object.
+    clipboard: ClipboardRef,
 
     state: EditorViewState,
     hover_dialog: Option<SaveFileDialogWidget>,
@@ -103,6 +107,7 @@ impl EditorView {
             replace_label,
             fsf,
             config,
+            clipboard,
             state: EditorViewState::Simple,
             hover_dialog: None,
             start_path: None,
@@ -262,8 +267,9 @@ impl EditorView {
         self.editor.internal().buffer_state()
     }
 
-    fn find_once(&mut self, phrase: &String) -> bool {
-        match self.editor.internal_mut().find_once(phrase) {
+    fn hit_find_once(&mut self) -> bool {
+        let phrase = self.find_box.get_text().to_string();
+        match self.editor.internal_mut().find_once(&phrase) {
             Ok(changed) => changed,
             Err(e) => {
                 // TODO handle?
@@ -273,11 +279,54 @@ impl EditorView {
         }
     }
 
+    /*
+    If we have selected item that matches current phrase, we replace it and do another lookup.
+    Just lookup otherwise.
+     */
+    fn hit_replace_once(&mut self) -> bool {
+        let phrase = match self.get_pattern() {
+            Some(p) => p,
+            None => {
+                debug!("hit_replace_once with empty phrase - ignoring");
+                return false;
+            }
+        };
+
+        let curr_text = self.editor.internal().buffer_state().text();
+        if curr_text.cursor_set.is_single() && curr_text.do_cursors_match_regex(&phrase) {
+            let with_what = self.replace_box.get_text().to_string();
+            let page_height = self.editor.internal().page_height() as usize;
+            let bf = self.editor.internal_mut().buffer_state_mut();
+            bf.apply_cem(
+                CommonEditMsg::Block(with_what),
+                page_height,
+                Some(&self.clipboard), //not really needed but why not
+            );
+
+            self.hit_find_once();
+            true
+        } else {
+            self.hit_find_once()
+        }
+    }
+
     fn set_deferred_focus(&mut self, wid: WID) {
         if self.deferred_focus.is_some() {
             warn!("overriding deferred focus before it was flushed!")
         }
         self.deferred_focus = Some(self.find_box.id())
+    }
+
+    /*
+    This checks, if next hit to replace does an actual replace and next find, or just first find.
+     */
+
+    fn get_pattern(&self) -> Option<SearchPattern> {
+        if self.find_box.is_empty() {
+            None
+        } else {
+            Some(self.find_box.get_text().into())
+        }
     }
 }
 
@@ -395,7 +444,7 @@ impl Widget for EditorView {
                     None
                 }
                 EditorViewMsg::FocusUpdateMsg(focus_update) => {
-                    warn!("updating focus");
+                    // warn!("updating focus");
                     self.display_state.as_mut().map(
                         |ds| {
                             if !ds.focus_group.update_focus(*focus_update) {
@@ -435,16 +484,15 @@ impl Widget for EditorView {
                     None
                 }
                 EditorViewMsg::FindHit => {
-                    let phrase = self.find_box.get_text().to_string();
-                    if !phrase.is_empty() {
-                        self.find_once(&phrase);
+                    if !self.find_box.is_empty() {
+                        self.hit_find_once();
                     }
                     None
                 }
                 EditorViewMsg::ReplaceHit => {
-                    let phrase = self.find_box.get_text().to_string();
-                    let with = self.replace_box.get_text().to_string();
-                    if !phrase.is_empty() && !with.is_empty() {}
+                    if !self.find_box.is_empty() {
+                        self.hit_replace_once();
+                    }
                     None
                 }
             }

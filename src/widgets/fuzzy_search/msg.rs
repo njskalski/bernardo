@@ -11,7 +11,7 @@ pub enum Navigation {
     ArrowDown,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum FuzzySearchMsg {
     EditMsg(CommonEditMsg),
     EscalateContext,

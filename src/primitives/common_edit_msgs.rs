@@ -20,9 +20,10 @@ move
 edit
 undo/redo
  */
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum CommonEditMsg {
     Char(char),
+    Block(String),
     CursorUp { selecting: bool },
     CursorDown { selecting: bool },
     CursorLeft { selecting: bool },
@@ -71,7 +72,7 @@ impl CommonEditMsg {
             CommonEditMsg::WordEnd { .. } => CommonEditMsg::WordEnd { selecting: false },
             CommonEditMsg::PageUp { .. } => CommonEditMsg::PageUp { selecting: false },
             CommonEditMsg::PageDown { .. } => CommonEditMsg::PageDown { selecting: false },
-            x => *x,
+            x => x.clone(),
         }
     }
 
@@ -88,6 +89,7 @@ impl CommonEditMsg {
             CommonEditMsg::PageUp { .. } => false,
             CommonEditMsg::PageDown { .. } => false,
             CommonEditMsg::Char(..) => true,
+            CommonEditMsg::Block(..) => true,
             CommonEditMsg::Backspace => true,
             CommonEditMsg::Delete => true,
             CommonEditMsg::Copy => false,
@@ -226,6 +228,9 @@ pub fn apply_cem(cem: CommonEditMsg,
         CommonEditMsg::Char(char) => {
             // TODO optimise
             insert_to_rope(cs, rope, None, char.to_string().as_str())
+        }
+        CommonEditMsg::Block(s) => {
+            insert_to_rope(cs, rope, None, &s)
         }
         CommonEditMsg::CursorUp { selecting } => {
             (0, cs.move_vertically_by(rope, -1, selecting))
@@ -437,9 +442,10 @@ pub fn apply_cem(cem: CommonEditMsg,
 
 // This maps a cme into a direction that the cursor has (probably) moved. It's used to update
 // scrolling information.
-pub fn cme_to_direction(cme: CommonEditMsg) -> Option<Arrow> {
+pub fn cme_to_direction(cme: &CommonEditMsg) -> Option<Arrow> {
     match cme {
         CommonEditMsg::Char(_) => Some(Arrow::Right),
+        CommonEditMsg::Block(_) => Some(Arrow::Right),
         CommonEditMsg::CursorUp { .. } => Some(Arrow::Up),
         CommonEditMsg::CursorDown { .. } => Some(Arrow::Down),
         CommonEditMsg::CursorLeft { .. } => Some(Arrow::Left),

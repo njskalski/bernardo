@@ -3,6 +3,7 @@ use std::ops::Range;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
+use regex::Regex;
 use ropey::iter::{Chars, Chunks};
 use ropey::Rope;
 use streaming_iterator::StreamingIterator;
@@ -15,6 +16,7 @@ use crate::fs::filesystem_front::SomethingToSave;
 use crate::Output;
 use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg};
 use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
+use crate::primitives::search_pattern::SearchPattern;
 
 use crate::text::buffer::{Buffer, LinesIter};
 use crate::tsw::lang_id::LangId;
@@ -84,6 +86,27 @@ impl Text {
         } else {
             Ok(false)
         }
+    }
+
+    /*
+    Returns true iff:
+        - all cursors have selections
+        - all selections match the pattern
+     */
+    pub fn do_cursors_match_regex(&self, pattern: &SearchPattern) -> bool {
+        for c in self.cursor_set.iter() {
+            if c.s.is_none() {
+                return false;
+            }
+            let sel = c.s.unwrap();
+            let selected: String = self.rope.chars().skip(sel.b).take(sel.e - sel.b).collect();
+
+            if !pattern.matches(&selected) {
+                return false;
+            }
+        }
+
+        true
     }
 }
 
@@ -198,8 +221,11 @@ impl BufferState {
 
         // TODO optimise
         let mut cursors = self.text().cursor_set.clone();
+        let old_text = self.text().rope.to_string();
+
         let (_diff_len_chars, any_change) = apply_cem(cem.clone(), &mut cursors, self, page_height as usize, clipboard);
 
+        let new_text = self.text().rope.to_string();
         //undo/redo invalidates cursors copy, so I need to watch for those
 
         match cem {

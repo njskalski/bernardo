@@ -437,7 +437,7 @@ impl Widget for SaveFileDialogWidget {
 
         return match our_msg.unwrap() {
             SaveFileDialogMsg::FocusUpdateMsg(focus_update) => {
-                warn!("updating focus");
+                // debug!("updating focus");
                 self.display_state.as_mut().map(
                     |ds| {
                         if !ds.focus_group.update_focus(*focus_update) {

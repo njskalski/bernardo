@@ -273,7 +273,7 @@ impl EditorWidget {
         theme.cursor_background(self.cursors().get_cursor_status_for_char(char_idx))
     }
 
-    fn height(&self) -> u16 {
+    pub fn page_height(&self) -> u16 {
         match self.last_size {
             Some(xy) => xy.y,
             None => {
@@ -370,11 +370,11 @@ impl Widget for EditorWidget {
             }
             Some(msg) => match (&self.state, msg) {
                 (&EditorState::Editing, EditorWidgetMsg::EditMsg(cem)) => {
-                    let page_height = self.height();
+                    let page_height = self.page_height();
                     // page_height as usize is safe, since page_height is u16 and usize is larger.
-                    let changed = self.buffer.apply_cem(*cem, page_height as usize, Some(&self.clipboard));
+                    let changed = self.buffer.apply_cem(cem.clone(), page_height as usize, Some(&self.clipboard));
 
-                    match cme_to_direction(*cem) {
+                    match cme_to_direction(cem) {
                         None => {}
                         Some(direction) => self.update_anchor(direction)
                     };
@@ -424,8 +424,8 @@ impl Widget for EditorWidget {
                 (&EditorState::DroppingCursor { special_cursor }, EditorWidgetMsg::DropCursorMove { cem }) => {
                     let mut set = CursorSet::singleton(special_cursor);
                     // TODO make sure this had no changing effect?
-                    let height = self.height();
-                    apply_cem(*cem, &mut set, &mut self.buffer, height as usize, Some(&self.clipboard));
+                    let height = self.page_height();
+                    apply_cem(cem.clone(), &mut set, &mut self.buffer, height as usize, Some(&self.clipboard));
                     self.state = EditorState::DroppingCursor { special_cursor: *set.as_single().unwrap() };
                     None
                 }

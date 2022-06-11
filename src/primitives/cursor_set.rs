@@ -1228,4 +1228,8 @@ impl CursorSet {
             &ZERO_CURSOR
         })
     }
+
+    pub fn is_single(&self) -> bool {
+        self.set.len() == 1
+    }
 }
