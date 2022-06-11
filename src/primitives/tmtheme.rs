@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 use log::warn;
-use owning_ref::{BoxRef, OwningRef};
 use syntect::highlighting::{Highlighter, HighlightState, ThemeSet};
 use serde::{Serialize, Deserialize};
 use syntect::parsing::{Scope, ScopeStack};
