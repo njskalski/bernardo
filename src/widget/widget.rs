@@ -26,8 +26,10 @@ pub trait Widget {
     fn min_size(&self) -> XY;
 
     // This is guaranteed to be called before render.
-    // It seems that I settled for "take as much space as available" not "take as little as possible", but I don't recall
+    // It seems that I settled for "take as much visible space as available" not "take as little as possible", but I don't recall
     // exact moment when this decision was made. TODO: Truth is, that should be a parameter.
+    // Again, from what I am deducing from my own code, layout returns actual screen size that will be affected, not the size
+    // a widget has - because anything WithScroll is "potentially infinite", and still returns XY.
 
     // There is an invariant that I encourage you to keep, that .layout DOES NOT use ANY data from
     // previous .layout call, to make the calls order independent. If display state spills from one frame

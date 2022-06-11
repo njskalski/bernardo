@@ -156,13 +156,15 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let (_margin_width, new_sc) = self.nested_sc(sc);
-        let _full_size = self.widget.layout(new_sc);
+        let (_margin_width, internal_sc) = self.nested_sc(sc);
+        let _full_size = self.widget.layout(internal_sc);
 
         // again, in case of nesting I could not just use hint.size
-        self.scroll.follow_anchor(new_sc.visible_hint().size,
+        self.scroll.follow_anchor(internal_sc.visible_hint().size,
                                   self.widget.anchor());
 
+        // full_size + XY::new(margin_width, 0)
+        // why like this? Well, I have
         sc.visible_hint().size
     }
 
