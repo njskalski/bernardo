@@ -10,11 +10,9 @@ extern crate matches;
 
 use std::io::stdout;
 use std::path::PathBuf;
-use std::process::exit;
 use std::rc::Rc;
-use std::time::SystemTime;
-
 use clap::Parser;
+
 use crossbeam_channel::select;
 use log::{debug, error};
 use termion::raw::IntoRawMode;
@@ -37,7 +35,8 @@ use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
-use dirs;
+use crate::gladius::load_config::load_config;
+use crate::gladius::logger_setup::logger_setup;
 
 mod experiments;
 mod io;
@@ -49,131 +48,24 @@ mod widgets;
 mod tsw;
 mod fs;
 mod config;
-
-const PROGRAM_NAME: &'static str = "gladius";
-const RELEASE_NAME: &'static str = "Romulus";
-const CONFIG_FILE_NAME: &'static str = "config.ron";
-
-
-#[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
-struct Args {
-    #[clap(flatten)]
-    pub verbosity: clap_verbosity_flag::Verbosity,
-
-    #[clap(short = 'r', long = "reconfigure")]
-    pub reconfigure: bool,
-}
-
-
-const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
-    // this is for git ignore
-    ("globset", log::LevelFilter::Error),
-    // I have no clue where it comes from, and I don't care so I suppress it
-    ("mio::poll", log::LevelFilter::Error),
-    // this is for "recursive_treat_views", which is the heart and backbone of Bernardo.
-    ("recursive_treat_views", log::LevelFilter::Error),
-    ("bernardo::text::buffer_state", log::LevelFilter::Warn),
-    ("bernardo::tsw::tree_sitter_wrapper", log::LevelFilter::Error),
-    ("bernardo::widgets::main_view::main_view", log::LevelFilter::Warn),
-    ("bernardo::widgets::fuzzy_search::fuzzy_search", log::LevelFilter::Warn),
-    ("bernardo::widgets::edit_box", log::LevelFilter::Warn),
-
-    // This guy leaves a lot of data in trace, it seems like it spawns a new thread. I think it deserves profiling.
-    ("arboard::x11_clipboard", log::LevelFilter::Warn),
-];
+mod gladius;
 
 fn main() {
-    let args = Args::parse();
+    let args = gladius::args::Args::parse();
+    logger_setup(args.verbosity.log_level_filter());
 
-    // global logger setting
-    let mut logger_builder = env_logger::builder();
-    logger_builder.filter_level(args.verbosity.log_level_filter());
-    // specific logger settings
-    for item in DEBUG_PARAMS {
-        logger_builder.filter(Some(item.0), item.1);
-    }
-    logger_builder.init();
+    let config_ref = load_config(args.reconfigure);
+    let theme = Theme::load_or_create_default(&config_ref.config_dir).unwrap();
 
-    let config_dir_base = dirs::config_dir().unwrap_or_else(|| {
-        error!("failed retrieving xdg config dir, using \"~/.config\" as default");
-        PathBuf::from("~/.config")
-    });
-    let config_dir = config_dir_base.join(PROGRAM_NAME);
-    let config_file_path = config_dir.join(CONFIG_FILE_NAME);
-    let config_exists = config_file_path.exists();
+    let (start_dir, files) = args.paths();
 
-    // Here we either create first config, or re-create it.
-    let mut config: Option<Config> = None;
-    if args.reconfigure || !config_exists {
-        if config_exists {
-            let secs = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-                Ok(n) => n.as_secs(),
-                Err(e) => {
-                    error!("failed checking time: {}", e);
-                    exit(1);
-                }
-            };
+    let fsf: FsfRef = LocalFilesystem::new(start_dir);
 
-            let backup_path = config_dir.join(format!("{}.old.{}", CONFIG_FILE_NAME, secs));
-            match std::fs::rename(&config_file_path, backup_path) {
-                Ok(_) => {}
-                Err(e) => {
-                    error!("failed backing up config before reconfiguring: {}.\nIn order to retry, remove {:?} manually.", e, &config_file_path);
-                    exit(2);
-                }
-            }
-        }
-
-        config = Some(Config::default());
-
-        if !config_dir.exists() {
-            match std::fs::create_dir_all(&config_dir) {
-                Ok(_) => {}
-                Err(e) => {
-                    error!("failed creating config dir {:?}, due: {}", &config_dir, e);
-                    exit(3);
-                }
-            }
-        }
-
-        match &config {
-            None => {}
-            Some(c) => {
-                match c.save_to_file(&config_file_path) {
-                    Ok(_) => {}
-                    Err(e) => {
-                        error!("failed saving fresh config at {:?}, because {}.", &config_file_path, e);
-                        exit(4);
-                    }
-                }
-            }
-        }
-    }
-
-    //loading config
-    if config.is_none() {
-        match Config::load_from_file(&config_file_path) {
-            Ok(c) => {
-                config = Some(c);
-            }
-            Err(e) => {
-                error!("failed loading config from {:?}. because: {}", &config_file_path, e);
-                exit(3);
-            }
-        }
-    }
-
-    let config_ref = ConfigRef::new(config.unwrap());
-
+    let clipboard = get_me_some_clipboard();
     let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
 
     let stdout = stdout();
     let stdout = stdout.lock().into_raw_mode().unwrap();
-    // let stdin = stdin();
-
-    // write!(stdout, "{}{}", clear::All, cursor::Goto(1, 1)).unwrap();
-    // stdout.flush().unwrap();
 
     let input = CrosstermInput::new();
     let mut output = CrosstermOutput::new(stdout);
@@ -183,16 +75,7 @@ fn main() {
         return;
     }
 
-    let fsf: FsfRef = LocalFilesystem::new(PathBuf::from("/home/andrzej/r/rust/bernardo"));
-    let clipboard = get_me_some_clipboard();
-
     let mut main_view = MainView::new(config_ref.clone(), tree_sitter, fsf.clone(), clipboard);
-
-    // let trash = Rc::new("trash".to_string());
-
-    // let mut main_view = SaveFileDialogWidget::new(fsf.clone()).with_something_to_save(Box::new(trash));
-
-    let theme = Theme::load_from_file(&PathBuf::from("./themes/default.ron")).unwrap();
 
     // returns (consumed, message_to_parent)
     fn recursive_treat_views(

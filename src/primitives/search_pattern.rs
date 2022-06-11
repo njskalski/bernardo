@@ -1,4 +1,4 @@
-use regex::{Error, Regex};
+use regex::Regex;
 
 #[derive(Debug, Clone)]
 pub enum SearchPattern {

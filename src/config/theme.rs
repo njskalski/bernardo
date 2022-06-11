@@ -1,11 +1,13 @@
+use std::fs;
 use std::path::Path;
-use log::warn;
+use log::{error, warn};
 use serde::{Deserialize, Serialize};
 use crate::config::load_error::LoadError;
 use crate::config::save_error::SaveError;
 use crate::fs::file_front::FileFront;
 
 use crate::io::style::{Effect, TextStyle};
+use crate::load_config;
 use crate::primitives::color::Color;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::is_default::IsDefault;
@@ -13,7 +15,7 @@ use crate::primitives::tmtheme::TmTheme;
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Theme {
-    #[serde(default, skip_serializing_if = "UiTheme::is_default")]
+    #[serde(default)]
     pub ui: UiTheme,
     // I do not serialize this, use the default value and always say "true" in comparison operator.
     #[serde(default, skip_serializing)]
@@ -156,6 +158,8 @@ pub struct CursorsSettings {
     pub foreground: Option<Color>,
 }
 
+const DEFAULT_THEME_PATH: &'static str = "themes/default.ron";
+
 impl Theme {
     /*
     uses default filesystem (std). It is actually needed, it's unlikely that we want the theme config to be in
@@ -167,14 +171,29 @@ impl Theme {
         Ok(item)
     }
 
-    pub fn load_from_ff(ff: &FileFront) -> Result<Self, LoadError> {
-        let s = ff.read_entire_file_to_rope()?.to_string();
-        Ok(ron::from_str(s.as_str())?)
+    pub fn save_to_file(&self, path: &Path) -> Result<(), SaveError> {
+        let item_s = ron::ser::to_string_pretty(self, ron::ser::PrettyConfig::new())?;
+        path.parent().map(|p|
+            fs::create_dir_all(p).map_err(|e| {
+                error!("failed creating dir {:?}: {}", p, e);
+            })
+        );
+
+        fs::write(path, item_s)?;
+
+        Ok(())
     }
 
-    pub fn save_to_ff(&self, ff: &FileFront) -> Result<(), SaveError> {
-        let item_s = ron::to_string(self)?;
-        ff.overwrite_with(&item_s.as_str())?;
-        Ok(())
+    pub fn load_or_create_default(root_config_dir: &Path) -> Result<Self, LoadError> {
+        let full_path = root_config_dir.join(DEFAULT_THEME_PATH);
+        if full_path.exists() {
+            Self::load_from_file(&full_path)
+        } else {
+            let theme = Self::default();
+            theme.save_to_file(&full_path).map_err(|e| {
+                error!("failed saving theme to {:?}: {}", &full_path, e);
+            });
+            Ok(theme)
+        }
     }
 }

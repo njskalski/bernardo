@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use serde::{Deserialize, Serialize};
 
@@ -10,6 +10,9 @@ use crate::Keycode;
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Config {
     pub keyboard_config: KeyboardConfig,
+
+    #[serde(skip)]
+    pub config_dir: PathBuf,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]

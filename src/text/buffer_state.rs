@@ -3,7 +3,6 @@ use std::ops::Range;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
-use regex::Regex;
 use ropey::iter::{Chars, Chunks};
 use ropey::Rope;
 use streaming_iterator::StreamingIterator;
@@ -221,13 +220,9 @@ impl BufferState {
 
         // TODO optimise
         let mut cursors = self.text().cursor_set.clone();
-        let old_text = self.text().rope.to_string();
-
         let (_diff_len_chars, any_change) = apply_cem(cem.clone(), &mut cursors, self, page_height as usize, clipboard);
 
-        let new_text = self.text().rope.to_string();
         //undo/redo invalidates cursors copy, so I need to watch for those
-
         match cem {
             CommonEditMsg::Undo | CommonEditMsg::Redo => {}
             _ => {
