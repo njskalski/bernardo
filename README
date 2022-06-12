@@ -1,30 +1,31 @@
 If you see this on github, then it's a manual sync mirror that I often forget to push to.
 The up-to-date version is at https://gitlab.com/njskalski/bernardo
 
-And here is the website describing what it is: https://njskalski.gitlab.io/triarii
+This is a repository currently hosting two projects: Gladius and Bernardo.
+Bernardo is a TUI widget library.
+Gladius is a code editor.
+Currently they are developed in single repo, because separating them at this time would hinder the effort.
 
-This project is of a commandline, keyboard-only widget library called Bernardo TUI.
+Furthermore *both projects are in alpha state*, they *will* crash, don't use them for anything important yet.
 
-The priorities are:
-- Unparalleled user experience
-- Practical, non restrictive API
+Licenses: GPLv3. I might re-release Bernardo as LGPL at later date, but that has not been decided yet. If you decide to
+contribute, make sure you are OK with that.
 
-Secondary priorities: (to be targeted later)
-- Performance
-- Zero/almost zero panics
+Here is a website describing reasoning behind the projects: https://njskalski.gitlab.io/triarii
 
-It's primary use case against which it will be tested is another approach to code editor (I try to write one since 2018).
+Here's what editor can currently do:
+- read, write
+- syntax highlighting (done via tree-sitter, themes from syntect crate)
+- undo/redo (ctrl-z, ctrl-x <-! sorry, shift+ctrl doesn't work well with cmd-line)
+- copy/paste (ctrl-c, ctrl-v)
+- fuzzy jump to file or directory (ctrl-h)
+- fancy save-file-as dialog (mostly to test if widgets work correctly)
+- Multicursor: ctrl-w switches to "drop cursor" mode, where you navigate with arrows and can add/remove cursors with Enter. Esc exits this mode.
 
 Inspiration for name:
 
 https://en.wikipedia.org/wiki/Bernard_Gui
 
 Bernardo Gui, an inquisitor, historian and for a period of time, Bishop of Tui :D. Portrayed as violent, unfair man in
-"The Name of the Rose" novel by Umberto Eco. Some sources claim that this image is overly negative.
-
-I consider using mouse for programming a heresy, so I figured I need a help from professional inquisition that no one
-expects.
-
-Presently it compiles to a binary, where I test any widget I currently work on.
-
-I will write more docs, when the library matures a little more.
+"The Name of the Rose" novel by Umberto Eco. Some sources claim that this image is overly negative. I consider using
+mouse for programming a heresy, so I figured I need a help from professional inquisition that no one expects.
