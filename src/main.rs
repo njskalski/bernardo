@@ -51,7 +51,7 @@ mod config;
 mod gladius;
 
 fn main() {
-    let args = gladius::args::Args::parse();
+    let mut args = gladius::args::Args::parse();
     logger_setup(args.verbosity.log_level_filter());
 
     let config_ref = load_config(args.reconfigure);

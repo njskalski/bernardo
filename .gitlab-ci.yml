@@ -11,6 +11,11 @@ rust-latest:
   script:
     - cargo build --verbose
     - cargo test --verbose
+    - cp ./target/release/bernardo ./gladius
+  artifacts:
+    paths:
+      - ./gladius
+    expire_in: 30 days
 
 rust-nightly:
   stage: build

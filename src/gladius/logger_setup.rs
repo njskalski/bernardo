@@ -22,6 +22,11 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
 pub fn logger_setup(level_filter: LevelFilter) {
     // global logger setting
     let mut logger_builder = env_logger::builder();
+
+    #[cfg(not(debug_assertions))]
+    logger_builder.filter_level(LevelFilter::Off);
+
+    #[cfg(debug_assertions)]
     logger_builder.filter_level(level_filter);
     // specific logger settings
     for item in DEBUG_PARAMS {
