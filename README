@@ -6,11 +6,10 @@ Bernardo is a TUI widget library.
 Gladius is a code editor.
 Currently they are developed in single repo, because separating them at this time would hinder the effort.
 
-Furthermore *both projects are in alpha state*, they *will* crash, don't use them
- for anything important yet.
+Furthermore *both projects are in alpha state*, they *will* crash, don't use them for anything important yet.
 
-Licenses: GPLv3. I might re-release Bernardo as LGPL at later date, but that has
- not been decided yet. If you decide to contribute, make sure you are OK with that.
+Licenses: GPLv3. I might re-release Bernardo as LGPL at later date, but that has not been decided yet. If you decide
+to contribute, be sure you are OK with that.
 
 Here is a website describing reasoning behind the projects: https://njskalski.gitlab.io/triarii
 
@@ -21,8 +20,8 @@ Here's what editor can currently do:
 - copy/paste (ctrl-c, ctrl-v)
 - fuzzy jump to file or directory (ctrl-h)
 - fancy save-file-as dialog (mostly to test if widgets work correctly)
-- Multicursor: ctrl-w switches to "drop cursor" mode, where you navigate with 
-	    arrows and can add/remove cursors with Enter. Esc exits this mode.
+- Multicursor: ctrl-w switches to "drop cursor" mode, where you navigate with arrows and can add/remove cursors with
+    Enter. Esc exits this mode.
 
 Inspiration for name:
 
