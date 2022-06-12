@@ -11,10 +11,10 @@ rust-latest:
   script:
     - cargo build --verbose
     - cargo test --verbose
-    - cp ./target/release/bernardo ./gladius
+    - cp $PWD/target/release/bernardo $PWD/gladius
   artifacts:
     paths:
-      - ./gladius
+      - $PWD/gladius
     expire_in: 30 days
 
 rust-nightly:
