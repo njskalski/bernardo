@@ -9,17 +9,19 @@ rust-latest:
   stage: build
   image: rust:latest
   script:
-    - cargo build --verbose
+    - cargo build --verbose --release
     - cargo test --verbose
-    - cp $PWD/target/release/bernardo $PWD/gladius
+  cache:
+    paths:
+      - target/
   artifacts:
     paths:
-      - $PWD/gladius
+      - target/release/bernardo
     expire_in: 30 days
 
 rust-nightly:
   stage: build
   image: rustlang/rust:nightly
   script:
-    - cargo build --verbose
+    - cargo build --verbose --release
     - cargo test --verbose
