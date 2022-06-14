@@ -14,8 +14,8 @@ use std::rc::Rc;
 use clap::Parser;
 
 use crossbeam_channel::select;
+use crossterm::terminal;
 use log::{debug, error};
-use termion::raw::IntoRawMode;
 
 use crate::io::crossterm_input::CrosstermInput;
 use crate::io::crossterm_output::CrosstermOutput;
@@ -64,10 +64,9 @@ fn main() {
     let clipboard = get_me_some_clipboard();
     let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
 
-    let stdout = stdout();
-    let stdout = stdout.lock().into_raw_mode().unwrap();
-
+    terminal::enable_raw_mode().expect("failed entering raw mode");
     let input = CrosstermInput::new();
+    let stdout = stdout();
     let mut output = CrosstermOutput::new(stdout);
 
     if output.size_constraint().visible_hint().size == ZERO {
