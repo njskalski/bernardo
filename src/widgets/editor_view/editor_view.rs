@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
-use crate::{AnyMsg, ConfigRef, FsfRef, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget};
+use crate::{AnyMsg, ConfigRef, FsfRef, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget, ZERO};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::sub_output::SubOutput;
@@ -97,7 +97,7 @@ impl EditorView {
         EditorView {
             wid: get_new_widget_id(),
             display_state: None,
-            editor: WithScroll::new(editor, ScrollDirection::Vertical).with_line_no(),
+            editor: WithScroll::new(editor, ScrollDirection::Both).with_line_no(),
             find_box,
             find_label,
             replace_box,
@@ -550,7 +550,7 @@ impl Widget for EditorView {
     }
 
     fn anchor(&self) -> XY {
-        self.editor.internal().anchor()
+        ZERO
     }
 
     fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
