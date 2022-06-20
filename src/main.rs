@@ -49,6 +49,7 @@ mod tsw;
 mod fs;
 mod config;
 mod gladius;
+mod lsp_client;
 
 fn main() {
     let mut args = gladius::args::Args::parse();

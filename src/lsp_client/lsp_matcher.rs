@@ -4,7 +4,7 @@ use lsp_types::request::{GotoDeclarationResponse, GotoImplementationResponse, Go
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
-use crate::experiments::lsp_response::LspResponse;
+use crate::lsp_client::lsp_response::LspResponse;
 
 // I was not able to simplify this for an hour, and refused to try more.
 pub(crate) fn read_response(call: MethodCall) -> Result<Option<LspResponse>, jsonrpc_core::Error> {

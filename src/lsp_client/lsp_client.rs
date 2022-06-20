@@ -11,10 +11,12 @@ use lsp_types::request::{Initialize, Request};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use crate::ConfigRef;
-use crate::experiments::lsp_client::LspWriteError::BrokenPipe;
-use crate::experiments::lsp_client::LspReadError::UnexpectedContents;
-use crate::experiments::lsp_matcher;
-use crate::experiments::lsp_response::LspResponse;
+use crate::lsp_client::lsp_client::LspWriteError::BrokenPipe;
+use crate::lsp_client::lsp_client::LspReadError::UnexpectedContents;
+use crate::lsp_client::lsp_matcher;
+use crate::lsp_client::lsp_read_error::LspReadError;
+use crate::lsp_client::lsp_response::LspResponse;
+use crate::lsp_client::lsp_write_error::LspWriteError;
 use crate::tsw::lang_id::LangId;
 
 struct LspFinder {
@@ -42,26 +44,6 @@ struct LspWrapper {
     language: LangId,
 
     child: Child,
-}
-
-pub enum LspWriteError {
-    WrongValueType,
-    SerializationError(serde_json::error::Error),
-    IoError(io::Error),
-    BrokenPipe,
-    InterruptedWrite,
-}
-
-impl From<serde_json::error::Error> for LspWriteError {
-    fn from(e: serde_json::error::Error) -> Self {
-        LspWriteError::SerializationError(e)
-    }
-}
-
-impl From<io::Error> for LspWriteError {
-    fn from(ioe: io::Error) -> Self {
-        LspWriteError::IoError(ioe)
-    }
 }
 
 impl LspWrapper {
@@ -123,87 +105,16 @@ impl LspWrapper {
             Err(LspWriteError::WrongValueType)
         }
     }
-
-
-    // fn init(&self) {
-    //     let x = self.send::<Initialize>(lsp_types::InitializeParams {
-    //         process_id: None,
-    //         root_path: None,
-    //         root_uri: None,
-    //         initialization_options: None,
-    //         capabilities: Default::default(),
-    //         trace: None,
-    //         workspace_folders: None,
-    //         client_info: None,
-    //         locale: None,
-    //     });
-    //
-    //     let mut x = serde_json::Serializer::new(self.child.stdout.unwrap());
-    //
-    //     // x.serialize(serde_json::ser::Serializer)
-    // }
-
-    // fn send<R : Request>(&self, params : R::Params) {
-    //     let x = json::stringify(R)
-    // }
-
-    // fn send_request_unchecked<R>(&self, params: R::Params) -> jsonrpc::Result<R::Result>
-    //     where
-    //         R: lsp_types::request::Request,
-    // {
-    //     let id = self.next_request_id();
-    //     let request = Request::from_request::<R>(id, params);
-    //
-    //     let response = match self.clone().call(request).await {
-    //         Ok(Some(response)) => response,
-    //         Ok(None) | Err(_) => return Err(Error::internal_error()),
-    //     };
-    //
-    //     let (_, result) = response.into_parts();
-    //     result.and_then(|v| {
-    //         serde_json::from_value(v).map_err(|e| Error {
-    //             code: ErrorCode::ParseError,
-    //             message: e.to_string(),
-    //             data: None,
-    //         })
-    //     })
-    // }
 }
 
-enum LspReadError {
-    NoLine,
-    IoError(io::Error),
-    DeError(serde_json::error::Error),
-    UnknownMethod,
-    ParamCastFailed,
-    UnexpectedContents,
-}
 
 #[derive(Debug)]
-struct LspResponseTuple {
+pub struct LspResponseTuple {
     pub id: jsonrpc_core::Id,
     pub params: LspResponse,
 }
 
-impl From<io::Error> for LspReadError {
-    fn from(ioe: io::Error) -> Self {
-        LspReadError::IoError(ioe)
-    }
-}
-
-impl From<serde_json::error::Error> for LspReadError {
-    fn from(dee: serde_json::error::Error) -> Self {
-        LspReadError::DeError(dee)
-    }
-}
-
-impl From<jsonrpc_core::Error> for LspReadError {
-    fn from(_: Error) -> Self {
-        LspReadError::ParamCastFailed
-    }
-}
-
-fn read_lsp<R: BufRead>(input: &mut R) -> Result<LspResponseTuple, LspReadError> {
+pub fn read_lsp<R: BufRead>(input: &mut R) -> Result<LspResponseTuple, LspReadError> {
     if let Some(line_res) = input.lines().next() {
         let line = line_res?;
 
