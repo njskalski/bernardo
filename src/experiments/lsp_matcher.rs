@@ -7,7 +7,7 @@ use serde_json::Value;
 use crate::experiments::lsp_response::LspResponse;
 
 // I was not able to simplify this for an hour, and refused to try more.
-fn read_response(call: MethodCall) -> Result<Option<LspResponse>, jsonrpc_core::Error> {
+pub(crate) fn read_response(call: MethodCall) -> Result<Option<LspResponse>, jsonrpc_core::Error> {
     Ok(match call.method.as_str() {
         "initialize" => {
             let paras = call.params.parse::<InitializeResult>()?;

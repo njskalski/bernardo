@@ -13,6 +13,8 @@ use serde::Serialize;
 use crate::ConfigRef;
 use crate::experiments::lsp_client::LspWriteError::BrokenPipe;
 use crate::experiments::lsp_client::LspReadError::UnexpectedContents;
+use crate::experiments::lsp_matcher;
+use crate::experiments::lsp_response::LspResponse;
 use crate::tsw::lang_id::LangId;
 
 struct LspFinder {
@@ -172,14 +174,15 @@ enum LspReadError {
     NoLine,
     IoError(io::Error),
     DeError(serde_json::error::Error),
+    UnknownMethod,
     ParamCastFailed,
     UnexpectedContents,
 }
 
 #[derive(Debug)]
-enum LspResponse {
-    Unknown(String),
-    Initialized(lsp_types::InitializeResult),
+struct LspResponseTuple {
+    pub id: jsonrpc_core::Id,
+    pub params: LspResponse,
 }
 
 impl From<io::Error> for LspReadError {
@@ -200,7 +203,7 @@ impl From<jsonrpc_core::Error> for LspReadError {
     }
 }
 
-fn read_lsp<R: BufRead>(input: &mut R) -> Result<LspResponse, LspReadError> {
+fn read_lsp<R: BufRead>(input: &mut R) -> Result<LspResponseTuple, LspReadError> {
     if let Some(line_res) = input.lines().next() {
         let line = line_res?;
 
@@ -220,17 +223,18 @@ fn read_lsp<R: BufRead>(input: &mut R) -> Result<LspResponse, LspReadError> {
                 input.read_exact(body.borrow_mut())?;
 
                 let call = serde_json::from_slice::<jsonrpc_core::MethodCall>(&body)?;
+                let id = call.id.clone();
 
-
-                Ok(match call.method.as_str() {
-                    "initialize" => {
-                        let params = call.params.parse::<lsp_types::InitializeResult>()?;
-                        LspResponse::Initialized(params)
+                match lsp_matcher::read_response(call) {
+                    Ok(None) => Err(LspReadError::UnknownMethod),
+                    Ok(Some(params)) => {
+                        Ok(LspResponseTuple {
+                            id,
+                            params,
+                        })
                     }
-                    other => {
-                        LspResponse::Unknown(call.method)
-                    }
-                })
+                    Err(_) => Err(LspReadError::ParamCastFailed)
+                }
             } else {
                 Err(LspReadError::UnexpectedContents)
             }
