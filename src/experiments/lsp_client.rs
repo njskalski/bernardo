@@ -4,6 +4,7 @@ use std::io::{BufRead, Read, Write};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::str::FromStr;
+use jsonrpc_core::Error;
 use log::error;
 use lsp_types::lsp_request;
 use lsp_types::request::{Initialize, Request};
@@ -170,7 +171,14 @@ enum LspReadError {
     NoLine,
     IoError(io::Error),
     DeError(serde_json::error::Error),
+    ParamCastFailed,
     UnexpectedContents,
+}
+
+#[derive(Debug)]
+enum LspResponse {
+    Unknown(String),
+    Initialized(lsp_types::InitializeResult),
 }
 
 impl From<io::Error> for LspReadError {
@@ -185,7 +193,20 @@ impl From<serde_json::error::Error> for LspReadError {
     }
 }
 
-fn read_lsp<R: BufRead>(input: &mut R) -> Result<(), LspReadError> {
+impl From<jsonrpc_core::Error> for LspReadError {
+    fn from(_: Error) -> Self {
+        LspReadError::ParamCastFailed
+    }
+}
+
+// macro_rules! str_to_type {
+//     ($name:tt) => {
+//         let item = serde_json::from_slice::<lsp_request!($name)::Params>(&call.params);
+//         Box::new(item) as Box<dyn >
+//     }
+// }
+
+fn read_lsp<R: BufRead>(input: &mut R) -> Result<LspResponse, LspReadError> {
     if let Some(line_res) = input.lines().next() {
         let line = line_res?;
 
@@ -205,9 +226,16 @@ fn read_lsp<R: BufRead>(input: &mut R) -> Result<(), LspReadError> {
                 input.read_exact(body.borrow_mut())?;
 
                 let call = serde_json::from_slice::<jsonrpc_core::MethodCall>(&body)?;
-                let x = lsp_request!(&call.method);
 
-                Ok(())
+                Ok(match call.method.as_str() {
+                    "initialize" => {
+                        let params = call.params.parse::<lsp_types::InitializeResult>()?;
+                        LspResponse::Initialized(params)
+                    }
+                    other => {
+                        LspResponse::Unknown(call.method)
+                    }
+                })
             } else {
                 Err(LspReadError::UnexpectedContents)
             }
