@@ -4,10 +4,11 @@ use std::io::{BufRead, Read, Write};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::str::FromStr;
-use jsonrpc_core::Error;
+use jsonrpc_core::{Error, MethodCall};
 use log::error;
 use lsp_types::lsp_request;
 use lsp_types::request::{Initialize, Request};
+use serde::de::DeserializeOwned;
 use serde::Serialize;
 use crate::ConfigRef;
 use crate::experiments::lsp_client::LspWriteError::BrokenPipe;
@@ -199,13 +200,6 @@ impl From<jsonrpc_core::Error> for LspReadError {
     }
 }
 
-// macro_rules! str_to_type {
-//     ($name:tt) => {
-//         let item = serde_json::from_slice::<lsp_request!($name)::Params>(&call.params);
-//         Box::new(item) as Box<dyn >
-//     }
-// }
-
 fn read_lsp<R: BufRead>(input: &mut R) -> Result<LspResponse, LspReadError> {
     if let Some(line_res) = input.lines().next() {
         let line = line_res?;
@@ -226,6 +220,7 @@ fn read_lsp<R: BufRead>(input: &mut R) -> Result<LspResponse, LspReadError> {
                 input.read_exact(body.borrow_mut())?;
 
                 let call = serde_json::from_slice::<jsonrpc_core::MethodCall>(&body)?;
+
 
                 Ok(match call.method.as_str() {
                     "initialize" => {

@@ -6,3 +6,5 @@ pub mod clipboard;
 pub mod beter_deref_str;
 pub mod regex_search;
 pub mod lsp_client;
+mod lsp_matcher;
+mod lsp_response;
