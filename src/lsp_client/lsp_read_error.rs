@@ -1,12 +1,15 @@
 use std::io;
 
+#[derive(Debug)]
 pub enum LspReadError {
     NoLine,
     IoError(io::Error),
     DeError(serde_json::error::Error),
+    UnknownIdentifier,
     UnknownMethod,
     ParamCastFailed,
     UnexpectedContents,
+    LspFailure(jsonrpc_core::Error),
 }
 
 impl From<io::Error> for LspReadError {
