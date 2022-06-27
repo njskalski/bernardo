@@ -7,7 +7,7 @@ use serde_json::Value;
 use crate::lsp_client::lsp_response::LspResponse;
 
 // I was not able to simplify this for an hour, and refused to try more.
-pub fn read_response(method: &str, value: Value) -> Result<Option<LspResponse>, serde_json::error::Error> {
+pub fn value_to_typed_response(method: &str, value: Value) -> Result<Option<LspResponse>, serde_json::error::Error> {
     Ok(match method {
         "initialize" => {
             let paras = serde_json::from_value::<InitializeResult>(value)?;

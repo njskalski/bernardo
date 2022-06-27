@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
+use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
 use crate::config::load_error::LoadError;
@@ -70,7 +70,7 @@ impl Default for Editor {
     }
 }
 
-pub type ConfigRef = Rc<Config>;
+pub type ConfigRef = Arc<Config>;
 
 impl Config {
     /*

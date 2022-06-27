@@ -1,5 +1,6 @@
 use std::io;
 
+#[derive(Debug)]
 pub enum LspWriteError {
     WrongValueType,
     SerializationError(serde_json::error::Error),

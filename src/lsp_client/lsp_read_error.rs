@@ -10,6 +10,7 @@ pub enum LspReadError {
     ParamCastFailed,
     UnexpectedContents,
     LspFailure(jsonrpc_core::Error),
+    BrokenChannel,
 }
 
 impl From<io::Error> for LspReadError {

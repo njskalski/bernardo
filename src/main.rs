@@ -8,6 +8,7 @@ extern crate maplit;
 #[macro_use]
 extern crate matches;
 
+
 use std::io::stdout;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -37,6 +38,8 @@ use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
 use crate::gladius::load_config::load_config;
 use crate::gladius::logger_setup::logger_setup;
+use crate::lsp_client::lsp_finder::LspFinder;
+use crate::tsw::lang_id::LangId;
 
 mod experiments;
 mod io;
@@ -74,6 +77,29 @@ fn main() {
         //TODO
         return;
     }
+
+    // from here are pure experiments
+    let tokio_runtime = match tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build() {
+        Ok(tokio_runtime) => tokio_runtime,
+        Err(e) => {
+            error!("failed starting tokio: [{:?}]", e);
+            return;
+        }
+    };
+
+    let lsp_finder = LspFinder::new(config_ref.clone());
+    let workspace_root = PathBuf::from("/home/andrzej/r/rust/bernardo");
+
+    let handle = tokio_runtime.spawn(async move {
+        let mut lsp_client = lsp_finder.todo_get_lsp(LangId::RUST, workspace_root).unwrap();
+        let item = lsp_client.initialize().await;
+        error!("item {:?}", item);
+    });
+    tokio_runtime.block_on(handle).unwrap();
+    // end of pure experiments
 
     let mut main_view = MainView::new(config_ref.clone(), tree_sitter, fsf.clone(), clipboard);
 
