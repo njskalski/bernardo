@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use crossterm::{cursor, ExecutableCommand, QueueableCommand, style, terminal};
+use crossterm::{cursor, QueueableCommand, style, terminal};
 use crossterm::style::{Attribute, Color, Print, SetAttribute, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::{Clear, ClearType};
 use log::{debug, warn};

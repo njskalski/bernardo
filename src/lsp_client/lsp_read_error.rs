@@ -11,6 +11,7 @@ pub enum LspReadError {
     UnexpectedContents,
     LspFailure(jsonrpc_core::Error),
     BrokenChannel,
+    HttpParseError(stream_httparse::streaming_parser::ParseError),
 }
 
 impl From<io::Error> for LspReadError {
@@ -28,5 +29,11 @@ impl From<serde_json::error::Error> for LspReadError {
 impl From<jsonrpc_core::Error> for LspReadError {
     fn from(_: jsonrpc_core::Error) -> Self {
         LspReadError::ParamCastFailed
+    }
+}
+
+impl From<stream_httparse::streaming_parser::ParseError> for LspReadError {
+    fn from(p: stream_httparse::streaming_parser::ParseError) -> Self {
+        LspReadError::HttpParseError(p)
     }
 }

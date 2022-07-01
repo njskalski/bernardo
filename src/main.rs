@@ -73,11 +73,6 @@ fn main() {
     let stdout = stdout();
     let mut output = CrosstermOutput::new(stdout);
 
-    if output.size_constraint().visible_hint().size == ZERO {
-        //TODO
-        return;
-    }
-
     // from here are pure experiments
     let tokio_runtime = match tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
@@ -96,10 +91,15 @@ fn main() {
     let handle = tokio_runtime.spawn(async move {
         let mut lsp_client = lsp_finder.todo_get_lsp(LangId::RUST, workspace_root).unwrap();
         let item = lsp_client.initialize().await;
-        error!("item {:?}", item);
     });
-    tokio_runtime.block_on(handle).unwrap();
+
+    // tokio_runtime.block_on(handle).unwrap();
     // end of pure experiments
+
+    if output.size_constraint().visible_hint().size == ZERO {
+        //TODO
+        return;
+    }
 
     let mut main_view = MainView::new(config_ref.clone(), tree_sitter, fsf.clone(), clipboard);
 
@@ -215,4 +215,6 @@ fn main() {
             }
         }
     }
+
+    tokio_runtime.block_on(handle).unwrap();
 }
