@@ -3,7 +3,10 @@ use jsonrpc_core::{Id, Output};
 use log::{debug, error};
 use tokio::io::AsyncReadExt;
 use tokio::sync::RwLock;
+use crate::lsp_client::lsp_client::IdToCallInfo;
 use crate::lsp_client::lsp_read_error::LspReadError;
+
+const FAKE_RESPONSE_PREFIX: &'static str = "HTTP/1.1 200 OK\r\n";
 
 // TODO one can reduce allocation here
 fn id_to_str(id: Id) -> String {
@@ -15,7 +18,7 @@ fn id_to_str(id: Id) -> String {
     }
 }
 
-async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
+pub async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
     input: &mut R,
     response_parser: &mut stream_httparse::streaming_parser::RespParser,
     id_to_method: &Arc<RwLock<IdToCallInfo>>,

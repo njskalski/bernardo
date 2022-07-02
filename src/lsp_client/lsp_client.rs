@@ -35,9 +35,11 @@ use tokio::process::{ChildStderr, ChildStdout};
 use tokio::io::AsyncBufReadExt;
 use tokio::io::AsyncReadExt;
 use tokio::sync::RwLock;
+use crate::lsp_client::lsp_read::read_lsp;
+use crate::lsp_client::lsp_write::{internal_send_notification, internal_send_request};
 
 const DEFAULT_RESPONSE_PREALLOCATION_SIZE: usize = 4192;
-const FAKE_RESPONSE_PREFIX: &'static str = "HTTP/1.1 200 OK\r\n";
+
 /*
 Number of LanguageServerProtocol messages we don't know what to with do kept in memory.
  */
@@ -45,12 +47,12 @@ const DEFAULT_MAX_UNPROCESSED_MSGS: usize = 24;
 
 // I use ID == String, because i32 might be small, and i64 is safe, so I send i64 as string and so I store it.
 // LSP defines id integer as i32, while jsonrpc_core as u64.
-struct CallInfo {
-    method: &'static str,
-    sender: tokio::sync::oneshot::Sender<serde_json::Value>,
+pub struct CallInfo {
+    pub method: &'static str,
+    pub sender: tokio::sync::oneshot::Sender<serde_json::Value>,
 }
 
-type IdToCallInfo = HashMap<String, CallInfo>;
+pub type IdToCallInfo = HashMap<String, CallInfo>;
 
 
 /*
@@ -118,7 +120,7 @@ impl LspWrapper {
             LspWrapper {
                 server_path: path,
                 workspace_root_path: workspace_root,
-                language: LangId::RUST
+                language: LangId::RUST,
                 child,
                 ids,
                 curr_id: 1,
@@ -160,11 +162,12 @@ impl LspWrapper {
         }
     }
 
-    async fn send_notification<N: lsp_types::notification::Notification>(&mut self, params: N::Params) -> Result<(), LspIOError> {
+    async fn send_notification<N: lsp_types::notification::Notification>(&mut self, params: N::Params) -> Result<(), LspWriteError> {
         if let Some(stdin) = self.child.stdin.as_mut() {
-            internal_send_notification::<N, _>(stdin, params).await?
+            internal_send_notification::<N, _>(stdin, params).await?;
+            Ok(())
         } else {
-            Err(LspIOError::Write(LspWriteError::BrokenPipe.into()))
+            Err(LspWriteError::BrokenPipe.into())
         }
     }
 
@@ -242,17 +245,17 @@ impl LspWrapper {
         }).await
     }
 
-    pub async fn send_did_open_text_document_notification(&mut self, url: Url) {
-        self.send_notification < lsp_types::notification::DidOpenTextDocument > (
+    pub async fn send_did_open_text_document_notification(&mut self, url: Url) -> Result<(), LspWriteError> {
+        self.send_notification::<lsp_types::notification::DidOpenTextDocument>(
             lsp_types::DidOpenTextDocumentParams {
                 text_document: lsp_types::TextDocumentItem {
                     uri: url,
-                    language_id: self.language.to_lsp_lang_id_string().clone(),
+                    language_id: self.language.to_lsp_lang_id_string().to_owned(),
                     version: 0,
                     text: "".to_string(),
                 }
             }
-        )
+        ).await
     }
 
     pub fn wait(&self) -> &tokio::task::JoinHandle<Result<(), LspReadError>> {

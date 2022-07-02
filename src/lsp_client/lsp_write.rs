@@ -1,8 +1,9 @@
 use log::debug;
 use tokio::io::AsyncWriteExt;
 use crate::lsp_client::lsp_write_error::LspWriteError;
+use std::io::Write;
 
-async fn internal_send_request<R: lsp_types::request::Request, W: tokio::io::AsyncWrite>(
+pub async fn internal_send_request<R: lsp_types::request::Request, W: tokio::io::AsyncWrite>(
     stdin: &mut W,
     id: String,
     params: R::Params,
@@ -41,7 +42,7 @@ async fn internal_send_request<R: lsp_types::request::Request, W: tokio::io::Asy
     }
 }
 
-async fn internal_send_notification<N: lsp_types::notification::Notification, W: tokio::io::AsyncWrite>(
+pub async fn internal_send_notification<N: lsp_types::notification::Notification, W: tokio::io::AsyncWrite>(
     stdin: &mut W,
     params: N::Params,
 ) -> Result<(), LspWriteError>
@@ -56,7 +57,7 @@ async fn internal_send_notification<N: lsp_types::notification::Notification, W:
             https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#notificationMessage
              */
             jsonrpc: None,
-            method: R::METHOD.to_string(),
+            method: N::METHOD.to_string(),
             params: jsonrpc_core::Params::Map(params),
         });
         let request = serde_json::to_string(&req)?;
