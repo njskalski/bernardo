@@ -29,11 +29,13 @@ use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::lsp_client::lsp_response::LspResponse;
 use crate::lsp_client::lsp_write_error::LspWriteError;
 use crate::tsw::lang_id::LangId;
-use tokio::io::{AsyncBufRead, AsyncWriteExt};
+use tokio::io::{AsyncBufRead, AsyncWriteExt, BufReader, Lines};
 use tokio::process::{ChildStderr, ChildStdout};
 use tokio::io::AsyncBufReadExt;
 use tokio::io::AsyncReadExt;
+use tokio::sync::mpsc::{Receiver, Sender, UnboundedReceiver, UnboundedSender};
 use tokio::sync::RwLock;
+use crate::lsp_client::lsp_notification::LspServerNotification;
 use crate::lsp_client::lsp_read::read_lsp;
 use crate::lsp_client::lsp_write::{internal_send_notification, internal_send_request};
 
@@ -66,9 +68,14 @@ pub struct LspWrapper {
 
     curr_id: u64,
     reader_handle: tokio::task::JoinHandle<Result<(), LspReadError>>,
+    logger_handle: tokio::task::JoinHandle<Result<(), ()>>,
 }
 
 impl LspWrapper {
+    /*
+    This spawns a reader thread that awaits server's stdout/stderr and pipes messages.
+
+     */
     pub fn todo_new(workspace_root: PathBuf) -> Option<LspWrapper> {
         // TODO unwrap
         // let path = PathBuf::from_str("/home/andrzej/.cargo/bin/rls").unwrap();
@@ -90,30 +97,27 @@ impl LspWrapper {
             Some(o) => tokio::io::BufReader::new(o)
         };
 
-        // let stderr = match child.stderr.take() {
-        //     None => {
-        //         error!("failed acquiring stderr");
-        //         return None;
-        //     }
-        //     Some(e) => tokio::io::BufReader::new(e)
-        // };
+        let stderr = match child.stderr.take() {
+            None => {
+                error!("failed acquiring stderr");
+                return None;
+            }
+            Some(e) => tokio::io::BufReader::new(e)
+        };
+
+        let (notification_sender, notification_receiver) = tokio::sync::mpsc::unbounded_channel::<LspServerNotification>();
         let ids = Arc::new(RwLock::new(IdToCallInfo::default()));
 
-        let id_to_name = ids.clone();
+        let reader_handle: tokio::task::JoinHandle<Result<(), LspReadError>> = tokio::spawn(Self::reader_thread(
+            ids.clone(),
+            notification_sender,
+            stdout,
+        ));
 
-        let handle: tokio::task::JoinHandle<Result<(), LspReadError>> = tokio::spawn(async move {
-            let mut resp_parser = RespParser::new_capacity(DEFAULT_RESPONSE_PREALLOCATION_SIZE);
-            loop {
-                match read_lsp(&mut stdout, &mut resp_parser, &id_to_name).await {
-                    Ok(_) => {}
-                    Err(e) => {
-                        debug!("terminating lsp_reader thread because {:?}", e);
-                        return Err(e);
-                    }
-                }
-            }
-            Ok(())
-        });
+        let logger_handle: tokio::task::JoinHandle<Result<(), ()>> = tokio::spawn(Self::logger_thread(
+            stderr,
+            notification_receiver,
+        ));
 
         Some(
             LspWrapper {
@@ -123,7 +127,8 @@ impl LspWrapper {
                 child,
                 ids,
                 curr_id: 1,
-                reader_handle: handle,
+                reader_handle,
+                logger_handle,
             }
         )
     }
@@ -192,8 +197,8 @@ impl LspWrapper {
         // tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
 
         self.send_message::<lsp_types::request::Initialize>(lsp_types::InitializeParams {
-            // process_id: Some(pid),
-            process_id: None,
+            process_id: Some(pid),
+            // process_id: None,
             root_path: None,
             root_uri,
             initialization_options: None,
@@ -259,5 +264,68 @@ impl LspWrapper {
 
     pub fn wait(&self) -> &tokio::task::JoinHandle<Result<(), LspReadError>> {
         &self.reader_handle
+    }
+
+    pub async fn reader_thread(
+        id_to_name: Arc<RwLock<IdToCallInfo>>,
+        notification_sender: UnboundedSender<LspServerNotification>,
+        mut stdout: BufReader<ChildStdout>,
+    ) -> Result<(), LspReadError> {
+        let mut resp_parser = RespParser::new_capacity(DEFAULT_RESPONSE_PREALLOCATION_SIZE);
+        loop {
+            match read_lsp(&mut stdout, &mut resp_parser, &id_to_name, &notification_sender).await {
+                Ok(_) => {}
+                Err(e) => {
+                    debug!("terminating lsp_reader thread because {:?}", e);
+                    return Err(e);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /*
+    This thread just dries the pipes of whatever we have no good receiver for: so stderr and
+    LspNotifications that I do not handle in any specific way yet.
+     */
+    pub async fn logger_thread(
+        mut stderr_pipe: BufReader<ChildStderr>,
+        mut notification_receiver: UnboundedReceiver<LspServerNotification>,
+    ) -> Result<(), ()> {
+        //TODO dry the other channel too before quitting
+
+        let mut stderr_lines = stderr_pipe.lines();
+
+        loop {
+            tokio::select! {
+                line_res = stderr_lines.next_line() => {
+                    match line_res {
+                        Ok(line_op) => {
+                            if let Some(line) = line_op {
+                                error!("Lsp: {}", line);
+                            } else {
+                                debug!("no more lines in LSP stderr_pipe.")
+                            }
+                        }
+                        Err(e) => {
+                            error!("stderr_pipe read error: {}", e);
+                        }
+                    }
+                },
+                notification_op = notification_receiver.recv() => {
+                    match notification_op {
+                        Some(notification) => {
+                            debug!("received LSP notification:\n---\n{:?}\n---\n", notification);
+                        }
+                        None => {
+                            debug!("notification channel closed.")
+                        }
+                    }
+                },
+                else => { break; },
+            }
+        }
+
+        Ok(())
     }
 }

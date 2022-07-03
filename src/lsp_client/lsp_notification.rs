@@ -17,7 +17,7 @@ impl From<jsonrpc_core::error::Error> for LspNotificationParsingError {
 }
 
 
-pub fn x(jn: jsonrpc_core::Notification) -> Result<LspServerNotification, LspNotificationParsingError> {
+pub fn parse_notification(jn: jsonrpc_core::Notification) -> Result<LspServerNotification, LspNotificationParsingError> {
     match jn.method.as_str() {
         n::Cancel::METHOD => {
             let params = jn.params.parse::<CancelParams>()?;
@@ -110,6 +110,7 @@ pub fn x(jn: jsonrpc_core::Notification) -> Result<LspServerNotification, LspNot
     }
 }
 
+#[derive(Debug)]
 pub enum LspServerNotification {
     CancelRequest(CancelParams),
     SetTrace(SetTraceParams),
