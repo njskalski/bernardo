@@ -27,7 +27,6 @@ use crate::ConfigRef;
 use crate::lsp_client::lsp_io_error::LspIOError;
 use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::lsp_client::lsp_response::LspResponse;
-use crate::lsp_client::lsp_value_to_typed_response;
 use crate::lsp_client::lsp_write_error::LspWriteError;
 use crate::tsw::lang_id::LangId;
 use tokio::io::{AsyncBufRead, AsyncWriteExt};
