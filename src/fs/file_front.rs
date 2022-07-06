@@ -152,7 +152,7 @@ impl FileFront {
         })
     }
 
-    pub fn descendant(&self, suffix: &Path) -> Option<FileFront> {
+    pub fn descendant<T: AsRef<Path> + ?Sized>(&self, suffix: &T) -> Option<FileFront> {
         let new_path = self.path().join(suffix);
         if self.fsf.exists(&new_path) {
             self.fsf.get_item(&new_path)

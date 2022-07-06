@@ -29,9 +29,8 @@ impl RustHandler {
         if !ff.is_dir() {
             return Err(HandlerLoadError::NotAProject);
         }
-
-        let path_suffix = PathBuf::from("Cargo.toml");
-        let cargo_file = ff.descendant(&path_suffix).ok_or(HandlerLoadError::NotAProject)?;
+        
+        let cargo_file = ff.descendant("Cargo.toml").ok_or(HandlerLoadError::NotAProject)?;
         if !cargo_file.is_file() {
             return Err(HandlerLoadError::NotAProject);
         }

@@ -12,7 +12,7 @@ pub struct ProjectScope {
     /*
     Handler is something that translates "path" to "project definition"
      */
-    pub handler_id: Option<Box<dyn Handler>>,
+    pub handler: Option<Box<dyn Handler>>,
 }
 
 // #[derive(Serialize, Debug, Deserialize)]

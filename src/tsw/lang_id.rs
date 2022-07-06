@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum LangId {
     C,
@@ -18,5 +20,11 @@ impl LangId {
             LangId::GO => "go",
             LangId::RUST => "rust",
         }
+    }
+}
+
+impl Display for LangId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
