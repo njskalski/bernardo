@@ -2,12 +2,13 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::Path;
 use std::rc::Rc;
+use std::sync::Arc;
 use crate::fs::file_front::FileFront;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::io::loading_state::LoadingState;
 
 #[derive(Clone, Debug)]
-pub struct FsfRef(pub Rc<Box<dyn FilesystemFront>>);
+pub struct FsfRef(pub Arc<Box<dyn FilesystemFront>>);
 
 impl FsfRef {
     pub fn get_root(&self) -> FileFront {
@@ -52,7 +53,7 @@ impl Deref for FsfRef {
 
 impl PartialEq for FsfRef {
     fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
+        Arc::ptr_eq(&self.0, &other.0)
     }
 }
 
@@ -60,6 +61,6 @@ impl Eq for FsfRef {}
 
 impl Hash for FsfRef {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Rc::as_ptr(&self.0).hash(state)
+        Arc::as_ptr(&self.0).hash(state)
     }
 }

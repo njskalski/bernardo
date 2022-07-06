@@ -7,6 +7,7 @@ license = "GPLv3"
 
 [dependencies]
 arboard = "2.1.0"
+cargo_toml = "0.11.5" # we need to go deeper.
 clap = { version = "3.0.13", features = ["derive"] }
 clap-verbosity-flag = "0.4.1"
 crossterm = "0.23.0"

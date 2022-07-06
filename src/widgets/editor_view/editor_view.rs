@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 use crate::{AnyMsg, ConfigRef, FsfRef, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget, ZERO};
@@ -66,7 +67,7 @@ pub struct EditorView {
     If none, we'll use the fsf root.
     See get_save_file_dialog_path for details.
      */
-    start_path: Option<Rc<PathBuf>>,
+    start_path: Option<Arc<PathBuf>>,
 
     // this is a workaround to set focus into something not visible yet in next frame.
     deferred_focus: Option<WID>,
@@ -112,14 +113,14 @@ impl EditorView {
         }
     }
 
-    pub fn with_path(self, path: Rc<PathBuf>) -> Self {
+    pub fn with_path(self, path: Arc<PathBuf>) -> Self {
         Self {
             start_path: Some(path),
             ..self
         }
     }
 
-    pub fn with_path_op(self, path_op: Option<Rc<PathBuf>>) -> Self {
+    pub fn with_path_op(self, path_op: Option<Arc<PathBuf>>) -> Self {
         Self {
             start_path: path_op,
             ..self
@@ -247,7 +248,7 @@ impl EditorView {
     This returns a (absolute) file path to be used with save_file_dialog. It can but does not have to
     contain filename part.
      */
-    fn get_save_file_dialog_path(&self) -> &Rc<PathBuf> {
+    fn get_save_file_dialog_path(&self) -> &Arc<PathBuf> {
         let buffer = self.editor.internal().buffer();
         if let Some(ff) = buffer.get_file_front() {
             return ff.path_rc();

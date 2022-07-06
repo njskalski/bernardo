@@ -3,6 +3,7 @@ use std::{fmt, io};
 use std::fmt::{Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 
 use log::{error, warn};
 use ropey::Rope;
@@ -17,7 +18,7 @@ type FilterType = fn(&FileFront) -> bool;
 
 pub struct FileChildrenCache {
     pub loading_state: LoadingState,
-    pub children: Vec<Rc<PathBuf>>,
+    pub children: Vec<Arc<PathBuf>>,
 }
 
 /*
@@ -26,10 +27,10 @@ The cache is written on tick (inotify or blocking read) and read by everybody el
 it must be Rc<RefCell<>> :(. And I wanted helper methods, which is not possible without wrapping the
 non-local types.
  */
-pub struct FileChildrenCacheRef(pub Rc<RefCell<FileChildrenCache>>);
+pub struct FileChildrenCacheRef(pub Arc<RefCell<FileChildrenCache>>);
 
 impl FileChildrenCacheRef {
-    pub fn get_children(&self) -> (LoadingState, Vec<Rc<PathBuf>>) {
+    pub fn get_children(&self) -> (LoadingState, Vec<Arc<PathBuf>>) {
         if let Ok(r) = self.0.try_borrow() {
             (r.loading_state, r.children.clone())
         } else {
@@ -71,7 +72,7 @@ impl Default for FileChildrenCache {
 #[derive(Clone, Debug, Hash)]
 pub struct FileFront {
     // TODO I have not decided or forgot what I decided, whether this path is relative to fsf root or not.
-    path: Rc<PathBuf>,
+    path: Arc<PathBuf>,
     fsf: FsfRef,
 }
 
@@ -92,7 +93,7 @@ impl PartialEq for FileFront {
 impl Eq for FileFront {}
 
 impl FileFront {
-    pub fn new(fsf: FsfRef, path: Rc<PathBuf>) -> FileFront {
+    pub fn new(fsf: FsfRef, path: Arc<PathBuf>) -> FileFront {
         Self {
             path,
             fsf,
@@ -103,7 +104,7 @@ impl FileFront {
         &self.path
     }
 
-    pub fn path_rc(&self) -> &Rc<PathBuf> { &self.path }
+    pub fn path_rc(&self) -> &Arc<PathBuf> { &self.path }
 
     pub fn is_dir(&self) -> bool {
         self.fsf.0.is_dir(&self.path)
@@ -129,6 +130,7 @@ impl FileFront {
         self.fsf.read_entire_file_bytes(self.path())
     }
 
+
     /*
     Fails only if parent is outside root
      */
@@ -148,6 +150,15 @@ impl FileFront {
             error!("failed to extract a filename from: {:?}", self.path());
             crate::fs::constants::NOT_A_FILENAME
         })
+    }
+
+    pub fn descendant(&self, suffix: &Path) -> Option<FileFront> {
+        let new_path = self.path().join(suffix);
+        if self.fsf.exists(&new_path) {
+            self.fsf.get_item(&new_path)
+        } else {
+            None
+        }
     }
 
     //TODO tests

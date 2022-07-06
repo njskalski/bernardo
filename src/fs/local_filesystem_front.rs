@@ -7,6 +7,7 @@ use std::fs::DirEntry;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 
 use crossbeam_channel::{Receiver, RecvError, Sender};
 use filesystem::{FileSystem, OsFileSystem};
@@ -51,7 +52,7 @@ pub enum FSRequest {
 #[derive(Debug)]
 pub struct LocalFilesystem {
     fs: OsFileSystem,
-    root_path: Rc<PathBuf>,
+    root_path: Arc<PathBuf>,
 
     fs_request_channel: (Sender<FSRequest>, Receiver<FSRequest>),
     fs_channel: (Sender<FSUpdate>, Receiver<FSUpdate>),
@@ -79,7 +80,7 @@ impl LocalFilesystem {
 
         fs.start_indexing_thread();
 
-        FsfRef(Rc::new(Box::new(fs)))
+        FsfRef(Arc::new(Box::new(fs)))
     }
 
     pub fn set_at_hand_limit(&self, new_at_hand_limit: usize) {
@@ -291,11 +292,11 @@ impl LocalFilesystem {
 }
 
 impl FilesystemFront for LocalFilesystem {
-    fn get_root_path(&self) -> &Rc<PathBuf> {
+    fn get_root_path(&self) -> &Arc<PathBuf> {
         &self.root_path
     }
 
-    fn get_path(&self, path: &Path) -> Option<Rc<PathBuf>> {
+    fn get_path(&self, path: &Path) -> Option<Arc<PathBuf>> {
         let p: &Path = path;
         if !self.is_within(p) {
             return None;
@@ -332,7 +333,7 @@ impl FilesystemFront for LocalFilesystem {
 
 
     // This returns from cache if possible. Triggers update.
-    fn get_children_paths(&self, path: &Path) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
+    fn get_children_paths(&self, path: &Path) -> (LoadingState, Box<dyn Iterator<Item=Arc<PathBuf>> + '_>) {
         if !self.is_within(path) {
             warn!("requested get_children outside fs: {:?}", path);
             return (LoadingState::Complete, Box::new(iter::empty()));
@@ -379,7 +380,7 @@ impl FilesystemFront for LocalFilesystem {
                 FSUpdate::DirectoryUpdate { full_path, entries } => {
                     let path = is.get_or_create_path(&full_path);
 
-                    let mut items: Vec<Rc<PathBuf>> = Vec::new();
+                    let mut items: Vec<Arc<PathBuf>> = Vec::new();
                     items.reserve(entries.len());
                     for de in entries.iter() {
                         match de.file_type() {
@@ -431,17 +432,17 @@ impl FilesystemFront for LocalFilesystem {
         self.fs.is_dir(path) || self.fs.is_file(path)
     }
 
-    fn fuzzy_file_paths_it(&self, query: String, limit: usize, respect_ignores: bool) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
+    fn fuzzy_file_paths_it(&self, query: String, limit: usize, respect_ignores: bool) -> (LoadingState, Box<dyn Iterator<Item=Arc<PathBuf>> + '_>) {
         self.internal_state.try_borrow().map(|isref| {
             let (loading_state, iter) = isref.fuzzy_files_it(query);
 
-            let items: Vec<Rc<PathBuf>> = if respect_ignores {
+            let items: Vec<Arc<PathBuf>> = if respect_ignores {
                 iter.filter(|item| isref.is_ignored(item) == false).take(limit).map(|f| f.clone()).collect()
             } else {
                 iter.take(limit).map(|f| f.clone()).collect()
             };
 
-            (loading_state, Box::new(items.into_iter()) as Box<dyn Iterator<Item=Rc<PathBuf>>>)
+            (loading_state, Box::new(items.into_iter()) as Box<dyn Iterator<Item=Arc<PathBuf>>>)
         }).unwrap_or_else(|e| {
             error!("failed acquiring lock: {}", e);
             (LoadingState::Error, Box::new(iter::empty()))

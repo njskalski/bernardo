@@ -11,6 +11,7 @@ I hope I will discover most of functional constraints while implementing it.
 use std::borrow::Borrow;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use log::{debug, error, warn};
 
@@ -69,7 +70,7 @@ pub struct SaveFileDialogWidget {
     on_cancel: Option<WidgetAction<Self>>,
     on_save: Option<WidgetActionParam<Self, FileFront>>,
 
-    root_path: Rc<PathBuf>,
+    root_path: Arc<PathBuf>,
 
     hover_dialog: Option<GenericDialog>,
 }
@@ -188,7 +189,7 @@ impl SaveFileDialogWidget {
     If set to a dir, only tree will be expanded.
     If set to a file, both tree will be expanded, and editbox filled.
      */
-    pub fn set_path(&mut self, path: &Rc<PathBuf>) -> bool {
+    pub fn set_path(&mut self, path: &Arc<PathBuf>) -> bool {
         debug!("setting path to {:?}", path);
 
         let (mut dir, filename): (PathBuf, Option<&str>) = if self.fsf.is_dir(path) {
@@ -241,7 +242,7 @@ impl SaveFileDialogWidget {
     }
 
 
-    fn show_files_on_right_panel(&mut self, directory: &Rc<PathBuf>) -> bool {
+    fn show_files_on_right_panel(&mut self, directory: &Arc<PathBuf>) -> bool {
         if !self.fsf.is_dir(&directory) {
             warn!("expected directory, got {:?}", directory);
             return false;
@@ -262,7 +263,7 @@ impl SaveFileDialogWidget {
         true
     }
 
-    pub fn with_path(mut self, path: &Rc<PathBuf>) -> Self {
+    pub fn with_path(mut self, path: &Arc<PathBuf>) -> Self {
         self.set_path(path);
         self
     }

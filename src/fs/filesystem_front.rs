@@ -3,6 +3,7 @@ use std::{io, iter};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::str::Utf8Error;
+use std::sync::Arc;
 
 /*
 Reasons for this thing to exist (use cases in order of importance):
@@ -70,13 +71,13 @@ Now FilesystemFront does not ever return a FileFront, because for that a FsfRef 
 So all methods that return FileFront are in Fsf implementation, and are fs agnostic.
  */
 pub trait FilesystemFront: Debug {
-    fn get_root_path(&self) -> &Rc<PathBuf>;
+    fn get_root_path(&self) -> &Arc<PathBuf>;
 
     /*
     Converts path to Rc<PathBuf>, creating it if necessary.
     Fails ONLY if the given path is outside root.
      */
-    fn get_path(&self, path: &Path) -> Option<Rc<PathBuf>>;
+    fn get_path(&self, path: &Path) -> Option<Arc<PathBuf>>;
 
     fn read_entire_file_to_rope(&self, path: &Path) -> Result<Rope, ReadError>;
 
@@ -86,7 +87,7 @@ pub trait FilesystemFront: Debug {
     // that I want to test with infinite file generator behind an interface here.
 
     // first argument says if the list is complete.
-    fn get_children_paths(&self, path: &Path) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>);
+    fn get_children_paths(&self, path: &Path) -> (LoadingState, Box<dyn Iterator<Item=Arc<PathBuf>> + '_>);
 
     // fn ls(&self, path: &Path) -> (bool, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>);
 
@@ -109,7 +110,7 @@ pub trait FilesystemFront: Debug {
     // TODO would be great to not pass the limit ahead, but until I figure out how to wrap a Ref into an iterator, I don't know how.
     // TODO now the fuzzy search actually slows everything down a lot, because it's retriggered each keystroke. I should cache the results.
     // TODO Gitignore benefits from processing files in particular order, which I (now) completely ignore. Some optimisation will be necessary.
-    fn fuzzy_file_paths_it(&self, query: String, limit: usize, respect_ignores: bool) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>);
+    fn fuzzy_file_paths_it(&self, query: String, limit: usize, respect_ignores: bool) -> (LoadingState, Box<dyn Iterator<Item=Arc<PathBuf>> + '_>);
 
     fn is_ignored(&self, path: &Path) -> bool;
 

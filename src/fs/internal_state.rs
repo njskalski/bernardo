@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 use filesystem::{FileSystem, OsFileSystem};
 use ignore::gitignore::Gitignore;
 use log::{error, warn};
@@ -17,16 +18,16 @@ use crate::widgets::fuzzy_search::helpers::is_subsequence;
 const DEFAULT_FILES_PRELOADS: usize = 128 * 1024;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct WrappedRcPath(pub Rc<PathBuf>);
+pub struct WrappedArcPath(pub Arc<PathBuf>);
 
-impl Borrow<Path> for WrappedRcPath {
+impl Borrow<Path> for WrappedArcPath {
     fn borrow(&self) -> &Path {
         self.0.as_path()
     }
 }
 
-impl Borrow<Rc<PathBuf>> for WrappedRcPath {
-    fn borrow(&self) -> &Rc<PathBuf> {
+impl Borrow<Arc<PathBuf>> for WrappedArcPath {
+    fn borrow(&self) -> &Arc<PathBuf> {
         &self.0
     }
 }
@@ -34,16 +35,16 @@ impl Borrow<Rc<PathBuf>> for WrappedRcPath {
 pub struct InternalState {
     root_path: PathBuf,
     fs: filesystem::OsFileSystem,
-    children_cache: HashMap<WrappedRcPath, Rc<RefCell<FileChildrenCache>>>,
+    children_cache: HashMap<WrappedArcPath, Arc<RefCell<FileChildrenCache>>>,
     // I need to store some identifier, as search_index.remove requires it. I choose u128 so I can
     // safely not reuse them.
-    paths: HashMap<WrappedRcPath, u128>,
-    rev_paths: HashMap<u128, WrappedRcPath>,
+    paths: HashMap<WrappedArcPath, u128>,
+    rev_paths: HashMap<u128, WrappedArcPath>,
     pub at_hand_limit: usize, // TODO privatize
 
     current_idx: u128,
 
-    gitignores: HashMap<WrappedRcPath, ignore::gitignore::Gitignore>,
+    gitignores: HashMap<WrappedArcPath, ignore::gitignore::Gitignore>,
 }
 
 impl InternalState {
@@ -74,11 +75,11 @@ pub struct FuzzyFileIt<'a> {
 }
 
 impl InternalState {
-    pub fn get_or_create_cache(&mut self, path: &Rc<PathBuf>) -> FileChildrenCacheRef {
+    pub fn get_or_create_cache(&mut self, path: &Arc<PathBuf>) -> FileChildrenCacheRef {
         match self.children_cache.get(path) {
             None => {
-                let cache = Rc::new(RefCell::new(FileChildrenCache::default()));
-                self.children_cache.insert(WrappedRcPath(path.clone()), cache.clone());
+                let cache = Arc::new(RefCell::new(FileChildrenCache::default()));
+                self.children_cache.insert(WrappedArcPath(path.clone()), cache.clone());
                 FileChildrenCacheRef(cache)
             }
             Some(cache) => FileChildrenCacheRef(cache.clone()),
@@ -89,7 +90,7 @@ impl InternalState {
         self.children_cache.get(path).map(|f| FileChildrenCacheRef(f.clone()))
     }
 
-    pub fn get_path(&self, path: &Path) -> Option<Rc<PathBuf>> {
+    pub fn get_path(&self, path: &Path) -> Option<Arc<PathBuf>> {
         self.paths.get_key_value(path).map(|(p, _)| p.0.clone())
     }
 
@@ -100,7 +101,7 @@ impl InternalState {
 
         let (key, value) = self.paths.get_key_value(path).map(|(a, b)| (a.0.clone(), *b)).unwrap();
 
-        if Rc::strong_count(&key) > 3 {
+        if Arc::strong_count(&key) > 3 {
             warn!("removing path with more than three strong referrers - possible leak?");
         }
 
@@ -111,18 +112,18 @@ impl InternalState {
         true
     }
 
-    fn _create_path(&mut self, path: &Path) -> Rc<PathBuf> {
-        let rcp = Rc::new(path.to_owned());
+    fn _create_path(&mut self, path: &Path) -> Arc<PathBuf> {
+        let rcp = Arc::new(path.to_owned());
         let idx = self.current_idx;
         self.current_idx += 1;
 
-        self.paths.insert(WrappedRcPath(rcp.clone()), idx);
-        self.rev_paths.insert(idx, WrappedRcPath(rcp.clone()));
+        self.paths.insert(WrappedArcPath(rcp.clone()), idx);
+        self.rev_paths.insert(idx, WrappedArcPath(rcp.clone()));
 
         rcp
     }
 
-    pub fn get_or_create_path(&mut self, path: &Path) -> Rc<PathBuf> {
+    pub fn get_or_create_path(&mut self, path: &Path) -> Arc<PathBuf> {
         if let Some((p, _)) = self.paths.get_key_value(path) {
             p.0.clone()
         } else {
@@ -148,12 +149,12 @@ impl InternalState {
         }
 
         let gp = self.get_or_create_path(gitignore.path());
-        if self.gitignores.insert(WrappedRcPath(gp.clone()), gitignore).is_some() {
+        if self.gitignores.insert(WrappedArcPath(gp.clone()), gitignore).is_some() {
             warn!("replaced gitignore at {:?}", gp);
         }
     }
 
-    pub fn fuzzy_files_it(&self, query: String) -> (LoadingState, Box<dyn Iterator<Item=Rc<PathBuf>> + '_>) {
+    pub fn fuzzy_files_it(&self, query: String) -> (LoadingState, Box<dyn Iterator<Item=Arc<PathBuf>> + '_>) {
         // TODO this is dumb as fuck, just to prove rest works
         let iter = self.paths.iter().filter(move |item| {
             item.0.0.file_name().map(|f| f.to_str()).flatten().map(|s| is_subsequence(s, &query)).unwrap_or_else(|| {
