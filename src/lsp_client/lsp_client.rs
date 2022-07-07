@@ -78,8 +78,8 @@ impl LspWrapper {
      */
     pub fn todo_new(workspace_root: PathBuf) -> Option<LspWrapper> {
         // TODO unwrap
-        // let path = PathBuf::from_str("/home/andrzej/.cargo/bin/rls").unwrap();
-        let path = PathBuf::from_str("/usr/bin/clangd").unwrap();
+        let path = PathBuf::from_str("/home/andrzej/.local/bin/rust-analyzer").unwrap();
+        // let path = PathBuf::from_str("/usr/bin/clangd").unwrap();
         let mut child = tokio::process::Command::new(path.as_os_str())
             // .args(&["--cli"])
             .stdin(Stdio::piped())

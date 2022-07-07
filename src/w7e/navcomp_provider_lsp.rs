@@ -4,3 +4,9 @@ use crate::lsp_client::lsp_client::LspWrapper;
 pub struct NavCompProviderLsp {
     lsp: Arc<LspWrapper>,
 }
+
+impl NavCompProviderLsp {
+    pub fn new(lsp: Arc<LspWrapper>) -> Self {
+        NavCompProviderLsp { lsp }
+    }
+}
