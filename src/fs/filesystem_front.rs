@@ -1,9 +1,15 @@
-use std::fmt::{Debug, Display, Formatter};
 use std::{io, iter};
+use std::fmt::{Debug, Display, Formatter};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::str::Utf8Error;
 use std::sync::Arc;
+
+use crossbeam_channel::Receiver;
+use ropey::Rope;
+
+use crate::fs::read_error::ReadError;
+use crate::io::loading_state::LoadingState;
 
 /*
 Reasons for this thing to exist (use cases in order of importance):
@@ -12,25 +18,6 @@ Reasons for this thing to exist (use cases in order of importance):
 - fast queries. We need to execute "fuzzy search" over filenames. This requires precomputing a trie/patricia tree, and updating it on inotify.
 - async IO without async runtime. I will test for infinite files support and I want to access huge files over internet.
  */
-
-use crossbeam_channel::Receiver;
-use ropey::Rope;
-
-use crate::io::loading_state::LoadingState;
-
-#[derive(Debug)]
-pub enum ReadError {
-    IoError(io::Error),
-    Utf8Error(Utf8Error),
-}
-
-impl Display for ReadError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl std::error::Error for ReadError {}
 
 pub trait SomethingToSave {
     fn get_slices(&self) -> Box<dyn Iterator<Item=&[u8]> + '_>;

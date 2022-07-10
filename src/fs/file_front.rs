@@ -6,9 +6,11 @@ use std::sync::Arc;
 
 use log::{error, warn};
 use ropey::Rope;
+use serde::Deserialize;
 
-use crate::fs::filesystem_front::{ReadError, SomethingToSave};
+use crate::fs::filesystem_front::SomethingToSave;
 use crate::fs::fsfref::FsfRef;
+use crate::fs::read_error::ReadError;
 use crate::io::loading_state::LoadingState;
 use crate::widgets::list_widget::{ListWidgetItem, ListWidgetProvider};
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
@@ -137,6 +139,13 @@ impl FileFront {
 
     pub fn read_entire_file_to_bytes(&self) -> Result<Vec<u8>, ReadError> {
         self.fsf.read_entire_file_bytes(self.path())
+    }
+
+    pub fn read_entire_file_to_item<'a, I: Deserialize<'a>>(&self) -> Result<I, ReadError> {
+        let bytes = self.read_entire_file_to_bytes()?;
+        let string = std::str::from_utf8(&bytes)?;
+        let item = ron::from_str::<I>(&string)?;
+        Ok(item)
     }
 
     /*

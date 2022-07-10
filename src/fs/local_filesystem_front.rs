@@ -13,9 +13,10 @@ use filesystem::{FileSystem, OsFileSystem};
 use log::{debug, error, warn};
 use ropey::Rope;
 
-use crate::fs::filesystem_front::{FilesystemFront, ReadError, SomethingToSave};
+use crate::fs::filesystem_front::{FilesystemFront, SomethingToSave};
 use crate::fs::fsfref::FsfRef;
 use crate::fs::internal_state::InternalState;
+use crate::fs::read_error::ReadError;
 use crate::io::loading_state::LoadingState;
 
 // TODOs:

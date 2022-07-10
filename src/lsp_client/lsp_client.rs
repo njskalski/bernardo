@@ -8,8 +8,8 @@ use log::{debug, error, warn};
 use lsp_types::Url;
 use serde_json::Value;
 use stream_httparse::streaming_parser::RespParser;
-use tokio::io::BufReader;
 use tokio::io::AsyncBufReadExt;
+use tokio::io::BufReader;
 use tokio::process::{ChildStderr, ChildStdout};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::RwLock;
@@ -37,7 +37,6 @@ pub struct CallInfo {
 }
 
 pub type IdToCallInfo = HashMap<String, CallInfo>;
-
 
 /*
 Represents a single LSP server connection
