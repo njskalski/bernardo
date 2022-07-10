@@ -5,3 +5,4 @@ pub mod fsfref;
 mod internal_state;
 pub mod constants;
 pub mod read_error;
+pub mod write_error;

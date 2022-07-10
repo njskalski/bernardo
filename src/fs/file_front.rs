@@ -5,12 +5,15 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use log::{error, warn};
+use ron::ser::PrettyConfig;
 use ropey::Rope;
-use serde::Deserialize;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 use crate::fs::filesystem_front::SomethingToSave;
 use crate::fs::fsfref::FsfRef;
 use crate::fs::read_error::ReadError;
+use crate::fs::write_error::WriteError;
 use crate::io::loading_state::LoadingState;
 use crate::widgets::list_widget::{ListWidgetItem, ListWidgetProvider};
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
@@ -141,11 +144,15 @@ impl FileFront {
         self.fsf.read_entire_file_bytes(self.path())
     }
 
-    pub fn read_entire_file_to_item<'a, I: Deserialize<'a>>(&self) -> Result<I, ReadError> {
+    pub fn read_entire_file_to_item<I: DeserializeOwned>(&self) -> Result<I, ReadError> {
         let bytes = self.read_entire_file_to_bytes()?;
-        let string = std::str::from_utf8(&bytes)?;
-        let item = ron::from_str::<I>(&string)?;
+        let item: I = ron::de::from_bytes::<I>(&bytes)?;
         Ok(item)
+    }
+
+    pub fn overwrite_item_ron<I: Serialize>(&self, item: &I) -> Result<(), WriteError> {
+        let bytes = ron::ser::to_string_pretty(item, PrettyConfig::default())?;
+        self.overwrite_with(&bytes.as_str()).map_err(|e| WriteError::IoError(e))
     }
 
     /*

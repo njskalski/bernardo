@@ -1,8 +1,7 @@
-use std::{io, iter};
-use std::fmt::{Debug, Display, Formatter};
+use std::iter;
+use std::fmt::Debug;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::str::Utf8Error;
 use std::sync::Arc;
 
 use crossbeam_channel::Receiver;
