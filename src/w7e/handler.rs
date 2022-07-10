@@ -2,15 +2,11 @@
 Handler is a wrapper that translates language specific project definition into common project
 items, like run configurations, test targets, and LSP clients.
  */
-use std::str::FromStr;
+
 use std::sync::Arc;
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-use crate::fs::file_front::FileFront;
-use crate::w7e::handler_load_error::HandlerLoadError;
-use crate::w7e::navcomp_provider::NavCompProvider;
 use crate::LangId;
+use crate::w7e::navcomp_provider::NavCompProvider;
 
 pub type NavCompRef = Arc<Box<dyn NavCompProvider>>;
 

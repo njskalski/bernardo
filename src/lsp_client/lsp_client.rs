@@ -1,43 +1,26 @@
-use std::borrow::BorrowMut;
-use std::collections::{HashMap, VecDeque};
-use std::fmt::format;
-use std::future::Future;
-use std::{future, io};
-use std::io::{BufRead, Read, Write};
-use std::path::{Path, PathBuf};
-use std::pin::Pin;
+use std::collections::HashMap;
+use std::path::PathBuf;
 use std::process::Stdio;
 use std::str::FromStr;
 use std::sync::Arc;
-use std::task::{Context, Poll};
-use std::thread::JoinHandle;
-use crossbeam_channel::TryRecvError;
-use jsonrpc_core::{Error, Id, MethodCall, Output};
-use jsonrpc_core_client::RawClient;
-use jsonrpc_core_client::transports::local::connect;
+
 use log::{debug, error, warn};
 use lsp_types::Url;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 use serde_json::Value;
-use stream_httparse::streaming_parser::{ParseResult, RespParser};
-use syntect::html::IncludeBackground::No;
-use tokio::sync::oneshot::error::RecvError;
-use crate::ConfigRef;
-use crate::lsp_client::lsp_io_error::LspIOError;
-use crate::lsp_client::lsp_read_error::LspReadError;
-use crate::lsp_client::lsp_response::LspResponse;
-use crate::lsp_client::lsp_write_error::LspWriteError;
-use crate::tsw::lang_id::LangId;
-use tokio::io::{AsyncBufRead, AsyncWriteExt, BufReader, Lines};
-use tokio::process::{ChildStderr, ChildStdout};
+use stream_httparse::streaming_parser::RespParser;
+use tokio::io::BufReader;
 use tokio::io::AsyncBufReadExt;
-use tokio::io::AsyncReadExt;
-use tokio::sync::mpsc::{Receiver, Sender, UnboundedReceiver, UnboundedSender};
+use tokio::process::{ChildStderr, ChildStdout};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::RwLock;
+
+use crate::lsp_client::lsp_io_error::LspIOError;
 use crate::lsp_client::lsp_notification::LspServerNotification;
 use crate::lsp_client::lsp_read::read_lsp;
+use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::lsp_client::lsp_write::{internal_send_notification, internal_send_request};
+use crate::lsp_client::lsp_write_error::LspWriteError;
+use crate::tsw::lang_id::LangId;
 
 const DEFAULT_RESPONSE_PREALLOCATION_SIZE: usize = 4192;
 

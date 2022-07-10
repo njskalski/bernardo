@@ -3,11 +3,12 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 use std::sync::Arc;
+
 use filesystem::{FileSystem, OsFileSystem};
 use ignore::gitignore::Gitignore;
 use log::{error, warn};
+
 use crate::fs::constants::is_sham;
 use crate::fs::file_front::{FileChildrenCache, FileChildrenCacheRef};
 use crate::io::loading_state::LoadingState;

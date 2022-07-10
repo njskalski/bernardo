@@ -1,16 +1,14 @@
 use std::fs;
 use std::path::Path;
+
 use log::{error, warn};
 use serde::{Deserialize, Serialize};
+
 use crate::config::load_error::LoadError;
 use crate::config::save_error::SaveError;
-use crate::fs::file_front::FileFront;
-
 use crate::io::style::{Effect, TextStyle};
-use crate::load_config;
 use crate::primitives::color::Color;
 use crate::primitives::cursor_set::CursorStatus;
-use crate::primitives::is_default::IsDefault;
 use crate::primitives::tmtheme::TmTheme;
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]

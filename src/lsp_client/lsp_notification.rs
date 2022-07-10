@@ -1,8 +1,6 @@
 use jsonrpc_core::Error;
-use lsp_types::{CancelParams, CreateFilesParams, DeleteFilesParams, DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams, InitializedParams, InitializeParams, LogMessageParams, LogTraceParams, ProgressParams, PublishDiagnosticsParams, RenameFilesParams, SetTraceParams, ShowMessageParams, WillSaveTextDocumentParams, WorkDoneProgressCancelParams};
-use lsp_types::notification::WillSaveTextDocument;
+use lsp_types::{CancelParams, CreateFilesParams, DeleteFilesParams, DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams, InitializedParams, LogMessageParams, LogTraceParams, ProgressParams, PublishDiagnosticsParams, RenameFilesParams, SetTraceParams, ShowMessageParams, WillSaveTextDocumentParams, WorkDoneProgressCancelParams};
 use lsp_types::notification as n;
-use crate::lsp_client::lsp_notification::LspNotificationParsingError::ParamsParseFailed;
 use lsp_types::notification::Notification;
 
 pub enum LspNotificationParsingError {

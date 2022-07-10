@@ -1,11 +1,13 @@
 use std::sync::Arc;
+
 use jsonrpc_core::{Id, Output};
 use log::{debug, error};
 use tokio::io::AsyncReadExt;
-use tokio::sync::mpsc::{Sender, UnboundedSender};
+use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::RwLock;
+
 use crate::lsp_client::lsp_client::IdToCallInfo;
-use crate::lsp_client::lsp_notification::{LspNotificationParsingError, LspServerNotification, parse_notification};
+use crate::lsp_client::lsp_notification::{LspServerNotification, parse_notification};
 use crate::lsp_client::lsp_read_error::LspReadError;
 
 const FAKE_RESPONSE_PREFIX: &'static str = "HTTP/1.1 200 OK\r\n";
