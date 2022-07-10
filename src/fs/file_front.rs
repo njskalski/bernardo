@@ -1,16 +1,16 @@
 use std::cell::{BorrowMutError, RefCell};
-use std::{fmt, io};
 use std::fmt::{Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;
+use std::{fmt, io};
 
 use log::{error, warn};
 use ropey::Rope;
+
 use crate::fs::filesystem_front::{ReadError, SomethingToSave};
 use crate::fs::fsfref::FsfRef;
 use crate::io::loading_state::LoadingState;
-
 use crate::widgets::list_widget::{ListWidgetItem, ListWidgetProvider};
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
@@ -40,7 +40,9 @@ impl FileChildrenCacheRef {
     }
 
     pub fn set_loading_state(&self, loading_state: LoadingState) -> Result<(), BorrowMutError> {
-        self.0.try_borrow_mut().map(|mut c| c.loading_state = loading_state)
+        self.0
+            .try_borrow_mut()
+            .map(|mut c| c.loading_state = loading_state)
     }
 
     pub fn get_loading_state(&self) -> LoadingState {
@@ -53,9 +55,11 @@ impl FileChildrenCacheRef {
 
 impl Debug for FileChildrenCache {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?} cache with {} items",
-               self.loading_state,
-               self.children.len(),
+        write!(
+            f,
+            "{:?} cache with {} items",
+            self.loading_state,
+            self.children.len(),
         )
     }
 }
@@ -94,17 +98,23 @@ impl Eq for FileFront {}
 
 impl FileFront {
     pub fn new(fsf: FsfRef, path: Arc<PathBuf>) -> FileFront {
-        Self {
-            path,
-            fsf,
-        }
+        Self { path, fsf }
     }
 
     pub fn path(&self) -> &Path {
         &self.path
     }
 
-    pub fn path_rc(&self) -> &Arc<PathBuf> { &self.path }
+    pub fn relative_path(&self) -> &Path {
+        // TODO unwrap
+        self.path
+            .strip_prefix(self.fsf.get_root_path().as_ref())
+            .unwrap()
+    }
+
+    pub fn path_rc(&self) -> &Arc<PathBuf> {
+        &self.path
+    }
 
     pub fn is_dir(&self) -> bool {
         self.fsf.0.is_dir(&self.path)
@@ -114,7 +124,7 @@ impl FileFront {
         self.fsf.0.is_file(&self.path)
     }
 
-    pub fn children(&self) -> Box<dyn Iterator<Item=FileFront> + '_> {
+    pub fn children(&self) -> Box<dyn Iterator<Item = FileFront> + '_> {
         self.fsf.get_children(&self.path).1
     }
 
@@ -130,7 +140,6 @@ impl FileFront {
         self.fsf.read_entire_file_bytes(self.path())
     }
 
-
     /*
     Fails only if parent is outside root
      */
@@ -143,13 +152,18 @@ impl FileFront {
     }
 
     pub fn display_file_name(&self) -> &str {
-        self.path().file_name().map(|oss| oss.to_str().unwrap_or_else(|| {
-            error!("failed to cast path to string: {:?}", self.path());
-            crate::fs::constants::NON_UTF8_ERROR_STR
-        })).unwrap_or_else(|| {
-            error!("failed to extract a filename from: {:?}", self.path());
-            crate::fs::constants::NOT_A_FILENAME
-        })
+        self.path()
+            .file_name()
+            .map(|oss| {
+                oss.to_str().unwrap_or_else(|| {
+                    error!("failed to cast path to string: {:?}", self.path());
+                    crate::fs::constants::NON_UTF8_ERROR_STR
+                })
+            })
+            .unwrap_or_else(|| {
+                error!("failed to extract a filename from: {:?}", self.path());
+                crate::fs::constants::NOT_A_FILENAME
+            })
     }
 
     pub fn descendant<T: AsRef<Path> + ?Sized>(&self, suffix: &T) -> Option<FileFront> {
@@ -168,7 +182,7 @@ impl FileFront {
         } else {
             match self.path.parent() {
                 None => self.path.as_path(),
-                Some(p) => p
+                Some(p) => p,
             }
         };
 
@@ -181,7 +195,9 @@ impl FileFront {
                     path
                 }
             }
-        } else { path };
+        } else {
+            path
+        };
 
         path.to_str().unwrap_or_else(|| {
             error!("failed to cast path to string: {:?}", self.path());
@@ -196,7 +212,10 @@ impl TreeViewNode<PathBuf> for FileFront {
     }
 
     fn label(&self) -> String {
-        self.path.file_name().map(|f| f.to_string_lossy().to_string()).unwrap_or("error".to_string()) //TODO
+        self.path
+            .file_name()
+            .map(|f| f.to_string_lossy().to_string())
+            .unwrap_or("error".to_string()) //TODO
     }
 
     fn is_leaf(&self) -> bool {
@@ -246,7 +265,11 @@ impl ListWidgetItem for FileFront {
             return None;
         }
 
-        self.path.file_name().map(|f| f.to_str().map(|f| f.to_string())).flatten().or(Some("error".to_string()))
+        self.path
+            .file_name()
+            .map(|f| f.to_str().map(|f| f.to_string()))
+            .flatten()
+            .or(Some("error".to_string()))
     }
 }
 
@@ -264,10 +287,7 @@ impl Debug for FilteredFileFront {
 
 impl FilteredFileFront {
     pub fn new(ff: FileFront, filter: FilterType) -> Self {
-        Self {
-            ff,
-            filter,
-        }
+        Self { ff, filter }
     }
 }
 
@@ -277,7 +297,10 @@ impl ListWidgetProvider<FileFront> for FilteredFileFront {
     }
 
     fn get(&self, idx: usize) -> Option<FileFront> {
-        self.ff.children().filter(|x| (self.filter)(x)).nth(idx).map(|f| f.clone())
+        self.ff
+            .children()
+            .filter(|x| (self.filter)(x))
+            .nth(idx)
+            .map(|f| f.clone())
     }
 }
-

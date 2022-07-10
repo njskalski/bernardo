@@ -3,6 +3,15 @@ use crate::w7e::handler::Handler;
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::rust::handler_rust::RustHandler;
 
+// pub fn load_handler(
+//     handler_id: &str,
+// ) -> Option<fn(ff) -> Result<Box<dyn Handler>, HandlerLoadError>> {
+//     match handler_id {
+//         "rust" => Some(|ff| RustHandler::load(ff).map(|h| Box::new(h) as Box<dyn Handler>)),
+//         _ => None,
+//     }
+// }
+
 pub fn load_handler(handler_id: &str, ff: FileFront) -> Result<Box<dyn Handler>, HandlerLoadError> {
     match handler_id {
         "rust" => {
