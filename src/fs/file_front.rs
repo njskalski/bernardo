@@ -1,9 +1,8 @@
+use std::{fmt, io};
 use std::cell::{BorrowMutError, RefCell};
 use std::fmt::{Debug, Formatter};
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 use std::sync::Arc;
-use std::{fmt, io};
 
 use log::{error, warn};
 use ropey::Rope;
@@ -124,7 +123,7 @@ impl FileFront {
         self.fsf.0.is_file(&self.path)
     }
 
-    pub fn children(&self) -> Box<dyn Iterator<Item = FileFront> + '_> {
+    pub fn children(&self) -> Box<dyn Iterator<Item=FileFront> + '_> {
         self.fsf.get_children(&self.path).1
     }
 

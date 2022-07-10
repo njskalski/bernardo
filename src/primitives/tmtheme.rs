@@ -1,11 +1,10 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use std::rc::Rc;
-use log::warn;
-use syntect::highlighting::{Highlighter, HighlightState, ThemeSet};
-use serde::{Serialize, Deserialize};
-use syntect::parsing::{Scope, ScopeStack};
+
+use syntect::highlighting::{Highlighter, ThemeSet};
+use syntect::parsing::Scope;
+
 use crate::primitives::color::Color;
 
 impl Into<Color> for syntect::highlighting::Color {

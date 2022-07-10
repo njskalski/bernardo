@@ -3,9 +3,10 @@ This is a piece of specialized code for TreeView of Rc<PathBuf>
  */
 
 use std::path::PathBuf;
-use std::rc::Rc;
 use std::sync::Arc;
+
 use log::{debug, error, warn};
+
 use crate::fs::file_front::FileFront;
 use crate::FsfRef;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;

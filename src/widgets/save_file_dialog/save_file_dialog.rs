@@ -10,18 +10,18 @@ I hope I will discover most of functional constraints while implementing it.
 
 use std::borrow::Borrow;
 use std::path::PathBuf;
-use std::rc::Rc;
 use std::sync::Arc;
 
 use log::{debug, error, warn};
 
-use crate::Keycode;
+use crate::config::theme::Theme;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::fs::file_front::{FileFront, FilteredFileFront};
 use crate::fs::fsfref::FsfRef;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
+use crate::Keycode;
 use crate::layout::display_state::GenericDisplayState;
 use crate::layout::empty_layout::EmptyLayout;
 use crate::layout::frame_layout::FrameLayout;
@@ -34,7 +34,6 @@ use crate::primitives::helpers::fill_output;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
-use crate::config::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction, WidgetActionParam};

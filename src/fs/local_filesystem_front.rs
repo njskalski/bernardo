@@ -1,6 +1,5 @@
 use std::{iter, thread};
 use std::cell::RefCell;
-use std::cmp::Ordering;
 use std::collections::VecDeque;
 use std::fmt::Debug;
 use std::fs::DirEntry;
@@ -9,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;
 
-use crossbeam_channel::{Receiver, RecvError, Sender};
+use crossbeam_channel::{Receiver, Sender};
 use filesystem::{FileSystem, OsFileSystem};
 use log::{debug, error, warn};
 use ropey::Rope;
