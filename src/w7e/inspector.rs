@@ -1,11 +1,13 @@
-use crate::fs::file_front::FileFront;
-use crate::LangId;
-use crate::w7e::workspace::ProjectScope;
 use std::collections::HashMap;
+
 use log::error;
+
+use crate::fs::file_front::FileFront;
 use crate::w7e::handler::Handler;
 use crate::w7e::handler_load_error::HandlerLoadError;
+use crate::w7e::project_scope::ProjectScope;
 use crate::w7e::rust::inspector_rust::RustLangInspector;
+use crate::LangId;
 
 #[derive(Debug)]
 pub enum InspectError {
@@ -24,7 +26,7 @@ pub trait LangInspector: Sync {
 }
 
 lazy_static! {
-    static ref KnownInspectors : HashMap<LangId, Box<dyn LangInspector>> = hashmap! {
+    static ref KnownInspectors: HashMap<LangId, Box<dyn LangInspector>> = hashmap! {
         LangId::RUST => Box::new(RustLangInspector::new()) as Box<dyn LangInspector>,
     };
 }
@@ -45,13 +47,11 @@ pub fn inspect_workspace(folder: FileFront) -> Result<Vec<ProjectScope>, Inspect
     for (lang_id, inspector) in KnownInspectors.iter() {
         if inspector.is_project_dir(&folder) {
             match inspector.handle(folder.clone()) {
-                Ok(handler) => {
-                    scopes.push(ProjectScope {
-                        path: folder.clone(),
-                        lang_id: inspector.lang_id(),
-                        handler: Some(handler),
-                    })
-                }
+                Ok(handler) => scopes.push(ProjectScope {
+                    path: folder.clone(),
+                    lang_id: inspector.lang_id(),
+                    handler: Some(handler),
+                }),
                 Err(e) => {
                     error!("handler {} failed: {:?}", lang_id, e);
                 }
