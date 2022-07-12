@@ -5,3 +5,4 @@ pub mod deref_str;
 pub mod clipboard;
 pub mod beter_deref_str;
 pub mod regex_search;
+pub mod pretty_ron;

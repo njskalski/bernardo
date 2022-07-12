@@ -2,6 +2,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::ser::{SerializeSeq, SerializeStruct};
 
 use crate::{fs, w7e};
+use crate::experiments::pretty_ron::ToPrettyRonString;
 use crate::fs::file_front::FileFront;
 use crate::w7e::project_scope::{ProjectScope, SerializableProjectScope};
 
@@ -16,8 +17,10 @@ pub struct Workspace {
 
 #[derive(Serialize, Deserialize)]
 pub struct SerializableWorkspace {
-    scopes: Vec<SerializableProjectScope>,
+    pub scopes: Vec<SerializableProjectScope>,
 }
+
+impl ToPrettyRonString for SerializableWorkspace {}
 
 #[derive(Debug)]
 pub enum LoadError {

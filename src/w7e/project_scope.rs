@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 use crate::{FsfRef, LangId};
+use crate::experiments::pretty_ron::ToPrettyRonString;
 use crate::fs::file_front::FileFront;
 use crate::w7e::handler::Handler;
 use crate::w7e::handler_factory::load_handler;
@@ -24,6 +25,8 @@ pub struct SerializableProjectScope {
     pub path: PathBuf,
     pub handler_id_op: Option<String>,
 }
+
+impl ToPrettyRonString for SerializableProjectScope {}
 
 #[derive(Debug)]
 pub enum LoadError {

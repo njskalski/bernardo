@@ -27,3 +27,9 @@ impl From<ron::Error> for ReadError {
         ReadError::RonError(re)
     }
 }
+
+impl From<std::io::Error> for ReadError {
+    fn from(ie: std::io::Error) -> Self {
+        ReadError::IoError(ie)
+    }
+}

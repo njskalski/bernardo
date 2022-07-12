@@ -317,7 +317,7 @@ impl FilesystemFront for LocalFilesystem {
     fn read_entire_file_to_rope(&self, path: &Path) -> Result<Rope, ReadError> {
         let mut file = std::fs::File::open(path).map_err(|ioe| ReadError::IoError(ioe))?;
         let mut buf: Vec<u8> = Vec::default();
-        file.read_to_end(&mut buf);
+        file.read_to_end(&mut buf)?;
         let s = std::str::from_utf8(&buf).map_err(|ue| ReadError::Utf8Error(ue))?;
 
         Ok(Rope::from_str(s))
@@ -326,8 +326,7 @@ impl FilesystemFront for LocalFilesystem {
     fn read_entire_file_bytes(&self, path: &Path) -> Result<Vec<u8>, ReadError> {
         let mut file = std::fs::File::open(path).map_err(|ioe| ReadError::IoError(ioe))?;
         let mut buf: Vec<u8> = Vec::default();
-        file.read_to_end(&mut buf);
-
+        file.read_to_end(&mut buf)?;
         Ok(buf)
     }
 
