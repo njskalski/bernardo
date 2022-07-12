@@ -2,7 +2,6 @@
 mod tests {
     use std::path::PathBuf;
 
-    use log::{debug, error};
     use serde::Serialize;
 
     use crate::experiments::pretty_ron::ToPrettyRonString;
