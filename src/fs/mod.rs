@@ -6,3 +6,4 @@ mod internal_state;
 pub mod constants;
 pub mod read_error;
 pub mod write_error;
+pub mod fake_filesystem_front;
