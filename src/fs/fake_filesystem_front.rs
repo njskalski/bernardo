@@ -1,5 +1,6 @@
+use std::collections::HashSet;
 use std::fmt::{Debug, Formatter};
-use std::io::Error;
+use std::io::{Error, Read};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -12,28 +13,56 @@ use crate::io::loading_state::LoadingState;
 
 pub enum FakeFileNodeContents {
     Folder(Vec<FakeFileNode>),
-
+    Text(String),
 }
 
 pub struct FakeFileNode {
     pub name: PathBuf,
-    pub children: Vec<FakeFileNode>,
+    pub contents : FakeFileNodeContents,
+}
+
+impl FakeFileNode {
+    pub fn file<P : Into<PathBuf>, T : ToString>(name : P, text : T) -> FakeFileNode {
+        FakeFileNode{
+            name: name.into(),
+            contents: FakeFileNodeContents::Text(text.to_string()),
+        }
+    }
+
+    pub fn directory<P : Into<PathBuf>>(name : P, items : Vec<FakeFileNode>) -> FakeFileNode {
+        FakeFileNode {
+            name: name.into(),
+            contents : FakeFileNodeContents::Folder(items),
+        }
+    }
+
+    pub fn directory_from_it<P : Into<PathBuf>, I : Iterator<Item=FakeFileNode>>(name : P, iter : I) -> FakeFileNode {
+        FakeFileNode {
+            name: name.into(),
+            contents : FakeFileNodeContents::Folder(iter.collect()),
+        }
+    }
 }
 
 pub struct FakeFilesystemFront {
     root_path: Arc<PathBuf>,
     root_contents: Vec<FakeFileNode>,
+
+    paths : HashSet<Arc<PathBuf>>,
 }
 
 impl FakeFilesystemFront {
     pub fn new(root_path: PathBuf) -> Self {
+        let rp = Arc::new(root_path);
+        let mut paths = HashSet::new();
+        paths.insert(rp.clone());
+
         FakeFilesystemFront {
-            root_path: Arc::new(root_path),
+            root_path: rp,
             root_contents: Vec::default(),
+            paths,
         }
     }
-
-    pub fn add_items<I: Iterator<Item=FakeFileNode>>(&mut self, items: I) {}
 }
 
 impl Debug for FakeFilesystemFront {
@@ -43,6 +72,7 @@ impl Debug for FakeFilesystemFront {
 }
 
 impl FilesystemFront for FakeFilesystemFront {
+
     fn get_root_path(&self) -> &Arc<PathBuf> {
         &self.root_path
     }
@@ -101,5 +131,39 @@ impl FilesystemFront for FakeFilesystemFront {
 
     fn overwrite_file(&self, path: &Path, source: &dyn SomethingToSave) -> Result<(), Error> {
         todo!()
+    }
+}
+#[macro_export]
+macro_rules! ffile {
+    ( $name:expr, $text: expr) => {
+        {
+            FakeFileNode::file($name, $text)
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! fdir {
+    ( $name:expr, $( $it:expr ), *) => {
+        {
+            let mut items : Vec<FakeFileNode> = Vec::new();
+            $(
+                items.push($it);
+            )*
+
+            FakeFileNode::directory($name, items)
+        }
+    };
+}
+
+// these are purely API tests, like "does it have semantics I like", not "does it work well"
+#[cfg(test)]
+mod tests {
+    use crate::fs::fake_filesystem_front::FakeFileNode;
+
+    #[test]
+    fn make_some_files() {
+        let f : FakeFileNode = ffile!("some", "text");
+        let dir : FakeFileNode = fdir!("dir", f, ffile!("a", "b"), ffile!("x", "d"));
     }
 }
