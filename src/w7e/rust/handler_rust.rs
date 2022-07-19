@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::fs::file_front::FileFront;
 use crate::LangId;
 use crate::lsp_client::lsp_client::LspWrapper;
+use crate::new_fs::path::SPath;
 use crate::w7e::handler::{Handler, NavCompRef};
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::navcomp_provider::NavCompProvider;
@@ -36,7 +37,7 @@ impl Handler for RustHandler {
 }
 
 impl RustHandler {
-    pub fn load(ff: FileFront) -> Result<RustHandler, HandlerLoadError> {
+    pub fn load(ff: SPath) -> Result<RustHandler, HandlerLoadError> {
         if !ff.is_dir() {
             return Err(HandlerLoadError::NotAProject);
         }
