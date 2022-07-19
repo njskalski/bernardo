@@ -80,7 +80,7 @@ impl SPath {
 
     pub fn read_entire_file_to_item<T : DeserializeOwned>(&self) -> Result<T, ReadError> {
         let bytes = self.read_entire_file()?;
-        ron::de::from_bytes(&bytes).map_err(|e| ReadError::DeError(e))
+        ron::de::from_bytes(&bytes).map_err(|e| e.into())
     }
 
     pub fn is_dir(&self) -> bool {

@@ -33,4 +33,7 @@ mod tests {
     ],
 )"#);
     }
+
+    #[test]
+    fn test_read_workspace() {}
 }

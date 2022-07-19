@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::experiments::clipboard::{Clipboard, ClipboardRef, get_me_fake_clipboard};
+    use crate::experiments::clipboard::{ClipboardRef, get_me_fake_clipboard};
     use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg};
     use crate::primitives::cursor_set_selection_tests::tests::{buffer_cursors_sel_to_text, text_to_buffer_cursors_with_selections};
 

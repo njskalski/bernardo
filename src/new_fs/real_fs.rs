@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 use std::fmt::{Debug, Formatter};
-use std::fs::DirEntry;
 use std::hash::{Hash, Hasher};
 use std::io::{Error, Read};
 use std::path::{Path, PathBuf};
 use filesystem::ReadDir;
 use log::{debug, error};
+use crate::new_fs::dir_entry::DirEntry;
 use crate::new_fs::new_filesystem_front::NewFilesystemFront;
 use crate::new_fs::path::SPath;
 use crate::new_fs::read_error::{ListError, ReadError};
@@ -27,7 +27,7 @@ impl NewFilesystemFront for RealFS {
 
     fn blocking_read_entire_file(&self, path: &Path) -> Result<Vec<u8>, ReadError> {
         let full_path = self.root_path.join(path);
-        std::fs::read(&full_path).map_err(|e| ReadError::UnmappedError(e))
+        std::fs::read(&full_path).map_err(|e| e.into())
     }
 
     fn is_dir(&self, path: &Path) -> bool {
@@ -46,16 +46,16 @@ impl NewFilesystemFront for RealFS {
 
     fn list(&self, path : &Path) -> Result<Vec<DirEntry>, ListError> {
         let full_path = self.root_path.join(path);
-        let readdir = std::fs::read_dir(&full_path).map_err(|e| ListError::UnmappedError(e))?;
+        let readdir = std::fs::read_dir(&full_path)?;
         let mut items : Vec<DirEntry> = Vec::new();
         for item in readdir {
             match item {
                 Ok(dir_entry) => {
-                    items.push(dir_entry)
+                    items.push(DirEntry::new(dir_entry.path()))
                 }
                 Err(e) => {
                     error!("failed read dir because {}", e);
-                    return Err(ListError::UnmappedError(e))
+                    return Err(e.into())
                 }
             }
         }

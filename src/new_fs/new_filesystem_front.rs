@@ -3,6 +3,7 @@ use std::hash::Hash;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use crate::FsfRef;
+use crate::new_fs::dir_entry::DirEntry;
 use crate::new_fs::path::SPath;
 use crate::new_fs::read_error::{ListError, ReadError};
 
@@ -29,8 +30,7 @@ pub trait NewFilesystemFront : Debug {
 
     fn hash_seed(&self) -> usize;
 
-    fn list(&self, path: &Path) -> Result<Vec<std::fs::DirEntry>, ListError>;
+    fn list(&self, path: &Path) -> Result<Vec<DirEntry>, ListError>;
 
     fn exists(&self, path: &Path) -> bool;
-
 }

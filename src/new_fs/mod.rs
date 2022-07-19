@@ -4,3 +4,4 @@ pub mod real_fs;
 pub mod mock_fs;
 pub mod read_error;
 pub mod nfsf_ref;
+pub mod dir_entry;
