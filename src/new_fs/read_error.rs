@@ -1,5 +1,7 @@
 pub enum ReadError {
     FileNotFound,
+    NotAFilePath,
+    DeError(ron::de::Error),
     UnmappedError(std::io::Error),
 }
 

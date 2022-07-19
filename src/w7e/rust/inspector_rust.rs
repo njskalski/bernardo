@@ -1,3 +1,4 @@
+use std::path::{Path, PathBuf};
 use crate::fs::file_front::FileFront;
 use crate::LangId;
 use crate::new_fs::path::SPath;
@@ -14,7 +15,7 @@ impl LangInspector for RustLangInspector {
     }
 
     fn is_project_dir(&self, ff: &SPath) -> bool {
-        ff.is_dir() && ff.descendant("Cargo.toml").map(|desc| desc.is_dir()).unwrap_or(false)
+        ff.is_dir() && ff.descendant_checked("Cargo.toml").map(|desc| desc.is_dir()).unwrap_or(false)
     }
 
     fn handle(&self, ff: SPath) -> Result<Box<dyn Handler>, HandlerLoadError> {

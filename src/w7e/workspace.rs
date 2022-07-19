@@ -42,7 +42,7 @@ impl From<new_fs::read_error::ReadError> for LoadError {
 
 impl Workspace {
     pub fn try_load(root_path: SPath) -> Result<Workspace, LoadError> {
-        let workspace_file = root_path.descendant(WORKSPACE_FILE).ok_or(LoadError::WorkspaceFileNotFound)?;
+        let workspace_file = root_path.descendant_checked(WORKSPACE_FILE).ok_or(LoadError::WorkspaceFileNotFound)?;
         let serialized_workspace = workspace_file.read_entire_file_to_item::<SerializableWorkspace>()?;
         let workspace = Self::from(serialized_workspace, root_path)?;
         Ok(workspace)

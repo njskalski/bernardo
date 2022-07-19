@@ -19,6 +19,14 @@ pub trait NewFilesystemFront : Debug {
      */
     fn is_dir(&self, path: &Path) -> bool;
 
+    /*
+    Blocking
+
+    TODO:
+    - define if that's a file, symlink or any
+     */
+    fn is_file(&self, path: &Path) -> bool;
+
     fn hash_seed(&self) -> usize;
 
     fn list(&self, path: &Path) -> Result<Vec<std::fs::DirEntry>, ListError>;

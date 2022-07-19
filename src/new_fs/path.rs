@@ -1,6 +1,7 @@
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use serde::de::DeserializeOwned;
 use crate::FsfRef;
 use crate::new_fs::nfsf_ref::NfsfRef;
 
@@ -30,6 +31,18 @@ pub enum PathCell {
     }
 }
 
+impl PathCell {
+    pub fn relative_path(&self) -> PathBuf {
+        match self {
+            PathCell::Head(_) => PathBuf::new(),
+            PathCell::Segment { prev, cell } => {
+                let mut head = prev.relative_path();
+                head.join(cell)
+            }
+        }
+    }
+}
+
 
 #[derive(Clone, Debug)]
 pub struct SPath (pub Arc<PathCell>);
@@ -46,11 +59,64 @@ impl SPath {
             Arc::new(PathCell::Segment { prev, cell: segment })
         )
     }
+
+    pub fn fsf(&self) -> &NfsfRef {
+        match self.0.as_ref() {
+            PathCell::Head(fzf) => fzf,
+            PathCell::Segment { prev, .. } => prev.fsf(),
+        }
+    }
+
+    pub fn descendant_checked<P: AsRef<Path>>(&self, path : P) -> Option<SPath> {
+        let fzf = self.fsf();
+        fzf.descendant_checked(path.as_ref())
+    }
+
+    pub fn read_entire_file(&self) -> Result<Vec<u8>, ReadError> {
+        let path : PathBuf = self.relative_path();
+        let fsf = self.fsf();
+        fsf.fs.blocking_read_entire_file(&path)
+    }
+
+    pub fn read_entire_file_to_item<T : DeserializeOwned>(&self) -> Result<T, ReadError> {
+        let bytes = self.read_entire_file()?;
+        ron::de::from_bytes(&bytes).map_err(|e| ReadError::DeError(e))
+    }
+
+    pub fn is_dir(&self) -> bool {
+        let path : PathBuf = self.relative_path();
+        let fsf = self.fsf();
+        fsf.fs.is_dir(&path)
+    }
+
+    pub fn is_file(&self) -> bool {
+        let path : PathBuf = self.relative_path();
+        let fsf = self.fsf();
+        fsf.fs.is_file(&path)
+    }
+
+    // returns owned PathBuf relative to FS root.
+    pub fn relative_path(&self) -> PathBuf {
+        self.0.relative_path()
+    }
+
+    pub fn absolute_path(&self) -> PathBuf {
+        let path= self.relative_path();
+        let root_path = self.fsf().root_path_buf().clone();
+        root_path.join(path)
+    }
+
+    pub fn parent(&self) -> Option<&SPath> {
+        match self.0.as_ref() {
+            PathCell::Head(_) => None,
+            PathCell::Segment { prev, cell } => Some(prev),
+        }
+    }
 }
 
 impl PartialEq<Self> for SPath {
     fn eq(&self, other: &Self) -> bool {
-        if self.0.fsf() != other.0.fsf() {
+        if *self.fsf() != *other.fsf() {
             return false;
         }
 
@@ -63,85 +129,8 @@ impl PartialEq<Self> for SPath {
 
 impl Hash for SPath {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.part.hash(state);
-        self.0.prev.hash(state)
+        self.0.as_ref().hash(state)
     }
 }
 
 impl Eq for SPath {}
-
-impl PathCell {
-    // fn relative_path(&self) -> PathBuf {
-    //     let mut pb : PathBuf = match self {
-    //         // PathPredecessor::FilesystemRoot(_) => PathBuf::new(),
-    //         // PathPredecessor::SPath(s) => s.0.relative_path(),
-    //         PathCell::Head(fzf) => fzf.root_path(),
-    //         PathCell::Segment { prev, cell } => {
-    //
-    //         }
-    //     };
-    //
-    //     pb.push(&self.part);
-    //     pb
-    // }
-    //
-    // fn copy_path(&self) -> PathBuf {
-    //     let mut prefix : PathBuf = match &self {
-    //         PathPredecessor::FilesystemRoot(fsf) => {
-    //             fsf.0.root_path().clone()
-    //         }
-    //         PathPredecessor::SPath(s) => {
-    //             s.0.copy_path()
-    //         }
-    //     };
-    //
-    //     prefix.push(&self.part);
-    //     prefix
-    // }
-    //
-    // fn fsf(&self) -> &NfsfRef {
-    //     match &self.prev {
-    //         PathPredecessor::FilesystemRoot(fsf) => fsf,
-    //         PathPredecessor::SPath(x) => x.0.fsf(),
-    //     }
-    // }
-}
-
-impl Into<PathBuf> for &SPath {
-    fn into(self) -> PathBuf {
-        self.0.copy_path()
-    }
-}
-
-impl SPath {
-    pub fn blocking_read_entire_file(&self) -> Result<Vec<u8>, ReadError> {
-        let path : PathBuf = self.into();
-        let fsf = self.0.fsf();
-        fsf.0.blocking_read_entire_file(&path)
-    }
-
-    pub fn is_dir(&self) -> bool {
-        let path : PathBuf = self.into();
-        let fsf = self.0.fsf();
-        fsf.0.is_dir(&path)
-    }
-
-    // returns owned PathBuf relative to FS root.
-    pub fn relative_path(&self) -> PathBuf {
-        self.0.relative_path()
-    }
-
-    pub fn parent(&self) -> Option<&SPath> {
-        match self.0.as_ref() {
-            PathCell::Head(_) => None,
-            PathCell::Segment { prev, cell } => Some(prev),
-        }
-    }
-
-    pub fn descendant_checked(&self, relative_path: &Path) -> Option<SPath> {
-        let fsf = self.0.fsf();
-
-
-    }
-}
-

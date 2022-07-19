@@ -26,11 +26,18 @@ impl NewFilesystemFront for RealFS {
     }
 
     fn blocking_read_entire_file(&self, path: &Path) -> Result<Vec<u8>, ReadError> {
-        std::fs::read(path).map_err(|e| ReadError::UnmappedError(e))
+        let full_path = self.root_path.join(path);
+        std::fs::read(&full_path).map_err(|e| ReadError::UnmappedError(e))
     }
 
     fn is_dir(&self, path: &Path) -> bool {
-        path.is_dir()
+        let full_path = self.root_path.join(path);
+        full_path.is_dir()
+    }
+
+    fn is_file(&self, path: &Path) -> bool {
+        let full_path = self.root_path.join(path);
+        full_path.is_file()
     }
 
     fn hash_seed(&self) -> usize {
@@ -38,7 +45,8 @@ impl NewFilesystemFront for RealFS {
     }
 
     fn list(&self, path : &Path) -> Result<Vec<DirEntry>, ListError> {
-        let readdir = std::fs::read_dir(path).map_err(|e| ReadError::UnmappedError(e))?;
+        let full_path = self.root_path.join(path);
+        let readdir = std::fs::read_dir(&full_path).map_err(|e| ListError::UnmappedError(e))?;
         let mut items : Vec<DirEntry> = Vec::new();
         for item in readdir {
             match item {
@@ -47,7 +55,7 @@ impl NewFilesystemFront for RealFS {
                 }
                 Err(e) => {
                     error!("failed read dir because {}", e);
-                    Err(ListError::UnmappedError(e))
+                    return Err(ListError::UnmappedError(e))
                 }
             }
         }

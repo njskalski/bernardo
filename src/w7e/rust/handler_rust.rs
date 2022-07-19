@@ -10,7 +10,7 @@ use crate::w7e::navcomp_provider::NavCompProvider;
 use crate::w7e::navcomp_provider_lsp::NavCompProviderLsp;
 
 pub struct RustHandler {
-    root: FileFront,
+    root: SPath,
     cargo_file: cargo_toml::Manifest,
 
     // TODO merge these two?
@@ -43,17 +43,17 @@ impl RustHandler {
         }
 
         let cargo_file = ff
-            .descendant("Cargo.toml")
+            .descendant_checked("Cargo.toml")
             .ok_or(HandlerLoadError::NotAProject)?;
         if !cargo_file.is_file() {
             return Err(HandlerLoadError::NotAProject);
         }
 
-        let contents = cargo_file.read_entire_file_to_bytes()?;
+        let contents = cargo_file.read_entire_file()?;
         let cargo = cargo_toml::Manifest::from_slice(&contents)
             .map_err(|e| HandlerLoadError::DeserializationError(Box::new(e)))?;
 
-        let lsp = LspWrapper::todo_new(ff.path_rc().to_path_buf()).map(|lsp| Arc::new(lsp));
+        let lsp = LspWrapper::todo_new(ff.relative_path()).map(|lsp| Arc::new(lsp));
         let navcomp = lsp.clone().map(|lsp| {
             Arc::new(Box::new(NavCompProviderLsp::new(lsp)) as Box<dyn NavCompProvider>)
         });

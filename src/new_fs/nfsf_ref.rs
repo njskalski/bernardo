@@ -8,14 +8,15 @@ use crate::new_fs::path::{PathCell, SPath};
 
 // Chaching should be implemented here or nowhere.
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NfsfRef{
     pub fs : Arc<Box<dyn NewFilesystemFront>>,
 }
 
 impl Hash for NfsfRef {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.fs.hash(state)
+        state.write_usize(self.fs.hash_seed());
+        self.fs.root_path().hash(state)
     }
 }
 
