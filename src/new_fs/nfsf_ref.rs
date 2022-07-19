@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
@@ -8,21 +9,24 @@ use crate::new_fs::path::{PathCell, SPath};
 
 // Chaching should be implemented here or nowhere.
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub struct NfsfRef{
     pub fs : Arc<Box<dyn NewFilesystemFront>>,
 }
+
+impl PartialEq for NfsfRef {
+    fn eq(&self, other: &Self) -> bool {
+        self.fs.hash_seed() == other.fs.hash_seed() &&
+            self.fs.root_path() == other.fs.root_path()
+    }
+}
+
+impl Eq for NfsfRef {}
 
 impl Hash for NfsfRef {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write_usize(self.fs.hash_seed());
         self.fs.root_path().hash(state)
-    }
-}
-
-impl AsRef<Box<dyn FilesystemFront>> for NfsfRef {
-    fn as_ref(&self) -> &Box<dyn FilesystemFront> {
-        self.fs.as_ref()
     }
 }
 
@@ -46,7 +50,7 @@ impl NfsfRef {
         let mut it = path.components();
 
         while let Some(component) = it.next() {
-            let segment : PathBuf = component.as_ref().to_owned();
+            let segment = PathBuf::from((&component as &AsRef<Path>).as_ref());
             spath = SPath::append(spath, segment);
         }
 
