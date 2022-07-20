@@ -39,7 +39,8 @@ impl NfsfRef {
         self.fs.root_path()
     }
 
-    pub fn descendant_checked(&self, path : &Path) -> Option<SPath> {
+    pub fn descendant_checked<P: AsRef<Path>>(&self, path : P) -> Option<SPath>  {
+        let path = path.as_ref();
         if !self.fs.exists(path) {
             return None;
         }

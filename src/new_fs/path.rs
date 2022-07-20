@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -44,7 +45,7 @@ impl PathCell {
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct SPath (pub Arc<PathCell>);
 
 impl SPath {
@@ -67,7 +68,7 @@ impl SPath {
         }
     }
 
-    pub fn descendant_checked<P: AsRef<Path>>(&self, path : P) -> Option<SPath> {
+    pub fn descendant_checked<P: AsRef<Path>>(&self, path : P) -> Option<SPath>{
         let fzf = self.fsf();
         fzf.descendant_checked(path.as_ref())
     }
@@ -134,3 +135,17 @@ impl Hash for SPath {
 }
 
 impl Eq for SPath {}
+
+impl Display for SPath {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let path = self.relative_path();
+        write!(f, "{}", path.to_string_lossy())
+    }
+}
+
+impl Debug for SPath {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let path = self.relative_path();
+        write!(f, "{}", path.to_string_lossy())
+    }
+}

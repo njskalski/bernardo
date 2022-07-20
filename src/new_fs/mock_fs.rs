@@ -3,9 +3,11 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use log::{debug, error, warn};
 use crate::new_fs::dir_entry::DirEntry;
 use crate::new_fs::new_filesystem_front::NewFilesystemFront;
+use crate::new_fs::nfsf_ref::NfsfRef;
 use crate::new_fs::path::SPath;
 use crate::new_fs::read_error::{ListError, ReadError};
 
@@ -48,6 +50,12 @@ impl MockFS {
         Ok(())
     }
 
+    pub fn to_fsf(self) -> NfsfRef {
+        NfsfRef{
+            fs: Arc::new(Box::new(self))
+        }
+    }
+    
     fn split_path(path : &Path) -> Result<(PathBuf, PathBuf), ()> {
         if path.file_name().is_none() {
             error!("no valid filename {:?}", path);

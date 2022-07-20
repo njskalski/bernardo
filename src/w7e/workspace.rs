@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::ser::{SerializeSeq, SerializeStruct};
 use crate::experiments::pretty_ron::ToPrettyRonString;
@@ -5,7 +6,7 @@ use crate::{new_fs, w7e};
 use crate::new_fs::path::SPath;
 use crate::w7e::project_scope::{ProjectScope, SerializableProjectScope};
 
-pub const WORKSPACE_FILE: &'static str = ".gladius_workspace.ron";
+pub const WORKSPACE_FILE_NAME: &'static str = ".gladius_workspace.ron";
 
 pub struct Scopes(Vec<ProjectScope>);
 
@@ -42,7 +43,9 @@ impl From<new_fs::read_error::ReadError> for LoadError {
 
 impl Workspace {
     pub fn try_load(root_path: SPath) -> Result<Workspace, LoadError> {
-        let workspace_file = root_path.descendant_checked(WORKSPACE_FILE).ok_or(LoadError::WorkspaceFileNotFound)?;
+        let x = root_path.relative_path();
+
+        let workspace_file = root_path.descendant_checked(WORKSPACE_FILE_NAME).ok_or(LoadError::WorkspaceFileNotFound)?;
         let serialized_workspace = workspace_file.read_entire_file_to_item::<SerializableWorkspace>()?;
         let workspace = Self::from(serialized_workspace, root_path)?;
         Ok(workspace)
