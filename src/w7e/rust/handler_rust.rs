@@ -52,7 +52,7 @@ impl RustHandler {
 
         let contents = cargo_file.read_entire_file()?;
         let cargo = cargo_toml::Manifest::from_slice(&contents)
-            .map_err(|e| HandlerLoadError::DeserializationError(Box::new(e)))?;
+            .map_err(|e| HandlerLoadError::DeserializationError(e.to_string()))?;
 
         let lsp = LspWrapper::todo_new(ff.relative_path()).map(|lsp| Arc::new(lsp));
         let navcomp = lsp.clone().map(|lsp| {

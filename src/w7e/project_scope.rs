@@ -29,7 +29,7 @@ pub struct SerializableProjectScope {
 
 impl ToPrettyRonString for SerializableProjectScope {}
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum LoadError {
     DirectoryNotFound,
     HandlerLoadError(HandlerLoadError),
@@ -50,12 +50,17 @@ impl ProjectScope {
         }
     }
 
-    pub fn from_serializable(sps: SerializableProjectScope, fs: NfsfRef) -> Result<Self, LoadError> {
-        let ff = fs.descendant_checked(&sps.path).ok_or(LoadError::DirectoryNotFound)?;
-        let handler = match sps.handler_id_op {
+    pub fn from_serializable(sps: SerializableProjectScope, workspace : &SPath) -> Result<Self, LoadError> {
+        let ff = workspace.descendant_checked(&sps.path).ok_or(LoadError::DirectoryNotFound)?;
+        let handler = match &sps.handler_id_op {
             None => None,
             Some(handler_id) => {
-                Some(load_handler(&handler_id, ff.clone())?)
+                match load_handler(&handler_id, ff.clone()) {
+                    Ok(s) => Some(s),
+                    Err(e) => {
+                        return Err(LoadError::HandlerLoadError(e));
+                    }
+                }
             }
         };
 

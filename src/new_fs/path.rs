@@ -70,7 +70,8 @@ impl SPath {
 
     pub fn descendant_checked<P: AsRef<Path>>(&self, path : P) -> Option<SPath>{
         let fzf = self.fsf();
-        fzf.descendant_checked(path.as_ref())
+        let full_path = self.relative_path().join(path.as_ref());
+        fzf.descendant_checked(full_path)
     }
 
     pub fn read_entire_file(&self) -> Result<Vec<u8>, ReadError> {

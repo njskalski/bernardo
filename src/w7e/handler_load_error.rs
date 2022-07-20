@@ -2,12 +2,12 @@ use std::error::Error;
 
 use crate::new_fs::read_error::ReadError;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum HandlerLoadError {
     HandlerNotFound,
     NotAProject,
     ReadError(ReadError),
-    DeserializationError(Box<dyn Error>),
+    DeserializationError(String),
 }
 
 impl From<ReadError> for HandlerLoadError {

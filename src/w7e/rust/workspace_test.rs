@@ -8,7 +8,8 @@ mod tests {
     use crate::LangId;
     use crate::new_fs::mock_fs::MockFS;
     use crate::w7e::project_scope::SerializableProjectScope;
-    use crate::w7e::workspace::{SerializableWorkspace, Workspace};
+    use crate::w7e::workspace::{ScopeLoadErrors, SerializableWorkspace, Workspace, WORKSPACE_FILE_NAME};
+    use crate::w7e::workspace::LoadError::ScopeLoadError;
 
     #[test]
     fn test_write_rust_workspace() {
@@ -36,11 +37,8 @@ mod tests {
     }
 
     #[test]
-    fn test_read_workspace() {
-        let repo_folder = Path::new("workspace");
-        let mock_fs = MockFS::new("/tmp").with_file(
-            &repo_folder.join(crate::w7e::workspace::WORKSPACE_FILE_NAME),
-            r#"(
+    fn test_read_rust_workspace() {
+        let workspace = r#"(
     scopes: [
         (
             lang_id: RUST,
@@ -48,9 +46,47 @@ mod tests {
             handler_id_op: Some("rust_cargo"),
         ),
     ],
-)"#).to_fsf();
+)
+        "#;
+
+        let workspace_pill = ron::from_str::<SerializableWorkspace>(workspace).unwrap();
+
+        assert_eq!(workspace_pill.scopes.len(), 1);
+        assert_eq!(workspace_pill.scopes[0].lang_id, LangId::RUST);
+        assert_eq!(workspace_pill.scopes[0].path, PathBuf::from("rust_repo"));
+        assert_eq!(workspace_pill.scopes[0].handler_id_op, Some("rust_cargo".to_string()));
+    }
+
+    #[test]
+    fn test_read_workspace() {
+        let repo_folder = Path::new("workspace");
+        let mock_fs = MockFS::new("/tmp").with_file(
+            "workspace/.gladius_workspace.ron",
+            r#"(
+    scopes: [
+        (
+            lang_id: RUST,
+            path: "rust_project",
+            handler_id_op: Some("rust_cargo"),
+        ),
+    ],
+)"#).with_file(
+            "workspace/rust_project/Cargo.toml",
+            r#"
+[package]
+name = "hello_world" # the name of the package
+version = "0.1.0"    # the current version, obeying semver
+authors = ["Alice <a@example.com>", "Bob <b@example.com>"]
+            "#).to_fsf();
+
+        assert_eq!(mock_fs.exists("workspace"), true);
+        assert_eq!(mock_fs.exists("workspace/.gladius_workspace.ron"), true);
+        assert_eq!(mock_fs.exists("workspace/rust_project"), true);
+        assert_eq!(mock_fs.exists("workspace/rust_project/Cargo.toml"), true);
 
         let path = mock_fs.descendant_checked(&repo_folder).unwrap();
-        let repo = Workspace::try_load(path).unwrap();
+        let (workspace, errors) = Workspace::try_load(path).unwrap();
+
+        assert_eq!(errors, ScopeLoadErrors::default());
     }
 }

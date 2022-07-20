@@ -28,8 +28,8 @@ impl MockFS {
         }
     }
 
-    pub fn with_file<P : Into<PathBuf>, B : Into<Vec<u8>>>(mut self, path : P, bytes : B) -> Self {
-        self.add_file(&path.into(), bytes.into()).unwrap_or_else(
+    pub fn with_file<P : AsRef<Path>, B : Into<Vec<u8>>>(mut self, path : P, bytes : B) -> Self {
+        self.add_file(path.as_ref(), bytes.into()).unwrap_or_else(
             |_| error!("failed creating file in mockfs"));
         self
     }
