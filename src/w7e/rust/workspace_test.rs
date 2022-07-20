@@ -17,8 +17,8 @@ mod tests {
             scopes: vec![
                 SerializableProjectScope {
                     lang_id: LangId::RUST,
-                    path: PathBuf::from("/home/someuser/rust_repo"),
-                    handler_id_op: Some("rust_cargo".to_string()),
+                    path: PathBuf::from("rust_repo"),
+                    handler_id_op: Some("rust".to_string()),
                 }
             ]
         };
@@ -30,7 +30,7 @@ mod tests {
         (
             lang_id: RUST,
             path: "rust_repo",
-            handler_id_op: Some("rust_cargo"),
+            handler_id_op: Some("rust"),
         ),
     ],
 )"#);
@@ -43,7 +43,7 @@ mod tests {
         (
             lang_id: RUST,
             path: "rust_repo",
-            handler_id_op: Some("rust_cargo"),
+            handler_id_op: Some("rust"),
         ),
     ],
 )
@@ -54,7 +54,7 @@ mod tests {
         assert_eq!(workspace_pill.scopes.len(), 1);
         assert_eq!(workspace_pill.scopes[0].lang_id, LangId::RUST);
         assert_eq!(workspace_pill.scopes[0].path, PathBuf::from("rust_repo"));
-        assert_eq!(workspace_pill.scopes[0].handler_id_op, Some("rust_cargo".to_string()));
+        assert_eq!(workspace_pill.scopes[0].handler_id_op, Some("rust".to_string()));
     }
 
     #[test]
@@ -67,7 +67,7 @@ mod tests {
         (
             lang_id: RUST,
             path: "rust_project",
-            handler_id_op: Some("rust_cargo"),
+            handler_id_op: Some("rust"),
         ),
     ],
 )"#).with_file(
