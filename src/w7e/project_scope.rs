@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::LangId;
 use crate::experiments::pretty_ron::ToPrettyRonString;
-use crate::new_fs::nfsf_ref::NfsfRef;
+use crate::new_fs::fsf_ref::FsfRef;
 use crate::new_fs::path::SPath;
 use crate::w7e::handler::Handler;
 use crate::w7e::handler_factory::load_handler;

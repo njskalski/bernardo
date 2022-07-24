@@ -7,7 +7,6 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{AnyMsg, ConfigRef, InputEvent, Keycode, Output, SizeConstraint, Widget};
 use crate::experiments::clipboard::ClipboardRef;
-use crate::fs::fsfref::FsfRef;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
 use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
@@ -15,6 +14,7 @@ use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
 use crate::config::theme::Theme;
 use crate::experiments::regex_search::FindError;
+use crate::new_fs::fsf_ref::FsfRef;
 use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;

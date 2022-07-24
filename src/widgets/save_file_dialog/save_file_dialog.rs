@@ -16,8 +16,6 @@ use log::{debug, error, warn};
 
 use crate::config::theme::Theme;
 use crate::experiments::focus_group::FocusUpdate;
-use crate::fs::file_front::{FileFront, FilteredFileFront};
-use crate::fs::fsfref::FsfRef;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
@@ -29,6 +27,8 @@ use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::new_fs::fsf_ref::{FsfRef};
+use crate::new_fs::path::SPath;
 use crate::primitives::border::SINGLE_BORDER_STYLE;
 use crate::primitives::helpers::fill_output;
 use crate::primitives::rect::Rect;
@@ -56,9 +56,9 @@ pub struct SaveFileDialogWidget {
 
     display_state: Option<GenericDisplayState>,
 
-    // TODO PathBuf -> WrappedRcPath? See profiler.
-    tree_widget: WithScroll<TreeViewWidget<PathBuf, FileFront>>,
-    list_widget: ListWidget<FileFront>,
+    // TODO at this point I just want it to work, I should profile if it behaves fast.
+    tree_widget: WithScroll<TreeViewWidget<SPath, SPath>>,
+    list_widget: ListWidget<SPath>,
     edit_box: EditBoxWidget,
 
     ok_button: ButtonWidget,
@@ -67,21 +67,21 @@ pub struct SaveFileDialogWidget {
     fsf: FsfRef,
 
     on_cancel: Option<WidgetAction<Self>>,
-    on_save: Option<WidgetActionParam<Self, FileFront>>,
+    on_save: Option<WidgetActionParam<Self, SPath>>,
 
-    root_path: Arc<PathBuf>,
+    root_path: SPath,
 
     hover_dialog: Option<GenericDialog>,
 }
 
 impl SaveFileDialogWidget {
     pub fn new(fsf: FsfRef) -> Self {
-        let tree = fsf.get_root();
-        let filter = |f: &FileFront| -> bool {
+        let tree = fsf.root();
+        let filter = |f: &SPath| -> bool {
             f.is_dir()
         };
 
-        let tree_widget = TreeViewWidget::<PathBuf, FileFront>::new(tree)
+        let tree_widget = TreeViewWidget::<SPath, SPath>::new(tree)
             .with_filter(filter, Some(0))
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
@@ -94,7 +94,7 @@ impl SaveFileDialogWidget {
 
         let scroll_tree_widget = WithScroll::new(tree_widget, ScrollDirection::Vertical);
 
-        let list_widget: ListWidget<FileFront> = ListWidget::new().with_selection()
+        let list_widget: ListWidget<SPath> = ListWidget::new().with_selection()
             .with_on_hit(|w| {
                 w.get_highlighted().map(|item| {
                     Some(SaveFileDialogMsg::FileListHit(item).boxed())
@@ -110,7 +110,7 @@ impl SaveFileDialogWidget {
             |_| SaveFileDialogMsg::Cancel.someboxed()
         );
 
-        let path = fsf.get_root_path().clone();
+        let path = fsf.root();
 
         SaveFileDialogWidget {
             id: get_new_widget_id(),
@@ -188,10 +188,12 @@ impl SaveFileDialogWidget {
     If set to a dir, only tree will be expanded.
     If set to a file, both tree will be expanded, and editbox filled.
      */
-    pub fn set_path(&mut self, path: &Arc<PathBuf>) -> bool {
+    pub fn set_path(&mut self, path: &SPath) -> bool {
         debug!("setting path to {:?}", path);
 
-        let (mut dir, filename): (PathBuf, Option<&str>) = if self.fsf.is_dir(path) {
+
+
+        let (mut dir, filename): (PathBuf, Option<&str>) = if path.is_dir() {
             (path.to_path_buf(), None)
         } else {
             (path.parent().map(|f| f.to_path_buf()).unwrap_or_else(|| {
@@ -255,9 +257,9 @@ impl SaveFileDialogWidget {
             }
         };
 
-        self.list_widget.set_provider(
-            Box::new(FilteredFileFront::new(item, |f| f.is_file()))
-        );
+        // self.list_widget.set_provider(
+        //     Box::new(FilteredSPath::new(item, |f| f.is_file()))
+        // );
 
         true
     }
@@ -278,11 +280,11 @@ impl SaveFileDialogWidget {
         }
     }
 
-    pub fn set_on_save(&mut self, on_save: WidgetActionParam<Self, FileFront>) {
+    pub fn set_on_save(&mut self, on_save: WidgetActionParam<Self, SPath>) {
         self.on_save = Some(on_save);
     }
 
-    pub fn with_on_save(self, on_save: WidgetActionParam<Self, FileFront>) -> Self {
+    pub fn with_on_save(self, on_save: WidgetActionParam<Self, SPath>) -> Self {
         Self {
             on_save: Some(on_save),
             ..self

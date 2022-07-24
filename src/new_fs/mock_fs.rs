@@ -7,7 +7,7 @@ use std::sync::Arc;
 use log::{debug, error, warn};
 use crate::new_fs::dir_entry::DirEntry;
 use crate::new_fs::new_filesystem_front::NewFilesystemFront;
-use crate::new_fs::nfsf_ref::NfsfRef;
+use crate::new_fs::fsf_ref::FsfRef;
 use crate::new_fs::path::SPath;
 use crate::new_fs::read_error::{ListError, ReadError};
 
@@ -48,12 +48,6 @@ impl MockFS {
         }
 
         Ok(())
-    }
-
-    pub fn to_fsf(self) -> NfsfRef {
-        NfsfRef{
-            fs: Arc::new(Box::new(self))
-        }
     }
     
     fn split_path(path : &Path) -> Result<(PathBuf, PathBuf), ()> {
@@ -174,7 +168,6 @@ impl NewFilesystemFront for MockFS {
 mod tests {
     use std::path::Path;
     use crate::de;
-    use crate::fs::fake_filesystem_front::FakeFileNode;
     use crate::new_fs::mock_fs::MockFS;
     use crate::new_fs::new_filesystem_front::NewFilesystemFront;
     use crate::new_fs::read_error::ReadError;

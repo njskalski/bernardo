@@ -1,10 +1,12 @@
 use std::fmt::Debug;
-use crate::fs::file_front::FileFront;
-use crate::{AnyMsg, FsfRef};
+
+use crate::{AnyMsg};
 use crate::experiments::beter_deref_str::BetterDerefStr;
+use crate::new_fs::fsf_ref::FsfRef;
+use crate::new_fs::path::SPath;
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 
-pub type FileFrontToMsg = fn(&FileFront) -> Box<dyn AnyMsg>;
+pub type SPathToMsg = fn(&SPath) -> Box<dyn AnyMsg>;
 
 
 // TODO add subdirectory
@@ -30,13 +32,13 @@ impl FsfProvider {
 }
 
 #[derive(Debug)]
-pub enum FileFrontMsg {
-    Hit(FileFront),
+pub enum SPathMsg {
+    Hit(SPath),
 }
 
-impl AnyMsg for FileFrontMsg {}
+impl AnyMsg for SPathMsg {}
 
-impl Item for FileFront {
+impl Item for SPath {
     fn display_name(&self) -> BetterDerefStr {
         BetterDerefStr::Str(self.display_file_name())
     }
@@ -46,7 +48,7 @@ impl Item for FileFront {
     }
 
     fn on_hit(&self) -> Box<dyn AnyMsg> {
-        Box::new(FileFrontMsg::Hit(self.clone()))
+        Box::new(SPathMsg::Hit(self.clone()))
     }
 }
 

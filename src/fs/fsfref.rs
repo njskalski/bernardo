@@ -3,7 +3,7 @@ use std::ops::Deref;
 use std::path::Path;
 use std::sync::Arc;
 
-use crate::fs::file_front::FileFront;
+use crate::fs::file_front::SPath;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::io::loading_state::LoadingState;
 
@@ -11,29 +11,29 @@ use crate::io::loading_state::LoadingState;
 pub struct FsfRef(pub Arc<Box<dyn FilesystemFront>>);
 
 impl FsfRef {
-    pub fn get_root(&self) -> FileFront {
-        FileFront::new(
+    pub fn get_root(&self) -> SPath {
+        SPath::new(
             self.clone(),
             self.0.get_root_path().clone(),
         )
     }
 
-    pub fn get_children(&self, path: &Path) -> (LoadingState, Box<dyn Iterator<Item=FileFront> + '_>) {
+    pub fn get_children(&self, path: &Path) -> (LoadingState, Box<dyn Iterator<Item=SPath> + '_>) {
         let (loading_state, it) = self.0.get_children_paths(path);
-        let new_it = it.map(move |p| FileFront::new(self.clone(), p.clone()));
+        let new_it = it.map(move |p| SPath::new(self.clone(), p.clone()));
 
         (loading_state, Box::new(new_it))
     }
 
-    pub fn get_item(&self, path: &Path) -> Option<FileFront> {
+    pub fn get_item(&self, path: &Path) -> Option<SPath> {
         self.get_path(path).map(|p| {
-            FileFront::new(self.clone(), p)
+            SPath::new(self.clone(), p)
         })
     }
 
-    pub fn fuzzy_files_it(&self, query: String, limit: usize, respect_ignores: bool) -> (LoadingState, Box<dyn Iterator<Item=FileFront> + '_>) {
+    pub fn fuzzy_files_it(&self, query: String, limit: usize, respect_ignores: bool) -> (LoadingState, Box<dyn Iterator<Item=SPath> + '_>) {
         let (state, it) = self.0.fuzzy_file_paths_it(query, limit, respect_ignores);
-        (state, Box::new(it.map(move |path| FileFront::new(self.clone(), path))))
+        (state, Box::new(it.map(move |path| SPath::new(self.clone(), path))))
     }
 }
 

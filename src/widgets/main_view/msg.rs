@@ -1,6 +1,6 @@
 use crate::AnyMsg;
 use crate::experiments::focus_group::FocusUpdate;
-use crate::fs::file_front::FileFront;
+use crate::new_fs::path::SPath;
 
 #[derive(Clone, Debug)]
 pub enum MainViewMsg {
@@ -8,10 +8,10 @@ pub enum MainViewMsg {
 
     // This is called whenever item in tree is "expanded" or "collapsed".
     // I'm moving entire ChildRc, because PathBuf would allocate, and passing &Path would unleash borrow checker hell.
-    TreeExpandedFlip { expanded: bool, item: FileFront },
+    TreeExpandedFlip { expanded: bool, item: SPath },
 
     // This is called whenever a file is selected.
-    TreeSelected { item: FileFront },
+    TreeSelected { item: SPath },
 
     OpenNewFile,
 

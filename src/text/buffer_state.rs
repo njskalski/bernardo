@@ -10,8 +10,8 @@ use tree_sitter::{Point};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::regex_search::{FindError, regex_find};
-use crate::fs::file_front::FileFront;
-use crate::fs::filesystem_front::SomethingToSave;
+use crate::experiments::something_to_save::SomethingToSave;
+use crate::new_fs::path::SPath;
 use crate::Output;
 use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg};
 use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
@@ -118,7 +118,7 @@ pub struct BufferState {
 
     lang_id: Option<LangId>,
 
-    file: Option<FileFront>,
+    file: Option<SPath>,
 }
 
 impl BufferState {
@@ -142,7 +142,7 @@ impl BufferState {
         }
     }
 
-    pub fn with_file_front(self, ff: FileFront) -> Self {
+    pub fn with_file_front(self, ff: SPath) -> Self {
         Self {
             file: Some(ff),
             ..self
@@ -195,11 +195,11 @@ impl BufferState {
         }).flatten().unwrap_or(vec![])
     }
 
-    pub fn set_file_front(&mut self, ff_op: Option<FileFront>) {
+    pub fn set_file_front(&mut self, ff_op: Option<SPath>) {
         self.file = ff_op;
     }
 
-    pub fn get_file_front(&self) -> Option<&FileFront> {
+    pub fn get_file_front(&self) -> Option<&SPath> {
         self.file.as_ref()
     }
 

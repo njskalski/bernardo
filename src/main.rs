@@ -20,8 +20,6 @@ use log::{debug, error};
 
 use crate::io::crossterm_input::CrosstermInput;
 use crate::io::crossterm_output::CrosstermOutput;
-use fs::fsfref::FsfRef;
-use fs::local_filesystem_front::LocalFilesystem;
 use crate::experiments::clipboard::get_me_some_clipboard;
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
@@ -39,6 +37,8 @@ use crate::widgets::main_view::main_view::MainView;
 use crate::gladius::load_config::load_config;
 use crate::gladius::logger_setup::logger_setup;
 use crate::lsp_client::lsp_finder::LspFinder;
+use crate::new_fs::new_filesystem_front::NewFilesystemFront;
+use crate::new_fs::real_fs::RealFS;
 use crate::tsw::lang_id::LangId;
 
 mod experiments;
@@ -65,7 +65,7 @@ fn main() {
 
     let (start_dir, files) = args.paths();
 
-    let fsf: FsfRef = LocalFilesystem::new(start_dir);
+    let fsf = RealFS::new(start_dir).to_fsf();
 
     let clipboard = get_me_some_clipboard();
     let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));

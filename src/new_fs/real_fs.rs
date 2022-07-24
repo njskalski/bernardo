@@ -14,6 +14,14 @@ pub struct RealFS {
     root_path : PathBuf,
 }
 
+impl RealFS {
+    pub fn new(root_path : PathBuf) -> RealFS {
+        RealFS {
+            root_path
+        }
+    }
+}
+
 impl Debug for RealFS {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Filesystem({})", self.root_path.to_string_lossy())

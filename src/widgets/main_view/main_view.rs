@@ -5,8 +5,6 @@ use log::{debug, error, warn};
 
 use crate::{AnyMsg, ConfigRef, InputEvent, Output, SizeConstraint, Widget};
 use crate::experiments::clipboard::ClipboardRef;
-use crate::fs::file_front::FileFront;
-use crate::fs::fsfref::FsfRef;
 use crate::io::sub_output::SubOutput;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
@@ -15,11 +13,13 @@ use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::config::theme::Theme;
+use crate::new_fs::fsf_ref::FsfRef;
+use crate::new_fs::path::SPath;
 use crate::primitives::xy::XY;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
-use crate::widgets::fuzzy_search::fsf_provider::{FileFrontMsg, FsfProvider};
+use crate::widgets::fuzzy_search::fsf_provider::{SPathMsg, FsfProvider};
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
 use crate::widgets::main_view::display_state::{Focus, MainViewDisplayState};
 use crate::widgets::main_view::editor_group::EditorGroup;
@@ -44,7 +44,7 @@ pub struct MainView {
     display_state: MainViewDisplayState,
 
     // TODO PathBuf -> WrappedRcPath? See profiler.
-    tree_widget: WithScroll<TreeViewWidget<PathBuf, FileFront>>,
+    tree_widget: WithScroll<TreeViewWidget<SPath, SPath>>,
 
     editors: EditorGroup,
     no_editor: NoEditorWidget,
@@ -154,7 +154,7 @@ impl MainView {
         res
     }
 
-    pub fn open_file(&mut self, ff: FileFront) -> bool {
+    pub fn open_file(&mut self, ff: SPath) -> bool {
         debug!("opening file {:?}", ff.path());
 
         if let Some(idx) = self.editors.get_if_open(&ff) {
@@ -291,9 +291,9 @@ impl Widget for MainView {
             };
         };
 
-        if let Some(fuzzy_file_msg) = msg.as_msg::<FileFrontMsg>() {
+        if let Some(fuzzy_file_msg) = msg.as_msg::<SPathMsg>() {
             return match fuzzy_file_msg {
-                FileFrontMsg::Hit(file_front) => {
+                SPathMsg::Hit(file_front) => {
                     if file_front.is_file() {
                         self.open_file(file_front.clone());
                         self.hover = None;

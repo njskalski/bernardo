@@ -1,13 +1,13 @@
 use crate::AnyMsg;
 use crate::experiments::focus_group::FocusUpdate;
-use crate::fs::file_front::FileFront;
+use crate::new_fs::path::SPath;
 
 #[derive(Clone, Debug)]
 pub enum EditorViewMsg {
     Save,
     SaveAs,
     OnSaveAsCancel,
-    OnSaveAsHit { ff: FileFront },
+    OnSaveAsHit { ff: SPath },
 
     FocusUpdateMsg(FocusUpdate),
 

@@ -3,34 +3,33 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use crate::fs::filesystem_front::FilesystemFront;
 use crate::new_fs::new_filesystem_front::NewFilesystemFront;
 use crate::new_fs::path::{PathCell, SPath};
 
 // Chaching should be implemented here or nowhere.
 
 #[derive(Clone, Debug)]
-pub struct NfsfRef{
+pub struct FsfRef {
     pub fs : Arc<Box<dyn NewFilesystemFront>>,
 }
 
-impl PartialEq for NfsfRef {
+impl PartialEq for FsfRef {
     fn eq(&self, other: &Self) -> bool {
         self.fs.hash_seed() == other.fs.hash_seed() &&
             self.fs.root_path() == other.fs.root_path()
     }
 }
 
-impl Eq for NfsfRef {}
+impl Eq for FsfRef {}
 
-impl Hash for NfsfRef {
+impl Hash for FsfRef {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write_usize(self.fs.hash_seed());
         self.fs.root_path().hash(state)
     }
 }
 
-impl NfsfRef {
+impl FsfRef {
     pub fn root(&self) -> SPath {
         SPath::head(self.clone())
     }
@@ -60,5 +59,18 @@ impl NfsfRef {
         }
 
         Some(spath)
+    }
+}
+
+#[macro_export]
+macro_rules! spath{
+    ( $fsf:expr ) => {
+        fsf.root()
+    }
+    ( $fsf:expr, $($cell:expr), *) => {
+        let mut sp = fsf.root();
+        $(
+            sp =
+        )*
     }
 }

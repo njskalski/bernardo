@@ -11,14 +11,14 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use crate::fs::filesystem_front::SomethingToSave;
-use crate::fs::fsfref::FsfRef;
+use crate::fs::FsfRef::FsfRef;
 use crate::fs::read_error::ReadError;
 use crate::fs::write_error::WriteError;
 use crate::io::loading_state::LoadingState;
 use crate::widgets::list_widget::{ListWidgetItem, ListWidgetProvider};
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
-type FilterType = fn(&FileFront) -> bool;
+type FilterType = fn(&SPath) -> bool;
 
 pub struct FileChildrenCache {
     pub loading_state: LoadingState,
@@ -78,13 +78,13 @@ impl Default for FileChildrenCache {
 }
 
 #[derive(Clone, Debug, Hash)]
-pub struct FileFront {
+pub struct SPath {
     // TODO I have not decided or forgot what I decided, whether this path is relative to fsf root or not.
     path: Arc<PathBuf>,
     fsf: FsfRef,
 }
 
-impl PartialEq for FileFront {
+impl PartialEq for SPath {
     fn eq(&self, other: &Self) -> bool {
         let same_thing: bool = self.fsf == other.fsf && self.path == other.path;
 
@@ -98,10 +98,10 @@ impl PartialEq for FileFront {
     }
 }
 
-impl Eq for FileFront {}
+impl Eq for SPath {}
 
-impl FileFront {
-    pub fn new(fsf: FsfRef, path: Arc<PathBuf>) -> FileFront {
+impl SPath {
+    pub fn new(fsf: FsfRef, path: Arc<PathBuf>) -> SPath {
         Self { path, fsf }
     }
 
@@ -128,7 +128,7 @@ impl FileFront {
         self.fsf.0.is_file(&self.path)
     }
 
-    pub fn children(&self) -> Box<dyn Iterator<Item=FileFront> + '_> {
+    pub fn children(&self) -> Box<dyn Iterator<Item=SPath> + '_> {
         self.fsf.get_children(&self.path).1
     }
 
@@ -158,7 +158,7 @@ impl FileFront {
     /*
     Fails only if parent is outside root
      */
-    pub fn parent(&self) -> Option<FileFront> {
+    pub fn parent(&self) -> Option<SPath> {
         self.path.parent().map(|f| self.fsf.get_item(f)).flatten()
     }
 
@@ -181,7 +181,7 @@ impl FileFront {
             })
     }
 
-    pub fn descendant<T: AsRef<Path> + ?Sized>(&self, suffix: &T) -> Option<FileFront> {
+    pub fn descendant<T: AsRef<Path> + ?Sized>(&self, suffix: &T) -> Option<SPath> {
         let new_path = self.path().join(suffix);
         if self.fsf.exists(&new_path) {
             self.fsf.get_item(&new_path)
@@ -221,7 +221,7 @@ impl FileFront {
     }
 }
 
-impl TreeViewNode<PathBuf> for FileFront {
+impl TreeViewNode<PathBuf> for SPath {
     fn id(&self) -> &PathBuf {
         &self.path
     }
@@ -262,7 +262,7 @@ impl TreeViewNode<PathBuf> for FileFront {
     }
 }
 
-impl ListWidgetItem for FileFront {
+impl ListWidgetItem for SPath {
     fn get_column_name(_idx: usize) -> &'static str {
         "name"
     }
@@ -289,29 +289,29 @@ impl ListWidgetItem for FileFront {
 }
 
 #[derive(Clone)]
-pub struct FilteredFileFront {
-    ff: FileFront,
+pub struct FilteredSPath {
+    ff: SPath,
     filter: FilterType,
 }
 
-impl Debug for FilteredFileFront {
+impl Debug for FilteredSPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "[filtered {:?}]", self.ff)
     }
 }
 
-impl FilteredFileFront {
-    pub fn new(ff: FileFront, filter: FilterType) -> Self {
+impl FilteredSPath {
+    pub fn new(ff: SPath, filter: FilterType) -> Self {
         Self { ff, filter }
     }
 }
 
-impl ListWidgetProvider<FileFront> for FilteredFileFront {
+impl ListWidgetProvider<SPath> for FilteredSPath {
     fn len(&self) -> usize {
         self.ff.children().filter(|x| (self.filter)(x)).count()
     }
 
-    fn get(&self, idx: usize) -> Option<FileFront> {
+    fn get(&self, idx: usize) -> Option<SPath> {
         self.ff
             .children()
             .filter(|x| (self.filter)(x))

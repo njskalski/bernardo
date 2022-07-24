@@ -2,12 +2,13 @@ use std::rc::Rc;
 
 use log::error;
 
-use crate::{AnyMsg, ConfigRef, FsfRef, TreeSitterWrapper};
+use crate::{AnyMsg, ConfigRef,  TreeSitterWrapper};
 use crate::experiments::beter_deref_str::BetterDerefStr;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::filename_to_language::filename_to_language;
-use crate::fs::file_front::FileFront;
-use crate::fs::read_error::ReadError;
+use crate::new_fs::fsf_ref::FsfRef;
+use crate::new_fs::path::SPath;
+use crate::new_fs::read_error::ReadError;
 use crate::text::buffer_state::BufferState;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::fuzzy_search::helpers::is_subsequence;
@@ -56,7 +57,7 @@ impl EditorGroup {
     }
 
     // TODO is it on error escalation path after failed read?
-    pub fn open_file(&mut self, tree_sitter: Rc<TreeSitterWrapper>, ff: FileFront, clipboard: ClipboardRef) -> Result<usize, ReadError> {
+    pub fn open_file(&mut self, tree_sitter: Rc<TreeSitterWrapper>, ff: SPath, clipboard: ClipboardRef) -> Result<usize, ReadError> {
         let file_contents = ff.read_entire_file_to_rope()?;
         let lang_id_op = filename_to_language(ff.path());
 
@@ -78,7 +79,7 @@ impl EditorGroup {
         Ok(res)
     }
 
-    pub fn get_if_open(&self, ff: &FileFront) -> Option<usize> {
+    pub fn get_if_open(&self, ff: &SPath) -> Option<usize> {
         for (idx, editor) in self.editors.iter().enumerate() {
             if let Some(cff) = editor.buffer_state().get_file_front() {
                 if cff == ff {
@@ -125,7 +126,7 @@ impl EditorGroup {
 #[derive(Clone, Debug)]
 enum BufferDesc {
     // pos is position in editors vector
-    File { pos: usize, ff: FileFront },
+    File { pos: usize, ff: SPath },
     /*
     id corresponds to display name, pos to position in EditorGroup.editors vector
      */

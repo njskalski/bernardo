@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use crate::fs::file_front::FileFront;
 use crate::LangId;
 use crate::lsp_client::lsp_client::LspWrapper;
 use crate::new_fs::path::SPath;

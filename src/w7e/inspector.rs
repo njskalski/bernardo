@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use log::error;
 
-use crate::fs::file_front::FileFront;
 use crate::w7e::handler::Handler;
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::project_scope::ProjectScope;
