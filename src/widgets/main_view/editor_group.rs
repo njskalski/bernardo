@@ -59,7 +59,7 @@ impl EditorGroup {
     // TODO is it on error escalation path after failed read?
     pub fn open_file(&mut self, tree_sitter: Rc<TreeSitterWrapper>, ff: SPath, clipboard: ClipboardRef) -> Result<usize, ReadError> {
         let file_contents = ff.read_entire_file_to_rope()?;
-        let lang_id_op = filename_to_language(ff.path());
+        let lang_id_op = filename_to_language(&ff);
 
         self.editors.push(
             EditorView::new(self.config.clone(), tree_sitter.clone(), ff.fsf().clone(), clipboard)
@@ -68,9 +68,7 @@ impl EditorGroup {
                         .with_text_from_rope(file_contents, lang_id_op)
                         .with_file_front(ff.clone())
                 ).with_path_op(
-                ff.path().parent().map(|p|
-                    ff.fsf().get_item(p)
-                ).flatten().map(|f| f.path_rc().clone())
+                ff.parent()
             ),
         );
 
@@ -136,14 +134,19 @@ enum BufferDesc {
 impl Item for BufferDesc {
     fn display_name(&self) -> BetterDerefStr {
         match self {
-            BufferDesc::File { pos, ff } => BetterDerefStr::Str(ff.display_file_name()),
+            BufferDesc::File { pos, ff } => {
+                BetterDerefStr::Str(ff.last_name().unwrap_or("error getting filename"))
+            },
             BufferDesc::Unnamed { pos, id } => BetterDerefStr::String(format!("Unnamed #{}", id)),
         }
     }
 
     fn comment(&self) -> Option<BetterDerefStr> {
         match self {
-            BufferDesc::File { pos, ff } => Some(BetterDerefStr::Str(ff.display_last_dir_name(true))),
+            BufferDesc::File { pos, ff } => {
+                // Some(BetterDerefStr::Str(ff.display_last_dir_name(true)))
+                Some(BetterDerefStr::Str(ff.display_name().as_ref_str()))
+            },
             _ => None,
         }
     }

@@ -5,6 +5,7 @@ use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use log::{debug, error, warn};
+use streaming_iterator::StreamingIterator;
 use crate::new_fs::dir_entry::DirEntry;
 use crate::new_fs::new_filesystem_front::NewFilesystemFront;
 use crate::new_fs::fsf_ref::FsfRef;
@@ -160,6 +161,10 @@ impl NewFilesystemFront for MockFS {
         } else {
             false
         }
+    }
+
+    fn overwrite_with(&self, path: &Path, stream: &dyn StreamingIterator<Item=[u8]>) {
+        todo!()
     }
 }
 

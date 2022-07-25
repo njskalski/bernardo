@@ -3,8 +3,10 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use streaming_iterator::StreamingIterator;
 use crate::new_fs::new_filesystem_front::NewFilesystemFront;
 use crate::new_fs::path::{PathCell, SPath};
+use crate::new_fs::write_error::WriteError;
 
 // Chaching should be implemented here or nowhere.
 
@@ -60,17 +62,41 @@ impl FsfRef {
 
         Some(spath)
     }
+
+    pub fn display_name(&self) -> &str {
+        "TODOdisplay_name"
+    }
+
+    pub fn overwrite_with<P: AsRef<Path>, T : StreamingIterator<Item=[u8]>>(&self, path : P, stream : T) -> Result<usize, WriteError> {
+        let path = path.as_ref();
+
+    }
 }
 
 #[macro_export]
 macro_rules! spath{
-    ( $fsf:expr ) => {
-        fsf.root()
-    }
-    ( $fsf:expr, $($cell:expr), *) => {
-        let mut sp = fsf.root();
+    ( $fsf:expr $(, $c:expr)* ) => {{
+        let mut sp = $fsf.root();
         $(
-            sp =
+            sp = sp.descendant_unchecked($c);
         )*
+        sp
+    }};
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+    use crate::de;
+    use crate::new_fs::mock_fs::MockFS;
+    use crate::new_fs::new_filesystem_front::NewFilesystemFront;
+    use crate::new_fs::read_error::ReadError;
+
+    #[test]
+    fn spath_macro() {
+        let mockfs = MockFS::new("/").to_fsf();
+        let sp0 = spath!(mockfs);
+        let sp1 = spath!(mockfs, "a");
+        let sp2 = spath!(mockfs, "a", "b");
     }
 }

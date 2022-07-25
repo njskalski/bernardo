@@ -63,7 +63,7 @@ impl MainView {
                tree_sitter: Rc<TreeSitterWrapper>,
                fsf: FsfRef,
                clipboard: ClipboardRef) -> MainView {
-        let root_node = fsf.get_root();
+        let root_node = fsf.root();
         let tree = TreeViewWidget::new(root_node)
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
@@ -155,7 +155,7 @@ impl MainView {
     }
 
     pub fn open_file(&mut self, ff: SPath) -> bool {
-        debug!("opening file {:?}", ff.path());
+        debug!("opening file {:?}", ff);
 
         if let Some(idx) = self.editors.get_if_open(&ff) {
             self.display_state.focus = Focus::Editor;
@@ -299,13 +299,13 @@ impl Widget for MainView {
                         self.hover = None;
                         None
                     } else if file_front.is_dir() {
-                        if !self.tree_widget.internal_mut().set_path(file_front.fsf(), file_front.path_rc()) {
+                        if !self.tree_widget.internal_mut().set_path(file_front) {
                             error!("failed to set path")
                         }
                         self.hover = None;
                         None
                     } else {
-                        error!("ff {:?} is neither file nor dir!", file_front.path());
+                        error!("ff {:?} is neither file nor dir!", file_front);
                         None
                     }
                 }

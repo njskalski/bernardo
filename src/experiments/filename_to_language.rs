@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::path::Path;
+use crate::new_fs::path::SPath;
 
 use crate::tsw::lang_id::LangId;
 
@@ -26,8 +27,9 @@ lazy_static! {
     };
 }
 
-pub fn filename_to_language(path: &Path) -> Option<LangId> {
-    path.extension().map(|ext| ext.to_str()).flatten().map(|ext|
-        EXT_TO_LANGUAGE.get(ext).map(|p| *p)
-    ).flatten()
+pub fn filename_to_language(path: &SPath) -> Option<LangId> {
+    // path.extension().map(|ext| ext.to_str()).flatten().map(|ext|
+    //     EXT_TO_LANGUAGE.get(ext).map(|p| *p)
+    // ).flatten()
+    todo!()
 }

@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::io::empty;
 
 use crate::{AnyMsg};
 use crate::experiments::beter_deref_str::BetterDerefStr;
@@ -40,11 +41,11 @@ impl AnyMsg for SPathMsg {}
 
 impl Item for SPath {
     fn display_name(&self) -> BetterDerefStr {
-        BetterDerefStr::Str(self.display_file_name())
+        BetterDerefStr::Str(self.display_name().as_ref_str())
     }
 
     fn comment(&self) -> Option<BetterDerefStr> {
-        Some(BetterDerefStr::Str(self.display_last_dir_name(true)))
+        Some(BetterDerefStr::Str(self.display_name().as_ref_str()))
     }
 
     fn on_hit(&self) -> Box<dyn AnyMsg> {
@@ -58,7 +59,7 @@ impl ItemsProvider for FsfProvider {
     }
 
     fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
-        let items = self.fsf.fuzzy_files_it(query, limit, self.consider_ignores).1.map(|f| Box::new(f) as Box<dyn Item>);
-        Box::new(items)
+        // let items = self.fsf.fuzzy_files_it(query, limit, self.consider_ignores).1.map(|f| Box::new(f) as Box<dyn Item>);
+        Box::new(std::iter::empty())
     }
 }

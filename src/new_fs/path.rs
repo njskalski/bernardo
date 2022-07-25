@@ -2,11 +2,13 @@ use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use ropey::Rope;
 use serde::de::DeserializeOwned;
 use streaming_iterator::StreamingIterator;
 use syntect::html::IncludeBackground::No;
 use crate::new_fs::fsf_ref::FsfRef;
 use crate::new_fs::read_error::ReadError;
+use crate::new_fs::write_error::WriteError;
 
 // TODO add some invariants.
 
@@ -112,13 +114,25 @@ impl SPath {
         ron::de::from_bytes(&bytes).map_err(|e| e.into())
     }
 
+    pub fn read_entire_file_to_string(&self) -> Result<String, ReadError> {
+        let bytes = self.read_entire_file()?;
+        Ok(String::from_utf8(bytes)?)
+    }
+
+    pub fn read_entire_file_to_rope(&self) -> Result<Rope, ReadError> {
+        let bytes = self.read_entire_file()?;
+        Ok(ropey::Rope::from_reader(&bytes)?)
+    }
+
     pub fn is_dir(&self) -> bool {
+        // TODO optimise
         let path : PathBuf = self.relative_path();
         let fsf = self.fsf();
         fsf.fs.is_dir(&path)
     }
 
     pub fn is_file(&self) -> bool {
+        // TODO optimise
         let path : PathBuf = self.relative_path();
         let fsf = self.fsf();
         fsf.fs.is_file(&path)
@@ -135,11 +149,15 @@ impl SPath {
         root_path.join(path)
     }
 
-    pub fn parent(&self) -> Option<&SPath> {
+    pub fn parent_ref(&self) -> Option<&SPath> {
         match self.0.as_ref() {
             PathCell::Head(_) => None,
             PathCell::Segment { prev, cell } => Some(prev),
         }
+    }
+
+    pub fn parent(&self) -> Option<SPath> {
+        self.parent_ref().map(|p| p.clone())
     }
 
     pub fn last_name(&self) -> Option<&str> {
@@ -152,7 +170,7 @@ impl SPath {
     }
 
     pub fn ancestors_and_self(&self) -> ParentIter {
-        ParentIter(self.parent().map(|c| c.clone()))
+        ParentIter(self.parent_ref().map(|c| c.clone()))
     }
 
     pub fn ancestors_and_self_ref(&self) -> ParentRefIter {
@@ -167,6 +185,18 @@ impl SPath {
         }
 
         false
+    }
+
+    pub fn exists(&self) -> bool {
+        // TODO optimise
+        let fsf = self.fsf();
+        let p = self.relative_path();
+        fsf.exists(&p)
+    }
+
+    pub fn overwrite_with<T : StreamingIterator<Item=[u8]>>(&self, stream : T) -> Result<usize, WriteError> {
+        let fsf = self.fsf();
+        fsf.overwrite_with(&self, stream)
     }
 }
 
@@ -190,7 +220,7 @@ impl Iterator for ParentIter {
 
     fn next(&mut self) -> Option<Self::Item> {
         let current = self.0.take();
-        self.0 = current.map(|c| c.parent()).flatten().map(|c| c.clone());
+        self.0 = current.map(|c| c.parent_ref()).flatten().map(|c| c.clone());
         current
     }
 }

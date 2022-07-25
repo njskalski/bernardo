@@ -5,6 +5,7 @@ use std::io::{Error, Read};
 use std::path::{Path, PathBuf};
 use filesystem::ReadDir;
 use log::{debug, error};
+use streaming_iterator::StreamingIterator;
 use crate::new_fs::dir_entry::DirEntry;
 use crate::new_fs::new_filesystem_front::NewFilesystemFront;
 use crate::new_fs::path::SPath;
@@ -71,6 +72,10 @@ impl NewFilesystemFront for RealFS {
     }
 
     fn exists(&self, path: &Path) -> bool {
+        todo!()
+    }
+
+    fn overwrite_with(&self, path: &Path, stream: &dyn StreamingIterator<Item=[u8]>) {
         todo!()
     }
 }

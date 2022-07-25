@@ -13,6 +13,7 @@ use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::new_fs::fsf_ref::FsfRef;
+use crate::new_fs::path::SPath;
 use crate::primitives::common_edit_msgs::CommonEditMsg;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
@@ -68,7 +69,7 @@ pub struct EditorView {
     If none, we'll use the fsf root.
     See get_save_file_dialog_path for details.
      */
-    start_path: Option<Arc<PathBuf>>,
+    start_path: Option<SPath>,
 
     // this is a workaround to set focus into something not visible yet in next frame.
     deferred_focus: Option<WID>,
@@ -114,14 +115,14 @@ impl EditorView {
         }
     }
 
-    pub fn with_path(self, path: Arc<PathBuf>) -> Self {
+    pub fn with_path(self, path: SPath) -> Self {
         Self {
             start_path: Some(path),
             ..self
         }
     }
 
-    pub fn with_path_op(self, path_op: Option<Arc<PathBuf>>) -> Self {
+    pub fn with_path_op(self, path_op: Option<SPath>) -> Self {
         Self {
             start_path: path_op,
             ..self
