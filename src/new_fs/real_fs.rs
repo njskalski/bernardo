@@ -10,6 +10,7 @@ use crate::new_fs::dir_entry::DirEntry;
 use crate::new_fs::new_filesystem_front::NewFilesystemFront;
 use crate::new_fs::path::SPath;
 use crate::new_fs::read_error::{ListError, ReadError};
+use crate::new_fs::write_error::WriteError;
 
 pub struct RealFS {
     root_path : PathBuf,
@@ -75,7 +76,7 @@ impl NewFilesystemFront for RealFS {
         todo!()
     }
 
-    fn overwrite_with(&self, path: &Path, stream: &dyn StreamingIterator<Item=[u8]>) {
+    fn overwrite_with(&self, path: &Path, stream: &dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
         todo!()
     }
 }

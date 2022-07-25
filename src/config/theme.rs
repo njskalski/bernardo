@@ -160,7 +160,8 @@ const DEFAULT_THEME_PATH: &'static str = "themes/default.ron";
 
 impl Theme {
     /*
-    uses default filesystem (std). It is actually needed, it's unlikely that we want the theme config to be in
+    uses default filesystem (std). It is actually needed, the config might need to be initialized before filesystem AND it's most likely
+    not local to any workspace.
      */
     pub fn load_from_file(path: &Path) -> Result<Self, LoadError> {
         let b = std::fs::read(path)?;

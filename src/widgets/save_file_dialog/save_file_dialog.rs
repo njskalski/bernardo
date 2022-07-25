@@ -189,7 +189,7 @@ impl SaveFileDialogWidget {
     If set to a dir, only tree will be expanded.
     If set to a file, both tree will be expanded, and editbox filled.
      */
-    pub fn set_path(&mut self, path: &SPath) -> bool {
+    pub fn set_path(&mut self, path: SPath) -> bool {
         debug!("setting path to {:?}", path);
         todo!()
         //
@@ -265,7 +265,7 @@ impl SaveFileDialogWidget {
         // true
     }
 
-    pub fn with_path(mut self, path: &SPath) -> Self {
+    pub fn with_path(mut self, path: SPath) -> Self {
         self.set_path(path);
         self
     }
@@ -465,7 +465,7 @@ impl Widget for SaveFileDialogWidget {
                 None
             }
             SaveFileDialogMsg::TreeHighlighted(node) => {
-                if !self.set_path(node) {
+                if !self.set_path(node.clone()) {
                     warn!("failed to set path {:?}", node);
                 }
 

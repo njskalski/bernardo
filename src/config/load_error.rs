@@ -5,6 +5,7 @@ use crate::new_fs::read_error::ReadError;
 #[derive(Debug)]
 pub enum LoadError {
     ReadError(ReadError),
+    IoError(std::io::Error),
     DeserializationError(ron::Error),
 }
 
@@ -22,7 +23,7 @@ impl From<ReadError> for LoadError {
 
 impl From<std::io::Error> for LoadError {
     fn from(ioe: std::io::Error) -> Self {
-        LoadError::ReadError(ReadError::IoError(ioe))
+        LoadError::ReadError(ReadError::from(ioe))
     }
 }
 

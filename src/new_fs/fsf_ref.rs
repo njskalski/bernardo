@@ -67,9 +67,8 @@ impl FsfRef {
         "TODOdisplay_name"
     }
 
-    pub fn overwrite_with<P: AsRef<Path>, T : StreamingIterator<Item=[u8]>>(&self, path : P, stream : T) -> Result<usize, WriteError> {
-        let path = path.as_ref();
-
+    pub fn overwrite_with(&self, path : &Path, stream : &dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
+        self.fs.overwrite_with(path, stream)
     }
 }
 

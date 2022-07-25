@@ -6,4 +6,3 @@ pub mod clipboard;
 pub mod beter_deref_str;
 pub mod regex_search;
 pub mod pretty_ron;
-pub mod something_to_save;

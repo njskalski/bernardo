@@ -3,14 +3,13 @@ use std::ops::Range;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
-use ropey::iter::{Chars, Chunks};
+use ropey::iter::{Bytes, Chars, Chunks};
 use ropey::Rope;
 use streaming_iterator::StreamingIterator;
 use tree_sitter::{Point};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::regex_search::{FindError, regex_find};
-use crate::experiments::something_to_save::SomethingToSave;
 use crate::new_fs::path::SPath;
 use crate::Output;
 use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg};
@@ -293,6 +292,13 @@ impl BufferState {
             }
         }
     }
+    
+    pub fn streaming_iterator(&self) -> BufferStateStreamingIterator {
+        BufferStateStreamingIterator {
+            chunks: self.chunks(),
+            curr_chunk: None
+        }
+    }
 }
 
 impl ToString for BufferState {
@@ -470,8 +476,19 @@ impl Buffer for BufferState {
     }
 }
 
-impl SomethingToSave for BufferState {
-    fn get_slices(&self) -> Box<dyn Iterator<Item=&[u8]> + '_> {
-        Box::new(self.text().rope.chunks().map(|chunk| chunk.as_bytes()))
+struct BufferStateStreamingIterator<'a> {
+    chunks : Chunks<'a>,
+    curr_chunk : Option<&'a str>,
+}
+
+impl<'a> StreamingIterator for BufferStateStreamingIterator<'a> {
+    type Item = [u8];
+
+    fn advance(&mut self) {
+        self.curr_chunk = self.chunks.next();
+    }
+
+    fn get(&self) -> Option<&Self::Item> {
+        self.curr_chunk.map(|c| c.as_bytes())
     }
 }

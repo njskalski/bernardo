@@ -1,4 +1,6 @@
 use std::io::Error;
+use std::str::Utf8Error;
+use std::string::FromUtf8Error;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ReadError {
@@ -6,6 +8,7 @@ pub enum ReadError {
     NotAFilePath,
     // TODO separate?
     DeError(String),
+    Utf8Error(std::str::Utf8Error),
     UnmappedError(String),
 }
 
@@ -31,5 +34,17 @@ impl From<std::io::Error> for ListError {
 impl From<ron::de::Error> for ReadError {
     fn from(e: ron::Error) -> Self {
         ReadError::DeError(e.to_string())
+    }
+}
+
+impl From<Utf8Error> for ReadError {
+    fn from(ue: Utf8Error) -> Self {
+        ReadError::Utf8Error(ue)
+    }
+}
+
+impl From<FromUtf8Error> for ReadError {
+    fn from(fue: FromUtf8Error) -> Self {
+        ReadError::Utf8Error(fue.utf8_error())
     }
 }

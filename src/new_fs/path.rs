@@ -2,6 +2,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use regex::internal::Input;
 use ropey::Rope;
 use serde::de::DeserializeOwned;
 use streaming_iterator::StreamingIterator;
@@ -62,8 +63,8 @@ impl SPath {
     }
 
     pub fn append(prev : SPath, segment : PathBuf) -> SPath {
-        debug_assert!(segment.len() > 0);
-        debug_assert!(segment != "..");
+        debug_assert!(segment.to_string_lossy().len() > 0);
+        debug_assert!(segment.to_string_lossy() != "..");
         SPath(
             Arc::new(PathCell::Segment { prev, cell: segment })
         )
@@ -89,7 +90,7 @@ impl SPath {
     //  - ".."
     //  - some other nonsensical string that I will add here later.
     pub fn descendant_unchecked<P: AsRef<Path>>(&self, path : P) -> Option<SPath> {
-        if path.as_ref().len() == 0 {
+        if path.as_ref().to_string_lossy().len() == 0 {
             return None;
         }
 
@@ -121,7 +122,7 @@ impl SPath {
 
     pub fn read_entire_file_to_rope(&self) -> Result<Rope, ReadError> {
         let bytes = self.read_entire_file()?;
-        Ok(ropey::Rope::from_reader(&bytes)?)
+        Ok(ropey::Rope::from_reader(&*bytes)?)
     }
 
     pub fn is_dir(&self) -> bool {
@@ -174,11 +175,12 @@ impl SPath {
     }
 
     pub fn ancestors_and_self_ref(&self) -> ParentRefIter {
-        ParentRefIter(self)
+        ParentRefIter(Some(self))
     }
 
     pub fn is_parent_of(&self, other : &SPath) -> bool {
-        while let Some(parent) = other.ancestors_and_self_ref() {
+        let mut iter = other.ancestors_and_self_ref();
+        while let Some(parent) = iter.next() {
             if self == parent {
                 return true;
             }
@@ -196,7 +198,8 @@ impl SPath {
 
     pub fn overwrite_with<T : StreamingIterator<Item=[u8]>>(&self, stream : T) -> Result<usize, WriteError> {
         let fsf = self.fsf();
-        fsf.overwrite_with(&self, stream)
+        let path = self.relative_path();
+        fsf.overwrite_with(&path, &stream)
     }
 }
 
@@ -207,7 +210,7 @@ impl<'a> StreamingIterator for ParentRefIter<'a> {
     type Item = SPath;
 
     fn advance(&mut self) {
-        self.0 = self.0.parent();
+        self.0 = self.0.map(|f| f.parent_ref()).flatten();
     }
 
     fn get(&self) -> Option<&Self::Item> {

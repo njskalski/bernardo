@@ -200,7 +200,7 @@ impl EditorView {
         let buffer = self.editor.internal().buffer();
 
         if let Some(ff) = buffer.get_file_front() {
-            ff.overwrite_with(buffer);
+            ff.overwrite_with(buffer.streaming_iterator());
         } else {
             self.open_save_as_dialog()
         }
@@ -225,22 +225,14 @@ impl EditorView {
         self.hover_dialog = Some(save_file_dialog);
     }
 
-    fn positively_save_raw(&mut self, path: &Path) {
-        let ff = match self.fsf.get_item(path) {
-            None => {
-                error!("attempted saving beyond root path");
-                return;
-            }
-            Some(p) => p,
-        };
-
+    fn positively_save_raw(&mut self, path: &SPath) {
         // setting the file path
         let buffer = self.editor.internal_mut().buffer_mut();
-        buffer.set_file_front(Some(ff.clone()));
+        buffer.set_file_front(Some(path.clone()));
 
         // updating the "save as dialog" starting position
-        ff.parent().map(|_f| {
-            self.start_path = Some(ff.path_rc().clone())
+        path.parent().map(|_| {
+            self.start_path = Some(path.clone())
         }).unwrap_or_else(|| {
             error!("failed setting save_as_dialog starting position - most likely parent is outside fsf root");
         });
@@ -250,17 +242,17 @@ impl EditorView {
     This returns a (absolute) file path to be used with save_file_dialog. It can but does not have to
     contain filename part.
      */
-    fn get_save_file_dialog_path(&self) -> &Arc<PathBuf> {
+    fn get_save_file_dialog_path(&self) -> SPath {
         let buffer = self.editor.internal().buffer();
         if let Some(ff) = buffer.get_file_front() {
-            return ff.path_rc();
+            return ff.clone();
         };
 
         if let Some(sp) = self.start_path.as_ref() {
-            return sp;
+            return sp.clone();
         }
 
-        self.fsf.get_root_path()
+        self.fsf.root()
     }
 
     pub fn buffer_state(&self) -> &BufferState {
@@ -439,7 +431,7 @@ impl Widget for EditorView {
                 }
                 EditorViewMsg::OnSaveAsHit { ff } => {
                     // TODO handle errors
-                    ff.overwrite_with(self.editor.internal().buffer());
+                    ff.overwrite_with(self.editor.internal().buffer().streaming_iterator());
                     self.hover_dialog = None;
                     None
                 }
