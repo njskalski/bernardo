@@ -476,7 +476,7 @@ impl Buffer for BufferState {
     }
 }
 
-struct BufferStateStreamingIterator<'a> {
+pub struct BufferStateStreamingIterator<'a> {
     chunks : Chunks<'a>,
     curr_chunk : Option<&'a str>,
 }

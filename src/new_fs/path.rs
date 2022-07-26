@@ -78,8 +78,6 @@ impl SPath {
     }
 
     pub fn descendant_checked<P: AsRef<Path>>(&self, path : P) -> Option<SPath>{
-
-
         let fzf = self.fsf();
         let full_path = self.relative_path().join(path.as_ref());
         fzf.descendant_checked(full_path)
@@ -165,7 +163,8 @@ impl SPath {
         match self.0.as_ref() {
             PathCell::Head(_) => Some("<root>"),
             PathCell::Segment { prev, cell } => {
-                Some(cell.to_string_lossy().as_ref())
+                // TODO
+                cell.to_str()
             }
         }
     }
@@ -203,8 +202,8 @@ impl SPath {
     }
 }
 
-struct ParentIter(Option<SPath>);
-struct ParentRefIter<'a>(Option<&'a SPath>);
+pub struct ParentIter(Option<SPath>);
+pub struct ParentRefIter<'a>(Option<&'a SPath>);
 
 impl<'a> StreamingIterator for ParentRefIter<'a> {
     type Item = SPath;
@@ -223,7 +222,7 @@ impl Iterator for ParentIter {
 
     fn next(&mut self) -> Option<Self::Item> {
         let current = self.0.take();
-        self.0 = current.map(|c| c.parent_ref()).flatten().map(|c| c.clone());
+        self.0 = current.as_ref().map(|c| c.parent_ref()).flatten().map(|c| c.clone());
         current
     }
 }

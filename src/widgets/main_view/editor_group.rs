@@ -144,8 +144,8 @@ impl Item for BufferDesc {
     fn comment(&self) -> Option<BetterDerefStr> {
         match self {
             BufferDesc::File { pos, ff } => {
-                // Some(BetterDerefStr::Str(ff.display_last_dir_name(true)))
-                Some(BetterDerefStr::Str(ff.display_name().as_ref_str()))
+                // TODO this is shit
+                Some(BetterDerefStr::String(ff.display_name().as_ref_str().to_string()))
             },
             _ => None,
         }

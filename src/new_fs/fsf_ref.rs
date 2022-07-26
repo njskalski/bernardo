@@ -44,16 +44,20 @@ impl FsfRef {
         self.fs.as_ref().exists(path.as_ref())
     }
 
+
+
     pub fn descendant_checked<P: AsRef<Path>>(&self, path : P) -> Option<SPath>  {
         let path = path.as_ref();
         if !self.fs.exists(path) {
             return None;
         }
 
-        //TODO can add caching, but not now.
+        self.descendant_unchecked(path)
+    }
 
+    pub fn descendant_unchecked<P: AsRef<Path>>(&self, path : P) -> Option<SPath> {
         let mut spath = SPath::head(self.clone());
-        let mut it = path.components();
+        let mut it = path.as_ref().components();
 
         while let Some(component) = it.next() {
             let segment = PathBuf::from((&component as &AsRef<Path>).as_ref());
@@ -75,9 +79,9 @@ impl FsfRef {
 #[macro_export]
 macro_rules! spath{
     ( $fsf:expr $(, $c:expr)* ) => {{
-        let mut sp = $fsf.root();
+        let mut sp : Option<crate::new_fs::path::SPath> = Some($fsf.root());
         $(
-            sp = sp.descendant_unchecked($c);
+            sp = sp.map(|x| x.descendant_unchecked($c)).flatten();
         )*
         sp
     }};

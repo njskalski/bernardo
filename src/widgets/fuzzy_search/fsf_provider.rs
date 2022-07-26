@@ -41,11 +41,11 @@ impl AnyMsg for SPathMsg {}
 
 impl Item for SPath {
     fn display_name(&self) -> BetterDerefStr {
-        BetterDerefStr::Str(self.display_name().as_ref_str())
+        BetterDerefStr::String(self.display_name().as_ref_str().to_string())
     }
 
     fn comment(&self) -> Option<BetterDerefStr> {
-        Some(BetterDerefStr::Str(self.display_name().as_ref_str()))
+        Some(BetterDerefStr::String(self.display_name().as_ref_str().to_string()))
     }
 
     fn on_hit(&self) -> Box<dyn AnyMsg> {

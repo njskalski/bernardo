@@ -167,6 +167,12 @@ impl NewFilesystemFront for MockFS {
     fn overwrite_with(&self, path: &Path, stream: &dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
         todo!()
     }
+
+    fn to_fsf(self) -> FsfRef {
+        FsfRef {
+            fs: Arc::new(Box::new(self))
+        }
+    }
 }
 
 // these are purely API tests, like "does it have semantics I like", not "does it work well"

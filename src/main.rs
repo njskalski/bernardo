@@ -106,7 +106,7 @@ fn main() {
     let mut main_view = MainView::new(config_ref.clone(), tree_sitter, fsf.clone(), clipboard);
 
     for f in files.iter() {
-        if !fsf.get_item(f).map(|ff| main_view.open_file(ff)).unwrap_or(false) {
+        if !fsf.descendant_checked(f).map(|ff| main_view.open_file(ff)).unwrap_or(false) {
             error!("failed opening file {:?}", f);
         }
     }
@@ -209,12 +209,12 @@ fn main() {
                     }
                 };
             }
-            recv(fsf.tick_recv()) -> msg => {
-                // debug!("processing tick: {:?}", msg);
-                msg.map(|_| fsf.tick()).unwrap_or_else(|e| {
-                    error!("failed receiving fsf_tick: {}", e);
-                });
-            }
+            // recv(fsf.tick_recv()) -> msg => {
+            //     // debug!("processing tick: {:?}", msg);
+            //     msg.map(|_| fsf.tick()).unwrap_or_else(|e| {
+            //         error!("failed receiving fsf_tick: {}", e);
+            //     });
+            // }
         }
     }
 

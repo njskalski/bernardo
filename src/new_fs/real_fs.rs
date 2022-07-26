@@ -3,10 +3,12 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::io::{Error, Read};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use filesystem::ReadDir;
 use log::{debug, error};
 use streaming_iterator::StreamingIterator;
 use crate::new_fs::dir_entry::DirEntry;
+use crate::new_fs::fsf_ref::FsfRef;
 use crate::new_fs::new_filesystem_front::NewFilesystemFront;
 use crate::new_fs::path::SPath;
 use crate::new_fs::read_error::{ListError, ReadError};
@@ -78,5 +80,11 @@ impl NewFilesystemFront for RealFS {
 
     fn overwrite_with(&self, path: &Path, stream: &dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
         todo!()
+    }
+
+    fn to_fsf(self) -> FsfRef {
+        FsfRef {
+            fs: Arc::new(Box::new(self))
+        }
     }
 }

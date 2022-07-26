@@ -36,11 +36,7 @@ pub trait NewFilesystemFront : Debug {
 
     fn exists(&self, path: &Path) -> bool;
 
-    fn to_fsf(self) -> FsfRef where Self: Sized {
-        FsfRef {
-            fs: Arc::new(Box::new(self))
-        }
-    }
-
     fn overwrite_with(&self, path : &Path, stream : &dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError>;
+
+    fn to_fsf(self) -> FsfRef;
 }
