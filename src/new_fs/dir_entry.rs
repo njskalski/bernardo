@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct DirEntry {
@@ -10,6 +10,14 @@ impl DirEntry {
         DirEntry {
             file_name : file_name.into()
         }
+    }
+
+    pub fn into_path_buf(self) -> PathBuf {
+        self.file_name
+    }
+
+    pub fn into_path(&self) -> &Path {
+        &self.file_name
     }
 }
 

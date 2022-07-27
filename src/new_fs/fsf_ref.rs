@@ -1,5 +1,5 @@
 use std::borrow::Borrow;
-use std::cell::RefCell;
+use std::cell::{BorrowMutError, RefCell, RefMut};
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
 use std::fmt::{Debug, Formatter};
@@ -7,6 +7,7 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use log::error;
 use streaming_iterator::StreamingIterator;
 use crate::new_fs::dir_entry::DirEntry;
 use crate::new_fs::filesystem_front::FilesystemFront;
@@ -102,11 +103,33 @@ impl FsfRef {
     }
 
     pub fn blocking_list(&self, spath: &SPath) -> Result<Vec<SPath>, ListError> {
+        // TODO 
+
+        if let Some(cache) = self.fs.caches.borrow().get(spath) {
+            return Ok(cache.vec.clone());
+        }
+
         let path = spath.relative_path();
         let items = self.fs.fs.blocking_list(&path)?;
 
-        // let cache = i
-        todo!()
+        let mut dir_cache : Vec<SPath> = Vec::with_capacity(items.len());
+        for item in items.into_iter() {
+            let sp = SPath::append(spath.clone(), item.into_path_buf());
+            dir_cache.push(sp);
+        }
+
+        match self.fs.caches.try_borrow_mut() {
+            Ok(mut cache) => {
+                cache.insert(spath.clone(), DirCache {
+                    vec: dir_cache.clone(),
+                });
+            }
+            Err(e) => {
+                error!("failed writing cache, because {:?}", e);
+            }
+        }
+
+        Ok(dir_cache)
     }
 
     pub fn blocking_read_entire_file(&self, spath: &SPath) -> Result<Vec<u8>, ReadError> {
