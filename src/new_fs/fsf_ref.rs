@@ -1,5 +1,8 @@
 use std::borrow::Borrow;
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
+use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
@@ -13,15 +16,30 @@ use crate::new_fs::write_error::WriteError;
 
 // Chaching should be implemented here or nowhere.
 
-#[derive(Clone, Debug)]
+pub struct DirCache {
+    vec : Vec<SPath>,
+}
+
+pub struct FsAndCache {
+    fs : Box<dyn FilesystemFront>,
+    caches : RefCell<HashMap<SPath, DirCache>>,
+}
+
+#[derive(Clone)]
 pub struct FsfRef {
-    fs : Arc<Box<dyn FilesystemFront>>,
+    fs : Arc<FsAndCache>,
+}
+
+impl Debug for FsfRef {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "FsfRef{:?}", self.fs.fs)
+    }
 }
 
 impl PartialEq for FsfRef {
     fn eq(&self, other: &Self) -> bool {
-        self.fs.hash_seed() == other.fs.hash_seed() &&
-            self.fs.root_path() == other.fs.root_path()
+        self.fs.fs.hash_seed() == other.fs.fs.hash_seed() &&
+            self.fs.fs.root_path() == other.fs.fs.root_path()
     }
 }
 
@@ -29,15 +47,18 @@ impl Eq for FsfRef {}
 
 impl Hash for FsfRef {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write_usize(self.fs.hash_seed());
-        self.fs.root_path().hash(state)
+        state.write_usize(self.fs.fs.hash_seed());
+        self.fs.fs.root_path().hash(state)
     }
 }
 
 impl FsfRef {
     pub fn new<FS : FilesystemFront + 'static>(fs : FS) -> Self {
         FsfRef {
-            fs: Arc::new(Box::new(fs) as Box<dyn FilesystemFront>)
+            fs: Arc::new(FsAndCache{
+                fs: Box::new(fs) as Box<dyn FilesystemFront>,
+                caches: RefCell::new(Default::default())
+            }),
         }
     } 
     
@@ -46,16 +67,17 @@ impl FsfRef {
     }
 
     pub fn root_path_buf(&self) -> &PathBuf {
-        self.fs.root_path()
+        self.fs.fs.root_path()
     }
 
-    pub fn exists<P: AsRef<Path>>(&self, path : P) -> bool {
-        self.fs.as_ref().exists(path.as_ref())
+    pub fn exists(&self, path : &SPath) -> bool {
+        let path = path.relative_path();
+        self.fs.fs.exists(&path)
     }
 
     pub fn descendant_checked<P: AsRef<Path>>(&self, path : P) -> Option<SPath>  {
         let path = path.as_ref();
-        if !self.fs.exists(path) {
+        if !self.fs.fs.exists(path) {
             return None;
         }
 
@@ -74,24 +96,32 @@ impl FsfRef {
         Some(spath)
     }
 
-    pub fn overwrite_with(&self, path : &Path, stream : &dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
-        self.fs.overwrite_with(path, stream)
+    pub fn overwrite_with(&self, spath : &SPath, stream : &dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
+        let path = spath.relative_path();
+        self.fs.fs.overwrite_with(&path, stream)
     }
 
-    pub fn blocking_list(&self, path: &Path) -> Result<Vec<DirEntry>, ListError> {
-        self.fs.blocking_list(path)
+    pub fn blocking_list(&self, spath: &SPath) -> Result<Vec<SPath>, ListError> {
+        let path = spath.relative_path();
+        let items = self.fs.fs.blocking_list(&path)?;
+
+        // let cache = i
+        todo!()
     }
 
-    pub fn blocking_read_entire_file(&self, path: &Path) -> Result<Vec<u8>, ReadError> {
-        self.fs.blocking_read_entire_file(path)
+    pub fn blocking_read_entire_file(&self, spath: &SPath) -> Result<Vec<u8>, ReadError> {
+        let path = spath.relative_path();
+        self.fs.fs.blocking_read_entire_file(&path)
     }
 
-    pub fn is_dir(&self, path : &Path) -> bool {
-        self.fs.is_dir(path)
+    pub fn is_dir(&self, spath : &SPath) -> bool {
+        let path = spath.relative_path();
+        self.fs.fs.is_dir(&path)
     }
 
-    pub fn is_file(&self, path : &Path) -> bool {
-        self.fs.is_file(path)
+    pub fn is_file(&self, spath : &SPath) -> bool {
+        let path = spath.relative_path();
+        self.fs.fs.is_file(&path)
     }
 }
 

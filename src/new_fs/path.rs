@@ -105,9 +105,8 @@ impl SPath {
     }
 
     pub fn read_entire_file(&self) -> Result<Vec<u8>, ReadError> {
-        let path : PathBuf = self.relative_path();
         let fsf = self.fsf();
-        fsf.blocking_read_entire_file(&path)
+        fsf.blocking_read_entire_file(self)
     }
 
     pub fn read_entire_file_to_item<T : DeserializeOwned>(&self) -> Result<T, ReadError> {
@@ -126,17 +125,13 @@ impl SPath {
     }
 
     pub fn is_dir(&self) -> bool {
-        // TODO optimise
-        let path : PathBuf = self.relative_path();
         let fsf = self.fsf();
-        fsf.is_dir(&path)
+        fsf.is_dir(self)
     }
 
     pub fn is_file(&self) -> bool {
-        // TODO optimise
-        let path : PathBuf = self.relative_path();
         let fsf = self.fsf();
-        fsf.is_file(&path)
+        fsf.is_file(self)
     }
 
     // returns owned PathBuf relative to FS root.
@@ -193,20 +188,17 @@ impl SPath {
     pub fn exists(&self) -> bool {
         // TODO optimise
         let fsf = self.fsf();
-        let p = self.relative_path();
-        fsf.exists(&p)
+        fsf.exists(self)
     }
 
     pub fn overwrite_with<T : StreamingIterator<Item=[u8]>>(&self, stream : T) -> Result<usize, WriteError> {
         let fsf = self.fsf();
-        let path = self.relative_path();
-        fsf.overwrite_with(&path, &stream)
+        fsf.overwrite_with(self, &stream)
     }
 
-    pub fn blocking_list(&self) -> Result<Vec<DirEntry>, ListError> {
+    pub fn blocking_list(&self) -> Result<Vec<SPath>, ListError> {
         let fsf = self.fsf();
-        let path = self.relative_path();
-        fsf.blocking_list(&path)
+        fsf.blocking_list(self)
     }
 }
 

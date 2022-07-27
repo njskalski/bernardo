@@ -5,7 +5,7 @@ mod tests {
     use serde::Serialize;
 
     use crate::experiments::pretty_ron::ToPrettyRonString;
-    use crate::{LangId, FilesystemFront};
+    use crate::{LangId, FilesystemFront, spath};
     use crate::new_fs::mock_fs::MockFS;
     use crate::w7e::project_scope::SerializableProjectScope;
     use crate::w7e::workspace::{ScopeLoadErrors, SerializableWorkspace, Workspace, WORKSPACE_FILE_NAME};
@@ -79,10 +79,10 @@ version = "0.1.0"    # the current version, obeying semver
 authors = ["Alice <a@example.com>", "Bob <b@example.com>"]
             "#).to_fsf();
 
-        assert_eq!(mock_fs.exists("workspace"), true);
-        assert_eq!(mock_fs.exists("workspace/.gladius_workspace.ron"), true);
-        assert_eq!(mock_fs.exists("workspace/rust_project"), true);
-        assert_eq!(mock_fs.exists("workspace/rust_project/Cargo.toml"), true);
+        assert_eq!(spath!(mock_fs, "workspace").unwrap().exists(), true);
+        assert_eq!(spath!(mock_fs, "workspace", ".gladius_workspace.ron").unwrap().exists(), true);
+        // assert_eq!(mock_fs.exists("workspace/rust_project"), true);
+        // assert_eq!(mock_fs.exists("workspace/rust_project/Cargo.toml"), true);
 
         let path = mock_fs.descendant_checked(&repo_folder).unwrap();
         let (workspace, errors) = Workspace::try_load(path).unwrap();
