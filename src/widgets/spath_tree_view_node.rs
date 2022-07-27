@@ -87,7 +87,15 @@ impl TreeViewNode<SPath> for DirTreeNode {
     }
 
     fn child_iter(&self) -> Box<dyn Iterator<Item=Self>> {
-        todo!()
+        match self.sp.blocking_list() {
+            Ok(items) => Box::new(
+                items.into_iter().filter(|c| c.is_dir()).map(|item| DirTreeNode::new(item))
+            ) as Box<dyn Iterator<Item=Self>>,
+            Err(e) => {
+                error!("fail to call blocking_list {:?}", e);
+                Box::new(std::iter::empty()) as Box<dyn Iterator<Item=Self>>
+            }
+        }
     }
 
     fn is_complete(&self) -> bool {
