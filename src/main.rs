@@ -1,3 +1,4 @@
+#![feature(const_trait_impl)]
 #![allow(dead_code)]
 #![allow(unreachable_patterns)]
 
@@ -37,7 +38,7 @@ use crate::widgets::main_view::main_view::MainView;
 use crate::gladius::load_config::load_config;
 use crate::gladius::logger_setup::logger_setup;
 use crate::lsp_client::lsp_finder::LspFinder;
-use crate::new_fs::new_filesystem_front::NewFilesystemFront;
+use crate::new_fs::filesystem_front::FilesystemFront;
 use crate::new_fs::real_fs::RealFS;
 use crate::tsw::lang_id::LangId;
 

@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use regex::internal::Input;
@@ -7,8 +8,9 @@ use ropey::Rope;
 use serde::de::DeserializeOwned;
 use streaming_iterator::StreamingIterator;
 use syntect::html::IncludeBackground::No;
+use crate::new_fs::dir_entry::DirEntry;
 use crate::new_fs::fsf_ref::FsfRef;
-use crate::new_fs::read_error::ReadError;
+use crate::new_fs::read_error::{ListError, ReadError};
 use crate::new_fs::write_error::WriteError;
 
 // TODO add some invariants.
@@ -105,7 +107,7 @@ impl SPath {
     pub fn read_entire_file(&self) -> Result<Vec<u8>, ReadError> {
         let path : PathBuf = self.relative_path();
         let fsf = self.fsf();
-        fsf.fs.blocking_read_entire_file(&path)
+        fsf.blocking_read_entire_file(&path)
     }
 
     pub fn read_entire_file_to_item<T : DeserializeOwned>(&self) -> Result<T, ReadError> {
@@ -127,14 +129,14 @@ impl SPath {
         // TODO optimise
         let path : PathBuf = self.relative_path();
         let fsf = self.fsf();
-        fsf.fs.is_dir(&path)
+        fsf.is_dir(&path)
     }
 
     pub fn is_file(&self) -> bool {
         // TODO optimise
         let path : PathBuf = self.relative_path();
         let fsf = self.fsf();
-        fsf.fs.is_file(&path)
+        fsf.is_file(&path)
     }
 
     // returns owned PathBuf relative to FS root.
@@ -199,6 +201,12 @@ impl SPath {
         let fsf = self.fsf();
         let path = self.relative_path();
         fsf.overwrite_with(&path, &stream)
+    }
+
+    pub fn blocking_list(&self) -> Result<Vec<DirEntry>, ListError> {
+        let fsf = self.fsf();
+        let path = self.relative_path();
+        fsf.blocking_list(&path)
     }
 }
 
@@ -267,7 +275,7 @@ mod tests {
     use std::path::Path;
     use crate::de;
     use crate::new_fs::mock_fs::MockFS;
-    use crate::new_fs::new_filesystem_front::NewFilesystemFront;
+    use crate::new_fs::filesystem_front::FilesystemFront;
     use crate::new_fs::read_error::ReadError;
 
     #[test]

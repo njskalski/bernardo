@@ -9,7 +9,7 @@ use log::{debug, error};
 use streaming_iterator::StreamingIterator;
 use crate::new_fs::dir_entry::DirEntry;
 use crate::new_fs::fsf_ref::FsfRef;
-use crate::new_fs::new_filesystem_front::NewFilesystemFront;
+use crate::new_fs::filesystem_front::FilesystemFront;
 use crate::new_fs::path::SPath;
 use crate::new_fs::read_error::{ListError, ReadError};
 use crate::new_fs::write_error::WriteError;
@@ -32,7 +32,7 @@ impl Debug for RealFS {
     }
 }
 
-impl NewFilesystemFront for RealFS {
+impl FilesystemFront for RealFS {
     fn root_path(&self) -> &PathBuf {
         &self.root_path
     }
@@ -56,7 +56,7 @@ impl NewFilesystemFront for RealFS {
         1
     }
 
-    fn list(&self, path : &Path) -> Result<Vec<DirEntry>, ListError> {
+    fn blocking_list(&self, path : &Path) -> Result<Vec<DirEntry>, ListError> {
         let full_path = self.root_path.join(path);
         let readdir = std::fs::read_dir(&full_path)?;
         let mut items : Vec<DirEntry> = Vec::new();
@@ -83,8 +83,6 @@ impl NewFilesystemFront for RealFS {
     }
 
     fn to_fsf(self) -> FsfRef {
-        FsfRef {
-            fs: Arc::new(Box::new(self))
-        }
+        FsfRef::new(self)
     }
 }

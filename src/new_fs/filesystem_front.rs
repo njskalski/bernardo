@@ -11,7 +11,7 @@ use crate::new_fs::write_error::WriteError;
 
 // all paths except root_path are RELATIVE to root_path.
 
-pub trait NewFilesystemFront : Debug {
+pub trait FilesystemFront: Debug {
     // Absolute path to root folder. Just for informative reasons.
     fn root_path(&self) -> &PathBuf;
 
@@ -32,7 +32,7 @@ pub trait NewFilesystemFront : Debug {
 
     fn hash_seed(&self) -> usize;
 
-    fn list(&self, path: &Path) -> Result<Vec<DirEntry>, ListError>;
+    fn blocking_list(&self, path: &Path) -> Result<Vec<DirEntry>, ListError>;
 
     fn exists(&self, path: &Path) -> bool;
 

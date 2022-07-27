@@ -7,7 +7,7 @@ use std::sync::Arc;
 use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
 use crate::new_fs::dir_entry::DirEntry;
-use crate::new_fs::new_filesystem_front::NewFilesystemFront;
+use crate::new_fs::filesystem_front::FilesystemFront;
 use crate::new_fs::fsf_ref::FsfRef;
 use crate::new_fs::path::SPath;
 use crate::new_fs::read_error::{ListError, ReadError};
@@ -77,7 +77,7 @@ impl Debug for MockFS {
     }
 }
 
-impl NewFilesystemFront for MockFS {
+impl FilesystemFront for MockFS {
     fn root_path(&self) -> &PathBuf {
         &self.root_path
     }
@@ -116,7 +116,7 @@ impl NewFilesystemFront for MockFS {
         2
     }
 
-    fn list(&self, path: &Path) -> Result<Vec<DirEntry>, ListError> {
+    fn blocking_list(&self, path: &Path) -> Result<Vec<DirEntry>, ListError> {
         if !self.exists(path) {
             return Err(ListError::PathNotFound);
         }
@@ -165,13 +165,13 @@ impl NewFilesystemFront for MockFS {
     }
 
     fn overwrite_with(&self, path: &Path, stream: &dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
+
+
         todo!()
     }
 
     fn to_fsf(self) -> FsfRef {
-        FsfRef {
-            fs: Arc::new(Box::new(self))
-        }
+        FsfRef::new(self)
     }
 }
 
@@ -181,7 +181,7 @@ mod tests {
     use std::path::Path;
     use crate::de;
     use crate::new_fs::mock_fs::MockFS;
-    use crate::new_fs::new_filesystem_front::NewFilesystemFront;
+    use crate::new_fs::filesystem_front::FilesystemFront;
     use crate::new_fs::read_error::ReadError;
 
     #[test]
@@ -202,7 +202,7 @@ mod tests {
         assert_eq!(mockfs.is_file(&Path::new("folder2")), false);
         assert_eq!(mockfs.is_file(&Path::new("")), false);
 
-        assert_eq!(mockfs.list(&Path::new("")).unwrap(), vec![de!("folder1"), de!("folder2")]);
+        assert_eq!(mockfs.blocking_list(&Path::new("")).unwrap(), vec![de!("folder1"), de!("folder2")]);
 
         assert_eq!(mockfs.blocking_read_entire_file(&Path::new("")), Err(ReadError::NotAFilePath));
         assert_eq!(mockfs.blocking_read_entire_file(&Path::new("/folder3")), Err(ReadError::FileNotFound));

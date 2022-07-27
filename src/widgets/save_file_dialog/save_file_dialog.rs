@@ -44,6 +44,7 @@ use crate::widgets::generic_dialog::generic_dialog::GenericDialog;
 use crate::widgets::list_widget::ListWidget;
 use crate::widgets::save_file_dialog::dialogs::override_dialog;
 use crate::widgets::save_file_dialog::save_file_dialog_msg::SaveFileDialogMsg;
+use crate::widgets::spath_tree_view_node::DirTreeNode;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::with_scroll::WithScroll;
 
@@ -58,7 +59,7 @@ pub struct SaveFileDialogWidget {
     display_state: Option<GenericDisplayState>,
 
     // TODO at this point I just want it to work, I should profile if it behaves fast.
-    tree_widget: WithScroll<TreeViewWidget<SPath, SPath>>,
+    tree_widget: WithScroll<TreeViewWidget<SPath, DirTreeNode>>,
     list_widget: ListWidget<SPath>,
     edit_box: EditBoxWidget,
 
@@ -77,20 +78,17 @@ pub struct SaveFileDialogWidget {
 
 impl SaveFileDialogWidget {
     pub fn new(fsf: FsfRef) -> Self {
-        let tree = fsf.root();
-        let filter = |f: &SPath| -> bool {
-            f.is_dir()
-        };
+        let root = fsf.root();
 
-        let tree_widget = TreeViewWidget::<SPath, SPath>::new(tree)
-            .with_filter(filter, Some(0))
+        let tree_widget = TreeViewWidget::<SPath, DirTreeNode>::new(DirTreeNode::new(root))
+            // .with_filter(filter, Some(0))
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
-                Some(Box::new(SaveFileDialogMsg::TreeExpanded(item)))
+                Some(Box::new(SaveFileDialogMsg::TreeExpanded(item.spath().clone())))
             })
             .with_on_highlighted_changed(|widget| {
                 let (_, item) = widget.get_highlighted();
-                Some(Box::new(SaveFileDialogMsg::TreeHighlighted(item)))
+                Some(Box::new(SaveFileDialogMsg::TreeHighlighted(item.spath().clone())))
             });
 
         let scroll_tree_widget = WithScroll::new(tree_widget, ScrollDirection::Vertical);

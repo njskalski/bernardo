@@ -25,6 +25,7 @@ use crate::widgets::main_view::display_state::{Focus, MainViewDisplayState};
 use crate::widgets::main_view::editor_group::EditorGroup;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::no_editor::NoEditorWidget;
+use crate::widgets::spath_tree_view_node::FileTreeNode;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 use crate::widgets::with_scroll::WithScroll;
@@ -44,7 +45,7 @@ pub struct MainView {
     display_state: MainViewDisplayState,
 
     // TODO PathBuf -> WrappedRcPath? See profiler.
-    tree_widget: WithScroll<TreeViewWidget<SPath, SPath>>,
+    tree_widget: WithScroll<TreeViewWidget<SPath, FileTreeNode>>,
 
     editors: EditorGroup,
     no_editor: NoEditorWidget,
@@ -63,19 +64,21 @@ impl MainView {
                tree_sitter: Rc<TreeSitterWrapper>,
                fsf: FsfRef,
                clipboard: ClipboardRef) -> MainView {
-        let root_node = fsf.root();
-        let tree = TreeViewWidget::new(root_node)
+        let root = fsf.root();
+        let tree = TreeViewWidget::new(FileTreeNode::new(root))
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
 
                 Some(Box::new(MainViewMsg::TreeExpandedFlip {
                     expanded: widget.is_expanded(item.id()),
-                    item,
+                    item: item.spath().clone(),
                 }))
             })
             .with_on_select_hightlighted(|widget| {
                 let (_, item) = widget.get_highlighted();
-                Some(Box::new(MainViewMsg::TreeSelected { item }))
+                Some(Box::new(MainViewMsg::TreeSelected {
+                    item: item.spath().clone(),
+                }))
             });
 
         MainView {

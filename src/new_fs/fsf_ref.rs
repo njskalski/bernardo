@@ -1,18 +1,21 @@
+use std::borrow::Borrow;
 use std::ffi::OsStr;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use streaming_iterator::StreamingIterator;
-use crate::new_fs::new_filesystem_front::NewFilesystemFront;
+use crate::new_fs::dir_entry::DirEntry;
+use crate::new_fs::filesystem_front::FilesystemFront;
 use crate::new_fs::path::{PathCell, SPath};
+use crate::new_fs::read_error::{ListError, ReadError};
 use crate::new_fs::write_error::WriteError;
 
 // Chaching should be implemented here or nowhere.
 
 #[derive(Clone, Debug)]
 pub struct FsfRef {
-    pub fs : Arc<Box<dyn NewFilesystemFront>>,
+    fs : Arc<Box<dyn FilesystemFront>>,
 }
 
 impl PartialEq for FsfRef {
@@ -32,6 +35,12 @@ impl Hash for FsfRef {
 }
 
 impl FsfRef {
+    pub fn new<FS : FilesystemFront + 'static>(fs : FS) -> Self {
+        FsfRef {
+            fs: Arc::new(Box::new(fs) as Box<dyn FilesystemFront>)
+        }
+    } 
+    
     pub fn root(&self) -> SPath {
         SPath::head(self.clone())
     }
@@ -43,8 +52,6 @@ impl FsfRef {
     pub fn exists<P: AsRef<Path>>(&self, path : P) -> bool {
         self.fs.as_ref().exists(path.as_ref())
     }
-
-
 
     pub fn descendant_checked<P: AsRef<Path>>(&self, path : P) -> Option<SPath>  {
         let path = path.as_ref();
@@ -67,12 +74,24 @@ impl FsfRef {
         Some(spath)
     }
 
-    pub fn display_name(&self) -> &str {
-        "TODOdisplay_name"
-    }
-
     pub fn overwrite_with(&self, path : &Path, stream : &dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
         self.fs.overwrite_with(path, stream)
+    }
+
+    pub fn blocking_list(&self, path: &Path) -> Result<Vec<DirEntry>, ListError> {
+        self.fs.blocking_list(path)
+    }
+
+    pub fn blocking_read_entire_file(&self, path: &Path) -> Result<Vec<u8>, ReadError> {
+        self.fs.blocking_read_entire_file(path)
+    }
+
+    pub fn is_dir(&self, path : &Path) -> bool {
+        self.fs.is_dir(path)
+    }
+
+    pub fn is_file(&self, path : &Path) -> bool {
+        self.fs.is_file(path)
     }
 }
 
@@ -92,7 +111,7 @@ mod tests {
     use std::path::Path;
     use crate::de;
     use crate::new_fs::mock_fs::MockFS;
-    use crate::new_fs::new_filesystem_front::NewFilesystemFront;
+    use crate::new_fs::filesystem_front::FilesystemFront;
     use crate::new_fs::read_error::ReadError;
 
     #[test]

@@ -8,13 +8,13 @@ use std::sync::Arc;
 use log::{debug, error, warn};
 use crate::new_fs::fsf_ref::FsfRef;
 use crate::new_fs::path::SPath;
+use crate::widgets::spath_tree_view_node::FileTreeNode;
 
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 
-impl TreeViewWidget<SPath, SPath> {
+impl TreeViewWidget<SPath, FileTreeNode> {
     pub fn set_path(&mut self, path: &SPath) -> bool {
         debug!("setting path to {:?}", path);
-
         todo!()
 
         // // TODO(cleanup) why do I need the _filename again?

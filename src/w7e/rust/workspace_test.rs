@@ -5,7 +5,7 @@ mod tests {
     use serde::Serialize;
 
     use crate::experiments::pretty_ron::ToPrettyRonString;
-    use crate::{LangId, NewFilesystemFront};
+    use crate::{LangId, FilesystemFront};
     use crate::new_fs::mock_fs::MockFS;
     use crate::w7e::project_scope::SerializableProjectScope;
     use crate::w7e::workspace::{ScopeLoadErrors, SerializableWorkspace, Workspace, WORKSPACE_FILE_NAME};
