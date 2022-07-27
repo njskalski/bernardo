@@ -30,6 +30,10 @@ impl TreeViewNode<usize> for Rc<StupidTree> {
         self.children.is_empty()
     }
 
+    fn child_iter(&self) -> Box<dyn Iterator<Item=Self>> {
+        todo!()
+    }
+
     fn num_child(&self) -> (bool, usize) {
         (true, self.children.len())
     }
