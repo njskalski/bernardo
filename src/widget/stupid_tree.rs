@@ -31,15 +31,7 @@ impl TreeViewNode<usize> for Rc<StupidTree> {
     }
 
     fn child_iter(&self) -> Box<dyn Iterator<Item=Self>> {
-        todo!()
-    }
-
-    fn num_child(&self) -> (bool, usize) {
-        (true, self.children.len())
-    }
-
-    fn get_child(&self, idx: usize) -> Option<Self> {
-        self.children.get(idx).map(|f| f.clone())
+        Box::new(self.children.clone().into_iter())
     }
 
     fn is_complete(&self) -> bool {

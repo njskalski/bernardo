@@ -62,20 +62,6 @@ impl TreeViewNode<SPath> for FileTreeNode {
         }
     }
 
-    fn num_child(&self) -> (bool, usize) {
-        match self.sp.blocking_list() {
-            Ok(list) => (true, list.len()),
-            Err(e) => {
-                error!("failed to list: {:?}", e);
-                (false, 0)
-            }
-        }
-    }
-
-    fn get_child(&self, idx: usize) -> Option<Self> {
-        todo!()
-    }
-
     fn is_complete(&self) -> bool {
         true //TODO
     }
@@ -101,20 +87,6 @@ impl TreeViewNode<SPath> for DirTreeNode {
     }
 
     fn child_iter(&self) -> Box<dyn Iterator<Item=Self>> {
-        todo!()
-    }
-
-    fn num_child(&self) -> (bool, usize) {
-        match self.sp.blocking_list() {
-            Ok(list) => (true, list.len()),
-            Err(e) => {
-                error!("failed to list: {:?}", e);
-                (false, 0)
-            }
-        }
-    }
-
-    fn get_child(&self, idx: usize) -> Option<Self> {
         todo!()
     }
 

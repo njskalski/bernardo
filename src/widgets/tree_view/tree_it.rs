@@ -57,9 +57,8 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> Iterator for T
 
             // If it's expanded, I have to throw all children on the stack.
             if self.expanded.contains(node_ref.id()) {
-                for idx in (0..node_ref.num_child().1).rev() {
-                    let item = node_ref.get_child(idx).unwrap();
-
+                let idx_and_items : Vec<(usize, Item)> = node_ref.child_iter().enumerate().collect();
+                for (_idx, item) in idx_and_items.into_iter().rev() {
                     match self.filter_op {
                         Some(filter) => {
                             if item.matching_self_or_children(filter.borrow(), self.filter_depth_op) == MaybeBool::False {
