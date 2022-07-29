@@ -2,10 +2,10 @@ use std::collections::HashSet;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::io::{Error, Read};
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 use filesystem::ReadDir;
-use log::{debug, error};
+use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
 use crate::new_fs::dir_entry::DirEntry;
 use crate::new_fs::fsf_ref::FsfRef;
@@ -63,7 +63,14 @@ impl FilesystemFront for RealFS {
         for item in readdir {
             match item {
                 Ok(dir_entry) => {
-                    items.push(DirEntry::new(dir_entry.path()))
+                    match dir_entry.path().file_name() {
+                        Some(file_name) => {
+                            items.push(DirEntry::new(file_name));
+                        }
+                        None => {
+                            warn!("received dir_entry {:?} that does not have file_name, ignoring.", dir_entry);
+                        }
+                    }
                 }
                 Err(e) => {
                     error!("failed read dir because {}", e);

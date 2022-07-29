@@ -1,13 +1,16 @@
+use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use log::warn;
 use regex::internal::Input;
 use ropey::Rope;
 use serde::de::DeserializeOwned;
 use streaming_iterator::StreamingIterator;
 use syntect::html::IncludeBackground::No;
+use crate::experiments::beter_deref_str::BetterDerefStr;
 use crate::new_fs::dir_entry::DirEntry;
 use crate::new_fs::fsf_ref::FsfRef;
 use crate::new_fs::read_error::{ListError, ReadError};
@@ -52,6 +55,13 @@ impl PathCell {
             }
         }
     }
+
+    pub fn as_path(&self) -> Option<&Path> {
+        match self {
+            PathCell::Head(_) => None,
+            PathCell::Segment { prev, cell } => Some(cell),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -67,6 +77,7 @@ impl SPath {
     pub fn append(prev : SPath, segment : PathBuf) -> SPath {
         debug_assert!(segment.to_string_lossy().len() > 0);
         debug_assert!(segment.to_string_lossy() != "..");
+        debug_assert!(segment.components().count() == 1);
         SPath(
             Arc::new(PathCell::Segment { prev, cell: segment })
         )
@@ -156,14 +167,46 @@ impl SPath {
         self.parent_ref().map(|p| p.clone())
     }
 
-    pub fn last_name(&self) -> Option<&str> {
+    /*
+    Returns string representing last component of path
+     */
+    pub fn file_name_str(&self) -> Option<&str> {
         match self.0.as_ref() {
-            PathCell::Head(_) => Some("<root>"),
+            PathCell::Head(_) => None,
             PathCell::Segment { prev, cell } => {
-                // TODO
-                cell.to_str()
+                cell.to_str().or_else(|| {
+                    warn!("failed casting last item of path {:?}", self);
+                    None
+                })
             }
         }
+    }
+
+    /*
+    Returns printable label representing last component for tree/list use case.
+    TODO: this should return some non-owned type
+     */
+    pub fn label(&self) -> String {
+        match self.0.as_ref() {
+            PathCell::Head(fs) => {
+                fs.root_path_buf().file_name()
+                    .map(|oss|oss.to_string_lossy().to_string())
+                    .unwrap_or_else(||{
+                        warn!("failed casting last item of pathbuf. Using hardcoded default.");
+                        "<root>".to_string()
+                    })
+            },
+            PathCell::Segment { prev, cell } => {
+                cell.to_string_lossy().to_string()
+            }
+        }
+    }
+
+    /*
+    Returns &Path representing last component of path
+     */
+    pub fn last_file_name(&self) -> Option<&Path> {
+        self.0.as_path()
     }
 
     pub fn ancestors_and_self(&self) -> ParentIter {

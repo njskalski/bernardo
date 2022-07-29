@@ -28,8 +28,7 @@ lazy_static! {
 }
 
 pub fn filename_to_language(path: &SPath) -> Option<LangId> {
-    // path.extension().map(|ext| ext.to_str()).flatten().map(|ext|
-    //     EXT_TO_LANGUAGE.get(ext).map(|p| *p)
-    // ).flatten()
-    todo!()
+    path.last_file_name().map(|f| f.extension()).flatten().map(|ext| ext.to_str()).flatten().map(|ext|
+        EXT_TO_LANGUAGE.get(ext).map(|p| *p)
+    ).flatten()
 }

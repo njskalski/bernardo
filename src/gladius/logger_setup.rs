@@ -16,6 +16,8 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
 
     // This guy leaves a lot of data in trace, it seems like it spawns a new thread. I think it deserves profiling.
     ("arboard::x11_clipboard", log::LevelFilter::Warn),
+
+    ("bernardo::lsp_client", log::LevelFilter::Warn),
 ];
 
 

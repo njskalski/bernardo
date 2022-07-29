@@ -37,13 +37,7 @@ impl TreeViewNode<SPath> for FileTreeNode {
     }
 
     fn label(&self) -> String {
-        match self.sp.last_name() {
-            None => {
-                error!("no last_name in SPath used in TreeViewNode");
-                "<error>".to_string()
-            }
-            Some(item) => item.to_string(),
-        }
+        self.sp.label()
     }
 
     fn is_leaf(&self) -> bool {
@@ -72,15 +66,7 @@ impl TreeViewNode<SPath> for DirTreeNode {
         &self.sp
     }
 
-    fn label(&self) -> String {
-        match self.sp.last_name() {
-            None => {
-                error!("no last_name in SPath used in TreeViewNode");
-                "<error>".to_string()
-            }
-            Some(item) => item.to_string(),
-        }
-    }
+    fn label(&self) -> String { self.sp.label() }
 
     fn is_leaf(&self) -> bool {
         self.sp.is_file()

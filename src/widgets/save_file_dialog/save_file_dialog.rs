@@ -470,7 +470,7 @@ impl Widget for SaveFileDialogWidget {
                 None
             }
             SaveFileDialogMsg::FileListHit(file) => {
-                let text = file.last_name().unwrap();
+                let text = file.file_name_str().unwrap();
                 self.edit_box.set_text(text); // TODO
                 self.edit_box.set_cursor_end();
                 self.set_focused(self.edit_box.id());

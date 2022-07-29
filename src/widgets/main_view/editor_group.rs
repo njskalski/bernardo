@@ -135,7 +135,7 @@ impl Item for BufferDesc {
     fn display_name(&self) -> BetterDerefStr {
         match self {
             BufferDesc::File { pos, ff } => {
-                BetterDerefStr::Str(ff.last_name().unwrap_or("error getting filename"))
+                BetterDerefStr::Str(ff.file_name_str().unwrap_or("error getting filename"))
             },
             BufferDesc::Unnamed { pos, id } => BetterDerefStr::String(format!("Unnamed #{}", id)),
         }
