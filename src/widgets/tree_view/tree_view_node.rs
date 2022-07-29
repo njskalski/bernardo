@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -13,7 +14,7 @@ pub enum MaybeBool {
 // Keep it lightweight. It is expected to be implemented by Rc<some type>
 pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
     fn id(&self) -> &Key;
-    fn label(&self) -> String;
+    fn label(&self) -> Cow<str>;
     fn is_leaf(&self) -> bool;
 
     fn child_iter(&self) -> Box<dyn Iterator<Item=Self>>;

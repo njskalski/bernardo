@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::rc::Rc;
 
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
@@ -22,8 +23,8 @@ impl TreeViewNode<usize> for Rc<StupidTree> {
         &self.id
     }
 
-    fn label(&self) -> String {
-        format!("StupidTree {}", self.id)
+    fn label(&self) -> Cow<str> {
+        format!("StupidTree {}", self.id).into()
     }
 
     fn is_leaf(&self) -> bool {

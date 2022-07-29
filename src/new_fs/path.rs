@@ -186,18 +186,18 @@ impl SPath {
     Returns printable label representing last component for tree/list use case.
     TODO: this should return some non-owned type
      */
-    pub fn label(&self) -> String {
+    pub fn label(&self) -> Cow<str> {
         match self.0.as_ref() {
             PathCell::Head(fs) => {
                 fs.root_path_buf().file_name()
-                    .map(|oss|oss.to_string_lossy().to_string())
+                    .map(|oss|oss.to_string_lossy().into())
                     .unwrap_or_else(||{
                         warn!("failed casting last item of pathbuf. Using hardcoded default.");
-                        "<root>".to_string()
+                        "<root>".into()
                     })
             },
             PathCell::Segment { prev, cell } => {
-                cell.to_string_lossy().to_string()
+                cell.to_string_lossy().into()
             }
         }
     }

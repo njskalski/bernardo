@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
 use log::error;
 use crate::new_fs::dir_entry::DirEntry;
@@ -36,7 +37,7 @@ impl TreeViewNode<SPath> for FileTreeNode {
         &self.sp
     }
 
-    fn label(&self) -> String {
+    fn label(&self) -> Cow<str> {
         self.sp.label()
     }
 
@@ -66,7 +67,7 @@ impl TreeViewNode<SPath> for DirTreeNode {
         &self.sp
     }
 
-    fn label(&self) -> String { self.sp.label() }
+    fn label(&self) -> Cow<str> { self.sp.label() }
 
     fn is_leaf(&self) -> bool {
         self.sp.is_file()
