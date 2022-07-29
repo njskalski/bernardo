@@ -151,7 +151,7 @@ impl FsfRef {
 #[macro_export]
 macro_rules! spath{
     ( $fsf:expr $(, $c:expr)* ) => {{
-        let mut sp : Option<crate::new_fs::path::SPath> = Some($fsf.root());
+        let mut sp : Option<crate::fs::path::SPath> = Some($fsf.root());
         $(
             sp = sp.map(|x| x.descendant_unchecked($c)).flatten();
         )*

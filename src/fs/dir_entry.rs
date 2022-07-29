@@ -25,7 +25,7 @@ impl DirEntry {
 macro_rules! de {
     ( $name:expr ) => {
         {
-            crate::new_fs::dir_entry::DirEntry::new($name)
+            crate::fs::dir_entry::DirEntry::new($name)
         }
     };
 }

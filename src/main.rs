@@ -55,7 +55,6 @@ mod config;
 mod gladius;
 mod lsp_client;
 mod w7e;
-mod fs;
 
 fn main() {
     let mut args = gladius::args::Args::parse();
