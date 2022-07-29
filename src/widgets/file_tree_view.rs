@@ -6,60 +6,63 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use log::{debug, error, warn};
+use streaming_iterator::StreamingIterator;
 use crate::new_fs::fsf_ref::FsfRef;
 use crate::new_fs::path::SPath;
+use crate::spath;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
 
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 
 impl TreeViewWidget<SPath, FileTreeNode> {
-    pub fn set_path(&mut self, path: &SPath) -> bool {
-        debug!("setting path to {:?}", path);
-        todo!()
+    pub fn expand_path(&mut self, path: &SPath) -> bool {
+        debug!("setting path to {}", path);
 
-        // // TODO(cleanup) why do I need the _filename again?
-        // let (mut dir, _filename): (PathBuf, Option<&str>) = if fsf.is_dir(path) {
-        //     (path.to_path_buf(), None)
-        // } else {
-        //     (path.parent().map(|f| f.to_path_buf()).unwrap_or_else(|| {
-        //         warn!("failed to extract parent of {:?}, defaulting to fsf.root", path);
-        //         fsf.get_root_path().to_path_buf()
-        //     }), path.file_name().map(|s| s.to_str()).unwrap_or_else(|| {
-        //         warn!("filename at end of {:?} is not UTF-8", path);
-        //         None
-        //     }))
-        // };
-        //
-        // if !dir.starts_with(fsf.get_root_path().as_path()) {
-        //     error!("attempted to set path to non-root location {:?}, defaulting to fsf.root", dir);
-        //     dir = fsf.get_root_path().to_path_buf();
-        // }
-        //
-        // // now I will be stripping pieces of dir path and expanding each of them (bottom-up)
-        // self.expanded_mut().insert(dir.to_path_buf());
-        //
-        // let mut root_path = fsf.get_root_path().to_path_buf();
-        // self.expanded_mut().insert(root_path.clone());
-        //
-        // match dir.strip_prefix(&root_path) {
-        //     Err(e) => {
-        //         error!("supposed to set path to {:?}, but it's outside fs {:?}, because: {}", path, &root_path, e);
-        //         return false;
-        //     }
-        //     Ok(remainder) => {
-        //         for comp in remainder.components() {
-        //             root_path = root_path.join(comp);
-        //             debug!("expanding subtree {:?}", &root_path);
-        //             self.expanded_mut().insert(root_path.clone());
-        //         }
-        //     }
-        // }
-        //
-        // if !self.set_selected(&root_path) {
-        //     error!("failed to select {:?}", root_path);
-        //     return false;
-        // }
+        let root_node = self.get_root_node();
 
-        // true
+        if !root_node.spath().is_parent_of(path) {
+            warn!("attempted to set path {}, but root is {}, ignoring.", path, root_node.spath());
+            return false;
+        }
+
+        let exp_mut = self.expanded_mut();
+
+        let mut parent_ref_iter = path.ancestors_and_self_ref();
+        while let Some(anc) = parent_ref_iter.next() {
+            if anc.is_file() {
+                continue;
+            }
+
+            exp_mut.insert(anc.clone());
+        }
+
+        true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::new_fs::mock_fs::MockFS;
+    use crate::new_fs::path::SPath;
+    use crate::{FilesystemFront, spath};
+    use crate::widgets::spath_tree_view_node::FileTreeNode;
+    use crate::widgets::tree_view::tree_view::TreeViewWidget;
+
+    #[test]
+    fn test_set_path() {
+        let mockfs = MockFS::new("/tmp")
+            .with_file("folder1/folder2/file1.txt", "some text")
+            .with_file("folder1/folder3/moulder.txt", "truth is out there")
+            .to_fsf();
+
+        let mut widget = TreeViewWidget::<SPath, FileTreeNode>::new(
+            FileTreeNode::new(spath!(mockfs, "folder1").unwrap()));
+
+        assert_eq!(widget.is_expanded(&spath!(mockfs, "folder1","folder2", "file1.txt").unwrap()), false);
+
+        assert_eq!(widget.expand_path(&spath!(mockfs, "folder1", "folder2", "file1.txt").unwrap()), true);
+        assert_eq!(widget.is_expanded(&spath!(mockfs, "folder1").unwrap()), true);
+        assert_eq!(widget.is_expanded(&spath!(mockfs, "folder1","folder2").unwrap()), true);
+        assert_eq!(widget.is_expanded(&spath!(mockfs, "folder1", "folder3").unwrap()), false);
     }
 }

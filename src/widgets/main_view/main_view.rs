@@ -302,7 +302,7 @@ impl Widget for MainView {
                         self.hover = None;
                         None
                     } else if file_front.is_dir() {
-                        if !self.tree_widget.internal_mut().set_path(file_front) {
+                        if !self.tree_widget.internal_mut().expand_path(file_front) {
                             error!("failed to set path")
                         }
                         self.hover = None;

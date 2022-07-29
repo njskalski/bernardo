@@ -13,6 +13,7 @@ use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::config::theme::Theme;
+use crate::new_fs::path::SPath;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
@@ -211,6 +212,10 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
 
     pub fn get_highlighted(&self) -> (u16, Item) {
         self.items().nth(self.highlighted).clone().unwrap() //TODO
+    }
+
+    pub fn get_root_node(&self) -> &Item {
+        &self.root_node
     }
 }
 

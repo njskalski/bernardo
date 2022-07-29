@@ -209,10 +209,16 @@ impl SPath {
         self.0.as_path()
     }
 
+    /*
+    Returns iterator starting in self, and going up the tree until reaching root of filesystem.
+     */
     pub fn ancestors_and_self(&self) -> ParentIter {
         ParentIter(self.parent_ref().map(|c| c.clone()))
     }
 
+    /*
+    Returns iterator starting in self, and going up the tree until reaching root of filesystem.
+     */
     pub fn ancestors_and_self_ref(&self) -> ParentRefIter {
         ParentRefIter(Some(self))
     }
