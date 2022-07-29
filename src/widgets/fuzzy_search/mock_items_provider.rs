@@ -1,4 +1,5 @@
 pub mod mock {
+    use std::borrow::Cow;
     use crate::AnyMsg;
     use crate::experiments::beter_deref_str::BetterDerefStr;
     use crate::primitives::alphabet::mock::ALPHABET;
@@ -42,8 +43,8 @@ pub mod mock {
     }
 
     impl Item for String {
-        fn display_name(&self) -> BetterDerefStr {
-            BetterDerefStr::Str(self.as_str())
+        fn display_name(&self) -> Cow<str> {
+            self.into()
         }
 
         fn on_hit(&self) -> Box<dyn AnyMsg> {

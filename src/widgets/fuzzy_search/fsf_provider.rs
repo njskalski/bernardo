@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt::Debug;
 use std::io::empty;
 
@@ -40,13 +41,12 @@ pub enum SPathMsg {
 impl AnyMsg for SPathMsg {}
 
 impl Item for SPath {
-    fn display_name(&self) -> BetterDerefStr {
-        //TODO
-        BetterDerefStr::Str(self.file_name_str().unwrap_or("<error>"))
+    fn display_name(&self) -> Cow<str> {
+        self.file_name_str().unwrap_or("<error>").into()
     }
 
-    fn comment(&self) -> Option<BetterDerefStr> {
-        Some(BetterDerefStr::String(self.display_name().as_ref_str().to_string()))
+    fn comment(&self) -> Option<Cow<str>> {
+        Some(self.display_name())
     }
 
     fn on_hit(&self) -> Box<dyn AnyMsg> {

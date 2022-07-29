@@ -293,7 +293,7 @@ impl Widget for FuzzySearchWidget {
                 theme.default_text(focused)
             };
 
-            for g in item.display_name().as_ref_str().graphemes(true) {
+            for g in item.display_name().as_ref().graphemes(true) {
                 let selected_grapheme = query_it.peek().map(|f| *f == g).unwrap_or(false);
                 let grapheme_style = if selected_grapheme {
                     theme.cursor_background(CursorStatus::WithinSelection).map(|bg| {
@@ -314,7 +314,7 @@ impl Widget for FuzzySearchWidget {
             }
 
             //TODO cast overflow
-            for x in (item.display_name().as_ref_str().width_cjk() as u16)..self.width() {
+            for x in (item.display_name().as_ref().width_cjk() as u16)..self.width() {
                 output.print_at(XY::new(x as u16, y),
                                 style,
                                 " ");
@@ -323,14 +323,14 @@ impl Widget for FuzzySearchWidget {
             if self.draw_comment == DrawComment::All || (self.draw_comment == DrawComment::Highlighted && selected_line) {
                 if let Some(comment) = item.comment() {
                     let mut x = 0 as u16;
-                    for g in comment.as_ref_str().graphemes(true) {
+                    for g in comment.as_ref().graphemes(true) {
                         output.print_at(XY::new(x, y + 1),
                                         style,
                                         g);
                         x += g.width_cjk() as u16; //TODO overflow
                     }
                     //TODO cast overflow
-                    for x in (comment.as_ref_str().width_cjk() as u16)..self.width() {
+                    for x in (comment.as_ref().width_cjk() as u16)..self.width() {
                         output.print_at(XY::new(x as u16, y + 1),
                                         style,
                                         " ");

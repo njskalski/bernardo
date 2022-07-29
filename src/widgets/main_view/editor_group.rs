@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::rc::Rc;
 
 use log::error;
@@ -132,20 +133,20 @@ enum BufferDesc {
 }
 
 impl Item for BufferDesc {
-    fn display_name(&self) -> BetterDerefStr {
+    fn display_name(&self) -> Cow<str> {
         match self {
             BufferDesc::File { pos, ff } => {
-                BetterDerefStr::Str(ff.file_name_str().unwrap_or("error getting filename"))
+                ff.file_name_str().unwrap_or("error getting filename").into()
             },
-            BufferDesc::Unnamed { pos, id } => BetterDerefStr::String(format!("Unnamed #{}", id)),
+            BufferDesc::Unnamed { pos, id } => format!("Unnamed #{}", id).into(),
         }
     }
 
-    fn comment(&self) -> Option<BetterDerefStr> {
+    fn comment(&self) -> Option<Cow<str>> {
         match self {
             BufferDesc::File { pos, ff } => {
                 // TODO this is shit
-                Some(BetterDerefStr::String(ff.display_name().as_ref_str().to_string()))
+                Some(ff.display_name())
             },
             _ => None,
         }
@@ -172,7 +173,7 @@ impl ItemsProvider for BufferNamesProvider {
         let mut items: Vec<BufferDesc> = vec![];
 
         for item in self.descs.iter() {
-            if is_subsequence(item.display_name().as_ref_str(), &query) {
+            if is_subsequence(item.display_name().as_ref(), &query) {
                 items.push(item.clone());
                 if items.len() >= limit {
                     break;
