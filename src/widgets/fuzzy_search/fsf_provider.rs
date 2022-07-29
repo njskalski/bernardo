@@ -41,7 +41,8 @@ impl AnyMsg for SPathMsg {}
 
 impl Item for SPath {
     fn display_name(&self) -> BetterDerefStr {
-        BetterDerefStr::String(self.display_name().as_ref_str().to_string())
+        //TODO
+        BetterDerefStr::Str(self.file_name_str().unwrap_or("<error>"))
     }
 
     fn comment(&self) -> Option<BetterDerefStr> {
