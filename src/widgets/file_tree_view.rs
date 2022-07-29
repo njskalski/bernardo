@@ -7,8 +7,8 @@ use std::sync::Arc;
 
 use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
-use crate::new_fs::fsf_ref::FsfRef;
-use crate::new_fs::path::SPath;
+use crate::fs::fsf_ref::FsfRef;
+use crate::fs::path::SPath;
 use crate::spath;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
 
@@ -42,8 +42,8 @@ impl TreeViewWidget<SPath, FileTreeNode> {
 
 #[cfg(test)]
 mod tests {
-    use crate::new_fs::mock_fs::MockFS;
-    use crate::new_fs::path::SPath;
+    use crate::fs::mock_fs::MockFS;
+    use crate::fs::path::SPath;
     use crate::{FilesystemFront, spath};
     use crate::widgets::spath_tree_view_node::FileTreeNode;
     use crate::widgets::tree_view::tree_view::TreeViewWidget;

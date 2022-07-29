@@ -9,11 +9,11 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use log::error;
 use streaming_iterator::StreamingIterator;
-use crate::new_fs::dir_entry::DirEntry;
-use crate::new_fs::filesystem_front::FilesystemFront;
-use crate::new_fs::path::{PathCell, SPath};
-use crate::new_fs::read_error::{ListError, ReadError};
-use crate::new_fs::write_error::WriteError;
+use crate::fs::dir_entry::DirEntry;
+use crate::fs::filesystem_front::FilesystemFront;
+use crate::fs::path::{PathCell, SPath};
+use crate::fs::read_error::{ListError, ReadError};
+use crate::fs::write_error::WriteError;
 
 // Chaching should be implemented here or nowhere.
 
@@ -163,9 +163,9 @@ macro_rules! spath{
 mod tests {
     use std::path::Path;
     use crate::de;
-    use crate::new_fs::mock_fs::MockFS;
-    use crate::new_fs::filesystem_front::FilesystemFront;
-    use crate::new_fs::read_error::ReadError;
+    use crate::fs::mock_fs::MockFS;
+    use crate::fs::filesystem_front::FilesystemFront;
+    use crate::fs::read_error::ReadError;
 
     #[test]
     fn spath_macro() {

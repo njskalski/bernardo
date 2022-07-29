@@ -14,7 +14,7 @@ use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
 use crate::config::theme::Theme;
 use crate::experiments::regex_search::FindError;
-use crate::new_fs::fsf_ref::FsfRef;
+use crate::fs::fsf_ref::FsfRef;
 use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;

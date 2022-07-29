@@ -1,5 +1,5 @@
 use log::{error, warn};
-use crate::new_fs::path::SPath;
+use crate::fs::path::SPath;
 use crate::widgets::list_widget::ListWidgetItem;
 
 impl ListWidgetItem for SPath {

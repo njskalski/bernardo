@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 use std::str::Utf8Error;
-use crate::new_fs::read_error::ReadError;
+use crate::fs::read_error::ReadError;
 
 #[derive(Debug)]
 pub enum LoadError {

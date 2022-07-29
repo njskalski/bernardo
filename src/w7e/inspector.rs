@@ -7,7 +7,7 @@ use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::project_scope::ProjectScope;
 use crate::w7e::rust::inspector_rust::RustLangInspector;
 use crate::LangId;
-use crate::new_fs::path::SPath;
+use crate::fs::path::SPath;
 
 #[derive(Debug)]
 pub enum InspectError {

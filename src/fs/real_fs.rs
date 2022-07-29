@@ -7,12 +7,12 @@ use std::sync::Arc;
 use filesystem::ReadDir;
 use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
-use crate::new_fs::dir_entry::DirEntry;
-use crate::new_fs::fsf_ref::FsfRef;
-use crate::new_fs::filesystem_front::FilesystemFront;
-use crate::new_fs::path::SPath;
-use crate::new_fs::read_error::{ListError, ReadError};
-use crate::new_fs::write_error::WriteError;
+use crate::fs::dir_entry::DirEntry;
+use crate::fs::fsf_ref::FsfRef;
+use crate::fs::filesystem_front::FilesystemFront;
+use crate::fs::path::SPath;
+use crate::fs::read_error::{ListError, ReadError};
+use crate::fs::write_error::WriteError;
 
 pub struct RealFS {
     root_path : PathBuf,

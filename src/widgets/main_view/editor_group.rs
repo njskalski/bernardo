@@ -4,12 +4,11 @@ use std::rc::Rc;
 use log::error;
 
 use crate::{AnyMsg, ConfigRef,  TreeSitterWrapper};
-use crate::experiments::beter_deref_str::BetterDerefStr;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::filename_to_language::filename_to_language;
-use crate::new_fs::fsf_ref::FsfRef;
-use crate::new_fs::path::SPath;
-use crate::new_fs::read_error::ReadError;
+use crate::fs::fsf_ref::FsfRef;
+use crate::fs::path::SPath;
+use crate::fs::read_error::ReadError;
 use crate::text::buffer_state::BufferState;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::fuzzy_search::helpers::is_subsequence;

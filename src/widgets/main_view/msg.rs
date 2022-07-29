@@ -1,6 +1,6 @@
 use crate::AnyMsg;
 use crate::experiments::focus_group::FocusUpdate;
-use crate::new_fs::path::SPath;
+use crate::fs::path::SPath;
 
 #[derive(Clone, Debug)]
 pub enum MainViewMsg {

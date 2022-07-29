@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
 use log::error;
-use crate::new_fs::dir_entry::DirEntry;
-use crate::new_fs::path::SPath;
-use crate::new_fs::read_error::ListError;
+use crate::fs::dir_entry::DirEntry;
+use crate::fs::path::SPath;
+use crate::fs::read_error::ListError;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 #[derive(Debug, Clone)]

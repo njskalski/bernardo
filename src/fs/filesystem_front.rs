@@ -3,11 +3,11 @@ use std::hash::Hash;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use streaming_iterator::StreamingIterator;
-use crate::new_fs::dir_entry::DirEntry;
-use crate::new_fs::fsf_ref::FsfRef;
-use crate::new_fs::path::SPath;
-use crate::new_fs::read_error::{ListError, ReadError};
-use crate::new_fs::write_error::WriteError;
+use crate::fs::dir_entry::DirEntry;
+use crate::fs::fsf_ref::FsfRef;
+use crate::fs::path::SPath;
+use crate::fs::read_error::{ListError, ReadError};
+use crate::fs::write_error::WriteError;
 
 // all paths except root_path are RELATIVE to root_path.
 

@@ -3,7 +3,6 @@
 
 use std::borrow::Cow;
 use crate::AnyMsg;
-use crate::experiments::beter_deref_str::BetterDerefStr;
 
 pub trait Item {
     fn display_name(&self) -> Cow<str>;

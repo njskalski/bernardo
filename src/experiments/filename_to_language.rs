@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::path::Path;
-use crate::new_fs::path::SPath;
+use crate::fs::path::SPath;
 
 use crate::tsw::lang_id::LangId;
 

@@ -3,9 +3,8 @@ use std::fmt::Debug;
 use std::io::empty;
 
 use crate::{AnyMsg};
-use crate::experiments::beter_deref_str::BetterDerefStr;
-use crate::new_fs::fsf_ref::FsfRef;
-use crate::new_fs::path::SPath;
+use crate::fs::fsf_ref::FsfRef;
+use crate::fs::path::SPath;
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 
 pub type SPathToMsg = fn(&SPath) -> Box<dyn AnyMsg>;

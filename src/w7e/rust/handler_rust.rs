@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use crate::LangId;
 use crate::lsp_client::lsp_client::LspWrapper;
-use crate::new_fs::path::SPath;
+use crate::fs::path::SPath;
 use crate::w7e::handler::{Handler, NavCompRef};
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::navcomp_provider::NavCompProvider;

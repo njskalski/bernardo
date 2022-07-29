@@ -10,10 +10,10 @@ use ropey::Rope;
 use serde::de::DeserializeOwned;
 use streaming_iterator::StreamingIterator;
 use syntect::html::IncludeBackground::No;
-use crate::new_fs::dir_entry::DirEntry;
-use crate::new_fs::fsf_ref::FsfRef;
-use crate::new_fs::read_error::{ListError, ReadError};
-use crate::new_fs::write_error::WriteError;
+use crate::fs::dir_entry::DirEntry;
+use crate::fs::fsf_ref::FsfRef;
+use crate::fs::read_error::{ListError, ReadError};
+use crate::fs::write_error::WriteError;
 
 // TODO add some invariants.
 
@@ -314,9 +314,9 @@ impl Debug for SPath {
 mod tests {
     use std::path::Path;
     use crate::de;
-    use crate::new_fs::mock_fs::MockFS;
-    use crate::new_fs::filesystem_front::FilesystemFront;
-    use crate::new_fs::read_error::ReadError;
+    use crate::fs::mock_fs::MockFS;
+    use crate::fs::filesystem_front::FilesystemFront;
+    use crate::fs::read_error::ReadError;
 
     #[test]
     fn make_some_files() {}

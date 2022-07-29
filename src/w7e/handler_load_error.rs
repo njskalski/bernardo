@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::new_fs::read_error::ReadError;
+use crate::fs::read_error::ReadError;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum HandlerLoadError {

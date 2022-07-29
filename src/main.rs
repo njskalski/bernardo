@@ -38,8 +38,8 @@ use crate::widgets::main_view::main_view::MainView;
 use crate::gladius::load_config::load_config;
 use crate::gladius::logger_setup::logger_setup;
 use crate::lsp_client::lsp_finder::LspFinder;
-use crate::new_fs::filesystem_front::FilesystemFront;
-use crate::new_fs::real_fs::RealFS;
+use crate::fs::filesystem_front::FilesystemFront;
+use crate::fs::real_fs::RealFS;
 use crate::tsw::lang_id::LangId;
 
 mod experiments;
@@ -55,7 +55,7 @@ mod config;
 mod gladius;
 mod lsp_client;
 mod w7e;
-mod new_fs;
+mod fs;
 
 fn main() {
     let mut args = gladius::args::Args::parse();

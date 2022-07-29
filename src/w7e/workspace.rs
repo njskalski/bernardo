@@ -2,8 +2,8 @@ use std::path::PathBuf;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::ser::{SerializeSeq, SerializeStruct};
 use crate::experiments::pretty_ron::ToPrettyRonString;
-use crate::{new_fs, w7e};
-use crate::new_fs::path::SPath;
+use crate::{fs, w7e};
+use crate::fs::path::SPath;
 use crate::w7e::project_scope;
 use crate::w7e::project_scope::{ProjectScope, SerializableProjectScope};
 
@@ -28,7 +28,7 @@ impl ToPrettyRonString for SerializableWorkspace {}
 pub enum LoadError {
     WorkspaceFileNotFound,
     ScopeLoadError(w7e::project_scope::LoadError),
-    ReadError(new_fs::read_error::ReadError),
+    ReadError(fs::read_error::ReadError),
 }
 
 impl From<w7e::project_scope::LoadError> for LoadError {
@@ -37,8 +37,8 @@ impl From<w7e::project_scope::LoadError> for LoadError {
     }
 }
 
-impl From<new_fs::read_error::ReadError> for LoadError {
-    fn from(re: new_fs::read_error::ReadError) -> Self {
+impl From<fs::read_error::ReadError> for LoadError {
+    fn from(re: fs::read_error::ReadError) -> Self {
         LoadError::ReadError(re)
     }
 }

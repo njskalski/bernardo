@@ -6,12 +6,12 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
-use crate::new_fs::dir_entry::DirEntry;
-use crate::new_fs::filesystem_front::FilesystemFront;
-use crate::new_fs::fsf_ref::FsfRef;
-use crate::new_fs::path::SPath;
-use crate::new_fs::read_error::{ListError, ReadError};
-use crate::new_fs::write_error::WriteError;
+use crate::fs::dir_entry::DirEntry;
+use crate::fs::filesystem_front::FilesystemFront;
+use crate::fs::fsf_ref::FsfRef;
+use crate::fs::path::SPath;
+use crate::fs::read_error::{ListError, ReadError};
+use crate::fs::write_error::WriteError;
 
 pub struct MockFS {
     root_path : PathBuf,
@@ -180,9 +180,9 @@ impl FilesystemFront for MockFS {
 mod tests {
     use std::path::Path;
     use crate::de;
-    use crate::new_fs::mock_fs::MockFS;
-    use crate::new_fs::filesystem_front::FilesystemFront;
-    use crate::new_fs::read_error::ReadError;
+    use crate::fs::mock_fs::MockFS;
+    use crate::fs::filesystem_front::FilesystemFront;
+    use crate::fs::read_error::ReadError;
 
     #[test]
     fn make_some_files() {

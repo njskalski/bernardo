@@ -10,7 +10,7 @@ use tree_sitter::{Point};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::regex_search::{FindError, regex_find};
-use crate::new_fs::path::SPath;
+use crate::fs::path::SPath;
 use crate::Output;
 use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg};
 use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
