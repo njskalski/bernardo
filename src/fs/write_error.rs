@@ -1,21 +1,25 @@
-use std::io;
+use std::io::Error;
 
-use ron::Error;
-
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum WriteError {
-    RonSeError(ron::Error),
-    IoError(io::Error),
+    FileNotFound,
+    UnmappedError(String),
 }
 
-impl From<ron::Error> for WriteError {
-    fn from(se: Error) -> Self {
-        WriteError::RonSeError(se)
-    }
-}
-
-impl From<io::Error> for WriteError {
-    fn from(ie: io::Error) -> Self {
-        WriteError::IoError(ie)
-    }
-}
+// impl From<std::io::Error> for ReadError {
+//     fn from(e: Error) -> Self {
+//         ReadError::UnmappedError(e.to_string())
+//     }
+// }
+//
+// impl From<std::io::Error> for ListError {
+//     fn from(e: Error) -> Self {
+//         ListError::UnmappedError(e.to_string())
+//     }
+// }
+//
+// impl From<ron::de::Error> for ReadError {
+//     fn from(e: ron::Error) -> Self {
+//         ReadError::DeError(e.to_string())
+//     }
+// }

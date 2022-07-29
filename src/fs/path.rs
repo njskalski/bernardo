@@ -10,7 +10,6 @@ use ropey::Rope;
 use serde::de::DeserializeOwned;
 use streaming_iterator::StreamingIterator;
 use syntect::html::IncludeBackground::No;
-use crate::experiments::beter_deref_str::BetterDerefStr;
 use crate::new_fs::dir_entry::DirEntry;
 use crate::new_fs::fsf_ref::FsfRef;
 use crate::new_fs::read_error::{ListError, ReadError};

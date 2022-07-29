@@ -1,35 +1,50 @@
-use std::fmt::{Display, Formatter};
+use std::io::Error;
 use std::str::Utf8Error;
+use std::string::FromUtf8Error;
 
-use ron::Error;
-
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ReadError {
-    IoError(std::io::Error),
-    Utf8Error(Utf8Error),
-    RonError(ron::Error),
+    FileNotFound,
+    NotAFilePath,
+    // TODO separate?
+    DeError(String),
+    Utf8Error(std::str::Utf8Error),
+    UnmappedError(String),
 }
 
-impl Display for ReadError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+#[derive(Debug, PartialEq, Eq)]
+pub enum ListError {
+    PathNotFound,
+    NotADir,
+    UnmappedError(String),
+}
+
+impl From<std::io::Error> for ReadError {
+    fn from(e: Error) -> Self {
+        ReadError::UnmappedError(e.to_string())
     }
 }
 
-impl From<std::str::Utf8Error> for ReadError {
+impl From<std::io::Error> for ListError {
+    fn from(e: Error) -> Self {
+        ListError::UnmappedError(e.to_string())
+    }
+}
+
+impl From<ron::de::Error> for ReadError {
+    fn from(e: ron::Error) -> Self {
+        ReadError::DeError(e.to_string())
+    }
+}
+
+impl From<Utf8Error> for ReadError {
     fn from(ue: Utf8Error) -> Self {
         ReadError::Utf8Error(ue)
     }
 }
 
-impl From<ron::Error> for ReadError {
-    fn from(re: Error) -> Self {
-        ReadError::RonError(re)
-    }
-}
-
-impl From<std::io::Error> for ReadError {
-    fn from(ie: std::io::Error) -> Self {
-        ReadError::IoError(ie)
+impl From<FromUtf8Error> for ReadError {
+    fn from(fue: FromUtf8Error) -> Self {
+        ReadError::Utf8Error(fue.utf8_error())
     }
 }
