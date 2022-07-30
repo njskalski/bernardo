@@ -120,7 +120,7 @@ impl FsfRef {
 
     pub fn overwrite_with(&self, spath: &SPath, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
         let path = spath.relative_path();
-        self.fs.fs.overwrite_with(&path, stream)
+        self.fs.fs.blocking_overwrite_with(&path, stream)
     }
 
     pub fn blocking_list(&self, spath: &SPath) -> Result<Vec<SPath>, ListError> {

@@ -38,7 +38,7 @@ pub trait FilesystemFront: Debug {
 
     fn exists(&self, path: &Path) -> bool;
 
-    fn overwrite_with(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError>;
+    fn blocking_overwrite_with(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError>;
 
     fn to_fsf(self) -> FsfRef;
 }

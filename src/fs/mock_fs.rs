@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
@@ -16,9 +17,9 @@ use crate::fs::read_error::{ListError, ReadError};
 use crate::fs::write_error::WriteError;
 
 pub struct MockFS {
-    root_path : PathBuf,
+    root_path: PathBuf,
     // directory -> file -> contents
-    all_files : HashMap<PathBuf, HashMap<PathBuf, Vec<u8>>>,
+    all_files: RefCell<HashMap<PathBuf, HashMap<PathBuf, Vec<u8>>>>,
 }
 
 impl MockFS {
@@ -27,25 +28,29 @@ impl MockFS {
         all_files.insert(PathBuf::new(), HashMap::new());
 
         MockFS {
-            root_path : root_path.into(),
-            all_files,
+            root_path: root_path.into(),
+            all_files: RefCell::new(all_files),
         }
     }
 
-    pub fn with_file<P : AsRef<Path>, B : Into<Vec<u8>>>(mut self, path : P, bytes : B) -> Self {
+    pub fn with_file<P: AsRef<Path>, B: Into<Vec<u8>>>(mut self, path: P, bytes: B) -> Self {
         self.add_file(path.as_ref(), bytes.into()).unwrap_or_else(
             |_| error!("failed creating file in mockfs"));
         self
     }
 
-    pub fn add_file(&mut self, path : &Path, bytes : Vec<u8>) -> Result<(), ()> {
+    fn set_file_contents(&self, path: &Path, bytes: Vec<u8>) -> Result<(), ()> {
+        debug_assert!(!self.is_dir(path), "overwriting directory with file");
+
         let (parent_path, file_name) = Self::split_path(path)?;
 
-        if !self.all_files.contains_key(&parent_path) {
-            self.all_files.insert(parent_path.clone(), HashMap::new());
+        let mut all_files = self.all_files.borrow_mut();
+
+        if !all_files.contains_key(&parent_path) {
+            all_files.insert(parent_path.clone(), HashMap::new());
         }
 
-        let mut folder = self.all_files.get_mut(&parent_path).unwrap();
+        let mut folder = all_files.get_mut(&parent_path).unwrap();
 
         if let Some(old_val) = folder.insert(PathBuf::from(file_name), bytes) {
             warn!("overwriting file {:?}", path);
@@ -53,8 +58,12 @@ impl MockFS {
 
         Ok(())
     }
-    
-    fn split_path(path : &Path) -> Result<(PathBuf, PathBuf), ()> {
+
+    pub fn add_file(&mut self, path: &Path, bytes: Vec<u8>) -> Result<(), ()> {
+        self.set_file_contents(path, bytes)
+    }
+
+    fn split_path(path: &Path) -> Result<(PathBuf, PathBuf), ()> {
         if path.file_name().is_none() {
             error!("no valid filename {:?}", path);
             return Err(());
@@ -64,12 +73,6 @@ impl MockFS {
         let parent_path = path.parent().unwrap_or(Path::new("")).to_path_buf();
 
         Ok((parent_path, file_name))
-    }
-
-    pub fn get_file_mut(&mut self, path :&Path) -> Result<&mut Vec<u8>, ReadError> {
-        let (parent_path, file_name) = Self::split_path(path).map_err(|_| ReadError::NotAFilePath)?;
-        let folder = self.all_files.get_mut(&parent_path).ok_or(ReadError::FileNotFound)?;
-        folder.get_mut(&file_name).ok_or(ReadError::FileNotFound)
     }
 }
 
@@ -93,18 +96,19 @@ impl FilesystemFront for MockFS {
             return Err(ReadError::NotAFilePath);
         }
 
-        let (parent, me)  = Self::split_path(path).unwrap();
-        let folder = self.all_files.get(&parent).unwrap();
+        let (parent, me) = Self::split_path(path).unwrap();
+        let all_files = self.all_files.borrow();
+        let folder = all_files.get(&parent).unwrap();
         Ok(folder.get(&me).unwrap().clone())
     }
 
     fn is_dir(&self, path: &Path) -> bool {
-        self.all_files.contains_key(path)
+        self.all_files.borrow().contains_key(path)
     }
 
     fn is_file(&self, path: &Path) -> bool {
         if let Ok( (parent, me) ) = Self::split_path(path) {
-            if let Some( folder) = self.all_files.get(&parent) {
+            if let Some(folder) = self.all_files.borrow().get(&parent) {
                 folder.contains_key(&me)
             } else {
                 false
@@ -127,9 +131,9 @@ impl FilesystemFront for MockFS {
             return Err(ListError::NotADir);
         }
 
-        let mut items : Vec<DirEntry> = Vec::new();
+        let mut items: Vec<DirEntry> = Vec::new();
 
-        for key in self.all_files.keys() {
+        for key in self.all_files.borrow().keys() {
             if let Ok(suffix) = key.strip_prefix(path) {
                 if let Some(first_component) = suffix.components().next() {
                     items.push(DirEntry::new(&first_component))
@@ -137,7 +141,8 @@ impl FilesystemFront for MockFS {
             }
         }
 
-        let folder = self.all_files.get(path).unwrap();
+        let all_files = self.all_files.borrow();
+        let folder = all_files.get(path).unwrap();
 
         for item in folder.keys() {
             items.push(DirEntry::new(item.clone()));
@@ -150,13 +155,13 @@ impl FilesystemFront for MockFS {
     }
 
     fn exists(&self, path: &Path) -> bool {
-        if self.all_files.contains_key(path) {
+        if self.all_files.borrow().contains_key(path) {
             return true;
         }
 
         if let Ok( (parent, me) ) = Self::split_path(path) {
             error!("{:?} {:?}", parent, me);
-            if let Some( folder) = self.all_files.get(&parent) {
+            if let Some(folder) = self.all_files.borrow().get(&parent) {
                 folder.contains_key(&me)
             } else {
                 false
@@ -166,8 +171,17 @@ impl FilesystemFront for MockFS {
         }
     }
 
-    fn overwrite_with(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
-        todo!()
+    fn blocking_overwrite_with(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
+        let mut bytes = Vec::<u8>::new();
+        while let Some(chunk) = stream.next() {
+            for i in chunk.into_iter() {
+                bytes.push(*i);
+            }
+        };
+
+        let len_bytes = bytes.len();
+        self.set_file_contents(path, bytes);
+        Ok(len_bytes)
     }
 
     fn to_fsf(self) -> FsfRef {
