@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Stdio;
@@ -53,17 +54,16 @@ pub struct LspWrapper {
     logger_handle: tokio::task::JoinHandle<Result<(), ()>>,
 }
 
+pub type LspWrapperRef = Arc<RefCell<LspWrapper>>;
+
 impl LspWrapper {
     /*
     This spawns a reader thread that awaits server's stdout/stderr and pipes messages.
 
      */
-    pub fn todo_new(workspace_root: PathBuf) -> Option<LspWrapper> {
+    pub fn new(lsp_path: PathBuf, workspace_root: PathBuf) -> Option<LspWrapper> {
         debug!("starting LspWrapper for directory {:?}", &workspace_root);
-        // TODO unwrap
-        let path = PathBuf::from_str("/home/andrzej/.local/bin/rust-analyzer").unwrap();
-        // let path = PathBuf::from_str("/usr/bin/clangd").unwrap();
-        let mut child = tokio::process::Command::new(path.as_os_str())
+        let mut child = tokio::process::Command::new(lsp_path.as_os_str())
             // .args(&["--cli"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -104,7 +104,7 @@ impl LspWrapper {
 
         Some(
             LspWrapper {
-                server_path: path,
+                server_path: lsp_path,
                 workspace_root_path: workspace_root,
                 language: LangId::RUST,
                 child,
@@ -140,7 +140,7 @@ impl LspWrapper {
                 }
                 Ok(resp) => {
                     serde_json::from_value::<R::Result>(resp).map_err(|e| {
-                        LspIOError::Read(LspReadError::DeError(e))
+                        LspIOError::Read(LspReadError::DeError(e.to_string()))
                     })
                 }
             }

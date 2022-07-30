@@ -63,7 +63,7 @@ pub async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
             match single {
                 Output::Failure(fail) => {
                     debug!("failed parsing response, because {:?}", fail);
-                    Err(LspReadError::LspFailure(fail.error))
+                    Err(LspReadError::JsonRpcError(fail.error.to_string()))
                 },
                 Output::Success(succ) => {
                     let id = id_to_str(succ.id);

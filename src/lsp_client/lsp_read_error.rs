@@ -1,28 +1,28 @@
 use std::io;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum LspReadError {
     NoLine,
-    IoError(io::Error),
-    DeError(serde_json::error::Error),
+    IoError(String),
+    DeError(String),
     UnknownMethod,
     ParamCastFailed,
     UnexpectedContents,
     NotSingleResponse,
-    LspFailure(jsonrpc_core::Error),
+    JsonRpcError(String),
     BrokenChannel,
-    HttpParseError(stream_httparse::streaming_parser::ParseError),
+    HttpParseError(String),
 }
 
 impl From<io::Error> for LspReadError {
     fn from(ioe: io::Error) -> Self {
-        LspReadError::IoError(ioe)
+        LspReadError::IoError(ioe.to_string())
     }
 }
 
 impl From<serde_json::error::Error> for LspReadError {
     fn from(dee: serde_json::error::Error) -> Self {
-        LspReadError::DeError(dee)
+        LspReadError::DeError(dee.to_string())
     }
 }
 
@@ -34,6 +34,6 @@ impl From<jsonrpc_core::Error> for LspReadError {
 
 impl From<stream_httparse::streaming_parser::ParseError> for LspReadError {
     fn from(p: stream_httparse::streaming_parser::ParseError) -> Self {
-        LspReadError::HttpParseError(p)
+        LspReadError::HttpParseError(p.to_string())
     }
 }

@@ -1,11 +1,14 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
 
+use crate::config::global_editor_options::GlobalEditorOptions;
 use crate::config::load_error::LoadError;
 use crate::config::save_error::SaveError;
 use crate::io::keys::Key;
 use crate::Keycode;
+use crate::primitives::is_default::IsDefault;
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Config {
@@ -13,6 +16,9 @@ pub struct Config {
 
     #[serde(skip)]
     pub config_dir: PathBuf,
+
+    #[serde(default, skip_serializing_if = "GlobalEditorOptions::is_default")]
+    pub global: GlobalEditorOptions,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]

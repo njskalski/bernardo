@@ -34,13 +34,6 @@ impl ToPrettyRonString for SerializableProjectScope {}
 #[derive(Debug, Eq, PartialEq)]
 pub enum LoadError {
     DirectoryNotFound,
-    HandlerLoadError(HandlerLoadError),
-}
-
-impl From<HandlerLoadError> for LoadError {
-    fn from(e: HandlerLoadError) -> Self {
-        LoadError::HandlerLoadError(e)
-    }
 }
 
 impl ProjectScope {
@@ -72,14 +65,14 @@ impl ProjectScope {
     Config is required to "know" where the LSP servers are. We will provide reasonable defaults,
     but option to override is essential.
      */
-    pub fn load_handler(&mut self, config: &ConfigRef) -> Result<(), HandlerLoadError> {
+    pub async fn load_handler(&mut self, config: &ConfigRef) -> Result<(), HandlerLoadError> {
         let handler = match &self.handler_id {
             None => {
                 warn!("project scope [{:?}] with no handler - what the point?", self.path.relative_path());
                 return Ok(())
             },
             Some(handler_id) => {
-                load_handler(config, &handler_id, self.path.clone())?
+                load_handler(config, &handler_id, self.path.clone()).await?
             }
         };
 

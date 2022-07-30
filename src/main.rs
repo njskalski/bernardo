@@ -33,12 +33,12 @@ use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
-use crate::lsp_client::lsp_finder::LspFinder;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::ZERO;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::inspector::{inspect_workspace, InspectError};
 use crate::w7e::project_scope::ProjectScope;
 use crate::w7e::workspace::{LoadError, ScopeLoadErrors, Workspace};
@@ -66,15 +66,20 @@ async fn main() -> Result<(), usize> {
     let mut args = gladius::args::Args::parse();
     logger_setup(args.verbosity.log_level_filter());
 
+    // Initializing subsystems
     let config_ref = load_config(args.reconfigure);
     let theme = Theme::load_or_create_default(&config_ref.config_dir).unwrap();
+    let clipboard = get_me_some_clipboard();
+    let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
 
+    // Parsing arguments
     debug!("{:?}", args.paths());
     let (start_dir, files) = args.paths();
     let fsf = RealFS::new(start_dir).to_fsf();
 
+    // Loading / Building workspace file
     let workspace_dir = fsf.root();
-    let (mut workspace, scope_errors): (Option<Workspace>, ScopeLoadErrors) = match Workspace::try_load(workspace_dir.clone()) {
+    let (mut workspace_op, scope_errors): (Option<Workspace>, ScopeLoadErrors) = match Workspace::try_load(workspace_dir.clone()) {
         Ok(res) => (Some(res.0), res.1),
         Err(e) => {
             match e {
@@ -91,40 +96,56 @@ async fn main() -> Result<(), usize> {
         }
     };
 
-    // TODO add option to NOT build workspace?
-
-    if workspace.is_none() {
-        match inspect_workspace(&workspace_dir) {
-            Err(e) => {
-                match &e {
-                    InspectError::NotAFolder => {
-                        error!("failed inspecting workspace at {:?}, because it doesn't seem to be a folder.",
+    // TODO add option to NOT *save* workspace after creation?
+    let mut workspace = match workspace_op {
+        Some(w) => w,
+        None => {
+            // Attempting to create a reasonable workspace
+            match inspect_workspace(&workspace_dir) {
+                Err(e) => {
+                    match &e {
+                        InspectError::NotAFolder => {
+                            error!("failed inspecting workspace at {:?}, because it doesn't seem to be a folder.",
                             workspace_dir.absolute_path());
-                        // This should never happen, so I terminate program.
-                        return Err(1);
-                    }
-                    _ => {
-                        error!("failed inspecting workspace at {:?}, because:\n{}", workspace_dir.absolute_path(), e);
+                            // This should never happen, so I terminate program.
+                            return Err(1);
+                        }
+                        _ => {
+                            error!("failed inspecting workspace at {:?}, because:\n{}", workspace_dir.absolute_path(), e);
+                            // I decided inspection should not have non-fatal errors, just worst case scenario being "no scopes".
+                            return Err(1);
+                        }
                     }
                 }
-            }
-            Ok(scopes) => {
-                debug!("creating new workspace at {:?}", workspace_dir.absolute_path());
-                let workspace = Workspace::new(workspace_dir, scopes);
-                match workspace.save() {
-                    Ok(_) => {
-                        debug!("saved successfully");
+                Ok(scopes) => {
+                    debug!("creating new workspace at {:?} with {} scopes", workspace_dir.absolute_path(), scopes.len());
+                    let workspace = Workspace::new(workspace_dir, scopes);
+                    match workspace.save() {
+                        Ok(_) => {
+                            debug!("saved successfully");
+                        }
+                        Err(e) => {
+                            error!("failed writing workspace file: {:?}", e);
+                        }
                     }
-                    Err(e) => {
-                        error!("failed writing workspace file: {:?}", e);
-                    }
+                    workspace
                 }
             }
         }
-    }
+    };
 
-    let clipboard = get_me_some_clipboard();
-    let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
+    // at this point it is guaranteed that we have a Workspace present, though it might be not saved!
+
+    // Initializing handlers
+    match workspace.initialize_handlers(&config_ref).await {
+        Ok(_) => {
+            debug!("{} handlers initialized", workspace.scopes().len());
+        }
+        Err(errors) => {
+            // TODO I don't know, should I print more data?
+            debug!("{} handlers failed to load.", errors.len());
+        }
+    };
 
     terminal::enable_raw_mode().expect("failed entering raw mode");
     let input = CrosstermInput::new();

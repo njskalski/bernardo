@@ -1,22 +1,22 @@
 use std::io;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum LspWriteError {
     WrongValueType,
-    SerializationError(serde_json::error::Error),
-    IoError(io::Error),
+    SerializationError(String),
+    IoError(String),
     BrokenPipe,
     InterruptedWrite,
 }
 
 impl From<serde_json::error::Error> for LspWriteError {
     fn from(e: serde_json::error::Error) -> Self {
-        LspWriteError::SerializationError(e)
+        LspWriteError::SerializationError(e.to_string())
     }
 }
 
 impl From<io::Error> for LspWriteError {
     fn from(ioe: io::Error) -> Self {
-        LspWriteError::IoError(ioe)
+        LspWriteError::IoError(ioe.to_string())
     }
 }

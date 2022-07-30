@@ -1,7 +1,7 @@
 use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::lsp_client::lsp_write_error::LspWriteError;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum LspIOError {
     Write(LspWriteError),
     Read(LspReadError),

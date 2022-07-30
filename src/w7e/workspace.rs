@@ -4,10 +4,11 @@ use log::debug;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::ser::{SerializeSeq, SerializeStruct};
 
-use crate::{fs, w7e};
+use crate::{ConfigRef, fs, w7e};
 use crate::experiments::pretty_ron::ToPrettyRonString;
 use crate::fs::path::SPath;
 use crate::fs::write_error::{WriteError, WriteOrSerError};
+use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::project_scope;
 use crate::w7e::project_scope::{ProjectScope, SerializableProjectScope};
 
@@ -83,5 +84,30 @@ impl Workspace {
         SerializableWorkspace {
             scopes: serializable_scopes
         }
+    }
+
+    pub async fn initialize_handlers(&mut self, config: &ConfigRef) -> Result<(), Vec<HandlerLoadError>> {
+        let mut errors: Vec<HandlerLoadError> = Vec::default();
+
+        for scope in self.scopes.iter_mut() {
+            match scope.load_handler(config).await {
+                Ok(_) => {
+                    debug!("loaded handler for scope {:?}", scope.path.absolute_path());
+                }
+                Err(e) => {
+                    errors.push(e);
+                }
+            }
+        }
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
+    }
+
+    pub fn scopes(&self) -> &Vec<ProjectScope> {
+        &self.scopes
     }
 }
