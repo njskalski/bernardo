@@ -2,7 +2,9 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+
 use streaming_iterator::StreamingIterator;
+
 use crate::fs::dir_entry::DirEntry;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
@@ -36,7 +38,7 @@ pub trait FilesystemFront: Debug {
 
     fn exists(&self, path: &Path) -> bool;
 
-    fn overwrite_with(&self, path : &Path, stream : &dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError>;
+    fn overwrite_with(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError>;
 
     fn to_fsf(self) -> FsfRef;
 }

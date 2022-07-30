@@ -254,9 +254,9 @@ impl SPath {
         fsf.exists(self)
     }
 
-    pub fn overwrite_with<T : StreamingIterator<Item=[u8]>>(&self, stream : T) -> Result<usize, WriteError> {
+    pub fn overwrite_with(&self, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
         let fsf = self.fsf();
-        fsf.overwrite_with(self, &stream)
+        fsf.overwrite_with(self, stream)
     }
 
     pub fn blocking_list(&self) -> Result<Vec<SPath>, ListError> {

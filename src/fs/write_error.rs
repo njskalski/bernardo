@@ -6,12 +6,12 @@ pub enum WriteError {
     UnmappedError(String),
 }
 
-// impl From<std::io::Error> for ReadError {
-//     fn from(e: Error) -> Self {
-//         ReadError::UnmappedError(e.to_string())
-//     }
-// }
-//
+impl From<std::io::Error> for WriteError {
+    fn from(e: Error) -> Self {
+        WriteError::UnmappedError(e.to_string())
+    }
+}
+
 // impl From<std::io::Error> for ListError {
 //     fn from(e: Error) -> Self {
 //         ListError::UnmappedError(e.to_string())

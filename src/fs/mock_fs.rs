@@ -4,8 +4,10 @@ use std::hash::{Hash, Hasher};
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+
 use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
+
 use crate::fs::dir_entry::DirEntry;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::fsf_ref::FsfRef;
@@ -164,9 +166,7 @@ impl FilesystemFront for MockFS {
         }
     }
 
-    fn overwrite_with(&self, path: &Path, stream: &dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
-
-
+    fn overwrite_with(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
         todo!()
     }
 
@@ -179,9 +179,10 @@ impl FilesystemFront for MockFS {
 #[cfg(test)]
 mod tests {
     use std::path::Path;
+
     use crate::de;
-    use crate::fs::mock_fs::MockFS;
     use crate::fs::filesystem_front::FilesystemFront;
+    use crate::fs::mock_fs::MockFS;
     use crate::fs::read_error::ReadError;
 
     #[test]

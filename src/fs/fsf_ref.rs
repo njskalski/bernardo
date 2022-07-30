@@ -118,7 +118,7 @@ impl FsfRef {
         Some(spath)
     }
 
-    pub fn overwrite_with(&self, spath : &SPath, stream : &dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
+    pub fn overwrite_with(&self, spath: &SPath, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
         let path = spath.relative_path();
         self.fs.fs.overwrite_with(&path, stream)
     }

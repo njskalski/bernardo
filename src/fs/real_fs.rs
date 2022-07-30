@@ -1,15 +1,17 @@
 use std::collections::HashSet;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
-use std::io::{Error, Read};
+use std::io::{Error, Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
+
 use filesystem::ReadDir;
 use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
+
 use crate::fs::dir_entry::DirEntry;
-use crate::fs::fsf_ref::FsfRef;
 use crate::fs::filesystem_front::FilesystemFront;
+use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::fs::read_error::{ListError, ReadError};
 use crate::fs::write_error::WriteError;
@@ -82,11 +84,23 @@ impl FilesystemFront for RealFS {
     }
 
     fn exists(&self, path: &Path) -> bool {
-        todo!()
+        path.exists()
     }
 
-    fn overwrite_with(&self, path: &Path, stream: &dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
-        todo!()
+    fn overwrite_with(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
+        let mut file = std::fs::File::open(path)?;
+
+        let mut bytes_written: usize = 0;
+        while let Some(bytes) = stream.next() {
+            let num_bytes = file.write(bytes)?;
+            if num_bytes != bytes.len() {
+                error!("unexpected number of bytes written");
+                break;
+            }
+        }
+
+        file.flush()?;
+        Ok(bytes_written)
     }
 
     fn to_fsf(self) -> FsfRef {
