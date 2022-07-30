@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::io::Error;
 use std::str::Utf8Error;
 use std::string::FromUtf8Error;
@@ -17,6 +18,13 @@ pub enum ListError {
     PathNotFound,
     NotADir,
     UnmappedError(String),
+}
+
+impl Display for ReadError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // TODO something smarter?
+        write!(f, "{:?}", self)
+    }
 }
 
 impl From<std::io::Error> for ReadError {

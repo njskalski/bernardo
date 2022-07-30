@@ -11,36 +11,38 @@ extern crate matches;
 
 
 use std::io::stdout;
-use std::path::PathBuf;
 use std::rc::Rc;
-use clap::Parser;
 
+use clap::Parser;
 use crossbeam_channel::select;
 use crossterm::terminal;
 use log::{debug, error};
 
+use config::theme::Theme;
+
+use crate::config::config::{Config, ConfigRef};
+use crate::experiments::clipboard::get_me_some_clipboard;
+use crate::fs::filesystem_front::FilesystemFront;
+use crate::fs::real_fs::RealFS;
+use crate::gladius::load_config::load_config;
+use crate::gladius::logger_setup::logger_setup;
 use crate::io::crossterm_input::CrosstermInput;
 use crate::io::crossterm_output::CrosstermOutput;
-use crate::experiments::clipboard::get_me_some_clipboard;
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
+use crate::lsp_client::lsp_finder::LspFinder;
 use crate::primitives::size_constraint::SizeConstraint;
-use config::theme::Theme;
-use crate::config::config::{Config, ConfigRef};
 use crate::primitives::xy::ZERO;
+use crate::tsw::lang_id::LangId;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::w7e::workspace::{LoadError, ScopeLoadErrors, Workspace};
+use crate::w7e::workspace::WORKSPACE_FILE_NAME;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
-use crate::gladius::load_config::load_config;
-use crate::gladius::logger_setup::logger_setup;
-use crate::lsp_client::lsp_finder::LspFinder;
-use crate::fs::filesystem_front::FilesystemFront;
-use crate::fs::real_fs::RealFS;
-use crate::tsw::lang_id::LangId;
 
 mod experiments;
 mod io;
@@ -56,16 +58,37 @@ mod gladius;
 mod lsp_client;
 mod w7e;
 
-fn main() {
+#[tokio::main(flavor = "multi_thread", worker_threads = 4)]
+async fn main() -> Result<(), usize> {
     let mut args = gladius::args::Args::parse();
     logger_setup(args.verbosity.log_level_filter());
 
     let config_ref = load_config(args.reconfigure);
     let theme = Theme::load_or_create_default(&config_ref.config_dir).unwrap();
 
+    debug!("{:?}", args.paths());
     let (start_dir, files) = args.paths();
-
     let fsf = RealFS::new(start_dir).to_fsf();
+
+    let (workspace, scope_errors): (Option<Workspace>, ScopeLoadErrors) = match Workspace::try_load(fsf.root()) {
+        Ok(res) => (Some(res.0), res.1),
+        Err(e) => {
+            match e {
+                LoadError::WorkspaceFileNotFound => {
+                    (None, ScopeLoadErrors::default())
+                }
+                LoadError::ReadError(e) => {
+                    error!("failed reading workspace file at {}, because:\n{}\nterminating. To continue, rename/remove {} in that folder.",
+                        fsf.root(), e, WORKSPACE_FILE_NAME);
+
+                    return Err(1);
+                }
+            }
+        }
+    };
+
+    // starting indexing threads
+
 
     let clipboard = get_me_some_clipboard();
     let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
@@ -75,32 +98,20 @@ fn main() {
     let stdout = stdout();
     let mut output = CrosstermOutput::new(stdout);
 
-    // from here are pure experiments
-    let tokio_runtime = match tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(2)
-        .enable_all()
-        .build() {
-        Ok(tokio_runtime) => tokio_runtime,
-        Err(e) => {
-            error!("failed starting tokio: [{:?}]", e);
-            return;
-        }
-    };
+    // let lsp_finder = LspFinder::new(config_ref.clone());
+    // let workspace_root = PathBuf::from("/home/andrzej/r/rust/bernardo");
 
-    let lsp_finder = LspFinder::new(config_ref.clone());
-    let workspace_root = PathBuf::from("/home/andrzej/r/rust/bernardo");
+    // let workspace =
 
-    let handle = tokio_runtime.spawn(async move {
-        let mut lsp_client = lsp_finder.todo_get_lsp(LangId::RUST, workspace_root).unwrap();
-        let item = lsp_client.initialize().await;
-    });
+    // let mut lsp_client = lsp_finder.todo_get_lsp(LangId::RUST, workspace_root).unwrap();
+    // let item = lsp_client.initialize().await;
 
     // tokio_runtime.block_on(handle).unwrap();
     // end of pure experiments
 
     if output.size_constraint().visible_hint().size == ZERO {
-        //TODO
-        return;
+        error!("it seems like the screen has zero size.");
+        return Err(1);
     }
 
     let mut main_view = MainView::new(config_ref.clone(), tree_sitter, fsf.clone(), clipboard);
@@ -218,5 +229,5 @@ fn main() {
         }
     }
 
-    tokio_runtime.block_on(handle).unwrap();
+    Ok(())
 }

@@ -1,9 +1,9 @@
 use std::{env, fs};
 use std::path::PathBuf;
 use std::process::exit;
-use log::error;
-use clap::Parser;
 
+use clap::Parser;
+use log::error;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

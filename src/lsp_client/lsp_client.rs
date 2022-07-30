@@ -8,7 +8,7 @@ use log::{debug, error, warn};
 use lsp_types::Url;
 use serde_json::Value;
 use stream_httparse::streaming_parser::RespParser;
-use tokio::io::AsyncBufReadExt;
+use tokio::io::{AsyncBufReadExt, AsyncReadExt};
 use tokio::io::BufReader;
 use tokio::process::{ChildStderr, ChildStdout};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -278,15 +278,18 @@ impl LspWrapper {
 
         let mut stderr_lines = stderr_pipe.lines();
 
+        let mut more_lines = true;
+        let mut notification_channel_open = true;
         loop {
             tokio::select! {
-                line_res = stderr_lines.next_line() => {
+                line_res = stderr_lines.next_line(), if more_lines => {
                     match line_res {
                         Ok(line_op) => {
                             if let Some(line) = line_op {
                                 error!("Lsp: {}", line);
                             } else {
-                                debug!("no more lines in LSP stderr_pipe.")
+                                debug!("no more lines in LSP stderr_pipe.");
+                                more_lines = false;
                             }
                         }
                         Err(e) => {
@@ -294,19 +297,22 @@ impl LspWrapper {
                         }
                     }
                 },
-                notification_op = notification_receiver.recv() => {
+                notification_op = notification_receiver.recv(), if notification_channel_open => {
                     match notification_op {
                         Some(notification) => {
                             debug!("received LSP notification:\n---\n{:?}\n---\n", notification);
                         }
                         None => {
-                            debug!("notification channel closed.")
+                            debug!("notification channel closed.");
+                            notification_channel_open = false;
                         }
                     }
                 },
                 else => { break; },
             }
         }
+
+        debug!("closing logger thread");
 
         Ok(())
     }

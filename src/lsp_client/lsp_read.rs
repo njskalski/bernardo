@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use jsonrpc_core::{Id, Output};
 use log::{debug, error};
+use serde_json::json;
 use tokio::io::AsyncReadExt;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::RwLock;
@@ -53,19 +54,30 @@ pub async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
     }
 
     let response = response_parser.finish()?;
-    debug!("Receiving:\n---\n{}\n---\n", std::str::from_utf8(response.body()).unwrap());
+    debug!("Receiving {:?} and body of {} bytes", response.status_code(), response.body().len());
+    debug!("{}", std::str::from_utf8(response.body()).unwrap());
 
     // TODO add notification type.
     if let Ok(resp) = serde_json::from_slice::<jsonrpc_core::Response>(response.body()) {
         if let jsonrpc_core::Response::Single(single) = resp {
             match single {
-                Output::Failure(fail) => Err(LspReadError::LspFailure(fail.error)),
+                Output::Failure(fail) => {
+                    debug!("failed parsing response, because {:?}", fail);
+                    Err(LspReadError::LspFailure(fail.error))
+                },
                 Output::Success(succ) => {
                     let id = id_to_str(succ.id);
+                    debug!("call info id {}", &id);
                     if let Some(call_info) = id_to_method.write().await.remove(&id) {
                         match call_info.sender.send(succ.result) {
-                            Ok(_) => Ok(()),
-                            Err(_) => Err(LspReadError::BrokenChannel)
+                            Ok(_) => {
+                                debug!("sent {} to {}", call_info.method, &id);
+                                Ok(())
+                            },
+                            Err(_) => {
+                                debug!("failed to send {} to {}, because of broken channel", call_info.method, &id);
+                                Err(LspReadError::BrokenChannel)
+                            }
                         }
                     } else {
                         Err(LspReadError::UnknownMethod)
