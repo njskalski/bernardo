@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use crate::fs::path::SPath;
 use crate::LangId;
 use crate::lsp_client::lsp_client::LspWrapper;
-use crate::fs::path::SPath;
 use crate::w7e::handler::{Handler, NavCompRef};
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::navcomp_provider::NavCompProvider;
@@ -53,7 +53,7 @@ impl RustHandler {
         let cargo = cargo_toml::Manifest::from_slice(&contents)
             .map_err(|e| HandlerLoadError::DeserializationError(e.to_string()))?;
 
-        let lsp = LspWrapper::todo_new(ff.relative_path()).map(|lsp| Arc::new(lsp));
+        let lsp = LspWrapper::todo_new(ff.absolute_path()).map(|lsp| Arc::new(lsp));
         let navcomp = lsp.clone().map(|lsp| {
             Arc::new(Box::new(NavCompProviderLsp::new(lsp)) as Box<dyn NavCompProvider>)
         });

@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter, write};
 
-use log::error;
+use log::{debug, error};
 
+use crate::{ConfigRef, LangId};
 use crate::fs::path::SPath;
-use crate::LangId;
 use crate::w7e::handler::Handler;
+use crate::w7e::handler_factory::load_handler;
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::project_scope::ProjectScope;
 use crate::w7e::rust::inspector_rust::RustLangInspector;
@@ -29,8 +30,6 @@ pub trait LangInspector: Sync {
     This is supposed to be quick.
      */
     fn is_project_dir(&self, ff: &SPath) -> bool;
-
-    fn handle(&self, ff: SPath) -> Result<Box<dyn Handler>, HandlerLoadError>;
 }
 
 lazy_static! {
@@ -53,17 +52,16 @@ pub fn inspect_workspace(folder: &SPath) -> Result<Vec<ProjectScope>, InspectErr
     // TODO add one level more of descending (multiple projects per dir)
 
     for (lang_id, inspector) in KNOWN_INSPECTORS.iter() {
+        debug!("checking for lang {} in {}", lang_id, &folder);
         if inspector.is_project_dir(&folder) {
-            match inspector.handle(folder.clone()) {
-                Ok(handler) => scopes.push(ProjectScope {
-                    path: folder.clone(),
-                    lang_id: inspector.lang_id(),
-                    handler: Some(handler),
-                }),
-                Err(e) => {
-                    error!("handler {} failed: {:?}", lang_id, e);
-                }
-            }
+            debug!("matched {}", lang_id);
+            scopes.push(ProjectScope {
+                path: folder.clone(),
+                lang_id: inspector.lang_id(),
+                // this is a place where we set default handler_ids
+                handler_id: Some(inspector.lang_id().to_lsp_lang_id_string().to_string()),
+                handler: None,
+            });
         }
     }
 

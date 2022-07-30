@@ -59,6 +59,7 @@ impl LspWrapper {
 
      */
     pub fn todo_new(workspace_root: PathBuf) -> Option<LspWrapper> {
+        debug!("starting LspWrapper for directory {:?}", &workspace_root);
         // TODO unwrap
         let path = PathBuf::from_str("/home/andrzej/.local/bin/rust-analyzer").unwrap();
         // let path = PathBuf::from_str("/usr/bin/clangd").unwrap();

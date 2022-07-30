@@ -1,8 +1,9 @@
 use std::path::PathBuf;
 
+use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 
-use crate::LangId;
+use crate::{ConfigRef, LangId};
 use crate::experiments::pretty_ron::ToPrettyRonString;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
@@ -17,10 +18,11 @@ pub struct ProjectScope {
     /*
     Handler is something that translates "path" to "project definition"
      */
+    pub handler_id: Option<String>,
     pub handler: Option<Box<dyn Handler>>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SerializableProjectScope {
     pub lang_id: LangId,
     pub path: PathBuf,
@@ -51,23 +53,37 @@ impl ProjectScope {
     }
 
     pub fn from_serializable(sps: SerializableProjectScope, workspace : &SPath) -> Result<Self, LoadError> {
-        let ff = workspace.descendant_checked(&sps.path).ok_or(LoadError::DirectoryNotFound)?;
-        let handler = match &sps.handler_id_op {
-            None => None,
-            Some(handler_id) => {
-                match load_handler(&handler_id, ff.clone()) {
-                    Ok(s) => Some(s),
-                    Err(e) => {
-                        return Err(LoadError::HandlerLoadError(e));
-                    }
-                }
-            }
+        debug!("loading project scope from pill: {:?}", sps);
+        let ff = if sps.path.as_os_str().is_empty() {
+            workspace.clone()
+        } else {
+            workspace.descendant_checked(&sps.path).ok_or(LoadError::DirectoryNotFound)?
         };
 
         Ok(ProjectScope {
             lang_id: sps.lang_id,
             path: ff,
-            handler,
+            handler_id: sps.handler_id_op,
+            handler: None,
         })
+    }
+
+    /*
+    Config is required to "know" where the LSP servers are. We will provide reasonable defaults,
+    but option to override is essential.
+     */
+    pub fn load_handler(&mut self, config: &ConfigRef) -> Result<(), HandlerLoadError> {
+        let handler = match &self.handler_id {
+            None => {
+                warn!("project scope [{:?}] with no handler - what the point?", self.path.relative_path());
+                return Ok(())
+            },
+            Some(handler_id) => {
+                load_handler(config, &handler_id, self.path.clone())?
+            }
+        };
+
+        self.handler = Some(handler);
+        Ok(())
     }
 }

@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use log::debug;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::ser::{SerializeSeq, SerializeStruct};
 
@@ -49,6 +50,7 @@ impl Workspace {
 
     pub fn try_load(root_path: SPath) -> Result<(Workspace, ScopeLoadErrors), LoadError> {
         let workspace_file = root_path.descendant_checked(WORKSPACE_FILE_NAME).ok_or(LoadError::WorkspaceFileNotFound)?;
+        debug!("loading workspace file from {:?}", workspace_file.absolute_path());
         let serialized_workspace = workspace_file.read_entire_file_to_item::<SerializableWorkspace>()?;
         Self::from(serialized_workspace, root_path)
     }
