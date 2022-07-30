@@ -198,7 +198,6 @@ impl SPath {
 
     /*
     Returns printable label representing last component for tree/list use case.
-    TODO: this should return some non-owned type
      */
     pub fn label(&self) -> Cow<str> {
         match self.0.as_ref() {

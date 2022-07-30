@@ -190,81 +190,43 @@ impl SaveFileDialogWidget {
     pub fn set_path(&mut self, path: SPath) -> bool {
         debug!("setting path to {:?}", path);
 
-        // self.tree_widget.internal_mut().set_p
+        let (dir, file): (Option<SPath>, Option<SPath>) = if path.is_file() {
+            (path.parent(), Some(path))
+        } else {
+            (Some(path), None)
+        };
 
-        todo!()
-        //
-        // let (mut dir, filename): (PathBuf, Option<&str>) = if path.is_dir() {
-        //     (path.to_path_buf(), None)
-        // } else {
-        //     (path.parent().map(|f| f.to_path_buf()).unwrap_or_else(|| {
-        //         warn!("failed to extract parent of {:?}, defaulting to fsf.root", path);
-        //         self.fsf.get_root_path().to_path_buf()
-        //     }), path.file_name().map(|s| s.to_str()).unwrap_or_else(|| {
-        //         warn!("filename at end of {:?} is not UTF-8", path);
-        //         None
-        //     }))
-        // };
-        //
-        // if !dir.starts_with(self.fsf.get_root_path().as_path()) {
-        //     error!("attempted to set path to non-root location {:?}, defaulting to fsf.root", dir);
-        //     dir = self.fsf.get_root_path().to_path_buf();
-        // }
-        //
-        // // now I will be stripping pieces of dir path and expanding each of them (bottom-up)
-        // self.tree_widget.internal_mut().expanded_mut().insert(dir.to_path_buf());
-        //
-        // let mut root_path = self.fsf.get_root_path().to_path_buf();
-        // self.tree_widget.internal_mut().expanded_mut().insert(root_path.clone());
-        //
-        // match dir.strip_prefix(&root_path) {
-        //     Err(e) => {
-        //         error!("supposed to set path to {:?}, but it's outside fs {:?}, because: {}", path, &root_path, e);
-        //         return false;
-        //     }
-        //     Ok(remainder) => {
-        //         for comp in remainder.components() {
-        //             root_path = root_path.join(comp);
-        //             debug!("expanding subtree {:?}", &root_path);
-        //             self.tree_widget.internal_mut().expanded_mut().insert(root_path.clone());
-        //         }
-        //     }
-        // }
-        //
-        // if !self.tree_widget.internal_mut().set_selected(&root_path) {
-        //     error!("failed to select {:?}", root_path);
-        //     return false;
-        // }
-        //
-        // filename.map(|f| self.edit_box.set_text(f));
-        //
-        // self.fsf.get_path(&root_path).map(|rcp| {
-        //     self.show_files_on_right_panel(&rcp)
-        // }).unwrap_or(false)
+        let mut changed = false;
+        dir.map(|p| changed = self.tree_widget.internal_mut().expand_path(&p));
+        file.map(|p| {
+            self.edit_box.set_text(p.label().as_ref());
+            changed = true;
+        });
+
+        changed
     }
 
 
-    fn show_files_on_right_panel(&mut self, directory: &Arc<PathBuf>) -> bool {
-        todo!()
-        // if !self.fsf.is_dir(&directory) {
-        //     warn!("expected directory, got {:?}", directory);
-        //     return false;
-        // }
-        //
-        // let item = match self.fsf.get_item(directory) {
-        //     Some(i) => i,
-        //     None => {
-        //         warn!("failed retrieving {:?} from fsf", directory);
-        //         return false;
-        //     }
-        // };
-        //
-        // // self.list_widget.set_provider(
-        // //     Box::new(FilteredSPath::new(item, |f| f.is_file()))
-        // // );
-        //
-        // true
-    }
+    // fn show_files_on_right_panel(&mut self, directory: &Arc<PathBuf>) -> bool {
+    //     // if !self.fsf.is_dir(&directory) {
+    //     //     warn!("expected directory, got {:?}", directory);
+    //     //     return false;
+    //     // }
+    //     //
+    //     // let item = match self.fsf.get_item(directory) {
+    //     //     Some(i) => i,
+    //     //     None => {
+    //     //         warn!("failed retrieving {:?} from fsf", directory);
+    //     //         return false;
+    //     //     }
+    //     // };
+    //     //
+    //     // // self.list_widget.set_provider(
+    //     // //     Box::new(FilteredSPath::new(item, |f| f.is_file()))
+    //     // // );
+    //     //
+    //     // true
+    // }
 
     pub fn with_path(mut self, path: SPath) -> Self {
         self.set_path(path);
@@ -293,15 +255,21 @@ impl SaveFileDialogWidget {
         }
     }
 
+    // TODO tests!
     pub fn get_path(&self) -> Option<SPath> {
-        // if self.edit_box.get_text().len_chars() == 0 {
-        //     None
-        // } else {
-        //     let path = self.tree_widget.internal().get_highlighted().1.path().to_owned();
-        //     let last_item = self.edit_box.get_text().to_string();
-        //     Some(path.join(last_item))
-        // }
-        todo!()
+        if self.edit_box.get_text().len_chars() == 0 {
+            None
+        } else {
+            let file_name = self.edit_box.get_text().to_string();
+            let path = self.tree_widget.internal().get_highlighted().1.spath().clone();
+            let result = path.descendant_unchecked(file_name);
+
+            if result.is_none() {
+                error!("expected non-empty result");
+            }
+
+            result
+        }
     }
 
     // Returns op message to parent, so it can be called from 'update'

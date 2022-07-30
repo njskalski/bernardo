@@ -84,7 +84,24 @@ impl GenericDialog {
     }
 
     pub fn get_selected(&self) -> usize {
-        todo!()
+        match &self.display_state {
+            None => {
+                error!("get_selected without display_state");
+                0
+            }
+            Some(ds) => {
+                let wid = ds.focus_group.get_focused();
+
+                for (idx, button) in self.buttons.iter().enumerate() {
+                    if button.id() == wid {
+                        return idx;
+                    }
+                }
+
+                error!("get_selected: focus_group returns WID that is not found among buttons : {}", wid);
+                0
+            }
+        }
     }
 
     pub fn with_border(self, border_style: &'static BorderStyle) -> Self {
