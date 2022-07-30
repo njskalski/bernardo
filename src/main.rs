@@ -24,6 +24,7 @@ use crate::config::config::{Config, ConfigRef};
 use crate::experiments::clipboard::get_me_some_clipboard;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::real_fs::RealFS;
+use crate::fs::write_error::WriteOrSerError;
 use crate::gladius::load_config::load_config;
 use crate::gladius::logger_setup::logger_setup;
 use crate::io::crossterm_input::CrosstermInput;
@@ -38,6 +39,8 @@ use crate::primitives::xy::ZERO;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::w7e::inspector::{inspect_workspace, InspectError};
+use crate::w7e::project_scope::ProjectScope;
 use crate::w7e::workspace::{LoadError, ScopeLoadErrors, Workspace};
 use crate::w7e::workspace::WORKSPACE_FILE_NAME;
 use crate::widget::any_msg::AnyMsg;
@@ -70,7 +73,8 @@ async fn main() -> Result<(), usize> {
     let (start_dir, files) = args.paths();
     let fsf = RealFS::new(start_dir).to_fsf();
 
-    let (workspace, scope_errors): (Option<Workspace>, ScopeLoadErrors) = match Workspace::try_load(fsf.root()) {
+    let workspace_dir = fsf.root();
+    let (mut workspace, scope_errors): (Option<Workspace>, ScopeLoadErrors) = match Workspace::try_load(workspace_dir.clone()) {
         Ok(res) => (Some(res.0), res.1),
         Err(e) => {
             match e {
@@ -87,8 +91,37 @@ async fn main() -> Result<(), usize> {
         }
     };
 
-    // starting indexing threads
+    // TODO add option to NOT build workspace?
 
+    if workspace.is_none() {
+        match inspect_workspace(&workspace_dir) {
+            Err(e) => {
+                match &e {
+                    InspectError::NotAFolder => {
+                        error!("failed inspecting workspace at {:?}, because it doesn't seem to be a folder.",
+                            workspace_dir.absolute_path());
+                        // This should never happen, so I terminate program.
+                        return Err(1);
+                    }
+                    _ => {
+                        error!("failed inspecting workspace at {:?}, because:\n{}", workspace_dir.absolute_path(), e);
+                    }
+                }
+            }
+            Ok(scopes) => {
+                debug!("creating new workspace at {:?}", workspace_dir.absolute_path());
+                let workspace = Workspace::new(workspace_dir, scopes);
+                match workspace.save() {
+                    Ok(_) => {
+                        debug!("saved successfully");
+                    }
+                    Err(e) => {
+                        error!("failed writing workspace file: {:?}", e);
+                    }
+                }
+            }
+        }
+    }
 
     let clipboard = get_me_some_clipboard();
     let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));

@@ -171,7 +171,7 @@ impl FilesystemFront for MockFS {
         }
     }
 
-    fn blocking_overwrite_with(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
+    fn blocking_overwrite_with_stream(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
         let mut bytes = Vec::<u8>::new();
         while let Some(chunk) = stream.next() {
             for i in chunk.into_iter() {
@@ -182,6 +182,12 @@ impl FilesystemFront for MockFS {
         let len_bytes = bytes.len();
         self.set_file_contents(path, bytes);
         Ok(len_bytes)
+    }
+
+    fn blocking_overwrite_with_str(&self, path: &Path, s: &str) -> Result<usize, WriteError> {
+        let bytes = s.as_bytes();
+        self.set_file_contents(path, Vec::from(bytes));
+        Ok(bytes.len())
     }
 
     fn to_fsf(self) -> FsfRef {

@@ -1,17 +1,25 @@
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter, write};
 
 use log::error;
 
+use crate::fs::path::SPath;
+use crate::LangId;
 use crate::w7e::handler::Handler;
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::project_scope::ProjectScope;
 use crate::w7e::rust::inspector_rust::RustLangInspector;
-use crate::LangId;
-use crate::fs::path::SPath;
 
 #[derive(Debug)]
 pub enum InspectError {
     NotAFolder,
+}
+
+impl Display for InspectError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        //TODO
+        write!(f, "{:?}", self)
+    }
 }
 
 pub trait LangInspector: Sync {
@@ -26,7 +34,7 @@ pub trait LangInspector: Sync {
 }
 
 lazy_static! {
-    static ref KnownInspectors: HashMap<LangId, Box<dyn LangInspector>> = hashmap! {
+    static ref KNOWN_INSPECTORS: HashMap<LangId, Box<dyn LangInspector>> = hashmap! {
         LangId::RUST => Box::new(RustLangInspector::new()) as Box<dyn LangInspector>,
     };
 }
@@ -35,7 +43,7 @@ lazy_static! {
 This is a stub method that is supposed to figure out if there are projects to be found in this
 directory.
  */
-pub fn inspect_workspace(folder: SPath) -> Result<Vec<ProjectScope>, InspectError> {
+pub fn inspect_workspace(folder: &SPath) -> Result<Vec<ProjectScope>, InspectError> {
     if !folder.is_dir() {
         return Err(InspectError::NotAFolder);
     }
@@ -44,7 +52,7 @@ pub fn inspect_workspace(folder: SPath) -> Result<Vec<ProjectScope>, InspectErro
 
     // TODO add one level more of descending (multiple projects per dir)
 
-    for (lang_id, inspector) in KnownInspectors.iter() {
+    for (lang_id, inspector) in KNOWN_INSPECTORS.iter() {
         if inspector.is_project_dir(&folder) {
             match inspector.handle(folder.clone()) {
                 Ok(handler) => scopes.push(ProjectScope {

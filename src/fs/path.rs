@@ -9,13 +9,14 @@ use log::warn;
 use regex::internal::Input;
 use ropey::Rope;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 use streaming_iterator::StreamingIterator;
 use syntect::html::IncludeBackground::No;
 
 use crate::fs::dir_entry::DirEntry;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::read_error::{ListError, ReadError};
-use crate::fs::write_error::WriteError;
+use crate::fs::write_error::{WriteError, WriteOrSerError};
 
 // TODO add some invariants.
 
@@ -253,9 +254,20 @@ impl SPath {
         fsf.exists(self)
     }
 
-    pub fn overwrite_with(&self, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
+    pub fn overwrite_with_stream(&self, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
         let fsf = self.fsf();
-        fsf.overwrite_with(self, stream)
+        fsf.overwrite_with_stream(self, stream)
+    }
+
+    pub fn overwrite_with_str<T: AsRef<str>>(&self, s: T) -> Result<usize, WriteError> {
+        let fsf = self.fsf();
+        let ss = s.as_ref();
+        fsf.overwrite_with_str(self, ss)
+    }
+
+    pub fn overwrite_with_ron<T: Serialize>(&self, item: &T) -> Result<usize, WriteOrSerError> {
+        let ron_item = ron::ser::to_string_pretty::<T>(item, ron::ser::PrettyConfig::default())?;
+        self.overwrite_with_str(&ron_item).map_err(|e| e.into())
     }
 
     pub fn blocking_list(&self) -> Result<Vec<SPath>, ListError> {

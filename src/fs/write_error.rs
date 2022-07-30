@@ -1,5 +1,7 @@
 use std::io::Error;
 
+use crate::fs::write_error::WriteOrSerError::SerError;
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum WriteError {
     FileNotFound,
@@ -12,14 +14,20 @@ impl From<std::io::Error> for WriteError {
     }
 }
 
-// impl From<std::io::Error> for ListError {
-//     fn from(e: Error) -> Self {
-//         ListError::UnmappedError(e.to_string())
-//     }
-// }
-//
-// impl From<ron::de::Error> for ReadError {
-//     fn from(e: ron::Error) -> Self {
-//         ReadError::DeError(e.to_string())
-//     }
-// }
+#[derive(Debug, PartialEq, Eq)]
+pub enum WriteOrSerError {
+    WriteError(WriteError),
+    SerError(String),
+}
+
+impl From<WriteError> for WriteOrSerError {
+    fn from(we: WriteError) -> Self {
+        WriteOrSerError::WriteError(we)
+    }
+}
+
+impl From<ron::Error> for WriteOrSerError {
+    fn from(re: ron::Error) -> WriteOrSerError {
+        WriteOrSerError::SerError(re.to_string())
+    }
+}

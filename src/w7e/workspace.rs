@@ -6,6 +6,7 @@ use serde::ser::{SerializeSeq, SerializeStruct};
 use crate::{fs, w7e};
 use crate::experiments::pretty_ron::ToPrettyRonString;
 use crate::fs::path::SPath;
+use crate::fs::write_error::{WriteError, WriteOrSerError};
 use crate::w7e::project_scope;
 use crate::w7e::project_scope::{ProjectScope, SerializableProjectScope};
 
@@ -39,10 +40,23 @@ impl From<fs::read_error::ReadError> for LoadError {
 }
 
 impl Workspace {
+    pub fn new(root_path: SPath, scopes: Vec<ProjectScope>) -> Workspace {
+        Workspace {
+            root_path,
+            scopes,
+        }
+    }
+
     pub fn try_load(root_path: SPath) -> Result<(Workspace, ScopeLoadErrors), LoadError> {
         let workspace_file = root_path.descendant_checked(WORKSPACE_FILE_NAME).ok_or(LoadError::WorkspaceFileNotFound)?;
         let serialized_workspace = workspace_file.read_entire_file_to_item::<SerializableWorkspace>()?;
         Self::from(serialized_workspace, root_path)
+    }
+
+    pub fn save(&self) -> Result<usize, WriteOrSerError> {
+        let file = self.root_path.descendant_unchecked(WORKSPACE_FILE_NAME).unwrap();
+        let pill = self.serializable();
+        file.overwrite_with_ron(&pill)
     }
 
     pub fn from(sw: SerializableWorkspace, root_path: SPath) -> Result<(Workspace, ScopeLoadErrors), LoadError> {
@@ -60,5 +74,12 @@ impl Workspace {
             root_path,
             scopes,
         }, scope_errors))
+    }
+
+    pub fn serializable(&self) -> SerializableWorkspace {
+        let serializable_scopes: Vec<_> = self.scopes.iter().map(|scope| scope.serializable()).collect();
+        SerializableWorkspace {
+            scopes: serializable_scopes
+        }
     }
 }

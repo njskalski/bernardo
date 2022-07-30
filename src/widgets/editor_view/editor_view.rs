@@ -202,7 +202,7 @@ impl EditorView {
         let buffer = self.editor.internal().buffer();
 
         if let Some(ff) = buffer.get_file_front() {
-            ff.overwrite_with(&mut buffer.streaming_iterator());
+            ff.overwrite_with_stream(&mut buffer.streaming_iterator());
         } else {
             self.open_save_as_dialog()
         }
@@ -433,7 +433,7 @@ impl Widget for EditorView {
                 }
                 EditorViewMsg::OnSaveAsHit { ff } => {
                     // TODO handle errors
-                    ff.overwrite_with(&mut self.editor.internal().buffer().streaming_iterator());
+                    ff.overwrite_with_stream(&mut self.editor.internal().buffer().streaming_iterator());
                     self.hover_dialog = None;
                     None
                 }
