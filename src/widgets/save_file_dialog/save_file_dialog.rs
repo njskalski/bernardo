@@ -11,12 +11,14 @@ I hope I will discover most of functional constraints while implementing it.
 use std::borrow::Borrow;
 use std::path::PathBuf;
 use std::sync::Arc;
-use jsonrpc_core::futures::future::err;
 
+use jsonrpc_core::futures::future::err;
 use log::{debug, error, warn};
 
 use crate::config::theme::Theme;
 use crate::experiments::focus_group::FocusUpdate;
+use crate::fs::fsf_ref::FsfRef;
+use crate::fs::path::SPath;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
@@ -28,8 +30,6 @@ use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
-use crate::fs::fsf_ref::{FsfRef};
-use crate::fs::path::SPath;
 use crate::primitives::border::SINGLE_BORDER_STYLE;
 use crate::primitives::helpers::fill_output;
 use crate::primitives::rect::Rect;
@@ -80,7 +80,7 @@ impl SaveFileDialogWidget {
     pub fn new(fsf: FsfRef) -> Self {
         let root = fsf.root();
 
-        let tree_widget = TreeViewWidget::<SPath, DirTreeNode>::new(DirTreeNode::new(root))
+        let tree_widget = TreeViewWidget::<SPath, DirTreeNode>::new(DirTreeNode::new(root.clone()))
             // .with_filter(filter, Some(0))
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
@@ -189,6 +189,9 @@ impl SaveFileDialogWidget {
      */
     pub fn set_path(&mut self, path: SPath) -> bool {
         debug!("setting path to {:?}", path);
+
+        // self.tree_widget.internal_mut().set_p
+
         todo!()
         //
         // let (mut dir, filename): (PathBuf, Option<&str>) = if path.is_dir() {

@@ -4,7 +4,10 @@ use std::rc::Rc;
 use log::{debug, error, warn};
 
 use crate::{AnyMsg, ConfigRef, InputEvent, Output, SizeConstraint, Widget};
+use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
+use crate::fs::fsf_ref::FsfRef;
+use crate::fs::path::SPath;
 use crate::io::sub_output::SubOutput;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
@@ -12,14 +15,11 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
-use crate::config::theme::Theme;
-use crate::fs::fsf_ref::FsfRef;
-use crate::fs::path::SPath;
 use crate::primitives::xy::XY;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
-use crate::widgets::fuzzy_search::fsf_provider::{SPathMsg, FsfProvider};
+use crate::widgets::fuzzy_search::fsf_provider::{FsfProvider, SPathMsg};
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
 use crate::widgets::main_view::display_state::{Focus, MainViewDisplayState};
 use crate::widgets::main_view::editor_group::EditorGroup;
@@ -65,7 +65,7 @@ impl MainView {
                fsf: FsfRef,
                clipboard: ClipboardRef) -> MainView {
         let root = fsf.root();
-        let tree = TreeViewWidget::new(FileTreeNode::new(root))
+        let tree = TreeViewWidget::new(FileTreeNode::new(root.clone()))
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
 

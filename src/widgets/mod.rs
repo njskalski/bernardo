@@ -15,3 +15,4 @@ pub mod open_buffers_list;
 pub mod editor_view;
 pub mod spath_tree_view_node;
 pub mod spath_list_widget_item;
+pub mod dir_tree_view;

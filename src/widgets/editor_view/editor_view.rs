@@ -1,19 +1,21 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;
+
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
-use crate::{AnyMsg, ConfigRef,  InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget, ZERO};
+
+use crate::{AnyMsg, ConfigRef, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget, ZERO};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::focus_group::FocusUpdate;
+use crate::fs::fsf_ref::FsfRef;
+use crate::fs::path::SPath;
 use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::GenericDisplayState;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
-use crate::fs::fsf_ref::FsfRef;
-use crate::fs::path::SPath;
 use crate::primitives::common_edit_msgs::CommonEditMsg;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;

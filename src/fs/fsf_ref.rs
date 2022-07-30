@@ -6,9 +6,12 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
+
 use log::error;
+use serde::__private::de::Borrowed;
 use streaming_iterator::StreamingIterator;
+
 use crate::fs::dir_entry::DirEntry;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::path::{PathCell, SPath};
@@ -22,8 +25,11 @@ pub struct DirCache {
 }
 
 pub struct FsAndCache {
-    fs : Box<dyn FilesystemFront>,
-    caches : RefCell<HashMap<SPath, DirCache>>,
+    fs: Box<dyn FilesystemFront>,
+    caches: RefCell<HashMap<SPath, DirCache>>,
+
+    // TODO implement drop to set this option to None to avoid memory leak, because now fs is self-referencing
+    root_node_cache: RefCell<Option<SPath>>,
 }
 
 #[derive(Clone)]
@@ -54,24 +60,39 @@ impl Hash for FsfRef {
 }
 
 impl FsfRef {
-    pub fn new<FS : FilesystemFront + 'static>(fs : FS) -> Self {
-        FsfRef {
-            fs: Arc::new(FsAndCache{
+    pub fn new<FS: FilesystemFront + 'static>(fs: FS) -> Self {
+        let mut fsf = FsfRef {
+            fs: Arc::new(FsAndCache {
                 fs: Box::new(fs) as Box<dyn FilesystemFront>,
-                caches: RefCell::new(Default::default())
-            }),
+                caches: RefCell::new(Default::default()),
+                root_node_cache: RefCell::new(None),
+            })
+        };
+
+        {
+            let mut root_node_cache = fsf.fs.root_node_cache.borrow_mut();
+            *root_node_cache = Some(SPath::head(fsf.clone()));
         }
-    } 
-    
+
+        fsf
+    }
+
     pub fn root(&self) -> SPath {
-        SPath::head(self.clone())
+        match self.fs.root_node_cache.borrow().deref() {
+            None => {
+                debug_assert!(false);
+                error!("this should never happen");
+                SPath::head(self.clone())
+            }
+            Some(x) => { x.clone() }
+        }
     }
 
     pub fn root_path_buf(&self) -> &PathBuf {
         self.fs.fs.root_path()
     }
 
-    pub fn exists(&self, path : &SPath) -> bool {
+    pub fn exists(&self, path: &SPath) -> bool {
         let path = path.relative_path();
         self.fs.fs.exists(&path)
     }
@@ -151,20 +172,21 @@ impl FsfRef {
 #[macro_export]
 macro_rules! spath{
     ( $fsf:expr $(, $c:expr)* ) => {{
-        let mut sp : Option<crate::fs::path::SPath> = Some($fsf.root());
+        let mut sp : crate::fs::path::SPath = $fsf.root();
         $(
-            sp = sp.map(|x| x.descendant_unchecked($c)).flatten();
+            sp = crate::fs::path::SPath::append(sp, $c);
         )*
-        sp
+        Some(sp)
     }};
 }
 
 #[cfg(test)]
 mod tests {
     use std::path::Path;
+
     use crate::de;
-    use crate::fs::mock_fs::MockFS;
     use crate::fs::filesystem_front::FilesystemFront;
+    use crate::fs::mock_fs::MockFS;
     use crate::fs::read_error::ReadError;
 
     #[test]

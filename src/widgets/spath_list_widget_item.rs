@@ -1,5 +1,6 @@
 use log::{error, warn};
 use crate::fs::path::SPath;
+use crate::widgets::fuzzy_search::item_provider::Item;
 use crate::widgets::list_widget::ListWidgetItem;
 
 impl ListWidgetItem for SPath {
@@ -24,8 +25,11 @@ impl ListWidgetItem for SPath {
     }
 
     fn get(&self, idx: usize) -> Option<String> {
-        todo!()
-
-
+        match idx {
+            0 => Some(self.display_name().to_string()), // TODO,
+            1 => Some("N/A".to_string()),
+            2 => Some("N/A".to_string()),
+            _ => None
+        }
     }
 }

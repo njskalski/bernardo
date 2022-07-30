@@ -4,12 +4,14 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+
 use log::warn;
 use regex::internal::Input;
 use ropey::Rope;
 use serde::de::DeserializeOwned;
 use streaming_iterator::StreamingIterator;
 use syntect::html::IncludeBackground::No;
+
 use crate::fs::dir_entry::DirEntry;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::read_error::{ListError, ReadError};
@@ -46,19 +48,30 @@ pub enum PathCell {
 
 impl PathCell {
     pub fn relative_path(&self) -> PathBuf {
-        match self {
+        match &self {
             PathCell::Head(_) => PathBuf::new(),
             PathCell::Segment { prev, cell } => {
                 let mut head = prev.relative_path();
-                head.join(cell)
+                let x = self.is_head();
+                head = head.join(cell);
+
+                // head.join(cell)
+                head
             }
         }
     }
 
     pub fn as_path(&self) -> Option<&Path> {
-        match self {
+        match &self {
             PathCell::Head(_) => None,
             PathCell::Segment { prev, cell } => Some(cell),
+        }
+    }
+
+    pub fn is_head(&self) -> bool {
+        match &self {
+            PathCell::Head(_) => true,
+            PathCell::Segment { .. } => false,
         }
     }
 }
@@ -67,18 +80,20 @@ impl PathCell {
 pub struct SPath (pub Arc<PathCell>);
 
 impl SPath {
-    pub fn head(fzf : FsfRef) -> SPath {
+    pub fn head(fzf: FsfRef) -> SPath {
         SPath(
             Arc::new(PathCell::Head(fzf))
         )
     }
 
-    pub fn append(prev : SPath, segment : PathBuf) -> SPath {
-        debug_assert!(segment.to_string_lossy().len() > 0);
-        debug_assert!(segment.to_string_lossy() != "..");
-        debug_assert!(segment.components().count() == 1);
+    pub fn append<P: AsRef<Path>>(prev: SPath, segment: P) -> SPath {
+        let cell = segment.as_ref().to_path_buf();
+        debug_assert!(cell.to_string_lossy().len() > 0);
+        debug_assert!(cell.to_string_lossy() != "..");
+        debug_assert!(cell.components().count() == 1);
+
         SPath(
-            Arc::new(PathCell::Segment { prev, cell: segment })
+            Arc::new(PathCell::Segment { prev, cell })
         )
     }
 
@@ -212,14 +227,14 @@ impl SPath {
     Returns iterator starting in self, and going up the tree until reaching root of filesystem.
      */
     pub fn ancestors_and_self(&self) -> ParentIter {
-        ParentIter(self.parent_ref().map(|c| c.clone()))
+        ParentIter(Some(self.clone()))
     }
 
     /*
     Returns iterator starting in self, and going up the tree until reaching root of filesystem.
      */
     pub fn ancestors_and_self_ref(&self) -> ParentRefIter {
-        ParentRefIter(Some(self))
+        ParentRefIter::new(Some(self))
     }
 
     pub fn is_parent_of(&self, other : &SPath) -> bool {
@@ -251,17 +266,41 @@ impl SPath {
 }
 
 pub struct ParentIter(Option<SPath>);
-pub struct ParentRefIter<'a>(Option<&'a SPath>);
+
+/*
+First field is "what is going to be returned next".
+Second field says "did initial advance already happen or not", because streaming iterators call
+    advance before get, which lead to skipping first element. Field exists only to ignore fist call
+    to "advance".
+ */
+pub struct ParentRefIter<'a> {
+    next: Option<&'a SPath>,
+    first_advance_happened: bool,
+}
+
+impl<'a> ParentRefIter<'a> {
+    pub fn new(first: Option<&'a SPath>) -> ParentRefIter<'a> {
+        ParentRefIter {
+            next: first,
+            first_advance_happened: false,
+        }
+    }
+}
 
 impl<'a> StreamingIterator for ParentRefIter<'a> {
     type Item = SPath;
 
     fn advance(&mut self) {
-        self.0 = self.0.map(|f| f.parent_ref()).flatten();
+        if !self.first_advance_happened {
+            self.first_advance_happened = true;
+            return;
+        }
+
+        self.next = self.next.map(|f| f.parent_ref()).flatten();
     }
 
     fn get(&self) -> Option<&Self::Item> {
-        self.0
+        self.next
     }
 }
 
@@ -281,9 +320,8 @@ impl PartialEq<Self> for SPath {
             return false;
         }
 
-        // TODO optimise it
         let path_a = self.relative_path();
-        let path_b = self.relative_path();
+        let path_b = other.relative_path();
         path_a == path_b
     }
 }
@@ -312,12 +350,78 @@ impl Debug for SPath {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-    use crate::de;
+    use streaming_iterator::StreamingIterator;
+
+    use crate::{de, FilesystemFront, spath};
     use crate::fs::mock_fs::MockFS;
-    use crate::fs::filesystem_front::FilesystemFront;
-    use crate::fs::read_error::ReadError;
 
     #[test]
-    fn make_some_files() {}
+    fn eq() {
+        let m1 = MockFS::new("/tmp").to_fsf();
+        let m2 = MockFS::new("/tmp2").to_fsf();
+
+        assert_eq!(spath!(m1, "a", "b").unwrap(), spath!(m1, "a", "b").unwrap());
+        assert_ne!(spath!(m1, "a", "b").unwrap(), spath!(m1, "a", "c").unwrap());
+        assert_ne!(spath!(m1).unwrap(), spath!(m2).unwrap());
+        assert_ne!(spath!(m1, "a", "b").unwrap(), spath!(m2, "a", "b").unwrap());
+    }
+
+    #[test]
+    fn parent_ref() {
+        let mockfs = MockFS::new("/tmp").to_fsf();
+        let sp = spath!(mockfs, "folder1","folder2", "file1.txt").unwrap();
+
+        assert_eq!(sp.parent_ref().unwrap(), &spath!(mockfs, "folder1","folder2").unwrap());
+        assert_eq!(sp.parent_ref().unwrap()
+                       .parent_ref().unwrap(),
+                   &spath!(mockfs, "folder1").unwrap());
+        assert_eq!(sp.parent_ref().unwrap()
+                       .parent_ref().unwrap()
+                       .parent_ref().unwrap(),
+                   &spath!(mockfs).unwrap());
+    }
+
+    #[test]
+    fn parent_and_self_ref_it() {
+        let mockfs = MockFS::new("/tmp").to_fsf();
+        let sp = spath!(mockfs, "folder1","folder2","folder3", "file1.txt").unwrap();
+
+        let mut it = sp.ancestors_and_self_ref();
+        assert_eq!(it.next(), Some(&sp));
+        assert_eq!(it.next(), Some(&spath!(mockfs, "folder1","folder2","folder3").unwrap()));
+        assert_eq!(it.next(), Some(&spath!(mockfs, "folder1","folder2").unwrap()));
+        assert_eq!(it.next(), Some(&spath!(mockfs, "folder1").unwrap()));
+        assert_eq!(it.next(), Some(&spath!(mockfs).unwrap()));
+        assert_eq!(it.next(), None);
+    }
+
+    #[test]
+    fn parent() {
+        let mockfs = MockFS::new("/tmp").to_fsf();
+        let sp = spath!(mockfs, "folder1","folder2", "file1.txt").unwrap();
+
+        assert_eq!(sp, sp);
+
+        let sparent1 = sp.parent().unwrap();
+        assert_eq!(sparent1, spath!(mockfs, "folder1","folder2").unwrap());
+        let sparent2 = sparent1.parent().unwrap();
+        assert_eq!(sparent2, spath!(mockfs, "folder1").unwrap());
+        let sparent3 = sparent2.parent().unwrap();
+        assert_eq!(sparent3, spath!(mockfs).unwrap());
+        assert_eq!(sparent3.parent(), None);
+    }
+
+    #[test]
+    fn parent_and_self_it() {
+        let mockfs = MockFS::new("/tmp").to_fsf();
+        let sp = spath!(mockfs, "folder1","folder2","folder3", "file1.txt").unwrap();
+
+        let mut it = sp.ancestors_and_self();
+        assert_eq!(it.next(), Some(sp));
+        assert_eq!(it.next(), spath!(mockfs, "folder1","folder2","folder3"));
+        assert_eq!(it.next(), spath!(mockfs, "folder1","folder2"));
+        assert_eq!(it.next(), spath!(mockfs, "folder1"));
+        assert_eq!(it.next(), spath!(mockfs));
+        assert_eq!(it.next(), None);
+    }
 }

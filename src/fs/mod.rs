@@ -6,3 +6,4 @@ pub mod read_error;
 pub mod fsf_ref;
 pub mod dir_entry;
 pub mod write_error;
+pub mod file_attrs;
