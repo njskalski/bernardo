@@ -148,7 +148,7 @@ async fn main() -> Result<(), usize> {
     };
 
     // Producing NavCompGroup - a collection of navigation/completions available for this workspace.
-
+    let nav_comp_group_ref = workspace.todo_get_navcomp_group();
 
     // Initializing Bernardo TUI
     terminal::enable_raw_mode().expect("failed entering raw mode");
@@ -161,7 +161,13 @@ async fn main() -> Result<(), usize> {
         return Err(1);
     }
 
-    let mut main_view = MainView::new(config_ref.clone(), tree_sitter, fsf.clone(), clipboard);
+    let mut main_view = MainView::new(
+        config_ref.clone(),
+        tree_sitter,
+        fsf.clone(),
+        clipboard,
+        nav_comp_group_ref,
+    );
     for f in files.iter() {
         if !fsf.descendant_checked(f).map(|ff| main_view.open_file(ff)).unwrap_or(false) {
             error!("failed opening file {:?}", f);

@@ -17,6 +17,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::xy::XY;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::fuzzy_search::fsf_provider::{FsfProvider, SPathMsg};
@@ -63,7 +64,9 @@ impl MainView {
     pub fn new(config: ConfigRef,
                tree_sitter: Rc<TreeSitterWrapper>,
                fsf: FsfRef,
-               clipboard: ClipboardRef) -> MainView {
+               clipboard: ClipboardRef,
+               nav_comp_group: NavCompGroupRef,
+    ) -> MainView {
         let root = fsf.root();
         let tree = TreeViewWidget::new(FileTreeNode::new(root.clone()))
             .with_on_flip_expand(|widget| {
@@ -85,7 +88,10 @@ impl MainView {
             wid: get_new_widget_id(),
             display_state: MainViewDisplayState::default(),
             tree_widget: WithScroll::new(tree, ScrollDirection::Vertical),
-            editors: EditorGroup::new(config.clone()),
+            editors: EditorGroup::new(
+                config.clone(),
+                nav_comp_group.clone(),
+            ),
             no_editor: NoEditorWidget::default(),
             tree_sitter,
             fsf,

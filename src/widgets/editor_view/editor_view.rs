@@ -3,6 +3,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use log::{debug, error, warn};
+use streaming_iterator::StreamingIterator;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{AnyMsg, ConfigRef, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget, ZERO};
@@ -23,6 +24,7 @@ use crate::primitives::search_pattern::SearchPattern;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::w7e::handler::NavCompRef;
+use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::edit_box::EditBoxWidget;
@@ -41,6 +43,8 @@ enum EditorViewState {
     Find,
     FindReplace,
 }
+
+// TODO join paths of saving file and set navcomp then in one place
 
 pub struct EditorView {
     wid: WID,
@@ -63,6 +67,7 @@ pub struct EditorView {
     config: ConfigRef,
     // this is necessary since there are multiple clipboard receivers within this object.
     clipboard: ClipboardRef,
+    nav_comp_group: NavCompGroupRef,
 
     state: EditorViewState,
     hover_dialog: Option<SaveFileDialogWidget>,
@@ -85,12 +90,14 @@ impl EditorView {
         fsf: FsfRef,
         clipboard: ClipboardRef,
         // TODO(#17) now navcomp is language specific, and editor can be "recycled" from say yaml to rs, requiring change of navcomp.
-        navcomp: NavCompRef,
+        nav_comp_group: NavCompGroupRef,
     ) -> Self {
         let editor = EditorWidget::new(config.clone(),
                                        tree_sitter,
                                        fsf.clone(),
-                                       clipboard.clone());
+                                       clipboard.clone(),
+                                       None,
+        );
 
         let find_label = TextWidget::new(Box::new(PATTERN));
         let replace_label = TextWidget::new(Box::new(REPLACE));
@@ -113,6 +120,7 @@ impl EditorView {
             fsf,
             config,
             clipboard,
+            nav_comp_group,
             state: EditorViewState::Simple,
             hover_dialog: None,
             start_path: None,
@@ -436,7 +444,13 @@ impl Widget for EditorView {
                 }
                 EditorViewMsg::OnSaveAsHit { ff } => {
                     // TODO handle errors
-                    ff.overwrite_with_stream(&mut self.editor.internal().buffer().streaming_iterator());
+                    let editor = self.editor.internal_mut();
+                    let mut streaming_it = editor.buffer().streaming_iterator();
+                    ff.overwrite_with_stream(&mut streaming_it);
+                    editor.buffer_state_mut().set_file_front(Some(ff.clone()));
+                    let navcomp_op = self.nav_comp_group.get_navcomp_for(ff)
+                    editor.set_navcomp(navcomp_op);
+
                     self.hover_dialog = None;
                     None
                 }

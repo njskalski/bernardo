@@ -1,13 +1,15 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use log::debug;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::ser::{SerializeSeq, SerializeStruct};
 
-use crate::{ConfigRef, fs, w7e};
+use crate::{ConfigRef, fs, LangId, w7e};
 use crate::experiments::pretty_ron::ToPrettyRonString;
 use crate::fs::path::SPath;
 use crate::fs::write_error::{WriteError, WriteOrSerError};
+use crate::LangId::RUST;
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::navcomp_group::{NavCompGroup, NavCompGroupRef};
 use crate::w7e::project_scope;
@@ -113,5 +115,16 @@ impl Workspace {
     }
 
     // TODO(beta): This should not be called more than once, but I did not decide how to prevent it yet.
-    pub fn todo_get_navcomp_group(&self) -> NavCompGroupRef {}
+    pub fn todo_get_navcomp_group(&self) -> NavCompGroupRef {
+        let mut nav_comp_group = NavCompGroup::new();
+        for scope in self.scopes.iter() {
+            scope.handler.as_ref().map(|handler| handler.navcomp()).flatten().map(|navcomp| {
+                nav_comp_group.add_option(scope.lang_id, navcomp);
+            })
+        }
+
+        debug!("created navcomp group with {} items", nav_comp_group.len());
+
+        Arc::new(nav_comp_group)
+    }
 }

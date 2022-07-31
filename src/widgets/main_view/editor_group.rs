@@ -10,6 +10,7 @@ use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::fs::read_error::ReadError;
 use crate::text::buffer_state::BufferState;
+use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::fuzzy_search::helpers::is_subsequence;
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
@@ -22,13 +23,15 @@ use crate::widgets::main_view::msg::MainViewMsg;
 pub struct EditorGroup {
     editors: Vec<EditorView>,
     config: ConfigRef,
+    nav_comp_group: NavCompGroupRef,
 }
 
 impl EditorGroup {
-    pub fn new(config: ConfigRef) -> EditorGroup {
+    pub fn new(config: ConfigRef, nav_comp_group: NavCompGroupRef) -> EditorGroup {
         EditorGroup {
             editors: Vec::new(),
             config,
+            nav_comp_group,
         }
     }
 
@@ -52,7 +55,7 @@ impl EditorGroup {
                             tree_sitter,
                             fsf,
                             clipboard,
-                            None),
+                            self.nav_comp_group.clone()),
         );
 
         let res = self.editors.len() - 1;
@@ -66,12 +69,17 @@ impl EditorGroup {
         let lang_id_op = filename_to_language(&ff);
 
         self.editors.push(
-            EditorView::new(self.config.clone(), tree_sitter.clone(), ff.fsf().clone(), clipboard)
-                .with_buffer(
-                    BufferState::new(tree_sitter)
-                        .with_text_from_rope(file_contents, lang_id_op)
-                        .with_file_front(ff.clone())
-                ).with_path_op(
+            EditorView::new(
+                self.config.clone(),
+                tree_sitter.clone(),
+                ff.fsf().clone(),
+                clipboard,
+                self.nav_comp_group.clone(),
+            ).with_buffer(
+                BufferState::new(tree_sitter)
+                    .with_text_from_rope(file_contents, lang_id_op)
+                    .with_file_front(ff.clone())
+            ).with_path_op(
                 ff.parent()
             ),
         );

@@ -104,6 +104,10 @@ impl EditorWidget {
         }
     }
 
+    pub fn set_navcomp(&mut self, navcomp: Option<NavCompRef>) {
+        self.navcomp = navcomp;
+    }
+
     pub fn with_buffer(self, buffer: BufferState) -> Self {
         let mut result = EditorWidget {
             buffer: buffer,
