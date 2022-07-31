@@ -22,6 +22,7 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::search_pattern::SearchPattern;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
+use crate::w7e::handler::NavCompRef;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::edit_box::EditBoxWidget;
@@ -83,6 +84,8 @@ impl EditorView {
         tree_sitter: Rc<TreeSitterWrapper>,
         fsf: FsfRef,
         clipboard: ClipboardRef,
+        // TODO(#17) now navcomp is language specific, and editor can be "recycled" from say yaml to rs, requiring change of navcomp.
+        navcomp: NavCompRef,
     ) -> Self {
         let editor = EditorWidget::new(config.clone(),
                                        tree_sitter,

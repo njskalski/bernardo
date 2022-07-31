@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
 use std::path::PathBuf;
 use std::process::Stdio;
 use std::str::FromStr;
@@ -232,7 +233,7 @@ impl LspWrapper {
         }).await
     }
 
-    pub async fn send_did_open_text_document_notification(&mut self, url: Url) -> Result<(), LspWriteError> {
+    pub async fn text_document_did_open(&mut self, url: Url) -> Result<(), LspWriteError> {
         self.send_notification::<lsp_types::notification::DidOpenTextDocument>(
             lsp_types::DidOpenTextDocumentParams {
                 text_document: lsp_types::TextDocumentItem {
@@ -316,5 +317,11 @@ impl LspWrapper {
         debug!("closing logger thread");
 
         Ok(())
+    }
+}
+
+impl Debug for LspWrapper {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "LspWrapper({:?})", &self.server_path)
     }
 }

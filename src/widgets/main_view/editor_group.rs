@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use log::error;
 
-use crate::{AnyMsg, ConfigRef,  TreeSitterWrapper};
+use crate::{AnyMsg, ConfigRef, TreeSitterWrapper};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::fs::fsf_ref::FsfRef;
@@ -48,7 +48,11 @@ impl EditorGroup {
 
     pub fn open_empty(&mut self, tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> usize {
         self.editors.push(
-            EditorView::new(self.config.clone(), tree_sitter, fsf, clipboard),
+            EditorView::new(self.config.clone(),
+                            tree_sitter,
+                            fsf,
+                            clipboard,
+                            None),
         );
 
         let res = self.editors.len() - 1;

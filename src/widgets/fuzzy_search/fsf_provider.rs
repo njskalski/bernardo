@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::io::empty;
 
-use crate::{AnyMsg};
+use crate::AnyMsg;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
@@ -45,7 +45,7 @@ impl Item for SPath {
     }
 
     fn comment(&self) -> Option<Cow<str>> {
-        Some(self.display_name())
+        self.parent_ref().map(|p| p.relative_path().to_string_lossy().to_string().into())
     }
 
     fn on_hit(&self) -> Box<dyn AnyMsg> {
@@ -60,6 +60,6 @@ impl ItemsProvider for FsfProvider {
 
     fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
         // let items = self.fsf.fuzzy_files_it(query, limit, self.consider_ignores).1.map(|f| Box::new(f) as Box<dyn Item>);
-        Box::new(std::iter::empty())
+        todo!()
     }
 }

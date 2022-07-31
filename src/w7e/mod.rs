@@ -10,3 +10,4 @@ pub mod project_scope;
 pub mod rust;
 pub mod suggestions_provider;
 pub mod workspace;
+pub mod navcomp_group;

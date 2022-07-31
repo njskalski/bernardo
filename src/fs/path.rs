@@ -5,13 +5,14 @@ use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use log::warn;
+use log::{debug, error, warn};
 use regex::internal::Input;
 use ropey::Rope;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use streaming_iterator::StreamingIterator;
 use syntect::html::IncludeBackground::No;
+use url::Url;
 
 use crate::fs::dir_entry::DirEntry;
 use crate::fs::fsf_ref::FsfRef;
@@ -273,6 +274,17 @@ impl SPath {
     pub fn blocking_list(&self) -> Result<Vec<SPath>, ListError> {
         let fsf = self.fsf();
         fsf.blocking_list(self)
+    }
+
+    // TODO add error?
+    pub fn to_url(&self) -> Result<Url, ()> {
+        let path = self.absolute_path();
+        let url = url::Url::from_file_path(&path);
+        if url.is_err() {
+            error!("failed casting spath [{}] to url", self);
+        }
+
+        url
     }
 }
 

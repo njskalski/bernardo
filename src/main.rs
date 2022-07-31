@@ -97,7 +97,7 @@ async fn main() -> Result<(), usize> {
     };
 
     // TODO add option to NOT *save* workspace after creation?
-    let mut workspace = match workspace_op {
+    let mut workspace: Workspace = match workspace_op {
         Some(w) => w,
         None => {
             // Attempting to create a reasonable workspace
@@ -134,7 +134,7 @@ async fn main() -> Result<(), usize> {
         }
     };
 
-    // at this point it is guaranteed that we have a Workspace present, though it might be not saved!
+    // At this point it is guaranteed that we have a Workspace present, though it might be not saved!
 
     // Initializing handlers
     match workspace.initialize_handlers(&config_ref).await {
@@ -147,21 +147,14 @@ async fn main() -> Result<(), usize> {
         }
     };
 
+    // Producing NavCompGroup - a collection of navigation/completions available for this workspace.
+
+
+    // Initializing Bernardo TUI
     terminal::enable_raw_mode().expect("failed entering raw mode");
     let input = CrosstermInput::new();
     let stdout = stdout();
     let mut output = CrosstermOutput::new(stdout);
-
-    // let lsp_finder = LspFinder::new(config_ref.clone());
-    // let workspace_root = PathBuf::from("/home/andrzej/r/rust/bernardo");
-
-    // let workspace =
-
-    // let mut lsp_client = lsp_finder.todo_get_lsp(LangId::RUST, workspace_root).unwrap();
-    // let item = lsp_client.initialize().await;
-
-    // tokio_runtime.block_on(handle).unwrap();
-    // end of pure experiments
 
     if output.size_constraint().visible_hint().size == ZERO {
         error!("it seems like the screen has zero size.");
@@ -169,7 +162,6 @@ async fn main() -> Result<(), usize> {
     }
 
     let mut main_view = MainView::new(config_ref.clone(), tree_sitter, fsf.clone(), clipboard);
-
     for f in files.iter() {
         if !fsf.descendant_checked(f).map(|ff| main_view.open_file(ff)).unwrap_or(false) {
             error!("failed opening file {:?}", f);
@@ -228,6 +220,7 @@ async fn main() -> Result<(), usize> {
         }
     }
 
+    // Genesis
     'main:
     loop {
         match output.clear() {

@@ -6,22 +6,23 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{AnyMsg, ConfigRef, InputEvent, Keycode, Output, SizeConstraint, Widget};
+use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
+use crate::experiments::regex_search::FindError;
+use crate::fs::fsf_ref::FsfRef;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
+use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};
 use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
-use crate::config::theme::Theme;
-use crate::experiments::regex_search::FindError;
-use crate::fs::fsf_ref::FsfRef;
 use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::w7e::handler::NavCompRef;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
-use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
@@ -76,11 +77,19 @@ pub struct EditorWidget {
     clipboard: ClipboardRef,
     config: ConfigRef,
 
+    // navcomp is to submit edit messages, suggestion display will probably be somewhere else
+    navcomp: Option<NavCompRef>,
+
     state: EditorState,
 }
 
 impl EditorWidget {
-    pub fn new(config: ConfigRef, tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> EditorWidget {
+    pub fn new(config: ConfigRef,
+               tree_sitter: Rc<TreeSitterWrapper>,
+               fsf: FsfRef,
+               clipboard: ClipboardRef,
+               navcomp: Option<NavCompRef>,
+    ) -> EditorWidget {
         EditorWidget {
             wid: get_new_widget_id(),
             last_size: None,
@@ -91,14 +100,28 @@ impl EditorWidget {
             config,
             clipboard,
             state: EditorState::Editing,
+            navcomp,
         }
     }
 
     pub fn with_buffer(self, buffer: BufferState) -> Self {
-        EditorWidget {
+        let mut result = EditorWidget {
             buffer: buffer,
             ..self
+        };
+
+        match (&result.navcomp, result.buffer.get_file_front()) {
+            (Some(navcomp), Some(spath)) => {
+                navcomp.file_open_for_edition(spath);
+            },
+            _ => {
+                debug!("not starting navigation, because navcomp is some: {}, ff is some: {}",
+                    result.navcomp.is_some(), result.buffer.get_file_front().is_some() )
+            }
         }
+
+
+        result
     }
 
     // This updates the "anchor" of view to match the direction of editing. Remember, the scroll will
@@ -443,5 +466,22 @@ impl Widget for EditorWidget {
 
     fn anchor(&self) -> XY {
         self.anchor
+    }
+}
+
+impl Drop for EditorWidget {
+    fn drop(&mut self) {
+        debug!("dropping editor widget for buffer : [{:?}]", self.buffer.get_file_front());
+
+        match (&self.navcomp, self.buffer.get_file_front()) {
+            (Some(navcomp), Some(spath)) => {
+                debug!("shutting down navcomp.");
+                navcomp.file_closed(spath);
+            },
+            _ => {
+                debug!("not stoping navigation, because navcomp is some: {}, ff is some: {}",
+                    self.navcomp.is_some(), self.buffer.get_file_front().is_some() )
+            }
+        }
     }
 }

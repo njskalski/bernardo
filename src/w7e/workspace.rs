@@ -9,6 +9,7 @@ use crate::experiments::pretty_ron::ToPrettyRonString;
 use crate::fs::path::SPath;
 use crate::fs::write_error::{WriteError, WriteOrSerError};
 use crate::w7e::handler_load_error::HandlerLoadError;
+use crate::w7e::navcomp_group::{NavCompGroup, NavCompGroupRef};
 use crate::w7e::project_scope;
 use crate::w7e::project_scope::{ProjectScope, SerializableProjectScope};
 
@@ -110,4 +111,7 @@ impl Workspace {
     pub fn scopes(&self) -> &Vec<ProjectScope> {
         &self.scopes
     }
+
+    // TODO(beta): This should not be called more than once, but I did not decide how to prevent it yet.
+    pub fn todo_get_navcomp_group(&self) -> NavCompGroupRef {}
 }
