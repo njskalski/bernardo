@@ -108,12 +108,14 @@ impl EditorWidget {
         self.navcomp = navcomp;
     }
 
-    pub fn with_buffer(mut self, buffer: BufferState) -> Self {
+    pub fn with_buffer(mut self, buffer: BufferState, navcomp_op: Option<NavCompRef>) -> Self {
         self.buffer = buffer;
+        self.navcomp = navcomp_op;
+        let contents = self.buffer.text().to_string();
 
         match (&self.navcomp, self.buffer.get_file_front()) {
             (Some(navcomp), Some(spath)) => {
-                navcomp.file_open_for_edition(spath);
+                navcomp.file_open_for_edition(spath, contents);
             }
             _ => {
                 debug!("not starting navigation, because navcomp is some: {}, ff is some: {}",

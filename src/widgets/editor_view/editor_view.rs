@@ -143,7 +143,8 @@ impl EditorView {
     }
 
     pub fn with_buffer(self, buffer: BufferState) -> Self {
-        let editor = self.editor.mutate_internal(move |b| b.with_buffer(buffer));
+        let navcomp_op = buffer.get_file_front().map(|path| self.nav_comp_group.get_navcomp_for(path)).flatten();
+        let editor = self.editor.mutate_internal(move |b| b.with_buffer(buffer, navcomp_op));
 
         EditorView {
             editor,

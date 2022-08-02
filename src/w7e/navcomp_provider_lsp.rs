@@ -26,7 +26,7 @@ impl NavCompProviderLsp {
 }
 
 impl NavCompProvider for NavCompProviderLsp {
-    fn file_open_for_edition(&self, path: &SPath) {
+    fn file_open_for_edition(&self, path: &SPath, file_contents: String) {
         let url = match path.to_url() {
             Ok(url) => url,
             Err(_) => {
@@ -39,7 +39,7 @@ impl NavCompProvider for NavCompProviderLsp {
 
         let item = spawn(async move {
             let mut lsp_lock = lsp.write().await;
-            lsp_lock.text_document_did_open(url.clone()).await.map_err(|err| {
+            lsp_lock.text_document_did_open(url.clone(), file_contents).await.map_err(|err| {
                 debug!("failed sending text_document_did_open for {}", url);
             })
         });

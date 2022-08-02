@@ -7,7 +7,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use log::{debug, error, warn};
-use lsp_types::Url;
+use lsp_types::{GeneralClientCapabilities, Url};
 use serde_json::Value;
 use stream_httparse::streaming_parser::RespParser;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt};
@@ -20,7 +20,7 @@ use crate::lsp_client::lsp_io_error::LspIOError;
 use crate::lsp_client::lsp_notification::LspServerNotification;
 use crate::lsp_client::lsp_read::read_lsp;
 use crate::lsp_client::lsp_read_error::LspReadError;
-use crate::lsp_client::lsp_write::{internal_send_notification, internal_send_request};
+use crate::lsp_client::lsp_write::{internal_send_notification, internal_send_notification_no_params, internal_send_request};
 use crate::lsp_client::lsp_write_error::LspWriteError;
 use crate::tsw::lang_id::LangId;
 
@@ -150,6 +150,15 @@ impl LspWrapper {
         }
     }
 
+    async fn send_notification_no_params<N: lsp_types::notification::Notification>(&mut self) -> Result<(), LspWriteError> {
+        if let Some(stdin) = self.child.stdin.as_mut() {
+            internal_send_notification_no_params::<N, _>(stdin).await?;
+            Ok(())
+        } else {
+            Err(LspWriteError::BrokenPipe.into())
+        }
+    }
+
     async fn send_notification<N: lsp_types::notification::Notification>(&mut self, params: N::Params) -> Result<(), LspWriteError> {
         if let Some(stdin) = self.child.stdin.as_mut() {
             internal_send_notification::<N, _>(stdin, params).await?;
@@ -180,14 +189,34 @@ impl LspWrapper {
 
         // tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
 
-        self.send_message::<lsp_types::request::Initialize>(lsp_types::InitializeParams {
+        let result = self.send_message::<lsp_types::request::Initialize>(lsp_types::InitializeParams {
             process_id: Some(pid),
             // process_id: None,
             root_path: None,
             root_uri,
             initialization_options: None,
             capabilities: lsp_types::ClientCapabilities {
-                workspace: None,
+                workspace: Some(lsp_types::WorkspaceClientCapabilities {
+                    apply_edit: None,
+                    workspace_edit: None,
+                    did_change_configuration: None,
+                    did_change_watched_files: None,
+                    symbol: None,
+                    execute_command: None,
+                    workspace_folders: None,
+                    configuration: None,
+                    semantic_tokens: None,
+                    code_lens: None,
+                    file_operations: Some(lsp_types::WorkspaceFileOperationsClientCapabilities {
+                        dynamic_registration: Some(true),
+                        did_create: None,
+                        will_create: None,
+                        did_rename: None,
+                        will_rename: None,
+                        did_delete: None,
+                        will_delete: None,
+                    }),
+                }),
                 text_document: Some(lsp_types::TextDocumentClientCapabilities {
                     synchronization: Some(lsp_types::TextDocumentSyncClientCapabilities {
                         dynamic_registration: Some(true),
@@ -230,16 +259,22 @@ impl LspWrapper {
             client_info: None,
             // I specifically refuse to support any locale other than US English. Not sorry.
             locale: None,
-        }).await
+        }).await?;
+
+        //before returning I will send syn-ack as protocol demands.
+
+        self.send_notification_no_params::<lsp_types::notification::Initialized>().await?;
+
+        Ok(result)
     }
 
-    pub async fn text_document_did_open(&mut self, url: Url) -> Result<(), LspWriteError> {
+    pub async fn text_document_did_open(&mut self, url: Url, text: String) -> Result<(), LspWriteError> {
         self.send_notification::<lsp_types::notification::DidOpenTextDocument>(
             lsp_types::DidOpenTextDocumentParams {
                 text_document: lsp_types::TextDocumentItem {
                     uri: url,
                     language_id: self.language.to_lsp_lang_id_string().to_owned(),
-                    version: 0,
+                    version: 1,
                     text: "".to_string(),
                 }
             }
@@ -290,7 +325,7 @@ impl LspWrapper {
                             if let Some(line) = line_op {
                                 error!("Lsp: {}", line);
                             } else {
-                                debug!("no more lines in LSP stderr_pipe.");
+                                warn!("no more lines in LSP stderr_pipe.");
                                 more_lines = false;
                             }
                         }

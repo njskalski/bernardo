@@ -43,6 +43,7 @@ pub async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
             error!("bytes_read == 0, eof?");
             return Err(LspReadError::BrokenChannel);
         }
+
         let (done, leftover_bytes) = response_parser.block_parse(&buf);
         if leftover_bytes > 0 {
             error!("expected to stop parsing before retrieving unused bytes, got {}", leftover_bytes);

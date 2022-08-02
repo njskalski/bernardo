@@ -1,4 +1,4 @@
-use std::fmt::{Debug};
+use std::fmt::Debug;
 use std::ops::Range;
 use std::rc::Rc;
 
@@ -6,8 +6,9 @@ use log::{debug, error, warn};
 use ropey::iter::{Bytes, Chars, Chunks};
 use ropey::Rope;
 use streaming_iterator::StreamingIterator;
-use tree_sitter::{Point};
+use tree_sitter::Point;
 use unicode_segmentation::UnicodeSegmentation;
+
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::regex_search::{FindError, regex_find};
 use crate::fs::path::SPath;
@@ -15,7 +16,6 @@ use crate::Output;
 use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg};
 use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
 use crate::primitives::search_pattern::SearchPattern;
-
 use crate::text::buffer::{Buffer, LinesIter};
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
@@ -105,6 +105,12 @@ impl Text {
         }
 
         true
+    }
+}
+
+impl ToString for Text {
+    fn to_string(&self) -> String {
+        self.rope.to_string()
     }
 }
 
