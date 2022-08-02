@@ -44,4 +44,8 @@ impl NavCompGroup {
             debug!("removing old navcomp: [{:?}]", old);
         });
     }
+
+    pub fn len(&self) -> usize {
+        self.navcomps.len()
+    }
 }

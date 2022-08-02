@@ -2,6 +2,8 @@ use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
 use log::{debug, error};
+use tokio::spawn;
+use tokio::task::spawn_blocking;
 use url::Url;
 
 use crate::fs::path::SPath;
@@ -33,11 +35,14 @@ impl NavCompProvider for NavCompProviderLsp {
             }
         };
 
-        self.lsp.try_borrow_mut().map(|mut lsp| {
-            tokio::spawn(|| lsp.text_document_did_open(url));
-        }).unwrap_or_else(|| {
-            debug!("failed sending file_open_for_edition - can't acquire LSP ref");
-        })
+        let lsp = self.lsp.clone();
+
+        let item = spawn(async move {
+            let mut lsp_lock = lsp.write().await;
+            lsp_lock.text_document_did_open(url.clone()).await.map_err(|err| {
+                debug!("failed sending text_document_did_open for {}", url);
+            })
+        });
     }
 
     fn file_closed(&self, path: &SPath) {

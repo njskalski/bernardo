@@ -108,24 +108,21 @@ impl EditorWidget {
         self.navcomp = navcomp;
     }
 
-    pub fn with_buffer(self, buffer: BufferState) -> Self {
-        let mut result = EditorWidget {
-            buffer: buffer,
-            ..self
-        };
+    pub fn with_buffer(mut self, buffer: BufferState) -> Self {
+        self.buffer = buffer;
 
-        match (&result.navcomp, result.buffer.get_file_front()) {
+        match (&self.navcomp, self.buffer.get_file_front()) {
             (Some(navcomp), Some(spath)) => {
                 navcomp.file_open_for_edition(spath);
-            },
+            }
             _ => {
                 debug!("not starting navigation, because navcomp is some: {}, ff is some: {}",
-                    result.navcomp.is_some(), result.buffer.get_file_front().is_some() )
+                    self.navcomp.is_some(), self.buffer.get_file_front().is_some() )
             }
         }
 
 
-        result
+        self
     }
 
     // This updates the "anchor" of view to match the direction of editing. Remember, the scroll will

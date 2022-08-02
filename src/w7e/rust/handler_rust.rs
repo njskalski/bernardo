@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use log::{debug, error};
 use lsp_types::InitializeResult;
+use tokio::sync::RwLock;
 use tokio::time::error::Elapsed;
 
 use crate::{ConfigRef, LangId};
@@ -78,7 +79,7 @@ impl RustHandler {
                     Ok(init_result) => {
                         debug!("lsp initialized successfully.");
 
-                        let arc_lsp = Arc::new(RefCell::new(lsp));
+                        let arc_lsp = Arc::new(RwLock::new(lsp));
                         lsp_ref_op = Some(arc_lsp.clone());
                         navcomp_op = Some(
                             Arc::new(Box::new(NavCompProviderLsp::new(arc_lsp)) as Box<dyn NavCompProvider>)

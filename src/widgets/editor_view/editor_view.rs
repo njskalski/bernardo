@@ -240,8 +240,7 @@ impl EditorView {
 
     fn positively_save_raw(&mut self, path: &SPath) {
         // setting the file path
-        let buffer = self.editor.internal_mut().buffer_mut();
-        buffer.set_file_front(Some(path.clone()));
+        self.set_file_name(path);
 
         // updating the "save as dialog" starting position
         path.parent().map(|_| {
@@ -332,6 +331,13 @@ impl EditorView {
         } else {
             Some(self.find_box.get_text().into())
         }
+    }
+
+    fn set_file_name(&mut self, path: &SPath) {
+        let mut editor = self.editor.internal_mut();
+        editor.buffer_state_mut().set_file_front(Some(path.clone()));
+        let navcomp_op = self.nav_comp_group.get_navcomp_for(path);
+        editor.set_navcomp(navcomp_op);
     }
 }
 
@@ -445,11 +451,9 @@ impl Widget for EditorView {
                 EditorViewMsg::OnSaveAsHit { ff } => {
                     // TODO handle errors
                     let editor = self.editor.internal_mut();
-                    let mut streaming_it = editor.buffer().streaming_iterator();
-                    ff.overwrite_with_stream(&mut streaming_it);
-                    editor.buffer_state_mut().set_file_front(Some(ff.clone()));
-                    let navcomp_op = self.nav_comp_group.get_navcomp_for(ff)
-                    editor.set_navcomp(navcomp_op);
+                    if ff.overwrite_with_stream(&mut editor.buffer().streaming_iterator()).is_ok() {
+                        self.set_file_name(ff);
+                    }
 
                     self.hover_dialog = None;
                     None

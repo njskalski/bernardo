@@ -120,7 +120,7 @@ impl Workspace {
         for scope in self.scopes.iter() {
             scope.handler.as_ref().map(|handler| handler.navcomp()).flatten().map(|navcomp| {
                 nav_comp_group.add_option(scope.lang_id, navcomp);
-            })
+            });
         }
 
         debug!("created navcomp group with {} items", nav_comp_group.len());

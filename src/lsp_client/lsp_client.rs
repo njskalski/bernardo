@@ -55,7 +55,7 @@ pub struct LspWrapper {
     logger_handle: tokio::task::JoinHandle<Result<(), ()>>,
 }
 
-pub type LspWrapperRef = Arc<RefCell<LspWrapper>>;
+pub type LspWrapperRef = Arc<tokio::sync::RwLock<LspWrapper>>;
 
 impl LspWrapper {
     /*
