@@ -1,8 +1,11 @@
+use std::fmt::format;
+
 use jsonrpc_core::Error;
 use lsp_types::{CancelParams, CreateFilesParams, DeleteFilesParams, DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams, InitializedParams, LogMessageParams, LogTraceParams, ProgressParams, PublishDiagnosticsParams, RenameFilesParams, SetTraceParams, ShowMessageParams, WillSaveTextDocumentParams, WorkDoneProgressCancelParams};
 use lsp_types::notification as n;
 use lsp_types::notification::Notification;
 
+#[derive(Debug)]
 pub enum LspNotificationParsingError {
     UnknownMethod,
     ParamsParseFailed(jsonrpc_core::error::Error),
@@ -14,6 +17,11 @@ impl From<jsonrpc_core::error::Error> for LspNotificationParsingError {
     }
 }
 
+impl ToString for LspNotificationParsingError {
+    fn to_string(&self) -> String {
+        format!("{:?}", self)
+    }
+}
 
 pub fn parse_notification(jn: jsonrpc_core::Notification) -> Result<LspServerNotification, LspNotificationParsingError> {
     match jn.method.as_str() {

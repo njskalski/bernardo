@@ -1,14 +1,15 @@
 use std::sync::Arc;
 
-use jsonrpc_core::{Id, Output};
+use jsonrpc_core::{Call, Id, MethodCall, Output};
 use log::{debug, error};
-use serde_json::json;
+use regex::internal::Input;
+use serde_json::{json, Value};
 use tokio::io::AsyncReadExt;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::RwLock;
 
 use crate::lsp_client::lsp_client::IdToCallInfo;
-use crate::lsp_client::lsp_notification::{LspServerNotification, parse_notification};
+use crate::lsp_client::lsp_notification::{LspNotificationParsingError, LspServerNotification, parse_notification};
 use crate::lsp_client::lsp_read_error::LspReadError;
 
 const FAKE_RESPONSE_PREFIX: &'static str = "HTTP/1.1 200 OK\r\n";
@@ -25,80 +26,177 @@ fn id_to_str(id: Id) -> String {
 
 pub async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
     input: &mut R,
-    response_parser: &mut stream_httparse::streaming_parser::RespParser,
     id_to_method: &Arc<RwLock<IdToCallInfo>>,
     notification_sink: &UnboundedSender<LspServerNotification>,
 ) -> Result<(), LspReadError> {
-    {
-        let (done, leftover_bytes) = response_parser.block_parse(FAKE_RESPONSE_PREFIX.as_bytes());
-        if done || leftover_bytes > 0 {
-            error!("unexpected early exit of http response parser: (done: {}, leftover_bytes: {})", done, leftover_bytes);
-        }
-    }
+    let mut headers: Vec<u8> = Vec::new();
 
     loop {
-        let mut buf: [u8; 1] = [0; 1];
-        let bytes_read = input.read(&mut buf).await?;
-        if bytes_read == 0 {
-            error!("bytes_read == 0, eof?");
-            return Err(LspReadError::BrokenChannel);
-        }
+        let mut buf: [u8; 1] = [0];
+        input.read(&mut buf).await?;
+        headers.push(buf[0]);
 
-        let (done, leftover_bytes) = response_parser.block_parse(&buf);
-        if leftover_bytes > 0 {
-            error!("expected to stop parsing before retrieving unused bytes, got {}", leftover_bytes);
-        }
-
-        if done {
-            break;
+        if headers.len() > 3 {
+            // The crosses below are an exorcism against heretic line terminators.
+            if headers.ends_with(/* ✞ */"\r\n\r\n".as_bytes() /* ✞ */) {
+                break;
+            }
         }
     }
 
-    let response = response_parser.finish()?;
-    debug!("Receiving {:?} and body of {} bytes", response.status_code(), response.body().len());
-    debug!("{}", std::str::from_utf8(response.body()).unwrap());
+    let headers_string = String::from_utf8(headers)?;
+    let body_len = match get_len_from_headers(&headers_string) {
+        None => return Err(LspReadError::NoContentLength),
+        Some(i) => i,
+    };
+    debug!("Receiving body of {} bytes", body_len);
 
-    // TODO add notification type.
-    if let Ok(resp) = serde_json::from_slice::<jsonrpc_core::Response>(response.body()) {
-        if let jsonrpc_core::Response::Single(single) = resp {
-            match single {
-                Output::Failure(fail) => {
-                    debug!("failed parsing response, because {:?}", fail);
-                    Err(LspReadError::JsonRpcError(fail.error.to_string()))
-                },
-                Output::Success(succ) => {
-                    let id = id_to_str(succ.id);
-                    debug!("call info id {}", &id);
-                    if let Some(call_info) = id_to_method.write().await.remove(&id) {
-                        match call_info.sender.send(succ.result) {
-                            Ok(_) => {
-                                debug!("sent {} to {}", call_info.method, &id);
-                                Ok(())
-                            },
-                            Err(_) => {
-                                debug!("failed to send {} to {}, because of broken channel", call_info.method, &id);
-                                Err(LspReadError::BrokenChannel)
-                            }
-                        }
-                    } else {
-                        Err(LspReadError::UnknownMethod)
+    let mut body: Vec<u8> = Vec::with_capacity(body_len);
+    while body.len() < body_len {
+        let mut buf: [u8; 1] = [0];
+        input.read(&mut buf).await?;
+        body.push(buf[0]);
+    }
+
+    debug!("got it:\n[{}]", std::str::from_utf8(&body).unwrap());
+    let s = std::str::from_utf8(&body).unwrap();
+
+    if let Ok(call) = jsonrpc_core::serde_from_str::<jsonrpc_core::Call>(&s) {
+        match call {
+            Call::MethodCall(call) => {
+                debug!("deserialized call->method_call");
+                let value: Value = call.params.into();
+                internal_send(&id_to_method,
+                              call.id.clone(),
+                              value,
+                              Some(&call.method),
+                ).await
+            }
+            Call::Notification(notification) => {
+                debug!("deserialized call->notification");
+                match parse_notification(notification) {
+                    Ok(no) => {
+                        notification_sink.send(no).map_err(|_| LspReadError::BrokenChannel)?;
+                        Ok(())
+                    }
+                    Err(e) => {
+                        Err(LspReadError::DeError(e.to_string()))
                     }
                 }
             }
-        } else {
-            Err(LspReadError::NotSingleResponse)
-        }
-    } else if let Ok(notification) = serde_json::from_slice::<jsonrpc_core::Notification>(response.body()) {
-        match parse_notification(notification) {
-            Ok(no) => {
-                notification_sink.send(no).map_err(|_| LspReadError::BrokenChannel)?;
-                Ok(())
+            Call::Invalid { id } => {
+                debug!("deserialized invalid id: {:?}", id);
+
+                // the fact that failed to
+
+                if let Ok(resp) = jsonrpc_core::serde_from_str::<jsonrpc_core::Response>(&s) {
+                    debug!("deserialized response");
+                    if let jsonrpc_core::Response::Single(single) = resp {
+                        match single {
+                            Output::Failure(fail) => {
+                                debug!("failed parsing response, because {:?}", fail);
+                                Err(LspReadError::JsonRpcError(fail.error.to_string()))
+                            },
+                            Output::Success(succ) => {
+                                debug!("call info id {:?}", &succ.id);
+                                internal_send(&id_to_method,
+                                              succ.id,
+                                              succ.result,
+                                              None,
+                                ).await
+                            }
+                        }
+                    } else {
+                        Err(LspReadError::NotSingleResponse)
+                    }
+                } else if let Ok(notification) = jsonrpc_core::serde_from_str::<jsonrpc_core::Notification>(&s) {
+                    debug!("deserialized notification");
+                    match parse_notification(notification) {
+                        Ok(no) => {
+                            notification_sink.send(no).map_err(|_| LspReadError::BrokenChannel)?;
+                            Ok(())
+                        }
+                        Err(e) => {
+                            Err(LspReadError::DeError(e.to_string()))
+                        }
+                    }
+                } else {
+                    error!("failed to parse [{}] into either Notification or Response", &s);
+                    Err(LspReadError::UnexpectedContents)
+                }
             }
-            Err(e) => {
+        }
+    } else {
+        debug!("failed deserializing as call, even a failed one.");
+        Err(LspReadError::UnexpectedContents)
+    }
+}
+
+async fn internal_send(
+    id_to_method: &Arc<RwLock<IdToCallInfo>>,
+    id: Id,
+    value: Value,
+    method: Option<&String>,
+) -> Result<(), LspReadError> {
+    let id = id_to_str(id);
+    debug!("call info id {}", &id);
+    if let Some(call_info) = id_to_method.write().await.remove(&id) {
+        match call_info.sender.send(value) {
+            Ok(_) => {
+                debug!("sent {} to {}", call_info.method, &id);
+                Ok(())
+            },
+            Err(_) => {
+                debug!("failed to send {} to {}, because of broken channel", call_info.method, &id);
                 Err(LspReadError::BrokenChannel)
             }
         }
     } else {
-        Err(LspReadError::UnexpectedContents)
+        debug!("not waiting for call with id {:?}", &id);
+        Err(LspReadError::UnmatchedId {
+            id: id.to_string(),
+            method: method.map(|m| m.to_string()).unwrap_or("<unset>".to_string()),
+        })
+    }
+}
+
+static CONTENT_LENGTH_HEADER: &'static str = "Content-Length:";
+
+pub fn get_len_from_headers(headers: &String) -> Option<usize> {
+    for line in headers.lines() {
+        if line.trim().starts_with(&CONTENT_LENGTH_HEADER) {
+            let bytes_num_str = &line[CONTENT_LENGTH_HEADER.len() + 1..];
+            let bytes_num = bytes_num_str.parse::<usize>().ok();
+            return bytes_num;
+        }
+    }
+
+    None
+}
+
+//{"jsonrpc":"2.0","id":0,"method":"client/registerCapability","params":{"registrations":[{"id":"textDocument/didSave","method":"textDocument/didSave","registerOptions":{"includeText":false,"documentSelector":[{"pattern":"**/*.rs"},{"pattern":"**/Cargo.toml"},{"pattern":"**/Cargo.lock"}]}}]}}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn json_deserialize() {
+        let s = r#"{"jsonrpc":"2.0","id":0,"method":"client/registerCapability","params":{"registrations":[{"id":"textDocument/didSave","method":"textDocument/didSave","registerOptions":{"includeText":false,"documentSelector":[{"pattern":"**/*.rs"},{"pattern":"**/Cargo.toml"},{"pattern":"**/Cargo.lock"}]}}]}}"#;
+
+        // This entire test was to figure out what does the output of LSP deserializes to.
+        // Guess what, it deserializes to REQUEST. W T F.
+
+        //Failure, Output, Response, Success
+        // assert_eq!(jsonrpc_core::serde_from_str::<jsonrpc_core::Failure>(&s).is_ok(), true);
+        // assert_eq!(jsonrpc_core::serde_from_str::<jsonrpc_core::Output>(&s).is_ok(), true);
+        // assert_eq!(jsonrpc_core::serde_from_str::<jsonrpc_core::Response>(&s).is_ok(), true);
+        // assert_eq!(jsonrpc_core::serde_from_str::<jsonrpc_core::Success>(&s).is_ok(), true);
+
+        //Call, MethodCall, Notification, Request
+        assert_eq!(jsonrpc_core::serde_from_str::<jsonrpc_core::Call>(&s).is_ok(), true);
+        assert_eq!(jsonrpc_core::serde_from_str::<jsonrpc_core::MethodCall>(&s).is_ok(), true);
+        // assert_eq!(jsonrpc_core::serde_from_str::<jsonrpc_core::Notification>(&s).is_ok(), true);
+        assert_eq!(jsonrpc_core::serde_from_str::<jsonrpc_core::Request>(&s).is_ok(), true);
     }
 }

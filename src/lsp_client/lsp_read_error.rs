@@ -1,14 +1,18 @@
 use std::io;
+use std::str::Utf8Error;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum LspReadError {
     NoLine,
+    NoContentLength,
+    FromUtf8(String),
     IoError(String),
     DeError(String),
     UnknownMethod,
     ParamCastFailed,
     UnexpectedContents,
     NotSingleResponse,
+    UnmatchedId { id: String, method: String },
     JsonRpcError(String),
     BrokenChannel,
     HttpParseError(String),
@@ -32,8 +36,8 @@ impl From<jsonrpc_core::Error> for LspReadError {
     }
 }
 
-impl From<stream_httparse::streaming_parser::ParseError> for LspReadError {
-    fn from(p: stream_httparse::streaming_parser::ParseError) -> Self {
-        LspReadError::HttpParseError(p.to_string())
+impl From<std::string::FromUtf8Error> for LspReadError {
+    fn from(ue: std::string::FromUtf8Error) -> Self {
+        LspReadError::FromUtf8(ue.to_string())
     }
 }

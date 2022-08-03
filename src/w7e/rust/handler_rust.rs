@@ -18,7 +18,7 @@ use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::navcomp_provider::NavCompProvider;
 use crate::w7e::navcomp_provider_lsp::NavCompProviderLsp;
 
-pub const INIT_TIMEOUT: Duration = Duration::from_millis(400);
+pub const INIT_TIMEOUT: Duration = Duration::from_millis(2000);
 
 pub struct RustHandler {
     root: SPath,

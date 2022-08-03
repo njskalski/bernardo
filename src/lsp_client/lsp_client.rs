@@ -9,7 +9,6 @@ use std::sync::Arc;
 use log::{debug, error, warn};
 use lsp_types::{GeneralClientCapabilities, Url};
 use serde_json::Value;
-use stream_httparse::streaming_parser::RespParser;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt};
 use tokio::io::BufReader;
 use tokio::process::{ChildStderr, ChildStdout};
@@ -290,10 +289,12 @@ impl LspWrapper {
         notification_sender: UnboundedSender<LspServerNotification>,
         mut stdout: BufReader<ChildStdout>,
     ) -> Result<(), LspReadError> {
-        let mut resp_parser = RespParser::new_capacity(DEFAULT_RESPONSE_PREALLOCATION_SIZE);
         loop {
-            match read_lsp(&mut stdout, &mut resp_parser, &id_to_name, &notification_sender).await {
+            match read_lsp(&mut stdout, &id_to_name, &notification_sender).await {
                 Ok(_) => {}
+                Err(LspReadError::UnmatchedId { id, method }) => {
+                    warn!("unmatched id {} (method {})", id, method);
+                }
                 Err(e) => {
                     debug!("terminating lsp_reader thread because {:?}", e);
                     return Err(e);
@@ -337,7 +338,8 @@ impl LspWrapper {
                 notification_op = notification_receiver.recv(), if notification_channel_open => {
                     match notification_op {
                         Some(notification) => {
-                            debug!("received LSP notification:\n---\n{:?}\n---\n", notification);
+                            //debug!("received LSP notification:\n---\n{:?}\n---\n", notification);
+                            debug!("received LSP notification");
                         }
                         None => {
                             debug!("notification channel closed.");
