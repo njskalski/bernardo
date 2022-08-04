@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::path::PathBuf;
+use std::process;
 use std::process::Stdio;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -15,6 +16,7 @@ use tokio::process::{ChildStderr, ChildStdout};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::RwLock;
 
+use crate::lsp_client::debug_helpers::lsp_debug_save;
 use crate::lsp_client::lsp_io_error::LspIOError;
 use crate::lsp_client::lsp_notification::LspServerNotification;
 use crate::lsp_client::lsp_read::read_lsp;
@@ -91,13 +93,23 @@ impl LspWrapper {
         let (notification_sender, notification_receiver) = tokio::sync::mpsc::unbounded_channel::<LspServerNotification>();
         let ids = Arc::new(RwLock::new(IdToCallInfo::default()));
 
+        let reader_identifier: String = format!("{}-{}", lsp_path.file_name().map(|f| f.to_string_lossy().to_string())
+            .unwrap_or_else(|| {
+                error!("failed to unwrap filename");
+                "noname".to_string()
+            }), process::id());
+
+        let reader_identifier2 = reader_identifier.clone();
+
         let reader_handle: tokio::task::JoinHandle<Result<(), LspReadError>> = tokio::spawn(Self::reader_thread(
+            reader_identifier,
             ids.clone(),
             notification_sender,
             stdout,
         ));
 
         let logger_handle: tokio::task::JoinHandle<Result<(), ()>> = tokio::spawn(Self::logger_thread(
+            reader_identifier2,
             stderr,
             notification_receiver,
         ));
@@ -206,23 +218,10 @@ impl LspWrapper {
                     configuration: None,
                     semantic_tokens: None,
                     code_lens: None,
-                    file_operations: Some(lsp_types::WorkspaceFileOperationsClientCapabilities {
-                        dynamic_registration: Some(true),
-                        did_create: None,
-                        will_create: None,
-                        did_rename: None,
-                        will_rename: None,
-                        did_delete: None,
-                        will_delete: None,
-                    }),
+                    file_operations: None,
                 }),
                 text_document: Some(lsp_types::TextDocumentClientCapabilities {
-                    synchronization: Some(lsp_types::TextDocumentSyncClientCapabilities {
-                        dynamic_registration: Some(true),
-                        will_save: Some(true),
-                        will_save_wait_until: None, // TODO?
-                        did_save: Some(true),
-                    }),
+                    synchronization: None,
                     completion: None,
                     hover: None,
                     signature_help: None,
@@ -253,7 +252,7 @@ impl LspWrapper {
                 general: None,
                 experimental: None,
             },
-            trace: Some(trace),
+            trace: None,
             workspace_folders: Some(vec![workspace]),
             client_info: None,
             // I specifically refuse to support any locale other than US English. Not sorry.
@@ -285,12 +284,22 @@ impl LspWrapper {
     }
 
     pub async fn reader_thread(
+        // used for debugging
+        identifier: String,
         id_to_name: Arc<RwLock<IdToCallInfo>>,
         notification_sender: UnboundedSender<LspServerNotification>,
         mut stdout: BufReader<ChildStdout>,
     ) -> Result<(), LspReadError> {
+        let mut num: usize = 0;
         loop {
-            match read_lsp(&mut stdout, &id_to_name, &notification_sender).await {
+            num += 1;
+            match read_lsp(
+                &identifier,
+                &mut num,
+                &mut stdout,
+                &id_to_name,
+                &notification_sender,
+            ).await {
                 Ok(_) => {}
                 Err(LspReadError::UnmatchedId { id, method }) => {
                     warn!("unmatched id {} (method {})", id, method);
@@ -309,12 +318,14 @@ impl LspWrapper {
     LspNotifications that I do not handle in any specific way yet.
      */
     pub async fn logger_thread(
+        identifier: String,
         mut stderr_pipe: BufReader<ChildStderr>,
         mut notification_receiver: UnboundedReceiver<LspServerNotification>,
     ) -> Result<(), ()> {
         //TODO dry the other channel too before quitting
 
         let mut stderr_lines = stderr_pipe.lines();
+        let mut stderr_path = PathBuf::from(identifier).join("stderr.txt");
 
         let mut more_lines = true;
         let mut notification_channel_open = true;
@@ -324,7 +335,8 @@ impl LspWrapper {
                     match line_res {
                         Ok(line_op) => {
                             if let Some(line) = line_op {
-                                error!("Lsp: {}", line);
+                                //error!("Lspx{:?}: {}", &stderr_path, &line);
+                                lsp_debug_save(stderr_path.clone(), format!("{}\n", line)).await;
                             } else {
                                 warn!("no more lines in LSP stderr_pipe.");
                                 more_lines = false;
@@ -339,7 +351,7 @@ impl LspWrapper {
                     match notification_op {
                         Some(notification) => {
                             //debug!("received LSP notification:\n---\n{:?}\n---\n", notification);
-                            debug!("received LSP notification");
+                            // debug!("received LSP notification");
                         }
                         None => {
                             debug!("notification channel closed.");

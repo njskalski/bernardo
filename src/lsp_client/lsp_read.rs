@@ -1,5 +1,7 @@
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use json::{JsonValue, stringify_pretty};
 use jsonrpc_core::{Call, Id, MethodCall, Output};
 use log::{debug, error};
 use regex::internal::Input;
@@ -8,6 +10,7 @@ use tokio::io::AsyncReadExt;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::RwLock;
 
+use crate::lsp_client::debug_helpers::{format_or_noop, lsp_debug_save};
 use crate::lsp_client::lsp_client::IdToCallInfo;
 use crate::lsp_client::lsp_notification::{LspNotificationParsingError, LspServerNotification, parse_notification};
 use crate::lsp_client::lsp_read_error::LspReadError;
@@ -25,6 +28,8 @@ fn id_to_str(id: Id) -> String {
 }
 
 pub async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
+    identifier: &str,
+    num: &mut usize,
     input: &mut R,
     id_to_method: &Arc<RwLock<IdToCallInfo>>,
     notification_sink: &UnboundedSender<LspServerNotification>,
@@ -58,8 +63,18 @@ pub async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
         body.push(buf[0]);
     }
 
-    debug!("got it:\n[{}]", std::str::from_utf8(&body).unwrap());
+    // debug!("got it:\n[{}]", std::str::from_utf8(&body).unwrap());
     let s = std::str::from_utf8(&body).unwrap();
+
+    #[cfg(debug_assertions)]
+    {
+        let dir = Path::new(identifier);
+
+        let file = dir.join(format!("incoming-{}.json", num));
+        let pretty_string = format_or_noop(s.to_string());
+
+        tokio::spawn(lsp_debug_save(file, pretty_string));
+    }
 
     if let Ok(call) = jsonrpc_core::serde_from_str::<jsonrpc_core::Call>(&s) {
         match call {
@@ -174,7 +189,6 @@ pub fn get_len_from_headers(headers: &String) -> Option<usize> {
     None
 }
 
-//{"jsonrpc":"2.0","id":0,"method":"client/registerCapability","params":{"registrations":[{"id":"textDocument/didSave","method":"textDocument/didSave","registerOptions":{"includeText":false,"documentSelector":[{"pattern":"**/*.rs"},{"pattern":"**/Cargo.toml"},{"pattern":"**/Cargo.lock"}]}}]}}
 
 #[cfg(test)]
 mod tests {
