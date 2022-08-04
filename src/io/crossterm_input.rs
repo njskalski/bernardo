@@ -2,7 +2,7 @@ use std::thread;
 
 use crossbeam_channel::Receiver;
 use crossterm::event::Event;
-use log::{debug, warn};
+use log::{debug, error, warn};
 
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
@@ -22,7 +22,7 @@ impl CrosstermInput {
                 let event = crossterm::event::read();
                 match event {
                     Err(err) => {
-                        debug!("received error {:?}, closing crossterm input.", err);
+                        error!("received error {:?}, closing crossterm input.", err);
                         break;
                     }
                     Ok(raw_event) => {

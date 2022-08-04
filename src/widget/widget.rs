@@ -3,16 +3,18 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use log::{debug, error};
 
+use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::size_constraint::SizeConstraint;
-use crate::config::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 
 // this corresponds to message to Parent.
 pub type WidgetAction<W> = fn(&W) -> Option<Box<dyn AnyMsg>>;
 pub type WidgetActionParam<W, P> = fn(&W, P) -> Option<Box<dyn AnyMsg>>;
+
+pub type ActionTrigger<W> = Box<dyn FnOnce(&W) -> Option<Box<dyn AnyMsg>>>;
 
 pub type WID = usize;
 
@@ -95,6 +97,10 @@ pub trait Widget {
         }
 
         None
+    }
+
+    fn get_actions(&self) -> Box<dyn Iterator<Item=ActionTrigger<Self>> + '_> where Self: Sized {
+        Box::new(std::iter::empty())
     }
 }
 

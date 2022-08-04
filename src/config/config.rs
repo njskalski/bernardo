@@ -67,8 +67,8 @@ impl Default for Editor {
     fn default() -> Self {
         Editor {
             save: Keycode::Char('s').to_key().with_ctrl(),
-            save_as: Keycode::Char('d').to_key().with_ctrl(),
-            enter_cursor_drop_mode: Keycode::Char('e').to_key().with_ctrl(),
+            save_as: Keycode::Char('d').to_key().with_ctrl().with_shift(),
+            enter_cursor_drop_mode: Keycode::Char('r').to_key().with_ctrl(),
             find: Keycode::Char('f').to_key().with_ctrl(),
             replace: Keycode::Char('r').to_key().with_ctrl(),
             close_find_replace: Keycode::Esc.to_key(),
