@@ -1,3 +1,4 @@
+use std::cmp::{max, min};
 use std::fmt;
 use std::fmt::Formatter;
 use std::ops::Add;
@@ -17,6 +18,19 @@ impl Rect {
     pub const fn new(pos: XY, size: XY) -> Self {
         Rect { pos, size }
     }
+
+    pub fn xxyy(x1: u16, x2: u16, y1: u16, y2: u16) -> Self {
+        let minx = std::cmp::min(x1, x2);
+        let maxx = std::cmp::max(x1, x2);
+        let miny = std::cmp::min(y1, y2);
+        let maxy = std::cmp::max(y1, y2);
+
+        Rect::new(
+            XY::new(minx, miny),
+            XY::new(maxx - minx, maxy - miny),
+        )
+    }
+
     pub fn lower_right(&self) -> XY {
         self.pos + self.size
     }

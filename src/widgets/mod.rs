@@ -16,3 +16,4 @@ pub mod editor_view;
 pub mod spath_tree_view_node;
 pub mod spath_list_widget_item;
 pub mod dir_tree_view;
+pub mod action_triggers_fuzzy_provicer;

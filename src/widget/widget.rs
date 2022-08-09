@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -8,13 +9,12 @@ use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::{XY, ZERO};
+use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::AnyMsg;
 
 // this corresponds to message to Parent.
 pub type WidgetAction<W> = fn(&W) -> Option<Box<dyn AnyMsg>>;
 pub type WidgetActionParam<W, P> = fn(&W, P) -> Option<Box<dyn AnyMsg>>;
-
-pub type ActionTrigger<W> = Box<dyn FnOnce(&W) -> Option<Box<dyn AnyMsg>>>;
 
 pub type WID = usize;
 
