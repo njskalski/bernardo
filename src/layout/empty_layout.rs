@@ -28,10 +28,6 @@ impl<W: Widget> Layout<W> for EmptyLayout {
         self.size.unwrap_or(ZERO)
     }
 
-    fn calc_sizes(&self, root: &mut W, _output_size: XY) -> Vec<WidgetIdRect> {
-        vec![]
-    }
-
     fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>> {
         Vec::default()
     }

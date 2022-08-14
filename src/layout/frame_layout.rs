@@ -31,23 +31,7 @@ impl<W: Widget> Layout<W> for FrameLayout<W> {
     fn min_size(&self, root: &W) -> XY {
         self.layout.min_size(root) + self.margins * 2
     }
-
-    fn calc_sizes(&self, root: &mut W, output_size: XY) -> Vec<WidgetIdRect> {
-        let rect = match self.sub_rect(output_size) {
-            Some(rect) => rect,
-            None => {
-                error!("too small output to render with margins");
-                return vec![];
-            }
-        };
-
-        let subs = self.layout.calc_sizes(root, rect.size);
-
-        subs.iter().map(|wir| {
-            wir.shifted(self.margins)
-        }).collect()
-    }
-
+    
     fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>> {
         let rect = match self.sub_rect(output_size) {
             Some(rect) => rect,

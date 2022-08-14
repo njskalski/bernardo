@@ -56,6 +56,14 @@ impl<W: Widget> WidgetWithRect<W> {
             ..self
         }
     }
+
+    #[deprecated]
+    pub fn todo_into_wir(&self, root: &W) -> WidgetIdRect {
+        WidgetIdRect {
+            wid: self.widget.get(root).id(),
+            rect: self.rect,
+        }
+    }
 }
 
 pub trait Layout<W: Widget> {
@@ -65,10 +73,7 @@ pub trait Layout<W: Widget> {
     This only calculates the rects under current constraints. The widgets themselves should
     receive information about their new sizes before render.
      */
-    fn calc_sizes(&self, root: &mut W, output_size: XY) -> Vec<WidgetIdRect>;
-
     fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>>;
-
 
     fn boxed(self) -> Box<dyn Layout<W>> where Self: Sized, Self: 'static {
         Box::new(self)

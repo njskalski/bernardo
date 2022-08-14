@@ -182,46 +182,6 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
         minxy
     }
 
-    fn calc_sizes(&self, root: &mut W, output_size: XY) -> Vec<WidgetIdRect> {
-        let rects_op = self.get_just_rects(output_size);
-        if rects_op.is_none() {
-            warn!(
-                "not enough space to get_rects split_layout: {:?}",
-                output_size
-            );
-            return vec![];
-        };
-
-        let rects = rects_op.unwrap();
-        let mut res: Vec<WidgetIdRect> = vec![];
-
-        debug_assert!(rects.len() == self.children.len());
-
-        for (idx, child_layout) in self.children.iter().enumerate() {
-            let rect = &rects[idx];
-            let wirs = child_layout.layout.calc_sizes(root, rect.size);
-
-            // debug!("A{} output_size {} parent {} children {:?}", wirs.len(), output_size, rect, wirs);
-            //TODO add intersection checks
-
-            for wir in wirs.iter() {
-                let wid = wir.wid;
-                let new_rect = wir.rect.shifted(rect.pos);
-
-                // debug!("output_size {} parent {} child {} res {}", output_size, rect, wir.rect, new_rect);
-                debug_assert!(output_size.x >= new_rect.lower_right().x);
-                debug_assert!(output_size.y >= new_rect.lower_right().y);
-
-                res.push(WidgetIdRect {
-                    wid,
-                    rect: new_rect,
-                });
-            }
-        }
-
-        res
-    }
-
     fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>> {
         let rects_op = self.get_just_rects(output_size);
         if rects_op.is_none() {

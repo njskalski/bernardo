@@ -31,40 +31,6 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
         self.widget.get(root).min_size()
     }
 
-    fn calc_sizes(&self, root: &mut W, output_size: XY) -> Vec<WidgetIdRect> {
-        let wid = self.widget.get(root).id();
-
-        let res = if self.with_border {
-            if output_size > (2, 2).into() {
-                let limited_output = XY::new(output_size.x - 2, output_size.y - 2);
-                let size = self.widget.get_mut(root).layout(SizeConstraint::simple(limited_output));
-                let rect = Rect::new(XY::new(1, 1), size);
-
-                vec![WidgetIdRect {
-                    wid,
-                    rect,
-                }]
-            } else {
-                warn!("too small LeafLayout to draw the view.");
-                vec![]
-            }
-        } else {
-            let size = self.widget.get_mut(root).layout(SizeConstraint::simple(output_size));
-            let rect = Rect::new(ZERO, size);
-
-            vec![WidgetIdRect {
-                wid,
-                rect,
-            }]
-        };
-
-        for wid in &res {
-            debug_assert!(output_size >= wid.rect.lower_right());
-        }
-
-        res
-    }
-
     fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>> {
         let res = if self.with_border {
             if output_size > (2, 2).into() {

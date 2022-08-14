@@ -11,7 +11,7 @@ use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::io::sub_output::SubOutput;
 use crate::layout::hover_layout::HoverLayout;
-use crate::layout::layout::{Layout, WidgetIdRect};
+use crate::layout::layout::{Layout, WidgetIdRect, WidgetWithRect};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::rect::Rect;
@@ -127,7 +127,7 @@ impl MainView {
         res
     }
 
-    fn internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {
+    fn internal_layout(&mut self, max_size: XY) -> Box<dyn Layout<Self>> {
         let mut left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
         let right_column = match self.display_state.curr_editor_idx {
             None => LeafLayout::new(subwidget!(Self.no_editor)),
@@ -173,11 +173,11 @@ impl MainView {
                         bg_layout.boxed(),
                         hover,
                         rect,
-                    ).calc_sizes(self, max_size)
+                    ).boxed()
                 }
             }
         } else {
-            bg_layout.calc_sizes(self, max_size)
+            bg_layout.boxed()
         };
 
         res
@@ -234,7 +234,12 @@ impl Widget for MainView {
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         let max_size = sc.visible_hint().size;
-        let res_sizes = self.internal_layout(max_size);
+        let layout = self.internal_layout(max_size);
+        let res_sizes: Vec<_> = layout.layout(self, max_size)
+            .iter()
+            .map(|w| w.todo_into_wir(self))
+            .collect();
+
         self.display_state.wirs = res_sizes;
         max_size
     }

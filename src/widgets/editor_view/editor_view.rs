@@ -160,7 +160,7 @@ impl EditorView {
         )
     }
 
-    fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
+    fn internal_layout(&self, size: XY) -> Box<dyn Layout<Self>> {
         let mut editor_layout = LeafLayout::new(subwidget!(Self.editor)).boxed();
         let mut find_text_layout = LeafLayout::new(subwidget!(Self.find_label)).boxed();
         let mut find_box_layout = LeafLayout::new(subwidget!(Self.find_box)).boxed();
@@ -178,7 +178,7 @@ impl EditorView {
                 .with(SplitRule::Proportional(1.0), replace_box_layout)
                 .boxed();
 
-        let mut background: Box<dyn Layout<Self>> = match &mut self.state {
+        let mut background: Box<dyn Layout<Self>> = match &self.state {
             EditorViewState::Simple => {
                 editor_layout
             }
@@ -197,24 +197,23 @@ impl EditorView {
             }
         };
 
-        match self.hover_dialog.as_mut() {
-            None => background.calc_sizes(self, size),
-            Some(dialog) => {
-                let rect = Self::get_hover_rect(size);
-                let hover = LeafLayout::new(SubwidgetPointer::new(
-                    Box::new(|s: &Self| {
-                        s.hover_dialog.as_ref().unwrap()
-                    }),
-                    Box::new(|s: &mut Self| {
-                        s.hover_dialog.as_mut().unwrap()
-                    }),
-                )).boxed();
+        if self.hover_dialog.is_none() {
+            background
+        } else {
+            let rect = Self::get_hover_rect(size);
+            let hover = LeafLayout::new(SubwidgetPointer::new(
+                Box::new(|s: &Self| {
+                    s.hover_dialog.as_ref().unwrap()
+                }),
+                Box::new(|s: &mut Self| {
+                    s.hover_dialog.as_mut().unwrap()
+                }),
+            )).boxed();
 
-                HoverLayout::new(background,
-                                 hover,
-                                 rect,
-                ).calc_sizes(self, size)
-            }
+            HoverLayout::new(background,
+                             hover,
+                             rect,
+            ).boxed()
         }
     }
 
@@ -369,7 +368,12 @@ impl Widget for EditorView {
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         //This is copied from SaveFileDialog, and should be replaced when focus is removed from widgets.
         let max_size = sc.visible_hint().size;
-        let res_sizes = self.internal_layout(max_size);
+        let layout = self.internal_layout(max_size);
+        let res_sizes: Vec<_> = layout
+            .layout(self, max_size)
+            .iter()
+            .map(|w| w.todo_into_wir(self))
+            .collect();
 
         let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
 

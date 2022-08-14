@@ -140,8 +140,8 @@ impl GenericDialog {
         self.keystroke = Some(keystroke);
     }
 
-    fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
-        let mut text_layout = LeafLayout::new(subwidget!(Self.text_widget)).boxed();
+    fn internal_layout(&mut self, size: XY) -> Box<dyn Layout<Self>> {
+        let text_layout = LeafLayout::new(subwidget!(Self.text_widget)).boxed();
 
         // let mut button_layout = SplitLayout::new(SplitDirection::Vertical);
         let button_layouts: Vec<Box<dyn Layout<Self>>> = (0..self.buttons.len()).map(|idx| {
@@ -164,15 +164,15 @@ impl GenericDialog {
             })
             .boxed();
 
-        let mut total_layout = SplitLayout::new(SplitDirection::Vertical)
+        let total_layout = SplitLayout::new(SplitDirection::Vertical)
             .with(SplitRule::Proportional(1.0),
                   text_layout)
             .with(SplitRule::Fixed(1), button_layout)
             .boxed();
 
-        let mut frame_layout = FrameLayout::new(total_layout, XY::new(2, 2));
+        let frame_layout = FrameLayout::new(total_layout, XY::new(2, 2)).boxed();
 
-        frame_layout.calc_sizes(self, size)
+        frame_layout
     }
 }
 
@@ -202,7 +202,13 @@ impl Widget for GenericDialog {
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         let size = sc.visible_hint().size;
-        let wirs = self.internal_layout(size);
+        let layout = self.internal_layout(size);
+
+        let wirs: Vec<_> = layout
+            .layout(self, size)
+            .iter()
+            .map(|w| w.todo_into_wir(self))
+            .collect();
 
         let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
         let mut ds = GenericDisplayState::new(size, wirs);

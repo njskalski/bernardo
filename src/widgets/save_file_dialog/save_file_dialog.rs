@@ -167,7 +167,7 @@ impl SaveFileDialogWidget {
 
         let frame = XY::new(1, 1);
 
-        if self.hover_dialog.is_some() {
+        if self.hover_dialog.is_none() {
             FrameLayout::new(layout, frame).boxed()
         } else {
             let margins = max_size / 20;
@@ -307,7 +307,7 @@ impl SaveFileDialogWidget {
             Some(p) => p,
             None => {
                 error!("self.get_path() is None in save_positively!");
-                return None
+                return None;
             }
         };
 
@@ -345,12 +345,13 @@ impl Widget for SaveFileDialogWidget {
         // TODO relayouting destroys focus selection.
 
         let layout = self.internal_layout(max_size);
-        let res_sizes = layout.calc_sizes(self, max_size);
+        let res_sizes = layout.layout(self, max_size);
 
         // Retention of focus. Not sure if it should be here.
         let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
 
-        let mut ds = GenericDisplayState::new(max_size, res_sizes);
+        let old_sizes: Vec<_> = res_sizes.iter().map(|w| w.todo_into_wir(self)).collect();
+        let mut ds = GenericDisplayState::new(max_size, old_sizes);
         ds.focus_group_mut().add_edge(self.tree_widget.id(), FocusUpdate::Right, self.list_widget.id());
         ds.focus_group_mut().add_edge(self.list_widget.id(), FocusUpdate::Left, self.tree_widget.id());
 
@@ -359,11 +360,9 @@ impl Widget for SaveFileDialogWidget {
         ds.focus_group_mut().add_edge(self.edit_box.id(), FocusUpdate::Up, self.list_widget.id());
         ds.focus_group_mut().add_edge(self.list_widget.id(), FocusUpdate::Down, self.edit_box.id());
 
-
         // debug!("focusgroup: {:?}", ds.focus_group);
 
         self.display_state = Some(ds);
-
 
         // re-setting focus.
         match (focus_op, &mut self.display_state) {
