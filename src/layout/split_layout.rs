@@ -197,7 +197,7 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
 
         debug_assert!(rects.len() == self.children.len());
 
-        for (idx, child_layout) in self.children.iter_mut().enumerate() {
+        for (idx, child_layout) in self.children.iter().enumerate() {
             let rect = &rects[idx];
             let wirs = child_layout.layout.calc_sizes(root, rect.size);
 

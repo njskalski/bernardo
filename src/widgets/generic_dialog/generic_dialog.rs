@@ -145,12 +145,14 @@ impl GenericDialog {
 
         // let mut button_layout = SplitLayout::new(SplitDirection::Vertical);
         let button_layouts: Vec<Box<dyn Layout<Self>>> = (0..self.buttons.len()).map(|idx| {
+            let idx1 = idx;
+            let idx2 = idx;
             LeafLayout::new(SubwidgetPointer::new(
-                Box::new(|s: &Self| {
-                    &s.buttons[idx]
+                Box::new(move |s: &Self| {
+                    &s.buttons[idx1]
                 }),
-                Box::new(|s: &mut Self| {
-                    &mut s.buttons[idx]
+                Box::new(move |s: &mut Self| {
+                    &mut s.buttons[idx2]
                 }),
             )).boxed()
         }).collect();

@@ -132,9 +132,11 @@ impl MainView {
         let right_column = match self.display_state.curr_editor_idx {
             None => LeafLayout::new(subwidget!(Self.no_editor)),
             Some(idx) => {
+                let idx1 = idx;
+                let idx2 = idx;
                 LeafLayout::new(SubwidgetPointer::new(
-                    Box::new(|s: &Self| { s.editors.get(idx).map(|w| w.as_any()).unwrap_or(&s.no_editor) }),
-                    Box::new(|s: &mut Self| { s.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut s.no_editor) }),
+                    Box::new(move |s: &Self| { s.editors.get(idx1).map(|w| w.as_any()).unwrap_or(&s.no_editor) }),
+                    Box::new(move |s: &mut Self| { s.editors.get_mut(idx2).map(|w| w as &mut dyn Widget).unwrap_or(&mut s.no_editor) }),
                 ))
             }
         }.boxed();
