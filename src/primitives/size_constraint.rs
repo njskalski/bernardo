@@ -11,6 +11,14 @@ x >= hint.lower_right.x || x == None,
 y >= hint.lower_right.y || y == None,
 None means "no limit"
  */
+
+pub enum FillPolicy {
+    // uses as little space as possible
+    Constrained,
+    // fills entire dimension
+    Greedy,
+}
+
 #[derive(Copy, Clone, Debug)]
 pub struct SizeConstraint {
     x: Option<u16>,
