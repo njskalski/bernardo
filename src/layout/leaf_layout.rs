@@ -25,9 +25,6 @@ impl<'a> LeafLayout<'a> {
 }
 
 impl<'a> Layout for LeafLayout<'a> {
-    fn is_leaf(&self) -> bool {
-        true
-    }
 
     fn min_size(&self) -> XY {
         self.widget.min_size()

@@ -24,18 +24,17 @@ pub trait Widget {
     fn typename(&self) -> &'static str;
 
     // Minimal size of the view. If the output cannot satisfy it, a replacement is drawn instead,
-    // and the view cannot be focused (TODO or input will be ignored, haven't decided that yet).
+    // and the view cannot be focused.
     fn min_size(&self) -> XY;
 
-    // This is guaranteed to be called before render.
-    // It seems that I settled for "take as much visible space as available" not "take as little as possible", but I don't recall
-    // exact moment when this decision was made. TODO: Truth is, that should be a parameter.
-    // Again, from what I am deducing from my own code, layout returns actual screen size that will be affected, not the size
-    // a widget has - because anything WithScroll is "potentially infinite", and still returns XY.
-
-    // There is an invariant that I encourage you to keep, that .layout DOES NOT use ANY data from
-    // previous .layout call, to make the calls order independent. If display state spills from one frame
-    // to another, an entire new class of errors emerges, that I refuse to handle.
+    // This is guaranteed to be called before render, but not before each render.
+    //
+    // Widget is given size constraint and returns "how much space would it take to render fully".
+    // Whether widget "fills" the space or just uses as little as it can depends on Widget, not on
+    // layout. No css bs here.
+    //
+    // It is assumed that no widget is "infinite", because I say so. Infinite sources are not
+    // supported at this time.
     fn layout(&mut self, sc: SizeConstraint) -> XY;
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.

@@ -12,7 +12,7 @@ y >= hint.lower_right.y || y == None,
 None means "no limit"
  */
 
-pub enum FillPolicy {
+pub enum AlignEnum {
     // uses as little space as possible
     Constrained,
     // fills entire dimension
@@ -21,6 +21,8 @@ pub enum FillPolicy {
 
 #[derive(Copy, Clone, Debug)]
 pub struct SizeConstraint {
+    // "infinite" dimension means we have a scroll, and widget is supposed to tell *how much it can
+    // fill with meaningful output given infinite space*.
     x: Option<u16>,
     y: Option<u16>,
 

@@ -27,9 +27,6 @@ impl<'a> FrameLayout<'a> {
 }
 
 impl<'a> Layout for FrameLayout<'a> {
-    fn is_leaf(&self) -> bool {
-        true
-    }
 
     fn min_size(&self) -> XY {
         self.layout.min_size() + self.margins * 2

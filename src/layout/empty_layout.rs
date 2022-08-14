@@ -23,10 +23,6 @@ impl EmptyLayout {
 }
 
 impl Layout for EmptyLayout {
-    fn is_leaf(&self) -> bool {
-        true
-    }
-
     fn min_size(&self) -> XY {
         self.size.unwrap_or(ZERO)
     }

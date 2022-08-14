@@ -32,10 +32,6 @@ impl DummyLayout {
 }
 
 impl Layout for DummyLayout {
-    fn is_leaf(&self) -> bool {
-        true
-    }
-
     fn min_size(&self) -> XY {
         self.size
     }
