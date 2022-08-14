@@ -22,16 +22,8 @@ impl<W: Widget> SubwidgetPointer<W> {
         }
     }
 
-    // pub fn sugar_new<G, GM>(getter: G, getter_mut: GM) -> Self
-    //     where
-    //         G: (Fn(&W) -> &dyn Widget) + 'static,
-    //         GM: (Fn(&mut W) -> &mut dyn Widget) + 'static,
-    // {
-    //     SubwidgetPointer::new(Box::new(getter), Box::new(getter_mut))
-    // }
-
-    fn get<'a>(&'a self, parent: &'a W) -> &dyn Widget {
-        (self.getter)(parent)
+    fn get<'a>(&self, parent: &'a W) -> &'a dyn Widget {
+        (self.getter.clone())(parent)
     }
 
     fn get_mut<'a>(&self, parent: &'a mut W) -> &'a mut dyn Widget {
@@ -39,17 +31,24 @@ impl<W: Widget> SubwidgetPointer<W> {
     }
 }
 
-#[derive(Clone)]
 struct SubwidgetPointerOp<W: Widget> {
     op: Option<SubwidgetPointer<W>>,
 }
 
+impl<W: Widget> Clone for SubwidgetPointerOp<W> {
+    fn clone(&self) -> Self {
+        SubwidgetPointerOp {
+            op: self.op.as_ref().map(|op| op.clone())
+        }
+    }
+}
+
 impl<W: Widget> SubwidgetPointerOp<W> {
-    fn get<'a>(&'a self, parent: &'a W) -> Option<&dyn Widget> {
+    fn get<'a>(&self, parent: &'a W) -> Option<&'a dyn Widget> {
         self.op.as_ref().map(|sp| sp.get(parent))
     }
 
-    fn get_mut<'a>(&'a self, parent: &'a mut W) -> Option<&mut dyn Widget> {
+    fn get_mut<'a>(&self, parent: &'a mut W) -> Option<&'a mut dyn Widget> {
         self.op.as_ref().map(move |sp| sp.get_mut(parent))
     }
 }
@@ -113,7 +112,7 @@ mod tests {
         }
         struct DummyWidget {
             subwidget: DummySubwidget,
-            self_pointer: SubwidgetPointer<DummyWidget>,
+            self_pointer: SubwidgetPointerOp<DummyWidget>,
 
         }
         impl Widget for DummyWidget {
@@ -146,12 +145,11 @@ mod tests {
             }
 
             fn get_subwidget(&self, wid: WID) -> Option<&dyn Widget> where Self: Sized {
-                Some(self.self_pointer.get(self))
+                self.self_pointer.get(self)
             }
 
             fn get_subwidget_mut(&mut self, wid: WID) -> Option<&mut dyn Widget> where Self: Sized {
-                let x = self.self_pointer.clone();
-                Some(x.get_mut(self))
+                (self.self_pointer.clone()).get_mut(self)
             }
         }
 
