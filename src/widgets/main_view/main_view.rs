@@ -147,19 +147,35 @@ impl MainView {
             );
 
 
+        //TODO(subwidgetpointermap)
+
         let res = if let Some(hover) = &mut self.hover {
             match hover {
                 HoverItem::FuzzySearch(fuzzy) => {
                     let rect = MainView::get_hover_rect(max_size);
+
+                    let hover = LeafLayout::new(SubwidgetPointer::new(
+                        Box::new(|s: &Self| {
+                            match s.hover.as_ref().unwrap() {
+                                HoverItem::FuzzySearch(fs) => fs,
+                            }
+                        }),
+                        Box::new(|s: &mut Self| {
+                            match s.hover.as_mut().unwrap() {
+                                HoverItem::FuzzySearch(fs) => fs,
+                            }
+                        }),
+                    )).boxed();
+
                     HoverLayout::new(
-                        bg_layout,
-                        LeafLayout::new(subwidget!(Self.fuzzy)).boxed(),
+                        bg_layout.boxed(),
+                        hover,
                         rect,
-                    ).calc_sizes(max_size)
+                    ).calc_sizes(self, max_size)
                 }
             }
         } else {
-            bg_layout.calc_sizes(max_size)
+            bg_layout.calc_sizes(self, max_size)
         };
 
         res

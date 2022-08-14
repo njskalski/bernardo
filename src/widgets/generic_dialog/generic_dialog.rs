@@ -2,12 +2,14 @@ use core::option::Option;
 use std::borrow::Borrow;
 use std::fmt::Debug;
 use std::iter;
+use std::ops::Index;
 
 use log::{debug, error, warn};
 
-use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, Widget, ZERO};
+use crate::{AnyMsg, InputEvent, Output, SizeConstraint, subwidget, Theme, Widget, ZERO};
 use crate::experiments::deref_str::DerefStr;
 use crate::experiments::focus_group::FocusUpdate;
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::keys::Key;
 use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::GenericDisplayState;
@@ -139,28 +141,36 @@ impl GenericDialog {
     }
 
     fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
-        let mut text_layout = LeafLayout::new(&mut self.text_widget);
+        let mut text_layout = LeafLayout::new(subwidget!(Self.text_widget)).boxed();
 
         // let mut button_layout = SplitLayout::new(SplitDirection::Vertical);
-        let mut button_layouts: Vec<LeafLayout> = self.buttons.iter_mut().map(
-            |but| {
-                LeafLayout::new(but as &mut dyn Widget)
-            }).collect();
+        let button_layouts: Vec<Box<dyn Layout<Self>>> = (0..self.buttons.len()).map(|idx| {
+            LeafLayout::new(SubwidgetPointer::new(
+                Box::new(|s: &Self| {
+                    &s.buttons[idx]
+                }),
+                Box::new(|s: &mut Self| {
+                    &mut s.buttons[idx]
+                }),
+            )).boxed()
+        }).collect();
 
-        let mut button_layout = button_layouts.iter_mut().fold(
+        let button_layout = button_layouts.into_iter().fold(
             SplitLayout::new(SplitDirection::Horizontal),
             |acc, layout| {
                 acc.with(SplitRule::Proportional(1.0), layout)
-            });
+            })
+            .boxed();
 
         let mut total_layout = SplitLayout::new(SplitDirection::Vertical)
             .with(SplitRule::Proportional(1.0),
-                  &mut text_layout as &mut dyn Layout)
-            .with(SplitRule::Fixed(1), &mut button_layout as &mut dyn Layout);
+                  text_layout)
+            .with(SplitRule::Fixed(1), button_layout)
+            .boxed();
 
-        let mut frame_layout = FrameLayout::new(&mut total_layout, XY::new(2, 2));
+        let mut frame_layout = FrameLayout::new(total_layout, XY::new(2, 2));
 
-        frame_layout.calc_sizes(size)
+        frame_layout.calc_sizes(self, size)
     }
 }
 
