@@ -1,7 +1,8 @@
 use log::warn;
 
+use crate::{Output, Theme};
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
-use crate::layout::layout::{Layout, WidgetIdRect};
+use crate::layout::layout::{Layout, WidgetIdRect, WidgetWithRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::{XY, ZERO};
@@ -59,6 +60,38 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
 
         for wid in &res {
             debug_assert!(output_size >= wid.rect.lower_right());
+        }
+
+        res
+    }
+
+    fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>> {
+        let res = if self.with_border {
+            if output_size > (2, 2).into() {
+                let limited_output = XY::new(output_size.x - 2, output_size.y - 2);
+                let size = self.widget.get_mut(root).layout(SizeConstraint::simple(limited_output));
+                let rect = Rect::new(XY::new(1, 1), size);
+
+                vec![WidgetWithRect::new(
+                    self.widget.clone(),
+                    rect,
+                )]
+            } else {
+                warn!("too small LeafLayout to draw the view.");
+                vec![]
+            }
+        } else {
+            let size = self.widget.get_mut(root).layout(SizeConstraint::simple(output_size));
+            let rect = Rect::new(ZERO, size);
+
+            vec![WidgetWithRect::new(
+                self.widget.clone(),
+                rect,
+            )]
+        };
+
+        for wid in &res {
+            debug_assert!(output_size >= wid.rect().lower_right());
         }
 
         res

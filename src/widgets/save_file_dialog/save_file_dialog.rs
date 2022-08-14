@@ -128,7 +128,7 @@ impl SaveFileDialogWidget {
         }
     }
 
-    fn internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {
+    fn internal_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
         let tree_layout = LeafLayout::new(subwidget!(Self.tree_widget));
         // let mut empty_layout = EmptyLayout::new().with_size(XY::new(1, 1));
 
@@ -167,24 +167,23 @@ impl SaveFileDialogWidget {
 
         let frame = XY::new(1, 1);
 
-        match self.hover_dialog.as_mut() {
-            None => FrameLayout::new(layout, frame).calc_sizes(self, max_size),
-            Some(dialog) => {
-                let margins = max_size / 20;
-                //TODO(subwidgetpointermap)
-                let dialog_layout = LeafLayout::new(SubwidgetPointer::new(
-                    Box::new(|x: &Self| { x.hover_dialog.as_ref().unwrap() }),
-                    Box::new(|x: &mut Self| { x.hover_dialog.as_mut().unwrap() }),
-                )).boxed();
+        if self.hover_dialog.is_some() {
+            FrameLayout::new(layout, frame).boxed()
+        } else {
+            let margins = max_size / 20;
+            //TODO(subwidgetpointermap)
+            let dialog_layout = LeafLayout::new(SubwidgetPointer::new(
+                Box::new(|x: &Self| { x.hover_dialog.as_ref().unwrap() }),
+                Box::new(|x: &mut Self| { x.hover_dialog.as_mut().unwrap() }),
+            )).boxed();
 
-                FrameLayout::new(HoverLayout::new(layout,
-                                                  dialog_layout,
-                                                  Rect::new(
-                                                      margins, // TODO
-                                                      max_size - margins * 2,
-                                                  ),
-                ).boxed(), frame).calc_sizes(self, max_size)
-            }
+            FrameLayout::new(HoverLayout::new(layout,
+                                              dialog_layout,
+                                              Rect::new(
+                                                  margins, // TODO
+                                                  max_size - margins * 2,
+                                              ),
+            ).boxed(), frame).boxed()
         }
     }
 
@@ -336,7 +335,7 @@ impl Widget for SaveFileDialogWidget {
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         // TODO this entire function is a makeshift and experiment
-        let max_size = sc.visible_hint().size;
+        let max_size = sc.visible_hint().lower_right();
 
         // TODO this lazy relayouting kills resizing on data change.
         // if self.display_state.as_ref().map(|x| x.for_size == max_size) == Some(true) {
@@ -345,8 +344,8 @@ impl Widget for SaveFileDialogWidget {
 
         // TODO relayouting destroys focus selection.
 
-        let res_sizes = self.internal_layout(max_size);
-
+        let layout = self.internal_layout(max_size);
+        let res_sizes = layout.calc_sizes(self, max_size);
 
         // Retention of focus. Not sure if it should be here.
         let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());

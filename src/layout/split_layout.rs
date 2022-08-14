@@ -1,9 +1,9 @@
 use log::warn;
 
-use crate::layout::layout::{Layout, WidgetIdRect};
+use crate::{Output, Theme, Widget};
+use crate::layout::layout::{Layout, WidgetIdRect, WidgetWithRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
-use crate::Widget;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SplitDirection {
@@ -216,6 +216,42 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
                     wid,
                     rect: new_rect,
                 });
+            }
+        }
+
+        res
+    }
+
+    fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>> {
+        let rects_op = self.get_just_rects(output_size);
+        if rects_op.is_none() {
+            warn!(
+                "not enough space to get_rects split_layout: {:?}",
+                output_size
+            );
+            return Vec::default();
+        };
+
+        let rects = rects_op.unwrap();
+        let mut res: Vec<WidgetWithRect<W>> = vec![];
+
+        debug_assert!(rects.len() == self.children.len());
+
+        for (idx, child_layout) in self.children.iter().enumerate() {
+            let rect = &rects[idx];
+            let wirs = child_layout.layout.layout(root, rect.size);
+
+            // debug!("A{} output_size {} parent {} children {:?}", wirs.len(), output_size, rect, wirs);
+            //TODO add intersection checks
+
+            for wir in wirs.into_iter() {
+                let new_wir = wir.shifted(rect.pos);
+
+                // debug!("output_size {} parent {} child {} res {}", output_size, rect, wir.rect, new_rect);
+                debug_assert!(output_size.x >= new_wir.rect().lower_right().x);
+                debug_assert!(output_size.y >= new_wir.rect().lower_right().y);
+
+                res.push(new_wir);
             }
         }
 

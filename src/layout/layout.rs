@@ -1,3 +1,5 @@
+use crate::{Output, Theme};
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::{WID, Widget};
@@ -31,6 +33,31 @@ impl WidgetIdRect {
     }
 }
 
+pub struct WidgetWithRect<W: Widget> {
+    widget: SubwidgetPointer<W>,
+    rect: Rect,
+}
+
+impl<W: Widget> WidgetWithRect<W> {
+    pub fn new(widget: SubwidgetPointer<W>, rect: Rect) -> Self {
+        Self {
+            widget,
+            rect,
+        }
+    }
+
+    pub fn rect(&self) -> &Rect {
+        &self.rect
+    }
+
+    pub fn shifted(self, offset: XY) -> Self {
+        Self {
+            rect: self.rect.shifted(offset),
+            ..self
+        }
+    }
+}
+
 pub trait Layout<W: Widget> {
     fn min_size(&self, root: &W) -> XY;
 
@@ -39,6 +66,9 @@ pub trait Layout<W: Widget> {
     receive information about their new sizes before render.
      */
     fn calc_sizes(&self, root: &mut W, output_size: XY) -> Vec<WidgetIdRect>;
+
+    fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>>;
+
 
     fn boxed(self) -> Box<dyn Layout<W>> where Self: Sized, Self: 'static {
         Box::new(self)
