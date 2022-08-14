@@ -31,6 +31,9 @@ pub trait ComplexWidget: Widget {
         // }
     }
 
+    fn get_focused(&self) -> Option<&dyn Widget>;
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget>;
+
     fn get_layout(&mut self) -> Box<dyn Layout + '_> {
         error!("call to default internal_layout on {} {}", self.typename(), self.id());
         Box::new(DummyLayout::new(self.id(), self.min_size()))

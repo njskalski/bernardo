@@ -146,6 +146,14 @@ mod tests {
             }
         }
         impl ComplexWidget for DummyWidget {
+            fn get_focused(&self) -> Option<&dyn Widget> {
+                todo!()
+            }
+
+            fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+                todo!()
+            }
+
             fn get_subwidget(&self, wid: WID) -> Option<&dyn Widget> where Self: Sized {
                 self.self_pointer.get(self)
             }

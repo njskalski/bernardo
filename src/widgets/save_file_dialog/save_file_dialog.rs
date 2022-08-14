@@ -473,24 +473,6 @@ impl Widget for SaveFileDialogWidget {
         };
     }
 
-    fn get_focused(&self) -> Option<&dyn Widget> {
-        if self.hover_dialog.is_some() {
-            return self.hover_dialog.as_ref().map(|f| f as &dyn Widget);
-        };
-
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(|wid| self.get_subwidget(wid)).flatten()
-    }
-
-    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        if self.hover_dialog.is_some() {
-            return self.hover_dialog.as_mut().map(|f| f as &mut dyn Widget);
-        }
-
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
-    }
-
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         fill_output(theme.ui.non_focused.background, output);
 
@@ -545,5 +527,23 @@ impl ComplexWidget for SaveFileDialogWidget {
 
         self.hover_dialog.as_ref().map(|f| widgets.push(f));
         Box::new(widgets.into_iter())
+    }
+
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        if self.hover_dialog.is_some() {
+            return self.hover_dialog.as_ref().map(|f| f as &dyn Widget);
+        };
+
+        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+        wid_op.map(|wid| self.get_subwidget(wid)).flatten()
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        if self.hover_dialog.is_some() {
+            return self.hover_dialog.as_mut().map(|f| f as &mut dyn Widget);
+        }
+
+        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
     }
 }

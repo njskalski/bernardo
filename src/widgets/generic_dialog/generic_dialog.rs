@@ -294,16 +294,6 @@ impl Widget for GenericDialog {
             }
         }
     }
-
-    fn get_focused(&self) -> Option<&dyn Widget> {
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(|wid| self.get_subwidget(wid)).flatten()
-    }
-
-    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
-    }
 }
 
 impl ComplexWidget for GenericDialog {
@@ -323,5 +313,15 @@ impl ComplexWidget for GenericDialog {
         }).chain(
             iter::once(&self.text_widget as &dyn Widget)
         ))
+    }
+
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+        wid_op.map(|wid| self.get_subwidget(wid)).flatten()
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
     }
 }

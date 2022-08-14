@@ -369,50 +369,86 @@ impl Widget for MainView {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         ComplexWidget::render(self, theme, focused, output)
     }
-    //
-    // fn render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
-    //
-    // }
-
-    // fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
-    //     let mut items = vec![&mut self.tree_widget as &mut dyn Widget];
-    //
-    //     let editor_or_not = match self.display_state.curr_editor_idx {
-    //         None => &mut self.no_editor as &mut dyn Widget,
-    //         Some(idx) => self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut self.no_editor),
-    //     };
-    //     items.push(editor_or_not);
-    //
-    //     if self.hover.is_some() {
-    //         match self.hover.as_mut().unwrap() {
-    //             HoverItem::FuzzySearch(fuzzy) => {
-    //                 items.push(fuzzy);
-    //             }
-    //         }
-    //     };
-    //
-    //     Box::new(items.into_iter())
-    // }
-    //
-    // fn subwidgets(&self) -> Box<dyn Iterator<Item=&dyn Widget> + '_> where Self: Sized {
-    //     let mut items = vec![&self.tree_widget as &dyn Widget];
-    //
-    //     let editor_or_not = match self.display_state.curr_editor_idx {
-    //         None => &self.no_editor as &dyn Widget,
-    //         Some(idx) => self.editors.get(idx).map(|w| w as &dyn Widget).unwrap_or(&self.no_editor),
-    //     };
-    //     items.push(editor_or_not);
-    //
-    //     if self.hover.is_some() {
-    //         match self.hover.as_ref().unwrap() {
-    //             HoverItem::FuzzySearch(fuzzy) => {
-    //                 items.push(fuzzy);
-    //             }
-    //         }
-    //     };
-    //
-    //     Box::new(items.into_iter())
-    // }
 }
 
-impl ComplexWidget for MainView {}
+impl ComplexWidget for MainView {
+    fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
+        let mut items = vec![&mut self.tree_widget as &mut dyn Widget];
+
+        let editor_or_not = match self.display_state.curr_editor_idx {
+            None => &mut self.no_editor as &mut dyn Widget,
+            Some(idx) => self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut self.no_editor),
+        };
+        items.push(editor_or_not);
+
+        if self.hover.is_some() {
+            match self.hover.as_mut().unwrap() {
+                HoverItem::FuzzySearch(fuzzy) => {
+                    items.push(fuzzy);
+                }
+            }
+        };
+
+        Box::new(items.into_iter())
+    }
+
+    fn subwidgets(&self) -> Box<dyn Iterator<Item=&dyn Widget> + '_> where Self: Sized {
+        let mut items = vec![&self.tree_widget as &dyn Widget];
+
+        let editor_or_not = match self.display_state.curr_editor_idx {
+            None => &self.no_editor as &dyn Widget,
+            Some(idx) => self.editors.get(idx).map(|w| w as &dyn Widget).unwrap_or(&self.no_editor),
+        };
+        items.push(editor_or_not);
+
+        if self.hover.is_some() {
+            match self.hover.as_ref().unwrap() {
+                HoverItem::FuzzySearch(fuzzy) => {
+                    items.push(fuzzy);
+                }
+            }
+        };
+
+        Box::new(items.into_iter())
+    }
+
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        // that's not how I would write it, but borrow checker does not appreciate my style.
+        if self.hover.is_some() {
+            return match self.hover.as_ref().unwrap() {
+                HoverItem::FuzzySearch(fuzzy) => Some(fuzzy),
+            };
+        } else {
+            match self.display_state.focus {
+                Focus::Tree => Some(&self.tree_widget as &dyn Widget),
+                Focus::Editor => {
+                    self.display_state.curr_editor_idx.map(|idx| {
+                        self.editors.get(idx).map(|w| w as &dyn Widget).unwrap_or(
+                            &self.no_editor
+                        )
+                    })
+                }
+            }
+        }
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        if self.hover.is_some() {
+            return match self.hover.as_mut().unwrap() {
+                HoverItem::FuzzySearch(fuzzy) => Some(fuzzy),
+            };
+        } else {
+            match self.display_state.focus {
+                Focus::Tree => Some(&mut self.tree_widget as &mut dyn Widget),
+                Focus::Editor => {
+                    Some(match self.display_state.curr_editor_idx {
+                        None => &mut self.no_editor as &mut dyn Widget,
+                        Some(idx) => self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(
+                            &mut self.no_editor
+                        )
+                    })
+                }
+            }
+        }
+    }
+}

@@ -516,28 +516,6 @@ impl Widget for EditorView {
         };
     }
 
-    fn get_focused(&self) -> Option<&dyn Widget> {
-        if let Some(hd) = &self.hover_dialog {
-            return Some(hd);
-        }
-
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(|wid| self.get_subwidget(wid)).flatten()
-    }
-
-    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        // if let Some(hd) = &mut self.hover_dialog {
-        //     return Some(hd as &mut dyn Widget);
-        // }
-        // it has to be written badly, because otherwise borrowchecker is sad.
-        if self.hover_dialog.is_some() {
-            return self.hover_dialog.as_mut().map(|f| f as &mut dyn Widget);
-        }
-
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
-    }
-
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         if let Some(cached_sizes) = &self.display_state {
             let focused_child_id_op = self.get_focused().map(|f| f.id());
@@ -613,5 +591,27 @@ impl ComplexWidget for EditorView {
 
 
         Box::new(res.into_iter())
+    }
+
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        if let Some(hd) = &self.hover_dialog {
+            return Some(hd);
+        }
+
+        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+        wid_op.map(|wid| self.get_subwidget(wid)).flatten()
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        // if let Some(hd) = &mut self.hover_dialog {
+        //     return Some(hd as &mut dyn Widget);
+        // }
+        // it has to be written badly, because otherwise borrowchecker is sad.
+        if self.hover_dialog.is_some() {
+            return self.hover_dialog.as_mut().map(|f| f as &mut dyn Widget);
+        }
+
+        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
+        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
     }
 }

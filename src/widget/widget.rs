@@ -50,7 +50,6 @@ pub trait Widget {
     // Returning Some(self) would lead to infinite loop.
     fn get_focused(&self) -> Option<&dyn Widget> { None }
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> { None }
-    
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output);
 
