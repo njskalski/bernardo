@@ -10,31 +10,20 @@ use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::regex_search::FindError;
 use crate::fs::fsf_ref::FsfRef;
-use crate::io::sub_output::SubOutput;
-use crate::layout::dummy_layout::DummyLayout;
-use crate::layout::hover_layout::HoverLayout;
-use crate::layout::layout::{Layout, WidgetIdRect};
-use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
 use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};
 use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
-use crate::primitives::rect::Rect;
 use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::handler::NavCompRef;
-use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
-use crate::widgets::action_triggers_fuzzy_provicer::Actions;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
-use crate::widgets::fuzzy_search;
-use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
-use crate::widgets::fuzzy_search::item_provider::Item;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
 
@@ -92,8 +81,6 @@ pub struct EditorWidget {
     navcomp: Option<NavCompRef>,
 
     state: EditorState,
-
-    hover: Option<FuzzySearchWidget>,
 }
 
 impl EditorWidget {
@@ -114,7 +101,6 @@ impl EditorWidget {
             clipboard,
             state: EditorState::Editing,
             navcomp,
-            hover: None,
         }
     }
 
@@ -351,62 +337,6 @@ impl EditorWidget {
         }
         res
     }
-
-    pub fn set_hover(&mut self, cursor: Cursor) {
-        let actions: Vec<ActionTrigger<Self>> = self.get_actions().collect();
-        let prov = Actions::new(actions);
-
-        let hover = FuzzySearchWidget::new(|_| {
-            EditorWidgetMsg::ContextMenuClose.someboxed()
-        }).with_provider(Box::new(prov));
-
-        self.hover = Some(hover);
-    }
-
-    pub fn draw_hover(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        // TODO there will be some completely arbitrary decisions made here
-
-        // First I have to come up with "where to draw". Now there might be a moment when I will
-        //  want to add actions for multicursor, but now I just write to error
-
-        if !self.cursors().is_single() {
-            error!("no action implemented for multicursor, ignoring.");
-            return;
-        }
-    }
-
-    fn get_hover_rect(&self, size: XY) -> Rect {
-        let anchor = self.anchor;
-
-        debug_assert!(size > XY::new(4, 4));
-
-        // we draw, where there's more space to use
-        let above: bool = anchor.y > size.y / 2;
-
-        // we also pick the reasonable
-
-        let default_width: u16 = 15;
-        let todo_height: u16 = std::cmp::min(size.y / 3, 10);
-
-        Rect::xxyy(anchor.x, std::cmp::min(anchor.x + default_width, size.x),
-                   if above { anchor.y - 1 } else { anchor.y + 1 }, anchor.y + todo_height)
-    }
-
-    fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
-        let mut background = DummyLayout::new(self.wid, size);
-
-        let rect = self.get_hover_rect(size);
-
-        match self.hover.as_mut() {
-            None => background.calc_sizes(size),
-            Some(dialog) => {
-                HoverLayout::new(&mut background,
-                                 &mut LeafLayout::new(dialog),
-                                 rect,
-                ).calc_sizes(size)
-            }
-        }
-    }
 }
 
 impl Widget for EditorWidget {
@@ -433,9 +363,6 @@ impl Widget for EditorWidget {
         return match (&self.state, input_event) {
             (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.enter_cursor_drop_mode => {
                 EditorWidgetMsg::ToCursorDropMode.someboxed()
-            }
-            (&EditorState::Editing, InputEvent::EverythingBarTrigger) if self.cursors().is_single() => {
-                EditorWidgetMsg::OpenContextMenu.someboxed()
             }
             (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Esc => {
                 EditorWidgetMsg::ToEditMode.someboxed()
@@ -528,18 +455,6 @@ impl Widget for EditorWidget {
                     self.state = EditorState::DroppingCursor { special_cursor: *set.as_single().unwrap() };
                     None
                 }
-                (&EditorState::Editing, EditorWidgetMsg::OpenContextMenu) => {
-                    match self.cursors().as_single().map(|c| c.clone()) {
-                        None => {
-                            error!("cannot open context menu when cursor is not single - not implemented")
-                        }
-                        Some(cursor) => {
-                            self.set_hover(cursor);
-                        }
-                    }
-
-                    None
-                }
                 (editor_state, msg) => {
                     error!("Unhandled combination of editor state {:?} and msg {:?}", editor_state, msg);
                     None
@@ -549,79 +464,11 @@ impl Widget for EditorWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let cached
-
-        let focused_child_id_op = self.get_focused().map(|f| f.id());
-        for wir in &cached_sizes.widget_sizes {
-            match self.get_subwidget(wir.wid) {
-                Some(widget) => {
-                    let sub_output = &mut SubOutput::new(output, wir.rect);
-                    widget.render(theme,
-                                  focused && focused_child_id_op == Some(wir.wid),
-                                  sub_output,
-                    );
-                }
-                None => {
-                    warn!("subwidget {} not found!", wir.wid);
-                }
-            }
-        }
+        self.internal_render(theme, focused, output);
     }
 
     fn anchor(&self) -> XY {
         self.anchor
-    }
-
-    fn get_actions(&self) -> Box<dyn Iterator<Item=ActionTrigger<Self>> + '_> where Self: Sized {
-        let mut actions: Vec<ActionTrigger<Self>> = vec![];
-        actions.push(ActionTrigger::new("debugprint anchor".into(), Box::new(|w: &EditorWidget| {
-            debug!("my anchor is {:?}", w.anchor());
-            None
-        })));
-
-        Box::new(
-            actions.into_iter()
-        )
-    }
-
-    fn get_focused(&self) -> Option<&dyn Widget> {
-        if self.hover.is_some() {
-            return self.hover.as_ref().map(|f| f as &dyn Widget);
-        };
-
-        None
-    }
-
-    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        if self.hover.is_some() {
-            return self.hover.as_mut().map(|f| f as &mut dyn Widget);
-        };
-
-        None
-    }
-
-    fn get_subwidget(&self, wid: WID) -> Option<&dyn Widget> where Self: Sized {
-        if self.wid == wid {
-            return Some(self)
-        }
-
-        if self.hover.as_ref().map(|hover| hover.id() == wid).unwrap_or(false) {
-            return self.hover.as_ref().map(|w| w as &dyn Widget)
-        }
-
-        None
-    }
-
-    fn get_subwidget_mut(&mut self, wid: WID) -> Option<&mut dyn Widget> where Self: Sized {
-        if self.wid == wid {
-            return Some(self)
-        }
-
-        if self.hover.as_ref().map(|hover| hover.id() == wid).unwrap_or(false) {
-            return self.hover.as_mut().map(|w| w as &mut dyn Widget)
-        }
-
-        None
     }
 }
 
@@ -641,4 +488,3 @@ impl Drop for EditorWidget {
         }
     }
 }
-

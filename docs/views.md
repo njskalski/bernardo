@@ -90,13 +90,6 @@ I gave these ideas a spin and here is what came out of it:
 
 ### solutions:
 
-1) disposable variant of widget tree. I am not sure how to build it. On one hand having reference to parent should allow
-   me to get references to children. On the other,
-   it is general rule that references point to items higher on stack, so recursive strategy doesn't seem to work because
-   I never have all elements of tree on the stack at the same time.
-
-   I could try storing references in vector, doing something like "chain iterators".collect()
-
 2) merge render and layout. This seems easiest. They are literally called one after another. The only reason they ever
    got separated was the fact that I did not want to have render with mut.
 
