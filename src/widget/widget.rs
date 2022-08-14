@@ -18,7 +18,7 @@ pub type WidgetActionParam<W, P> = fn(&W, P) -> Option<Box<dyn AnyMsg>>;
 
 pub type WID = usize;
 
-pub trait Widget {
+pub trait Widget: 'static {
     fn id(&self) -> WID;
 
     fn typename(&self) -> &'static str;

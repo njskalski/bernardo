@@ -196,7 +196,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
 }
 
 
-impl<Item: ListWidgetItem> Widget for ListWidget<Item> {
+impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     fn id(&self) -> WID {
         self.id
     }

@@ -219,7 +219,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
     }
 }
 
-impl<K: Hash + Eq + Debug + Clone, I: TreeViewNode<K>> Widget for TreeViewWidget<K, I> {
+impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widget for TreeViewWidget<K, I> {
     fn id(&self) -> WID {
         self.id
     }

@@ -131,13 +131,12 @@ impl MainView {
         let mut left_column = LeafLayout::new(subwidget!(Self.tree_widget));
         let editor_or_not = match self.display_state.curr_editor_idx {
             None => LeafLayout::new(subwidget!(Self.no_editor)),
-            Some(idx) => //self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut self.no_editor),
-                {
-                    LeafLayout::new(SubwidgetPointer::new(
-                        |s: &Self| { s.editors.get(idx).unwrap() },
-                        |s: &mut Self| { s.editors.get_mut(idx).unwrap() },
-                    ))
-                }
+            Some(idx) => {
+                LeafLayout::new(SubwidgetPointer::new(
+                    Box::new(|s: &Self| { s.editors.get(idx).map(|w| w as &dyn Widget).unwrap_or(&s.no_editor) }),
+                    Box::new(|s: &mut Self| { s.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut s.no_editor) }),
+                ))
+            }
         };
 
 

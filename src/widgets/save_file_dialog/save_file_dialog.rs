@@ -173,8 +173,8 @@ impl SaveFileDialogWidget {
                 let margins = max_size / 20;
                 //TODO(subwidgetpointermap)
                 let dialog_layout = LeafLayout::new(SubwidgetPointer::new(
-                    |x: &Self| { x.hover_dialog.as_ref().unwrap() },
-                    |x: &mut Self| { x.hover_dialog.as_mut().unwrap() },
+                    Box::new(|x: &Self| { x.hover_dialog.as_ref().unwrap() }),
+                    Box::new(|x: &mut Self| { x.hover_dialog.as_mut().unwrap() }),
                 )).boxed();
 
                 FrameLayout::new(HoverLayout::new(layout,
