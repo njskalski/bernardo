@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use crate::Widget;
 
 pub trait Getter<W>: Fn(&W) -> &dyn Widget {
@@ -9,23 +11,20 @@ impl<W, T: Fn(&W) -> &(dyn Widget) + Clone + 'static> Getter<W> for T {
         Box::new(self.clone())
     }
 }
-
 impl<W: 'static> Clone for Box<dyn Getter<W>> {
-    fn clone(&self) -> Self { self.clone_box() }
+    fn clone(&self) -> Self { (**self).clone_box() }
 }
 
 pub trait GetterMut<W>: Fn(&mut W) -> &mut dyn Widget {
     fn clone_box(&self) -> Box<dyn GetterMut<W>>;
 }
-
 impl<W, T: Fn(&mut W) -> &mut (dyn Widget) + Clone + 'static> GetterMut<W> for T {
     fn clone_box(&self) -> Box<dyn GetterMut<W>> {
         Box::new(self.clone())
     }
 }
-
 impl<W: 'static> Clone for Box<dyn GetterMut<W>> {
-    fn clone(&self) -> Self { self.clone_box() }
+    fn clone(&self) -> Self { (**self).clone_box() }
 }
 
 pub trait GetterOp<W>: Fn(&W) -> Option<&dyn Widget> {
@@ -39,7 +38,7 @@ impl<W, T: Fn(&W) -> Option<&(dyn Widget)> + Clone + 'static> GetterOp<W> for T 
 }
 
 impl<W: 'static> Clone for Box<dyn GetterOp<W>> {
-    fn clone(&self) -> Self { self.clone_box() }
+    fn clone(&self) -> Self { (**self).clone_box() }
 }
 
 pub trait GetterOpMut<W>: Fn(&mut W) -> Option<&mut dyn Widget> {
@@ -53,7 +52,7 @@ impl<W, T: Fn(&mut W) -> Option<&mut (dyn Widget)> + Clone + 'static> GetterOpMu
 }
 
 impl<W: 'static> Clone for Box<dyn GetterOpMut<W>> {
-    fn clone(&self) -> Self { self.clone_box() }
+    fn clone(&self) -> Self { (**self).clone_box() }
 }
 
 
@@ -234,6 +233,8 @@ mod tests {
         );
 
         let sp3 = subwidget!(DummyWidget.subwidget);
+
+        let sp4 = sp3.clone();
 
         impl DummyWidget {
             pub fn new() -> Self {
