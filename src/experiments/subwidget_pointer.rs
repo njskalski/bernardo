@@ -76,6 +76,7 @@ mod tests {
     use crate::experiments::subwidget_pointer::{SubwidgetPointer, SubwidgetPointerOp};
     use crate::primitives::xy::XY;
     use crate::widget::action_trigger::ActionTrigger;
+    use crate::widget::complex_widget::ComplexWidget;
     use crate::widget::widget::WID;
 
     #[test]
@@ -143,7 +144,8 @@ mod tests {
             fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
                 todo!()
             }
-
+        }
+        impl ComplexWidget for DummyWidget {
             fn get_subwidget(&self, wid: WID) -> Option<&dyn Widget> where Self: Sized {
                 self.self_pointer.get(self)
             }

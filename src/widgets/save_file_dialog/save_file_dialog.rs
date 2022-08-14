@@ -37,6 +37,7 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
+use crate::widget::complex_widget::ComplexWidget;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction, WidgetActionParam};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
@@ -444,11 +445,11 @@ impl Widget for SaveFileDialogWidget {
                 let text = file.file_name_str().unwrap();
                 self.edit_box.set_text(text); // TODO
                 self.edit_box.set_cursor_end();
-                self.set_focused(self.edit_box.id());
+                // self.set_focused(self.edit_box.id()); // TODO
                 None
             }
             SaveFileDialogMsg::EditBoxHit => {
-                self.set_focused(self.ok_button.id());
+                // self.set_focused(self.ok_button.id()); // TODO
                 None
             }
             SaveFileDialogMsg::Cancel => {
@@ -490,16 +491,6 @@ impl Widget for SaveFileDialogWidget {
         wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
     }
 
-    fn set_focused(&mut self, wid: WID) -> bool {
-        if self.hover_dialog.is_some() {
-            warn!("blocking setting focus, hovering dialog displayed");
-            return false;
-        }
-        self.display_state.as_mut().map(|ds| {
-            ds.focus_group_mut().set_focused(wid)
-        }).unwrap_or(false)
-    }
-
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         fill_output(theme.ui.non_focused.background, output);
 
@@ -528,7 +519,9 @@ impl Widget for SaveFileDialogWidget {
             }
         }
     }
+}
 
+impl ComplexWidget for SaveFileDialogWidget {
     fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> {
         // debug!("call to save_file_dialog subwidget_mut on {}", self.id());
         let mut widgets = vec![&mut self.tree_widget as &mut dyn Widget,

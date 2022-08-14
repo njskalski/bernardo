@@ -19,6 +19,7 @@ use crate::primitives::xy::XY;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widget::any_msg::AsAny;
+use crate::widget::complex_widget::ComplexWidget;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::fuzzy_search::fsf_provider::{FsfProvider, SPathMsg};
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
@@ -365,66 +366,53 @@ impl Widget for MainView {
         }
     }
 
-    fn render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
-        let focused_id_op = self.get_focused().map(|f| f.id());
-        if self.display_state.wirs.is_empty() {
-            error!("call to render before layout");
-            return;
-        }
-
-        for wir in &self.display_state.wirs {
-            match self.get_subwidget(wir.wid) {
-                Some(widget) => {
-                    let sub_output = &mut SubOutput::new(output, wir.rect);
-                    widget.render(theme,
-                                  Some(widget.id()) == focused_id_op,
-                                  sub_output,
-                    );
-                }
-                None => {
-                    warn!("subwidget {} not found!", wir.wid);
-                }
-            }
-        }
+    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        ComplexWidget::render(self, theme, focused, output)
     }
+    //
+    // fn render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
+    //
+    // }
 
-    fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
-        let mut items = vec![&mut self.tree_widget as &mut dyn Widget];
-
-        let editor_or_not = match self.display_state.curr_editor_idx {
-            None => &mut self.no_editor as &mut dyn Widget,
-            Some(idx) => self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut self.no_editor),
-        };
-        items.push(editor_or_not);
-
-        if self.hover.is_some() {
-            match self.hover.as_mut().unwrap() {
-                HoverItem::FuzzySearch(fuzzy) => {
-                    items.push(fuzzy);
-                }
-            }
-        };
-
-        Box::new(items.into_iter())
-    }
-
-    fn subwidgets(&self) -> Box<dyn Iterator<Item=&dyn Widget> + '_> where Self: Sized {
-        let mut items = vec![&self.tree_widget as &dyn Widget];
-
-        let editor_or_not = match self.display_state.curr_editor_idx {
-            None => &self.no_editor as &dyn Widget,
-            Some(idx) => self.editors.get(idx).map(|w| w as &dyn Widget).unwrap_or(&self.no_editor),
-        };
-        items.push(editor_or_not);
-
-        if self.hover.is_some() {
-            match self.hover.as_ref().unwrap() {
-                HoverItem::FuzzySearch(fuzzy) => {
-                    items.push(fuzzy);
-                }
-            }
-        };
-
-        Box::new(items.into_iter())
-    }
+    // fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
+    //     let mut items = vec![&mut self.tree_widget as &mut dyn Widget];
+    //
+    //     let editor_or_not = match self.display_state.curr_editor_idx {
+    //         None => &mut self.no_editor as &mut dyn Widget,
+    //         Some(idx) => self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut self.no_editor),
+    //     };
+    //     items.push(editor_or_not);
+    //
+    //     if self.hover.is_some() {
+    //         match self.hover.as_mut().unwrap() {
+    //             HoverItem::FuzzySearch(fuzzy) => {
+    //                 items.push(fuzzy);
+    //             }
+    //         }
+    //     };
+    //
+    //     Box::new(items.into_iter())
+    // }
+    //
+    // fn subwidgets(&self) -> Box<dyn Iterator<Item=&dyn Widget> + '_> where Self: Sized {
+    //     let mut items = vec![&self.tree_widget as &dyn Widget];
+    //
+    //     let editor_or_not = match self.display_state.curr_editor_idx {
+    //         None => &self.no_editor as &dyn Widget,
+    //         Some(idx) => self.editors.get(idx).map(|w| w as &dyn Widget).unwrap_or(&self.no_editor),
+    //     };
+    //     items.push(editor_or_not);
+    //
+    //     if self.hover.is_some() {
+    //         match self.hover.as_ref().unwrap() {
+    //             HoverItem::FuzzySearch(fuzzy) => {
+    //                 items.push(fuzzy);
+    //             }
+    //         }
+    //     };
+    //
+    //     Box::new(items.into_iter())
+    // }
 }
+
+impl ComplexWidget for MainView {}

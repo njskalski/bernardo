@@ -1,12 +1,11 @@
-use log::{error};
+use log::error;
 
 use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Widget};
+use crate::config::theme::Theme;
 use crate::io::over_output::OverOutput;
 use crate::io::sub_output::SubOutput;
-
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::{Scroll, ScrollDirection};
-use crate::config::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::widget::WID;
 
@@ -217,21 +216,5 @@ impl<W: Widget> Widget for WithScroll<W> {
     fn anchor(&self) -> XY {
         // scroll nesting would probably affect that
         ZERO
-    }
-
-    fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
-        self.widget.subwidgets_mut()
-    }
-
-    fn subwidgets(&self) -> Box<dyn Iterator<Item=&dyn Widget> + '_> where Self: Sized {
-        self.widget.subwidgets()
-    }
-
-    fn get_subwidget(&self, wid: WID) -> Option<&dyn Widget> where Self: Sized {
-        self.widget.get_subwidget(wid)
-    }
-
-    fn get_subwidget_mut(&mut self, wid: WID) -> Option<&mut dyn Widget> where Self: Sized {
-        self.widget.get_subwidget_mut(wid)
     }
 }

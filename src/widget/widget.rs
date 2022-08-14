@@ -50,52 +50,12 @@ pub trait Widget {
     // Returning Some(self) would lead to infinite loop.
     fn get_focused(&self) -> Option<&dyn Widget> { None }
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> { None }
-
-    // Updates focus path from that widget below.
-    // Returns whether succeeded.
-    fn set_focused(&mut self, wid: WID) -> bool {
-        if self.id() == wid {
-            true
-        } else {
-            error!("attempted to update focus_path, but hit non-matching end at widget {}", self.id());
-            false
-        }
-    }
+    
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output);
 
     fn anchor(&self) -> XY {
         ZERO
-    }
-
-    fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
-        debug!("call to default subwidget_mut on {}", self.id());
-        Box::new(std::iter::empty())
-    }
-
-    fn subwidgets(&self) -> Box<dyn std::iter::Iterator<Item=&dyn Widget> + '_> where Self: Sized {
-        debug!("call to default subwidget on {}", self.id());
-        Box::new(std::iter::empty())
-    }
-
-    fn get_subwidget(&self, wid: WID) -> Option<&dyn Widget> where Self: Sized {
-        for widget in self.subwidgets() {
-            if widget.id() == wid {
-                return Some(widget);
-            }
-        }
-
-        None
-    }
-
-    fn get_subwidget_mut(&mut self, wid: WID) -> Option<&mut dyn Widget> where Self: Sized {
-        for widget in self.subwidgets_mut() {
-            if widget.id() == wid {
-                return Some(widget);
-            }
-        }
-
-        None
     }
 
     fn get_actions(&self) -> Box<dyn Iterator<Item=ActionTrigger<Self>> + '_> where Self: Sized {

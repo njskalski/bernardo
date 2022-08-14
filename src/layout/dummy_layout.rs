@@ -10,22 +10,19 @@ use crate::widget::widget::WID;
 
 pub struct DummyLayout {
     wid: WID,
-    size: XY,
-    with_border: bool,
+    min_size: XY,
 }
 
 impl DummyLayout {
-    pub fn new(wid: WID, size: XY) -> Self {
+    pub fn new(wid: WID, min_size: XY) -> Self {
         DummyLayout {
             wid,
-            size,
-            with_border: false,
+            min_size,
         }
     }
 
     pub fn with_border(self) -> Self {
         DummyLayout {
-            with_border: true,
             ..self
         }
     }
@@ -33,29 +30,15 @@ impl DummyLayout {
 
 impl Layout for DummyLayout {
     fn min_size(&self) -> XY {
-        self.size
+        self.min_size
     }
 
     fn calc_sizes(&mut self, output_size: XY) -> Vec<WidgetIdRect> {
-        if self.with_border {
-            if output_size > (2, 2).into() {
-                let rect = Rect::new(XY::new(1, 1), self.size);
-
-                vec![WidgetIdRect {
-                    wid: self.wid,
-                    rect,
-                }]
-            } else {
-                warn!("too small LeafLayout to draw the view.");
-                vec![]
-            }
-        } else {
-            let rect = Rect::new(ZERO, self.size);
+        let rect = Rect::new(ZERO, output_size);
 
             vec![WidgetIdRect {
                 wid: self.wid,
                 rect,
             }]
-        }
     }
 }

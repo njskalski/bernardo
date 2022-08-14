@@ -26,6 +26,7 @@ use crate::text::buffer_state::BufferState;
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widget::any_msg::AsAny;
+use crate::widget::complex_widget::ComplexWidget;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_view::msg::EditorViewMsg;
@@ -537,15 +538,6 @@ impl Widget for EditorView {
         wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
     }
 
-    fn set_focused(&mut self, wid: WID) -> bool {
-        if let Some(ds) = &mut self.display_state {
-            ds.focus_group_mut().set_focused(wid)
-        } else {
-            error!("set_focused with no display state.");
-            false
-        }
-    }
-
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         if let Some(cached_sizes) = &self.display_state {
             let focused_child_id_op = self.get_focused().map(|f| f.id());
@@ -571,7 +563,9 @@ impl Widget for EditorView {
     fn anchor(&self) -> XY {
         ZERO
     }
+}
 
+impl ComplexWidget for EditorView {
     fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
         let mut res: Vec<&mut dyn Widget> = vec![&mut self.editor];
 

@@ -18,6 +18,7 @@ use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::border::BorderStyle;
 use crate::primitives::helpers::fill_output;
 use crate::primitives::xy::XY;
+use crate::widget::complex_widget::ComplexWidget;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::text_widget::TextWidget;
@@ -303,7 +304,9 @@ impl Widget for GenericDialog {
         let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
         wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
     }
+}
 
+impl ComplexWidget for GenericDialog {
     fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> {
         // debug!("call to generic_dialog subwidget_mut on {}", self.id());
         Box::new(self.buttons.iter_mut().map(|button| {
@@ -322,4 +325,3 @@ impl Widget for GenericDialog {
         ))
     }
 }
-
