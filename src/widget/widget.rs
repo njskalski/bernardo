@@ -68,6 +68,14 @@ pub trait Widget: 'static {
         ZERO
     }
 
+    fn as_any(&self) -> &dyn Widget where Self: Sized {
+        self as &dyn Widget
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Widget where Self: Sized {
+        self as &mut dyn Widget
+    }
+
     fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
         debug!("call to default subwidget_mut on {}", self.id());
         Box::new(std::iter::empty())

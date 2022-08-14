@@ -128,25 +128,22 @@ impl MainView {
     }
 
     fn internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {
-        let mut left_column = LeafLayout::new(subwidget!(Self.tree_widget));
-        let editor_or_not = match self.display_state.curr_editor_idx {
+        let mut left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
+        let right_column = match self.display_state.curr_editor_idx {
             None => LeafLayout::new(subwidget!(Self.no_editor)),
             Some(idx) => {
                 LeafLayout::new(SubwidgetPointer::new(
-                    Box::new(|s: &Self| { s.editors.get(idx).map(|w| w as &dyn Widget).unwrap_or(&s.no_editor) }),
+                    Box::new(|s: &Self| { s.editors.get(idx).map(|w| w.as_any()).unwrap_or(&s.no_editor) }),
                     Box::new(|s: &mut Self| { s.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut s.no_editor) }),
                 ))
             }
-        };
-
-
-        let mut right_column = LeafLayout::new(editor_or_not);
+        }.boxed();
 
         let mut bg_layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0),
-                  &mut left_column)
+                  left_column)
             .with(SplitRule::Proportional(4.0),
-                  &mut right_column,
+                  right_column,
             );
 
 
@@ -155,8 +152,8 @@ impl MainView {
                 HoverItem::FuzzySearch(fuzzy) => {
                     let rect = MainView::get_hover_rect(max_size);
                     HoverLayout::new(
-                        &mut bg_layout,
-                        &mut LeafLayout::new(fuzzy),
+                        bg_layout,
+                        LeafLayout::new(subwidget!(Self.fuzzy)).boxed(),
                         rect,
                     ).calc_sizes(max_size)
                 }
