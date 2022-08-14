@@ -57,7 +57,7 @@ impl<W: 'static> Clone for Box<dyn GetterOpMut<W>> {
 }
 
 
-struct SubwidgetPointer<W: Widget> {
+pub struct SubwidgetPointer<W: Widget> {
     getter: Box<dyn Getter<W>>,
     getter_mut: Box<dyn GetterMut<W>>,
 }
@@ -79,11 +79,11 @@ impl<W: Widget> SubwidgetPointer<W> {
         }
     }
 
-    fn get<'a>(&self, parent: &'a W) -> &'a dyn Widget {
+    pub fn get<'a>(&self, parent: &'a W) -> &'a dyn Widget {
         (self.getter.clone())(parent)
     }
 
-    fn get_mut<'a>(&self, parent: &'a mut W) -> &'a mut dyn Widget {
+    pub fn get_mut<'a>(&self, parent: &'a mut W) -> &'a mut dyn Widget {
         (self.getter_mut.clone())(parent)
     }
 }
@@ -111,15 +111,16 @@ impl<W: Widget> SubwidgetPointerOp<W> {
         }
     }
 
-    fn get<'a>(&self, parent: &'a W) -> Option<&'a dyn Widget> {
+    pub fn get<'a>(&self, parent: &'a W) -> Option<&'a dyn Widget> {
         (self.getter_op)(parent)
     }
 
-    fn get_mut<'a>(&self, parent: &'a mut W) -> Option<&'a mut dyn Widget> {
+    pub fn get_mut<'a>(&self, parent: &'a mut W) -> Option<&'a mut dyn Widget> {
         (self.getter_op_mut)(parent)
     }
 }
 
+#[macro_export]
 macro_rules! subwidget {
 ($parent: ident.$ child: ident) => {
     SubwidgetPointer::new(
@@ -129,6 +130,7 @@ macro_rules! subwidget {
 }
 }
 
+#[macro_export]
 macro_rules! subwidget_op {
 ($parent: ident.$ child: ident) => {
     SubwidgetPointerOp::new(
