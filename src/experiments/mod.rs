@@ -5,3 +5,4 @@ pub mod deref_str;
 pub mod clipboard;
 pub mod regex_search;
 pub mod pretty_ron;
+pub mod subwidget_pointer;
