@@ -1,6 +1,10 @@
 use crate::Widget;
 
-struct SubwidgetPointer<W: Widget> {
+// TODO(subwidgetpointermap) we want also macro corresponding to "map", something like
+// subwidgetpointermap:
+// map!(getter that returns Option<SubwidgetPointer>, function that assumes it's Some(WidgetPointer)
+
+pub struct SubwidgetPointer<W: Widget> {
     getter: fn(&W) -> &dyn Widget,
     getter_mut: fn(&mut W) -> &mut dyn Widget,
 }
@@ -22,11 +26,11 @@ impl<W: Widget> SubwidgetPointer<W> {
         }
     }
 
-    fn get<'a>(&self, parent: &'a W) -> &'a dyn Widget {
+    pub fn get<'a>(&self, parent: &'a W) -> &'a dyn Widget {
         (self.getter.clone())(parent)
     }
 
-    fn get_mut<'a>(&self, parent: &'a mut W) -> &'a mut dyn Widget {
+    pub fn get_mut<'a>(&self, parent: &'a mut W) -> &'a mut dyn Widget {
         (self.getter_mut.clone())(parent)
     }
 }
@@ -61,13 +65,24 @@ impl<W: Widget> From<SubwidgetPointer<W>> for SubwidgetPointerOp<W> {
     }
 }
 
+#[macro_export]
 macro_rules! subwidget {
 ($parent: ident.$ child: ident) => {
-    SubwidgetPointer::new(
+    crate::experiments::subwidget_pointer::SubwidgetPointer::new(
         |p : &($parent)| { &p.$child},
         |p : &mut ($parent)| { &mut p.$child}
     )
 }
+}
+
+#[macro_export]
+macro_rules! subwidget_self {
+    ($parent: ident) => {
+        crate::experiments::subwidget_pointer::SubwidgetPointer::new(
+            |p : &($parent)| { p },
+            |p : &mut $parent| { p },
+        )
+    }
 }
 
 #[cfg(test)]
@@ -172,5 +187,7 @@ mod tests {
                 }
             }
         }
+
+        let lol = subwidget_self!(DummyWidget);
     }
 }

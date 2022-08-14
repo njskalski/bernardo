@@ -28,12 +28,16 @@ impl WidgetIdRect {
     }
 }
 
-pub trait Layout {
-    fn min_size(&self) -> XY;
+pub trait Layout<W: Widget> {
+    fn min_size(&self, root: &W) -> XY;
 
     /*
     This only calculates the rects under current constraints. The widgets themselves should
     receive information about their new sizes before render.
      */
-    fn calc_sizes(&mut self, output_size: XY) -> Vec<WidgetIdRect>;
+    fn calc_sizes(&self, root: &mut W, output_size: XY) -> Vec<WidgetIdRect>;
+
+    fn boxed(self) -> Box<dyn Layout<W>> where Self: Sized {
+        Box::new(self)
+    }
 }

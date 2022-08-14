@@ -3,6 +3,7 @@ use log::warn;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
+use crate::Widget;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SplitDirection {
@@ -16,17 +17,17 @@ pub enum SplitRule {
     Proportional(f32),
 }
 
-struct SplitLayoutChild<'a> {
-    layout: &'a mut dyn Layout,
+struct SplitLayoutChild<W: Widget> {
+    layout: Box<dyn Layout<W>>,
     split_rule: SplitRule,
 }
 
-pub struct SplitLayout<'a> {
-    children: Vec<SplitLayoutChild<'a>>,
+pub struct SplitLayout<W: Widget> {
+    children: Vec<SplitLayoutChild<W>>,
     split_direction: SplitDirection,
 }
 
-impl<'a> SplitLayout<'a> {
+impl<W: Widget> SplitLayout<W> {
     pub fn new(split_direction: SplitDirection) -> Self {
         SplitLayout {
             children: vec![],
@@ -34,7 +35,7 @@ impl<'a> SplitLayout<'a> {
         }
     }
 
-    pub fn with(self, split_rule: SplitRule, child: &'a mut dyn Layout) -> Self {
+    pub fn with(self, split_rule: SplitRule, child: Box<dyn Layout<W>>) -> Self {
         let mut children = self.children;
         let child = SplitLayoutChild {
             layout: child,
@@ -129,12 +130,12 @@ impl<'a> SplitLayout<'a> {
     }
 }
 
-impl<'a> Layout for SplitLayout<'a> {
-    fn min_size(&self) -> XY {
+impl<W: Widget> Layout<W> for SplitLayout<W> {
+    fn min_size(&self, root: &W) -> XY {
         let mut minxy = XY::new(0, 0);
 
         for child in self.children.iter() {
-            let min_size = child.layout.min_size();
+            let min_size = child.layout.min_size(root);
             match child.split_rule {
                 SplitRule::Fixed(iusize) => {
                     if iusize > u16::MAX as usize {
@@ -181,7 +182,7 @@ impl<'a> Layout for SplitLayout<'a> {
         minxy
     }
 
-    fn calc_sizes(&mut self, output_size: XY) -> Vec<WidgetIdRect> {
+    fn calc_sizes(&self, root: &mut W, output_size: XY) -> Vec<WidgetIdRect> {
         let rects_op = self.get_just_rects(output_size);
         if rects_op.is_none() {
             warn!(
@@ -198,7 +199,7 @@ impl<'a> Layout for SplitLayout<'a> {
 
         for (idx, child_layout) in self.children.iter_mut().enumerate() {
             let rect = &rects[idx];
-            let wirs = child_layout.layout.calc_sizes(rect.size);
+            let wirs = child_layout.layout.calc_sizes(root, rect.size);
 
             // debug!("A{} output_size {} parent {} children {:?}", wirs.len(), output_size, rect, wirs);
             //TODO add intersection checks
