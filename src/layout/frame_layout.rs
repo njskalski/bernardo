@@ -3,14 +3,15 @@ use log::error;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
+use crate::Widget;
 
-pub struct FrameLayout<'a> {
-    layout: &'a mut dyn Layout,
+pub struct FrameLayout<W: Widget> {
+    layout: Box<dyn Layout<W>>,
     margins: XY,
 }
 
-impl<'a> FrameLayout<'a> {
-    pub fn new(layout: &'a mut dyn Layout, margins: XY) -> Self {
+impl<W: Widget> FrameLayout<W> {
+    pub fn new(layout: Box<dyn Layout<W>>, margins: XY) -> Self {
         Self {
             layout,
             margins,
@@ -26,14 +27,13 @@ impl<'a> FrameLayout<'a> {
     }
 }
 
-impl<'a> Layout for FrameLayout<'a> {
-
-    fn min_size(&self) -> XY {
-        self.layout.min_size() + self.margins * 2
+impl<W: Widget> Layout<W> for FrameLayout<W> {
+    fn min_size(&self, root: &W) -> XY {
+        self.layout.min_size(root) + self.margins * 2
     }
 
 
-    fn calc_sizes(&mut self, output_size: XY) -> Vec<WidgetIdRect> {
+    fn calc_sizes(&self, root: &mut W, output_size: XY) -> Vec<WidgetIdRect> {
         let rect = match self.sub_rect(output_size) {
             Some(rect) => rect,
             None => {
@@ -42,7 +42,7 @@ impl<'a> Layout for FrameLayout<'a> {
             }
         };
 
-        let subs = self.layout.calc_sizes(rect.size);
+        let subs = self.layout.calc_sizes(root, rect.size);
 
         subs.iter().map(|wir| {
             wir.shifted(self.margins)

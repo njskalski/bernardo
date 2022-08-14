@@ -1,18 +1,19 @@
 use log::warn;
 
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::widget::Widget;
 
-pub struct LeafLayout<'a> {
-    widget: &'a mut dyn Widget,
+pub struct LeafLayout<W: Widget> {
+    widget: SubwidgetPointer<W>,
     with_border: bool,
 }
 
-impl<'a> LeafLayout<'a> {
-    pub fn new(widget: &'a mut dyn Widget) -> Self {
+impl<W: Widget> LeafLayout<W> {
+    pub fn new(widget: SubwidgetPointer<W>) -> Self {
         LeafLayout { widget, with_border: false }
     }
 
@@ -24,19 +25,18 @@ impl<'a> LeafLayout<'a> {
     }
 }
 
-impl<'a> Layout for LeafLayout<'a> {
-
-    fn min_size(&self) -> XY {
-        self.widget.min_size()
+impl<W: Widget> Layout<W> for LeafLayout<W> {
+    fn min_size(&self, root: &W) -> XY {
+        self.widget.get(root).min_size()
     }
 
-    fn calc_sizes(&mut self, output_size: XY) -> Vec<WidgetIdRect> {
-        let wid = self.widget.id();
+    fn calc_sizes(&self, root: &mut W, output_size: XY) -> Vec<WidgetIdRect> {
+        let wid = self.widget.get(root).id();
 
         let res = if self.with_border {
             if output_size > (2, 2).into() {
                 let limited_output = XY::new(output_size.x - 2, output_size.y - 2);
-                let size = self.widget.layout(SizeConstraint::simple(limited_output));
+                let size = self.widget.get_mut(root).layout(SizeConstraint::simple(limited_output));
                 let rect = Rect::new(XY::new(1, 1), size);
 
                 vec![WidgetIdRect {
@@ -48,7 +48,7 @@ impl<'a> Layout for LeafLayout<'a> {
                 vec![]
             }
         } else {
-            let size = self.widget.layout(SizeConstraint::simple(output_size));
+            let size = self.widget.get_mut(root).layout(SizeConstraint::simple(output_size));
             let rect = Rect::new(ZERO, size);
 
             vec![WidgetIdRect {
@@ -64,3 +64,4 @@ impl<'a> Layout for LeafLayout<'a> {
         res
     }
 }
+

@@ -12,17 +12,18 @@ use std::borrow::Borrow;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use jsonrpc_core::futures::future::err;
+use jsonrpc_core::futures::future::{err, ok};
 use log::{debug, error, warn};
 
+use crate::{Keycode, subwidget};
 use crate::config::theme::Theme;
 use crate::experiments::focus_group::FocusUpdate;
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
-use crate::Keycode;
 use crate::layout::display_state::GenericDisplayState;
 use crate::layout::empty_layout::EmptyLayout;
 use crate::layout::frame_layout::FrameLayout;
@@ -128,56 +129,61 @@ impl SaveFileDialogWidget {
     }
 
     fn internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {
-        let tree_widget = &mut self.tree_widget;
-        let list_widget = &mut self.list_widget;
-        let edit_box = &mut self.edit_box;
-        let mut tree_layout = LeafLayout::new(tree_widget);
-        let mut empty_layout = EmptyLayout::new().with_size(XY::new(1, 1));
+        let tree_layout = LeafLayout::new(subwidget!(Self.tree_widget));
+        // let mut empty_layout = EmptyLayout::new().with_size(XY::new(1, 1));
 
-        let mut left_column = SplitLayout::new(SplitDirection::Vertical)
-            .with(SplitRule::Proportional(1.0), &mut tree_layout)
-            .with(SplitRule::Fixed(1), &mut empty_layout);
+        let left_column = SplitLayout::new(SplitDirection::Vertical)
+            .with(SplitRule::Proportional(1.0), tree_layout.boxed())
+            // .with(SplitRule::Fixed(1), &mut empty_layout)
+            .boxed();
 
-        let mut empty = EmptyLayout::new();
-        let mut ok_box = LeafLayout::new(&mut self.ok_button);
-        let mut cancel_box = LeafLayout::new(&mut self.cancel_button);
+        let ok_box = LeafLayout::new(subwidget!(Self.ok_button)).boxed();
+        let cancel_box = LeafLayout::new(subwidget!(Self.cancel_button)).boxed();
 
-        let mut button_bar = SplitLayout::new(SplitDirection::Horizontal)
-            .with(SplitRule::Proportional(1.0), &mut empty)
-            .with(SplitRule::Fixed(12), &mut cancel_box)
-            .with(SplitRule::Fixed(12), &mut ok_box);
+        let button_bar = SplitLayout::new(SplitDirection::Horizontal)
+            .with(SplitRule::Proportional(1.0), EmptyLayout::new().boxed())
+            .with(SplitRule::Fixed(12), cancel_box)
+            .with(SplitRule::Fixed(12), ok_box)
+            .boxed();
 
-
-        let mut list = LeafLayout::new(list_widget);
-        let mut edit = LeafLayout::new(edit_box);
-        let mut right_column = SplitLayout::new(SplitDirection::Vertical)
+        let list = LeafLayout::new(subwidget!(Self.list_widget)).boxed();
+        let edit = LeafLayout::new(subwidget!(Self.edit_box)).boxed();
+        let right_column = SplitLayout::new(SplitDirection::Vertical)
             .with(SplitRule::Proportional(1.0),
-                  &mut list)
+                  list)
             .with(SplitRule::Fixed(1),
-                  &mut edit)
+                  edit)
             .with(SplitRule::Fixed(1),
-                  &mut button_bar);
+                  button_bar)
+            .boxed();
 
-        let mut layout = SplitLayout::new(SplitDirection::Horizontal)
+        let layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(2.0),
-                  &mut left_column)
+                  left_column)
             .with(SplitRule::Proportional(3.0),
-                  &mut right_column,
-            );
+                  right_column,
+            )
+            .boxed();
 
         let frame = XY::new(1, 1);
 
         match self.hover_dialog.as_mut() {
-            None => FrameLayout::new(&mut layout, frame).calc_sizes(max_size),
+            None => FrameLayout::new(layout, frame).calc_sizes(self, max_size),
             Some(dialog) => {
                 let margins = max_size / 20;
-                FrameLayout::new(&mut HoverLayout::new(&mut layout,
-                                                       &mut LeafLayout::new(dialog),
-                                                       Rect::new(
-                                                           margins, // TODO
-                                                           max_size - margins * 2,
-                                                       ),
-                ), frame).calc_sizes(max_size)
+                //TODO(subwidgetpointermap)
+                let dialog_layout = LeafLayout::new(SubwidgetPointer::new(
+                    Box::new(|x: &Self| { x.hover_dialog.as_ref().unwrap() }),
+                    Box::new(|x: &mut Self| { x.hover_dialog.as_mut().unwrap() }),
+                )).boxed();
+
+                FrameLayout::new(HoverLayout::new(layout,
+                                                  dialog_layout,
+                                                  Rect::new(
+                                                      margins, // TODO
+                                                      max_size - margins * 2,
+                                                  ),
+                ).boxed(), frame).calc_sizes(self, max_size)
             }
         }
     }

@@ -6,9 +6,10 @@ use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, ConfigRef, InputEvent, Output, SizeConstraint, Theme, TreeSitterWrapper, Widget, ZERO};
+use crate::{AnyMsg, ConfigRef, InputEvent, Output, SizeConstraint, subwidget, Theme, TreeSitterWrapper, Widget, ZERO};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::focus_group::FocusUpdate;
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::io::sub_output::SubOutput;
@@ -160,49 +161,59 @@ impl EditorView {
     }
 
     fn internal_layout(&mut self, size: XY) -> Vec<WidgetIdRect> {
-        let mut editor_layout = LeafLayout::new(&mut self.editor);
-        let mut find_text_layout = LeafLayout::new(&mut self.find_label);
-        let mut find_box_layout = LeafLayout::new(&mut self.find_box);
+        let mut editor_layout = LeafLayout::new(subwidget!(Self.editor)).boxed();
+        let mut find_text_layout = LeafLayout::new(subwidget!(Self.find_label)).boxed();
+        let mut find_box_layout = LeafLayout::new(subwidget!(Self.find_box)).boxed();
         let mut find_layout =
             SplitLayout::new(SplitDirection::Horizontal)
-                .with(SplitRule::Fixed(PATTERN.width_cjk()), &mut find_text_layout)
-                .with(SplitRule::Proportional(1.0), &mut find_box_layout);
+                .with(SplitRule::Fixed(PATTERN.width_cjk()), find_text_layout)
+                .with(SplitRule::Proportional(1.0), find_box_layout)
+                .boxed();
 
-        let mut replace_box_layout = LeafLayout::new(&mut self.replace_box);
-        let mut replace_text_layout = LeafLayout::new(&mut self.replace_label);
+        let mut replace_text_layout = LeafLayout::new(subwidget!(Self.replace_label)).boxed();
+        let mut replace_box_layout = LeafLayout::new(subwidget!(Self.replace_box)).boxed();
         let mut replace_layout =
             SplitLayout::new(SplitDirection::Horizontal)
-                .with(SplitRule::Fixed(REPLACE.width_cjk()), &mut replace_text_layout)
-                .with(SplitRule::Proportional(1.0), &mut replace_box_layout);
+                .with(SplitRule::Fixed(REPLACE.width_cjk()), replace_text_layout)
+                .with(SplitRule::Proportional(1.0), replace_box_layout)
+                .boxed();
 
-
-        let mut background: Box<dyn Layout> = match &mut self.state {
+        let mut background: Box<dyn Layout<Self>> = match &mut self.state {
             EditorViewState::Simple => {
-                Box::new(editor_layout)
+                editor_layout
             }
             EditorViewState::Find => {
-                Box::new(SplitLayout::new(SplitDirection::Vertical)
-                    .with(SplitRule::Proportional(1.0), &mut editor_layout)
-                    .with(SplitRule::Fixed(1), &mut find_layout)
-                )
+                SplitLayout::new(SplitDirection::Vertical)
+                    .with(SplitRule::Proportional(1.0), editor_layout)
+                    .with(SplitRule::Fixed(1), find_layout)
+                    .boxed()
             }
             EditorViewState::FindReplace => {
                 Box::new(SplitLayout::new(SplitDirection::Vertical)
-                    .with(SplitRule::Proportional(1.0), &mut editor_layout)
-                    .with(SplitRule::Fixed(1), &mut find_layout)
-                    .with(SplitRule::Fixed(1), &mut replace_layout)
+                    .with(SplitRule::Proportional(1.0), editor_layout)
+                    .with(SplitRule::Fixed(1), find_layout)
+                    .with(SplitRule::Fixed(1), replace_layout)
                 )
             }
         };
 
         match self.hover_dialog.as_mut() {
-            None => background.calc_sizes(size),
+            None => background.calc_sizes(self, size),
             Some(dialog) => {
                 let rect = Self::get_hover_rect(size);
-                HoverLayout::new(&mut *background,
-                                 &mut LeafLayout::new(dialog),
+                let hover = LeafLayout::new(SubwidgetPointer::new(
+                    Box::new(|s: &Self| {
+                        s.hover_dialog.as_ref().unwrap()
+                    }),
+                    Box::new(|s: &mut Self| {
+                        s.hover_dialog.as_mut().unwrap()
+                    }),
+                )).boxed();
+
+                HoverLayout::new(background,
+                                 hover,
                                  rect,
-                ).calc_sizes(size)
+                ).calc_sizes(self, size)
             }
         }
     }

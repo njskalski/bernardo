@@ -3,9 +3,10 @@ use std::rc::Rc;
 
 use log::{debug, error, warn};
 
-use crate::{AnyMsg, ConfigRef, InputEvent, Output, SizeConstraint, Widget};
+use crate::{AnyMsg, ConfigRef, InputEvent, Output, SizeConstraint, subwidget, Widget};
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::io::sub_output::SubOutput;
@@ -127,37 +128,56 @@ impl MainView {
     }
 
     fn internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {
-        let tree_widget = &mut self.tree_widget;
-
-        let mut left_column = LeafLayout::new(tree_widget);
-        let editor_or_not = match self.display_state.curr_editor_idx {
-            None => &mut self.no_editor as &mut dyn Widget,
-            Some(idx) => self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut self.no_editor),
-        };
-
-        let mut right_column = LeafLayout::new(editor_or_not);
+        let mut left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
+        let right_column = match self.display_state.curr_editor_idx {
+            None => LeafLayout::new(subwidget!(Self.no_editor)),
+            Some(idx) => {
+                let idx1 = idx;
+                let idx2 = idx;
+                LeafLayout::new(SubwidgetPointer::new(
+                    Box::new(move |s: &Self| { s.editors.get(idx1).map(|w| w.as_any()).unwrap_or(&s.no_editor) }),
+                    Box::new(move |s: &mut Self| { s.editors.get_mut(idx2).map(|w| w as &mut dyn Widget).unwrap_or(&mut s.no_editor) }),
+                ))
+            }
+        }.boxed();
 
         let mut bg_layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0),
-                  &mut left_column)
+                  left_column)
             .with(SplitRule::Proportional(4.0),
-                  &mut right_column,
+                  right_column,
             );
 
+
+        //TODO(subwidgetpointermap)
 
         let res = if let Some(hover) = &mut self.hover {
             match hover {
                 HoverItem::FuzzySearch(fuzzy) => {
                     let rect = MainView::get_hover_rect(max_size);
+
+                    let hover = LeafLayout::new(SubwidgetPointer::new(
+                        Box::new(|s: &Self| {
+                            match s.hover.as_ref().unwrap() {
+                                HoverItem::FuzzySearch(fs) => fs,
+                            }
+                        }),
+                        Box::new(|s: &mut Self| {
+                            match s.hover.as_mut().unwrap() {
+                                HoverItem::FuzzySearch(fs) => fs,
+                            }
+                        }),
+                    )).boxed();
+
                     HoverLayout::new(
-                        &mut bg_layout,
-                        &mut LeafLayout::new(fuzzy),
+                        bg_layout.boxed(),
+                        hover,
                         rect,
-                    ).calc_sizes(max_size)
+                    ).calc_sizes(self, max_size)
                 }
             }
         } else {
-            bg_layout.calc_sizes(max_size)
+            bg_layout.calc_sizes(self, max_size)
         };
 
         res
