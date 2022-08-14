@@ -1,4 +1,4 @@
-#![feature(const_trait_impl)]
+// #![feature(const_trait_impl)]
 #![allow(dead_code)]
 #![allow(unreachable_patterns)]
 
@@ -10,15 +10,14 @@ extern crate maplit;
 extern crate matches;
 
 
-use std::io::stdout;
-use std::rc::Rc;
-
 use clap::Parser;
 use crossbeam_channel::select;
 use crossterm::terminal;
 use log::{debug, error};
 
 use config::theme::Theme;
+use std::io::stdout;
+use std::rc::Rc;
 
 use crate::config::config::{Config, ConfigRef};
 use crate::experiments::clipboard::get_me_some_clipboard;

@@ -1,3 +1,7 @@
+use log::error;
+use serde::__private::de::Borrowed;
+use streaming_iterator::StreamingIterator;
+
 use std::borrow::Borrow;
 use std::cell::{BorrowMutError, RefCell, RefMut};
 use std::collections::{HashMap, HashSet};
@@ -7,10 +11,6 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Weak};
-
-use log::error;
-use serde::__private::de::Borrowed;
-use streaming_iterator::StreamingIterator;
 
 use crate::fs::dir_entry::DirEntry;
 use crate::fs::filesystem_front::FilesystemFront;
@@ -111,7 +111,7 @@ impl FsfRef {
         let mut it = path.as_ref().components();
 
         while let Some(component) = it.next() {
-            let segment = PathBuf::from((&component as &AsRef<Path>).as_ref());
+            let segment = PathBuf::from((&component as &dyn AsRef<Path>).as_ref());
             spath = SPath::append(spath, segment);
         }
 
