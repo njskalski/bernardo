@@ -3,9 +3,10 @@ use std::rc::Rc;
 
 use log::{debug, error, warn};
 
-use crate::{AnyMsg, ConfigRef, InputEvent, Output, SizeConstraint, Widget};
+use crate::{AnyMsg, ConfigRef, InputEvent, Output, SizeConstraint, subwidget, Widget};
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::io::sub_output::SubOutput;
@@ -127,13 +128,18 @@ impl MainView {
     }
 
     fn internal_layout(&mut self, max_size: XY) -> Vec<WidgetIdRect> {
-        let tree_widget = &mut self.tree_widget;
-
-        let mut left_column = LeafLayout::new(tree_widget);
+        let mut left_column = LeafLayout::new(subwidget!(Self.tree_widget));
         let editor_or_not = match self.display_state.curr_editor_idx {
-            None => &mut self.no_editor as &mut dyn Widget,
-            Some(idx) => self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut self.no_editor),
+            None => LeafLayout::new(subwidget!(Self.no_editor)),
+            Some(idx) => //self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut self.no_editor),
+                {
+                    LeafLayout::new(SubwidgetPointer::new(
+                        |s: &Self| { s.editors.get(idx).unwrap() },
+                        |s: &mut Self| { s.editors.get_mut(idx).unwrap() },
+                    ))
+                }
         };
+
 
         let mut right_column = LeafLayout::new(editor_or_not);
 
