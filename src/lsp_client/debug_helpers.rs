@@ -1,6 +1,6 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use log::{error, warn};
+use log::error;
 use tokio::io::AsyncWriteExt;
 
 pub async fn lsp_debug_save(file: PathBuf, contents: String) {

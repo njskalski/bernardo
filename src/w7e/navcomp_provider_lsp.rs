@@ -1,13 +1,10 @@
 use std::fmt::{Debug, Formatter};
-use std::sync::Arc;
 
 use log::{debug, error};
 use tokio::spawn;
-use tokio::task::spawn_blocking;
-use url::Url;
 
 use crate::fs::path::SPath;
-use crate::lsp_client::lsp_client::{LspWrapper, LspWrapperRef};
+use crate::lsp_client::lsp_client::LspWrapperRef;
 use crate::w7e::navcomp_provider::NavCompProvider;
 
 /*

@@ -17,7 +17,7 @@ impl ListWidgetItem for SPath {
         }
     }
 
-    fn get_min_column_width(idx: usize) -> u16 {
+    fn get_min_column_width(_idx: usize) -> u16 {
         10 // TODO completely arbitrary
     }
 

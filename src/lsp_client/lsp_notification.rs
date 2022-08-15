@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use jsonrpc_core::Error;
 use lsp_types::{CancelParams, CreateFilesParams, DeleteFilesParams, DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams, InitializedParams, LogMessageParams, LogTraceParams, ProgressParams, PublishDiagnosticsParams, RenameFilesParams, SetTraceParams, ShowMessageParams, WillSaveTextDocumentParams, WorkDoneProgressCancelParams};
 use lsp_types::notification as n;

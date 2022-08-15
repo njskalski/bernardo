@@ -2,13 +2,11 @@
 mod tests {
     use std::path::{Path, PathBuf};
 
-    use serde::Serialize;
-
     use crate::{FilesystemFront, LangId, spath};
     use crate::experiments::pretty_ron::ToPrettyRonString;
     use crate::fs::mock_fs::MockFS;
     use crate::w7e::project_scope::SerializableProjectScope;
-    use crate::w7e::workspace::{ScopeLoadErrors, SerializableWorkspace, Workspace, WORKSPACE_FILE_NAME};
+    use crate::w7e::workspace::{ScopeLoadErrors, SerializableWorkspace, Workspace};
 
     #[test]
     fn test_write_rust_workspace() {
@@ -84,7 +82,7 @@ authors = ["Alice <a@example.com>", "Bob <b@example.com>"]
         assert_eq!(spath!(mock_fs, "workspace", "rust_project", "Cargo.toml").unwrap().exists(), true);
 
         let path = mock_fs.descendant_checked(&repo_folder).unwrap();
-        let (workspace, errors) = Workspace::try_load(path).unwrap();
+        let (_workspace, errors) = Workspace::try_load(path).unwrap();
 
         assert_eq!(errors, ScopeLoadErrors::default());
     }

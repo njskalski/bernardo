@@ -60,7 +60,7 @@ mod w7e;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() -> Result<(), usize> {
-    let mut args = gladius::args::Args::parse();
+    let args = gladius::args::Args::parse();
     logger_setup(args.verbosity.log_level_filter());
 
     // Initializing subsystems
@@ -76,7 +76,7 @@ async fn main() -> Result<(), usize> {
 
     // Loading / Building workspace file
     let workspace_dir = fsf.root();
-    let (mut workspace_op, scope_errors): (Option<Workspace>, ScopeLoadErrors) = match Workspace::try_load(workspace_dir.clone()) {
+    let (workspace_op, _scope_errors): (Option<Workspace>, ScopeLoadErrors) = match Workspace::try_load(workspace_dir.clone()) {
         Ok(res) => (Some(res.0), res.1),
         Err(e) => {
             match e {

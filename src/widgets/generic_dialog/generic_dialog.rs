@@ -265,7 +265,7 @@ impl Widget for GenericDialog {
                 // warn!("updating focus");
                 self.display_state.as_mut().map(
                     |ds| {
-                        let msg = ds.focus_group.update_focus(*focus_update);
+                        let _msg = ds.focus_group.update_focus(*focus_update);
                         // warn!("focus updated {}", msg);
                         None
                     }

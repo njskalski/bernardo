@@ -364,7 +364,7 @@ impl Widget for EditorWidget {
             (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.enter_cursor_drop_mode => {
                 EditorWidgetMsg::ToCursorDropMode.someboxed()
             }
-            (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Esc => {
+            (&EditorState::DroppingCursor { .. }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Esc => {
                 EditorWidgetMsg::ToEditMode.someboxed()
             }
             (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Enter => {
@@ -373,7 +373,7 @@ impl Widget for EditorWidget {
                 EditorWidgetMsg::DropCursorFlip { cursor: special_cursor }.someboxed()
             }
             // TODO change to if let Some() when it's stabilized
-            (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
+            (&EditorState::DroppingCursor { .. }, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
                 let cem = key_to_edit_msg(key).unwrap();
                 if !cem.is_editing() {
                     EditorWidgetMsg::DropCursorMove { cem }.someboxed()
@@ -398,7 +398,7 @@ impl Widget for EditorWidget {
                 (&EditorState::Editing, EditorWidgetMsg::EditMsg(cem)) => {
                     let page_height = self.page_height();
                     // page_height as usize is safe, since page_height is u16 and usize is larger.
-                    let changed = self.buffer.apply_cem(cem.clone(), page_height as usize, Some(&self.clipboard));
+                    let _changed = self.buffer.apply_cem(cem.clone(), page_height as usize, Some(&self.clipboard));
 
                     match cme_to_direction(cem) {
                         None => {}
@@ -480,7 +480,7 @@ impl Drop for EditorWidget {
             (Some(navcomp), Some(spath)) => {
                 debug!("shutting down navcomp.");
                 navcomp.file_closed(spath);
-            },
+            }
             _ => {
                 debug!("not stoping navigation, because navcomp is some: {}, ff is some: {}",
                     self.navcomp.is_some(), self.buffer.get_file_front().is_some() )

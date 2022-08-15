@@ -127,7 +127,7 @@ impl MainView {
     }
 
     fn internal_layout(&mut self, max_size: XY) -> Box<dyn Layout<Self>> {
-        let mut left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
+        let left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
         let right_column = match self.display_state.curr_editor_idx {
             None => LeafLayout::new(subwidget!(Self.no_editor)),
             Some(idx) => {
@@ -140,7 +140,7 @@ impl MainView {
             }
         }.boxed();
 
-        let mut bg_layout = SplitLayout::new(SplitDirection::Horizontal)
+        let bg_layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0),
                   left_column)
             .with(SplitRule::Proportional(4.0),
@@ -152,7 +152,7 @@ impl MainView {
 
         let res = if let Some(hover) = &mut self.hover {
             match hover {
-                HoverItem::FuzzySearch(fuzzy) => {
+                HoverItem::FuzzySearch(_fuzzy) => {
                     let rect = MainView::get_hover_rect(max_size);
 
                     let hover = LeafLayout::new(SubwidgetPointer::new(
@@ -280,7 +280,7 @@ impl Widget for MainView {
 
                     None
                 }
-                MainViewMsg::TreeExpandedFlip { expanded, item } => {
+                MainViewMsg::TreeExpandedFlip { .. } => {
                     None
                 }
                 MainViewMsg::TreeSelected { item } => {

@@ -8,7 +8,7 @@ use std::sync::Arc;
 use log::{debug, error, warn};
 use lsp_types::Url;
 use serde_json::Value;
-use tokio::io::{AsyncBufReadExt, AsyncReadExt};
+use tokio::io::AsyncBufReadExt;
 use tokio::io::BufReader;
 use tokio::process::{ChildStderr, ChildStdout};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -72,7 +72,7 @@ impl LspWrapper {
             .spawn()
             .ok()?;
 
-        let mut stdout = match child.stdout.take() {
+        let stdout = match child.stdout.take() {
             None => {
                 error!("failed acquiring stdout");
                 return None;
@@ -185,7 +185,7 @@ impl LspWrapper {
         let root_url = Url::parse(&format!("file:///{}", abs_path)).unwrap(); //TODO unwrap
         let root_uri = Some(root_url.clone());
 
-        let trace = if cfg!(debug_assertions) {
+        let _trace = if cfg!(debug_assertions) {
             lsp_types::TraceValue::Verbose
         } else {
             lsp_types::TraceValue::Messages
@@ -264,7 +264,7 @@ impl LspWrapper {
         Ok(result)
     }
 
-    pub async fn text_document_did_open(&mut self, url: Url, text: String) -> Result<(), LspWriteError> {
+    pub async fn text_document_did_open(&mut self, url: Url, _text: String) -> Result<(), LspWriteError> {
         self.send_notification::<lsp_types::notification::DidOpenTextDocument>(
             lsp_types::DidOpenTextDocumentParams {
                 text_document: lsp_types::TextDocumentItem {
@@ -308,7 +308,6 @@ impl LspWrapper {
                 }
             }
         }
-        Ok(())
     }
 
     /*
@@ -317,13 +316,13 @@ impl LspWrapper {
      */
     pub async fn logger_thread(
         identifier: String,
-        mut stderr_pipe: BufReader<ChildStderr>,
+        stderr_pipe: BufReader<ChildStderr>,
         mut notification_receiver: UnboundedReceiver<LspServerNotification>,
     ) -> Result<(), ()> {
         //TODO dry the other channel too before quitting
 
         let mut stderr_lines = stderr_pipe.lines();
-        let mut stderr_path = PathBuf::from(identifier).join("stderr.txt");
+        let stderr_path = PathBuf::from(identifier).join("stderr.txt");
 
         let mut more_lines = true;
         let mut notification_channel_open = true;
@@ -347,7 +346,7 @@ impl LspWrapper {
                 },
                 notification_op = notification_receiver.recv(), if notification_channel_open => {
                     match notification_op {
-                        Some(notification) => {
+                        Some(_notification) => {
                             //debug!("received LSP notification:\n---\n{:?}\n---\n", notification);
                             // debug!("received LSP notification");
                         }

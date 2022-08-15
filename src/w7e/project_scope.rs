@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ConfigRef, LangId};
 use crate::experiments::pretty_ron::ToPrettyRonString;
-use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::w7e::handler::Handler;
 use crate::w7e::handler_factory::load_handler;
@@ -45,7 +44,7 @@ impl ProjectScope {
         }
     }
 
-    pub fn from_serializable(sps: SerializableProjectScope, workspace : &SPath) -> Result<Self, LoadError> {
+    pub fn from_serializable(sps: SerializableProjectScope, workspace: &SPath) -> Result<Self, LoadError> {
         debug!("loading project scope from pill: {:?}", sps);
         let ff = if sps.path.as_os_str().is_empty() {
             workspace.clone()
@@ -69,8 +68,8 @@ impl ProjectScope {
         let handler = match &self.handler_id {
             None => {
                 warn!("project scope [{:?}] with no handler - what the point?", self.path.relative_path());
-                return Ok(())
-            },
+                return Ok(());
+            }
             Some(handler_id) => {
                 load_handler(config, &handler_id, self.path.clone()).await?
             }

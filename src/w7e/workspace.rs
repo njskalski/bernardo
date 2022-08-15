@@ -2,14 +2,12 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use log::debug;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde::ser::{SerializeSeq, SerializeStruct};
+use serde::{Deserialize, Serialize};
 
-use crate::{ConfigRef, fs, LangId, w7e};
+use crate::{ConfigRef, fs};
 use crate::experiments::pretty_ron::ToPrettyRonString;
 use crate::fs::path::SPath;
-use crate::fs::write_error::{WriteError, WriteOrSerError};
-use crate::LangId::RUST;
+use crate::fs::write_error::WriteOrSerError;
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::navcomp_group::{NavCompGroup, NavCompGroupRef};
 use crate::w7e::project_scope;
@@ -18,6 +16,7 @@ use crate::w7e::project_scope::{ProjectScope, SerializableProjectScope};
 pub const WORKSPACE_FILE_NAME: &'static str = ".gladius_workspace.ron";
 
 pub struct Scopes(Vec<ProjectScope>);
+
 pub type ScopeLoadErrors = Vec<(PathBuf, project_scope::LoadError)>;
 
 pub struct Workspace {

@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
 use log::{debug, error, warn};
-use streaming_iterator::StreamingIterator;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{AnyMsg, ConfigRef, InputEvent, Output, SizeConstraint, subwidget, Theme, TreeSitterWrapper, Widget, ZERO};
@@ -100,7 +99,7 @@ impl EditorView {
         let find_label = TextWidget::new(Box::new(PATTERN));
         let replace_label = TextWidget::new(Box::new(REPLACE));
 
-        let find_box = EditBoxWidget::new().with_on_hit(|w| {
+        let find_box = EditBoxWidget::new().with_on_hit(|_| {
             EditorViewMsg::FindHit.someboxed()
         });
         let replace_box = EditBoxWidget::new().with_on_hit(|_| {
@@ -158,24 +157,24 @@ impl EditorView {
     }
 
     fn internal_layout(&self, size: XY) -> Box<dyn Layout<Self>> {
-        let mut editor_layout = LeafLayout::new(subwidget!(Self.editor)).boxed();
-        let mut find_text_layout = LeafLayout::new(subwidget!(Self.find_label)).boxed();
-        let mut find_box_layout = LeafLayout::new(subwidget!(Self.find_box)).boxed();
-        let mut find_layout =
+        let editor_layout = LeafLayout::new(subwidget!(Self.editor)).boxed();
+        let find_text_layout = LeafLayout::new(subwidget!(Self.find_label)).boxed();
+        let find_box_layout = LeafLayout::new(subwidget!(Self.find_box)).boxed();
+        let find_layout =
             SplitLayout::new(SplitDirection::Horizontal)
                 .with(SplitRule::Fixed(PATTERN.width_cjk()), find_text_layout)
                 .with(SplitRule::Proportional(1.0), find_box_layout)
                 .boxed();
 
-        let mut replace_text_layout = LeafLayout::new(subwidget!(Self.replace_label)).boxed();
-        let mut replace_box_layout = LeafLayout::new(subwidget!(Self.replace_box)).boxed();
-        let mut replace_layout =
+        let replace_text_layout = LeafLayout::new(subwidget!(Self.replace_label)).boxed();
+        let replace_box_layout = LeafLayout::new(subwidget!(Self.replace_box)).boxed();
+        let replace_layout =
             SplitLayout::new(SplitDirection::Horizontal)
                 .with(SplitRule::Fixed(REPLACE.width_cjk()), replace_text_layout)
                 .with(SplitRule::Proportional(1.0), replace_box_layout)
                 .boxed();
 
-        let mut background: Box<dyn Layout<Self>> = match &self.state {
+        let background: Box<dyn Layout<Self>> = match &self.state {
             EditorViewState::Simple => {
                 editor_layout
             }
@@ -283,7 +282,7 @@ impl EditorView {
         let phrase = self.find_box.get_text().to_string();
         match self.editor.internal_mut().find_once(&phrase) {
             Ok(changed) => changed,
-            Err(e) => {
+            Err(_e) => {
                 // TODO handle?
                 error!("failed looking for {}", phrase);
                 false
@@ -322,7 +321,7 @@ impl EditorView {
         }
     }
 
-    fn set_deferred_focus(&mut self, wid: WID) {
+    fn set_deferred_focus(&mut self, _wid: WID) {
         if self.deferred_focus.is_some() {
             warn!("overriding deferred focus before it was flushed!")
         }
@@ -342,7 +341,7 @@ impl EditorView {
     }
 
     fn set_file_name(&mut self, path: &SPath) {
-        let mut editor = self.editor.internal_mut();
+        let editor = self.editor.internal_mut();
         editor.buffer_state_mut().set_file_front(Some(path.clone()));
         let navcomp_op = self.nav_comp_group.get_navcomp_for(path);
         editor.set_navcomp(navcomp_op);

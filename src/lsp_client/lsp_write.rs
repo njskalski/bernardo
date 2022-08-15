@@ -1,6 +1,5 @@
 use std::io::Write;
 
-use jsonrpc_core::Id;
 use log::debug;
 use tokio::io::AsyncWriteExt;
 

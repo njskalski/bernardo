@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use jsonrpc_core::{Call, Id, Output};
 use log::{debug, error};
-use regex::internal::Input;
 use serde_json::Value;
 use tokio::io::AsyncReadExt;
 use tokio::sync::mpsc::UnboundedSender;
@@ -21,7 +20,7 @@ fn id_to_str(id: Id) -> String {
     match id {
         Id::Null => "".to_string(),
         Id::Num(u) => format!("{}", u),
-        /// String id
+        // String id
         Id::Str(s) => s,
     }
 }

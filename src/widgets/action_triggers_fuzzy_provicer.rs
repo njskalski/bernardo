@@ -19,7 +19,7 @@ impl<W: Widget> ItemsProvider for Actions<W> {
         todo!()
     }
 
-    fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
+    fn items(&self, _query: String, _limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
         todo!()
     }
 }

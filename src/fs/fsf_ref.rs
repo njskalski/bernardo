@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
@@ -58,7 +57,7 @@ impl Hash for FsfRef {
 
 impl FsfRef {
     pub fn new<FS: FilesystemFront + 'static>(fs: FS) -> Self {
-        let mut fsf = FsfRef {
+        let fsf = FsfRef {
             fs: Arc::new(FsAndCache {
                 fs: Box::new(fs) as Box<dyn FilesystemFront>,
                 caches: RefCell::new(Default::default()),
@@ -174,6 +173,7 @@ impl FsfRef {
 #[macro_export]
 macro_rules! spath {
     ( $fsf:expr $(, $c:expr)* ) => {{
+        #[allow(unused_mut)]
         let mut sp : Option<crate::fs::path::SPath> = Some($fsf.root());
         $(
             sp = sp.map(|s| s.descendant_unchecked($c)).flatten();
@@ -190,8 +190,8 @@ mod tests {
     #[test]
     fn spath_macro() {
         let mockfs = MockFS::new("/").to_fsf();
-        let sp0 = spath!(mockfs);
-        let sp1 = spath!(mockfs, "a");
-        let sp2 = spath!(mockfs, "a", "b");
+        let _sp0 = spath!(mockfs);
+        let _sp1 = spath!(mockfs, "a");
+        let _sp2 = spath!(mockfs, "a", "b");
     }
 }

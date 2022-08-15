@@ -1,12 +1,11 @@
-use log::{error};
+use log::error;
 
 use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Widget};
+use crate::config::theme::Theme;
 use crate::io::over_output::OverOutput;
 use crate::io::sub_output::SubOutput;
-
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::{Scroll, ScrollDirection};
-use crate::config::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::widget::WID;
 
@@ -185,7 +184,7 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let (margin_width, mut new_sc) = self.nested_sc(output.size_constraint());
+        let (margin_width, new_sc) = self.nested_sc(output.size_constraint());
 
         if margin_width > 0 {
             self.render_line_no(margin_width, theme, focused, output);

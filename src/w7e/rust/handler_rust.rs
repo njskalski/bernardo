@@ -1,18 +1,12 @@
-use std::cell::RefCell;
-use std::future::Future;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
 use log::{debug, error};
-use lsp_types::InitializeResult;
 use tokio::sync::RwLock;
-use tokio::time::error::Elapsed;
 
 use crate::{ConfigRef, LangId};
 use crate::fs::path::SPath;
 use crate::lsp_client::lsp_client::{LspWrapper, LspWrapperRef};
-use crate::lsp_client::lsp_io_error::LspIOError;
 use crate::w7e::handler::{Handler, NavCompRef};
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::navcomp_provider::NavCompProvider;
@@ -76,7 +70,7 @@ impl RustHandler {
             debug!("initializing lsp");
             if let Ok(res) = tokio::time::timeout(INIT_TIMEOUT, lsp.initialize()).await {
                 match res {
-                    Ok(init_result) => {
+                    Ok(_init_result) => {
                         debug!("lsp initialized successfully.");
 
                         let arc_lsp = Arc::new(RwLock::new(lsp));
