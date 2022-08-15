@@ -1,18 +1,17 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 
-use json::{JsonValue, stringify_pretty};
-use jsonrpc_core::{Call, Id, MethodCall, Output};
+use jsonrpc_core::{Call, Id, Output};
 use log::{debug, error};
 use regex::internal::Input;
-use serde_json::{json, Value};
+use serde_json::Value;
 use tokio::io::AsyncReadExt;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::RwLock;
 
 use crate::lsp_client::debug_helpers::{format_or_noop, lsp_debug_save};
 use crate::lsp_client::lsp_client::IdToCallInfo;
-use crate::lsp_client::lsp_notification::{LspNotificationParsingError, LspServerNotification, parse_notification};
+use crate::lsp_client::lsp_notification::{LspServerNotification, parse_notification};
 use crate::lsp_client::lsp_read_error::LspReadError;
 
 const FAKE_RESPONSE_PREFIX: &'static str = "HTTP/1.1 200 OK\r\n";
@@ -111,7 +110,7 @@ pub async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
                             Output::Failure(fail) => {
                                 debug!("failed parsing response, because {:?}", fail);
                                 Err(LspReadError::JsonRpcError(fail.error.to_string()))
-                            },
+                            }
                             Output::Success(succ) => {
                                 debug!("call info id {:?}", &succ.id);
                                 internal_send(&id_to_method,
@@ -160,7 +159,7 @@ async fn internal_send(
             Ok(_) => {
                 debug!("sent {} to {}", call_info.method, &id);
                 Ok(())
-            },
+            }
             Err(_) => {
                 debug!("failed to send {} to {}, because of broken channel", call_info.method, &id);
                 Err(LspReadError::BrokenChannel)
@@ -192,8 +191,6 @@ pub fn get_len_from_headers(headers: &String) -> Option<usize> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn json_deserialize() {
         let s = r#"{"jsonrpc":"2.0","id":0,"method":"client/registerCapability","params":{"registrations":[{"id":"textDocument/didSave","method":"textDocument/didSave","registerOptions":{"includeText":false,"documentSelector":[{"pattern":"**/*.rs"},{"pattern":"**/Cargo.toml"},{"pattern":"**/Cargo.lock"}]}}]}}"#;

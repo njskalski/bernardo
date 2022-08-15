@@ -4,8 +4,6 @@ use log::debug;
 use serde::{Deserialize, Serialize};
 use which;
 
-use crate::primitives::is_default::IsDefault;
-
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct GlobalEditorOptions {
     pub rust_lsp_path: Option<PathBuf>,

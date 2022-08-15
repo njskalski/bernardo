@@ -1,6 +1,4 @@
-use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::Arc;
 
 use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
@@ -15,7 +13,7 @@ use crate::fs::path::SPath;
 use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::GenericDisplayState;
 use crate::layout::hover_layout::HoverLayout;
-use crate::layout::layout::{Layout, WidgetIdRect};
+use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::common_edit_msgs::CommonEditMsg;
@@ -24,7 +22,6 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::search_pattern::SearchPattern;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
-use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};

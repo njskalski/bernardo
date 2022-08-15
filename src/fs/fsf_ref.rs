@@ -1,27 +1,24 @@
-use log::error;
-use serde::__private::de::Borrowed;
-use streaming_iterator::StreamingIterator;
-
 use std::borrow::Borrow;
-use std::cell::{BorrowMutError, RefCell, RefMut};
-use std::collections::{HashMap, HashSet};
-use std::ffi::OsStr;
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 
-use crate::fs::dir_entry::DirEntry;
+use log::error;
+use streaming_iterator::StreamingIterator;
+
 use crate::fs::filesystem_front::FilesystemFront;
-use crate::fs::path::{PathCell, SPath};
+use crate::fs::path::SPath;
 use crate::fs::read_error::{ListError, ReadError};
 use crate::fs::write_error::WriteError;
 
 // Chaching should be implemented here or nowhere.
 
 pub struct DirCache {
-    vec : Vec<SPath>,
+    vec: Vec<SPath>,
 }
 
 pub struct FsAndCache {
@@ -34,7 +31,7 @@ pub struct FsAndCache {
 
 #[derive(Clone)]
 pub struct FsfRef {
-    fs : Arc<FsAndCache>,
+    fs: Arc<FsAndCache>,
 }
 
 impl Debug for FsfRef {
@@ -97,7 +94,7 @@ impl FsfRef {
         self.fs.fs.exists(&path)
     }
 
-    pub fn descendant_checked<P: AsRef<Path>>(&self, path : P) -> Option<SPath>  {
+    pub fn descendant_checked<P: AsRef<Path>>(&self, path: P) -> Option<SPath> {
         let path = path.as_ref();
         if !self.fs.fs.exists(path) {
             return None;
@@ -106,7 +103,7 @@ impl FsfRef {
         self.descendant_unchecked(path)
     }
 
-    pub fn descendant_unchecked<P: AsRef<Path>>(&self, path : P) -> Option<SPath> {
+    pub fn descendant_unchecked<P: AsRef<Path>>(&self, path: P) -> Option<SPath> {
         let mut spath = SPath::head(self.clone());
         let mut it = path.as_ref().components();
 
@@ -138,7 +135,7 @@ impl FsfRef {
         let path = spath.relative_path();
         let items = self.fs.fs.blocking_list(&path)?;
 
-        let mut dir_cache : Vec<SPath> = Vec::with_capacity(items.len());
+        let mut dir_cache: Vec<SPath> = Vec::with_capacity(items.len());
         for item in items.into_iter() {
             let sp = SPath::append(spath.clone(), item.into_path_buf());
             dir_cache.push(sp);
@@ -163,19 +160,19 @@ impl FsfRef {
         self.fs.fs.blocking_read_entire_file(&path)
     }
 
-    pub fn is_dir(&self, spath : &SPath) -> bool {
+    pub fn is_dir(&self, spath: &SPath) -> bool {
         let path = spath.relative_path();
         self.fs.fs.is_dir(&path)
     }
 
-    pub fn is_file(&self, spath : &SPath) -> bool {
+    pub fn is_file(&self, spath: &SPath) -> bool {
         let path = spath.relative_path();
         self.fs.fs.is_file(&path)
     }
 }
 
 #[macro_export]
-macro_rules! spath{
+macro_rules! spath {
     ( $fsf:expr $(, $c:expr)* ) => {{
         let mut sp : Option<crate::fs::path::SPath> = Some($fsf.root());
         $(
@@ -187,12 +184,8 @@ macro_rules! spath{
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
-    use crate::de;
     use crate::fs::filesystem_front::FilesystemFront;
     use crate::fs::mock_fs::MockFS;
-    use crate::fs::read_error::ReadError;
 
     #[test]
     fn spath_macro() {

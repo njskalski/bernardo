@@ -1,5 +1,4 @@
 use std::io;
-use std::str::Utf8Error;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum LspReadError {

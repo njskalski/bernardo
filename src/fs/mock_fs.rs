@@ -1,18 +1,14 @@
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use std::hash::{Hash, Hasher};
-use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
-use log::{debug, error, warn};
+use log::{error, warn};
 use streaming_iterator::StreamingIterator;
 
 use crate::fs::dir_entry::DirEntry;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::fsf_ref::FsfRef;
-use crate::fs::path::SPath;
 use crate::fs::read_error::{ListError, ReadError};
 use crate::fs::write_error::WriteError;
 
@@ -23,8 +19,8 @@ pub struct MockFS {
 }
 
 impl MockFS {
-    pub fn new<T : Into<PathBuf>>(root_path : T) -> Self {
-        let mut all_files : HashMap<PathBuf, HashMap<PathBuf, Vec<u8>>> = HashMap::new();
+    pub fn new<T: Into<PathBuf>>(root_path: T) -> Self {
+        let mut all_files: HashMap<PathBuf, HashMap<PathBuf, Vec<u8>>> = HashMap::new();
         all_files.insert(PathBuf::new(), HashMap::new());
 
         MockFS {
@@ -50,9 +46,9 @@ impl MockFS {
             all_files.insert(parent_path.clone(), HashMap::new());
         }
 
-        let mut folder = all_files.get_mut(&parent_path).unwrap();
+        let folder = all_files.get_mut(&parent_path).unwrap();
 
-        if let Some(old_val) = folder.insert(PathBuf::from(file_name), bytes) {
+        if let Some(_old_val) = folder.insert(PathBuf::from(file_name), bytes) {
             warn!("overwriting file {:?}", path);
         }
 
@@ -107,7 +103,7 @@ impl FilesystemFront for MockFS {
     }
 
     fn is_file(&self, path: &Path) -> bool {
-        if let Ok( (parent, me) ) = Self::split_path(path) {
+        if let Ok((parent, me)) = Self::split_path(path) {
             if let Some(folder) = self.all_files.borrow().get(&parent) {
                 folder.contains_key(&me)
             } else {
@@ -159,7 +155,7 @@ impl FilesystemFront for MockFS {
             return true;
         }
 
-        if let Ok( (parent, me) ) = Self::split_path(path) {
+        if let Ok((parent, me)) = Self::split_path(path) {
             error!("{:?} {:?}", parent, me);
             if let Some(folder) = self.all_files.borrow().get(&parent) {
                 folder.contains_key(&me)

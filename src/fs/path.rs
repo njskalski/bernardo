@@ -1,20 +1,16 @@
 use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
-use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use log::{debug, error, warn};
-use regex::internal::Input;
+use log::{error, warn};
 use ropey::Rope;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use streaming_iterator::StreamingIterator;
-use syntect::html::IncludeBackground::No;
 use url::Url;
 
-use crate::fs::dir_entry::DirEntry;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::read_error::{ListError, ReadError};
 use crate::fs::write_error::{WriteError, WriteOrSerError};
@@ -42,10 +38,10 @@ impl Hash for PathCell {
 #[derive(Clone, Debug)]
 pub enum PathCell {
     Head(FsfRef),
-    Segment{
-        prev : SPath,
-        cell : PathBuf,
-    }
+    Segment {
+        prev: SPath,
+        cell: PathBuf,
+    },
 }
 
 impl PathCell {
@@ -54,7 +50,6 @@ impl PathCell {
             PathCell::Head(_) => PathBuf::new(),
             PathCell::Segment { prev, cell } => {
                 let mut head = prev.relative_path();
-                let x = self.is_head();
                 head = head.join(cell);
 
                 // head.join(cell)
@@ -79,7 +74,7 @@ impl PathCell {
 }
 
 #[derive(Clone)]
-pub struct SPath (pub Arc<PathCell>);
+pub struct SPath(pub Arc<PathCell>);
 
 impl SPath {
     pub fn head(fzf: FsfRef) -> SPath {
@@ -106,7 +101,7 @@ impl SPath {
         }
     }
 
-    pub fn descendant_checked<P: AsRef<Path>>(&self, path : P) -> Option<SPath>{
+    pub fn descendant_checked<P: AsRef<Path>>(&self, path: P) -> Option<SPath> {
         let fzf = self.fsf();
         let full_path = self.relative_path().join(path.as_ref());
         fzf.descendant_checked(full_path)
@@ -116,7 +111,7 @@ impl SPath {
     //  - empty string
     //  - ".."
     //  - some other nonsensical string that I will add here later.
-    pub fn descendant_unchecked<P: AsRef<Path>>(&self, path : P) -> Option<SPath> {
+    pub fn descendant_unchecked<P: AsRef<Path>>(&self, path: P) -> Option<SPath> {
         if path.as_ref().to_string_lossy().len() == 0 {
             return None;
         }
@@ -136,7 +131,7 @@ impl SPath {
         fsf.blocking_read_entire_file(self)
     }
 
-    pub fn read_entire_file_to_item<T : DeserializeOwned>(&self) -> Result<T, ReadError> {
+    pub fn read_entire_file_to_item<T: DeserializeOwned>(&self) -> Result<T, ReadError> {
         let bytes = self.read_entire_file()?;
         ron::de::from_bytes(&bytes).map_err(|e| e.into())
     }
@@ -167,7 +162,7 @@ impl SPath {
     }
 
     pub fn absolute_path(&self) -> PathBuf {
-        let path= self.relative_path();
+        let path = self.relative_path();
         let root_path = self.fsf().root_path_buf().clone();
         root_path.join(path)
     }
@@ -205,12 +200,12 @@ impl SPath {
         match self.0.as_ref() {
             PathCell::Head(fs) => {
                 fs.root_path_buf().file_name()
-                    .map(|oss|oss.to_string_lossy().into())
-                    .unwrap_or_else(||{
+                    .map(|oss| oss.to_string_lossy().into())
+                    .unwrap_or_else(|| {
                         warn!("failed casting last item of pathbuf. Using hardcoded default.");
                         "<root>".into()
                     })
-            },
+            }
             PathCell::Segment { prev, cell } => {
                 cell.to_string_lossy().into()
             }
@@ -238,7 +233,7 @@ impl SPath {
         ParentRefIter::new(Some(self))
     }
 
-    pub fn is_parent_of(&self, other : &SPath) -> bool {
+    pub fn is_parent_of(&self, other: &SPath) -> bool {
         let mut iter = other.ancestors_and_self_ref();
         while let Some(parent) = iter.next() {
             if self == parent {
@@ -375,7 +370,7 @@ impl Debug for SPath {
 mod tests {
     use streaming_iterator::StreamingIterator;
 
-    use crate::{de, FilesystemFront, spath};
+    use crate::{FilesystemFront, spath};
     use crate::fs::mock_fs::MockFS;
 
     #[test]

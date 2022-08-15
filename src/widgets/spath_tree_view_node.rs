@@ -1,16 +1,18 @@
 use std::borrow::Cow;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
+
 use log::error;
-use crate::fs::dir_entry::DirEntry;
+
 use crate::fs::path::SPath;
-use crate::fs::read_error::ListError;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 #[derive(Debug, Clone)]
-pub struct DirTreeNode {sp : SPath}
+pub struct DirTreeNode {
+    sp: SPath,
+}
 
 impl DirTreeNode {
-    pub fn new(sp : SPath) -> Self {
+    pub fn new(sp: SPath) -> Self {
         DirTreeNode { sp }
     }
 
@@ -20,10 +22,12 @@ impl DirTreeNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct FileTreeNode{ sp : SPath }
+pub struct FileTreeNode {
+    sp: SPath,
+}
 
 impl FileTreeNode {
-    pub fn new(sp : SPath) -> Self {
+    pub fn new(sp: SPath) -> Self {
         FileTreeNode { sp }
     }
 

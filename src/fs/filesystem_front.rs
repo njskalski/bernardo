@@ -1,13 +1,10 @@
 use std::fmt::Debug;
-use std::hash::Hash;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 use streaming_iterator::StreamingIterator;
 
 use crate::fs::dir_entry::DirEntry;
 use crate::fs::fsf_ref::FsfRef;
-use crate::fs::path::SPath;
 use crate::fs::read_error::{ListError, ReadError};
 use crate::fs::write_error::WriteError;
 

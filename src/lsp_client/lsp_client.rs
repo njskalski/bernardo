@@ -1,14 +1,12 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::path::PathBuf;
 use std::process;
 use std::process::Stdio;
-use std::str::FromStr;
 use std::sync::Arc;
 
 use log::{debug, error, warn};
-use lsp_types::{GeneralClientCapabilities, Url};
+use lsp_types::Url;
 use serde_json::Value;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt};
 use tokio::io::BufReader;

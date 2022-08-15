@@ -1,7 +1,5 @@
 use std::io::Error;
 
-use crate::fs::write_error::WriteOrSerError::SerError;
-
 #[derive(Debug, PartialEq, Eq)]
 pub enum WriteError {
     FileNotFound,
