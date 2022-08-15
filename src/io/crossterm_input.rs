@@ -2,7 +2,7 @@ use std::thread;
 
 use crossbeam_channel::Receiver;
 use crossterm::event::Event;
-use log::{debug, error, warn};
+use log::{error, warn};
 
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;

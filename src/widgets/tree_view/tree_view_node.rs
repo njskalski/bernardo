@@ -2,8 +2,6 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use log::error;
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum MaybeBool {
     False,
@@ -38,7 +36,7 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
         }
 
         let mut any_chance = self.is_complete();
-        for (idx, i) in self.child_iter().enumerate() {
+        for (_idx, i) in self.child_iter().enumerate() {
             match i.matching_self_or_children(filter, max_depth.map(|i| if i > 0 { i - 1 } else { 0 })) {
                 MaybeBool::True => return MaybeBool::True,
                 MaybeBool::Maybe => { any_chance = true; }

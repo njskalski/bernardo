@@ -2,15 +2,10 @@
 This is a piece of specialized code for TreeView of SPath
  */
 
-use std::path::PathBuf;
-use std::sync::Arc;
-
-use log::{debug, error, warn};
+use log::{debug, error};
 use streaming_iterator::StreamingIterator;
 
-use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
-use crate::spath;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 

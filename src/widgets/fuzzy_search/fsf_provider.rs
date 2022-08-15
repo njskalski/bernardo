@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 use std::fmt::Debug;
-use std::io::empty;
 
 use crate::AnyMsg;
 use crate::fs::fsf_ref::FsfRef;

@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
@@ -11,7 +10,7 @@ use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::io::sub_output::SubOutput;
 use crate::layout::hover_layout::HoverLayout;
-use crate::layout::layout::{Layout, WidgetIdRect, WidgetWithRect};
+use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::rect::Rect;

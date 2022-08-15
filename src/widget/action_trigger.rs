@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use crate::{AnyMsg, Widget};
 
 pub struct ActionTrigger<W: Widget> {

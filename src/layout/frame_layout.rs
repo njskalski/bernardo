@@ -1,9 +1,9 @@
 use log::error;
 
-use crate::{Output, Theme, Widget};
-use crate::layout::layout::{Layout, WidgetIdRect, WidgetWithRect};
+use crate::layout::layout::{Layout, WidgetWithRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
+use crate::Widget;
 
 pub struct FrameLayout<W: Widget> {
     layout: Box<dyn Layout<W>>,
@@ -31,7 +31,7 @@ impl<W: Widget> Layout<W> for FrameLayout<W> {
     fn min_size(&self, root: &W) -> XY {
         self.layout.min_size(root) + self.margins * 2
     }
-    
+
     fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>> {
         let rect = match self.sub_rect(output_size) {
             Some(rect) => rect,

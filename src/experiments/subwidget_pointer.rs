@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use crate::Widget;
 
 pub trait Getter<W>: Fn(&W) -> &dyn Widget {
@@ -11,6 +9,7 @@ impl<W, T: Fn(&W) -> &(dyn Widget) + Clone + 'static> Getter<W> for T {
         Box::new(self.clone())
     }
 }
+
 impl<W: 'static> Clone for Box<dyn Getter<W>> {
     fn clone(&self) -> Self { (**self).clone_box() }
 }
@@ -18,11 +17,13 @@ impl<W: 'static> Clone for Box<dyn Getter<W>> {
 pub trait GetterMut<W>: Fn(&mut W) -> &mut dyn Widget {
     fn clone_box(&self) -> Box<dyn GetterMut<W>>;
 }
+
 impl<W, T: Fn(&mut W) -> &mut (dyn Widget) + Clone + 'static> GetterMut<W> for T {
     fn clone_box(&self) -> Box<dyn GetterMut<W>> {
         Box::new(self.clone())
     }
 }
+
 impl<W: 'static> Clone for Box<dyn GetterMut<W>> {
     fn clone(&self) -> Self { (**self).clone_box() }
 }
@@ -122,8 +123,8 @@ impl<W: Widget> SubwidgetPointerOp<W> {
 macro_rules! subwidget {
 ($parent: ident.$ child: ident) => {
     crate::experiments::subwidget_pointer::SubwidgetPointer::new(
-        Box::new(|p : &($parent)| { &p.$child}),
-        Box::new(|p : &mut ($parent)| { &mut p.$child}),
+        Box::new(|p : &$parent| { &p.$child}),
+        Box::new(|p : &mut $parent| { &mut p.$child}),
     )
 }
 }
@@ -132,8 +133,8 @@ macro_rules! subwidget {
 macro_rules! subwidget_op {
 ($parent: ident.$ child: ident) => {
     crate::experiments::subwidget_pointer::SubwidgetPointerOp::new(
-        Box::new(|p : &($parent)| { p.$child.as_ref().map(|w| {w as &dyn Widget}) }),
-        Box::new(|p : &mut ($parent)| { p.$child.as_mut().map(|w| {w as &mut dyn Widget}) }),
+        Box::new(|p : &$parent| { p.$child.as_ref().map(|w| {w as &dyn Widget}) }),
+        Box::new(|p : &mut $parent| { p.$child.as_mut().map(|w| {w as &mut dyn Widget}) }),
     )
 }
 }
@@ -143,7 +144,6 @@ mod tests {
     use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, Widget};
     use crate::experiments::subwidget_pointer::{SubwidgetPointer, SubwidgetPointerOp};
     use crate::primitives::xy::XY;
-    use crate::widget::action_trigger::ActionTrigger;
     use crate::widget::widget::WID;
 
     #[test]

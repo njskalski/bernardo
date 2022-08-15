@@ -3,7 +3,7 @@ use std::ops::Range;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
-use ropey::iter::{Bytes, Chars, Chunks};
+use ropey::iter::{Chars, Chunks};
 use ropey::Rope;
 use streaming_iterator::StreamingIterator;
 use tree_sitter::Point;
@@ -298,11 +298,11 @@ impl BufferState {
             }
         }
     }
-    
+
     pub fn streaming_iterator(&self) -> BufferStateStreamingIterator {
         BufferStateStreamingIterator {
             chunks: self.chunks(),
-            curr_chunk: None
+            curr_chunk: None,
         }
     }
 }
@@ -483,8 +483,8 @@ impl Buffer for BufferState {
 }
 
 pub struct BufferStateStreamingIterator<'a> {
-    chunks : Chunks<'a>,
-    curr_chunk : Option<&'a str>,
+    chunks: Chunks<'a>,
+    curr_chunk: Option<&'a str>,
 }
 
 impl<'a> StreamingIterator for BufferStateStreamingIterator<'a> {

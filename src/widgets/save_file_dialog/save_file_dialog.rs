@@ -9,10 +9,7 @@ I hope I will discover most of functional constraints while implementing it.
  */
 
 use std::borrow::Borrow;
-use std::path::PathBuf;
-use std::sync::Arc;
 
-use jsonrpc_core::futures::future::{err, ok};
 use log::{debug, error, warn};
 
 use crate::{Keycode, subwidget};
@@ -28,7 +25,7 @@ use crate::layout::display_state::GenericDisplayState;
 use crate::layout::empty_layout::EmptyLayout;
 use crate::layout::frame_layout::FrameLayout;
 use crate::layout::hover_layout::HoverLayout;
-use crate::layout::layout::{Layout, WidgetIdRect};
+use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::border::SINGLE_BORDER_STYLE;

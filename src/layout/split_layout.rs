@@ -1,9 +1,9 @@
 use log::warn;
 
-use crate::{Output, Theme, Widget};
-use crate::layout::layout::{Layout, WidgetIdRect, WidgetWithRect};
+use crate::layout::layout::{Layout, WidgetWithRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
+use crate::Widget;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SplitDirection {

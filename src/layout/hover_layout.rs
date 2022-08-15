@@ -4,10 +4,10 @@
 
 use log::error;
 
-use crate::{Output, Theme, Widget};
-use crate::layout::layout::{Layout, WidgetIdRect, WidgetWithRect};
+use crate::layout::layout::{Layout, WidgetWithRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
+use crate::Widget;
 
 pub struct HoverLayout<W: Widget> {
     parent: Box<dyn Layout<W>>,
@@ -31,7 +31,7 @@ impl<W: Widget> Layout<W> for HoverLayout<W> {
     fn min_size(&self, root: &W) -> XY {
         self.parent.min_size(root)
     }
-    
+
     fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>> {
         let mut result = self.parent.layout(root, output_size);
 

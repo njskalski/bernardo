@@ -10,20 +10,20 @@ extern crate maplit;
 extern crate matches;
 
 
+use std::io::stdout;
+use std::rc::Rc;
+
 use clap::Parser;
 use crossbeam_channel::select;
 use crossterm::terminal;
 use log::{debug, error};
 
 use config::theme::Theme;
-use std::io::stdout;
-use std::rc::Rc;
 
 use crate::config::config::{Config, ConfigRef};
 use crate::experiments::clipboard::get_me_some_clipboard;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::real_fs::RealFS;
-use crate::fs::write_error::WriteOrSerError;
 use crate::gladius::load_config::load_config;
 use crate::gladius::logger_setup::logger_setup;
 use crate::io::crossterm_input::CrosstermInput;
@@ -37,9 +37,7 @@ use crate::primitives::xy::ZERO;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
-use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::inspector::{inspect_workspace, InspectError};
-use crate::w7e::project_scope::ProjectScope;
 use crate::w7e::workspace::{LoadError, ScopeLoadErrors, Workspace};
 use crate::w7e::workspace::WORKSPACE_FILE_NAME;
 use crate::widget::any_msg::AnyMsg;

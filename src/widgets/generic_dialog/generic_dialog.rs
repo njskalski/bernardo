@@ -2,7 +2,6 @@ use core::option::Option;
 use std::borrow::Borrow;
 use std::fmt::Debug;
 use std::iter;
-use std::ops::Index;
 
 use log::{debug, error, warn};
 
@@ -14,7 +13,7 @@ use crate::io::keys::Key;
 use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::GenericDisplayState;
 use crate::layout::frame_layout::FrameLayout;
-use crate::layout::layout::{Layout, WidgetIdRect};
+use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::border::BorderStyle;
@@ -140,7 +139,7 @@ impl GenericDialog {
         self.keystroke = Some(keystroke);
     }
 
-    fn internal_layout(&mut self, size: XY) -> Box<dyn Layout<Self>> {
+    fn internal_layout(&mut self, _size: XY) -> Box<dyn Layout<Self>> {
         let text_layout = LeafLayout::new(subwidget!(Self.text_widget)).boxed();
 
         // let mut button_layout = SplitLayout::new(SplitDirection::Vertical);
