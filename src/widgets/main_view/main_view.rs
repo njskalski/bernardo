@@ -373,11 +373,15 @@ impl ComplexWidget for MainView {
         self.get_curr_editor_ptr()
     }
 
-    fn set_display_state(&mut self, ds: DisplayState<MainView>) {
-        self.display_state = Some(ds);
+    fn set_display_state(&mut self, display_state: DisplayState<MainView>) {
+        self.display_state = Some(display_state);
     }
 
     fn get_display_state_op(&self) -> Option<&DisplayState<MainView>> {
         self.display_state.as_ref()
+    }
+
+    fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
+        self.display_state.as_mut()
     }
 }

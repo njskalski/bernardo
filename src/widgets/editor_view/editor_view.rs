@@ -45,7 +45,7 @@ enum EditorViewState {
 pub struct EditorView {
     wid: WID,
 
-    display_state: Option<GenericDisplayState>,
+    display_state: Option<DisplayState<EditorView>>,
 
     editor: WithScroll<EditorWidget>,
     find_box: EditBoxWidget,
@@ -368,11 +368,7 @@ impl Widget for EditorView {
         let c = &self.config.keyboard_config.editor;
         return match input_event {
             InputEvent::FocusUpdate(focus_update) => {
-                let can_update = self.display_state.as_ref().map(|ds| {
-                    ds.focus_group().can_update_focus(focus_update)
-                }).unwrap_or(false);
-
-                if can_update {
+                if self.will_accept_focus_update(focus_update) {
                     Some(Box::new(EditorViewMsg::FocusUpdateMsg(focus_update)))
                 } else {
                     None
@@ -431,17 +427,8 @@ impl Widget for EditorView {
                 }
                 EditorViewMsg::FocusUpdateMsg(focus_update) => {
                     // warn!("updating focus");
-                    self.display_state.as_mut().map(
-                        |ds| {
-                            if !ds.focus_group.update_focus(*focus_update) {
-                                warn!("focus update accepted but failed");
-                            }
-                            None
-                        }
-                    ).unwrap_or_else(|| {
-                        error!("failed retrieving display_state");
-                        None
-                    })
+                    self.update_focus(*focus_update);
+                    None
                 }
                 EditorViewMsg::ToSimple => {
                     self.state = EditorViewState::Simple;
@@ -503,11 +490,15 @@ impl ComplexWidget for EditorView {
         todo!()
     }
 
-    fn set_display_state(&mut self, ds: DisplayState<EditorView>) {
+    fn set_display_state(&mut self, display_state: DisplayState<EditorView>) {
         todo!()
     }
 
     fn get_display_state_op(&self) -> Option<&DisplayState<EditorView>> {
-        todo!()
+        self.display_state.as_ref()
+    }
+
+    fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
+        self.display_state.as_mut()
     }
 }

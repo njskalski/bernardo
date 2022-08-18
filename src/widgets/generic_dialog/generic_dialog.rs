@@ -30,7 +30,7 @@ const CANCEL_LABEL: &'static str = "Cancel";
 pub struct GenericDialog {
     wid: WID,
 
-    display_state: Option<GenericDisplayState>,
+    display_state: Option<DisplayState<GenericDialog>>,
 
     text_widget: TextWidget,
 
@@ -79,27 +79,6 @@ impl GenericDialog {
 
     pub fn get_options_mut(&mut self) -> &mut Vec<ButtonWidget> {
         &mut self.buttons
-    }
-
-    pub fn get_selected(&self) -> usize {
-        match &self.display_state {
-            None => {
-                error!("get_selected without display_state");
-                0
-            }
-            Some(ds) => {
-                let wid = ds.focus_group.get_focused();
-
-                for (idx, button) in self.buttons.iter().enumerate() {
-                    if button.id() == wid {
-                        return idx;
-                    }
-                }
-
-                error!("get_selected: focus_group returns WID that is not found among buttons : {}", wid);
-                0
-            }
-        }
     }
 
     pub fn with_border(self, border_style: &'static BorderStyle) -> Self {
@@ -170,11 +149,7 @@ impl Widget for GenericDialog {
 
         return match input_event {
             InputEvent::FocusUpdate(focus_update) => {
-                let can_update = self.display_state.as_ref().map(|ds| {
-                    ds.focus_group.can_update_focus(focus_update)
-                }).unwrap_or(false);
-
-                if can_update {
+                if self.will_accept_focus_update(focus_update) {
                     Some(Box::new(GenericDialogMsg::FocusUpdate(focus_update)))
                 } else {
                     None
@@ -197,17 +172,8 @@ impl Widget for GenericDialog {
 
         return match our_msg.unwrap() {
             GenericDialogMsg::FocusUpdate(focus_update) => {
-                // warn!("updating focus");
-                self.display_state.as_mut().map(
-                    |ds| {
-                        let _msg = ds.focus_group.update_focus(*focus_update);
-                        // warn!("focus updated {}", msg);
-                        None
-                    }
-                ).unwrap_or_else(|| {
-                    error!("failed retrieving display_state");
-                    None
-                })
+                self.update_focus(*focus_update);
+                None
             }
             unknown_msg => {
                 warn!("GenericDialog.update : unknown message {:?}", unknown_msg);
@@ -261,11 +227,15 @@ impl ComplexWidget for GenericDialog {
         todo!()
     }
 
-    fn set_display_state(&mut self, ds: DisplayState<GenericDialog>) {
-        todo!()
+    fn set_display_state(&mut self, display_state: DisplayState<GenericDialog>) {
+        self.display_state = Some(display_state);
     }
 
     fn get_display_state_op(&self) -> Option<&DisplayState<GenericDialog>> {
-        todo!()
+        self.display_state.as_ref()
+    }
+
+    fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
+        self.display_state.as_mut()
     }
 }

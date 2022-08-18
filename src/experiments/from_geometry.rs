@@ -139,7 +139,7 @@ fn get_full_size(widgets_and_positions: &Vec<(WID, Rect)>) -> XY {
     full_size
 }
 
-fn from_geometry(
+pub fn from_geometry(
     widgets_and_positions: &Vec<(WID, Rect)>,
     output_size_op: Option<XY>,
 ) -> FocusGroupImpl {

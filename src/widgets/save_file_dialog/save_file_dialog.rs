@@ -453,11 +453,15 @@ impl ComplexWidget for SaveFileDialogWidget {
         subwidget!(Self.tree_widget)
     }
 
-    fn set_display_state(&mut self, ds: DisplayState<SaveFileDialogWidget>) {
-        todo!()
+    fn set_display_state(&mut self, display_state: DisplayState<SaveFileDialogWidget>) {
+        self.display_state = Some(display_state)
     }
 
     fn get_display_state_op(&self) -> Option<&DisplayState<SaveFileDialogWidget>> {
-        todo!()
+        self.display_state.as_ref()
+    }
+
+    fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
+        self.display_state.as_mut()
     }
 }

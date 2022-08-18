@@ -29,7 +29,7 @@ pub trait FocusGroup: Debug {
 
     fn get_focused(&self) -> WID;
     fn set_focused(&mut self, wid: WID) -> bool;
-    
+
     /*
     returns whether focus got updated or not. It is designed to give a sound feedback, not for
     the purpose of escalation. There will be no "focus escalation".
@@ -46,7 +46,7 @@ pub trait FocusGroup: Debug {
     fn remove_item(&mut self, widget_id: WID) -> bool;
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct FocusGraphNode {
     widget_id: WID,
     neighbours: HashMap<FocusUpdate, WID>,
@@ -61,7 +61,7 @@ impl FocusGraphNode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct FocusGroupImpl {
     nodes: HashMap<WID, FocusGraphNode>,
     selected: WID,
