@@ -38,6 +38,15 @@ pub struct WidgetWithRect<W: Widget> {
     rect: Rect,
 }
 
+impl<W: Widget> Clone for WidgetWithRect<W> {
+    fn clone(&self) -> Self {
+        Self {
+            widget: self.widget.clone(),
+            rect: self.rect.clone(),
+        }
+    }
+}
+
 impl<W: Widget> WidgetWithRect<W> {
     pub fn new(widget: SubwidgetPointer<W>, rect: Rect) -> Self {
         Self {

@@ -213,14 +213,6 @@ mod tests {
             fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
                 todo!()
             }
-
-            fn get_subwidget(&self, wid: WID) -> Option<&dyn Widget> where Self: Sized {
-                self.self_pointer_op.get(self)
-            }
-
-            fn get_subwidget_mut(&mut self, wid: WID) -> Option<&mut dyn Widget> where Self: Sized {
-                (self.self_pointer_op.clone()).get_mut(self)
-            }
         }
 
         let sp = SubwidgetPointer::new(

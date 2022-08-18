@@ -23,6 +23,7 @@ use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widget::any_msg::AsAny;
+use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_view::msg::EditorViewMsg;
@@ -362,47 +363,7 @@ impl Widget for EditorView {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        //This is copied from SaveFileDialog, and should be replaced when focus is removed from widgets.
-        let max_size = sc.visible_hint().size;
-        let layout = self.internal_layout(max_size);
-        let res_sizes: Vec<_> = layout
-            .layout(self, max_size)
-            .iter()
-            .map(|w| w.todo_into_wir(self))
-            .collect();
-
-        let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-
-        let mut ds = GenericDisplayState::new(max_size, res_sizes);
-
-        match &self.state {
-            EditorViewState::Find => {
-                ds.focus_group.add_edge(self.editor.id(), FocusUpdate::Down, self.find_box.id());
-                ds.focus_group.add_edge(self.find_box.id(), FocusUpdate::Up, self.editor.id());
-            }
-            EditorViewState::FindReplace => {
-                ds.focus_group.add_edge(self.editor.id(), FocusUpdate::Down, self.find_box.id());
-                ds.focus_group.add_edge(self.find_box.id(), FocusUpdate::Up, self.editor.id());
-
-                ds.focus_group.add_edge(self.find_box.id(), FocusUpdate::Down, self.replace_box.id());
-                ds.focus_group.add_edge(self.replace_box.id(), FocusUpdate::Up, self.find_box.id());
-            }
-            _ => {}
-        }
-
-        if let Some(wid) = &self.deferred_focus {
-            if !ds.focus_group.set_focused(*wid) {
-                error!("failed to set a deferred focus");
-            }
-            self.deferred_focus = None;
-        } else if let Some(wid) = focus_op {
-            if !ds.focus_group.set_focused(wid) {
-                error!("failed to reset focus");
-            }
-        }
-
-        self.display_state = Some(ds);
-        max_size
+        self.complex_layout(sc)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -489,24 +450,24 @@ impl Widget for EditorView {
                     self.find_box.clear();
                     self.replace_box.clear();
                     self.hover_dialog = None;
-                    self.set_focused(self.editor.id());
+                    self.set_focused(subwidget!(Self.editor));
                     None
                 }
                 EditorViewMsg::ToFind => {
                     self.state = EditorViewState::Find;
                     self.replace_box.clear();
-                    self.set_deferred_focus(self.find_box.id());
+                    self.set_focused(subwidget!(Self.find_box));
                     None
                 }
                 EditorViewMsg::ToFindReplace => {
                     let old_state = self.state;
                     self.state = EditorViewState::FindReplace;
 
-                    if old_state == EditorViewState::Find {
-                        self.set_deferred_focus(self.replace_box.id());
-                    } else {
-                        self.set_deferred_focus(self.find_box.id());
-                    }
+                    // if old_state == EditorViewState::Find {
+                    //     self.set_deferred_focus(self.replace_box.id());
+                    // } else {
+                    //     self.set_deferred_focus(self.find_box.id());
+                    // }
 
                     None
                 }
@@ -526,109 +487,29 @@ impl Widget for EditorView {
         };
     }
 
-    fn get_focused(&self) -> Option<&dyn Widget> {
-        if let Some(hd) = &self.hover_dialog {
-            return Some(hd);
-        }
-
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(|wid| self.get_subwidget(wid)).flatten()
-    }
-
-    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        // if let Some(hd) = &mut self.hover_dialog {
-        //     return Some(hd as &mut dyn Widget);
-        // }
-        // it has to be written badly, because otherwise borrowchecker is sad.
-        if self.hover_dialog.is_some() {
-            return self.hover_dialog.as_mut().map(|f| f as &mut dyn Widget);
-        }
-
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
-    }
-
-    fn set_focused(&mut self, wid: WID) -> bool {
-        if let Some(ds) = &mut self.display_state {
-            ds.focus_group_mut().set_focused(wid)
-        } else {
-            error!("set_focused with no display state.");
-            false
-        }
-    }
-
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        if let Some(cached_sizes) = &self.display_state {
-            let focused_child_id_op = self.get_focused().map(|f| f.id());
-            for wir in &cached_sizes.widget_sizes {
-                match self.get_subwidget(wir.wid) {
-                    Some(widget) => {
-                        let sub_output = &mut SubOutput::new(output, wir.rect);
-                        widget.render(theme,
-                                      focused && focused_child_id_op == Some(wir.wid),
-                                      sub_output,
-                        );
-                    }
-                    None => {
-                        warn!("subwidget {} not found!", wir.wid);
-                    }
-                }
-            }
-        } else {
-            error!("render absent display state");
-        }
+        self.complex_render(theme, focused, output)
     }
 
     fn anchor(&self) -> XY {
         ZERO
     }
+}
 
-    fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
-        let mut res: Vec<&mut dyn Widget> = vec![&mut self.editor];
-
-        match &mut self.state {
-            EditorViewState::Simple => {}
-            EditorViewState::Find => {
-                res.push(&mut self.find_box);
-                res.push(&mut self.find_label);
-            }
-            EditorViewState::FindReplace => {
-                res.push(&mut self.find_box);
-                res.push(&mut self.find_label);
-                res.push(&mut self.replace_box);
-                res.push(&mut self.replace_label);
-            }
-        };
-
-        if let Some(hd) = &mut self.hover_dialog {
-            res.push(hd);
-        }
-
-        Box::new(res.into_iter())
+impl ComplexWidget for EditorView {
+    fn internal_layout(&self, max_size: XY) -> Box<dyn Layout<EditorView>> {
+        todo!()
     }
 
-    fn subwidgets(&self) -> Box<dyn Iterator<Item=&dyn Widget> + '_> where Self: Sized {
-        let mut res: Vec<&dyn Widget> = vec![&self.editor];
+    fn get_default_focused(&self) -> SubwidgetPointer<EditorView> {
+        todo!()
+    }
 
-        match &self.state {
-            EditorViewState::Simple => {}
-            EditorViewState::Find => {
-                res.push(&self.find_box);
-                res.push(&self.find_label);
-            }
-            EditorViewState::FindReplace => {
-                res.push(&self.find_box);
-                res.push(&self.find_label);
-                res.push(&self.replace_box);
-                res.push(&self.replace_label);
-            }
-        };
+    fn set_display_state(&mut self, ds: DisplayState<EditorView>) {
+        todo!()
+    }
 
-        if let Some(hd) = &self.hover_dialog {
-            res.push(hd);
-        }
-
-
-        Box::new(res.into_iter())
+    fn get_display_state_op(&self) -> &Option<DisplayState<EditorView>> {
+        todo!()
     }
 }

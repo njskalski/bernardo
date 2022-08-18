@@ -87,4 +87,19 @@ impl SizeConstraint {
         self.x.map(|x| x > xy.x).unwrap_or(true) &&
             self.y.map(|y| y > xy.y).unwrap_or(true)
     }
+
+    pub fn is_finite(&self) -> bool {
+        self.x.is_some() && self.y().is_some()
+    }
+
+    pub fn is_infinite(&self) -> bool {
+        self.x.is_none() || self.y().is_none()
+    }
+
+    pub fn as_finite(&self) -> Option<XY> {
+        match (self.x, self.y) {
+            (Some(x), Some(y)) => Some(XY::new(x, y)),
+            _ => None
+        }
+    }
 }

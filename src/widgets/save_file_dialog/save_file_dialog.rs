@@ -35,6 +35,7 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
+use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction, WidgetActionParam};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
@@ -54,7 +55,7 @@ const CANCEL_LABEL: &'static str = "CANCEL";
 pub struct SaveFileDialogWidget {
     id: WID,
 
-    display_state: Option<GenericDisplayState>,
+    display_state: Option<DisplayState<Self>>,
 
     // TODO at this point I just want it to work, I should profile if it behaves fast.
     tree_widget: WithScroll<TreeViewWidget<SPath, DirTreeNode>>,
@@ -125,64 +126,6 @@ impl SaveFileDialogWidget {
         }
     }
 
-    fn internal_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
-        let tree_layout = LeafLayout::new(subwidget!(Self.tree_widget));
-        // let mut empty_layout = EmptyLayout::new().with_size(XY::new(1, 1));
-
-        let left_column = SplitLayout::new(SplitDirection::Vertical)
-            .with(SplitRule::Proportional(1.0), tree_layout.boxed())
-            // .with(SplitRule::Fixed(1), &mut empty_layout)
-            .boxed();
-
-        let ok_box = LeafLayout::new(subwidget!(Self.ok_button)).boxed();
-        let cancel_box = LeafLayout::new(subwidget!(Self.cancel_button)).boxed();
-
-        let button_bar = SplitLayout::new(SplitDirection::Horizontal)
-            .with(SplitRule::Proportional(1.0), EmptyLayout::new().boxed())
-            .with(SplitRule::Fixed(12), cancel_box)
-            .with(SplitRule::Fixed(12), ok_box)
-            .boxed();
-
-        let list = LeafLayout::new(subwidget!(Self.list_widget)).boxed();
-        let edit = LeafLayout::new(subwidget!(Self.edit_box)).boxed();
-        let right_column = SplitLayout::new(SplitDirection::Vertical)
-            .with(SplitRule::Proportional(1.0),
-                  list)
-            .with(SplitRule::Fixed(1),
-                  edit)
-            .with(SplitRule::Fixed(1),
-                  button_bar)
-            .boxed();
-
-        let layout = SplitLayout::new(SplitDirection::Horizontal)
-            .with(SplitRule::Proportional(2.0),
-                  left_column)
-            .with(SplitRule::Proportional(3.0),
-                  right_column,
-            )
-            .boxed();
-
-        let frame = XY::new(1, 1);
-
-        if self.hover_dialog.is_none() {
-            FrameLayout::new(layout, frame).boxed()
-        } else {
-            let margins = max_size / 20;
-            //TODO(subwidgetpointermap)
-            let dialog_layout = LeafLayout::new(SubwidgetPointer::new(
-                Box::new(|x: &Self| { x.hover_dialog.as_ref().unwrap() }),
-                Box::new(|x: &mut Self| { x.hover_dialog.as_mut().unwrap() }),
-            )).boxed();
-
-            FrameLayout::new(HoverLayout::new(layout,
-                                              dialog_layout,
-                                              Rect::new(
-                                                  margins, // TODO
-                                                  max_size - margins * 2,
-                                              ),
-            ).boxed(), frame).boxed()
-        }
-    }
 
     /*
     Sets the path of expanded nodes in save file dialog, and potentially filename.
@@ -331,74 +274,39 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        // TODO this entire function is a makeshift and experiment
-        let max_size = sc.visible_hint().lower_right();
-
-        // TODO this lazy relayouting kills resizing on data change.
-        // if self.display_state.as_ref().map(|x| x.for_size == max_size) == Some(true) {
-        //     return max_size
-        // }
-
-        // TODO relayouting destroys focus selection.
-
-        let layout = self.internal_layout(max_size);
-        let res_sizes = layout.layout(self, max_size);
-
-        // Retention of focus. Not sure if it should be here.
-        let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-
-        let mut ds = GenericDisplayState::new(self, layout.as_ref(), max_size);
-        ds.focus_group_mut().add_edge(self.tree_widget.id(), FocusUpdate::Right, self.list_widget.id());
-        ds.focus_group_mut().add_edge(self.list_widget.id(), FocusUpdate::Left, self.tree_widget.id());
-
-        ds.focus_group_mut().add_edge(self.edit_box.id(), FocusUpdate::Left, self.tree_widget.id());
-
-        ds.focus_group_mut().add_edge(self.edit_box.id(), FocusUpdate::Up, self.list_widget.id());
-        ds.focus_group_mut().add_edge(self.list_widget.id(), FocusUpdate::Down, self.edit_box.id());
-
-        // debug!("focusgroup: {:?}", ds.focus_group);
-
-        self.display_state = Some(ds);
-
-        // re-setting focus.
-        match (focus_op, &mut self.display_state) {
-            (Some(focus), Some(ds)) => { ds.focus_group.set_focused(focus); }
-            _ => {}
-        };
-
-        max_size
+        self.complex_layout(sc)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         // debug!("save_file_dialog.on_input {:?}", input_event);
 
         return match input_event {
-            InputEvent::FocusUpdate(focus_update) => {
-                let can_update = self.display_state.as_ref().map(|ds| {
-                    ds.focus_group().can_update_focus(focus_update)
-                }).unwrap_or(false);
-
-                if can_update {
-                    Some(Box::new(SaveFileDialogMsg::FocusUpdateMsg(focus_update)))
-                } else {
-                    None
-                }
-            }
+            // InputEvent::FocusUpdate(focus_update) => {
+            //     let can_update = self.display_state.as_ref().map(|ds| {
+            //         ds.focus_group().can_update_focus(focus_update)
+            //     }).unwrap_or(false);
+            //
+            //     if can_update {
+            //         Some(Box::new(SaveFileDialogMsg::FocusUpdateMsg(focus_update)))
+            //     } else {
+            //         None
+            //     }
+            // }
             InputEvent::KeyInput(key) => {
                 match key.keycode {
                     Keycode::Esc => SaveFileDialogMsg::Cancel.someboxed(),
-                    keycode if keycode.is_arrow() => {
-                        if let (Some(msg), Some(ds)) = (key.as_focus_update(), &self.display_state) {
-                            if ds.focus_group.can_update_focus(msg) {
-                                SaveFileDialogMsg::FocusUpdateMsg(msg).someboxed()
-                            } else {
-                                None
-                            }
-                        } else {
-                            error!("failed to cast arrow to focus update");
-                            None
-                        }
-                    }
+                    // keycode if keycode.is_arrow() => {
+                    //     if let (Some(msg), Some(ds)) = (key.as_focus_update(), &self.display_state) {
+                    //         if ds.focus_group.can_update_focus(msg) {
+                    //             SaveFileDialogMsg::FocusUpdateMsg(msg).someboxed()
+                    //         } else {
+                    //             None
+                    //         }
+                    //     } else {
+                    //         error!("failed to cast arrow to focus update");
+                    //         None
+                    //     }
+                    // }
                     _ => None
                 }
             }
@@ -416,20 +324,20 @@ impl Widget for SaveFileDialogWidget {
         }
 
         return match our_msg.unwrap() {
-            SaveFileDialogMsg::FocusUpdateMsg(focus_update) => {
-                // debug!("updating focus");
-                self.display_state.as_mut().map(
-                    |ds| {
-                        if !ds.focus_group.update_focus(*focus_update) {
-                            warn!("focus update accepted but failed");
-                        }
-                        None
-                    }
-                ).unwrap_or_else(|| {
-                    error!("failed retrieving display_state");
-                    None
-                })
-            }
+            // SaveFileDialogMsg::FocusUpdateMsg(focus_update) => {
+            //     // debug!("updating focus");
+            //     self.display_state.as_mut().map(
+            //         |ds| {
+            //             if !ds.focus_group.update_focus(*focus_update) {
+            //                 warn!("focus update accepted but failed");
+            //             }
+            //             None
+            //         }
+            //     ).unwrap_or_else(|| {
+            //         error!("failed retrieving display_state");
+            //         None
+            //     })
+            // }
             SaveFileDialogMsg::TreeExpanded(..) => {
                 None
             }
@@ -444,11 +352,11 @@ impl Widget for SaveFileDialogWidget {
                 let text = file.file_name_str().unwrap();
                 self.edit_box.set_text(text); // TODO
                 self.edit_box.set_cursor_end();
-                self.set_focused(self.edit_box.id());
+                self.set_focused(subwidget!(Self.edit_box));
                 None
             }
             SaveFileDialogMsg::EditBoxHit => {
-                self.set_focused(self.ok_button.id());
+                self.set_focused(subwidget!(Self.ok_button));
                 None
             }
             SaveFileDialogMsg::Cancel => {
@@ -473,84 +381,88 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
-        if self.hover_dialog.is_some() {
-            return self.hover_dialog.as_ref().map(|f| f as &dyn Widget);
-        };
-
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(|wid| self.get_subwidget(wid)).flatten()
+        self.complex_get_focused()
     }
 
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        if self.hover_dialog.is_some() {
-            return self.hover_dialog.as_mut().map(|f| f as &mut dyn Widget);
-        }
-
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
+        self.complex_get_focused_mut()
     }
 
-    fn set_focused(&mut self, wid: WID) -> bool {
-        if self.hover_dialog.is_some() {
-            warn!("blocking setting focus, hovering dialog displayed");
-            return false;
-        }
-        self.display_state.as_mut().map(|ds| {
-            ds.focus_group_mut().set_focused(wid)
-        }).unwrap_or(false)
-    }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        fill_output(theme.ui.non_focused.background, output);
+        self.complex_render(theme, focused, output)
+    }
+}
 
-        SINGLE_BORDER_STYLE.draw_edges(theme.default_text(focused),
-                                       output);
+impl ComplexWidget for SaveFileDialogWidget {
+    fn internal_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
+        let tree_layout = LeafLayout::new(subwidget!(Self.tree_widget));
+        // let mut empty_layout = EmptyLayout::new().with_size(XY::new(1, 1));
 
-        match self.display_state.borrow().as_ref() {
-            None => warn!("failed rendering save_file_dialog without cached_sizes"),
-            Some(cached_sizes) => {
-                // debug!("widget_sizes : {:?}", cached_sizes.widget_sizes);
-                let focused_child_id_op = self.get_focused().map(|f| f.id());
-                for wir in &cached_sizes.widget_sizes {
-                    match self.get_subwidget(wir.wid) {
-                        Some(widget) => {
-                            let sub_output = &mut SubOutput::new(output, wir.rect);
-                            widget.render(theme,
-                                          focused && focused_child_id_op == Some(wir.wid),
-                                          sub_output,
-                            );
-                        }
-                        None => {
-                            warn!("subwidget {} not found!", wir.wid);
-                        }
-                    }
-                }
-            }
+        let left_column = SplitLayout::new(SplitDirection::Vertical)
+            .with(SplitRule::Proportional(1.0), tree_layout.boxed())
+            // .with(SplitRule::Fixed(1), &mut empty_layout)
+            .boxed();
+
+        let ok_box = LeafLayout::new(subwidget!(Self.ok_button)).boxed();
+        let cancel_box = LeafLayout::new(subwidget!(Self.cancel_button)).boxed();
+
+        let button_bar = SplitLayout::new(SplitDirection::Horizontal)
+            .with(SplitRule::Proportional(1.0), EmptyLayout::new().boxed())
+            .with(SplitRule::Fixed(12), cancel_box)
+            .with(SplitRule::Fixed(12), ok_box)
+            .boxed();
+
+        let list = LeafLayout::new(subwidget!(Self.list_widget)).boxed();
+        let edit = LeafLayout::new(subwidget!(Self.edit_box)).boxed();
+        let right_column = SplitLayout::new(SplitDirection::Vertical)
+            .with(SplitRule::Proportional(1.0),
+                  list)
+            .with(SplitRule::Fixed(1),
+                  edit)
+            .with(SplitRule::Fixed(1),
+                  button_bar)
+            .boxed();
+
+        let layout = SplitLayout::new(SplitDirection::Horizontal)
+            .with(SplitRule::Proportional(2.0),
+                  left_column)
+            .with(SplitRule::Proportional(3.0),
+                  right_column,
+            )
+            .boxed();
+
+        let frame = XY::new(1, 1);
+
+        if self.hover_dialog.is_none() {
+            FrameLayout::new(layout, frame).boxed()
+        } else {
+            let margins = max_size / 20;
+            //TODO(subwidgetpointermap)
+            let dialog_layout = LeafLayout::new(SubwidgetPointer::new(
+                Box::new(|x: &Self| { x.hover_dialog.as_ref().unwrap() }),
+                Box::new(|x: &mut Self| { x.hover_dialog.as_mut().unwrap() }),
+            )).boxed();
+
+            FrameLayout::new(HoverLayout::new(layout,
+                                              dialog_layout,
+                                              Rect::new(
+                                                  margins, // TODO
+                                                  max_size - margins * 2,
+                                              ),
+            ).boxed(), frame).boxed()
         }
     }
 
-    fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> {
-        // debug!("call to save_file_dialog subwidget_mut on {}", self.id());
-        let mut widgets = vec![&mut self.tree_widget as &mut dyn Widget,
-                               &mut self.list_widget,
-                               &mut self.edit_box,
-                               &mut self.ok_button,
-                               &mut self.cancel_button];
-
-        self.hover_dialog.as_mut().map(|f| widgets.push(f));
-
-        Box::new(widgets.into_iter())
+    fn get_default_focused(&self) -> SubwidgetPointer<SaveFileDialogWidget> {
+        subwidget!(Self.tree_widget)
     }
 
-    fn subwidgets(&self) -> Box<dyn std::iter::Iterator<Item=&dyn Widget> + '_> {
-        // debug!("call to save_file_dialog subwidget on {}", self.id());
-        let mut widgets = vec![&self.tree_widget as &dyn Widget,
-                               &self.list_widget,
-                               &self.edit_box,
-                               &self.ok_button,
-                               &self.cancel_button];
+    fn set_display_state(&mut self, ds: DisplayState<SaveFileDialogWidget>) {
+        todo!()
+    }
 
-        self.hover_dialog.as_ref().map(|f| widgets.push(f));
-        Box::new(widgets.into_iter())
+    fn get_display_state_op(&self) -> &Option<DisplayState<SaveFileDialogWidget>> {
+        todo!()
     }
 }

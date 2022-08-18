@@ -115,7 +115,7 @@ fn walk_to_first_hit(buffer: &Buffer<WID>, wid: WID, rect: &Rect, step: (i16, i1
 pub fn get_focus_group<W: Widget>(root: &mut W, layout: &dyn Layout<W>, output_size: XY) -> FocusGroupImpl {
     let wwrs = layout.layout(root, output_size);
 
-    let widgets_and_positions: Vec<(WID, Rect)> = wwrs.iter().map(|w| {
+    let widgets_and_positions: Vec<(WID, Rect)> = wwrs.into_iter().map(|w| {
         let (swp, rect) = w.unpack();
         let wid = swp.get(root).id();
         (wid, rect)

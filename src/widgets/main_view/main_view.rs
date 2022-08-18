@@ -19,6 +19,7 @@ use crate::primitives::xy::XY;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widget::any_msg::AsAny;
+use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::fuzzy_search::fsf_provider::{FsfProvider, SPathMsg};
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
@@ -126,61 +127,6 @@ impl MainView {
         res
     }
 
-    fn internal_layout(&mut self, max_size: XY) -> Box<dyn Layout<Self>> {
-        let left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
-        let right_column = match self.display_state.curr_editor_idx {
-            None => LeafLayout::new(subwidget!(Self.no_editor)),
-            Some(idx) => {
-                let idx1 = idx;
-                let idx2 = idx;
-                LeafLayout::new(SubwidgetPointer::new(
-                    Box::new(move |s: &Self| { s.editors.get(idx1).map(|w| w.as_any()).unwrap_or(&s.no_editor) }),
-                    Box::new(move |s: &mut Self| { s.editors.get_mut(idx2).map(|w| w as &mut dyn Widget).unwrap_or(&mut s.no_editor) }),
-                ))
-            }
-        }.boxed();
-
-        let bg_layout = SplitLayout::new(SplitDirection::Horizontal)
-            .with(SplitRule::Proportional(1.0),
-                  left_column)
-            .with(SplitRule::Proportional(4.0),
-                  right_column,
-            );
-
-
-        //TODO(subwidgetpointermap)
-
-        let res = if let Some(hover) = &mut self.hover {
-            match hover {
-                HoverItem::FuzzySearch(_fuzzy) => {
-                    let rect = MainView::get_hover_rect(max_size);
-
-                    let hover = LeafLayout::new(SubwidgetPointer::new(
-                        Box::new(|s: &Self| {
-                            match s.hover.as_ref().unwrap() {
-                                HoverItem::FuzzySearch(fs) => fs,
-                            }
-                        }),
-                        Box::new(|s: &mut Self| {
-                            match s.hover.as_mut().unwrap() {
-                                HoverItem::FuzzySearch(fs) => fs,
-                            }
-                        }),
-                    )).boxed();
-
-                    HoverLayout::new(
-                        bg_layout.boxed(),
-                        hover,
-                        rect,
-                    ).boxed()
-                }
-            }
-        } else {
-            bg_layout.boxed()
-        };
-
-        res
-    }
 
     pub fn open_file(&mut self, ff: SPath) -> bool {
         debug!("opening file {:?}", ff);
@@ -215,6 +161,20 @@ impl MainView {
                 self.editors.get_buffer_list_provider()
             ).with_draw_comment_setting(DrawComment::Highlighted))
         );
+    }
+
+    fn get_curr_editor_ptr(&self) -> SubwidgetPointer<Self> {
+        match self.display_state.curr_editor_idx {
+            None => subwidget!(Self.no_editor),
+            Some(idx) => {
+                let idx1 = idx;
+                let idx2 = idx;
+                SubwidgetPointer::new(
+                    Box::new(move |s: &Self| { s.editors.get(idx1).map(|w| w.as_any()).unwrap_or(&s.no_editor) }),
+                    Box::new(move |s: &mut Self| { s.editors.get_mut(idx2).map(|w| w as &mut dyn Widget).unwrap_or(&mut s.no_editor) }),
+                )
+            }
+        }
     }
 }
 
@@ -390,65 +350,66 @@ impl Widget for MainView {
     }
 
     fn render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
-        let focused_id_op = self.get_focused().map(|f| f.id());
-        if self.display_state.wirs.is_empty() {
-            error!("call to render before layout");
-            return;
-        }
+        self.complex_render(theme, _focused, output)
+    }
+}
 
-        for wir in &self.display_state.wirs {
-            match self.get_subwidget(wir.wid) {
-                Some(widget) => {
-                    let sub_output = &mut SubOutput::new(output, wir.rect);
-                    widget.render(theme,
-                                  Some(widget.id()) == focused_id_op,
-                                  sub_output,
-                    );
-                }
-                None => {
-                    warn!("subwidget {} not found!", wir.wid);
+impl ComplexWidget for MainView {
+    fn internal_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
+        let left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
+        let right_column = LeafLayout::new(self.get_curr_editor_ptr()).boxed();
+
+        let bg_layout = SplitLayout::new(SplitDirection::Horizontal)
+            .with(SplitRule::Proportional(1.0),
+                  left_column)
+            .with(SplitRule::Proportional(4.0),
+                  right_column,
+            );
+
+
+        //TODO(subwidgetpointermap)
+
+        let res = if let Some(hover) = &self.hover {
+            match hover {
+                HoverItem::FuzzySearch(_fuzzy) => {
+                    let rect = MainView::get_hover_rect(max_size);
+
+                    let hover = LeafLayout::new(SubwidgetPointer::new(
+                        Box::new(|s: &Self| {
+                            match s.hover.as_ref().unwrap() {
+                                HoverItem::FuzzySearch(fs) => fs,
+                            }
+                        }),
+                        Box::new(|s: &mut Self| {
+                            match s.hover.as_mut().unwrap() {
+                                HoverItem::FuzzySearch(fs) => fs,
+                            }
+                        }),
+                    )).boxed();
+
+                    HoverLayout::new(
+                        bg_layout.boxed(),
+                        hover,
+                        rect,
+                    ).boxed()
                 }
             }
-        }
+        } else {
+            bg_layout.boxed()
+        };
+
+        res
     }
 
-    fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
-        let mut items = vec![&mut self.tree_widget as &mut dyn Widget];
-
-        let editor_or_not = match self.display_state.curr_editor_idx {
-            None => &mut self.no_editor as &mut dyn Widget,
-            Some(idx) => self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(&mut self.no_editor),
-        };
-        items.push(editor_or_not);
-
-        if self.hover.is_some() {
-            match self.hover.as_mut().unwrap() {
-                HoverItem::FuzzySearch(fuzzy) => {
-                    items.push(fuzzy);
-                }
-            }
-        };
-
-        Box::new(items.into_iter())
+    fn get_default_focused(&self) -> SubwidgetPointer<MainView> {
+        self.get_curr_editor_ptr()
     }
 
-    fn subwidgets(&self) -> Box<dyn Iterator<Item=&dyn Widget> + '_> where Self: Sized {
-        let mut items = vec![&self.tree_widget as &dyn Widget];
+    fn set_display_state(&mut self, ds: DisplayState<MainView>) {
+        todo!()
+    }
 
-        let editor_or_not = match self.display_state.curr_editor_idx {
-            None => &self.no_editor as &dyn Widget,
-            Some(idx) => self.editors.get(idx).map(|w| w as &dyn Widget).unwrap_or(&self.no_editor),
-        };
-        items.push(editor_or_not);
-
-        if self.hover.is_some() {
-            match self.hover.as_ref().unwrap() {
-                HoverItem::FuzzySearch(fuzzy) => {
-                    items.push(fuzzy);
-                }
-            }
-        };
-
-        Box::new(items.into_iter())
+    fn get_display_state_op(&self) -> &Option<DisplayState<MainView>> {
+        todo!()
     }
 }

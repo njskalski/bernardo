@@ -19,6 +19,7 @@ use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::border::BorderStyle;
 use crate::primitives::helpers::fill_output;
 use crate::primitives::xy::XY;
+use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::text_widget::TextWidget;
@@ -138,41 +139,6 @@ impl GenericDialog {
     pub fn set_keystroke(&mut self, keystroke: Box<dyn KeyToMsg>) {
         self.keystroke = Some(keystroke);
     }
-
-    fn internal_layout(&mut self, _size: XY) -> Box<dyn Layout<Self>> {
-        let text_layout = LeafLayout::new(subwidget!(Self.text_widget)).boxed();
-
-        // let mut button_layout = SplitLayout::new(SplitDirection::Vertical);
-        let button_layouts: Vec<Box<dyn Layout<Self>>> = (0..self.buttons.len()).map(|idx| {
-            let idx1 = idx;
-            let idx2 = idx;
-            LeafLayout::new(SubwidgetPointer::new(
-                Box::new(move |s: &Self| {
-                    &s.buttons[idx1]
-                }),
-                Box::new(move |s: &mut Self| {
-                    &mut s.buttons[idx2]
-                }),
-            )).boxed()
-        }).collect();
-
-        let button_layout = button_layouts.into_iter().fold(
-            SplitLayout::new(SplitDirection::Horizontal),
-            |acc, layout| {
-                acc.with(SplitRule::Proportional(1.0), layout)
-            })
-            .boxed();
-
-        let total_layout = SplitLayout::new(SplitDirection::Vertical)
-            .with(SplitRule::Proportional(1.0),
-                  text_layout)
-            .with(SplitRule::Fixed(1), button_layout)
-            .boxed();
-
-        let frame_layout = FrameLayout::new(total_layout, XY::new(2, 2)).boxed();
-
-        frame_layout
-    }
 }
 
 impl Widget for GenericDialog {
@@ -200,34 +166,7 @@ impl Widget for GenericDialog {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let size = sc.visible_hint().size;
-        let layout = self.internal_layout(size);
-
-        let wirs: Vec<_> = layout
-            .layout(self, size)
-            .iter()
-            .map(|w| w.todo_into_wir(self))
-            .collect();
-
-        let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        let mut ds = GenericDisplayState::new(size, wirs);
-        ds.focus_group.remove_item(self.text_widget.id());
-        self.display_state = Some(ds);
-
-        // re-setting focus.
-        match (focus_op, &mut self.display_state) {
-            (Some(focus), Some(ds)) => { ds.focus_group.set_focused(focus); }
-            (None, Some(ds)) => {
-                self.buttons.first().map(|f| {
-                    ds.focus_group.set_focused(f.id());
-                });
-            }
-            _ => {}
-        };
-
-        // debug!("focusgroup: {:?}", self.display_state);
-
-        size
+        self.complex_layout(sc)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -282,61 +221,55 @@ impl Widget for GenericDialog {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let style = theme.default_text(focused);
-        fill_output(style.background, output);
-
-        self.with_border.map(|b| {
-            b.draw_edges(style, output);
-        });
-
-        match self.display_state.borrow().as_ref() {
-            None => warn!("failed rendering GenericDialog without cached_sizes"),
-            Some(cached_sizes) => {
-                let focused_child_id_op = self.get_focused().map(|f| f.id());
-                for wir in &cached_sizes.widget_sizes {
-                    match self.get_subwidget(wir.wid) {
-                        Some(widget) => {
-                            let sub_output = &mut SubOutput::new(output, wir.rect);
-                            widget.render(theme,
-                                          focused && focused_child_id_op == Some(wir.wid),
-                                          sub_output,
-                            );
-                        }
-                        None => {
-                            warn!("subwidget {} not found!", wir.wid);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    fn get_focused(&self) -> Option<&dyn Widget> {
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(|wid| self.get_subwidget(wid)).flatten()
-    }
-
-    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        let wid_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
-        wid_op.map(move |wid| self.get_subwidget_mut(wid)).flatten()
-    }
-
-    fn subwidgets_mut(&mut self) -> Box<dyn std::iter::Iterator<Item=&mut dyn Widget> + '_> {
-        // debug!("call to generic_dialog subwidget_mut on {}", self.id());
-        Box::new(self.buttons.iter_mut().map(|button| {
-            button as &mut dyn Widget
-        }).chain(
-            iter::once(&mut self.text_widget as &mut dyn Widget)
-        ))
-    }
-
-    fn subwidgets(&self) -> Box<dyn std::iter::Iterator<Item=&dyn Widget> + '_> {
-        // debug!("call to generic_dialog subwidget on {}", self.id());
-        Box::new(self.buttons.iter().map(|button| {
-            button as &dyn Widget
-        }).chain(
-            iter::once(&self.text_widget as &dyn Widget)
-        ))
+        self.complex_render(theme, focused, output)
     }
 }
 
+impl ComplexWidget for GenericDialog {
+    fn internal_layout(&self, _size: XY) -> Box<dyn Layout<Self>> {
+        let text_layout = LeafLayout::new(subwidget!(Self.text_widget)).boxed();
+
+        // let mut button_layout = SplitLayout::new(SplitDirection::Vertical);
+        let button_layouts: Vec<Box<dyn Layout<Self>>> = (0..self.buttons.len()).map(|idx| {
+            let idx1 = idx;
+            let idx2 = idx;
+            LeafLayout::new(SubwidgetPointer::new(
+                Box::new(move |s: &Self| {
+                    &s.buttons[idx1]
+                }),
+                Box::new(move |s: &mut Self| {
+                    &mut s.buttons[idx2]
+                }),
+            )).boxed()
+        }).collect();
+
+        let button_layout = button_layouts.into_iter().fold(
+            SplitLayout::new(SplitDirection::Horizontal),
+            |acc, layout| {
+                acc.with(SplitRule::Proportional(1.0), layout)
+            })
+            .boxed();
+
+        let total_layout = SplitLayout::new(SplitDirection::Vertical)
+            .with(SplitRule::Proportional(1.0),
+                  text_layout)
+            .with(SplitRule::Fixed(1), button_layout)
+            .boxed();
+
+        let frame_layout = FrameLayout::new(total_layout, XY::new(2, 2)).boxed();
+
+        frame_layout
+    }
+
+    fn get_default_focused(&self) -> SubwidgetPointer<GenericDialog> {
+        todo!()
+    }
+
+    fn set_display_state(&mut self, ds: DisplayState<GenericDialog>) {
+        todo!()
+    }
+
+    fn get_display_state_op(&self) -> &Option<DisplayState<GenericDialog>> {
+        todo!()
+    }
+}

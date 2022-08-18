@@ -217,20 +217,4 @@ impl<W: Widget> Widget for WithScroll<W> {
         // scroll nesting would probably affect that
         ZERO
     }
-
-    fn subwidgets_mut(&mut self) -> Box<dyn Iterator<Item=&mut dyn Widget> + '_> where Self: Sized {
-        self.widget.subwidgets_mut()
-    }
-
-    fn subwidgets(&self) -> Box<dyn Iterator<Item=&dyn Widget> + '_> where Self: Sized {
-        self.widget.subwidgets()
-    }
-
-    fn get_subwidget(&self, wid: WID) -> Option<&dyn Widget> where Self: Sized {
-        self.widget.get_subwidget(wid)
-    }
-
-    fn get_subwidget_mut(&mut self, wid: WID) -> Option<&mut dyn Widget> where Self: Sized {
-        self.widget.get_subwidget_mut(wid)
-    }
 }
