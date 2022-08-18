@@ -1,7 +1,5 @@
 use core::option::Option;
-use std::borrow::Borrow;
 use std::fmt::Debug;
-use std::iter;
 
 use log::{debug, error, warn};
 
@@ -10,14 +8,12 @@ use crate::experiments::deref_str::DerefStr;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::keys::Key;
-use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::GenericDisplayState;
 use crate::layout::frame_layout::FrameLayout;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::border::BorderStyle;
-use crate::primitives::helpers::fill_output;
 use crate::primitives::xy::XY;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID};
@@ -269,7 +265,7 @@ impl ComplexWidget for GenericDialog {
         todo!()
     }
 
-    fn get_display_state_op(&self) -> &Option<DisplayState<GenericDialog>> {
+    fn get_display_state_op(&self) -> Option<&DisplayState<GenericDialog>> {
         todo!()
     }
 }

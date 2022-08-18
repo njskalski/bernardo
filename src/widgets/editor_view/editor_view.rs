@@ -5,11 +5,9 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{AnyMsg, ConfigRef, InputEvent, Output, SizeConstraint, subwidget, Theme, TreeSitterWrapper, Widget, ZERO};
 use crate::experiments::clipboard::ClipboardRef;
-use crate::experiments::focus_group::FocusUpdate;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
-use crate::io::sub_output::SubOutput;
 use crate::layout::display_state::GenericDisplayState;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
@@ -509,7 +507,7 @@ impl ComplexWidget for EditorView {
         todo!()
     }
 
-    fn get_display_state_op(&self) -> &Option<DisplayState<EditorView>> {
+    fn get_display_state_op(&self) -> Option<&DisplayState<EditorView>> {
         todo!()
     }
 }

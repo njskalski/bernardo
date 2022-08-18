@@ -1,8 +1,6 @@
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use log::{debug, error};
-
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
@@ -67,7 +65,7 @@ pub trait Widget: 'static {
     fn as_any_mut(&mut self) -> &mut dyn Widget where Self: Sized {
         self as &mut dyn Widget
     }
-    
+
     fn get_actions(&self) -> Box<dyn Iterator<Item=ActionTrigger<Self>> + '_> where Self: Sized {
         Box::new(std::iter::empty())
     }

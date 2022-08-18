@@ -1,25 +1,23 @@
 use log::{error, warn};
 
-use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, Widget};
+use crate::{Output, SizeConstraint, Theme, Widget};
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::sub_output::SubOutput;
 use crate::layout::layout::{Layout, WidgetWithRect};
 use crate::primitives::helpers::fill_output;
 use crate::primitives::xy::XY;
-use crate::widget::widget::WID;
 
 pub struct DisplayState<S: Widget> {
     focused: SubwidgetPointer<S>,
     wwrs: Vec<WidgetWithRect<S>>,
 }
 
-// S is for "Self"
-pub trait ComplexWidget: Widget {
+pub trait ComplexWidget: Widget + Sized {
     fn internal_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> where Self: Sized;
     fn get_default_focused(&self) -> SubwidgetPointer<Self> where Self: Sized;
 
     fn set_display_state(&mut self, ds: DisplayState<Self>) where Self: Sized;
-    fn get_display_state_op(&self) -> &Option<DisplayState<Self>> where Self: Sized;
+    fn get_display_state_op(&self) -> Option<&DisplayState<Self>> where Self: Sized;
 
     fn complex_layout(&mut self, sc: SizeConstraint) -> XY where Self: Sized {
         let xy = sc.as_finite().unwrap_or_else(|| {

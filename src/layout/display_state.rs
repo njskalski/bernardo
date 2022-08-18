@@ -2,7 +2,7 @@ use std::borrow::Borrow;
 
 use crate::experiments::focus_group::FocusGroup;
 use crate::experiments::from_geometry::get_focus_group;
-use crate::layout::layout::{Layout, WidgetIdRect};
+use crate::layout::layout::Layout;
 use crate::primitives::xy::XY;
 use crate::Widget;
 

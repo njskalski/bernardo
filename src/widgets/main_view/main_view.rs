@@ -8,7 +8,6 @@ use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
-use crate::io::sub_output::SubOutput;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
@@ -23,7 +22,6 @@ use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::fuzzy_search::fsf_provider::{FsfProvider, SPathMsg};
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
-use crate::widgets::main_view::display_state::{Focus, MainViewDisplayState};
 use crate::widgets::main_view::editor_group::EditorGroup;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::no_editor::NoEditorWidget;
@@ -44,13 +42,14 @@ pub struct MainView {
     I use a simplified "display state" model, not the GenericFocusGroup approach, to see how much effort the Generic one saves.
     caveat: whenever focusing on editor, make sure to set curr_editor_index as well. It's a temporary solution, so I don't wrap it.
      */
-    display_state: MainViewDisplayState,
+    display_state: Option<DisplayState<MainView>>,
 
     // TODO PathBuf -> WrappedRcPath? See profiler.
     tree_widget: WithScroll<TreeViewWidget<SPath, FileTreeNode>>,
 
     editors: EditorGroup,
     no_editor: NoEditorWidget,
+    curr_editor_idx: usize,
 
     // Providers
     tree_sitter: Rc<TreeSitterWrapper>,
@@ -87,13 +86,14 @@ impl MainView {
 
         MainView {
             wid: get_new_widget_id(),
-            display_state: MainViewDisplayState::default(),
+            display_state: None,
             tree_widget: WithScroll::new(tree, ScrollDirection::Vertical),
             editors: EditorGroup::new(
                 config.clone(),
                 nav_comp_group.clone(),
             ),
             no_editor: NoEditorWidget::default(),
+            curr_editor_idx: 0,
             tree_sitter,
             fsf,
             clipboard,
@@ -109,8 +109,8 @@ impl MainView {
 
     fn open_empty_editor_and_focus(&mut self) {
         let idx = self.editors.open_empty(self.tree_sitter.clone(), self.fsf.clone(), self.clipboard.clone());
-        self.display_state.focus = Focus::Editor;
-        self.display_state.curr_editor_idx = Some(idx);
+        self.curr_editor_idx = idx;
+        self.set_focused(self.get_default_focused())
     }
 
     fn get_hover_rect(max_size: XY) -> Rect {
@@ -132,13 +132,13 @@ impl MainView {
         debug!("opening file {:?}", ff);
 
         if let Some(idx) = self.editors.get_if_open(&ff) {
-            self.display_state.focus = Focus::Editor;
-            self.display_state.curr_editor_idx = Some(idx);
+            self.curr_editor_idx = idx;
+            self.set_focused(self.get_default_focused());
             true
         } else {
             self.editors.open_file(self.tree_sitter.clone(), ff, self.clipboard.clone()).map(|idx| {
-                self.display_state.focus = Focus::Editor;
-                self.display_state.curr_editor_idx = Some(idx);
+                self.curr_editor_idx = idx;
+                self.set_focused(self.get_default_focused());
             }).is_ok()
         }
     }
@@ -164,16 +164,20 @@ impl MainView {
     }
 
     fn get_curr_editor_ptr(&self) -> SubwidgetPointer<Self> {
-        match self.display_state.curr_editor_idx {
-            None => subwidget!(Self.no_editor),
-            Some(idx) => {
-                let idx1 = idx;
-                let idx2 = idx;
-                SubwidgetPointer::new(
-                    Box::new(move |s: &Self| { s.editors.get(idx1).map(|w| w.as_any()).unwrap_or(&s.no_editor) }),
-                    Box::new(move |s: &mut Self| { s.editors.get_mut(idx2).map(|w| w as &mut dyn Widget).unwrap_or(&mut s.no_editor) }),
-                )
+        if self.curr_editor_idx >= self.editors.len() {
+            if self.curr_editor_idx > 0 {
+                error!("current editor points further than number opened editors!");
+                return subwidget!(Self.tree_widget);
             }
+
+            subwidget!(Self.no_editor)
+        } else {
+            let idx1 = self.curr_editor_idx;
+            let idx2 = self.curr_editor_idx;
+            SubwidgetPointer::new(
+                Box::new(move |s: &Self| { s.editors.get(idx1).map(|w| w.as_any()).unwrap_or(&s.no_editor) }),
+                Box::new(move |s: &mut Self| { s.editors.get_mut(idx2).map(|w| w as &mut dyn Widget).unwrap_or(&mut s.no_editor) }),
+            )
         }
     }
 }
@@ -192,24 +196,16 @@ impl Widget for MainView {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let max_size = sc.visible_hint().size;
-        let layout = self.internal_layout(max_size);
-        let res_sizes: Vec<_> = layout.layout(self, max_size)
-            .iter()
-            .map(|w| w.todo_into_wir(self))
-            .collect();
-
-        self.display_state.wirs = res_sizes;
-        max_size
+        self.complex_layout(sc)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         // debug!("main_view.on_input {:?}", input_event);
 
         return match input_event {
-            InputEvent::FocusUpdate(focus_update) if self.display_state.will_accept_update_focus(focus_update) => {
-                MainViewMsg::FocusUpdateMsg(focus_update).someboxed()
-            }
+            // InputEvent::FocusUpdate(focus_update) if self.display_state.will_accept_update_focus(focus_update) => {
+            //     MainViewMsg::FocusUpdateMsg(focus_update).someboxed()
+            // }
             InputEvent::KeyInput(key) if key == self.config.keyboard_config.global.new_buffer => {
                 MainViewMsg::OpenNewFile.someboxed()
             }
@@ -233,13 +229,13 @@ impl Widget for MainView {
 
         if let Some(main_view_msg) = msg.as_msg::<MainViewMsg>() {
             return match main_view_msg {
-                MainViewMsg::FocusUpdateMsg(focus_update) => {
-                    if !self.display_state.update_focus(*focus_update) {
-                        error!("failed to accept focus update")
-                    }
-
-                    None
-                }
+                // MainViewMsg::FocusUpdateMsg(focus_update) => {
+                //     if !self.display_state.update_focus(*focus_update) {
+                //         error!("failed to accept focus update")
+                //     }
+                //
+                //     None
+                // }
                 MainViewMsg::TreeExpandedFlip { .. } => {
                     None
                 }
@@ -274,11 +270,15 @@ impl Widget for MainView {
                     if *pos >= self.editors.len() {
                         error!("received FuzzyBufferHit for an index {} and len is {}, ignoring", pos, self.editors.len());
                     } else {
-                        self.display_state.curr_editor_idx = Some(*pos);
+                        self.curr_editor_idx = *pos;
                     }
                     // removing the dialog
                     self.hover = None;
 
+                    None
+                }
+                _ => {
+                    warn!("unprocessed event");
                     None
                 }
             };
@@ -310,43 +310,11 @@ impl Widget for MainView {
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
-        // that's not how I would write it, but borrow checker does not appreciate my style.
-        if self.hover.is_some() {
-            return match self.hover.as_ref().unwrap() {
-                HoverItem::FuzzySearch(fuzzy) => Some(fuzzy),
-            };
-        } else {
-            match self.display_state.focus {
-                Focus::Tree => Some(&self.tree_widget as &dyn Widget),
-                Focus::Editor => {
-                    self.display_state.curr_editor_idx.map(|idx| {
-                        self.editors.get(idx).map(|w| w as &dyn Widget).unwrap_or(
-                            &self.no_editor
-                        )
-                    })
-                }
-            }
-        }
+        self.complex_get_focused()
     }
 
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        if self.hover.is_some() {
-            return match self.hover.as_mut().unwrap() {
-                HoverItem::FuzzySearch(fuzzy) => Some(fuzzy),
-            };
-        } else {
-            match self.display_state.focus {
-                Focus::Tree => Some(&mut self.tree_widget as &mut dyn Widget),
-                Focus::Editor => {
-                    Some(match self.display_state.curr_editor_idx {
-                        None => &mut self.no_editor as &mut dyn Widget,
-                        Some(idx) => self.editors.get_mut(idx).map(|w| w as &mut dyn Widget).unwrap_or(
-                            &mut self.no_editor
-                        )
-                    })
-                }
-            }
-        }
+        self.complex_get_focused_mut()
     }
 
     fn render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
@@ -406,10 +374,10 @@ impl ComplexWidget for MainView {
     }
 
     fn set_display_state(&mut self, ds: DisplayState<MainView>) {
-        todo!()
+        self.display_state = Some(ds);
     }
 
-    fn get_display_state_op(&self) -> &Option<DisplayState<MainView>> {
-        todo!()
+    fn get_display_state_op(&self) -> Option<&DisplayState<MainView>> {
+        self.display_state.as_ref()
     }
 }

@@ -1,12 +1,11 @@
 use log::warn;
 
-use crate::{Output, Theme};
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::{Layout, WidgetWithRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::{XY, ZERO};
-use crate::widget::widget::{WID, Widget};
+use crate::widget::widget::Widget;
 
 pub struct LeafLayout<W: Widget> {
     widget: SubwidgetPointer<W>,
