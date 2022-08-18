@@ -1,9 +1,10 @@
 use std::borrow::Borrow;
 
 use crate::experiments::focus_group::FocusGroup;
-use crate::experiments::from_geometry::from_wirs;
-use crate::layout::layout::WidgetIdRect;
+use crate::experiments::from_geometry::get_focus_group;
+use crate::layout::layout::{Layout, WidgetIdRect};
 use crate::primitives::xy::XY;
+use crate::Widget;
 
 //TODO: more advanced option would store references to widgets instead of their WIDs.
 // I'll consider that in a next step.
@@ -11,7 +12,6 @@ use crate::primitives::xy::XY;
 #[derive(Debug)]
 pub struct GenericDisplayState {
     pub for_size: XY,
-    pub widget_sizes: Vec<WidgetIdRect>,
     pub focus_group: Box<dyn FocusGroup>,
 }
 
@@ -24,11 +24,10 @@ impl GenericDisplayState {
         self.focus_group.borrow()
     }
 
-    pub fn new(for_size: XY, widget_sizes: Vec<WidgetIdRect>) -> Self {
-        let focus_group = from_wirs(&widget_sizes, Some(for_size));
+    pub fn new<W: Widget>(root: &mut W, layout: &dyn Layout<W>, output_size: XY) -> Self {
+        let focus_group = get_focus_group(root, layout, output_size);
         GenericDisplayState {
-            for_size,
-            widget_sizes,
+            for_size: output_size,
             focus_group: Box::new(focus_group),
         }
     }

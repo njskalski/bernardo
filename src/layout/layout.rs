@@ -1,3 +1,4 @@
+use crate::{Output, SizeConstraint, Theme};
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
@@ -49,6 +50,10 @@ impl<W: Widget> WidgetWithRect<W> {
         &self.rect
     }
 
+    pub fn widget(&self) -> &SubwidgetPointer<W> {
+        &self.widget
+    }
+
     pub fn shifted(self, offset: XY) -> Self {
         Self {
             rect: self.rect.shifted(offset),
@@ -63,15 +68,21 @@ impl<W: Widget> WidgetWithRect<W> {
             rect: self.rect,
         }
     }
+
+    pub fn unpack(self) -> (SubwidgetPointer<W>, Rect) {
+        (self.widget, self.rect)
+    }
 }
 
+/*
+ Layouts do not work on infinite planes (scrolling of layouted view will fail).
+ I might one day extend the definition, but it would require additional type to filter out layouts
+ like "split".
+ */
 pub trait Layout<W: Widget> {
     fn min_size(&self, root: &W) -> XY;
 
-    /*
-    This only calculates the rects under current constraints. The widgets themselves should
-    receive information about their new sizes before render.
-     */
+    // We do not support layouting on infinite spaces, I am too tired to implement it
     fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>>;
 
     fn boxed(self) -> Box<dyn Layout<W>> where Self: Sized, Self: 'static {

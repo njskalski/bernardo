@@ -347,8 +347,7 @@ impl Widget for SaveFileDialogWidget {
         // Retention of focus. Not sure if it should be here.
         let focus_op = self.display_state.as_ref().map(|ds| ds.focus_group.get_focused());
 
-        let old_sizes: Vec<_> = res_sizes.iter().map(|w| w.todo_into_wir(self)).collect();
-        let mut ds = GenericDisplayState::new(max_size, old_sizes);
+        let mut ds = GenericDisplayState::new(self, layout.as_ref(), max_size);
         ds.focus_group_mut().add_edge(self.tree_widget.id(), FocusUpdate::Right, self.list_widget.id());
         ds.focus_group_mut().add_edge(self.list_widget.id(), FocusUpdate::Left, self.tree_widget.id());
 

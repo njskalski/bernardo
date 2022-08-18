@@ -1,9 +1,13 @@
-use log::warn;
+use std::cmp::max;
 
+use log::{debug, error, warn};
+use tokio::io::split;
+
+use crate::{Output, SizeConstraint, Theme, Widget};
 use crate::layout::layout::{Layout, WidgetWithRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
-use crate::Widget;
+use crate::widget::widget::WID;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SplitDirection {
@@ -14,6 +18,7 @@ pub enum SplitDirection {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum SplitRule {
     Fixed(usize),
+    MinSize,
     Proportional(f32),
 }
 
@@ -47,7 +52,7 @@ impl<W: Widget> SplitLayout<W> {
         SplitLayout { children, ..self }
     }
 
-    fn get_just_rects(&self, size: XY) -> Option<Vec<Rect>> {
+    fn get_just_rects(&self, size: XY, root: &W) -> Option<Vec<Rect>> {
         let free_axis = if self.split_direction == SplitDirection::Vertical {
             size.y as usize
         } else {
@@ -57,6 +62,14 @@ impl<W: Widget> SplitLayout<W> {
         let fixed_amount = self.children.iter().fold(0, |acc, item| {
             acc + match item.split_rule {
                 SplitRule::Fixed(i) => i,
+                SplitRule::MinSize => {
+                    let ms = item.layout.min_size(root);
+                    if self.split_direction == SplitDirection::Vertical {
+                        ms.y as usize
+                    } else {
+                        ms.x as usize
+                    }
+                }
                 SplitRule::Proportional(_) => 0,
             }
         });
@@ -73,6 +86,15 @@ impl<W: Widget> SplitLayout<W> {
         for (idx, child) in self.children.iter().enumerate() {
             match child.split_rule {
                 SplitRule::Fixed(f) => {
+                    amounts[idx] = f;
+                }
+                SplitRule::MinSize => {
+                    let ms = child.layout.min_size(root);
+                    let f = if self.split_direction == SplitDirection::Vertical {
+                        ms.y
+                    } else {
+                        ms.x
+                    } as usize;
                     amounts[idx] = f;
                 }
                 SplitRule::Proportional(prop) => {
@@ -132,14 +154,14 @@ impl<W: Widget> SplitLayout<W> {
 
 impl<W: Widget> Layout<W> for SplitLayout<W> {
     fn min_size(&self, root: &W) -> XY {
-        let mut minxy = XY::new(0, 0);
+        let mut res = XY::new(0, 0);
 
         for child in self.children.iter() {
             let min_size = child.layout.min_size(root);
             match child.split_rule {
                 SplitRule::Fixed(iusize) => {
                     if iusize > u16::MAX as usize {
-                        warn!("found too big SplitRule::Fixed to process");
+                        error!("found too big SplitRule::Fixed to process, ignoring");
                         continue;
                     }
 
@@ -148,42 +170,34 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
                         if min_size.y > i {
                             warn!("SplitRule::Fixed limits y below min_size.y");
                         }
-
-                        if minxy.y < i {
-                            minxy.y = i;
-                        }
-                        if minxy.x < min_size.x {
-                            minxy.x = min_size.x;
-                        }
+                        res.x = max(res.x, min_size.x);
+                        res.y += min_size.y;
                     } else {
                         if min_size.x > i {
                             warn!("SplitRule::Fixed limits x below min_size.x");
                         }
 
-                        if minxy.x < i {
-                            minxy.x = i;
-                        }
-                        if minxy.y < min_size.y {
-                            minxy.y = min_size.y;
-                        }
+                        res.x += min_size.x;
+                        res.y = max(res.y, min_size.y);
                     }
                 }
-                SplitRule::Proportional(_) => {
-                    if minxy.x < min_size.x {
-                        minxy.x = min_size.x;
-                    }
-                    if minxy.y < min_size.y {
-                        minxy.y = min_size.y;
+                SplitRule::Proportional(_) | SplitRule::MinSize => {
+                    if self.split_direction == SplitDirection::Vertical {
+                        res.x = max(res.x, min_size.x);
+                        res.y += min_size.y;
+                    } else {
+                        res.x += min_size.x;
+                        res.y = max(res.y, min_size.y);
                     }
                 }
             };
         }
 
-        minxy
+        res
     }
 
     fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>> {
-        let rects_op = self.get_just_rects(output_size);
+        let rects_op = self.get_just_rects(output_size, root);
         if rects_op.is_none() {
             warn!(
                 "not enough space to get_rects split_layout: {:?}",
