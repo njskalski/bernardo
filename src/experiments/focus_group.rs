@@ -1,17 +1,10 @@
-/*
-I was not able to design a "silver bullet" solution to views, messaging, layout and focus
-without giving up on rust's safety warranties.
-
-I decided that instead I will decouple the concerns, so same as layouting, focus is handled
-in a separate component. When it's working the way I like it, I will then see if it can
-get merged with some other component.
- */
-
 use std::collections::HashMap;
 use std::fmt::Debug;
 
 use log::error;
 
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
+use crate::Widget;
 use crate::widget::widget::WID;
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -24,157 +17,76 @@ pub enum FocusUpdate {
     Prev,
 }
 
-pub trait FocusGroup: Debug {
-    fn has_view(&self, widget_id: WID) -> bool;
-
-    fn get_focused(&self) -> WID;
-    fn set_focused(&mut self, wid: WID) -> bool;
-
-    /*
-    returns whether focus got updated or not. It is designed to give a sound feedback, not for
-    the purpose of escalation. There will be no "focus escalation".
-     */
-    fn update_focus(&mut self, focus_update: FocusUpdate) -> bool;
-
-    fn can_update_focus(&self, focus_update: FocusUpdate) -> bool;
-
-    //TODO proper error reporting
-    fn override_edges(&mut self, widget_id: WID, edges: Vec<(FocusUpdate, WID)>) -> bool;
-    fn add_edge(&mut self, src_widget: WID, edge: FocusUpdate, target_widget: WID) -> bool;
-
-    // Removes item and drops all edges adjacent to it
-    fn remove_item(&mut self, widget_id: WID) -> bool;
-}
 
 #[derive(Clone, Debug)]
-struct FocusGraphNode {
+pub struct FocusGraphNode<AdditionalData: Clone> {
     widget_id: WID,
+    additional_data: AdditionalData,
     neighbours: HashMap<FocusUpdate, WID>,
 }
 
-impl FocusGraphNode {
-    fn new(widget_id: WID) -> Self {
+impl<AdditionalData: Clone> FocusGraphNode<AdditionalData> {
+    pub fn new(widget_id: WID, add: AdditionalData) -> Self {
         FocusGraphNode {
             widget_id,
+            additional_data: add,
             neighbours: HashMap::new(),
         }
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct FocusGroupImpl {
-    nodes: HashMap<WID, FocusGraphNode>,
+pub struct FocusGraph<AdditionalData: Clone> {
+    nodes: HashMap<WID, FocusGraphNode<AdditionalData>>,
     selected: WID,
 }
 
-impl FocusGroupImpl {
-    pub fn new(widget_ids: Vec<WID>) -> Self {
-        let mut nodes = HashMap::<WID, FocusGraphNode>::new();
-
-        for widget_id in widget_ids.iter() {
-            let node = FocusGraphNode::new(*widget_id);
-
-            nodes.insert(*widget_id, node);
-        }
-
-        let selected = widget_ids.first().unwrap();
-
-        FocusGroupImpl {
+impl<AdditionalData: Clone> FocusGraph<AdditionalData> {
+    pub fn new(nodes: HashMap<WID, FocusGraphNode<AdditionalData>>, selected: WID) -> Self {
+        Self {
             nodes,
-            selected: *selected,
+            selected,
         }
     }
 
-    pub fn dummy() -> Self {
-        FocusGroupImpl {
-            nodes: HashMap::new(),
-            selected: 0,
+    pub fn add_edge(&mut self, source: WID, edge: FocusUpdate, target: WID) -> bool {
+        if !self.nodes.contains_key(&target) {
+            error!("target node {} not found!", source);
+            return false;
         }
-    }
-}
 
-impl FocusGroup for FocusGroupImpl {
-    fn has_view(&self, widget_id: WID) -> bool {
-        self.nodes.contains_key(&widget_id)
-    }
-
-    fn get_focused(&self) -> WID {
-        //debug!("get_focused : {}", self.selected);
-        self.selected
-    }
-
-    fn set_focused(&mut self, wid: WID) -> bool {
-        //debug!("set_focused : {}", wid);
-        if self.has_view(wid) {
-            self.selected = wid;
+        if let Some(node) = self.nodes.get_mut(&source) {
+            node.neighbours.insert(edge, target);
             true
         } else {
+            error!("source node {} not found!", source);
             false
         }
     }
 
-    fn update_focus(&mut self, focus_update: FocusUpdate) -> bool {
-        let curr = self.nodes.get(&self.selected).unwrap();
-        let next_op = curr.neighbours.get(&focus_update);
-
-        match next_op {
-            None => false,
-            Some(next) => {
-                self.selected = *next;
-                debug_assert!(self.nodes.contains_key(next));
-                true
-            }
-        }
-    }
-
-    fn can_update_focus(&self, focus_update: FocusUpdate) -> bool {
-        let curr = self.nodes.get(&self.selected).unwrap();
-        let next_op = curr.neighbours.get(&focus_update);
-
-        next_op.is_some()
-    }
-
-
-    fn override_edges(&mut self, widget_id: WID, edges: Vec<(FocusUpdate, WID)>) -> bool {
-        match self.nodes.get_mut(&widget_id) {
-            None => false,
-            Some(node) => {
-                node.neighbours.clear();
-                for (e, v) in edges {
-                    node.neighbours.insert(e, v);
-                }
-                true
-            }
-        }
-    }
-
-    fn add_edge(&mut self, src_widget: WID, edge: FocusUpdate, target_widget: WID) -> bool {
-        match self.nodes.get_mut(&src_widget) {
-            None => false,
-            Some(src_node) => {
-                src_node.neighbours.insert(edge, target_widget);
-                true
-            }
-        }
-    }
-
-    fn remove_item(&mut self, widget_id: WID) -> bool {
-        if let Some(item) = self.nodes.remove(&widget_id) {
-            for (_fu, id) in item.neighbours.iter() {
-                self.nodes.get_mut(id).map(|node| {
-                    let all_items: Vec<_> = node.neighbours.iter().map(|(a, b)| (*a, *b)).collect();
-                    for (fu, neighbour) in all_items.iter() {
-                        if *neighbour == widget_id {
-                            node.neighbours.remove(fu);
-                        }
-                    }
-                }).unwrap_or_else(|| {
-                    error!("failed to read neighbour {} of {}", id, widget_id);
-                });
-            }
-
-            true
+    pub fn can_update_focus(&self, edge: FocusUpdate) -> bool {
+        if let Some(node) = self.nodes.get(&self.selected) {
+            node.neighbours.contains_key(&edge)
         } else {
+            error!("self.selected node {} not found!", self.selected);
+            false
+        }
+    }
+
+    pub fn get_focused(&self) -> WID {
+        self.selected
+    }
+
+    pub fn update_focus(&mut self, edge: FocusUpdate) -> bool {
+        if let Some(node) = self.nodes.get(&self.selected) {
+            if let Some(target_id) = node.neighbours.get(&edge) {
+                self.selected = *target_id;
+                true
+            } else {
+                false
+            }
+        } else {
+            error!("self.selected node {} not found!", self.selected);
             false
         }
     }

@@ -1,8 +1,8 @@
 use log::{error, warn};
 
 use crate::{Output, SizeConstraint, Theme, Widget};
-use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl, FocusUpdate};
-use crate::experiments::from_geometry::{from_geometry, get_focus_group};
+use crate::experiments::focus_group::{FocusGraph, FocusUpdate};
+use crate::experiments::from_geometry::from_geometry;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::sub_output::SubOutput;
 use crate::layout::layout::{Layout, WidgetWithRect};
@@ -14,7 +14,7 @@ use crate::widget::widget::WID;
 pub struct DisplayState<S: Widget> {
     focused: SubwidgetPointer<S>,
     wwrs: Vec<WidgetWithRect<S>>,
-    focus_group: FocusGroupImpl,
+    focus_group: FocusGraph<SubwidgetPointer<S>>,
 }
 
 pub trait ComplexWidget: Widget + Sized {
@@ -45,18 +45,20 @@ pub trait ComplexWidget: Widget + Sized {
         let layout = self.internal_layout(xy);
         let wwrs = layout.layout(self, xy);
 
-        let widgets_and_positions: Vec<(WID, Rect)> = wwrs.iter().map(|w| {
+        let widgets_and_positions: Vec<(WID, SubwidgetPointer<Self>, Rect)> = wwrs.iter().map(|w| {
             let rect = w.rect().clone();
             let wid = w.widget().get(self).id();
-            (wid, rect)
+            (wid, w.widget().clone(), rect)
         }).collect();
-
-        let focus_group = from_geometry(&widgets_and_positions, Some(xy));
 
         let focused = self.get_display_state_op()
             .as_ref()
             .map(|s| s.focused.clone())
             .unwrap_or(self.get_default_focused());
+
+        let selected = focused.get(self).id();
+
+        let focus_group = from_geometry::<>(&widgets_and_positions, selected, xy);
 
         let new_state = DisplayState {
             focused,

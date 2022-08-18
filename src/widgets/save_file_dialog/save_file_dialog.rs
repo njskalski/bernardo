@@ -382,8 +382,7 @@ impl Widget for SaveFileDialogWidget {
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
         self.complex_get_focused_mut()
     }
-
-
+    
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         self.complex_render(theme, focused, output)
     }

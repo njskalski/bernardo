@@ -8,7 +8,6 @@ use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
-use crate::layout::display_state::GenericDisplayState;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;

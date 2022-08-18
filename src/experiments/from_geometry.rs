@@ -4,9 +4,10 @@ to widgets, and edges A-e->b correspond to "which widget gets focus from A on in
 
 The graph is built using basic geometry.
  */
+use std::cmp::max;
 use std::collections::HashMap;
 
-use crate::experiments::focus_group::{FocusGroup, FocusGroupImpl, FocusUpdate};
+use crate::experiments::focus_group::{FocusGraph, FocusGraphNode, FocusUpdate};
 use crate::io::buffer::Buffer;
 use crate::layout::layout::Layout;
 use crate::primitives::rect::Rect;
@@ -14,8 +15,6 @@ use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::Widget;
 use crate::widget::widget::WID;
-
-// use log::debug;
 
 fn fill(b: &mut Buffer<WID>, wid: WID, rect: &Rect) {
     for x in rect.min_x()..u16::min(rect.max_x(), b.size().x) {
@@ -112,69 +111,60 @@ fn walk_to_first_hit(buffer: &Buffer<WID>, wid: WID, rect: &Rect, step: (i16, i1
     None
 }
 
-pub fn get_focus_group<W: Widget>(root: &mut W, layout: &dyn Layout<W>, output_size: XY) -> FocusGroupImpl {
-    let wwrs = layout.layout(root, output_size);
-
-    let widgets_and_positions: Vec<(WID, Rect)> = wwrs.into_iter().map(|w| {
-        let (swp, rect) = w.unpack();
-        let wid = swp.get(root).id();
-        (wid, rect)
-    }).collect();
-
-    from_geometry(&widgets_and_positions, Some(output_size))
-}
-
 fn get_full_size(widgets_and_positions: &Vec<(WID, Rect)>) -> XY {
     let mut full_size = XY::new(0, 0);
 
     for (_, rect) in widgets_and_positions {
-        if full_size.x < rect.max_x() {
-            full_size.x = rect.max_x();
-        }
-        if full_size.y < rect.max_y() {
-            full_size.y = rect.max_y();
-        }
+        full_size.x = max(full_size.x, rect.max_x());
+        full_size.y = max(full_size.y, rect.max_y());
     }
 
     full_size
 }
 
-pub fn from_geometry(
-    widgets_and_positions: &Vec<(WID, Rect)>,
-    output_size_op: Option<XY>,
-) -> FocusGroupImpl {
-    let ids: Vec<WID> = widgets_and_positions.iter().map(|(wid, _)| *wid).collect();
-    let mut fgi = FocusGroupImpl::new(ids);
+// TODO add test WID in w_a_p..
+pub fn from_geometry<AdditionalData: Clone>(
+    widgets_and_positions: &Vec<(WID, AdditionalData, Rect)>,
+    selected: WID,
+    output_size: XY,
+) -> FocusGraph<AdditionalData> {
+    // let ids: Vec<WID> = widgets_and_positions.iter().map(|(wid, _, _)| *wid).collect();
+    let mut nodes: HashMap<WID, FocusGraphNode<AdditionalData>> = HashMap::default();
 
-    let output_size = output_size_op.unwrap_or(get_full_size(&widgets_and_positions));
+    for (id, add, _) in widgets_and_positions.iter() {
+        nodes.insert(*id, FocusGraphNode::new(*id, add.clone()));
+    }
 
+    let mut fgi = FocusGraph::<AdditionalData>::new(nodes, selected);
     let mut buffer: Buffer<WID> = Buffer::new(output_size);
 
-    for (wid, rect) in widgets_and_positions {
+    for (wid, _, rect) in widgets_and_positions.iter() {
         fill(&mut buffer, *wid, &rect);
     }
 
-    for (wid, rect) in widgets_and_positions {
+    for (source, _, rect) in widgets_and_positions {
         let mut edges: Vec<(FocusUpdate, WID)> = Vec::new();
 
-        match walk_to_first_hit(&buffer, *wid, rect, (-1, 0)) {
+        match walk_to_first_hit(&buffer, *source, rect, (-1, 0)) {
             Some(left) => edges.push((FocusUpdate::Left, left)),
             None => {}
         };
-        match walk_to_first_hit(&buffer, *wid, rect, (1, 0)) {
+        match walk_to_first_hit(&buffer, *source, rect, (1, 0)) {
             Some(right) => edges.push((FocusUpdate::Right, right)),
             None => {}
         };
-        match walk_to_first_hit(&buffer, *wid, rect, (0, 1)) {
+        match walk_to_first_hit(&buffer, *source, rect, (0, 1)) {
             Some(down) => edges.push((FocusUpdate::Down, down)),
             None => {}
         };
-        match walk_to_first_hit(&buffer, *wid, rect, (0, -1)) {
+        match walk_to_first_hit(&buffer, *source, rect, (0, -1)) {
             Some(up) => edges.push((FocusUpdate::Up, up)),
             None => {}
         };
 
-        fgi.override_edges(*wid, edges);
+        for (focus_update, target) in edges {
+            fgi.add_edge(*source, focus_update, target);
+        }
     }
 
     fgi
@@ -182,7 +172,7 @@ pub fn from_geometry(
 
 #[cfg(test)]
 mod tests {
-    use crate::experiments::focus_group::{FocusGroup, FocusUpdate};
+    use crate::experiments::focus_group::{FocusGraph, FocusUpdate};
     use crate::experiments::from_geometry::{from_geometry, get_full_size};
     use crate::primitives::rect::Rect;
     use crate::primitives::xy::XY;
@@ -223,15 +213,15 @@ mod tests {
         */
 
         //widgets_and_positions : Vec<(WID, Option<Rect>)>, output_size : XY
-        let widgets_and_positions: Vec<(WID, Rect)> = vec![
-            (1, Rect::new((2, 0).into(), (1, 1).into())),
-            (2, Rect::new((0, 2).into(), (1, 1).into())),
-            (3, Rect::new((2, 2).into(), (1, 1).into())),
-            (4, Rect::new((4, 2).into(), (1, 1).into())),
-            (5, Rect::new((2, 4).into(), (3, 1).into())),
+        let widgets_and_positions: Vec<(WID, (), Rect)> = vec![
+            (1, (), Rect::new((2, 0).into(), (1, 1).into())),
+            (2, (), Rect::new((0, 2).into(), (1, 1).into())),
+            (3, (), Rect::new((2, 2).into(), (1, 1).into())),
+            (4, (), Rect::new((4, 2).into(), (1, 1).into())),
+            (5, (), Rect::new((2, 4).into(), (3, 1).into())),
         ];
 
-        let mut focus_group = from_geometry(&widgets_and_positions, None);
+        let mut focus_group = from_geometry::<()>(&widgets_and_positions, 1, XY::new(5, 5));
 
         assert_eq!(focus_group.get_focused(), 1);
         assert_eq!(focus_group.update_focus(FocusUpdate::Left), false);

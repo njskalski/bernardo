@@ -8,7 +8,6 @@ use crate::experiments::deref_str::DerefStr;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::keys::Key;
-use crate::layout::display_state::GenericDisplayState;
 use crate::layout::frame_layout::FrameLayout;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
