@@ -43,6 +43,9 @@ pub struct FocusGraph<AdditionalData: Clone> {
 
 impl<AdditionalData: Clone> FocusGraph<AdditionalData> {
     pub fn new(nodes: HashMap<WID, FocusGraphNode<AdditionalData>>, selected: WID) -> Self {
+        // TODO
+        assert!(nodes.keys().fold(false, |a, b| a || *b == selected));
+
         Self {
             nodes,
             selected,
@@ -73,8 +76,12 @@ impl<AdditionalData: Clone> FocusGraph<AdditionalData> {
         }
     }
 
-    pub fn get_focused(&self) -> WID {
+    pub fn get_focused_id(&self) -> WID {
         self.selected
+    }
+
+    pub fn get_focused(&self) -> AdditionalData {
+        self.nodes.get(&self.selected).map(|n| n.additional_data.clone()).unwrap()
     }
 
     pub fn update_focus(&mut self, edge: FocusUpdate) -> bool {

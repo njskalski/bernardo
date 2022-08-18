@@ -200,12 +200,12 @@ impl Widget for MainView {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        // debug!("main_view.on_input {:?}", input_event);
+        debug!("main_view.on_input {:?}", input_event);
 
         return match input_event {
-            // InputEvent::FocusUpdate(focus_update) if self.display_state.will_accept_update_focus(focus_update) => {
-            //     MainViewMsg::FocusUpdateMsg(focus_update).someboxed()
-            // }
+            InputEvent::FocusUpdate(focus_update) if self.will_accept_focus_update(focus_update) => {
+                MainViewMsg::FocusUpdateMsg(focus_update).someboxed()
+            }
             InputEvent::KeyInput(key) if key == self.config.keyboard_config.global.new_buffer => {
                 MainViewMsg::OpenNewFile.someboxed()
             }
@@ -229,13 +229,13 @@ impl Widget for MainView {
 
         if let Some(main_view_msg) = msg.as_msg::<MainViewMsg>() {
             return match main_view_msg {
-                // MainViewMsg::FocusUpdateMsg(focus_update) => {
-                //     if !self.display_state.update_focus(*focus_update) {
-                //         error!("failed to accept focus update")
-                //     }
-                //
-                //     None
-                // }
+                MainViewMsg::FocusUpdateMsg(focus_update) => {
+                    if !self.update_focus(*focus_update) {
+                        error!("failed to accept focus update")
+                    }
+
+                    None
+                }
                 MainViewMsg::TreeExpandedFlip { .. } => {
                     None
                 }

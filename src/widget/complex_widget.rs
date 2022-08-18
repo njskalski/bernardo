@@ -34,7 +34,14 @@ pub trait ComplexWidget: Widget + Sized {
         }
     }
 
-    fn update_focus(&mut self, focus_update: FocusUpdate) {}
+    fn update_focus(&mut self, focus_update: FocusUpdate) -> bool {
+        if let Some(ds) = self.get_display_state_mut_op() {
+            ds.focus_group.update_focus(focus_update)
+        } else {
+            error!("failed updating focus - display state not found");
+            false
+        }
+    }
 
     fn complex_layout(&mut self, sc: SizeConstraint) -> XY {
         let xy = sc.as_finite().unwrap_or_else(|| {

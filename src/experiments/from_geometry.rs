@@ -223,33 +223,33 @@ mod tests {
 
         let mut focus_group = from_geometry::<()>(&widgets_and_positions, 1, XY::new(5, 5));
 
-        assert_eq!(focus_group.get_focused(), 1);
+        assert_eq!(focus_group.get_focused_id(), 1);
         assert_eq!(focus_group.update_focus(FocusUpdate::Left), false);
         assert_eq!(focus_group.update_focus(FocusUpdate::Right), false);
         assert_eq!(focus_group.update_focus(FocusUpdate::Up), false);
 
         assert_eq!(focus_group.update_focus(FocusUpdate::Down), true);
-        assert_eq!(focus_group.get_focused(), 3);
+        assert_eq!(focus_group.get_focused_id(), 3);
         assert_eq!(focus_group.update_focus(FocusUpdate::Up), true);
-        assert_eq!(focus_group.get_focused(), 1);
+        assert_eq!(focus_group.get_focused_id(), 1);
         assert_eq!(focus_group.update_focus(FocusUpdate::Down), true);
-        assert_eq!(focus_group.get_focused(), 3);
+        assert_eq!(focus_group.get_focused_id(), 3);
         assert_eq!(focus_group.update_focus(FocusUpdate::Left), true);
-        assert_eq!(focus_group.get_focused(), 2);
+        assert_eq!(focus_group.get_focused_id(), 2);
         assert_eq!(focus_group.update_focus(FocusUpdate::Up), false);
         assert_eq!(focus_group.update_focus(FocusUpdate::Down), false);
         assert_eq!(focus_group.update_focus(FocusUpdate::Right), true);
-        assert_eq!(focus_group.get_focused(), 3);
+        assert_eq!(focus_group.get_focused_id(), 3);
         assert_eq!(focus_group.update_focus(FocusUpdate::Right), true);
-        assert_eq!(focus_group.get_focused(), 4);
+        assert_eq!(focus_group.get_focused_id(), 4);
         assert_eq!(focus_group.update_focus(FocusUpdate::Up), false);
         assert_eq!(focus_group.update_focus(FocusUpdate::Down), true);
-        assert_eq!(focus_group.get_focused(), 5);
+        assert_eq!(focus_group.get_focused_id(), 5);
         assert_eq!(focus_group.update_focus(FocusUpdate::Left), false);
         assert_eq!(focus_group.update_focus(FocusUpdate::Right), false);
         assert_eq!(focus_group.update_focus(FocusUpdate::Down), false);
 
         assert_eq!(focus_group.update_focus(FocusUpdate::Up), true);
-        assert_eq!(focus_group.get_focused(), 3);
+        assert_eq!(focus_group.get_focused_id(), 3);
     }
 }
