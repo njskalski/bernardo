@@ -9,11 +9,9 @@ use std::collections::HashMap;
 
 use crate::experiments::focus_group::{FocusGraph, FocusGraphNode, FocusUpdate};
 use crate::io::buffer::Buffer;
-use crate::layout::layout::Layout;
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
-use crate::Widget;
 use crate::widget::widget::WID;
 
 fn fill(b: &mut Buffer<WID>, wid: WID, rect: &Rect) {
@@ -172,7 +170,7 @@ pub fn from_geometry<AdditionalData: Clone>(
 
 #[cfg(test)]
 mod tests {
-    use crate::experiments::focus_group::{FocusGraph, FocusUpdate};
+    use crate::experiments::focus_group::FocusUpdate;
     use crate::experiments::from_geometry::{from_geometry, get_full_size};
     use crate::primitives::rect::Rect;
     use crate::primitives::xy::XY;

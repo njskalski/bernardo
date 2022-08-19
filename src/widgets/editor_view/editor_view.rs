@@ -154,63 +154,6 @@ impl EditorView {
         )
     }
 
-    fn internal_layout(&self, size: XY) -> Box<dyn Layout<Self>> {
-        let editor_layout = LeafLayout::new(subwidget!(Self.editor)).boxed();
-        let find_text_layout = LeafLayout::new(subwidget!(Self.find_label)).boxed();
-        let find_box_layout = LeafLayout::new(subwidget!(Self.find_box)).boxed();
-        let find_layout =
-            SplitLayout::new(SplitDirection::Horizontal)
-                .with(SplitRule::Fixed(PATTERN.width_cjk()), find_text_layout)
-                .with(SplitRule::Proportional(1.0), find_box_layout)
-                .boxed();
-
-        let replace_text_layout = LeafLayout::new(subwidget!(Self.replace_label)).boxed();
-        let replace_box_layout = LeafLayout::new(subwidget!(Self.replace_box)).boxed();
-        let replace_layout =
-            SplitLayout::new(SplitDirection::Horizontal)
-                .with(SplitRule::Fixed(REPLACE.width_cjk()), replace_text_layout)
-                .with(SplitRule::Proportional(1.0), replace_box_layout)
-                .boxed();
-
-        let background: Box<dyn Layout<Self>> = match &self.state {
-            EditorViewState::Simple => {
-                editor_layout
-            }
-            EditorViewState::Find => {
-                SplitLayout::new(SplitDirection::Vertical)
-                    .with(SplitRule::Proportional(1.0), editor_layout)
-                    .with(SplitRule::Fixed(1), find_layout)
-                    .boxed()
-            }
-            EditorViewState::FindReplace => {
-                Box::new(SplitLayout::new(SplitDirection::Vertical)
-                    .with(SplitRule::Proportional(1.0), editor_layout)
-                    .with(SplitRule::Fixed(1), find_layout)
-                    .with(SplitRule::Fixed(1), replace_layout)
-                )
-            }
-        };
-
-        if self.hover_dialog.is_none() {
-            background
-        } else {
-            let rect = Self::get_hover_rect(size);
-            let hover = LeafLayout::new(SubwidgetPointer::new(
-                Box::new(|s: &Self| {
-                    s.hover_dialog.as_ref().unwrap()
-                }),
-                Box::new(|s: &mut Self| {
-                    s.hover_dialog.as_mut().unwrap()
-                }),
-            )).boxed();
-
-            HoverLayout::new(background,
-                             hover,
-                             rect,
-            ).boxed()
-        }
-    }
-
     /*
     This attempts to save current file, but in case that's not possible (filename unknown) proceeds to open_save_as_dialog() below
      */
@@ -447,11 +390,11 @@ impl Widget for EditorView {
                     let old_state = self.state;
                     self.state = EditorViewState::FindReplace;
 
-                    // if old_state == EditorViewState::Find {
-                    //     self.set_deferred_focus(self.replace_box.id());
-                    // } else {
-                    //     self.set_deferred_focus(self.find_box.id());
-                    // }
+                    if old_state == EditorViewState::Find {
+                        self.set_focused(subwidget!(Self.replace_box));
+                    } else {
+                        self.set_focused(subwidget!(Self.find_box));
+                    }
 
                     None
                 }
@@ -478,19 +421,80 @@ impl Widget for EditorView {
     fn anchor(&self) -> XY {
         ZERO
     }
+
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        self.complex_get_focused()
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        self.complex_get_focused_mut()
+    }
 }
 
 impl ComplexWidget for EditorView {
-    fn internal_layout(&self, max_size: XY) -> Box<dyn Layout<EditorView>> {
-        todo!()
+    fn internal_layout(&self, size: XY) -> Box<dyn Layout<Self>> {
+        let editor_layout = LeafLayout::new(subwidget!(Self.editor)).boxed();
+        let find_text_layout = LeafLayout::new(subwidget!(Self.find_label)).boxed();
+        let find_box_layout = LeafLayout::new(subwidget!(Self.find_box)).boxed();
+        let find_layout =
+            SplitLayout::new(SplitDirection::Horizontal)
+                .with(SplitRule::Fixed(PATTERN.width_cjk()), find_text_layout)
+                .with(SplitRule::Proportional(1.0), find_box_layout)
+                .boxed();
+
+        let replace_text_layout = LeafLayout::new(subwidget!(Self.replace_label)).boxed();
+        let replace_box_layout = LeafLayout::new(subwidget!(Self.replace_box)).boxed();
+        let replace_layout =
+            SplitLayout::new(SplitDirection::Horizontal)
+                .with(SplitRule::Fixed(REPLACE.width_cjk()), replace_text_layout)
+                .with(SplitRule::Proportional(1.0), replace_box_layout)
+                .boxed();
+
+        let background: Box<dyn Layout<Self>> = match &self.state {
+            EditorViewState::Simple => {
+                editor_layout
+            }
+            EditorViewState::Find => {
+                SplitLayout::new(SplitDirection::Vertical)
+                    .with(SplitRule::Proportional(1.0), editor_layout)
+                    .with(SplitRule::Fixed(1), find_layout)
+                    .boxed()
+            }
+            EditorViewState::FindReplace => {
+                Box::new(SplitLayout::new(SplitDirection::Vertical)
+                    .with(SplitRule::Proportional(1.0), editor_layout)
+                    .with(SplitRule::Fixed(1), find_layout)
+                    .with(SplitRule::Fixed(1), replace_layout)
+                )
+            }
+        };
+
+        if self.hover_dialog.is_none() {
+            background
+        } else {
+            let rect = Self::get_hover_rect(size);
+            let hover = LeafLayout::new(SubwidgetPointer::new(
+                Box::new(|s: &Self| {
+                    s.hover_dialog.as_ref().unwrap()
+                }),
+                Box::new(|s: &mut Self| {
+                    s.hover_dialog.as_mut().unwrap()
+                }),
+            )).boxed();
+
+            HoverLayout::new(background,
+                             hover,
+                             rect,
+            ).boxed()
+        }
     }
 
     fn get_default_focused(&self) -> SubwidgetPointer<EditorView> {
-        todo!()
+        subwidget!(Self.editor)
     }
 
     fn set_display_state(&mut self, display_state: DisplayState<EditorView>) {
-        todo!()
+        self.display_state = Some(display_state)
     }
 
     fn get_display_state_op(&self) -> Option<&DisplayState<EditorView>> {
