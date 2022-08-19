@@ -184,6 +184,14 @@ impl Widget for GenericDialog {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         self.complex_render(theme, focused, output)
     }
+
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        self.complex_get_focused()
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        self.complex_get_focused_mut()
+    }
 }
 
 impl ComplexWidget for GenericDialog {
