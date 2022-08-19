@@ -11,6 +11,8 @@ use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::WID;
 
+// here one could merge focus_group.focused with ds.focused, but not it's not important.
+
 pub struct DisplayState<S: Widget> {
     focused: SubwidgetPointer<S>,
     wwrs: Vec<WidgetWithRect<S>>,
@@ -36,7 +38,14 @@ pub trait ComplexWidget: Widget + Sized {
 
     fn update_focus(&mut self, focus_update: FocusUpdate) -> bool {
         if let Some(ds) = self.get_display_state_mut_op() {
-            ds.focus_group.update_focus(focus_update)
+            if ds.focus_group.update_focus(focus_update) {
+                let subwidget_ptr = ds.focus_group.get_focused();
+                ds.focused = subwidget_ptr;
+
+                true
+            } else {
+                false
+            }
         } else {
             error!("failed updating focus - display state not found");
             false

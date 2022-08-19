@@ -220,7 +220,10 @@ impl Widget for MainView {
                     MainViewMsg::OpenFuzzyBuffers.someboxed()
                 }
             }
-            _ => None
+            _ => {
+                debug!("input {:?} NOT consumed", input_event);
+                None
+            }
         };
     }
 
