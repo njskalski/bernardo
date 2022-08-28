@@ -56,6 +56,28 @@ impl MockFS {
     }
 
     pub fn add_file(&mut self, path: &Path, bytes: Vec<u8>) -> Result<(), ()> {
+        let mut parent_op = path.parent();
+        loop {
+            match parent_op {
+                Some(parent) => {
+                    if !self.all_files.borrow().contains_key(parent) {
+                        self.all_files.borrow_mut().insert(
+                            parent.to_path_buf(), HashMap::default(),
+                        );
+                    }
+
+                    if parent.to_string_lossy().is_empty() {
+                        break;
+                    }
+
+                    parent_op = parent.parent();
+                }
+                None => {
+                    break;
+                }
+            }
+        }
+
         self.set_file_contents(path, bytes)
     }
 

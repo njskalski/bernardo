@@ -151,31 +151,31 @@ mod tests {
         struct DummySubwidget {}
         impl Widget for DummySubwidget {
             fn id(&self) -> WID {
-                todo!()
+                unimplemented!()
             }
 
             fn typename(&self) -> &'static str {
-                todo!()
+                unimplemented!()
             }
 
             fn min_size(&self) -> XY {
-                todo!()
+                unimplemented!()
             }
 
             fn layout(&mut self, sc: SizeConstraint) -> XY {
-                todo!()
+                unimplemented!()
             }
 
             fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-                todo!()
+                unimplemented!()
             }
 
             fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-                todo!()
+                unimplemented!()
             }
 
             fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-                todo!()
+                unimplemented!()
             }
         }
         struct DummyWidget {
@@ -187,31 +187,31 @@ mod tests {
         }
         impl Widget for DummyWidget {
             fn id(&self) -> WID {
-                todo!()
+                unimplemented!()
             }
 
             fn typename(&self) -> &'static str {
-                todo!()
+                unimplemented!()
             }
 
             fn min_size(&self) -> XY {
-                todo!()
+                unimplemented!()
             }
 
             fn layout(&mut self, sc: SizeConstraint) -> XY {
-                todo!()
+                unimplemented!()
             }
 
             fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-                todo!()
+                unimplemented!()
             }
 
             fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-                todo!()
+                unimplemented!()
             }
 
             fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-                todo!()
+                unimplemented!()
             }
         }
 

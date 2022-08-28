@@ -125,8 +125,6 @@ impl FsfRef {
     }
 
     pub fn blocking_list(&self, spath: &SPath) -> Result<Vec<SPath>, ListError> {
-        // TODO
-
         if let Some(cache) = self.fs.caches.borrow().get(spath) {
             return Ok(cache.vec.clone());
         }

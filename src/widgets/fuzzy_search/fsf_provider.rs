@@ -59,6 +59,7 @@ impl ItemsProvider for FsfProvider {
 
     fn items(&self, _query: String, _limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
         // let items = self.fsf.fuzzy_files_it(query, limit, self.consider_ignores).1.map(|f| Box::new(f) as Box<dyn Item>);
+
         todo!()
     }
 }

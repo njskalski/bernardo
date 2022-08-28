@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::cmp::Ordering;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
@@ -35,7 +36,7 @@ impl Hash for PathCell {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PathCell {
     Head(FsfRef),
     Segment {
@@ -281,6 +282,21 @@ impl SPath {
 
         url
     }
+
+    // pub fn children(&self) -> Box<dyn Iterator<item=SPath>> {
+    //     let fsf = self.fsf();
+    //     if !fsf.exists(&self) {
+    //         error!("requested children of non-existing path {:?}", self);
+    //         return Box::new(std::iter::empty());
+    //     }
+    //
+    //     if fsf.is_file(self) {
+    //         warn!("requested children of file path {:?}", self);
+    //         Box::new(std::iter::empty())
+    //     } else {
+    //         fsf.
+    //     }
+    // }
 }
 
 pub struct ParentIter(Option<SPath>);
@@ -363,6 +379,29 @@ impl Debug for SPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let path = self.relative_path();
         write!(f, "{}", path.to_string_lossy())
+    }
+}
+
+
+impl PartialOrd<Self> for SPath {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self.0 == other.0 {
+            return Some(Ordering::Equal);
+        }
+
+        // probably in after profiling I will decide to optimise here
+        self.absolute_path().partial_cmp(&other.absolute_path())
+    }
+}
+
+impl Ord for SPath {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if self.0 == other.0 {
+            return Ordering::Equal;
+        }
+
+        // probably in after profiling I will decide to optimise here
+        self.absolute_path().cmp(&other.absolute_path())
     }
 }
 
