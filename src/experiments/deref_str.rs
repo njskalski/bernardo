@@ -1,8 +1,7 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
-
-// TODO(cleanup) remove DerefStr in favour of BetterDerefStr
+// TODO(cleanup) remove DerefStr in favour of Cow<>?
 pub trait DerefStr {
     fn as_ref_str(&self) -> &str;
 }

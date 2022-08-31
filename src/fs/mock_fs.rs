@@ -1,31 +1,153 @@
+use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fmt::{Debug, Formatter};
-use std::path::{Path, PathBuf};
+use std::path::{Component, Components, Path, PathBuf};
 
-use log::{error, warn};
+use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
 
+use crate::experiments::array_streaming_iterator::ArrayStreamingIt;
+use crate::experiments::path_prefixes::PathPrefixes;
 use crate::fs::dir_entry::DirEntry;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::read_error::{ListError, ReadError};
 use crate::fs::write_error::WriteError;
 
+pub enum Record {
+    File(Vec<u8>),
+    Dir(HashMap<PathBuf, Record>),
+}
+
+impl Record {
+    // If creating == true, it creates a Dir, but since it returns a mut ref you can immediately
+    // override it with File.
+    fn get_mut(&mut self, path: &[Component], creating: bool) -> Option<&mut Record> {
+        if path.len() == 0 {
+            Some(self)
+        } else {
+            let first = PathBuf::new().join(path[0]);
+            match self {
+                Record::File(_) => {
+                    None
+                }
+                Record::Dir(ref mut items) => {
+                    if items.contains_key(&first) {
+                        return items.get_mut(&first).unwrap().get_mut(&path[1..], creating);
+                    }
+
+                    if creating {
+                        items.insert(first.clone(), Record::Dir(HashMap::new()));
+                        return items.get_mut(&first).unwrap().get_mut(&path[1..], creating);
+                    }
+
+                    None
+                }
+            }
+        }
+    }
+
+    fn get(&self, path: &[Component]) -> Option<&Record> {
+        if path.len() == 0 {
+            Some(self)
+        } else {
+            let first = PathBuf::new().join(path[0]);
+            match self {
+                Record::File(_) => {
+                    None
+                }
+                Record::Dir(ref items) => {
+                    items.get(&first).map(|r| r.get(&path[1..])).flatten()
+                }
+            }
+        }
+    }
+
+    fn is_empty_dir(&self) -> bool {
+        match &self {
+            Record::File(_) => false,
+            Record::Dir(contents) => contents.is_empty(),
+        }
+    }
+
+    fn is_dir(&self) -> bool {
+        match &self {
+            Record::File(_) => false,
+            Record::Dir(contents) => true,
+        }
+    }
+
+    fn is_file(&self) -> bool {
+        !self.is_dir()
+    }
+
+    fn create_dir(&mut self, path: &Path) -> bool {
+        let components: Vec<Component> = path.components().collect();
+
+        if self.get(&components).is_some() {
+            return false;
+        }
+
+        self.get_mut(&components, true).is_some()
+    }
+
+    fn overwrite_file(&mut self, path: &Path, contents: Vec<u8>) -> bool {
+        let components: Vec<Component> = path.components().collect();
+
+        if let Some(rec) = self.get_mut(&components, false) {
+            if rec.is_file() {
+                *rec = Record::File(contents);
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fn create_file(&mut self, path: &Path, contents: Vec<u8>) -> bool {
+        let components: Vec<Component> = path.components().collect();
+
+        if self.get(&components).is_some() {
+            return false;
+        }
+
+        self.get_mut(&components, true).map(|maybe_last| {
+            if maybe_last.is_empty_dir() {
+                *maybe_last = Record::File(contents);
+                true
+            } else {
+                false
+            }
+        }).unwrap_or(false)
+    }
+
+    fn list(&self) -> Option<Vec<PathBuf>> {
+        match self {
+            Record::File(_) => {
+                None
+            }
+            Record::Dir(e) => {
+                let files: Vec<_> = e.keys().map(|c| c.clone()).collect();
+                Some(files)
+            }
+        }
+    }
+}
+
 pub struct MockFS {
     root_path: PathBuf,
-    // directory -> file -> contents
-    all_files: RefCell<HashMap<PathBuf, HashMap<PathBuf, Vec<u8>>>>,
+    root_dir: RefCell<Record>,
 }
 
 impl MockFS {
     pub fn new<T: Into<PathBuf>>(root_path: T) -> Self {
-        let mut all_files: HashMap<PathBuf, HashMap<PathBuf, Vec<u8>>> = HashMap::new();
-        all_files.insert(PathBuf::new(), HashMap::new());
-
         MockFS {
             root_path: root_path.into(),
-            all_files: RefCell::new(all_files),
+            root_dir: RefCell::new(Record::Dir(HashMap::default())),
         }
     }
 
@@ -35,62 +157,34 @@ impl MockFS {
         self
     }
 
-    fn set_file_contents(&self, path: &Path, bytes: Vec<u8>) -> Result<(), ()> {
-        debug_assert!(!self.is_dir(path), "overwriting directory with file");
+    pub fn with_dir<P: AsRef<Path>>(mut self, path: P) -> Self {
+        self.add_dir(path.as_ref()).unwrap_or_else(
+            |_| error!("failed creating dir in mockfs"));
+        self
+    }
 
-        let (parent_path, file_name) = Self::split_path(path)?;
-
-        let mut all_files = self.all_files.borrow_mut();
-
-        if !all_files.contains_key(&parent_path) {
-            all_files.insert(parent_path.clone(), HashMap::new());
-        }
-
-        let folder = all_files.get_mut(&parent_path).unwrap();
-
-        if let Some(_old_val) = folder.insert(PathBuf::from(file_name), bytes) {
-            warn!("overwriting file {:?}", path);
-        }
-
-        Ok(())
+    pub fn add_dir(&self, path: &Path) -> Result<(), ()> {
+        if self.root_dir.borrow_mut().create_dir(path) { Ok(()) } else { Err(()) }
     }
 
     pub fn add_file(&mut self, path: &Path, bytes: Vec<u8>) -> Result<(), ()> {
-        let mut parent_op = path.parent();
-        loop {
-            match parent_op {
-                Some(parent) => {
-                    if !self.all_files.borrow().contains_key(parent) {
-                        self.all_files.borrow_mut().insert(
-                            parent.to_path_buf(), HashMap::default(),
-                        );
-                    }
-
-                    if parent.to_string_lossy().is_empty() {
-                        break;
-                    }
-
-                    parent_op = parent.parent();
-                }
-                None => {
-                    break;
-                }
-            }
-        }
-
-        self.set_file_contents(path, bytes)
+        if self.root_dir.borrow_mut().create_file(path, bytes) { Ok(()) } else { Err(()) }
     }
 
-    fn split_path(path: &Path) -> Result<(PathBuf, PathBuf), ()> {
-        if path.file_name().is_none() {
-            error!("no valid filename {:?}", path);
-            return Err(());
+    pub fn blocking_overwrite_with_bytes(&self, path: &Path, bytes: Vec<u8>) -> Result<usize, WriteError> {
+        let comp: Vec<_> = path.components().collect();
+
+        if let Some(record) = self.root_dir.borrow_mut().get_mut(&comp, false) {
+            if record.is_dir() {
+                return Err(WriteError::NotAFile);
+            }
+
+            let len_bytes = bytes.len();
+            *record = Record::File(bytes);
+            Ok(len_bytes)
+        } else {
+            Err(WriteError::FileNotFound)
         }
-
-        let file_name = PathBuf::from(path.file_name().unwrap());
-        let parent_path = path.parent().unwrap_or(Path::new("")).to_path_buf();
-
-        Ok((parent_path, file_name))
     }
 }
 
@@ -106,34 +200,25 @@ impl FilesystemFront for MockFS {
     }
 
     fn blocking_read_entire_file(&self, path: &Path) -> Result<Vec<u8>, ReadError> {
-        if !self.exists(path) {
-            return Err(ReadError::FileNotFound);
+        let comp: Vec<_> = path.components().collect();
+        if let Some(rec) = self.root_dir.borrow().get(&comp) {
+            match rec {
+                Record::File(contents) => Ok(contents.clone()),
+                Record::Dir(_) => Err(ReadError::NotAFilePath)
+            }
+        } else {
+            Err(ReadError::FileNotFound)
         }
-
-        if !self.is_file(path) {
-            return Err(ReadError::NotAFilePath);
-        }
-
-        let (parent, me) = Self::split_path(path).unwrap();
-        let all_files = self.all_files.borrow();
-        let folder = all_files.get(&parent).unwrap();
-        Ok(folder.get(&me).unwrap().clone())
     }
 
     fn is_dir(&self, path: &Path) -> bool {
-        self.all_files.borrow().contains_key(path)
+        let comp: Vec<_> = path.components().collect();
+        self.root_dir.borrow().get(&comp).map(|r| r.is_dir()).unwrap_or(false)
     }
 
     fn is_file(&self, path: &Path) -> bool {
-        if let Ok((parent, me)) = Self::split_path(path) {
-            if let Some(folder) = self.all_files.borrow().get(&parent) {
-                folder.contains_key(&me)
-            } else {
-                false
-            }
-        } else {
-            false
-        }
+        let comp: Vec<_> = path.components().collect();
+        self.root_dir.borrow().get(&comp).map(|r| r.is_file()).unwrap_or(false)
     }
 
     fn hash_seed(&self) -> usize {
@@ -149,44 +234,34 @@ impl FilesystemFront for MockFS {
             return Err(ListError::NotADir);
         }
 
-        let mut items: Vec<DirEntry> = Vec::new();
-
-        for key in self.all_files.borrow().keys() {
-            if let Ok(suffix) = key.strip_prefix(path) {
-                if let Some(first_component) = suffix.components().next() {
-                    items.push(DirEntry::new(&first_component))
+        let comp: Vec<_> = path.components().collect();
+        let items = if comp.is_empty() {
+            self.root_dir.borrow().list()
+        } else {
+            match self.root_dir.borrow().get(&comp) {
+                None => {
+                    error!("this test was redundant and still failed!");
+                    return Err(ListError::PathNotFound);
                 }
+                Some(dir) => dir.list()
+            }
+        };
+
+        match items {
+            None => {
+                error!("this test was redundant 2 and still failed!");
+                Err(ListError::NotADir)
+            }
+            Some(mut items) => {
+                items.sort();
+                Ok(items.into_iter().map(|i| DirEntry::new(i)).collect())
             }
         }
-
-        let all_files = self.all_files.borrow();
-        let folder = all_files.get(path).unwrap();
-
-        for item in folder.keys() {
-            items.push(DirEntry::new(item.clone()));
-        }
-
-        //TODO maybe not needed or even undesirable
-        items.sort();
-
-        Ok(items)
     }
 
     fn exists(&self, path: &Path) -> bool {
-        if self.all_files.borrow().contains_key(path) {
-            return true;
-        }
-
-        if let Ok((parent, me)) = Self::split_path(path) {
-            error!("{:?} {:?}", parent, me);
-            if let Some(folder) = self.all_files.borrow().get(&parent) {
-                folder.contains_key(&me)
-            } else {
-                false
-            }
-        } else {
-            false
-        }
+        let comp: Vec<_> = path.components().collect();
+        self.root_dir.borrow().get(&comp).is_some()
     }
 
     fn blocking_overwrite_with_stream(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
@@ -197,15 +272,12 @@ impl FilesystemFront for MockFS {
             }
         };
 
-        let len_bytes = bytes.len();
-        self.set_file_contents(path, bytes);
-        Ok(len_bytes)
+        self.blocking_overwrite_with_bytes(path, bytes)
     }
 
     fn blocking_overwrite_with_str(&self, path: &Path, s: &str) -> Result<usize, WriteError> {
-        let bytes = s.as_bytes();
-        self.set_file_contents(path, Vec::from(bytes));
-        Ok(bytes.len())
+        let bytes: Vec<_> = s.bytes().collect();
+        self.blocking_overwrite_with_bytes(path, bytes)
     }
 
     fn to_fsf(self) -> FsfRef {
@@ -216,12 +288,24 @@ impl FilesystemFront for MockFS {
 // these are purely API tests, like "does it have semantics I like", not "does it work well"
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::collections::HashMap;
+    use std::path::{Path, PathBuf};
 
     use crate::de;
+    use crate::experiments::path_prefixes::PathPrefixes;
     use crate::fs::filesystem_front::FilesystemFront;
-    use crate::fs::mock_fs::MockFS;
+    use crate::fs::mock_fs::{MockFS, Record};
     use crate::fs::read_error::ReadError;
+
+    #[test]
+    fn make_some_records() {
+        let mut record = Record::Dir(HashMap::new());
+
+        let some_path = PathBuf::from("hello/some/path/item.txt");
+        let comps: Vec<_> = some_path.components().collect();
+
+        assert!(record.get(&comps[0..1]).is_none());
+    }
 
     #[test]
     fn make_some_files() {

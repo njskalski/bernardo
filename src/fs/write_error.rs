@@ -2,6 +2,7 @@ use std::io::Error;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum WriteError {
+    NotAFile,
     FileNotFound,
     UnmappedError(String),
 }
