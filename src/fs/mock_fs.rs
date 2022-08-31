@@ -9,7 +9,6 @@ use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
 
 use crate::experiments::array_streaming_iterator::ArrayStreamingIt;
-use crate::experiments::path_prefixes::PathPrefixes;
 use crate::fs::dir_entry::DirEntry;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::fsf_ref::FsfRef;
@@ -292,7 +291,6 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     use crate::de;
-    use crate::experiments::path_prefixes::PathPrefixes;
     use crate::fs::filesystem_front::FilesystemFront;
     use crate::fs::mock_fs::{MockFS, Record};
     use crate::fs::read_error::ReadError;
