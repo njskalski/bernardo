@@ -2,6 +2,7 @@
 // Items will most likely contain certain messages.
 
 use std::borrow::Cow;
+
 use crate::AnyMsg;
 
 pub trait Item {
@@ -15,5 +16,6 @@ pub trait ItemsProvider {
 
     // TODO(cleanup) Shouldn't query be &str? It's not going to be modified, it doesn't have to be moved either.
     // or maybe the reason is that items is a tailing expression?
+    // TODO(cleanup) Do I need a limit if it's iterator?
     fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_>;
 }

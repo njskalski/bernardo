@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use crate::AnyMsg;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
+use crate::widgets::fuzzy_search::helpers::is_subsequence;
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 
 pub type SPathToMsg = fn(&SPath) -> Box<dyn AnyMsg>;
@@ -52,14 +53,24 @@ impl Item for SPath {
     }
 }
 
+// TODO reintroduce ignoring of gitignores
 impl ItemsProvider for FsfProvider {
     fn context_name(&self) -> &str {
         "fs"
     }
 
-    fn items(&self, _query: String, _limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
-        // let items = self.fsf.fuzzy_files_it(query, limit, self.consider_ignores).1.map(|f| Box::new(f) as Box<dyn Item>);
-
-        todo!()
+    fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
+        Box::new(
+            self.fsf.root()
+                .recursive_iter()
+                .filter(
+                    move |item| {
+                        let item_str = item.relative_path().to_string_lossy().to_string();
+                        is_subsequence(&item_str, &query)
+                    }
+                )
+                .map(|f| Box::new(f) as Box<dyn Item>)
+                .take(limit)
+        )
     }
 }

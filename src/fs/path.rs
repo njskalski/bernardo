@@ -12,6 +12,7 @@ use serde::Serialize;
 use streaming_iterator::StreamingIterator;
 use url::Url;
 
+use crate::fs::fsf_iter::RecursiveFsIter;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::read_error::{ListError, ReadError};
 use crate::fs::write_error::{WriteError, WriteOrSerError};
@@ -283,20 +284,9 @@ impl SPath {
         url
     }
 
-    // pub fn children(&self) -> Box<dyn Iterator<item=SPath>> {
-    //     let fsf = self.fsf();
-    //     if !fsf.exists(&self) {
-    //         error!("requested children of non-existing path {:?}", self);
-    //         return Box::new(std::iter::empty());
-    //     }
-    //
-    //     if fsf.is_file(self) {
-    //         warn!("requested children of file path {:?}", self);
-    //         Box::new(std::iter::empty())
-    //     } else {
-    //         fsf.
-    //     }
-    // }
+    pub fn recursive_iter(&self) -> RecursiveFsIter {
+        RecursiveFsIter::new(self.clone())
+    }
 }
 
 pub struct ParentIter(Option<SPath>);
