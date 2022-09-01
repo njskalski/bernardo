@@ -1,3 +1,4 @@
+use std::borrow::{Borrow, BorrowMut};
 use std::rc::Rc;
 
 use log::{debug, error, warn};
@@ -143,7 +144,7 @@ impl MainView {
         }
     }
 
-    fn open_fuzzy_search_in_files(&mut self) {
+    fn open_fuzzy_search_in_files_and_focus(&mut self) {
         self.hover = Some(
             HoverItem::FuzzySearch(FuzzySearchWidget::new(
                 |_| Some(Box::new(MainViewMsg::ClozeHover))
@@ -151,9 +152,10 @@ impl MainView {
                 Box::new(FsfProvider::new(self.fsf.clone()).with_ignores_filter())
             ).with_draw_comment_setting(DrawComment::Highlighted))
         );
+        self.set_focused_to_hover();
     }
 
-    fn open_fuzzy_buffer_list(&mut self) {
+    fn open_fuzzy_buffer_list_and_focus(&mut self) {
         self.hover = Some(
             HoverItem::FuzzySearch(FuzzySearchWidget::new(
                 |_| Some(Box::new(MainViewMsg::ClozeHover))
@@ -161,6 +163,7 @@ impl MainView {
                 self.editors.get_buffer_list_provider()
             ).with_draw_comment_setting(DrawComment::Highlighted))
         );
+        self.set_focused_to_hover();
     }
 
     fn get_curr_editor_ptr(&self) -> SubwidgetPointer<Self> {
@@ -179,6 +182,31 @@ impl MainView {
                 Box::new(move |s: &mut Self| { s.editors.get_mut(idx2).map(|w| w as &mut dyn Widget).unwrap_or(&mut s.no_editor) }),
             )
         }
+    }
+
+    fn set_focused_to_hover(&mut self) {
+        let ptr_to_hover = SubwidgetPointer::<Self>::new(
+            Box::new(|s: &MainView| {
+                let hover_present = s.hover.is_some();
+                if hover_present {
+                    match s.hover.as_ref().unwrap() { HoverItem::FuzzySearch(fs) => fs as &dyn Widget }
+                } else {
+                    error!("failed to unwrap hover widget!");
+                    s.get_default_focused().get(s)
+                }
+            }),
+            Box::new(|s: &mut MainView| {
+                let hover_present = s.hover.is_some();
+                if hover_present {
+                    match s.hover.as_mut().unwrap() { HoverItem::FuzzySearch(fs) => fs as &mut dyn Widget }
+                } else {
+                    error!("failed to unwrap hover widget!");
+                    s.get_default_focused().get_mut(s)
+                }
+            }),
+        );
+
+        self.set_focused(ptr_to_hover);
     }
 }
 
@@ -250,7 +278,7 @@ impl Widget for MainView {
                     None
                 }
                 MainViewMsg::OpenFuzzyFiles => {
-                    self.open_fuzzy_search_in_files();
+                    self.open_fuzzy_search_in_files_and_focus();
                     None
                 }
                 MainViewMsg::ClozeHover => {
@@ -262,7 +290,7 @@ impl Widget for MainView {
                     None
                 }
                 MainViewMsg::OpenFuzzyBuffers => {
-                    self.open_fuzzy_buffer_list();
+                    self.open_fuzzy_buffer_list_and_focus();
                     None
                 }
                 MainViewMsg::OpenNewFile => {
