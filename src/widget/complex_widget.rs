@@ -21,6 +21,10 @@ pub struct DisplayState<S: Widget> {
 
 pub trait ComplexWidget: Widget + Sized {
     fn internal_layout(&self, max_size: XY) -> Box<dyn Layout<Self>>;
+
+    // Called when we set initial "focus" within a complex widget and then as a fallback, whenever
+    // we fail to retrieve focus from view state. Right now it's implemented *within the getters*
+    // but TODO in a while I might bubble it up
     fn get_default_focused(&self) -> SubwidgetPointer<Self>;
 
     fn set_display_state(&mut self, display_state: DisplayState<Self>);

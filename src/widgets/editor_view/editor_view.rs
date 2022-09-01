@@ -73,9 +73,6 @@ pub struct EditorView {
     See get_save_file_dialog_path for details.
      */
     start_path: Option<SPath>,
-
-    // this is a workaround to set focus into something not visible yet in next frame.
-    deferred_focus: Option<WID>,
 }
 
 impl EditorView {
@@ -119,7 +116,6 @@ impl EditorView {
             state: EditorViewState::Simple,
             hover_dialog: None,
             start_path: None,
-            deferred_focus: None,
         }
     }
 
@@ -260,13 +256,6 @@ impl EditorView {
         } else {
             self.hit_find_once()
         }
-    }
-
-    fn set_deferred_focus(&mut self, _wid: WID) {
-        if self.deferred_focus.is_some() {
-            warn!("overriding deferred focus before it was flushed!")
-        }
-        self.deferred_focus = Some(self.find_box.id())
     }
 
     /*
