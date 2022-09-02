@@ -6,7 +6,7 @@ use std::process::Stdio;
 use std::sync::Arc;
 
 use log::{debug, error, warn};
-use lsp_types::Url;
+use lsp_types::{TextDocumentContentChangeEvent, Url, VersionedTextDocumentIdentifier};
 use serde_json::Value;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::BufReader;
@@ -47,7 +47,11 @@ pub struct LspWrapper {
     workspace_root_path: PathBuf,
     language: LangId,
     child: tokio::process::Child,
+
+    //TODO the common state should probably be merged to avoid concurrency issues. It's not like I
+    // will be sending multiple edit events concurrently.
     ids: Arc<RwLock<IdToCallInfo>>,
+    file_versions: Arc<RwLock<HashMap<Url, i32>>>,
 
     curr_id: u64,
     reader_handle: tokio::task::JoinHandle<Result<(), LspReadError>>,
@@ -90,6 +94,7 @@ impl LspWrapper {
 
         let (notification_sender, notification_receiver) = tokio::sync::mpsc::unbounded_channel::<LspServerNotification>();
         let ids = Arc::new(RwLock::new(IdToCallInfo::default()));
+        let file_versions = Arc::new(RwLock::new(HashMap::default()));
 
         let reader_identifier: String = format!("{}-{}", lsp_path.file_name().map(|f| f.to_string_lossy().to_string())
             .unwrap_or_else(|| {
@@ -119,6 +124,7 @@ impl LspWrapper {
                 language: LangId::RUST,
                 child,
                 ids,
+                file_versions,
                 curr_id: 1,
                 reader_handle,
                 logger_handle,
@@ -264,15 +270,55 @@ impl LspWrapper {
         Ok(result)
     }
 
-    pub async fn text_document_did_open(&mut self, url: Url, _text: String) -> Result<(), LspWriteError> {
+    pub async fn text_document_did_open(&mut self, url: Url, text: String) -> Result<(), LspWriteError> {
+        {
+            let mut lock = self.file_versions.blocking_write();
+            if let Some(old_id) = lock.get(&url) {
+                warn!("expected document {:?} version to be 0, is {}", &url, old_id);
+            } else {
+                lock.insert(url.clone(), 0);
+            }
+        }
+
         self.send_notification::<lsp_types::notification::DidOpenTextDocument>(
             lsp_types::DidOpenTextDocumentParams {
                 text_document: lsp_types::TextDocumentItem {
                     uri: url,
                     language_id: self.language.to_lsp_lang_id_string().to_owned(),
                     version: 1,
-                    text: "".to_string(),
+                    text,
                 }
+            }
+        ).await
+    }
+
+    /*
+    This is a non-incremental variant of text_document_did_change
+     */
+    pub async fn text_document_did_change(&mut self, url: Url, full_text: String) -> Result<(), LspWriteError> {
+        let version = {
+            let mut lock = self.file_versions.blocking_write();
+            if let Some(old_id) = lock.get(&url).map(|i| *i) {
+                debug!("updating document {:?} from {} to {}", &url, old_id, old_id+1);
+                lock.insert(url.clone(), old_id + 1);
+                old_id + 1
+            } else {
+                error!("failed to find document version for {:?} - was document opened?", &url);
+                // TODO add error for "no document version found"
+                return Ok(());
+            }
+        };
+
+        self.send_notification::<lsp_types::notification::DidChangeTextDocument>(
+            lsp_types::DidChangeTextDocumentParams {
+                text_document: VersionedTextDocumentIdentifier { uri: url, version },
+                content_changes: vec![
+                    TextDocumentContentChangeEvent {
+                        range: None,
+                        range_length: None,
+                        text: full_text,
+                    }
+                ],
             }
         ).await
     }

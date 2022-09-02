@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use log::{debug, error, warn};
+use lsp_types::Hover;
 use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -57,6 +58,8 @@ enum EditorState {
     },
 }
 
+enum EditorHover {}
+
 pub struct EditorWidget {
     wid: WID,
 
@@ -81,6 +84,9 @@ pub struct EditorWidget {
     navcomp: Option<NavCompRef>,
 
     state: EditorState,
+
+    // This is completion or navigation
+    hover: Option<EditorHover>,
 }
 
 impl EditorWidget {
@@ -101,6 +107,7 @@ impl EditorWidget {
             clipboard,
             state: EditorState::Editing,
             navcomp,
+            hover: None,
         }
     }
 
@@ -282,6 +289,13 @@ impl EditorWidget {
         self.state = EditorState::Editing;
     }
 
+    pub fn update_completion(&mut self) {
+        if let Some(cursor) = self.cursors().as_single() {
+            if let Some(navcomp) = &self.navcomp {}
+        } else {
+            self.hover = None;
+        }
+    }
 
     fn pos_to_cursor(&self, theme: &Theme, char_idx: usize) -> Option<Color> {
         match &self.state {
@@ -398,8 +412,18 @@ impl Widget for EditorWidget {
                 (&EditorState::Editing, EditorWidgetMsg::EditMsg(cem)) => {
                     let page_height = self.page_height();
                     // page_height as usize is safe, since page_height is u16 and usize is larger.
-                    let _changed = self.buffer.apply_cem(cem.clone(), page_height as usize, Some(&self.clipboard));
+                    let changed = self.buffer.apply_cem(cem.clone(), page_height as usize, Some(&self.clipboard));
 
+                    if changed {
+                        match (&self.navcomp, self.buffer.get_file_front()) {
+                            (Some(navcomp), Some(path)) => {
+                                let contents = self.buffer.text().to_string();
+                                navcomp.submit_edit_event(path, contents);
+                            }
+                            _ => {}
+                        }
+                    }
+                    
                     match cme_to_direction(cem) {
                         None => {}
                         Some(direction) => self.update_anchor(direction)

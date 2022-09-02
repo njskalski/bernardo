@@ -258,10 +258,6 @@ impl EditorView {
         }
     }
 
-    /*
-    This checks, if next hit to replace does an actual replace and next find, or just first find.
-     */
-
     fn get_pattern(&self) -> Option<SearchPattern> {
         if self.find_box.is_empty() {
             None

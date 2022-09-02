@@ -5,6 +5,7 @@ use tokio::spawn;
 
 use crate::fs::path::SPath;
 use crate::lsp_client::lsp_client::LspWrapperRef;
+use crate::primitives::cursor_set::Cursor;
 use crate::w7e::navcomp_provider::NavCompProvider;
 
 /*
@@ -40,6 +41,29 @@ impl NavCompProvider for NavCompProviderLsp {
                 debug!("failed sending text_document_did_open for {}", url);
             })
         });
+    }
+
+    fn submit_edit_event(&self, path: &SPath, file_contents: String) {
+        let url = match path.to_url() {
+            Ok(url) => url,
+            Err(_) => {
+                error!("failed opening for edition, because path->url cast failed.");
+                return;
+            }
+        };
+
+        let lsp = self.lsp.clone();
+
+        let item = spawn(async move {
+            let mut lsp_lock = lsp.write().await;
+            lsp_lock.text_document_did_change(url.clone(), file_contents).await.map_err(|err| {
+                debug!("failed sending text_document_did_change for {}", url);
+            })
+        });
+    }
+
+    fn completions(&self, path: &SPath, cursor: &Cursor) {
+        todo!()
     }
 
     fn file_closed(&self, path: &SPath) {
