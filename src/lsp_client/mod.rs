@@ -8,3 +8,4 @@ mod lsp_read;
 mod lsp_write;
 mod lsp_notification;
 mod debug_helpers;
+pub mod helpers;

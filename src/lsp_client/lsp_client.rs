@@ -6,7 +6,7 @@ use std::process::Stdio;
 use std::sync::Arc;
 
 use log::{debug, error, warn};
-use lsp_types::{TextDocumentContentChangeEvent, Url, VersionedTextDocumentIdentifier};
+use lsp_types::{CompletionContext, CompletionResponse, CompletionTriggerKind, Position, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentPositionParams, Url, VersionedTextDocumentIdentifier};
 use serde_json::Value;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::BufReader;
@@ -15,6 +15,7 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::RwLock;
 
 use crate::lsp_client::debug_helpers::lsp_debug_save;
+use crate::lsp_client::helpers::LspTextCursor;
 use crate::lsp_client::lsp_io_error::LspIOError;
 use crate::lsp_client::lsp_notification::LspServerNotification;
 use crate::lsp_client::lsp_read::read_lsp;
@@ -319,6 +320,41 @@ impl LspWrapper {
                         text: full_text,
                     }
                 ],
+            }
+        ).await
+    }
+
+    pub async fn text_document_completion(&mut self,
+                                          url: Url,
+                                          cursor: LspTextCursor,
+                                          /*
+                                          just typing or ctrl-space?
+                                           */
+                                          automatic: bool,
+                                          /*
+                                          '.' or '::' or other thing like that
+                                           */
+                                          trigger_character: Option<String>,
+    ) -> Result<Option<CompletionResponse>, LspIOError> {
+        self.send_message::<lsp_types::request::Completion>(
+            lsp_types::CompletionParams {
+                text_document_position: TextDocumentPositionParams {
+                    text_document: TextDocumentIdentifier { uri: url },
+                    position: Position {
+                        line: cursor.row,
+                        character: cursor.col,
+                    },
+                },
+                work_done_progress_params: Default::default(),
+                partial_result_params: Default::default(),
+                context: Some(CompletionContext {
+                    trigger_kind: if automatic {
+                        CompletionTriggerKind::TRIGGER_CHARACTER
+                    } else {
+                        CompletionTriggerKind::INVOKED
+                    },
+                    trigger_character,
+                }),
             }
         ).await
     }
