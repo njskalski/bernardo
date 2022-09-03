@@ -272,7 +272,7 @@ impl LspWrapper {
 
     pub async fn text_document_did_open(&mut self, url: Url, text: String) -> Result<(), LspWriteError> {
         {
-            let mut lock = self.file_versions.blocking_write();
+            let mut lock = self.file_versions.write().await;
             if let Some(old_id) = lock.get(&url) {
                 warn!("expected document {:?} version to be 0, is {}", &url, old_id);
             } else {
@@ -297,9 +297,9 @@ impl LspWrapper {
      */
     pub async fn text_document_did_change(&mut self, url: Url, full_text: String) -> Result<(), LspWriteError> {
         let version = {
-            let mut lock = self.file_versions.blocking_write();
+            let mut lock = self.file_versions.write().await;
             if let Some(old_id) = lock.get(&url).map(|i| *i) {
-                debug!("updating document {:?} from {} to {}", &url, old_id, old_id+1);
+                debug!("updating document {} from {} to {}", &url, old_id, old_id+1);
                 lock.insert(url.clone(), old_id + 1);
                 old_id + 1
             } else {
