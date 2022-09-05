@@ -18,6 +18,9 @@ pub enum NavCompTick {
     LspTick(LangId, usize)
 }
 
+pub type NavCompTickSender = crossbeam_channel::Sender<NavCompTick>;
+pub type NavCompTickRecv = crossbeam_channel::Receiver<NavCompTick>;
+
 /*
 This class is supposed to group all available navcomp providers so editor can choose from them
 whenever they want.
@@ -25,15 +28,15 @@ whenever they want.
 pub struct NavCompGroup {
     navcomps: HashMap<LangId, NavCompRef>,
 
-    tick_sender: tokio::sync::mpsc::UnboundedSender<NavCompTick>,
-    tick_receiver: tokio::sync::mpsc::UnboundedReceiver<NavCompTick>,
+    tick_sender: NavCompTickSender,
+    tick_receiver: NavCompTickRecv,
 }
 
 pub type NavCompGroupRef = Arc<NavCompGroup>;
 
 impl NavCompGroup {
     pub fn new() -> Self {
-        let (tick_sender, tick_receiver) = tokio::sync::mpsc::unbounded_channel::<NavCompTick>();
+        let (tick_sender, tick_receiver) = crossbeam_channel::unbounded::<NavCompTick>();
 
         NavCompGroup {
             navcomps: Default::default(),
@@ -66,11 +69,11 @@ impl NavCompGroup {
         self.navcomps.len()
     }
 
-    pub fn recvr(&self) -> &UnboundedReceiver<NavCompTick> {
+    pub fn recvr(&self) -> &NavCompTickRecv {
         &self.tick_receiver
     }
 
-    pub fn todo_sender(&self) -> &UnboundedSender<NavCompTick> {
+    pub fn todo_sender(&self) -> &NavCompTickSender {
         &self.tick_sender
     }
 }

@@ -10,7 +10,7 @@ use crate::fs::path::SPath;
 use crate::w7e::handler::Handler;
 use crate::w7e::handler_factory::load_handler;
 use crate::w7e::handler_load_error::HandlerLoadError;
-use crate::w7e::navcomp_group::NavCompTick;
+use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 
 pub struct ProjectScope {
     pub lang_id: LangId,
@@ -68,7 +68,7 @@ impl ProjectScope {
      */
     pub async fn load_handler(&mut self,
                               config: &ConfigRef,
-                              navcomp_tick_sender: UnboundedSender<NavCompTick>,
+                              navcomp_tick_sender: NavCompTickSender,
     ) -> Result<(), HandlerLoadError> {
         let handler = match &self.handler_id {
             None => {

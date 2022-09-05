@@ -269,13 +269,13 @@ async fn main() -> Result<(), usize> {
             //     });
             // }
 
-            recv(nav_comp_group_ref.recvr()) -> tick => {
-                match tick {
-                    _ => {
-                        error!("unhandled tick : {:?}", tick)
-                    }
-                }
-            }
+            // recv(nav_comp_group_ref.recvr()) -> tick => {
+            //     match tick {
+            //         _ => {
+            //             error!("unhandled tick : {:?}", tick)
+            //         }
+            //     }
+            // }
         }
     }
 

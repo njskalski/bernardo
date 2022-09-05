@@ -10,7 +10,7 @@ use crate::fs::path::SPath;
 use crate::lsp_client::lsp_client::{LspWrapper, LspWrapperRef};
 use crate::w7e::handler::{Handler, NavCompRef};
 use crate::w7e::handler_load_error::HandlerLoadError;
-use crate::w7e::navcomp_group::NavCompTick;
+use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 use crate::w7e::navcomp_provider::NavCompProvider;
 use crate::w7e::navcomp_provider_lsp::NavCompProviderLsp;
 
@@ -50,7 +50,7 @@ So handler can "partially work", meaning for instance that running/debugging wor
 impl RustHandler {
     pub async fn load(config: &ConfigRef,
                       ff: SPath,
-                      tick_sender: UnboundedSender<NavCompTick>,
+                      tick_sender: NavCompTickSender,
     ) -> Result<RustHandler, HandlerLoadError> {
         if !ff.is_dir() {
             return Err(HandlerLoadError::NotAProject);

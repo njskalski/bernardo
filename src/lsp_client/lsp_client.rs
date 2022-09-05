@@ -23,7 +23,7 @@ use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::lsp_client::lsp_write::{internal_send_notification, internal_send_notification_no_params, internal_send_request};
 use crate::lsp_client::lsp_write_error::LspWriteError;
 use crate::tsw::lang_id::LangId;
-use crate::w7e::navcomp_group::NavCompTick;
+use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 
 const DEFAULT_RESPONSE_PREALLOCATION_SIZE: usize = 4192;
 
@@ -59,7 +59,10 @@ pub struct LspWrapper {
     reader_handle: tokio::task::JoinHandle<Result<(), LspReadError>>,
     logger_handle: tokio::task::JoinHandle<Result<(), ()>>,
 
-    tick_sender: tokio::sync::mpsc::UnboundedSender<NavCompTick>,
+    /*
+    to be copied to all features, indicate "ready"
+     */
+    tick_sender: NavCompTickSender,
 }
 
 pub type LspWrapperRef = Arc<tokio::sync::RwLock<LspWrapper>>;
@@ -71,7 +74,7 @@ impl LspWrapper {
      */
     pub fn new(lsp_path: PathBuf,
                workspace_root: PathBuf,
-               tick_sender: UnboundedSender<NavCompTick>) -> Option<LspWrapper> {
+               tick_sender: NavCompTickSender) -> Option<LspWrapper> {
         debug!("starting LspWrapper for directory {:?}", &workspace_root);
         let mut child = tokio::process::Command::new(lsp_path.as_os_str())
             // .args(&["--cli"])
@@ -134,7 +137,7 @@ impl LspWrapper {
                 curr_id: 1,
                 reader_handle,
                 logger_handle,
-                tick_sender
+                tick_sender,
             }
         )
     }

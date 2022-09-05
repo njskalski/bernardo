@@ -340,7 +340,7 @@ impl EditorWidget {
                     };
 
                     // TODO
-                    let x = navcomp.completions(path, stupid_cursor);
+                    let mut x = navcomp.completions(path, stupid_cursor);
                 }
             }
         } else {
