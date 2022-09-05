@@ -73,7 +73,7 @@ impl RustHandler {
 
         if let Some(mut lsp) = LspWrapper::new(lsp_path,
                                                ff.absolute_path(),
-                                               tick_sender,
+                                               tick_sender.clone(),
         ) {
             debug!("initializing lsp");
             if let Ok(res) = tokio::time::timeout(INIT_TIMEOUT, lsp.initialize()).await {
@@ -84,7 +84,7 @@ impl RustHandler {
                         let arc_lsp = Arc::new(RwLock::new(lsp));
                         lsp_ref_op = Some(arc_lsp.clone());
                         navcomp_op = Some(
-                            Arc::new(Box::new(NavCompProviderLsp::new(arc_lsp)) as Box<dyn NavCompProvider>)
+                            Arc::new(Box::new(NavCompProviderLsp::new(arc_lsp, tick_sender.clone())) as Box<dyn NavCompProvider>)
                         );
                     }
                     Err(e) => {

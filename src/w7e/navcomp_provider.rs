@@ -40,5 +40,5 @@ pub trait NavCompProvider: Debug + Send + Sync {
 
     fn file_closed(&self, path: &SPath);
 
-    // fn todo_navcomp_sender(&self) -> &NavCompTickSender;
+    fn todo_navcomp_sender(&self) -> &NavCompTickSender;
 }

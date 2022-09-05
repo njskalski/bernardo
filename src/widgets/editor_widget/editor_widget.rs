@@ -129,7 +129,7 @@ impl EditorWidget {
         self.navcomp = navcomp_op;
         let contents = self.buffer.text().to_string();
 
-        match (self.navcomp, self.buffer.get_file_front()) {
+        match (self.navcomp.clone(), self.buffer.get_file_front()) {
             (Some(navcomp), Some(spath)) => {
                 navcomp.file_open_for_edition(spath, contents);
             }
