@@ -70,7 +70,7 @@ impl NavCompProvider for NavCompProviderLsp {
         });
     }
 
-    async fn completions(&self, path: SPath, cursor: LspTextCursor) -> Vec<Completion>; {
+    async fn completions(&self, path: SPath, cursor: LspTextCursor) -> Vec<Completion> {
         let url = match path.to_url() {
             Ok(url) => url,
             Err(_) => {
@@ -79,36 +79,32 @@ impl NavCompProvider for NavCompProviderLsp {
             }
         };
 
-        let comp = async move {
-            let lsp_arc = self.lsp.clone();
-            let mut lsp = lsp_arc.write().await;
-            match lsp.text_document_completion(url, cursor, true /*TODO*/, None).await {
-                Ok(resp) => {
-                    match resp {
-                        None => {
-                            warn!("no response for completion request");
-                            Vec::new()
-                        }
-                        Some(response) => {
-                            match response {
-                                CompletionResponse::Array(arr) => {
-                                    arr.into_iter().map(translate_completion_item).collect()
-                                }
-                                CompletionResponse::List(list) => {
-                                    list.items.into_iter().map(translate_completion_item).collect()
-                                }
+        let lsp_arc = self.lsp.clone();
+        let mut lsp = lsp_arc.write().await;
+        match lsp.text_document_completion(url, cursor, true /*TODO*/, None).await {
+            Ok(resp) => {
+                match resp {
+                    None => {
+                        warn!("no response for completion request");
+                        Vec::new()
+                    }
+                    Some(response) => {
+                        match response {
+                            CompletionResponse::Array(arr) => {
+                                arr.into_iter().map(translate_completion_item).collect()
+                            }
+                            CompletionResponse::List(list) => {
+                                list.items.into_iter().map(translate_completion_item).collect()
                             }
                         }
                     }
                 }
-                Err(e) => {
-                    error!("failed retrieving completions: {:?}", e);
-                    Vec::new()
-                }
             }
-        };
-
-        Box::new(comp)
+            Err(e) => {
+                error!("failed retrieving completions: {:?}", e);
+                Vec::new()
+            }
+        }
     }
 
     fn completion_triggers(&self, _path: &SPath) -> Vec<String> {
