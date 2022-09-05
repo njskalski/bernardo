@@ -368,7 +368,7 @@ impl EditorWidget {
                         futures::future::ready(())
                     });
 
-                    tokio::spawn(async { second_promise.await; });
+                    tokio::spawn(second_promise);
 
                     let comp = CompletionWidget::new(Box::new(promise));
                     self.hover = Some(EditorHover::Completion(comp));

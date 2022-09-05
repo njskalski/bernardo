@@ -22,7 +22,7 @@ pub struct Completion {
 
 // this is a wrapper around LSP and "similar services".
 #[async_trait]
-pub trait NavCompProvider: Debug {
+pub trait NavCompProvider: Debug + Send {
     /*
     file_contents are strictly LSP requirement
      */

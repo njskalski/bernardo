@@ -4,7 +4,7 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use log::error;
 use streaming_iterator::StreamingIterator;
@@ -22,10 +22,10 @@ pub struct DirCache {
 
 pub struct FsAndCache {
     fs: Box<dyn FilesystemFront>,
-    caches: RefCell<HashMap<SPath, DirCache>>,
+    caches: RwLock<HashMap<SPath, DirCache>>,
 
     // TODO implement drop to set this option to None to avoid memory leak, because now fs is self-referencing
-    root_node_cache: RefCell<Option<SPath>>,
+    root_node_cache: RwLock<Option<SPath>>,
 }
 
 #[derive(Clone)]
