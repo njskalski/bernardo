@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use log::{debug, error};
+use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::RwLock;
 
 use crate::{ConfigRef, LangId};
@@ -9,6 +10,7 @@ use crate::fs::path::SPath;
 use crate::lsp_client::lsp_client::{LspWrapper, LspWrapperRef};
 use crate::w7e::handler::{Handler, NavCompRef};
 use crate::w7e::handler_load_error::HandlerLoadError;
+use crate::w7e::navcomp_group::NavCompTick;
 use crate::w7e::navcomp_provider::NavCompProvider;
 use crate::w7e::navcomp_provider_lsp::NavCompProviderLsp;
 
@@ -46,7 +48,10 @@ So handler can "partially work", meaning for instance that running/debugging wor
 
  */
 impl RustHandler {
-    pub async fn load(config: &ConfigRef, ff: SPath) -> Result<RustHandler, HandlerLoadError> {
+    pub async fn load(config: &ConfigRef,
+                      ff: SPath,
+                      tick_sender: UnboundedSender<NavCompTick>,
+    ) -> Result<RustHandler, HandlerLoadError> {
         if !ff.is_dir() {
             return Err(HandlerLoadError::NotAProject);
         }
@@ -66,7 +71,10 @@ impl RustHandler {
         let mut lsp_ref_op: Option<LspWrapperRef> = None;
         let mut navcomp_op: Option<NavCompRef> = None;
 
-        if let Some(mut lsp) = LspWrapper::new(lsp_path, ff.absolute_path()) {
+        if let Some(mut lsp) = LspWrapper::new(lsp_path,
+                                               ff.absolute_path(),
+                                               tick_sender,
+        ) {
             debug!("initializing lsp");
             if let Ok(res) = tokio::time::timeout(INIT_TIMEOUT, lsp.initialize()).await {
                 match res {

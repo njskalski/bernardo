@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use log::{debug, warn};
 use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{ConfigRef, LangId};
 use crate::experiments::pretty_ron::ToPrettyRonString;
@@ -9,6 +10,7 @@ use crate::fs::path::SPath;
 use crate::w7e::handler::Handler;
 use crate::w7e::handler_factory::load_handler;
 use crate::w7e::handler_load_error::HandlerLoadError;
+use crate::w7e::navcomp_group::NavCompTick;
 
 pub struct ProjectScope {
     pub lang_id: LangId,
@@ -64,14 +66,21 @@ impl ProjectScope {
     Config is required to "know" where the LSP servers are. We will provide reasonable defaults,
     but option to override is essential.
      */
-    pub async fn load_handler(&mut self, config: &ConfigRef) -> Result<(), HandlerLoadError> {
+    pub async fn load_handler(&mut self,
+                              config: &ConfigRef,
+                              navcomp_tick_sender: UnboundedSender<NavCompTick>,
+    ) -> Result<(), HandlerLoadError> {
         let handler = match &self.handler_id {
             None => {
                 warn!("project scope [{:?}] with no handler - what the point?", self.path.relative_path());
                 return Ok(());
             }
             Some(handler_id) => {
-                load_handler(config, &handler_id, self.path.clone()).await?
+                load_handler(config,
+                             &handler_id,
+                             self.path.clone(),
+                             navcomp_tick_sender.clone(),
+                ).await?
             }
         };
 

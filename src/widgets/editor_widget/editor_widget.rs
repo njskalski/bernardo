@@ -11,6 +11,8 @@ use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::regex_search::FindError;
 use crate::fs::fsf_ref::FsfRef;
+use crate::fs::path::SPath;
+use crate::lsp_client::helpers::{get_lsp_text_cursor, LspTextCursor};
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
 use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};
@@ -289,9 +291,58 @@ impl EditorWidget {
         self.state = EditorState::Editing;
     }
 
-    pub fn update_completion(&mut self) {
+    pub fn auto_trigger_completion(&self) -> bool {
         if let Some(cursor) = self.cursors().as_single() {
-            if let Some(navcomp) = &self.navcomp {}
+            if let Some(navcomp) = &self.navcomp {
+                let path = match self.buffer().get_file_front() {
+                    None => {
+                        warn!("unimplemented autocompletion for non-saved files");
+                        return false;
+                    }
+                    Some(s) => s,
+                };
+
+                for symbol in navcomp.completion_triggers(path) {
+                    if self.buffer().text().ends_with(&symbol) {
+                        debug!("auto-trigger completion on symbol \"{}\"", &symbol);
+                        return true;
+                    }
+                }
+                false
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    pub fn todo_update_completion(&mut self) {
+        if let Some(cursor) = self.cursors().as_single() {
+            if let Some(navcomp) = &self.navcomp {
+                if self.auto_trigger_completion() {
+
+                    // TODO
+                    let path = match self.buffer().get_file_front() {
+                        None => {
+                            warn!("unimplemented autocompletion for non-saved files");
+                            return;
+                        }
+                        Some(s) => s,
+                    };
+
+                    let stupid_cursor = match get_lsp_text_cursor(self.buffer(), cursor) {
+                        Ok(sc) => sc,
+                        Err(e) => {
+                            error!("failed converting cursor to lsp_cursor: {:?}", e);
+                            return;
+                        }
+                    };
+
+                    // TODO
+                    let x = navcomp.completions(path, stupid_cursor);
+                }
+            }
         } else {
             self.hover = None;
         }

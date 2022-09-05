@@ -13,6 +13,15 @@ use crate::w7e::navcomp_group::{NavCompGroup, NavCompGroupRef};
 use crate::w7e::project_scope;
 use crate::w7e::project_scope::{ProjectScope, SerializableProjectScope};
 
+/*
+So a funny finding while adding NavCompTick channel is that it seems like I could immediately add
+a parallel channel for "filesystem events" within the workspace (after all we don't care for other),
+or even go so far as to merge the two, NavCompTicks being just a branch of multiple ticks we'd like
+to receive.
+
+In a way these two not obviously related structures seem to be intertwined.
+ */
+
 pub const WORKSPACE_FILE_NAME: &'static str = ".gladius_workspace.ron";
 
 pub struct Scopes(Vec<ProjectScope>);
@@ -88,13 +97,23 @@ impl Workspace {
         }
     }
 
-    pub async fn initialize_handlers(&mut self, config: &ConfigRef) -> Result<(), Vec<HandlerLoadError>> {
+    pub async fn initialize_handlers(&mut self, config: &ConfigRef) -> (NavCompGroupRef, Vec<HandlerLoadError>) {
         let mut errors: Vec<HandlerLoadError> = Vec::default();
+        let mut nav_comp_group = NavCompGroup::new();
 
         for scope in self.scopes.iter_mut() {
-            match scope.load_handler(config).await {
+            match scope.load_handler(config,
+                                     nav_comp_group.todo_sender().clone()).await {
                 Ok(_) => {
-                    debug!("loaded handler for scope {:?}", scope.path.absolute_path());
+                    let mut has_navcomp = false;
+                    scope.handler.as_ref().map(|h| {
+                        if let Some(navcomp) = h.navcomp() {
+                            has_navcomp = true;
+                            nav_comp_group.add_option(h.lang_id(), navcomp);
+                        }
+                    });
+
+                    debug!("loaded handler for scope {:?}, has_navcomp: {}", scope.path.absolute_path(), has_navcomp);
                 }
                 Err(e) => {
                     errors.push(e);
@@ -102,28 +121,12 @@ impl Workspace {
             }
         }
 
-        if errors.is_empty() {
-            Ok(())
-        } else {
-            Err(errors)
-        }
+        debug!("created navcomp group with {} items", nav_comp_group.len());
+
+        (Arc::new(nav_comp_group), errors)
     }
 
     pub fn scopes(&self) -> &Vec<ProjectScope> {
         &self.scopes
-    }
-
-    // TODO(beta): This should not be called more than once, but I did not decide how to prevent it yet.
-    pub fn todo_get_navcomp_group(&self) -> NavCompGroupRef {
-        let mut nav_comp_group = NavCompGroup::new();
-        for scope in self.scopes.iter() {
-            scope.handler.as_ref().map(|handler| handler.navcomp()).flatten().map(|navcomp| {
-                nav_comp_group.add_option(scope.lang_id, navcomp);
-            });
-        }
-
-        debug!("created navcomp group with {} items", nav_comp_group.len());
-
-        Arc::new(nav_comp_group)
     }
 }

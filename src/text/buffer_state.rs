@@ -107,7 +107,7 @@ impl Text {
         true
     }
 
-    fn ends_with(&self, what: &str) -> bool {
+    pub fn ends_with(&self, what: &str) -> bool {
         let what_char_len = what.graphemes(true).count();
         let rope_len = self.rope.len_chars();
 

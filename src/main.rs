@@ -134,18 +134,10 @@ async fn main() -> Result<(), usize> {
     // At this point it is guaranteed that we have a Workspace present, though it might be not saved!
 
     // Initializing handlers
-    match workspace.initialize_handlers(&config_ref).await {
-        Ok(_) => {
-            debug!("{} handlers initialized", workspace.scopes().len());
-        }
-        Err(errors) => {
-            // TODO I don't know, should I print more data?
-            debug!("{} handlers failed to load.", errors.len());
-        }
-    };
-
-    // Producing NavCompGroup - a collection of navigation/completions available for this workspace.
-    let nav_comp_group_ref = workspace.todo_get_navcomp_group();
+    let (nav_comp_group_ref, scope_errors) = workspace.initialize_handlers(&config_ref).await;
+    if !scope_errors.is_empty() {
+        debug!("{} handlers failed to load, details : {:?}", scope_errors.len(), scope_errors);
+    }
 
     // Initializing Bernardo TUI
     terminal::enable_raw_mode().expect("failed entering raw mode");
@@ -276,6 +268,14 @@ async fn main() -> Result<(), usize> {
             //         error!("failed receiving fsf_tick: {}", e);
             //     });
             // }
+
+            recv(nav_comp_group_ref.recvr()) -> tick => {
+                match tick {
+                    _ => {
+                        error!("unhandled tick : {:?}", tick)
+                    }
+                }
+            }
         }
     }
 

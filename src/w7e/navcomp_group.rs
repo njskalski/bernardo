@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use log::debug;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::fs::path::SPath;
@@ -9,19 +10,35 @@ use crate::LangId;
 use crate::w7e::handler::NavCompRef;
 
 /*
+This enum is used to notify UI on "future ready to poll". Right now I don't differentiate between
+Futures, because we don't have partial redraws, so I just match LangId and request ID
+ */
+#[derive(Debug, Copy, Clone)]
+pub enum NavCompTick {
+    LspTick(LangId, usize)
+}
+
+/*
 This class is supposed to group all available navcomp providers so editor can choose from them
 whenever they want.
  */
 pub struct NavCompGroup {
     navcomps: HashMap<LangId, NavCompRef>,
+
+    tick_sender: tokio::sync::mpsc::UnboundedSender<NavCompTick>,
+    tick_receiver: tokio::sync::mpsc::UnboundedReceiver<NavCompTick>,
 }
 
 pub type NavCompGroupRef = Arc<NavCompGroup>;
 
 impl NavCompGroup {
     pub fn new() -> Self {
+        let (tick_sender, tick_receiver) = tokio::sync::mpsc::unbounded_channel::<NavCompTick>();
+
         NavCompGroup {
-            navcomps: Default::default()
+            navcomps: Default::default(),
+            tick_sender,
+            tick_receiver,
         }
     }
 
@@ -47,5 +64,13 @@ impl NavCompGroup {
 
     pub fn len(&self) -> usize {
         self.navcomps.len()
+    }
+
+    pub fn recvr(&self) -> &UnboundedReceiver<NavCompTick> {
+        &self.tick_receiver
+    }
+
+    pub fn todo_sender(&self) -> &UnboundedSender<NavCompTick> {
+        &self.tick_sender
     }
 }
