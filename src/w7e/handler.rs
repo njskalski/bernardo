@@ -13,7 +13,7 @@ use crate::w7e::navcomp_provider::NavCompProvider;
 // TODO this might become a more complex type, so all methods on it can be sync, but they are
 // executed asynchronously by affiliated task. Though it does sound like just another layer of thread
 // over LSP thread, so NOT SURE.
-pub type NavCompRef = Arc<Mutex<Box<dyn NavCompProvider>>>;
+pub type NavCompRef = Arc<Box<dyn NavCompProvider>>;
 
 
 pub trait Handler {

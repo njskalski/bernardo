@@ -10,7 +10,7 @@ use crate::fs::write_error::WriteError;
 
 // all paths except root_path are RELATIVE to root_path.
 
-pub trait FilesystemFront: Debug + Send {
+pub trait FilesystemFront: Debug + Send + Sync {
     // Absolute path to root folder. Just for informative reasons.
     fn root_path(&self) -> &PathBuf;
 

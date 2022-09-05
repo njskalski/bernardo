@@ -7,6 +7,7 @@ use std::path::{Component, Components, Path, PathBuf};
 
 use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
+use tokio::sync::RwLock;
 
 use crate::experiments::array_streaming_iterator::ArrayStreamingIt;
 use crate::fs::dir_entry::DirEntry;
@@ -139,14 +140,14 @@ impl Record {
 
 pub struct MockFS {
     root_path: PathBuf,
-    root_dir: RefCell<Record>,
+    root_dir: RwLock<Record>,
 }
 
 impl MockFS {
     pub fn new<T: Into<PathBuf>>(root_path: T) -> Self {
         MockFS {
             root_path: root_path.into(),
-            root_dir: RefCell::new(Record::Dir(HashMap::default())),
+            root_dir: RwLock::new(Record::Dir(HashMap::default())),
         }
     }
 
@@ -163,17 +164,17 @@ impl MockFS {
     }
 
     pub fn add_dir(&self, path: &Path) -> Result<(), ()> {
-        if self.root_dir.borrow_mut().create_dir(path) { Ok(()) } else { Err(()) }
+        if self.root_dir.blocking_write().create_dir(path) { Ok(()) } else { Err(()) }
     }
 
     pub fn add_file(&mut self, path: &Path, bytes: Vec<u8>) -> Result<(), ()> {
-        if self.root_dir.borrow_mut().create_file(path, bytes) { Ok(()) } else { Err(()) }
+        if self.root_dir.blocking_write().create_file(path, bytes) { Ok(()) } else { Err(()) }
     }
 
     pub fn blocking_overwrite_with_bytes(&self, path: &Path, bytes: Vec<u8>) -> Result<usize, WriteError> {
         let comp: Vec<_> = path.components().collect();
 
-        if let Some(record) = self.root_dir.borrow_mut().get_mut(&comp, false) {
+        if let Some(record) = self.root_dir.blocking_write().get_mut(&comp, false) {
             if record.is_dir() {
                 return Err(WriteError::NotAFile);
             }
@@ -200,7 +201,7 @@ impl FilesystemFront for MockFS {
 
     fn blocking_read_entire_file(&self, path: &Path) -> Result<Vec<u8>, ReadError> {
         let comp: Vec<_> = path.components().collect();
-        if let Some(rec) = self.root_dir.borrow().get(&comp) {
+        if let Some(rec) = self.root_dir.blocking_read().get(&comp) {
             match rec {
                 Record::File(contents) => Ok(contents.clone()),
                 Record::Dir(_) => Err(ReadError::NotAFilePath)
@@ -212,12 +213,12 @@ impl FilesystemFront for MockFS {
 
     fn is_dir(&self, path: &Path) -> bool {
         let comp: Vec<_> = path.components().collect();
-        self.root_dir.borrow().get(&comp).map(|r| r.is_dir()).unwrap_or(false)
+        self.root_dir.blocking_read().get(&comp).map(|r| r.is_dir()).unwrap_or(false)
     }
 
     fn is_file(&self, path: &Path) -> bool {
         let comp: Vec<_> = path.components().collect();
-        self.root_dir.borrow().get(&comp).map(|r| r.is_file()).unwrap_or(false)
+        self.root_dir.blocking_read().get(&comp).map(|r| r.is_file()).unwrap_or(false)
     }
 
     fn hash_seed(&self) -> usize {
@@ -235,9 +236,9 @@ impl FilesystemFront for MockFS {
 
         let comp: Vec<_> = path.components().collect();
         let items = if comp.is_empty() {
-            self.root_dir.borrow().list()
+            self.root_dir.blocking_read().list()
         } else {
-            match self.root_dir.borrow().get(&comp) {
+            match self.root_dir.blocking_read().get(&comp) {
                 None => {
                     error!("this test was redundant and still failed!");
                     return Err(ListError::PathNotFound);
@@ -260,7 +261,7 @@ impl FilesystemFront for MockFS {
 
     fn exists(&self, path: &Path) -> bool {
         let comp: Vec<_> = path.components().collect();
-        self.root_dir.borrow().get(&comp).is_some()
+        self.root_dir.blocking_read().get(&comp).is_some()
     }
 
     fn blocking_overwrite_with_stream(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {

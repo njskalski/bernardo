@@ -84,7 +84,7 @@ impl RustHandler {
                         let arc_lsp = Arc::new(RwLock::new(lsp));
                         lsp_ref_op = Some(arc_lsp.clone());
                         navcomp_op = Some(
-                            Arc::new(Mutex::new(Box::new(NavCompProviderLsp::new(arc_lsp)) as Box<dyn NavCompProvider>))
+                            Arc::new(Box::new(NavCompProviderLsp::new(arc_lsp)) as Box<dyn NavCompProvider>)
                         );
                     }
                     Err(e) => {

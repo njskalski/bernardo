@@ -4,10 +4,11 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use log::error;
 use streaming_iterator::StreamingIterator;
+use tokio::sync::RwLock;
 
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::path::SPath;
@@ -21,7 +22,7 @@ pub struct DirCache {
 }
 
 pub struct FsAndCache {
-    fs: Box<dyn FilesystemFront>,
+    fs: Box<dyn FilesystemFront + Send + Sync>,
     caches: RwLock<HashMap<SPath, DirCache>>,
 
     // TODO implement drop to set this option to None to avoid memory leak, because now fs is self-referencing
@@ -56,17 +57,17 @@ impl Hash for FsfRef {
 }
 
 impl FsfRef {
-    pub fn new<FS: FilesystemFront + 'static>(fs: FS) -> Self {
+    pub fn new<FS: FilesystemFront + Sync + Send + 'static>(fs: FS) -> Self {
         let fsf = FsfRef {
             fs: Arc::new(FsAndCache {
-                fs: Box::new(fs) as Box<dyn FilesystemFront>,
-                caches: RefCell::new(Default::default()),
-                root_node_cache: RefCell::new(None),
+                fs: Box::new(fs) as Box<dyn FilesystemFront + Sync + Send>,
+                caches: RwLock::new(Default::default()),
+                root_node_cache: RwLock::new(None),
             })
         };
 
         {
-            let mut root_node_cache = fsf.fs.root_node_cache.borrow_mut();
+            let mut root_node_cache = fsf.fs.root_node_cache.blocking_write();
             *root_node_cache = Some(SPath::head(fsf.clone()));
         }
 
@@ -74,7 +75,7 @@ impl FsfRef {
     }
 
     pub fn root(&self) -> SPath {
-        match self.fs.root_node_cache.borrow().deref() {
+        match self.fs.root_node_cache.blocking_read().deref() {
             None => {
                 debug_assert!(false);
                 error!("this should never happen");
@@ -125,7 +126,7 @@ impl FsfRef {
     }
 
     pub fn blocking_list(&self, spath: &SPath) -> Result<Vec<SPath>, ListError> {
-        if let Some(cache) = self.fs.caches.borrow().get(spath) {
+        if let Some(cache) = self.fs.caches.blocking_write().get(spath) {
             return Ok(cache.vec.clone());
         }
 
@@ -138,7 +139,7 @@ impl FsfRef {
             dir_cache.push(sp);
         }
 
-        match self.fs.caches.try_borrow_mut() {
+        match self.fs.caches.try_write() {
             Ok(mut cache) => {
                 cache.insert(spath.clone(), DirCache {
                     vec: dir_cache.clone(),

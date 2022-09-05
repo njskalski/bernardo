@@ -22,7 +22,7 @@ pub struct Completion {
 
 // this is a wrapper around LSP and "similar services".
 #[async_trait]
-pub trait NavCompProvider: Debug + Send {
+pub trait NavCompProvider: Debug + Send + Sync {
     /*
     file_contents are strictly LSP requirement
      */
@@ -40,5 +40,5 @@ pub trait NavCompProvider: Debug + Send {
 
     fn file_closed(&self, path: &SPath);
 
-    fn todo_navcomp_sender(&self) -> &NavCompTickSender;
+    // fn todo_navcomp_sender(&self) -> &NavCompTickSender;
 }

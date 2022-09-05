@@ -3,7 +3,7 @@ use std::io::Error;
 use std::str::Utf8Error;
 use std::string::FromUtf8Error;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReadError {
     FileNotFound,
     NotAFilePath,
@@ -13,7 +13,7 @@ pub enum ReadError {
     UnmappedError(String),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ListError {
     PathNotFound,
     NotADir,

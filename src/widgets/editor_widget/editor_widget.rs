@@ -131,7 +131,7 @@ impl EditorWidget {
 
         match (self.navcomp, self.buffer.get_file_front()) {
             (Some(navcomp), Some(spath)) => {
-                navcomp.blocking_lock().file_open_for_edition(spath, contents);
+                navcomp.file_open_for_edition(spath, contents);
             }
             _ => {
                 debug!("not starting navigation, because navcomp is some: {}, ff is some: {}",
@@ -309,7 +309,7 @@ impl EditorWidget {
                     Some(s) => s,
                 };
 
-                for symbol in navcomp.blocking_lock().completion_triggers(path) {
+                for symbol in navcomp.completion_triggers(path) {
                     if self.buffer().text().ends_with(&symbol) {
                         debug!("auto-trigger completion on symbol \"{}\"", &symbol);
                         return true;
@@ -348,9 +348,9 @@ impl EditorWidget {
 
                     // TODO
 
-                    let tick_sender = navcomp.blocking_lock().todo_navcomp_sender().clone();
+                    let tick_sender = navcomp.todo_navcomp_sender().clone();
                     let promise = async move {
-                        navcomp.lock().await.completions(path, stupid_cursor).await
+                        navcomp.completions(path, stupid_cursor).await
                     };
 
                     let promise = promise.shared();

@@ -21,7 +21,6 @@ from non-async and hope it works out.
  */
 pub struct NavCompProviderLsp {
     lsp: LspWrapperRef,
-    todo_tick_sender: NavCompTickSender,
 }
 
 impl NavCompProviderLsp {
@@ -116,9 +115,9 @@ impl NavCompProvider for NavCompProviderLsp {
         todo!()
     }
 
-    fn todo_navcomp_sender(&self) -> &NavCompTickSender {
-        &self.todo_tick_sender
-    }
+    // fn todo_navcomp_sender(&self) -> &NavCompTickSender {
+    //     &self.todo_tick_sender
+    // }
 }
 
 impl Debug for NavCompProviderLsp {
