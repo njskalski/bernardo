@@ -1,7 +1,11 @@
 use std::fmt::{Debug, Formatter};
+
 use ropey::iter::{Chars, Chunks};
 use streaming_iterator::StreamingIterator;
+use unicode_segmentation::UnicodeSegmentation;
+
 use crate::experiments::deref_str::DerefStr;
+use crate::experiments::regex_search::{FindError, regex_find, RegexMatches};
 use crate::tsw::lang_id::LangId;
 
 //TODO create tests for undo/redo/set milestone

@@ -212,7 +212,7 @@ impl EditorView {
     }
 
     pub fn buffer_state(&self) -> &BufferState {
-        self.editor.internal().buffer_state()
+        self.editor.internal().buffer()
     }
 
     fn hit_find_once(&mut self) -> bool {
@@ -240,11 +240,11 @@ impl EditorView {
             }
         };
 
-        let curr_text = self.editor.internal().buffer_state().text();
+        let curr_text = self.editor.internal().buffer().text();
         if curr_text.cursor_set.is_single() && curr_text.do_cursors_match_regex(&phrase) {
             let with_what = self.replace_box.get_text().to_string();
             let page_height = self.editor.internal().page_height() as usize;
-            let bf = self.editor.internal_mut().buffer_state_mut();
+            let bf = self.editor.internal_mut().buffer_mut();
             bf.apply_cem(
                 CommonEditMsg::Block(with_what),
                 page_height,
@@ -268,7 +268,7 @@ impl EditorView {
 
     fn set_file_name(&mut self, path: &SPath) {
         let editor = self.editor.internal_mut();
-        editor.buffer_state_mut().set_file_front(Some(path.clone()));
+        editor.buffer_mut().set_file_front(Some(path.clone()));
         let navcomp_op = self.nav_comp_group.get_navcomp_for(path);
         editor.set_navcomp(navcomp_op);
     }

@@ -105,6 +105,11 @@ impl NavCompProvider for NavCompProviderLsp {
         }
     }
 
+    fn completion_triggers(&self, _path: &SPath) -> Vec<String> {
+        //TODO this will get language specific
+        vec![".".to_string(), "::".to_string()]
+    }
+
     fn file_closed(&self, path: &SPath) {
         todo!()
     }

@@ -31,5 +31,8 @@ pub trait NavCompProvider: Debug {
 
     async fn completions(&self, path: &SPath, cursor: LspTextCursor) -> Vec<Completion>;
 
+    // TODO this will probably get more complicated
+    fn completion_triggers(&self, path: &SPath) -> Vec<String>;
+
     fn file_closed(&self, path: &SPath);
 }

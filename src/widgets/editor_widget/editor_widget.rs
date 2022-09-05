@@ -323,14 +323,6 @@ impl EditorWidget {
         }
     }
 
-    pub fn buffer_state(&self) -> &BufferState {
-        &self.buffer
-    }
-
-    pub fn buffer_state_mut(&mut self) -> &mut BufferState {
-        &mut self.buffer
-    }
-
     pub fn cursors(&self) -> &CursorSet {
         &self.buffer.text().cursor_set
     }
@@ -423,7 +415,7 @@ impl Widget for EditorWidget {
                             _ => {}
                         }
                     }
-                    
+
                     match cme_to_direction(cem) {
                         None => {}
                         Some(direction) => self.update_anchor(direction)

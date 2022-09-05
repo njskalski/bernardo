@@ -106,6 +106,32 @@ impl Text {
 
         true
     }
+
+    fn ends_with(&self, what: &str) -> bool {
+        let what_char_len = what.graphemes(true).count();
+        let rope_len = self.rope.len_chars();
+
+        if rope_len < what_char_len {
+            false
+        } else {
+            let mut tail = String::new();
+            for char_idx in 0..what_char_len {
+                match self.rope.get_char(rope_len - what_char_len + char_idx) {
+                    Some(ch) => {
+                        tail.push(ch);
+                    }
+                    None => {
+                        error!("failed unwrapping expected character");
+                        return false;
+                    }
+                }
+            }
+
+            debug_assert!(tail.graphemes(true).count() == what_char_len);
+
+            what == &tail
+        }
+    }
 }
 
 impl ToString for Text {
