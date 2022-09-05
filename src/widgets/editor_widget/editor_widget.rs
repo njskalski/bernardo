@@ -1,12 +1,14 @@
 use std::rc::Rc;
 
+use crossbeam_channel::TrySendError;
+use futures::{FutureExt, TryFutureExt};
 use log::{debug, error, warn};
 use lsp_types::Hover;
 use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, ConfigRef, InputEvent, Keycode, Output, SizeConstraint, Widget};
+use crate::{AnyMsg, ConfigRef, InputEvent, Keycode, LangId, Output, SizeConstraint, Widget};
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::regex_search::FindError;
@@ -24,8 +26,11 @@ use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::handler::NavCompRef;
+use crate::w7e::navcomp_group::NavCompTick;
+use crate::w7e::navcomp_provider::Completion;
 use crate::widget::any_msg::AsAny;
 use crate::widget::widget::{get_new_widget_id, WID};
+use crate::widgets::editor_widget::completion_widget::CompletionWidget;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
@@ -60,7 +65,9 @@ enum EditorState {
     },
 }
 
-enum EditorHover {}
+enum EditorHover {
+    Completion(CompletionWidget)
+}
 
 pub struct EditorWidget {
     wid: WID,
@@ -122,9 +129,9 @@ impl EditorWidget {
         self.navcomp = navcomp_op;
         let contents = self.buffer.text().to_string();
 
-        match (&self.navcomp, self.buffer.get_file_front()) {
+        match (self.navcomp, self.buffer.get_file_front()) {
             (Some(navcomp), Some(spath)) => {
-                navcomp.file_open_for_edition(spath, contents);
+                navcomp.blocking_lock().file_open_for_edition(spath, contents);
             }
             _ => {
                 debug!("not starting navigation, because navcomp is some: {}, ff is some: {}",
@@ -302,7 +309,7 @@ impl EditorWidget {
                     Some(s) => s,
                 };
 
-                for symbol in navcomp.completion_triggers(path) {
+                for symbol in navcomp.blocking_lock().completion_triggers(path) {
                     if self.buffer().text().ends_with(&symbol) {
                         debug!("auto-trigger completion on symbol \"{}\"", &symbol);
                         return true;
@@ -319,7 +326,7 @@ impl EditorWidget {
 
     pub fn todo_update_completion(&mut self) {
         if let Some(cursor) = self.cursors().as_single() {
-            if let Some(navcomp) = &self.navcomp {
+            if let Some(navcomp) = self.navcomp.clone() {
                 if self.auto_trigger_completion() {
 
                     // TODO
@@ -328,7 +335,7 @@ impl EditorWidget {
                             warn!("unimplemented autocompletion for non-saved files");
                             return;
                         }
-                        Some(s) => s,
+                        Some(s) => s.clone(),
                     };
 
                     let stupid_cursor = match get_lsp_text_cursor(self.buffer(), cursor) {
@@ -340,7 +347,32 @@ impl EditorWidget {
                     };
 
                     // TODO
-                    let mut x = navcomp.completions(path, stupid_cursor);
+
+                    let tick_sender = navcomp.blocking_lock().todo_navcomp_sender().clone();
+                    let promise = async move {
+                        navcomp.lock().await.completions(path, stupid_cursor).await
+                    };
+
+                    let promise = promise.shared();
+                    let second_promise = promise.clone();
+                    let second_promise = second_promise.then(move |_| {
+                        // TODO parameters of LspTick
+                        match tick_sender.try_send(NavCompTick::LspTick(LangId::RUST, 0)) {
+                            Ok(_) => {
+                                debug!("sent navcomp tick");
+                            }
+                            Err(e) => {
+                                error!("failed sending navcomp tick: {:?}", e);
+                            }
+                        };
+                        futures::future::ready(())
+                    });
+
+                    tokio::spawn(async { second_promise.await; });
+
+                    let comp = CompletionWidget::new(Box::new(promise));
+                    self.hover = Some(EditorHover::Completion(comp));
+                    debug!("created completion");
                 }
             }
         } else {

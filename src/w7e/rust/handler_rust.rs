@@ -2,8 +2,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use log::{debug, error};
+use tokio::sync::{Mutex, RwLock};
 use tokio::sync::mpsc::UnboundedSender;
-use tokio::sync::RwLock;
 
 use crate::{ConfigRef, LangId};
 use crate::fs::path::SPath;
@@ -84,7 +84,7 @@ impl RustHandler {
                         let arc_lsp = Arc::new(RwLock::new(lsp));
                         lsp_ref_op = Some(arc_lsp.clone());
                         navcomp_op = Some(
-                            Arc::new(Box::new(NavCompProviderLsp::new(arc_lsp)) as Box<dyn NavCompProvider>)
+                            Arc::new(Mutex::new(Box::new(NavCompProviderLsp::new(arc_lsp)) as Box<dyn NavCompProvider>))
                         );
                     }
                     Err(e) => {

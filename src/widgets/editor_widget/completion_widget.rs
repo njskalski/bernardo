@@ -2,20 +2,28 @@
 I guess I should reuse FuzzySearch Widget, this is a placeholder now.
  */
 
+use std::future::Future;
+
 use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, Widget};
 use crate::primitives::xy::XY;
+use crate::w7e::navcomp_provider::Completion;
 use crate::widget::widget::{get_new_widget_id, WID};
+
+pub type CompletionsFuture = Box<dyn Future<Output=Vec<Completion>>>;
 
 pub struct CompletionWidget {
     wid: WID,
     fuzzy: bool,
+
+    completions: CompletionsFuture,
 }
 
 impl CompletionWidget {
-    pub fn new() -> Self {
+    pub fn new(completions_future: CompletionsFuture) -> Self {
         CompletionWidget {
             wid: get_new_widget_id(),
             fuzzy: true,
+            completions: completions_future,
         }
     }
 }

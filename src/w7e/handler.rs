@@ -5,10 +5,15 @@ items, like run configurations, test targets, and LSP clients.
 
 use std::sync::Arc;
 
+use tokio::sync::{Mutex, RwLock};
+
 use crate::LangId;
 use crate::w7e::navcomp_provider::NavCompProvider;
 
-pub type NavCompRef = Arc<Box<dyn NavCompProvider>>;
+// TODO this might become a more complex type, so all methods on it can be sync, but they are
+// executed asynchronously by affiliated task. Though it does sound like just another layer of thread
+// over LSP thread, so NOT SURE.
+pub type NavCompRef = Arc<Mutex<Box<dyn NavCompProvider>>>;
 
 pub trait Handler {
     fn lang_id(&self) -> LangId;
