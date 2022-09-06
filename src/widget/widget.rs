@@ -36,6 +36,9 @@ pub trait Widget: 'static {
     // In case I forget why I added it: to inform the "split layout" on actual size of widgets.
     // Without it, it would be impossible to decide "which widget get's how much space" before
     // rendering them.
+    //
+    // A lot of widgets decide based on sc.visible_hint() how much space to use, so their size is
+    // dependent not on constraint, but on size of display.
     fn layout(&mut self, sc: SizeConstraint) -> XY;
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.

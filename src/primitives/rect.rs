@@ -132,6 +132,10 @@ impl Rect {
         debug_assert!(self.lower_right().x > xy.x || xy.x == u16::MAX);
         debug_assert!(self.lower_right().y > xy.y || xy.y == u16::MAX);
     }
+
+    pub fn contains(&self, what: XY) -> bool {
+        return self.upper_left() <= what && what < self.lower_right();
+    }
 }
 
 pub struct CornersIterator {

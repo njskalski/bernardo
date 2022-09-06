@@ -1,19 +1,25 @@
+use std::cmp::min;
 use std::rc::Rc;
 
 use crossbeam_channel::TrySendError;
 use futures::{FutureExt, TryFutureExt};
+use futures::future::err;
 use log::{debug, error, warn};
 use lsp_types::Hover;
 use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, ConfigRef, InputEvent, Keycode, LangId, Output, SizeConstraint, Widget};
+use crate::{AnyMsg, ConfigRef, InputEvent, Keycode, LangId, Output, selfwidget, SizeConstraint, subwidget, Widget};
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::regex_search::FindError;
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
+use crate::layout::hover_layout::HoverLayout;
+use crate::layout::layout::Layout;
+use crate::layout::leaf_layout::LeafLayout;
 use crate::lsp_client::helpers::{get_lsp_text_cursor, LspTextCursor};
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
@@ -21,6 +27,7 @@ use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_ed
 use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
+use crate::primitives::rect::Rect;
 use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
@@ -29,11 +36,14 @@ use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_group::NavCompTick;
 use crate::w7e::navcomp_provider::Completion;
 use crate::widget::any_msg::AsAny;
+use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::editor_widget::completion_widget::CompletionWidget;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
+const MAX_HOVER_WIDTH: u16 = 15;
+const DEFAULT_HOVER_HEIGHT: u16 = 5;
 
 const NEWLINE: &'static str = "⏎";
 const BEYOND: &'static str = "⇱";
@@ -72,7 +82,7 @@ enum EditorHover {
 pub struct EditorWidget {
     wid: WID,
 
-    last_size: Option<XY>,
+    last_size: Option<SizeConstraint>,
 
     buffer: BufferState,
 
@@ -95,7 +105,7 @@ pub struct EditorWidget {
     state: EditorState,
 
     // This is completion or navigation
-    hover: Option<EditorHover>,
+    hover: Option<(Rect, EditorHover)>,
 }
 
 impl EditorWidget {
@@ -324,6 +334,85 @@ impl EditorWidget {
         }
     }
 
+    pub fn get_single_cursor_screen_pos(&self) -> Option<XY> {
+        let c = self.cursors().as_single()?;
+        let lspc = get_lsp_text_cursor(self.buffer(), c).map_err(
+            |e| {
+                error!("failed mappint cursor to lsp-cursor")
+            }).ok()?;
+        let lspcxy = match lspc.to_xy() {
+            None => {
+                error!("lsp cursor beyond XY max");
+                return None;
+            }
+            Some(x) => x,
+        };
+
+        let local_pos = match self.last_size {
+            None => {
+                error!("single_cursor_screen_pos called before first layout!");
+                return None;
+            }
+            Some(sc) => {
+                if !sc.visible_hint().contains(lspcxy) {
+                    warn!("cursor seems to be outside visible hint.");
+                    return None;
+                }
+
+                lspcxy - sc.visible_hint().upper_left()
+            }
+        };
+
+        debug!("cursor {:?} converted to {:?} positioned at {:?}", c, lspc, local_pos);
+        debug_assert!(local_pos >= ZERO);
+        debug_assert!(local_pos < self.last_size.unwrap().visible_hint().size);
+
+        Some(local_pos)
+    }
+
+    pub fn get_cursor_related_hover(&self) -> Option<Rect> {
+        let cursor_pos = match self.get_single_cursor_screen_pos() {
+            Some(cp) => cp,
+            None => {
+                error!("can't position hover, no cursor local pos");
+                None
+            }
+        };
+
+        // TODO completely arbitrary choice
+        let last_size = match self.last_size {
+            None => {
+                error!("requested hover before layour");
+                return None;
+            }
+            Some(ls) => ls,
+        };
+
+        // if cursor is in upper part, we draw the lower one, and other way around
+        let above = cursor_pos.y > (last_size.visible_hint().size.y / 2);
+        let width = min(MAX_HOVER_WIDTH, last_size.visible_hint().size.x - cursor_pos.x);
+        // TODO underflow
+        let height = min(DEFAULT_HOVER_HEIGHT, (last_size.visible_hint().size / 2) - 1 as u16);
+
+        if above {
+            debug_assert!(cursor_pos.y > height);
+            Some(Rect::xxyy(
+                cursor_pos.x,
+                cursor_pos.x + width,
+                cursor_pos.y - 1, // TODO underflow
+                cursor_pos.y - height,
+            ))
+        } else {
+            debug_assert!(cursor_pos.y + height < last_size.visible_hint().size.y);
+            Some(Rect::xxyy(
+                cursor_pos.x,
+                cursor_pos.x + width,
+                cursor_pos.y + 1,
+                cursor_pos.y + height,
+            ))
+        }
+    }
+
     pub fn todo_update_completion(&mut self) {
         if let Some(cursor) = self.cursors().as_single() {
             if let Some(navcomp) = self.navcomp.clone() {
@@ -348,6 +437,14 @@ impl EditorWidget {
 
                     // TODO
 
+                    let hover_rect = match self.get_cursor_related_hover() {
+                        None => {
+                            error!("no place to draw completions!");
+                            return;
+                        }
+                        Some(r) => r,
+                    };
+
                     let tick_sender = navcomp.todo_navcomp_sender().clone();
                     let promise = async move {
                         navcomp.completions(path, stupid_cursor).await
@@ -371,7 +468,7 @@ impl EditorWidget {
                     tokio::spawn(second_promise);
 
                     let comp = CompletionWidget::new(Box::new(promise));
-                    self.hover = Some(EditorHover::Completion(comp));
+                    self.hover = Some(hover_rect, EditorHover::Completion(comp));
                     debug!("created completion");
                 }
             }
@@ -442,9 +539,8 @@ impl Widget for EditorWidget {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let size = sc.visible_hint().size;
-        self.last_size = Some(size);
-        size
+        self.last_size = Some(sc);
+        sc.visible_hint().size
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -568,6 +664,32 @@ impl Widget for EditorWidget {
 
     fn anchor(&self) -> XY {
         self.anchor
+    }
+}
+
+impl ComplexWidget for EditorWidget {
+    fn internal_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
+        if self.hover.is_some() {
+            Box::new(LeafLayout::new(selfwidget!(Self)))
+        } else {
+            Box::new(HoverLayout::new())
+        }
+    }
+
+    fn get_default_focused(&self) -> SubwidgetPointer<Self> {
+        todo!()
+    }
+
+    fn set_display_state(&mut self, display_state: DisplayState<Self>) {
+        todo!()
+    }
+
+    fn get_display_state_op(&self) -> Option<&DisplayState<Self>> {
+        todo!()
+    }
+
+    fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
+        todo!()
     }
 }
 

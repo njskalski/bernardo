@@ -130,6 +130,16 @@ macro_rules! subwidget {
 }
 
 #[macro_export]
+macro_rules! selfwidget {
+($parent: ident) => {
+    crate::experiments::subwidget_pointer::SubwidgetPointer::new(
+        Box::new(|p : &$parent| { &p as &dyn Widget}),
+        Box::new(|p : &mut $parent| { &mut p as &mut dyn Widget}),
+    )
+}
+}
+
+#[macro_export]
 macro_rules! subwidget_op {
 ($parent: ident.$ child: ident) => {
     crate::experiments::subwidget_pointer::SubwidgetPointerOp::new(

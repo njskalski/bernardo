@@ -1,11 +1,23 @@
 use log::error;
 
 use crate::primitives::cursor_set::Cursor;
+use crate::primitives::xy::XY;
 use crate::text::buffer::Buffer;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct LspTextCursor {
     pub col: u32,
     pub row: u32,
+}
+
+impl LspTextCursor {
+    pub fn to_xy(&self) -> Option<XY> {
+        if self.col < u16::MAX_VALUE as u32 && self.row < u16::MAX_VALUE as u32 {
+            Some(XY::new(self.col as u16, self.row as u16))
+        } else {
+            None
+        }
+    }
 }
 
 pub fn get_lsp_text_cursor(buffer: &dyn Buffer, cursor: &Cursor) -> Result<LspTextCursor, ()> {
