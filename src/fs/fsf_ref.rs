@@ -24,9 +24,6 @@ pub struct DirCache {
 pub struct FsAndCache {
     fs: Box<dyn FilesystemFront + Send + Sync>,
     caches: RwLock<HashMap<SPath, DirCache>>,
-
-    // TODO implement drop to set this option to None to avoid memory leak, because now fs is self-referencing
-    root_node_cache: RwLock<Option<SPath>>,
 }
 
 #[derive(Clone)]
@@ -57,32 +54,19 @@ impl Hash for FsfRef {
 }
 
 impl FsfRef {
-    pub async fn new<FS: FilesystemFront + Sync + Send + 'static>(fs: FS) -> Self {
+    pub fn new<FS: FilesystemFront + Sync + Send + 'static>(fs: FS) -> Self {
         let fsf = FsfRef {
             fs: Arc::new(FsAndCache {
                 fs: Box::new(fs) as Box<dyn FilesystemFront + Sync + Send>,
                 caches: RwLock::new(Default::default()),
-                root_node_cache: RwLock::new(None),
             })
         };
-
-        {
-            let mut root_node_cache = fsf.fs.root_node_cache.write().await;
-            *root_node_cache = Some(SPath::head(fsf.clone()));
-        }
 
         fsf
     }
 
     pub fn root(&self) -> SPath {
-        match self.fs.root_node_cache.blocking_read().deref() {
-            None => {
-                debug_assert!(false);
-                error!("this should never happen");
-                SPath::head(self.clone())
-            }
-            Some(x) => { x.clone() }
-        }
+        SPath::head(self.clone())
     }
 
     pub fn root_path_buf(&self) -> &PathBuf {
@@ -126,7 +110,8 @@ impl FsfRef {
     }
 
     pub fn blocking_list(&self, spath: &SPath) -> Result<Vec<SPath>, ListError> {
-        if let Some(cache) = self.fs.caches.blocking_write().get(spath) {
+        // TODO unwrap - not necessary
+        if let Some(cache) = self.fs.caches.try_read().unwrap().get(spath) {
             return Ok(cache.vec.clone());
         }
 

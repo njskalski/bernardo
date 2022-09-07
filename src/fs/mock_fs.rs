@@ -165,17 +165,17 @@ impl MockFS {
     }
 
     pub fn add_dir(&self, path: &Path) -> Result<(), ()> {
-        if self.root_dir.blocking_write().create_dir(path) { Ok(()) } else { Err(()) }
+        if self.root_dir.try_write().unwrap().create_dir(path) { Ok(()) } else { Err(()) }
     }
 
     pub fn add_file(&mut self, path: &Path, bytes: Vec<u8>) -> Result<(), ()> {
-        if self.root_dir.blocking_write().create_file(path, bytes) { Ok(()) } else { Err(()) }
+        if self.root_dir.try_write().unwrap().create_file(path, bytes) { Ok(()) } else { Err(()) }
     }
 
     pub fn blocking_overwrite_with_bytes(&self, path: &Path, bytes: Vec<u8>) -> Result<usize, WriteError> {
         let comp: Vec<_> = path.components().collect();
 
-        if let Some(record) = self.root_dir.blocking_write().get_mut(&comp, false) {
+        if let Some(record) = self.root_dir.try_write().unwrap().get_mut(&comp, false) {
             if record.is_dir() {
                 return Err(WriteError::NotAFile);
             }
@@ -282,8 +282,8 @@ impl FilesystemFront for MockFS {
         self.blocking_overwrite_with_bytes(path, bytes)
     }
 
-    async fn to_fsf(self) -> FsfRef {
-        FsfRef::new(self).await
+    fn to_fsf(self) -> FsfRef {
+        FsfRef::new(self)
     }
 }
 

@@ -40,5 +40,5 @@ pub trait FilesystemFront: Debug + Send + Sync {
 
     fn blocking_overwrite_with_str(&self, path: &Path, s: &str) -> Result<usize, WriteError>;
 
-    async fn to_fsf(self) -> FsfRef;
+    fn to_fsf(self) -> FsfRef;
 }

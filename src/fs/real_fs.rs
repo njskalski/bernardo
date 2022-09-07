@@ -106,7 +106,7 @@ impl FilesystemFront for RealFS {
         Ok(s.len())
     }
 
-    async fn to_fsf(self) -> FsfRef {
-        FsfRef::new(self).await
+    fn to_fsf(self) -> FsfRef {
+        FsfRef::new(self)
     }
 }
