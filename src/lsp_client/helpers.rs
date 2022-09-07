@@ -12,7 +12,7 @@ pub struct LspTextCursor {
 
 impl LspTextCursor {
     pub fn to_xy(&self) -> Option<XY> {
-        if self.col < u16::MAX_VALUE as u32 && self.row < u16::MAX_VALUE as u32 {
+        if self.col < u16::MAX as u32 && self.row < u16::MAX as u32 {
             Some(XY::new(self.col as u16, self.row as u16))
         } else {
             None

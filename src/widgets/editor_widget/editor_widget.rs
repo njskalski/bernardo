@@ -375,7 +375,7 @@ impl EditorWidget {
             Some(cp) => cp,
             None => {
                 error!("can't position hover, no cursor local pos");
-                None
+                return None;
             }
         };
 
@@ -388,11 +388,11 @@ impl EditorWidget {
             Some(ls) => ls,
         };
 
-        // if cursor is in upper part, we draw the lower one, and other way around
+        // if cursor is in upper part, we draw below cursor, otherwise above it
         let above = cursor_pos.y > (last_size.visible_hint().size.y / 2);
         let width = min(MAX_HOVER_WIDTH, last_size.visible_hint().size.x - cursor_pos.x);
         // TODO underflow
-        let height = min(DEFAULT_HOVER_HEIGHT, (last_size.visible_hint().size / 2) - 1 as u16);
+        let height = min(DEFAULT_HOVER_HEIGHT, (last_size.visible_hint().size.y / 2) - 1);
 
         if above {
             debug_assert!(cursor_pos.y > height);
@@ -468,7 +468,7 @@ impl EditorWidget {
                     tokio::spawn(second_promise);
 
                     let comp = CompletionWidget::new(Box::new(promise));
-                    self.hover = Some(hover_rect, EditorHover::Completion(comp));
+                    self.hover = Some((hover_rect, EditorHover::Completion(comp)));
                     debug!("created completion");
                 }
             }
@@ -495,7 +495,7 @@ impl EditorWidget {
 
     pub fn page_height(&self) -> u16 {
         match self.last_size {
-            Some(xy) => xy.y,
+            Some(xy) => xy.visible_hint().size.y,
             None => {
                 error!("requested height before layout, using {} as page_height instead", MIN_EDITOR_SIZE.y);
                 MIN_EDITOR_SIZE.y
@@ -522,6 +522,26 @@ impl EditorWidget {
             self.update_anchor(Arrow::Down);
         }
         res
+    }
+
+    fn get_hover_subwidget(&self) -> Option<SubwidgetPointer<Self>> {
+        if self.hover.is_none() {
+            return None;
+        }
+
+        Some(SubwidgetPointer::<Self>::new(Box::new(
+            |s: &EditorWidget| {
+                match s.hover.as_ref().unwrap() {
+                    (_, EditorHover::Completion(comp)) => comp as &dyn Widget,
+                }
+            }
+        ), Box::new(
+            |s: &mut EditorWidget| {
+                match s.hover.as_mut().unwrap() {
+                    (_, EditorHover::Completion(comp)) => comp as &mut dyn Widget,
+                }
+            }
+        )))
     }
 }
 
@@ -669,10 +689,15 @@ impl Widget for EditorWidget {
 
 impl ComplexWidget for EditorWidget {
     fn internal_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
-        if self.hover.is_some() {
-            Box::new(LeafLayout::new(selfwidget!(Self)))
-        } else {
-            Box::new(HoverLayout::new())
+        match &self.hover {
+            None => Box::new(LeafLayout::new(selfwidget!(Self))),
+            Some((rect, _)) => {
+                Box::new(HoverLayout::new(
+                    Box::new(LeafLayout::new(selfwidget!(Self))),
+                    Box::new(LeafLayout::new(self.get_hover_subwidget().unwrap())),
+                    *rect,
+                ))
+            }
         }
     }
 

@@ -3,7 +3,13 @@ use std::path::PathBuf;
 use log::error;
 use tokio::io::AsyncWriteExt;
 
+const LSP_DEBUG_MODE: bool = false;
+
 pub async fn lsp_debug_save(file: PathBuf, contents: String) {
+    if !LSP_DEBUG_MODE {
+        return;
+    }
+    
     match file.parent() {
         None => {}
         Some(parent) => tokio::fs::create_dir_all(parent).await.unwrap(),

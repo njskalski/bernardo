@@ -133,8 +133,8 @@ macro_rules! subwidget {
 macro_rules! selfwidget {
 ($parent: ident) => {
     crate::experiments::subwidget_pointer::SubwidgetPointer::new(
-        Box::new(|p : &$parent| { &p as &dyn Widget}),
-        Box::new(|p : &mut $parent| { &mut p as &mut dyn Widget}),
+        Box::new(|p : &$parent| { p as &dyn Widget}),
+        Box::new(|p : &mut $parent| { p as &mut dyn Widget}),
     )
 }
 }
