@@ -14,9 +14,9 @@ use crate::widget::widget::WID;
 // here one could merge focus_group.focused with ds.focused, but not it's not important.
 
 pub struct DisplayState<S: Widget> {
-    focused: SubwidgetPointer<S>,
-    wwrs: Vec<WidgetWithRect<S>>,
-    focus_group: FocusGraph<SubwidgetPointer<S>>,
+    pub focused: SubwidgetPointer<S>,
+    pub wwrs: Vec<WidgetWithRect<S>>,
+    pub focus_group: FocusGraph<SubwidgetPointer<S>>,
 }
 
 pub trait ComplexWidget: Widget + Sized {

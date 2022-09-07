@@ -17,6 +17,7 @@ use crate::experiments::regex_search::FindError;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
+use crate::io::sub_output::SubOutput;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
@@ -27,6 +28,7 @@ use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_ed
 use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
+use crate::primitives::helpers::fill_output;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
@@ -106,6 +108,7 @@ pub struct EditorWidget {
 
     // This is completion or navigation
     hover: Option<(Rect, EditorHover)>,
+    display_state: Option<DisplayState<Self>>,
 }
 
 impl EditorWidget {
@@ -127,6 +130,7 @@ impl EditorWidget {
             state: EditorState::Editing,
             navcomp,
             hover: None,
+            display_state: None,
         }
     }
 
@@ -560,7 +564,7 @@ impl Widget for EditorWidget {
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         self.last_size = Some(sc);
-        sc.visible_hint().size
+        self.complex_layout(sc)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -702,19 +706,67 @@ impl ComplexWidget for EditorWidget {
     }
 
     fn get_default_focused(&self) -> SubwidgetPointer<Self> {
-        todo!()
+        selfwidget!(Self)
     }
 
     fn set_display_state(&mut self, display_state: DisplayState<Self>) {
-        todo!()
+        self.display_state = Some(display_state);
     }
 
     fn get_display_state_op(&self) -> Option<&DisplayState<Self>> {
-        todo!()
+        self.display_state.as_ref()
     }
 
     fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
-        todo!()
+        self.display_state.as_mut()
+    }
+
+    /*
+    now the reason I need to override this method highlights a shortcoming in my design I did not forsee:
+    namely, that "complex widget" can't really point to itself without overriding at least complex_render,
+    and then chances are something else will blow up.
+
+    Now here's why:
+    - if I don't override it, default implementation will call self.render(), causing infinite recursion, because
+        this is where "complex_render" should be called from
+    - if I move hover to say "editor view", editor widget will NOT appear on focus path between Hover and editorview,
+        introducing error in input handling, that would have to be bypassed by routing input back down, which is heresy.
+    - kosher way would be to introduce another layer between editor widget and editor view. It sounds the best, I just
+        need to come up with a fkn name for it. Editor_and_hover_view? Who owns LSP then? Fuck, this get's complicated.
+
+    It does beg a question whether "benedict" design is not superior, but I'd need a whiteboard to proove that,
+    and I am sitting in a cheap shack in Jeriquaquara right now, so I'll run with this and see where it takes me.
+     */
+    fn complex_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        fill_output(theme.ui.non_focused.background, output);
+
+        let mut focused_drawn = false;
+
+        match self.get_display_state_op() {
+            None => error!("failed rendering save_file_dialog without cached_sizes"),
+            Some(ds) => {
+                let focused_subwidget = ds.focused.get(self);
+
+                for wwr in &ds.wwrs {
+                    let sub_output = &mut SubOutput::new(output, *wwr.rect());
+                    let widget = wwr.widget().get(self);
+                    let subwidget_focused = focused && widget.id() == focused_subwidget.id();
+                    if widget.id() != self.id() {
+                        widget.render(theme,
+                                      subwidget_focused,
+                                      sub_output);
+                    } else {
+                        self.internal_render(theme, subwidget_focused, sub_output);
+                    }
+
+                    focused_drawn |= subwidget_focused;
+                }
+            }
+        }
+
+        if !focused_drawn {
+            error!("a focused widget is not drawn in {} #{}!", self.typename(), self.id())
+        }
     }
 }
 
