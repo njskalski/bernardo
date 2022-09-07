@@ -2,6 +2,7 @@ use std::fmt::{Debug, Formatter};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+use async_trait::async_trait;
 use log::{error, warn};
 use streaming_iterator::StreamingIterator;
 
@@ -29,6 +30,7 @@ impl Debug for RealFS {
     }
 }
 
+#[async_trait]
 impl FilesystemFront for RealFS {
     fn root_path(&self) -> &PathBuf {
         &self.root_path
@@ -104,7 +106,7 @@ impl FilesystemFront for RealFS {
         Ok(s.len())
     }
 
-    fn to_fsf(self) -> FsfRef {
-        FsfRef::new(self)
+    async fn to_fsf(self) -> FsfRef {
+        FsfRef::new(self).await
     }
 }

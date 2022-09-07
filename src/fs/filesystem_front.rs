@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 use std::path::{Path, PathBuf};
 
+// all paths except root_path are RELATIVE to root_path.
+use async_trait::async_trait;
 use streaming_iterator::StreamingIterator;
 
 use crate::fs::dir_entry::DirEntry;
@@ -8,8 +10,7 @@ use crate::fs::fsf_ref::FsfRef;
 use crate::fs::read_error::{ListError, ReadError};
 use crate::fs::write_error::WriteError;
 
-// all paths except root_path are RELATIVE to root_path.
-
+#[async_trait]
 pub trait FilesystemFront: Debug + Send + Sync {
     // Absolute path to root folder. Just for informative reasons.
     fn root_path(&self) -> &PathBuf;
@@ -39,5 +40,5 @@ pub trait FilesystemFront: Debug + Send + Sync {
 
     fn blocking_overwrite_with_str(&self, path: &Path, s: &str) -> Result<usize, WriteError>;
 
-    fn to_fsf(self) -> FsfRef;
+    async fn to_fsf(self) -> FsfRef;
 }

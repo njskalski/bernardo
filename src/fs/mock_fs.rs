@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use std::fmt::{Debug, Formatter};
 use std::path::{Component, Components, Path, PathBuf};
 
+use async_trait::async_trait;
 use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
 use tokio::sync::RwLock;
@@ -194,6 +195,7 @@ impl Debug for MockFS {
     }
 }
 
+#[async_trait]
 impl FilesystemFront for MockFS {
     fn root_path(&self) -> &PathBuf {
         &self.root_path
@@ -280,8 +282,8 @@ impl FilesystemFront for MockFS {
         self.blocking_overwrite_with_bytes(path, bytes)
     }
 
-    fn to_fsf(self) -> FsfRef {
-        FsfRef::new(self)
+    async fn to_fsf(self) -> FsfRef {
+        FsfRef::new(self).await
     }
 }
 

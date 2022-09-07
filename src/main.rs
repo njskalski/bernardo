@@ -72,7 +72,7 @@ async fn main() -> Result<(), usize> {
     // Parsing arguments
     debug!("{:?}", args.paths());
     let (start_dir, files) = args.paths();
-    let fsf = RealFS::new(start_dir).to_fsf();
+    let fsf = RealFS::new(start_dir).to_fsf().await;
 
     // Loading / Building workspace file
     let workspace_dir = fsf.root();

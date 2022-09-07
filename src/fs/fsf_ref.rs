@@ -57,7 +57,7 @@ impl Hash for FsfRef {
 }
 
 impl FsfRef {
-    pub fn new<FS: FilesystemFront + Sync + Send + 'static>(fs: FS) -> Self {
+    pub async fn new<FS: FilesystemFront + Sync + Send + 'static>(fs: FS) -> Self {
         let fsf = FsfRef {
             fs: Arc::new(FsAndCache {
                 fs: Box::new(fs) as Box<dyn FilesystemFront + Sync + Send>,
@@ -67,7 +67,7 @@ impl FsfRef {
         };
 
         {
-            let mut root_node_cache = fsf.fs.root_node_cache.blocking_write();
+            let mut root_node_cache = fsf.fs.root_node_cache.write().await;
             *root_node_cache = Some(SPath::head(fsf.clone()));
         }
 
