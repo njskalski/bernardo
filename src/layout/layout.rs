@@ -86,6 +86,8 @@ impl<W: Widget> WidgetWithRect<W> {
  Layouts do not work on infinite planes (scrolling of layouted view will fail).
  I might one day extend the definition, but it would require additional type to filter out layouts
  like "split".
+
+ Layout will SKIP a widget, if it's widget.id() == root.id()!
  */
 pub trait Layout<W: Widget> {
     fn min_size(&self, root: &W) -> XY;

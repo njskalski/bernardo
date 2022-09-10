@@ -692,7 +692,7 @@ impl Widget for EditorWidget {
 }
 
 impl ComplexWidget for EditorWidget {
-    fn internal_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
         match &self.hover {
             None => Box::new(LeafLayout::new(selfwidget!(Self))),
             Some((rect, _)) => {
@@ -736,6 +736,17 @@ impl ComplexWidget for EditorWidget {
 
     It does beg a question whether "benedict" design is not superior, but I'd need a whiteboard to proove that,
     and I am sitting in a cheap shack in Jeriquaquara right now, so I'll run with this and see where it takes me.
+
+    But if I am discussing it here, the primary argument *against* "benedict" is that it does not define well
+    focus transfer - what happens when we want to move focus to button that doesn't exist yet (deferred focus):
+    this process is inevitably risky. The item may fail to appear, and then we have to find a "general" focus
+    in rather flat hierarchy. I can "get back to the caller" to ask for "default", and if "caller" ceased to exist
+    continue up the tree asking for defaults. This *could* work.
+
+    No, focus seems to naturally flow DOWN the tree. Maybe I should just lift the requirement to add "exactly
+    one" focus path item? Maybe a single widget should be able to attach a chain of it's children?
+
+    It almost seems like the issue is in putting layouts as not separate widgets.
      */
     fn complex_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         fill_output(theme.ui.non_focused.background, output);

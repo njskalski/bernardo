@@ -354,7 +354,7 @@ impl Widget for MainView {
 }
 
 impl ComplexWidget for MainView {
-    fn internal_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
         let left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
         let right_column = LeafLayout::new(self.get_curr_editor_ptr()).boxed();
 

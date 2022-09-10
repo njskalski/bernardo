@@ -6,6 +6,7 @@ use crate::experiments::from_geometry::from_geometry;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::sub_output::SubOutput;
 use crate::layout::layout::{Layout, WidgetWithRect};
+use crate::primitives::helpers;
 use crate::primitives::helpers::fill_output;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
@@ -20,8 +21,19 @@ pub struct DisplayState<S: Widget> {
 }
 
 pub trait ComplexWidget: Widget + Sized {
-    fn internal_layout(&self, max_size: XY) -> Box<dyn Layout<Self>>;
+    /*
+    produces cloneable layout func tree
+     */
+    fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>>;
 
+    /*
+    because using ComplexWidget helper requires routing calling complex_render from widget's render,
+    we require internal_render on widget's self, to avoid infinite recurson
+     */
+    fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        fill_output(theme.default_text(focused).background, output);
+    }
+    
     // Called when we set initial "focus" within a complex widget and then as a fallback, whenever
     // we fail to retrieve focus from view state. Right now it's implemented *within the getters*
     // but TODO in a while I might bubble it up
@@ -62,7 +74,7 @@ pub trait ComplexWidget: Widget + Sized {
             sc.visible_hint().size
         });
 
-        let layout = self.internal_layout(xy);
+        let layout = self.get_layout(xy);
         let wwrs = layout.layout(self, xy);
 
         let widgets_and_positions: Vec<(WID, SubwidgetPointer<Self>, Rect)> = wwrs.iter().map(|w| {

@@ -382,14 +382,14 @@ impl Widget for SaveFileDialogWidget {
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
         self.complex_get_focused_mut()
     }
-    
+
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         self.complex_render(theme, focused, output)
     }
 }
 
 impl ComplexWidget for SaveFileDialogWidget {
-    fn internal_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
         let tree_layout = LeafLayout::new(subwidget!(Self.tree_widget));
         // let mut empty_layout = EmptyLayout::new().with_size(XY::new(1, 1));
 

@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use log::warn;
 
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
@@ -5,6 +7,7 @@ use crate::layout::layout::{Layout, WidgetWithRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::{XY, ZERO};
+use crate::widget::complex_widget::ComplexWidget;
 use crate::widget::widget::Widget;
 
 pub struct LeafLayout<W: Widget> {
@@ -49,7 +52,14 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
                 vec![]
             }
             Some(rect) => {
-                self.widget.get_mut(root).layout(SizeConstraint::simple(rect.size));
+                let root_id = root.id();
+                let widget = self.widget.get_mut(root);
+                let skip = root_id == widget.id();
+
+                if !skip {
+                    widget.layout(SizeConstraint::simple(rect.size));
+                }
+
                 vec![WidgetWithRect::new(
                     self.widget.clone(),
                     rect,
