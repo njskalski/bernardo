@@ -107,16 +107,22 @@ impl Text {
         true
     }
 
-    pub fn ends_with(&self, what: &str) -> bool {
+    pub fn ends_with_at(&self, char_offset: usize, what: &str) -> bool {
         let what_char_len = what.graphemes(true).count();
-        let rope_len = self.rope.len_chars();
+
+        if self.rope.len_chars() < char_offset {
+            debug!("ends_wit_at beyond end");
+            return false;
+        }
+        let sub_rope = self.rope.slice(0..char_offset);
+        let rope_len = sub_rope.len_chars();
 
         if rope_len < what_char_len {
             false
         } else {
             let mut tail = String::new();
             for char_idx in 0..what_char_len {
-                match self.rope.get_char(rope_len - what_char_len + char_idx) {
+                match sub_rope.get_char(rope_len - what_char_len + char_idx) {
                     Some(ch) => {
                         tail.push(ch);
                     }

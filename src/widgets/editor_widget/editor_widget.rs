@@ -324,7 +324,7 @@ impl EditorWidget {
                 };
 
                 for symbol in navcomp.completion_triggers(path) {
-                    if self.buffer().text().ends_with(&symbol) {
+                    if self.buffer().text().ends_with_at(cursor.a, &symbol) {
                         debug!("auto-trigger completion on symbol \"{}\"", &symbol);
                         return true;
                     }
@@ -617,6 +617,8 @@ impl Widget for EditorWidget {
                             }
                             _ => {}
                         }
+
+                        self.todo_update_completion();
                     }
 
                     match cme_to_direction(cem) {
