@@ -309,7 +309,7 @@ impl LspWrapper {
         let version = {
             let mut lock = self.file_versions.write().await;
             if let Some(old_id) = lock.get(&url).map(|i| *i) {
-                debug!("updating document {} from {} to {}", &url, old_id, old_id+1);
+                // debug!("updating document {} from {} to {}", &url, old_id, old_id+1);
                 lock.insert(url.clone(), old_id + 1);
                 old_id + 1
             } else {

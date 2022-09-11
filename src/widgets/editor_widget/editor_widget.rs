@@ -685,7 +685,7 @@ impl Widget for EditorWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        self.internal_render(theme, focused, output);
+        self.complex_render(theme, focused, output)
     }
 
     fn anchor(&self) -> XY {
@@ -756,7 +756,7 @@ impl ComplexWidget for EditorWidget {
         let mut focused_drawn = false;
 
         match self.get_display_state_op() {
-            None => error!("failed rendering save_file_dialog without cached_sizes"),
+            None => error!("failed rendering {} without cached_sizes", self.typename()),
             Some(ds) => {
                 let focused_subwidget = ds.focused.get(self);
 

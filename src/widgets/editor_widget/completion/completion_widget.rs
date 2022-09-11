@@ -6,9 +6,10 @@ use std::cmp::min;
 use std::future::Future;
 
 use futures::FutureExt;
-use log::warn;
+use log::{debug, warn};
 
 use crate::{AnyMsg, InputEvent, Output, selfwidget, SizeConstraint, subwidget, Theme, Widget};
+use crate::experiments::focus_group::FocusUpdate;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::experiments::wrapped_future::WrappedFuture;
 use crate::layout::layout::Layout;
@@ -65,16 +66,7 @@ impl Widget for CompletionWidget {
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         self.completions_future.poll();
-
-        match self.completions() {
-            None => {
-                XY::new(1, 1)
-            }
-            Some(comp) => {
-                // TODO cast
-                XY::new(10, min(comp.len() as u16, sc.visible_hint().size.y - 1))
-            }
-        }
+        self.complex_layout(sc)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -127,5 +119,13 @@ impl ComplexWidget for CompletionWidget {
 
     fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
         self.display_state.as_mut()
+    }
+
+    fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        for x in 0..output.size_constraint().visible_hint().size.x {
+            for y in 0..output.size_constraint().visible_hint().size.y {
+                output.print_at(XY::new(x, y), theme.ui.focused_highlighted, "!");
+            }
+        }
     }
 }

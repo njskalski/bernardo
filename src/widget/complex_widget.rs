@@ -33,7 +33,7 @@ pub trait ComplexWidget: Widget + Sized {
     fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         fill_output(theme.default_text(focused).background, output);
     }
-    
+
     // Called when we set initial "focus" within a complex widget and then as a fallback, whenever
     // we fail to retrieve focus from view state. Right now it's implemented *within the getters*
     // but TODO in a while I might bubble it up
@@ -68,6 +68,10 @@ pub trait ComplexWidget: Widget + Sized {
         }
     }
 
+    /*
+    This function automatically assumes you want to consume entire visible space with layout.
+    If you want something else, override it. But remember to set display_cache or render will fail.
+     */
     fn complex_layout(&mut self, sc: SizeConstraint) -> XY {
         let xy = sc.as_finite().unwrap_or_else(|| {
             warn!("using complex_layout on infinite SizeConstraint is not supported, will limit itself to visible hint");
@@ -107,9 +111,10 @@ pub trait ComplexWidget: Widget + Sized {
         fill_output(theme.ui.non_focused.background, output);
 
         let mut focused_drawn = false;
+        let self_id = self.id();
 
         match self.get_display_state_op() {
-            None => error!("failed rendering save_file_dialog without cached_sizes"),
+            None => error!("failed rendering {} without cached_sizes", self.typename()),
             Some(ds) => {
                 let focused_subwidget = ds.focused.get(self);
 
@@ -117,10 +122,14 @@ pub trait ComplexWidget: Widget + Sized {
                     let sub_output = &mut SubOutput::new(output, *wwr.rect());
                     let widget = wwr.widget().get(self);
                     let subwidget_focused = focused && widget.id() == focused_subwidget.id();
-                    widget.render(theme,
-                                  subwidget_focused,
-                                  sub_output);
 
+                    if widget.id() != self_id {
+                        widget.render(theme,
+                                      subwidget_focused,
+                                      sub_output);
+                    } else {
+                        self.internal_render(theme, subwidget_focused, sub_output);
+                    }
                     focused_drawn |= subwidget_focused;
                 }
             }

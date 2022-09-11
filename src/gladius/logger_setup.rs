@@ -10,6 +10,7 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("bernardo::fs::local_filesystem_front", log::LevelFilter::Error),
     ("bernardo::text::buffer_state", log::LevelFilter::Warn),
     ("bernardo::tsw::tree_sitter_wrapper", log::LevelFilter::Error),
+    ("bernardo", log::LevelFilter::Debug),
     ("bernardo::widgets::main_view::main_view", log::LevelFilter::Warn),
     ("bernardo::widgets::fuzzy_search::fuzzy_search", log::LevelFilter::Warn),
     ("bernardo::widgets::edit_box", log::LevelFilter::Warn),
