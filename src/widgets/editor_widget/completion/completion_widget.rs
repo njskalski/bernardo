@@ -4,9 +4,11 @@ I guess I should reuse FuzzySearch Widget, this is a placeholder now.
 
 use std::cmp::min;
 use std::future::Future;
+use std::sync::Arc;
 
 use futures::FutureExt;
-use log::{debug, warn};
+use log::{debug, error, warn};
+use tokio::sync::RwLock;
 
 use crate::{AnyMsg, InputEvent, Output, selfwidget, SizeConstraint, subwidget, Theme, Widget};
 use crate::experiments::focus_group::FocusUpdate;
@@ -28,25 +30,34 @@ pub type CompletionsFuture = Box<dyn Future<Output=Vec<Completion>> + Unpin>;
 
 pub struct CompletionWidget {
     wid: WID,
-    completions_future: WrappedFuture<Vec<Completion>>,
+    completions_future: Arc<RwLock<WrappedFuture<Vec<Completion>>>>,
     fuzzy: FuzzySearchWidget,
     display_state: Option<DisplayState<Self>>,
 }
 
 impl CompletionWidget {
     pub fn new(completions_future: CompletionsFuture) -> Self {
+        let w = Arc::new(RwLock::new(WrappedFuture::new(completions_future)));
         CompletionWidget {
             wid: get_new_widget_id(),
             fuzzy: FuzzySearchWidget::new(|_| {
                 CompletionWidgetMsg::Close.someboxed()
-            }),
-            completions_future: WrappedFuture::new(completions_future),
+            }).with_provider(
+                // TODO big clone unnecessary
+                Box::new(w.clone())),
+            completions_future: w,
             display_state: None,
         }
     }
 
-    fn completions(&self) -> Option<&Vec<Completion>> {
-        self.completions_future.read()
+    // TODO unnecessary clone
+    fn completions(&self) -> Option<Vec<Completion>> {
+        let lock = self.completions_future
+            .try_read()
+            .map_err(|_| error!("failed acquiring rw lock"))
+            .ok()?;
+
+        lock.read().map(|c| c.clone())
     }
 }
 
@@ -65,7 +76,14 @@ impl Widget for CompletionWidget {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        self.completions_future.poll();
+        self.completions_future
+            .try_write()
+            .map(|mut r| {
+                r.poll();
+            })
+            .map_err(|e| {
+                error!("failed acquiring rwlock on completions_future");
+            });
         self.complex_layout(sc)
     }
 
@@ -85,6 +103,7 @@ impl Widget for CompletionWidget {
                 }
                 _ => {
                     warn!("ignoring message {:?}", msg);
+                    None
                 }
             }
         };

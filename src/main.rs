@@ -16,7 +16,7 @@ use std::rc::Rc;
 use clap::Parser;
 use crossbeam_channel::select;
 use crossterm::terminal;
-use log::{debug, error};
+use log::{debug, error, warn};
 
 use config::theme::Theme;
 
@@ -155,7 +155,7 @@ async fn main() -> Result<(), usize> {
         tree_sitter,
         fsf.clone(),
         clipboard,
-        nav_comp_group_ref,
+        nav_comp_group_ref.clone(),
     );
     for f in files.iter() {
         if !fsf.descendant_checked(f).map(|ff| main_view.open_file(ff)).unwrap_or(false) {
@@ -269,13 +269,13 @@ async fn main() -> Result<(), usize> {
             //     });
             // }
 
-            // recv(nav_comp_group_ref.recvr()) -> tick => {
-            //     match tick {
-            //         _ => {
-            //             error!("unhandled tick : {:?}", tick)
-            //         }
-            //     }
-            // }
+            recv(nav_comp_group_ref.recvr()) -> tick => {
+                match tick {
+                    _ => {
+                        warn!("unhandled tick : {:?}", tick)
+                    }
+                }
+            }
         }
     }
 
