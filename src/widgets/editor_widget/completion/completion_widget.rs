@@ -83,6 +83,9 @@ impl Widget for CompletionWidget {
                 CompletionWidgetMsg::Close => {
                     EditorWidgetMsg::CompletionWidgetClose.someboxed()
                 }
+                _ => {
+                    warn!("ignoring message {:?}", msg);
+                }
             }
         };
     }
