@@ -1,21 +1,24 @@
 use std::cmp::min;
+
 use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget, ZERO};
+use crate::config::theme::Theme;
 use crate::io::sub_output::SubOutput;
+use crate::primitives::common_edit_msgs::key_to_edit_msg;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::rect::Rect;
-use crate::config::theme::Theme;
 use crate::primitives::xy::XY;
 use crate::widget::widget::{get_new_widget_id, WID, WidgetAction};
-use crate::primitives::common_edit_msgs::key_to_edit_msg;
 use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};
 
 const DEFAULT_WIDTH: u16 = 16;
+
+// TODO fix width calculation - I think it was done BEFORE introduced SizeConstraint
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum DrawComment {
@@ -310,6 +313,10 @@ impl Widget for FuzzySearchWidget {
                 x += g.width_cjk() as u16;
                 if selected_grapheme {
                     query_it.next();
+                }
+
+                if output.size_constraint().x().map(|max_x| x >= max_x).unwrap_or(false) {
+                    break;
                 }
             }
 

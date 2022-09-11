@@ -37,6 +37,7 @@ use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_group::NavCompTick;
 use crate::w7e::navcomp_provider::Completion;
+use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::AsAny;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID};
@@ -690,6 +691,14 @@ impl Widget for EditorWidget {
 
     fn anchor(&self) -> XY {
         self.anchor
+    }
+
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        self.get_hover_subwidget().map(|w| w.get(self))
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        self.get_hover_subwidget().map(|w| w.get_mut(self))
     }
 }
 
