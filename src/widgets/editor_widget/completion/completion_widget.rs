@@ -18,6 +18,7 @@ use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::xy::XY;
 use crate::w7e::navcomp_provider::Completion;
+use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::AsAny;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID};
@@ -127,6 +128,14 @@ impl Widget for CompletionWidget {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         self.complex_render(theme, focused, output)
+    }
+
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        self.complex_get_focused()
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        self.complex_get_focused_mut()
     }
 }
 
