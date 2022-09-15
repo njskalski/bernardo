@@ -10,7 +10,10 @@ pub struct WrappedFuture<T: Sized> {
 }
 
 impl<T: Sized> WrappedFuture<T> {
-    pub fn poll(&mut self) -> Option<&T> where T: Sized {
+    /*
+    Returns whether poll CHANGED STATE, not whether it resolved.
+     */
+    pub fn poll(&mut self) -> bool where T: Sized {
         if self.item.is_none() {
             let noop_waker = task::noop_waker();
             let mut cx = Context::from_waker(&noop_waker);
@@ -20,15 +23,16 @@ impl<T: Sized> WrappedFuture<T> {
             match Pin::new(&mut this).poll(&mut cx) {
                 Poll::Ready(x) => {
                     self.item = Some(x);
-                    self.item.as_ref()
+                    self.item.as_ref();
+                    true
                 }
                 Poll::Pending => {
                     self.future = Some(this);
-                    None
+                    false
                 }
             }
         } else {
-            self.item.as_ref()
+            false
         }
     }
 

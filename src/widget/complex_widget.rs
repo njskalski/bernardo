@@ -74,7 +74,7 @@ pub trait ComplexWidget: Widget + Sized {
      */
     fn complex_layout(&mut self, sc: SizeConstraint) -> XY {
         let xy = sc.as_finite().unwrap_or_else(|| {
-            warn!("using complex_layout on infinite SizeConstraint is not supported, will limit itself to visible hint");
+            // warn!("using complex_layout on infinite SizeConstraint is not supported, will limit itself to visible hint");
             sc.visible_hint().size
         });
 
@@ -110,7 +110,7 @@ pub trait ComplexWidget: Widget + Sized {
     fn complex_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         fill_output(theme.ui.non_focused.background, output);
 
-        let mut focused_drawn = false;
+        let mut my_focused_drawn = false;
         let self_id = self.id();
 
         match self.get_display_state_op() {
@@ -130,12 +130,12 @@ pub trait ComplexWidget: Widget + Sized {
                     } else {
                         self.internal_render(theme, subwidget_focused, sub_output);
                     }
-                    focused_drawn |= subwidget_focused;
+                    my_focused_drawn |= widget.id() == focused_subwidget.id();
                 }
             }
         }
 
-        if !focused_drawn {
+        if !my_focused_drawn {
             error!("a focused widget is not drawn in {} #{}!", self.typename(), self.id())
         }
     }

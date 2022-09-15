@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use futures::FutureExt;
 use log::{debug, error, warn};
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, RwLockWriteGuard, TryLockError};
 
 use crate::{AnyMsg, InputEvent, Output, selfwidget, SizeConstraint, subwidget, Theme, Widget};
 use crate::experiments::focus_group::FocusUpdate;
@@ -27,6 +27,12 @@ use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
 
 pub type CompletionsFuture = Box<dyn Future<Output=Vec<Completion>> + Unpin>;
 
+/*
+here we encoutnered another issue:
+if "focused" subwidget appears as a result of external state changing (here: completion future resolving),
+we have no "on update" to cause widget to *drop* outdated focus_state pointing to background (selfwidget)
+or update focus to freshly_appeared "fuzzy". There are several ways this can be fixed, but 
+ */
 
 pub struct CompletionWidget {
     wid: WID,
@@ -76,14 +82,24 @@ impl Widget for CompletionWidget {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        self.completions_future
-            .try_write()
-            .map(|mut r| {
-                r.poll();
-            })
-            .map_err(|e| {
+        let set_focused_fuzzy = match self.completions_future.try_write() {
+            Ok(mut lock) => {
+                if lock.poll() {
+                    true
+                } else {
+                    false
+                }
+            }
+            Err(e) => {
                 error!("failed acquiring rwlock on completions_future");
-            });
+                false
+            }
+        };
+        if set_focused_fuzzy {
+            self.set_focused(subwidget!(Self.fuzzy));
+        }
+
+
         self.complex_layout(sc)
     }
 
