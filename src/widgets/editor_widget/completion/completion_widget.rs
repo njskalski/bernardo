@@ -15,7 +15,7 @@ use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::experiments::wrapped_future::WrappedFuture;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
-use crate::lsp_client::promise::Promise;
+use crate::primitives::promise::Promise;
 use crate::primitives::xy::XY;
 use crate::w7e::navcomp_provider::Completion;
 use crate::widget::action_trigger::ActionTrigger;

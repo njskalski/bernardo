@@ -30,6 +30,7 @@ use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
 use crate::primitives::helpers::fill_output;
+use crate::primitives::promise::Promise;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::{XY, ZERO};
 use crate::text::buffer::Buffer;
@@ -452,11 +453,18 @@ impl EditorWidget {
                     };
 
                     let tick_sender = navcomp.todo_navcomp_sender().clone();
-                    let promise = navcomp.completions(path, stupid_cursor);
+                    let promise_op = navcomp.completions(path, stupid_cursor);
 
-                    let comp = CompletionWidget::new(Arc::new(RwLock::new(promise)));
-                    self.hover = Some((hover_rect, EditorHover::Completion(comp)));
-                    debug!("created completion");
+                    match promise_op {
+                        None => {
+                            debug!("no completions");
+                        }
+                        Some(promise) => {
+                            let comp = CompletionWidget::new(Arc::new(RwLock::new(promise)));
+                            self.hover = Some((hover_rect, EditorHover::Completion(comp)));
+                            debug!("created completion");
+                        }
+                    }
                 }
             }
         } else {

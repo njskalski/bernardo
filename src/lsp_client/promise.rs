@@ -7,36 +7,7 @@ use lsp_types::request::Request;
 use serde_json::Error;
 
 use crate::lsp_client::lsp_read_error::LspReadError;
-
-pub trait Promise<T> {
-    // Returns true if wait succeded, false if not
-    fn wait(&mut self) -> bool;
-
-    // Non-blocking wait. Returns whether *state changed*, not whether value is available.
-    fn update(&mut self) -> bool;
-
-    /*
-    Returns value, provided it was retrieved before. Does *not* change state, so if you want an
-    equivalent to Future.poll(), it's {Promise.update(); Promise.read()}
-     */
-    fn read(&self) -> Option<&T>;
-
-    /*
-    Returns true, iff there is no chance that it will ever resolve successfully.
-     */
-    fn is_broken(&self) -> bool;
-
-    /*
-    Returns true iff value is available to read.
-     */
-    fn is_delivered(&self) -> bool;
-
-    /*
-    Consumes promise returning value inside. It *does not* poll for message, so it's *not* an
-    equivalent of Future.now_or_never().
-     */
-    fn take(self) -> Option<T>;
-}
+use crate::primitives::promise::Promise;
 
 pub struct LSPPromise<R: Request> {
     receiver: Receiver<jsonrpc_core::Value>,
@@ -53,6 +24,7 @@ impl<R: Request> LSPPromise<R> {
         }
     }
 
+    // returns whether value is available
     fn set_from_value(&mut self, value: jsonrpc_core::Value) -> bool {
         match serde_json::from_value::<R::Result>(value) {
             Ok(item) => {
@@ -66,6 +38,10 @@ impl<R: Request> LSPPromise<R> {
             }
         }
     }
+
+    pub fn err(&self) -> Option<&LspReadError> {
+        self.err.as_ref()
+    }
 }
 
 impl<R: Request> Promise<R::Result> for LSPPromise<R> {
@@ -74,8 +50,9 @@ impl<R: Request> Promise<R::Result> for LSPPromise<R> {
             error!("wait on broken promise {:?}", self);
             return false;
         }
-        if self.is_delivered() {
-            warn!("rather unexpected wait on {:?}", self);
+
+        if self.item.is_some() {
+            warn!("rather unexpected second wait on promise {:?}", self);
             return true;
         }
 
@@ -99,6 +76,7 @@ impl<R: Request> Promise<R::Result> for LSPPromise<R> {
         if self.item.is_none() {
             match self.receiver.try_recv() {
                 Ok(value) => {
+                    // no matter whether setting fails or succeeds, the update takes place.
                     self.set_from_value(value)
                 }
                 Err(e) => {
@@ -115,7 +93,7 @@ impl<R: Request> Promise<R::Result> for LSPPromise<R> {
                 }
             }
         } else {
-            false
+            true
         }
     }
 
@@ -125,10 +103,6 @@ impl<R: Request> Promise<R::Result> for LSPPromise<R> {
 
     fn is_broken(&self) -> bool {
         self.err.is_some()
-    }
-
-    fn is_delivered(&self) -> bool {
-        self.item.is_some()
     }
 
     fn take(mut self) -> Option<R::Result> {

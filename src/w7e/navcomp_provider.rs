@@ -5,8 +5,8 @@ use async_trait::async_trait;
 
 use crate::fs::path::SPath;
 use crate::lsp_client::helpers::LspTextCursor;
-use crate::lsp_client::promise::Promise;
 use crate::primitives::cursor_set::Cursor;
+use crate::primitives::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
 
 #[derive(Debug, Clone)]
@@ -33,7 +33,7 @@ pub trait NavCompProvider: Debug {
      */
     fn submit_edit_event(&self, path: &SPath, file_contents: String);
 
-    fn completions(&self, path: SPath, cursor: LspTextCursor) -> Box<dyn Promise<Vec<Completion>>>;
+    fn completions(&self, path: SPath, cursor: LspTextCursor) -> Option<Box<dyn Promise<Vec<Completion>>>>;
 
     // TODO this will probably get more complicated
     fn completion_triggers(&self, path: &SPath) -> Vec<String>;

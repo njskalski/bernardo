@@ -61,22 +61,22 @@ impl<T> Debug for WrappedFuture<T> {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use std::collections::HashSet;
-    use std::future::ready;
-
-    use crate::experiments::wrapped_future::WrappedFuture;
-    use crate::widget::stupid_tree::get_stupid_tree;
-    use crate::widgets::tree_view::tree_it::TreeIt;
-    use crate::widgets::tree_view::tree_view_node::TreeViewNode;
-
-    #[test]
-    fn tree_it_test_1() {
-        let f1 = Box::new(ready(3));
-        let mut wrapped = WrappedFuture::new(f1);
-
-        assert_eq!(wrapped.poll(), Some(&3));
-        assert_eq!(wrapped.poll(), Some(&3));
-    }
-}
+// #[cfg(test)]
+// mod test {
+//     use std::collections::HashSet;
+//     use std::future::ready;
+//
+//     use crate::experiments::wrapped_future::WrappedFuture;
+//     use crate::widget::stupid_tree::get_stupid_tree;
+//     use crate::widgets::tree_view::tree_it::TreeIt;
+//     use crate::widgets::tree_view::tree_view_node::TreeViewNode;
+//
+//     #[test]
+//     fn tree_it_test_1() {
+//         let f1 = Box::new(ready(3));
+//         let mut wrapped = WrappedFuture::new(f1);
+//
+//         assert_eq!(wrapped.poll(), Some(&3));
+//         assert_eq!(wrapped.poll(), Some(&3));
+//     }
+// }

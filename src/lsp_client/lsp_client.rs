@@ -23,7 +23,8 @@ use crate::lsp_client::lsp_read::read_lsp;
 use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::lsp_client::lsp_write::{internal_send_notification, internal_send_notification_no_params, internal_send_request};
 use crate::lsp_client::lsp_write_error::LspWriteError;
-use crate::lsp_client::promise::{LSPPromise, Promise};
+use crate::lsp_client::promise::LSPPromise;
+use crate::primitives::promise::Promise;
 use crate::tsw::lang_id::LangId;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 
