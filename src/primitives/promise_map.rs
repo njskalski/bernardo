@@ -6,8 +6,6 @@ use log::{debug, error, warn};
 
 use crate::primitives::promise::Promise;
 
-// TODO tests tests and tests
-
 pub struct MappedPromise<A, P: Promise<A> + Sized, B, F: FnOnce(A) -> B> {
     // if broken, parent is set to None
     parent: Option<P>,

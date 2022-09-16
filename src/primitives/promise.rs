@@ -1,5 +1,7 @@
 use log::{error, warn};
 
+use crate::primitives::promise_map::MappedPromise;
+
 pub trait Promise<T> {
     // Blocks current thread until promise is delivered or broken.
     // Double wait *is not* an error.
@@ -25,6 +27,10 @@ pub trait Promise<T> {
     *not* an equivalent of Future.now_or_never().
      */
     fn take(self) -> Option<T>;
+
+    fn map<B, F: FnOnce(T) -> B>(self, mapper: F) -> MappedPromise<T, Self, B, F> where Self: Sized {
+        MappedPromise::new(self, mapper)
+    }
 }
 
 pub struct DonePromise<A> {
