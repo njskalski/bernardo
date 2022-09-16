@@ -3,7 +3,7 @@ use std::fmt::{Debug, Formatter};
 use log::error;
 
 use crate::w7e::navcomp_provider::Completion;
-use crate::widgets::editor_widget::completion::completion_widget::CompletionsFuture;
+use crate::widgets::editor_widget::completion::completion_widget::CompletionsPromise;
 use crate::widgets::list_widget::{ListWidgetItem, ListWidgetProvider};
 
 impl ListWidgetItem for Completion {
@@ -36,12 +36,12 @@ impl ListWidgetItem for Completion {
     }
 }
 
-impl ListWidgetProvider<Completion> for CompletionsFuture {
-    fn len(&self) -> usize {
-        todo!()
-    }
-
-    fn get(&self, idx: usize) -> Option<Completion> {
-        todo!()
-    }
-}
+// impl ListWidgetProvider<Completion> for CompletionsPromise {
+//     fn len(&self) -> usize {
+//         todo!()
+//     }
+//
+//     fn get(&self, idx: usize) -> Option<Completion> {
+//         todo!()
+//     }
+// }

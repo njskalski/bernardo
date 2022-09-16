@@ -1,4 +1,7 @@
 use std::io;
+use std::sync::PoisonError;
+
+use crossbeam_channel::RecvError;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum LspReadError {
@@ -15,6 +18,7 @@ pub enum LspReadError {
     JsonRpcError(String),
     BrokenChannel,
     HttpParseError(String),
+    LockError(String),
 }
 
 impl From<io::Error> for LspReadError {
@@ -38,5 +42,17 @@ impl From<jsonrpc_core::Error> for LspReadError {
 impl From<std::string::FromUtf8Error> for LspReadError {
     fn from(ue: std::string::FromUtf8Error) -> Self {
         LspReadError::FromUtf8(ue.to_string())
+    }
+}
+
+impl<R> From<PoisonError<R>> for LspReadError {
+    fn from(pe: PoisonError<R>) -> Self {
+        LspReadError::LockError(pe.to_string())
+    }
+}
+
+impl From<crossbeam_channel::RecvError> for LspReadError {
+    fn from(_: RecvError) -> Self {
+        LspReadError::BrokenChannel
     }
 }

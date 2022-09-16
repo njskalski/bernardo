@@ -5,6 +5,7 @@ use async_trait::async_trait;
 
 use crate::fs::path::SPath;
 use crate::lsp_client::helpers::LspTextCursor;
+use crate::lsp_client::promise::Promise;
 use crate::primitives::cursor_set::Cursor;
 use crate::w7e::navcomp_group::NavCompTickSender;
 
@@ -21,8 +22,7 @@ pub struct Completion {
 }
 
 // this is a wrapper around LSP and "similar services".
-#[async_trait]
-pub trait NavCompProvider: Debug + Send + Sync {
+pub trait NavCompProvider: Debug {
     /*
     file_contents are strictly LSP requirement
      */
@@ -33,7 +33,7 @@ pub trait NavCompProvider: Debug + Send + Sync {
      */
     fn submit_edit_event(&self, path: &SPath, file_contents: String);
 
-    async fn completions(&self, path: SPath, cursor: LspTextCursor) -> Vec<Completion>;
+    fn completions(&self, path: SPath, cursor: LspTextCursor) -> Box<dyn Promise<Vec<Completion>>>;
 
     // TODO this will probably get more complicated
     fn completion_triggers(&self, path: &SPath) -> Vec<String>;

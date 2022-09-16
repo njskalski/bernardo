@@ -1,18 +1,19 @@
+use std::{process, thread};
+use std::any::Any;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use std::io::BufRead;
+use std::io::BufReader;
 use std::path::PathBuf;
-use std::process;
-use std::process::Stdio;
-use std::sync::Arc;
+use std::process::{ChildStderr, ChildStdout, Stdio};
+use std::sync::{Arc, RwLock};
+use std::thread::JoinHandle;
 
+use crossbeam_channel::{Receiver, select, Sender};
 use log::{debug, error, warn};
 use lsp_types::{CompletionContext, CompletionResponse, CompletionTriggerKind, Position, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentPositionParams, Url, VersionedTextDocumentIdentifier};
+use lsp_types::request::Completion;
 use serde_json::Value;
-use tokio::io::AsyncBufReadExt;
-use tokio::io::BufReader;
-use tokio::process::{ChildStderr, ChildStdout};
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-use tokio::sync::RwLock;
 
 use crate::lsp_client::debug_helpers::lsp_debug_save;
 use crate::lsp_client::helpers::LspTextCursor;
@@ -22,6 +23,7 @@ use crate::lsp_client::lsp_read::read_lsp;
 use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::lsp_client::lsp_write::{internal_send_notification, internal_send_notification_no_params, internal_send_request};
 use crate::lsp_client::lsp_write_error::LspWriteError;
+use crate::lsp_client::promise::{LSPPromise, Promise};
 use crate::tsw::lang_id::LangId;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 
@@ -36,7 +38,7 @@ const DEFAULT_MAX_UNPROCESSED_MSGS: usize = 24;
 // LSP defines id integer as i32, while jsonrpc_core as u64.
 pub struct CallInfo {
     pub method: &'static str,
-    pub sender: tokio::sync::oneshot::Sender<serde_json::Value>,
+    pub sender: Sender<jsonrpc_core::Value>,
 }
 
 pub type IdToCallInfo = HashMap<String, CallInfo>;
@@ -48,7 +50,7 @@ pub struct LspWrapper {
     server_path: PathBuf,
     workspace_root_path: PathBuf,
     language: LangId,
-    child: tokio::process::Child,
+    child: process::Child,
 
     //TODO the common state should probably be merged to avoid concurrency issues. It's not like I
     // will be sending multiple edit events concurrently.
@@ -56,8 +58,8 @@ pub struct LspWrapper {
     file_versions: Arc<RwLock<HashMap<Url, i32>>>,
 
     curr_id: u64,
-    reader_handle: tokio::task::JoinHandle<Result<(), LspReadError>>,
-    logger_handle: tokio::task::JoinHandle<Result<(), ()>>,
+    reader_handle: JoinHandle<Result<(), LspReadError>>,
+    logger_handle: JoinHandle<Result<(), ()>>,
 
     /*
     to be copied to all features, indicate "ready"
@@ -65,7 +67,7 @@ pub struct LspWrapper {
     tick_sender: NavCompTickSender,
 }
 
-pub type LspWrapperRef = Arc<tokio::sync::RwLock<LspWrapper>>;
+// pub type LspWrapperRef = Arc<RwLock<LspWrapper>>;
 
 impl LspWrapper {
     /*
@@ -76,12 +78,11 @@ impl LspWrapper {
                workspace_root: PathBuf,
                tick_sender: NavCompTickSender) -> Option<LspWrapper> {
         debug!("starting LspWrapper for directory {:?}", &workspace_root);
-        let mut child = tokio::process::Command::new(lsp_path.as_os_str())
+        let mut child = process::Command::new(lsp_path.as_os_str())
             // .args(&["--cli"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .kill_on_drop(true)
             .spawn()
             .ok()?;
 
@@ -90,7 +91,7 @@ impl LspWrapper {
                 error!("failed acquiring stdout");
                 return None;
             }
-            Some(o) => tokio::io::BufReader::new(o)
+            Some(o) => BufReader::new(o)
         };
 
         let stderr = match child.stderr.take() {
@@ -98,10 +99,10 @@ impl LspWrapper {
                 error!("failed acquiring stderr");
                 return None;
             }
-            Some(e) => tokio::io::BufReader::new(e)
+            Some(e) => BufReader::new(e)
         };
 
-        let (notification_sender, notification_receiver) = tokio::sync::mpsc::unbounded_channel::<LspServerNotification>();
+        let (notification_sender, notification_receiver) = crossbeam_channel::unbounded::<LspServerNotification>();
         let ids = Arc::new(RwLock::new(IdToCallInfo::default()));
         let file_versions = Arc::new(RwLock::new(HashMap::default()));
 
@@ -113,18 +114,23 @@ impl LspWrapper {
 
         let reader_identifier2 = reader_identifier.clone();
 
-        let reader_handle: tokio::task::JoinHandle<Result<(), LspReadError>> = tokio::spawn(Self::reader_thread(
-            reader_identifier,
-            ids.clone(),
-            notification_sender,
-            stdout,
-        ));
+        let ids_clone = ids.clone();
+        let reader_handle: JoinHandle<Result<(), LspReadError>> = thread::spawn(move || {
+            Self::reader_thread(
+                reader_identifier,
+                ids_clone,
+                notification_sender,
+                stdout,
+            )
+        });
 
-        let logger_handle: tokio::task::JoinHandle<Result<(), ()>> = tokio::spawn(Self::logger_thread(
-            reader_identifier2,
-            stderr,
-            notification_receiver,
-        ));
+        let logger_handle: JoinHandle<Result<(), ()>> = thread::spawn(|| {
+            Self::logger_thread(
+                reader_identifier2,
+                stderr,
+                notification_receiver,
+            )
+        });
 
         Some(
             LspWrapper {
@@ -142,58 +148,49 @@ impl LspWrapper {
         )
     }
 
-    async fn send_message<R: lsp_types::request::Request>(&mut self, params: R::Params) -> Result<R::Result, LspIOError> {
+    fn send_message<R: lsp_types::request::Request>(&mut self, params: R::Params) -> Result<LSPPromise<R>, LspIOError> where <R as lsp_types::request::Request>::Result: std::marker::Send {
         let new_id = format!("{}", self.curr_id);
         self.curr_id += 1;
 
-        let (sender, receiver) = tokio::sync::oneshot::channel::<Value>();
+        let (sender, receiver) = crossbeam_channel::bounded::<jsonrpc_core::Value>(1);
 
-        if self.ids.write().await.insert(new_id.clone(), CallInfo {
+        if self.ids.write().map_err(|poison_error| {
+            LspWriteError::LockError(poison_error.to_string())
+        })?.insert(new_id.clone(), CallInfo {
             method: R::METHOD,
-            sender,
+            sender: sender,
         }).is_some() {
             // TODO this is a reuse of id, super unlikely
             warn!("id reuse, not handled properly");
         }
 
         if let Some(stdin) = self.child.stdin.as_mut() {
-            internal_send_request::<R, _>(stdin, new_id.clone(), params).await?;
-
-            match receiver.await {
-                Err(_) => {
-                    error!("failed retrieving message for id {}", &new_id);
-                    Err(LspIOError::Read(LspReadError::BrokenChannel))
-                }
-                Ok(resp) => {
-                    serde_json::from_value::<R::Result>(resp).map_err(|e| {
-                        LspIOError::Read(LspReadError::DeError(e.to_string()))
-                    })
-                }
-            }
+            internal_send_request::<R, _>(stdin, new_id.clone(), params)?;
+            Ok(LSPPromise::<R>::new(receiver))
         } else {
             Err(LspIOError::Write(LspWriteError::BrokenPipe.into()))
         }
     }
 
-    async fn send_notification_no_params<N: lsp_types::notification::Notification>(&mut self) -> Result<(), LspWriteError> {
+    fn send_notification_no_params<N: lsp_types::notification::Notification>(&mut self) -> Result<(), LspWriteError> {
         if let Some(stdin) = self.child.stdin.as_mut() {
-            internal_send_notification_no_params::<N, _>(stdin).await?;
+            internal_send_notification_no_params::<N, _>(stdin)?;
             Ok(())
         } else {
             Err(LspWriteError::BrokenPipe.into())
         }
     }
 
-    async fn send_notification<N: lsp_types::notification::Notification>(&mut self, params: N::Params) -> Result<(), LspWriteError> {
+    fn send_notification<N: lsp_types::notification::Notification>(&mut self, params: N::Params) -> Result<(), LspWriteError> {
         if let Some(stdin) = self.child.stdin.as_mut() {
-            internal_send_notification::<N, _>(stdin, params).await?;
+            internal_send_notification::<N, _>(stdin, params)?;
             Ok(())
         } else {
             Err(LspWriteError::BrokenPipe.into())
         }
     }
 
-    pub async fn initialize(&mut self) -> Result<lsp_types::InitializeResult, LspIOError> {
+    pub fn initialize(&mut self) -> Result<lsp_types::InitializeResult, LspIOError> {
         let pid = std::process::id();
 
         let abs_path = self.workspace_root_path.to_str().unwrap(); // TODO should be absolute //TODO unwrap
@@ -212,9 +209,7 @@ impl LspWrapper {
             name: "".to_string(),
         };
 
-        // tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-
-        let result = self.send_message::<lsp_types::request::Initialize>(lsp_types::InitializeParams {
+        let mut result = self.send_message::<lsp_types::request::Initialize>(lsp_types::InitializeParams {
             process_id: Some(pid),
             // process_id: None,
             root_path: None,
@@ -271,18 +266,21 @@ impl LspWrapper {
             client_info: None,
             // I specifically refuse to support any locale other than US English. Not sorry.
             locale: None,
-        }).await?;
+        })?;
 
         //before returning I will send syn-ack as protocol demands.
-
-        self.send_notification_no_params::<lsp_types::notification::Initialized>().await?;
-
-        Ok(result)
+        if result.wait() {
+            self.send_notification_no_params::<lsp_types::notification::Initialized>()?;
+            Ok(result.take().unwrap())
+        } else {
+            // OK maybe I should put errors in promises?
+            Err(LspIOError::Write(LspWriteError::IoError("failed init".to_string())))
+        }
     }
 
-    pub async fn text_document_did_open(&mut self, url: Url, text: String) -> Result<(), LspWriteError> {
+    pub fn text_document_did_open(&mut self, url: Url, text: String) -> Result<(), LspWriteError> {
         {
-            let mut lock = self.file_versions.write().await;
+            let mut lock = self.file_versions.write()?;
             if let Some(old_id) = lock.get(&url) {
                 warn!("expected document {:?} version to be 0, is {}", &url, old_id);
             } else {
@@ -299,15 +297,15 @@ impl LspWrapper {
                     text,
                 }
             }
-        ).await
+        )
     }
 
     /*
     This is a non-incremental variant of text_document_did_change
      */
-    pub async fn text_document_did_change(&mut self, url: Url, full_text: String) -> Result<(), LspWriteError> {
+    pub fn text_document_did_change(&mut self, url: Url, full_text: String) -> Result<(), LspWriteError> {
         let version = {
-            let mut lock = self.file_versions.write().await;
+            let mut lock = self.file_versions.write()?;
             if let Some(old_id) = lock.get(&url).map(|i| *i) {
                 // debug!("updating document {} from {} to {}", &url, old_id, old_id+1);
                 lock.insert(url.clone(), old_id + 1);
@@ -330,21 +328,21 @@ impl LspWrapper {
                     }
                 ],
             }
-        ).await
+        )
     }
 
-    pub async fn text_document_completion(&mut self,
-                                          url: Url,
-                                          cursor: LspTextCursor,
-                                          /*
-                                          just typing or ctrl-space?
-                                           */
-                                          automatic: bool,
-                                          /*
-                                          '.' or '::' or other thing like that
-                                           */
-                                          trigger_character: Option<String>,
-    ) -> Result<Option<CompletionResponse>, LspIOError> {
+    pub fn text_document_completion(&mut self,
+                                    url: Url,
+                                    cursor: LspTextCursor,
+                                    /*
+                                    just typing or ctrl-space?
+                                     */
+                                    automatic: bool,
+                                    /*
+                                    '.' or '::' or other thing like that
+                                     */
+                                    trigger_character: Option<String>,
+    ) -> Result<LSPPromise<Completion>, LspIOError> {
         self.send_message::<lsp_types::request::Completion>(
             lsp_types::CompletionParams {
                 text_document_position: TextDocumentPositionParams {
@@ -365,18 +363,18 @@ impl LspWrapper {
                     trigger_character,
                 }),
             }
-        ).await
+        )
     }
 
-    pub fn wait(&self) -> &tokio::task::JoinHandle<Result<(), LspReadError>> {
+    pub fn wait(&self) -> &JoinHandle<Result<(), LspReadError>> {
         &self.reader_handle
     }
 
-    pub async fn reader_thread(
+    pub fn reader_thread(
         // used for debugging
         identifier: String,
         id_to_name: Arc<RwLock<IdToCallInfo>>,
-        notification_sender: UnboundedSender<LspServerNotification>,
+        notification_sender: Sender<LspServerNotification>,
         mut stdout: BufReader<ChildStdout>,
     ) -> Result<(), LspReadError> {
         let mut num: usize = 0;
@@ -388,7 +386,7 @@ impl LspWrapper {
                 &mut stdout,
                 &id_to_name,
                 &notification_sender,
-            ).await {
+            ) {
                 Ok(_) => {}
                 Err(LspReadError::UnmatchedId { id, method }) => {
                     warn!("unmatched id {} (method {})", id, method);
@@ -405,10 +403,10 @@ impl LspWrapper {
     This thread just dries the pipes of whatever we have no good receiver for: so stderr and
     LspNotifications that I do not handle in any specific way yet.
      */
-    pub async fn logger_thread(
+    pub fn logger_thread(
         identifier: String,
         stderr_pipe: BufReader<ChildStderr>,
-        mut notification_receiver: UnboundedReceiver<LspServerNotification>,
+        mut notification_receiver: Receiver<LspServerNotification>,
     ) -> Result<(), ()> {
         //TODO dry the other channel too before quitting
 
@@ -417,39 +415,39 @@ impl LspWrapper {
 
         let mut more_lines = true;
         let mut notification_channel_open = true;
-        loop {
-            tokio::select! {
-                line_res = stderr_lines.next_line(), if more_lines => {
-                    match line_res {
-                        Ok(line_op) => {
-                            if let Some(line) = line_op {
-                                //error!("Lspx{:?}: {}", &stderr_path, &line);
-                                lsp_debug_save(stderr_path.clone(), format!("{}\n", line)).await;
-                            } else {
-                                warn!("no more lines in LSP stderr_pipe.");
-                                more_lines = false;
-                            }
-                        }
-                        Err(e) => {
-                            error!("stderr_pipe read error: {}", e);
-                        }
-                    }
-                },
-                notification_op = notification_receiver.recv(), if notification_channel_open => {
-                    match notification_op {
-                        Some(_notification) => {
-                            //debug!("received LSP notification:\n---\n{:?}\n---\n", notification);
-                            // debug!("received LSP notification");
-                        }
-                        None => {
-                            debug!("notification channel closed.");
-                            notification_channel_open = false;
-                        }
-                    }
-                },
-                else => { break; },
-            }
-        }
+        // loop {
+        //     select! {
+        //         stderr_lines.next_line() -> line_res => {
+        //             match line_res {
+        //                 Ok(line_op) => {
+        //                     if let Some(line) = line_op {
+        //                         //error!("Lspx{:?}: {}", &stderr_path, &line);
+        //                         lsp_debug_save(stderr_path.clone(), format!("{}\n", line)).await;
+        //                     } else {
+        //                         warn!("no more lines in LSP stderr_pipe.");
+        //                         more_lines = false;
+        //                     }
+        //                 }
+        //                 Err(e) => {
+        //                     error!("stderr_pipe read error: {}", e);
+        //                 }
+        //             }
+        //         },
+        //         notification_op = notification_receiver.recv(), if notification_channel_open => {
+        //             match notification_op {
+        //                 Some(_notification) => {
+        //                     //debug!("received LSP notification:\n---\n{:?}\n---\n", notification);
+        //                     // debug!("received LSP notification");
+        //                 }
+        //                 None => {
+        //                     debug!("notification channel closed.");
+        //                     notification_channel_open = false;
+        //                 }
+        //             }
+        //         },
+        //         else => { break; },
+        //     }
+        // }
 
         debug!("closing logger thread");
 

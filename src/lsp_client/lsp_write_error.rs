@@ -1,4 +1,5 @@
 use std::io;
+use std::sync::PoisonError;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum LspWriteError {
@@ -7,6 +8,7 @@ pub enum LspWriteError {
     IoError(String),
     BrokenPipe,
     InterruptedWrite,
+    LockError(String),
 }
 
 impl From<serde_json::error::Error> for LspWriteError {
@@ -18,5 +20,11 @@ impl From<serde_json::error::Error> for LspWriteError {
 impl From<io::Error> for LspWriteError {
     fn from(ioe: io::Error) -> Self {
         LspWriteError::IoError(ioe.to_string())
+    }
+}
+
+impl<R> From<PoisonError<R>> for LspWriteError {
+    fn from(pe: PoisonError<R>) -> Self {
+        LspWriteError::LockError(pe.to_string())
     }
 }

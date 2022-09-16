@@ -1,5 +1,6 @@
 use std::cmp::min;
 use std::rc::Rc;
+use std::sync::{Arc, RwLock};
 
 use crossbeam_channel::TrySendError;
 use futures::{FutureExt, TryFutureExt};
@@ -41,7 +42,7 @@ use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::AsAny;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID};
-use crate::widgets::editor_widget::completion::completion_widget::{CompletionWidget, wrap_completion_future};
+use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
@@ -451,28 +452,9 @@ impl EditorWidget {
                     };
 
                     let tick_sender = navcomp.todo_navcomp_sender().clone();
-                    let promise = async move {
-                        navcomp.completions(path, stupid_cursor).await
-                    };
+                    let promise = navcomp.completions(path, stupid_cursor);
 
-                    let promise = promise.shared();
-                    let second_promise = promise.clone();
-                    let second_promise = second_promise.then(move |_| {
-                        // TODO parameters of LspTick
-                        match tick_sender.try_send(NavCompTick::LspTick(LangId::RUST, 0)) {
-                            Ok(_) => {
-                                debug!("sent navcomp tick");
-                            }
-                            Err(e) => {
-                                error!("failed sending navcomp tick: {:?}", e);
-                            }
-                        };
-                        futures::future::ready(())
-                    });
-
-                    tokio::spawn(second_promise);
-
-                    let comp = CompletionWidget::new(wrap_completion_future(Box::new(promise)));
+                    let comp = CompletionWidget::new(Arc::new(RwLock::new(promise)));
                     self.hover = Some((hover_rect, EditorHover::Completion(comp)));
                     debug!("created completion");
                 }

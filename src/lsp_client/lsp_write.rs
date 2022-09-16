@@ -5,7 +5,7 @@ use tokio::io::AsyncWriteExt;
 
 use crate::lsp_client::lsp_write_error::LspWriteError;
 
-pub async fn internal_send_request<R: lsp_types::request::Request, W: tokio::io::AsyncWrite>(
+pub fn internal_send_request<R: lsp_types::request::Request, W: Write>(
     stdin: &mut W,
     id: String,
     params: R::Params,
@@ -32,9 +32,9 @@ pub async fn internal_send_request<R: lsp_types::request::Request, W: tokio::io:
 
         debug!("Sending request:\n---\n{}\n---\n", std::str::from_utf8(&buffer).unwrap());
 
-        let len = stdin.write(&buffer).await?;
+        let len = stdin.write(&buffer)?;
         if buffer.len() == len {
-            stdin.flush().await?;
+            stdin.flush()?;
             Ok(())
         } else {
             Err(LspWriteError::InterruptedWrite)
@@ -44,7 +44,7 @@ pub async fn internal_send_request<R: lsp_types::request::Request, W: tokio::io:
     }
 }
 
-pub async fn internal_send_notification<N: lsp_types::notification::Notification, W: tokio::io::AsyncWrite>(
+pub fn internal_send_notification<N: lsp_types::notification::Notification, W: Write>(
     stdin: &mut W,
     params: N::Params,
 ) -> Result<(), LspWriteError>
@@ -73,9 +73,9 @@ pub async fn internal_send_notification<N: lsp_types::notification::Notification
 
         debug!("Sending notification:\n---\n{}\n---\n", std::str::from_utf8(&buffer).unwrap());
 
-        let len = stdin.write(&buffer).await?;
+        let len = stdin.write(&buffer)?;
         if buffer.len() == len {
-            stdin.flush().await?;
+            stdin.flush()?;
             Ok(())
         } else {
             Err(LspWriteError::InterruptedWrite)
@@ -85,7 +85,7 @@ pub async fn internal_send_notification<N: lsp_types::notification::Notification
     }
 }
 
-pub async fn internal_send_notification_no_params<N: lsp_types::notification::Notification, W: tokio::io::AsyncWrite>(
+pub fn internal_send_notification_no_params<N: lsp_types::notification::Notification, W: Write>(
     stdin: &mut W,
 ) -> Result<(), LspWriteError>
     where
@@ -112,9 +112,9 @@ pub async fn internal_send_notification_no_params<N: lsp_types::notification::No
 
     debug!("Sending notification (no params):\n---\n{}\n---\n", std::str::from_utf8(&buffer).unwrap());
 
-    let len = stdin.write(&buffer).await?;
+    let len = stdin.write(&buffer)?;
     if buffer.len() == len {
-        stdin.flush().await?;
+        stdin.flush()?;
         Ok(())
     } else {
         Err(LspWriteError::InterruptedWrite)

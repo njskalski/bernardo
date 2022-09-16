@@ -1,12 +1,11 @@
+use std::io::Read;
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
+use crossbeam_channel::Sender;
 use jsonrpc_core::{Call, Id, Output};
 use log::{debug, error};
 use serde_json::Value;
-use tokio::io::AsyncReadExt;
-use tokio::sync::mpsc::UnboundedSender;
-use tokio::sync::RwLock;
 
 use crate::lsp_client::debug_helpers::{format_or_noop, lsp_debug_save};
 use crate::lsp_client::lsp_client::IdToCallInfo;
@@ -25,18 +24,18 @@ fn id_to_str(id: Id) -> String {
     }
 }
 
-pub async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
+pub fn read_lsp<R: Read>(
     identifier: &str,
     num: &mut usize,
     input: &mut R,
     id_to_method: &Arc<RwLock<IdToCallInfo>>,
-    notification_sink: &UnboundedSender<LspServerNotification>,
+    notification_sink: &Sender<LspServerNotification>,
 ) -> Result<(), LspReadError> {
     let mut headers: Vec<u8> = Vec::new();
 
     loop {
         let mut buf: [u8; 1] = [0];
-        input.read(&mut buf).await?;
+        input.read(&mut buf)?;
         headers.push(buf[0]);
 
         if headers.len() > 3 {
@@ -57,7 +56,7 @@ pub async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
     let mut body: Vec<u8> = Vec::with_capacity(body_len);
     while body.len() < body_len {
         let mut buf: [u8; 1] = [0];
-        input.read(&mut buf).await?;
+        input.read(&mut buf)?;
         body.push(buf[0]);
     }
 
@@ -71,7 +70,7 @@ pub async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
         let file = dir.join(format!("incoming-{}.json", num));
         let pretty_string = format_or_noop(s.to_string());
 
-        tokio::spawn(lsp_debug_save(file, pretty_string));
+        lsp_debug_save(file, pretty_string);
     }
 
     if let Ok(call) = jsonrpc_core::serde_from_str::<jsonrpc_core::Call>(&s) {
@@ -79,11 +78,11 @@ pub async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
             Call::MethodCall(call) => {
                 debug!("deserialized call->method_call");
                 let value: Value = call.params.into();
-                internal_send(&id_to_method,
-                              call.id.clone(),
-                              value,
-                              Some(&call.method),
-                ).await
+                internal_send_to_promise(&id_to_method,
+                                         call.id.clone(),
+                                         value,
+                                         Some(&call.method),
+                )
             }
             Call::Notification(notification) => {
                 debug!("deserialized call->notification");
@@ -112,11 +111,11 @@ pub async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
                             }
                             Output::Success(succ) => {
                                 debug!("call info id {:?}", &succ.id);
-                                internal_send(&id_to_method,
-                                              succ.id,
-                                              succ.result,
-                                              None,
-                                ).await
+                                internal_send_to_promise(&id_to_method,
+                                                         succ.id,
+                                                         succ.result,
+                                                         None,
+                                )
                             }
                         }
                     } else {
@@ -145,7 +144,7 @@ pub async fn read_lsp<R: tokio::io::AsyncRead + std::marker::Unpin>(
     }
 }
 
-async fn internal_send(
+fn internal_send_to_promise(
     id_to_method: &Arc<RwLock<IdToCallInfo>>,
     id: Id,
     value: Value,
@@ -153,7 +152,7 @@ async fn internal_send(
 ) -> Result<(), LspReadError> {
     let id = id_to_str(id);
     debug!("call info id {}", &id);
-    if let Some(call_info) = id_to_method.write().await.remove(&id) {
+    if let Some(call_info) = id_to_method.write()?.remove(&id) {
         match call_info.sender.send(value) {
             Ok(_) => {
                 debug!("sent {} to {}", call_info.method, &id);

@@ -4,11 +4,10 @@ I guess I should reuse FuzzySearch Widget, this is a placeholder now.
 
 use std::cmp::min;
 use std::future::Future;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use futures::FutureExt;
 use log::{debug, error, warn};
-use tokio::sync::{RwLock, RwLockWriteGuard, TryLockError};
 
 use crate::{AnyMsg, InputEvent, Output, selfwidget, SizeConstraint, subwidget, Theme, Widget};
 use crate::experiments::focus_group::FocusUpdate;
@@ -16,6 +15,7 @@ use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::experiments::wrapped_future::WrappedFuture;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
+use crate::lsp_client::promise::Promise;
 use crate::primitives::xy::XY;
 use crate::w7e::navcomp_provider::Completion;
 use crate::widget::action_trigger::ActionTrigger;
@@ -27,22 +27,18 @@ use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
 use crate::widgets::list_widget::ListWidget;
 
-pub fn wrap_completion_future(b: Box<dyn Future<Output=Vec<Completion>> + Unpin>) -> CompletionsFuture {
-    Arc::new(RwLock::new(WrappedFuture::new(b)))
-}
-
-pub type CompletionsFuture = Arc<RwLock<WrappedFuture<Vec<Completion>>>>;
+pub type CompletionsPromise = Arc<RwLock<Box<dyn Promise<Vec<Completion>>>>>;
 
 pub struct CompletionWidget {
     wid: WID,
-    completions_future: Arc<RwLock<WrappedFuture<Vec<Completion>>>>,
+    completions_future: Arc<RwLock<Box<dyn Promise<Vec<Completion>>>>>,
     fuzzy: bool,
     list_widget: ListWidget<Completion>,
     display_state: Option<DisplayState<Self>>,
 }
 
 impl CompletionWidget {
-    pub fn new(completions_future: CompletionsFuture) -> Self {
+    pub fn new(completions_future: CompletionsPromise) -> Self {
         CompletionWidget {
             wid: get_new_widget_id(),
             fuzzy: true,
@@ -80,7 +76,7 @@ impl Widget for CompletionWidget {
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         let set_focused_list = match self.completions_future.try_write() {
             Ok(mut lock) => {
-                if lock.poll() {
+                if lock.update() {
                     true
                 } else {
                     false

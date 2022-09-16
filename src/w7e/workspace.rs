@@ -103,7 +103,7 @@ impl Workspace {
 
         for scope in self.scopes.iter_mut() {
             match scope.load_handler(config,
-                                     nav_comp_group.todo_sender().clone()).await {
+                                     nav_comp_group.todo_sender().clone()) {
                 Ok(_) => {
                     let mut has_navcomp = false;
                     scope.handler.as_ref().map(|h| {

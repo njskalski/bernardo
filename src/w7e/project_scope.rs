@@ -66,9 +66,9 @@ impl ProjectScope {
     Config is required to "know" where the LSP servers are. We will provide reasonable defaults,
     but option to override is essential.
      */
-    pub async fn load_handler(&mut self,
-                              config: &ConfigRef,
-                              navcomp_tick_sender: NavCompTickSender,
+    pub fn load_handler(&mut self,
+                        config: &ConfigRef,
+                        navcomp_tick_sender: NavCompTickSender,
     ) -> Result<(), HandlerLoadError> {
         let handler = match &self.handler_id {
             None => {
@@ -80,7 +80,7 @@ impl ProjectScope {
                              &handler_id,
                              self.path.clone(),
                              navcomp_tick_sender.clone(),
-                ).await?
+                )?
             }
         };
 
