@@ -58,7 +58,7 @@ mod gladius;
 mod lsp_client;
 mod w7e;
 
-fn main() -> Result<(), usize> {
+fn main() {
     let args = gladius::args::Args::parse();
     logger_setup(args.verbosity.log_level_filter());
 
@@ -86,7 +86,7 @@ fn main() -> Result<(), usize> {
                     error!("failed reading workspace file at {}, because:\n{}\nterminating. To continue, rename/remove {} in that folder.",
                         fsf.root(), e, WORKSPACE_FILE_NAME);
 
-                    return Err(1);
+                    return;
                 }
             }
         }
@@ -104,12 +104,12 @@ fn main() -> Result<(), usize> {
                             error!("failed inspecting workspace at {:?}, because it doesn't seem to be a folder.",
                             workspace_dir.absolute_path());
                             // This should never happen, so I terminate program.
-                            return Err(1);
+                            return;
                         }
                         _ => {
                             error!("failed inspecting workspace at {:?}, because:\n{}", workspace_dir.absolute_path(), e);
                             // I decided inspection should not have non-fatal errors, just worst case scenario being "no scopes".
-                            return Err(1);
+                            return;
                         }
                     }
                 }
@@ -146,7 +146,7 @@ fn main() -> Result<(), usize> {
 
     if output.size_constraint().visible_hint().size == ZERO {
         error!("it seems like the screen has zero size.");
-        return Err(1);
+        return;
     }
 
     let mut main_view = MainView::new(
@@ -277,6 +277,4 @@ fn main() -> Result<(), usize> {
             }
         }
     }
-
-    Ok(())
 }

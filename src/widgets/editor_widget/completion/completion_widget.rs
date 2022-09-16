@@ -3,16 +3,13 @@ I guess I should reuse FuzzySearch Widget, this is a placeholder now.
  */
 
 use std::cmp::min;
-use std::future::Future;
 use std::sync::{Arc, RwLock};
 
-use futures::FutureExt;
 use log::{debug, error, warn};
 
 use crate::{AnyMsg, InputEvent, Output, selfwidget, SizeConstraint, subwidget, Theme, Widget};
 use crate::experiments::focus_group::FocusUpdate;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
-use crate::experiments::wrapped_future::WrappedFuture;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::promise::Promise;
@@ -31,26 +28,26 @@ pub type CompletionsPromise = Arc<RwLock<Box<dyn Promise<Vec<Completion>>>>>;
 
 pub struct CompletionWidget {
     wid: WID,
-    completions_future: Arc<RwLock<Box<dyn Promise<Vec<Completion>>>>>,
+    completions_promise: Arc<RwLock<Box<dyn Promise<Vec<Completion>>>>>,
     fuzzy: bool,
     list_widget: ListWidget<Completion>,
     display_state: Option<DisplayState<Self>>,
 }
 
 impl CompletionWidget {
-    pub fn new(completions_future: CompletionsPromise) -> Self {
+    pub fn new(completions_promise: CompletionsPromise) -> Self {
         CompletionWidget {
             wid: get_new_widget_id(),
             fuzzy: true,
             list_widget: ListWidget::new(),
-            completions_future,
+            completions_promise,
             display_state: None,
         }
     }
 
     // TODO unnecessary clone
     fn completions(&self) -> Option<Vec<Completion>> {
-        let lock = self.completions_future
+        let lock = self.completions_promise
             .try_read()
             .map_err(|_| error!("failed acquiring rw lock"))
             .ok()?;
@@ -74,7 +71,7 @@ impl Widget for CompletionWidget {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let set_focused_list = match self.completions_future.try_write() {
+        let set_focused_list = match self.completions_promise.try_write() {
             Ok(mut lock) => {
                 if lock.update() {
                     true
@@ -83,7 +80,7 @@ impl Widget for CompletionWidget {
                 }
             }
             Err(e) => {
-                error!("failed acquiring rwlock on completions_future");
+                error!("failed acquiring rwlock on completions_promise");
                 false
             }
         };

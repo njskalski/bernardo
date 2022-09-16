@@ -8,10 +8,6 @@ use crate::fs::path::SPath;
 use crate::LangId;
 use crate::w7e::handler::NavCompRef;
 
-/*
-This enum is used to notify UI on "future ready to poll". Right now I don't differentiate between
-Futures, because we don't have partial redraws, so I just match LangId and request ID
- */
 #[derive(Debug, Copy, Clone)]
 pub enum NavCompTick {
     LspTick(LangId, usize)

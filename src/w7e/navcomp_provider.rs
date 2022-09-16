@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-use std::future::Future;
 
 use crate::fs::path::SPath;
 use crate::lsp_client::helpers::LspTextCursor;

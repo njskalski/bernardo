@@ -1,5 +1,4 @@
 use std::fmt::{Debug, Formatter};
-use std::future::Future;
 use std::sync::{RwLock, TryLockResult};
 use std::thread;
 

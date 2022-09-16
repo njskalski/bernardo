@@ -3,8 +3,6 @@ use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use crossbeam_channel::TrySendError;
-use futures::{FutureExt, TryFutureExt};
-use futures::future::err;
 use log::{debug, error, warn};
 use lsp_types::Hover;
 use streaming_iterator::StreamingIterator;
