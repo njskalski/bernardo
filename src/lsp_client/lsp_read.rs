@@ -166,8 +166,8 @@ fn internal_send_to_promise(
                 Ok(())
             }
             Err(_) => {
-                debug!("failed to send {} to {}, because of broken channel", call_info.method, &id);
-                Err(LspReadError::BrokenChannel)
+                debug!("failed to send {} to {}, promise expired", call_info.method, &id);
+                Err(LspReadError::PromiseExpired { id })
             }
         }
     } else {

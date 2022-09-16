@@ -9,7 +9,7 @@ use std::process::{ChildStderr, ChildStdout, Stdio};
 use std::sync::{Arc, RwLock};
 use std::thread::JoinHandle;
 
-use crossbeam_channel::{Receiver, select, Sender};
+use crossbeam_channel::{Receiver, select, Sender, TrySendError};
 use log::{debug, error, warn};
 use lsp_types::{CompletionContext, CompletionResponse, CompletionTriggerKind, Position, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentPositionParams, Url, VersionedTextDocumentIdentifier};
 use lsp_types::request::Completion;
@@ -62,11 +62,6 @@ pub struct LspWrapper {
     reader_handle: JoinHandle<Result<(), LspReadError>>,
     logger_handle: JoinHandle<Result<(), ()>>,
     notification_reader_handle: JoinHandle<Result<(), ()>>,
-
-    /*
-    to be copied to all features, indicate "ready"
-     */
-    tick_sender: NavCompTickSender,
 }
 
 // pub type LspWrapperRef = Arc<RwLock<LspWrapper>>;
@@ -123,6 +118,7 @@ impl LspWrapper {
                 ids_clone,
                 notification_sender,
                 stdout,
+                tick_sender,
             )
         });
 
@@ -151,7 +147,6 @@ impl LspWrapper {
                 reader_handle,
                 logger_handle,
                 notification_reader_handle,
-                tick_sender,
             }
         )
     }
@@ -384,10 +379,12 @@ impl LspWrapper {
         id_to_name: Arc<RwLock<IdToCallInfo>>,
         notification_sender: Sender<LspServerNotification>,
         mut stdout: BufReader<ChildStdout>,
+        tick_sender: Sender<NavCompTick>,
     ) -> Result<(), LspReadError> {
         let mut num: usize = 0;
 
-        thread::sleep(time::Duration::from_secs(6));
+        // so I can attach fkn clion
+        // thread::sleep(time::Duration::from_secs(6));
 
         loop {
             num += 1;
@@ -398,7 +395,18 @@ impl LspWrapper {
                 &id_to_name,
                 &notification_sender,
             ) {
-                Ok(_) => {}
+                Ok(_) => {
+                    // TODO Pass LangId and whatever usize is?
+                    match tick_sender.try_send(NavCompTick::LspTick(LangId::RUST, 0)) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            error!("non-fatal: failed to send navcomp tick");
+                        }
+                    }
+                }
+                Err(LspReadError::PromiseExpired { id }) => {
+                    debug!("promise id {} expired", id);
+                }
                 Err(LspReadError::UnmatchedId { id, method }) => {
                     warn!("unmatched id {} (method {})", id, method);
                 }

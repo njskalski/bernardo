@@ -271,7 +271,7 @@ fn main() -> Result<(), usize> {
             recv(nav_comp_group_ref.recvr()) -> tick => {
                 match tick {
                     _ => {
-                        warn!("unhandled tick : {:?}", tick)
+                        // warn!("unhandled tick : {:?}", tick)
                     }
                 }
             }

@@ -17,6 +17,11 @@ pub enum LspReadError {
     UnmatchedId { id: String, method: String },
     JsonRpcError(String),
     BrokenChannel,
+    /*
+    We retrieved response, but promise that was waiting for it has been dropped.
+    TODO some day we should send cancellation in such cases
+     */
+    PromiseExpired { id: String },
     HttpParseError(String),
     LockError(String),
 }
