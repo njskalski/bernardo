@@ -4,11 +4,10 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use log::error;
 use streaming_iterator::StreamingIterator;
-use tokio::sync::RwLock;
 
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::path::SPath;

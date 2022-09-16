@@ -3,10 +3,8 @@ use std::future::Future;
 use std::sync::{RwLock, TryLockResult};
 use std::thread;
 
-use async_trait::async_trait;
 use log::{debug, error, warn};
 use lsp_types::CompletionResponse;
-use tokio::spawn;
 
 use crate::fs::path::SPath;
 use crate::lsp_client::helpers::LspTextCursor;
@@ -95,23 +93,37 @@ impl NavCompProvider for NavCompProviderLsp {
             }
         };
 
-        // match self.lsp.try_write() {
-        //     Err(_) => {
-        //         // this should never happen
-        //         error!("failed acquiring write lock");
-        //         None
-        //     }
-        //     Ok(mut lock) => {
-        //         match lock.text_document_completion(url, cursor, true /*TODO*/, None /*TODO*/) {
-        //             Err(e) => {
-        //                 error!("failed sending text_document_completion: {:?}", e);
-        //                 None
-        //             }
-        //             Ok(resp) => Some(Box::new(resp)),
-        //         }
-        //     }
-        // }
-        todo!()
+        match self.lsp.try_write() {
+            Err(_) => {
+                // this should never happen
+                error!("failed acquiring write lock");
+                None
+            }
+            Ok(mut lock) => {
+                match lock.text_document_completion(url, cursor, true /*TODO*/, None /*TODO*/) {
+                    Err(e) => {
+                        error!("failed sending text_document_completion: {:?}", e);
+                        None
+                    }
+                    Ok(resp) => Some(Box::new(resp.map(|cop| -> Vec<Completion> {
+                        match cop {
+                            None => vec![],
+                            Some(comps) => {
+                                match comps {
+                                    CompletionResponse::Array(arr) => {
+                                        arr.into_iter().map(translate_completion_item).collect()
+                                    }
+                                    CompletionResponse::List(list) => {
+                                        // TODO is complete ignored
+                                        list.items.into_iter().map(translate_completion_item).collect()
+                                    }
+                                }
+                            }
+                        }
+                    }))),
+                }
+            }
+        }
     }
 
     fn completion_triggers(&self, _path: &SPath) -> Vec<String> {

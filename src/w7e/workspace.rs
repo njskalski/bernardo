@@ -97,7 +97,7 @@ impl Workspace {
         }
     }
 
-    pub async fn initialize_handlers(&mut self, config: &ConfigRef) -> (NavCompGroupRef, Vec<HandlerLoadError>) {
+    pub fn initialize_handlers(&mut self, config: &ConfigRef) -> (NavCompGroupRef, Vec<HandlerLoadError>) {
         let mut errors: Vec<HandlerLoadError> = Vec::default();
         let mut nav_comp_group = NavCompGroup::new();
 

@@ -4,11 +4,10 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::{Debug, Formatter};
 use std::path::{Component, Components, Path, PathBuf};
+use std::sync::RwLock;
 
-use async_trait::async_trait;
 use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
-use tokio::sync::RwLock;
 
 use crate::experiments::array_streaming_iterator::ArrayStreamingIt;
 use crate::fs::dir_entry::DirEntry;
@@ -195,7 +194,7 @@ impl Debug for MockFS {
     }
 }
 
-#[async_trait]
+
 impl FilesystemFront for MockFS {
     fn root_path(&self) -> &PathBuf {
         &self.root_path
@@ -203,7 +202,7 @@ impl FilesystemFront for MockFS {
 
     fn blocking_read_entire_file(&self, path: &Path) -> Result<Vec<u8>, ReadError> {
         let comp: Vec<_> = path.components().collect();
-        if let Some(rec) = self.root_dir.blocking_read().get(&comp) {
+        if let Some(rec) = self.root_dir.read().unwrap().get(&comp) {
             match rec {
                 Record::File(contents) => Ok(contents.clone()),
                 Record::Dir(_) => Err(ReadError::NotAFilePath)
@@ -215,12 +214,12 @@ impl FilesystemFront for MockFS {
 
     fn is_dir(&self, path: &Path) -> bool {
         let comp: Vec<_> = path.components().collect();
-        self.root_dir.blocking_read().get(&comp).map(|r| r.is_dir()).unwrap_or(false)
+        self.root_dir.read().unwrap().get(&comp).map(|r| r.is_dir()).unwrap_or(false)
     }
 
     fn is_file(&self, path: &Path) -> bool {
         let comp: Vec<_> = path.components().collect();
-        self.root_dir.blocking_read().get(&comp).map(|r| r.is_file()).unwrap_or(false)
+        self.root_dir.read().unwrap().get(&comp).map(|r| r.is_file()).unwrap_or(false)
     }
 
     fn hash_seed(&self) -> usize {
@@ -238,9 +237,9 @@ impl FilesystemFront for MockFS {
 
         let comp: Vec<_> = path.components().collect();
         let items = if comp.is_empty() {
-            self.root_dir.blocking_read().list()
+            self.root_dir.read().unwrap().list()
         } else {
-            match self.root_dir.blocking_read().get(&comp) {
+            match self.root_dir.read().unwrap().get(&comp) {
                 None => {
                     error!("this test was redundant and still failed!");
                     return Err(ListError::PathNotFound);
@@ -263,7 +262,7 @@ impl FilesystemFront for MockFS {
 
     fn exists(&self, path: &Path) -> bool {
         let comp: Vec<_> = path.components().collect();
-        self.root_dir.blocking_read().get(&comp).is_some()
+        self.root_dir.read().unwrap().get(&comp).is_some()
     }
 
     fn blocking_overwrite_with_stream(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {

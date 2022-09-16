@@ -2,8 +2,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use log::{debug, error};
-use tokio::sync::{Mutex, RwLock};
-use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{ConfigRef, LangId};
 use crate::fs::path::SPath;

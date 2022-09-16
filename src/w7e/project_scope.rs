@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 use log::{debug, warn};
 use serde::{Deserialize, Serialize};
-use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{ConfigRef, LangId};
 use crate::experiments::pretty_ron::ToPrettyRonString;

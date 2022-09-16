@@ -1,8 +1,6 @@
 use std::fmt::Debug;
 use std::path::{Path, PathBuf};
 
-// all paths except root_path are RELATIVE to root_path.
-use async_trait::async_trait;
 use streaming_iterator::StreamingIterator;
 
 use crate::fs::dir_entry::DirEntry;
@@ -10,7 +8,8 @@ use crate::fs::fsf_ref::FsfRef;
 use crate::fs::read_error::{ListError, ReadError};
 use crate::fs::write_error::WriteError;
 
-#[async_trait]
+// all paths except root_path are RELATIVE to root_path.
+
 pub trait FilesystemFront: Debug + Send + Sync {
     // Absolute path to root folder. Just for informative reasons.
     fn root_path(&self) -> &PathBuf;

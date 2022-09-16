@@ -5,8 +5,6 @@ items, like run configurations, test targets, and LSP clients.
 
 use std::sync::Arc;
 
-use tokio::sync::{Mutex, RwLock};
-
 use crate::LangId;
 use crate::w7e::navcomp_provider::NavCompProvider;
 

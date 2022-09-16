@@ -58,9 +58,7 @@ mod gladius;
 mod lsp_client;
 mod w7e;
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 4)]
-// #[tokio::main(flavor = "current_thread")]
-async fn main() -> Result<(), usize> {
+fn main() -> Result<(), usize> {
     let args = gladius::args::Args::parse();
     logger_setup(args.verbosity.log_level_filter());
 
@@ -135,7 +133,7 @@ async fn main() -> Result<(), usize> {
     // At this point it is guaranteed that we have a Workspace present, though it might be not saved!
 
     // Initializing handlers
-    let (nav_comp_group_ref, scope_errors) = workspace.initialize_handlers(&config_ref).await;
+    let (nav_comp_group_ref, scope_errors) = workspace.initialize_handlers(&config_ref);
     if !scope_errors.is_empty() {
         debug!("{} handlers failed to load, details : {:?}", scope_errors.len(), scope_errors);
     }

@@ -1,8 +1,6 @@
 use std::fmt::Debug;
 use std::future::Future;
 
-use async_trait::async_trait;
-
 use crate::fs::path::SPath;
 use crate::lsp_client::helpers::LspTextCursor;
 use crate::primitives::cursor_set::Cursor;

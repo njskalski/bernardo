@@ -54,8 +54,8 @@ mod tests {
         assert_eq!(workspace_pill.scopes[0].handler_id_op, Some("rust".to_string()));
     }
 
-    #[tokio::test]
-    async fn test_read_workspace() {
+
+    fn test_read_workspace() {
         let repo_folder = Path::new("workspace");
         let mock_fs = MockFS::new("/tmp").with_file(
             "workspace/.gladius_workspace.ron",

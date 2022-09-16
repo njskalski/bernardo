@@ -1,7 +1,6 @@
 use std::io::Write;
 
 use log::debug;
-use tokio::io::AsyncWriteExt;
 
 use crate::lsp_client::lsp_write_error::LspWriteError;
 

@@ -1,8 +1,7 @@
 use std::borrow::Cow;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use log::error;
-use tokio::sync::{RwLock, RwLockReadGuard, TryLockError};
 
 use crate::AnyMsg;
 use crate::experiments::wrapped_future::WrappedFuture;
