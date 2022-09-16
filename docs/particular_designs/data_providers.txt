@@ -1,0 +1,30 @@
+A reoccuring pattern of "data provider" for widgets appeared in both:
+
+- ListWidget
+- FuzzyWidget
+
+but is not present in:
+
+- TreeViewWidget
+
+I think it's time to standarise the way data is delivered to widgets.
+
+So there are two things to consider:
+
+- performance
+- ownership
+
+First brings two things:
+
+1) we don't want to reallocate unless contents dynamically change. No allocations on display.
+2) no 'async' allowed in display. If we're waiting for output from different thread, we do a non-blocking poll.
+
+Ownership:
+
+3) widgets have to *own* a provider. Provider can be Arc<> of something, but Arc<RwLock<>> introduces risks of delay.
+Channel + Cell cache (internal mutability) is safer.
+
+A common situation is that I offer *immediate visual feedback* to user action while additional contents are still being
+loaded (search in files, fuzzy search, pulling definitions from remote server etc).
+
+So I have a feeling that a providers should offer at least "is_complete" call, so I can indicate load.

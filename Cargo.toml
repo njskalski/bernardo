@@ -57,8 +57,7 @@ lto = false
 
 [profile.release]
 #uncomment for profiling
-#debug = true
-
+debug = true
 
 #https://github.com/tree-sitter/tree-sitter/tree/master/lib/binding_rust
 [build-dependencies]

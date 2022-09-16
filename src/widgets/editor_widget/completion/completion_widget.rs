@@ -25,34 +25,29 @@ use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::editor_widget::completion::msg::CompletionWidgetMsg;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
+use crate::widgets::list_widget::ListWidget;
 
-pub type CompletionsFuture = Box<dyn Future<Output=Vec<Completion>> + Unpin>;
+pub fn wrap_completion_future(b: Box<dyn Future<Output=Vec<Completion>> + Unpin>) -> CompletionsFuture {
+    Arc::new(RwLock::new(WrappedFuture::new(b)))
+}
 
-/*
-here we encoutnered another issue:
-if "focused" subwidget appears as a result of external state changing (here: completion future resolving),
-we have no "on update" to cause widget to *drop* outdated focus_state pointing to background (selfwidget)
-or update focus to freshly_appeared "fuzzy". There are several ways this can be fixed, but 
- */
+pub type CompletionsFuture = Arc<RwLock<WrappedFuture<Vec<Completion>>>>;
 
 pub struct CompletionWidget {
     wid: WID,
     completions_future: Arc<RwLock<WrappedFuture<Vec<Completion>>>>,
-    fuzzy: FuzzySearchWidget,
+    fuzzy: bool,
+    list_widget: ListWidget<Completion>,
     display_state: Option<DisplayState<Self>>,
 }
 
 impl CompletionWidget {
     pub fn new(completions_future: CompletionsFuture) -> Self {
-        let w = Arc::new(RwLock::new(WrappedFuture::new(completions_future)));
         CompletionWidget {
             wid: get_new_widget_id(),
-            fuzzy: FuzzySearchWidget::new(|_| {
-                CompletionWidgetMsg::Close.someboxed()
-            }).with_provider(
-                // TODO big clone unnecessary
-                Box::new(w.clone())),
-            completions_future: w,
+            fuzzy: true,
+            list_widget: ListWidget::new(),
+            completions_future,
             display_state: None,
         }
     }
@@ -83,7 +78,7 @@ impl Widget for CompletionWidget {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let set_focused_fuzzy = match self.completions_future.try_write() {
+        let set_focused_list = match self.completions_future.try_write() {
             Ok(mut lock) => {
                 if lock.poll() {
                     true
@@ -96,8 +91,8 @@ impl Widget for CompletionWidget {
                 false
             }
         };
-        if set_focused_fuzzy {
-            self.set_focused(subwidget!(Self.fuzzy));
+        if set_focused_list {
+            self.set_focused(subwidget!(Self.list_widget));
         }
 
 
@@ -142,7 +137,7 @@ impl Widget for CompletionWidget {
 impl ComplexWidget for CompletionWidget {
     fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
         if self.completions().is_some() {
-            Box::new(LeafLayout::new(subwidget!(Self.fuzzy)))
+            Box::new(LeafLayout::new(subwidget!(Self.list_widget)))
         } else {
             Box::new(LeafLayout::new(selfwidget!(Self)))
         }
@@ -150,7 +145,7 @@ impl ComplexWidget for CompletionWidget {
 
     fn get_default_focused(&self) -> SubwidgetPointer<Self> {
         if self.completions().is_some() {
-            subwidget!(Self.fuzzy)
+            subwidget!(Self.list_widget)
         } else {
             selfwidget!(Self)
         }

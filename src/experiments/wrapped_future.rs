@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter, write};
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -46,6 +47,16 @@ impl<T> WrappedFuture<T> {
         Self {
             future: Some(f),
             item: None,
+        }
+    }
+}
+
+impl<T> Debug for WrappedFuture<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.item.is_none() {
+            write!(f, "[unresolved wrapped future {}]", std::any::type_name::<T>())
+        } else {
+            write!(f, "[resolved wrapped future {}]", std::any::type_name::<T>())
         }
     }
 }

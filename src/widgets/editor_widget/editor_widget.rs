@@ -41,7 +41,7 @@ use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::AsAny;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID};
-use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
+use crate::widgets::editor_widget::completion::completion_widget::{CompletionWidget, wrap_completion_future};
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
@@ -472,7 +472,7 @@ impl EditorWidget {
 
                     tokio::spawn(second_promise);
 
-                    let comp = CompletionWidget::new(Box::new(promise));
+                    let comp = CompletionWidget::new(wrap_completion_future(Box::new(promise)));
                     self.hover = Some((hover_rect, EditorHover::Completion(comp)));
                     debug!("created completion");
                 }
@@ -799,7 +799,7 @@ impl Drop for EditorWidget {
         match (&self.navcomp, self.buffer.get_file_front()) {
             (Some(navcomp), Some(spath)) => {
                 debug!("shutting down navcomp.");
-                navcomp.file_closed(spath);
+                // navcomp.file_closed(spath);
             }
             _ => {
                 debug!("not stoping navigation, because navcomp is some: {}, ff is some: {}",

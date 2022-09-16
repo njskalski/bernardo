@@ -59,6 +59,7 @@ mod lsp_client;
 mod w7e;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
+// #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), usize> {
     let args = gladius::args::Args::parse();
     logger_setup(args.verbosity.log_level_filter());
