@@ -2,7 +2,7 @@ use std::io::Read;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use crossbeam_channel::Sender;
+use crossbeam_channel::{Sender, SendError};
 use jsonrpc_core::{Call, Id, Output};
 use log::{debug, error};
 use serde_json::Value;
@@ -88,7 +88,14 @@ pub fn read_lsp<R: Read>(
                 debug!("deserialized call->notification");
                 match parse_notification(notification) {
                     Ok(no) => {
-                        notification_sink.send(no).map_err(|_| LspReadError::BrokenChannel)?;
+                        match notification_sink.send(no) {
+                            Ok(_) => {}
+                            Err(e) => match e {
+                                SendError(_) => {
+                                    error!("notification_sink.send fail: {:?}, non critical", e);
+                                }
+                            }
+                        };
                         Ok(())
                     }
                     Err(e) => {

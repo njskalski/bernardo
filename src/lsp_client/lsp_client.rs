@@ -1,4 +1,4 @@
-use std::{process, thread};
+use std::{process, thread, time};
 use std::any::Any;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
@@ -61,6 +61,7 @@ pub struct LspWrapper {
     curr_id: u64,
     reader_handle: JoinHandle<Result<(), LspReadError>>,
     logger_handle: JoinHandle<Result<(), ()>>,
+    notification_reader_handle: JoinHandle<Result<(), ()>>,
 
     /*
     to be copied to all features, indicate "ready"
@@ -129,7 +130,12 @@ impl LspWrapper {
             Self::logger_thread(
                 reader_identifier2,
                 stderr,
-                notification_receiver,
+            )
+        });
+
+        let notification_reader_handle: JoinHandle<Result<(), ()>> = thread::spawn(|| {
+            Self::notification_thread(
+                notification_receiver
             )
         });
 
@@ -144,6 +150,7 @@ impl LspWrapper {
                 curr_id: 1,
                 reader_handle,
                 logger_handle,
+                notification_reader_handle,
                 tick_sender,
             }
         )
@@ -379,6 +386,9 @@ impl LspWrapper {
         mut stdout: BufReader<ChildStdout>,
     ) -> Result<(), LspReadError> {
         let mut num: usize = 0;
+
+        thread::sleep(time::Duration::from_secs(6));
+
         loop {
             num += 1;
             match read_lsp(
@@ -401,56 +411,58 @@ impl LspWrapper {
     }
 
     /*
-    This thread just dries the pipes of whatever we have no good receiver for: so stderr and
-    LspNotifications that I do not handle in any specific way yet.
+    This thread just dries the stderr
      */
     pub fn logger_thread(
         identifier: String,
         stderr_pipe: BufReader<ChildStderr>,
-        mut notification_receiver: Receiver<LspServerNotification>,
     ) -> Result<(), ()> {
-        //TODO dry the other channel too before quitting
-
         let mut stderr_lines = stderr_pipe.lines();
         let stderr_path = PathBuf::from(identifier).join("stderr.txt");
 
-        let mut more_lines = true;
-        let mut notification_channel_open = true;
-        // loop {
-        //     select! {
-        //         stderr_lines.next_line() -> line_res => {
-        //             match line_res {
-        //                 Ok(line_op) => {
-        //                     if let Some(line) = line_op {
-        //                         //error!("Lspx{:?}: {}", &stderr_path, &line);
-        //                         lsp_debug_save(stderr_path.clone(), format!("{}\n", line)).await;
-        //                     } else {
-        //                         warn!("no more lines in LSP stderr_pipe.");
-        //                         more_lines = false;
-        //                     }
-        //                 }
-        //                 Err(e) => {
-        //                     error!("stderr_pipe read error: {}", e);
-        //                 }
-        //             }
-        //         },
-        //         notification_op = notification_receiver.recv(), if notification_channel_open => {
-        //             match notification_op {
-        //                 Some(_notification) => {
-        //                     //debug!("received LSP notification:\n---\n{:?}\n---\n", notification);
-        //                     // debug!("received LSP notification");
-        //                 }
-        //                 None => {
-        //                     debug!("notification channel closed.");
-        //                     notification_channel_open = false;
-        //                 }
-        //             }
-        //         },
-        //         else => { break; },
-        //     }
-        // }
+        loop {
+            let line_res = match stderr_lines.next() {
+                None => {
+                    break;
+                }
+                Some(l) => l,
+            };
+
+            match line_res {
+                Ok(line) => {
+                    lsp_debug_save(stderr_path.clone(), format!("{}\n", line));
+                }
+                Err(e) => {
+                    error!("stderr_pipe read error: {}", e);
+                    return Err(());
+                }
+            }
+        }
 
         debug!("closing logger thread");
+
+        Ok(())
+    }
+
+    /*
+    This thread just dries the stderr
+     */
+    pub fn notification_thread(
+        mut notification_receiver: Receiver<LspServerNotification>,
+    ) -> Result<(), ()> {
+        loop {
+            let notification = notification_receiver.recv();
+            match notification {
+                Ok(_notification) => {
+                    //debug!("received LSP notification:\n---\n{:?}\n---\n", notification);
+                    debug!("received LSP notification");
+                }
+                Err(e) => {
+                    debug!("notification channel closed: {:?}", e);
+                    break;
+                }
+            }
+        }
 
         Ok(())
     }
