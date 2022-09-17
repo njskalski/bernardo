@@ -1,6 +1,8 @@
 use std::borrow::Cow;
 use std::rc::Rc;
 
+use streaming_iterator::StreamingIterator;
+
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone)]
@@ -31,8 +33,8 @@ impl TreeViewNode<usize> for Rc<StupidTree> {
         self.children.is_empty()
     }
 
-    fn child_iter(&self) -> Box<dyn Iterator<Item=Self>> {
-        Box::new(self.children.clone().into_iter())
+    fn child_iter(&self) -> Box<dyn StreamingIterator<Item=Self>> {
+        Box::new(streaming_iterator::convert(self.children.clone().into_iter()))
     }
 
     fn is_complete(&self) -> bool {

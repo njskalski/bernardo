@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 use log::{debug, error, warn};
+use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -120,7 +121,8 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
 
     pub fn set_selected(&mut self, k: &Key) -> bool {
         let mut pos = 0 as usize;
-        for (_, item) in self.items() {
+        let mut items = self.items();
+        while let Some((_, item)) = items.next() {
             if item.id() == k {
                 self.highlighted = pos;
                 return true;
@@ -136,7 +138,9 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
     fn size_from_items(&self, sc: SizeConstraint) -> XY {
         let mut size = ZERO;
 
-        for item in self.items() {
+        let mut items = self.items();
+
+        while let Some(item) = items.next() {
             if size.y == sc.visible_hint().lower_right().y {
                 break;
             }
@@ -210,7 +214,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
     }
 
     pub fn get_highlighted(&self) -> (u16, Item) {
-        self.items().nth(self.highlighted).unwrap() //TODO
+        self.items().nth(self.highlighted).unwrap().clone() //TODO
     }
 
     pub fn get_root_node(&self) -> &Item {
@@ -291,7 +295,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
             },
             TreeViewMsg::HitEnter => {
                 let node = {
-                    let highlighted_pair = self.items().skip(self.highlighted).next().map(|(a, b)| (a, b.clone()));
+                    let highlighted_pair = self.items().skip(self.highlighted).next().map(|pair| pair.clone());
 
                     if highlighted_pair.is_none() {
                         warn!(
@@ -320,9 +324,12 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
         helpers::fill_output(primary_style.background, output);
         let cursor_style = theme.highlighted(focused);
 
-        for (item_idx, (depth, node)) in self.items().enumerate()
-            // skipping lines that cannot be visible, because they are before hint()
-            .skip(output.size_constraint().visible_hint().upper_left().y as usize) {
+        // skipping rows that are not visible
+        let skip_rows = output.size_constraint().visible_hint().upper_left().y as usize;
+
+        let mut item_idx: usize = skip_rows;
+        let mut items = self.items().skip(skip_rows);
+        while let Some((depth, node)) = items.next() {
 
             // skipping lines that cannot be visible, because larger than the hint()
             if item_idx >= output.size_constraint().visible_hint().lower_right().y as usize {
@@ -362,7 +369,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
 
             let mut x_offset: usize = 0;
             for (grapheme_idx, g) in text.graphemes(true).into_iter().enumerate() {
-                let desired_pos_x: usize = depth as usize * 2 + x_offset;
+                let desired_pos_x: usize = *depth as usize * 2 + x_offset;
                 if desired_pos_x > u16::MAX as usize {
                     error!("skipping drawing beyond x = u16::MAX");
                     break;
@@ -392,6 +399,8 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
 
                 x_offset += g.width();
             }
+
+            item_idx += 1;
         }
     }
 

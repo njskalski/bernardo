@@ -9,6 +9,7 @@ use crate::widgets::list_widget::list_widget_provider::ListWidgetProvider;
 pub struct ArcVecIter<S> {
     arc_vec: Arc<Vec<S>>,
     pos: usize,
+    first_advance: bool,
 }
 
 impl<S> ArcVecIter<S> {
@@ -16,6 +17,7 @@ impl<S> ArcVecIter<S> {
         Self {
             arc_vec,
             pos: 0,
+            first_advance: false,
         }
     }
 }
@@ -24,6 +26,11 @@ impl<S> StreamingIterator for ArcVecIter<S> {
     type Item = S;
 
     fn advance(&mut self) {
+        if !self.first_advance {
+            self.first_advance = true;
+            return;
+        }
+
         if self.pos < self.arc_vec.len() {
             self.pos += 1;
         }
@@ -34,31 +41,32 @@ impl<S> StreamingIterator for ArcVecIter<S> {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct RefVecIter<'a, S> {
-    vec: &'a Vec<S>,
-    pos: usize,
-}
-
-impl<'a, S> RefVecIter<'a, S> {
-    pub fn new(vec: &'a Vec<S>) -> Self {
-        Self {
-            vec,
-            pos: 0,
-        }
-    }
-}
-
-impl<'a, S> StreamingIterator for RefVecIter<'a, S> {
-    type Item = S;
-
-    fn advance(&mut self) {
-        if self.pos < self.vec.len() {
-            self.pos += 1;
-        }
-    }
-
-    fn get(&self) -> Option<&Self::Item> {
-        self.vec.get(self.pos)
-    }
-}
+// #[derive(Clone, Debug)]
+// pub struct RefVecIter<'a, S> {
+//     vec: &'a Vec<S>,
+//     pos: usize,
+//      first_advance: bool,
+// }
+//
+// impl<'a, S> RefVecIter<'a, S> {
+//     pub fn new(vec: &'a Vec<S>) -> Self {
+//         Self {
+//             vec,
+//             pos: 0,
+//         }
+//     }
+// }
+//
+// impl<'a, S> StreamingIterator for RefVecIter<'a, S> {
+//     type Item = S;
+//
+//     fn advance(&mut self) {
+//         if self.pos < self.vec.len() {
+//             self.pos += 1;
+//         }
+//     }
+//
+//     fn get(&self) -> Option<&Self::Item> {
+//         self.vec.get(self.pos)
+//     }
+// }
