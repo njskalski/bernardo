@@ -16,12 +16,10 @@ use std::hash::Hash;
 
 use crate::widgets::tree_view::tree_view_node::{MaybeBool, TreeItFilter, TreeViewNode};
 
-type QueueType<Item> = Item;
-
 // tu nie trzeba pogrzebacza, tu trzeba pogrzebu.
 
 pub struct TreeIt<'a, Key: Hash + Eq + Debug, Item: TreeViewNode<Key>> {
-    queue: Vec<(u16, QueueType<Item>)>,
+    queue: Vec<(u16, Item)>,
     expanded: &'a HashSet<Key>,
     filter_op: Option<&'a TreeItFilter<Item>>,
     filter_depth_op: Option<usize>,
@@ -34,7 +32,7 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeIt<'a, Key
         filter_op: Option<&'a TreeItFilter<Item>>,
         filter_depth_op: Option<usize>,
     ) -> TreeIt<'a, Key, Item> {
-        let mut queue: Vec<(u16, QueueType<Item>)> = Vec::new();
+        let mut queue: Vec<(u16, Item)> = Vec::new();
 
         queue.push((0, root.clone()));
 
@@ -47,8 +45,8 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeIt<'a, Key
     }
 }
 
-impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> Iterator for TreeIt<'a, Key, Item> {
-    type Item = (u16, Item);
+impl<'a, Key: Hash + Eq + Debug + Clone, TItem: TreeViewNode<Key>> Iterator for TreeIt<'a, Key, TItem> {
+    type Item = (u16, TItem);
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.queue.is_empty() == false {
@@ -57,7 +55,7 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> Iterator for T
 
             // If it's expanded, I have to throw all children on the stack.
             if self.expanded.contains(node_ref.id()) {
-                let idx_and_items : Vec<(usize, Item)> = node_ref.child_iter().enumerate().collect();
+                let idx_and_items: Vec<(usize, TItem)> = node_ref.child_iter().enumerate().collect();
                 for (_idx, item) in idx_and_items.into_iter().rev() {
                     match self.filter_op {
                         Some(filter) => {
@@ -74,7 +72,7 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> Iterator for T
                 }
             }
 
-            return Some((depth, node_ref));
+            return Some((depth, node_ref.clone()));
         }
 
         None

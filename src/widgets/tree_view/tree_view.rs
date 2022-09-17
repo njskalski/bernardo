@@ -210,7 +210,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
     }
 
     pub fn get_highlighted(&self) -> (u16, Item) {
-        self.items().nth(self.highlighted).clone().unwrap() //TODO
+        self.items().nth(self.highlighted).unwrap() //TODO
     }
 
     pub fn get_root_node(&self) -> &Item {
@@ -291,7 +291,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
             },
             TreeViewMsg::HitEnter => {
                 let node = {
-                    let highlighted_pair = self.items().skip(self.highlighted).next();
+                    let highlighted_pair = self.items().skip(self.highlighted).next().map(|(a, b)| (a, b.clone()));
 
                     if highlighted_pair.is_none() {
                         warn!(

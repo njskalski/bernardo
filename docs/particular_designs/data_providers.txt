@@ -24,10 +24,8 @@ Ownership:
 3) widgets have to *own* a provider. Provider can be Arc<> of something, but Arc<RwLock<>> introduces risks of delay.
 Channel + Cell cache (internal mutability) is safer.
 
-4) I think it's desirable to require that provider implements Iterator trait, not StreamingIterator. The reason for that
-being, that exotic use-cases like "here is a list of randomly generated numbers" are rare, and forcing implementor to
-have memory ALLOCATED with contents of whatever they want to display is one way to make sure it's going to be available
-fast.
+4) I think it's desirable to require that provider implements StreamingIterator trait, not Iterator. I want to encourage
+using references as opposed to making copies.
 
 A common situation is that I offer *immediate visual feedback* to user action while additional contents are still being
 loaded (search in files, fuzzy search, pulling definitions from remote server etc).

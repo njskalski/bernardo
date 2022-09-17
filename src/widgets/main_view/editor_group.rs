@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::rc::Rc;
 
 use log::error;
+use streaming_iterator::StreamingIterator;
 
 use crate::{AnyMsg, ConfigRef, TreeSitterWrapper};
 use crate::experiments::clipboard::ClipboardRef;
@@ -13,7 +14,7 @@ use crate::text::buffer_state::BufferState;
 use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::fuzzy_search::helpers::is_subsequence;
-use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
+use crate::widgets::fuzzy_search::item_provider::{FuzzyItem, FuzzyItemsProvider};
 use crate::widgets::main_view::msg::MainViewMsg;
 
 // This "class" was made separate to made borrow-checker realize, that it is not a violation of safety
@@ -101,7 +102,7 @@ impl EditorGroup {
         None
     }
 
-    pub fn get_buffer_list_provider(&self) -> Box<dyn ItemsProvider> {
+    pub fn get_buffer_list_provider(&self) -> Box<dyn FuzzyItemsProvider> {
         let mut free_id = 0 as u16;
         let buffer_descs: Vec<BufferDesc> = self.editors.iter().enumerate().map(|(idx, item)| {
             match item.buffer_state().get_file_front() {
@@ -143,12 +144,12 @@ enum BufferDesc {
     Unnamed { pos: usize, id: u16 },
 }
 
-impl Item for BufferDesc {
+impl FuzzyItem for BufferDesc {
     fn display_name(&self) -> Cow<str> {
         match self {
             BufferDesc::File { pos, ff } => {
                 ff.file_name_str().unwrap_or("error getting filename").into()
-            },
+            }
             BufferDesc::Unnamed { pos, id } => format!("Unnamed #{}", id).into(),
         }
     }
@@ -158,7 +159,7 @@ impl Item for BufferDesc {
             BufferDesc::File { pos, ff } => {
                 // TODO this is shit
                 Some(ff.display_name())
-            },
+            }
             _ => None,
         }
     }
@@ -175,23 +176,34 @@ pub struct BufferNamesProvider {
     descs: Vec<BufferDesc>,
 }
 
-impl ItemsProvider for BufferNamesProvider {
+impl FuzzyItemsProvider for BufferNamesProvider {
     fn context_name(&self) -> &str {
         "buffers"
     }
 
-    fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
-        let mut items: Vec<BufferDesc> = vec![];
+    fn items(&self, query: String, limit: usize) -> Box<dyn StreamingIterator<Item=Box<dyn FuzzyItem>>> {
+        // let mut items: Vec<BufferDesc> = vec![];
+        //
+        // for item in self.descs.iter() {
+        //     if is_subsequence(item.display_name().as_ref(), &query) {
+        //         items.push(item.clone());
+        //         if items.len() >= limit {
+        //             break;
+        //         }
+        //     }
+        // }
+        //
+        // Box::new(items.into_iter().map(|b| Box::new(b) as Box<dyn FuzzyItem>))
 
-        for item in self.descs.iter() {
-            if is_subsequence(item.display_name().as_ref(), &query) {
-                items.push(item.clone());
-                if items.len() >= limit {
-                    break;
-                }
-            }
-        }
-
-        Box::new(items.into_iter().map(|b| Box::new(b) as Box<dyn Item>))
+        Box::new(
+            streaming_iterator::convert(
+                self.descs
+                    .iter()
+                    .filter(
+                        |desc| is_subsequence(&desc.display_name(), &query)
+                    )
+                    .map(|desc| Box::new(desc.clone()) as Box<dyn FuzzyItem>)
+            )
+        ) as Box<dyn StreamingIterator<Item=Box<dyn FuzzyItem>> + 'static>
     }
 }

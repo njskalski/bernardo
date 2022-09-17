@@ -1,11 +1,13 @@
 use std::borrow::Cow;
 use std::fmt::Debug;
 
+use streaming_iterator::StreamingIterator;
+
 use crate::AnyMsg;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::widgets::fuzzy_search::helpers::is_subsequence;
-use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
+use crate::widgets::fuzzy_search::item_provider::{FuzzyItem, FuzzyItemsProvider};
 
 pub type SPathToMsg = fn(&SPath) -> Box<dyn AnyMsg>;
 
@@ -39,7 +41,7 @@ pub enum SPathMsg {
 
 impl AnyMsg for SPathMsg {}
 
-impl Item for SPath {
+impl FuzzyItem for SPath {
     fn display_name(&self) -> Cow<str> {
         self.file_name_str().unwrap_or("<error>").into()
     }
@@ -54,12 +56,12 @@ impl Item for SPath {
 }
 
 // TODO reintroduce ignoring of gitignores
-impl ItemsProvider for FsfProvider {
+impl FuzzyItemsProvider for FsfProvider {
     fn context_name(&self) -> &str {
         "fs"
     }
 
-    fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
+    fn items(&self, query: String, limit: usize) -> Box<dyn StreamingIterator<Item=Box<dyn FuzzyItem>>> {
         Box::new(
             self.fsf.root()
                 .recursive_iter()
@@ -69,7 +71,7 @@ impl ItemsProvider for FsfProvider {
                         is_subsequence(&item_str, &query)
                     }
                 )
-                .map(|f| Box::new(f) as Box<dyn Item>)
+                .map(|f| Box::new(f.clone()) as Box<dyn FuzzyItem>)
                 .take(limit)
         )
     }

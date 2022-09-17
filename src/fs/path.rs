@@ -268,7 +268,10 @@ impl SPath {
         self.overwrite_with_str(&ron_item).map_err(|e| e.into())
     }
 
-    pub fn blocking_list(&self) -> Result<Vec<SPath>, ListError> {
+    /*
+    Returns dir contents in lexigraphical order
+     */
+    pub fn blocking_list(&self) -> Result<Arc<Vec<SPath>>, ListError> {
         let fsf = self.fsf();
         fsf.blocking_list(self)
     }

@@ -13,7 +13,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::{get_new_widget_id, WID, WidgetAction};
 use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
-use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
+use crate::widgets::fuzzy_search::item_provider::{FuzzyItem, FuzzyItemsProvider};
 use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};
 
 const DEFAULT_WIDTH: u16 = 16;
@@ -30,7 +30,7 @@ pub enum DrawComment {
 pub struct FuzzySearchWidget {
     id: WID,
     edit: EditBoxWidget,
-    providers: Vec<Box<dyn ItemsProvider>>,
+    providers: Vec<Box<dyn FuzzyItemsProvider>>,
     context_shortcuts: Vec<String>,
 
     draw_comment: DrawComment,
@@ -64,7 +64,7 @@ impl FuzzySearchWidget {
         }
     }
 
-    pub fn with_provider(self, provider: Box<dyn ItemsProvider>) -> Self {
+    pub fn with_provider(self, provider: Box<dyn FuzzyItemsProvider>) -> Self {
         let mut contexts = self.providers;
         contexts.push(provider);
 
@@ -127,17 +127,17 @@ impl FuzzySearchWidget {
 }
 
 struct ItemIter<'a> {
-    providers: &'a Vec<Box<dyn ItemsProvider>>,
+    providers: &'a Vec<Box<dyn FuzzyItemsProvider>>,
     context_shortcuts: &'a Vec<String>,
     query: String,
     rows_limit: usize,
     provider_idx: usize,
-    cur_iter: Option<Box<dyn Iterator<Item=Box<dyn Item + 'a>> + 'a>>,
+    cur_iter: Option<Box<dyn Iterator<Item=Box<dyn FuzzyItem + 'a>> + 'a>>,
 }
 
 
 impl<'a> Iterator for ItemIter<'a> {
-    type Item = Box<dyn Item + 'a>;
+    type Item = Box<dyn FuzzyItem + 'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.rows_limit == 0 {

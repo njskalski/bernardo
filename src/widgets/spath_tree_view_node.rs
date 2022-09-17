@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::fmt::Debug;
+use std::sync::Arc;
 
 use log::error;
 
@@ -36,6 +37,50 @@ impl FileTreeNode {
     }
 }
 
+struct ArcVecWrapperFile {
+    pos: usize,
+    arc_vec: Arc<Vec<SPath>>,
+}
+
+impl ArcVecWrapperFile {
+    pub fn new(arc_vec: Arc<Vec<SPath>>) -> Self {
+        Self {
+            pos: 0,
+            arc_vec,
+        }
+    }
+}
+
+impl Iterator for ArcVecWrapperFile {
+    type Item = FileTreeNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!()
+    }
+}
+
+struct ArcVecWrapperDir {
+    pos: usize,
+    arc_vec: Arc<Vec<SPath>>,
+}
+
+impl ArcVecWrapperDir {
+    pub fn new(arc_vec: Arc<Vec<SPath>>) -> Self {
+        Self {
+            pos: 0,
+            arc_vec,
+        }
+    }
+}
+
+impl Iterator for ArcVecWrapperDir {
+    type Item = DirTreeNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!()
+    }
+}
+
 impl TreeViewNode<SPath> for FileTreeNode {
     fn id(&self) -> &SPath {
         &self.sp
@@ -51,9 +96,8 @@ impl TreeViewNode<SPath> for FileTreeNode {
 
     fn child_iter(&self) -> Box<dyn Iterator<Item=Self>> {
         match self.sp.blocking_list() {
-            Ok(items) => Box::new(
-                items.into_iter().map(|item| FileTreeNode::new(item))
-            ) as Box<dyn Iterator<Item=Self>>,
+            // TODO remove that clone
+            Ok(items) => Box::new(ArcVecWrapperFile::new(items)),
             Err(e) => {
                 error!("fail to call blocking_list {:?}", e);
                 Box::new(std::iter::empty()) as Box<dyn Iterator<Item=Self>>
@@ -73,6 +117,7 @@ impl TreeViewNode<SPath> for DirTreeNode {
 
     fn label(&self) -> Cow<str> { self.sp.label() }
 
+    // TODO this is not right
     fn is_leaf(&self) -> bool {
         self.sp.is_file()
     }
@@ -80,7 +125,7 @@ impl TreeViewNode<SPath> for DirTreeNode {
     fn child_iter(&self) -> Box<dyn Iterator<Item=Self>> {
         match self.sp.blocking_list() {
             Ok(items) => Box::new(
-                items.into_iter().filter(|c| c.is_dir()).map(|item| DirTreeNode::new(item))
+                ArcVecWrapperDir::new(items)
             ) as Box<dyn Iterator<Item=Self>>,
             Err(e) => {
                 error!("fail to call blocking_list {:?}", e);

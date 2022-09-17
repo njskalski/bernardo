@@ -1,65 +1,60 @@
 use std::collections::VecDeque;
+use std::marker::PhantomData;
+use std::sync::Arc;
 
 use log::{debug, error};
+use streaming_iterator::StreamingIterator;
 
+use crate::experiments::arc_vec_streaming_iter::ArcVecIter;
 use crate::fs::path::SPath;
 
 /*
-Recursively iterates over all items under root, in DFS pattern, siblings sorted lexicographically
+Recursively iterates over all items under root, in DFS pattern, siblings sorted lexicographically.
  */
+#[derive(Clone)]
 pub struct RecursiveFsIter {
-    stack: VecDeque<Box<dyn Iterator<Item=SPath>>>,
+    // Invariant: first element - if exists - is non-empty
+    stack: VecDeque<ArcVecIter<SPath>>,
 }
 
 impl RecursiveFsIter {
     pub fn new(root: SPath) -> Self {
-        let first_iter: Box<dyn Iterator<Item=SPath>> = match root.blocking_list() {
-            Ok(mut items) => {
-                items.sort();
-                Box::new(items.into_iter())
+        let stack: VecDeque<ArcVecIter<SPath>> = match root.blocking_list() {
+            Ok(items) => {
+                if items.is_empty() {
+                    VecDeque::new()
+                } else {
+                    VecDeque::from([ArcVecIter::new(items)])
+                }
             }
             Err(le) => {
                 error!("swallowed list error : {:?}", le);
-                Box::new(std::iter::empty())
+                VecDeque::new()
             }
         };
 
         RecursiveFsIter {
-            stack: VecDeque::from([first_iter])
+            stack,
         }
     }
 }
 
-impl Iterator for RecursiveFsIter {
+impl StreamingIterator for RecursiveFsIter {
     type Item = SPath;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.stack.is_empty() {
-            return None;
-        }
-
-
-        while let Some(iter) = self.stack.front_mut() {
-            if let Some(item) = iter.next() {
-                if item.is_dir() {
-                    match item.blocking_list() {
-                        Ok(mut children) => {
-                            children.sort();
-                            self.stack.push_front(Box::new(children.into_iter()));
-                        }
-                        Err(le) => {
-                            error!("swallowed list error 2 : {:?}", le);
-                        }
-                    };
-                }
-
-                return Some(item);
+    fn advance(&mut self) {
+        while let Some(mut front) = self.stack.front() {
+            front.advance();
+            if front.get().is_some() {
+                break;
             } else {
                 self.stack.pop_front();
             }
         }
+    }
 
-        None
+    fn get(&self) -> Option<&Self::Item> {
+        self.stack.front().map(|front| front.get(0)).flatten()
     }
 }
 
