@@ -1,0 +1,18 @@
+Menu widget:
+
+for navigational menus
+
+This widget requires a rethink. In particular, I think I'd like something like
+   _________________
+  |picked option:   |
+  |  _________________
+  | |  suboption 1
+  | |[ suboption 2 ]
+  --|
+    |
+
+this might also be just a layout.
+
+Search widget:
+
+search widget should be a "tree", that is common prefixes should collapse into a single node.

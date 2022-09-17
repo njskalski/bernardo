@@ -181,29 +181,17 @@ impl FuzzyItemsProvider for BufferNamesProvider {
         "buffers"
     }
 
-    fn items(&self, query: String, limit: usize) -> Box<dyn StreamingIterator<Item=Box<dyn FuzzyItem>>> {
-        // let mut items: Vec<BufferDesc> = vec![];
-        //
-        // for item in self.descs.iter() {
-        //     if is_subsequence(item.display_name().as_ref(), &query) {
-        //         items.push(item.clone());
-        //         if items.len() >= limit {
-        //             break;
-        //         }
-        //     }
-        // }
-        //
-        // Box::new(items.into_iter().map(|b| Box::new(b) as Box<dyn FuzzyItem>))
-
+    fn items(&self, query: String) -> Box<dyn StreamingIterator<Item=Box<dyn FuzzyItem + '_>> + '_> {
+        // TODO I gave up here and did clone
         Box::new(
             streaming_iterator::convert(
                 self.descs
                     .iter()
                     .filter(
-                        |desc| is_subsequence(&desc.display_name(), &query)
+                        move |desc| is_subsequence(&desc.display_name(), &query)
                     )
                     .map(|desc| Box::new(desc.clone()) as Box<dyn FuzzyItem>)
             )
-        ) as Box<dyn StreamingIterator<Item=Box<dyn FuzzyItem>> + 'static>
+        ) as Box<dyn StreamingIterator<Item=Box<dyn FuzzyItem>>>
     }
 }

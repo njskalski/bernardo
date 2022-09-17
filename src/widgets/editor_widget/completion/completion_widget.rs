@@ -21,7 +21,6 @@ use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::editor_widget::completion::msg::CompletionWidgetMsg;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
-use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
 use crate::widgets::list_widget::list_widget::ListWidget;
 
 pub type CompletionsPromise = Arc<RwLock<Box<dyn Promise<Vec<Completion>>>>>;

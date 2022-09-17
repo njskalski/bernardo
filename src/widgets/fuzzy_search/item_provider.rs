@@ -19,8 +19,9 @@ pub trait FuzzyItem {
 pub trait FuzzyItemsProvider {
     fn context_name(&self) -> &str;
 
-    // TODO(cleanup) Shouldn't query be &str? It's not going to be modified, it doesn't have to be moved either.
-    // or maybe the reason is that items is a tailing expression?
-    // TODO(cleanup) Do I need a limit if it's iterator?
-    fn items(&self, query: String, limit: usize) -> Box<dyn StreamingIterator<Item=Box<dyn FuzzyItem>>>;
+    // Shouldn't query be &str? It's not going to be modified, it doesn't have to be moved either.
+    // ^ no, not really, because in most cases it will be copied from another field (EditBox), with
+    // and I don't want to hear "borrowed temporary data"
+
+    fn items(&self, query: String) -> Box<dyn StreamingIterator<Item=Box<dyn FuzzyItem + '_>> + '_>;
 }

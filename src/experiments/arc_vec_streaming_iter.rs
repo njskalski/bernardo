@@ -49,16 +49,16 @@ impl<'a, S> RefVecIter<'a, S> {
     }
 }
 
-// impl<'a, S> StreamingIterator for RefVecIter<'a, S> {
-//     type Item = S;
-//
-//     fn advance(&mut self) {
-//         if self.pos < self.vec.len() {
-//             self.pos += 1;
-//         }
-//     }
-//
-//     fn get(&self) -> Option<&Self::Item> {
-//         self.vec.get(self.pos)
-//     }
-// }
+impl<'a, S> StreamingIterator for RefVecIter<'a, S> {
+    type Item = S;
+
+    fn advance(&mut self) {
+        if self.pos < self.vec.len() {
+            self.pos += 1;
+        }
+    }
+
+    fn get(&self) -> Option<&Self::Item> {
+        self.vec.get(self.pos)
+    }
+}

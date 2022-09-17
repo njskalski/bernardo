@@ -61,7 +61,7 @@ impl FuzzyItemsProvider for FsfProvider {
         "fs"
     }
 
-    fn items(&self, query: String, limit: usize) -> Box<dyn StreamingIterator<Item=Box<dyn FuzzyItem>>> {
+    fn items(&self, query: String) -> Box<dyn StreamingIterator<Item=Box<dyn FuzzyItem + '_>> + '_> {
         Box::new(
             self.fsf.root()
                 .recursive_iter()
@@ -72,7 +72,6 @@ impl FuzzyItemsProvider for FsfProvider {
                     }
                 )
                 .map(|f| Box::new(f.clone()) as Box<dyn FuzzyItem>)
-                .take(limit)
         )
     }
 }

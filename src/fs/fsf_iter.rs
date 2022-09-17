@@ -43,7 +43,7 @@ impl StreamingIterator for RecursiveFsIter {
     type Item = SPath;
 
     fn advance(&mut self) {
-        while let Some(mut front) = self.stack.front() {
+        while let Some(front) = self.stack.front_mut() {
             front.advance();
             if front.get().is_some() {
                 break;
@@ -54,7 +54,7 @@ impl StreamingIterator for RecursiveFsIter {
     }
 
     fn get(&self) -> Option<&Self::Item> {
-        self.stack.front().map(|front| front.get(0)).flatten()
+        self.stack.front().map(|front| front.get()).flatten()
     }
 }
 

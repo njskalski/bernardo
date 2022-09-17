@@ -21,7 +21,7 @@ impl<W: Widget> FuzzyItemsProvider for Actions<W> {
         todo!()
     }
 
-    fn items(&self, query: String, limit: usize) -> Box<dyn StreamingIterator<Item=Box<dyn FuzzyItem>>> {
+    fn items(&self, query: String) -> Box<dyn StreamingIterator<Item=Box<dyn FuzzyItem + '_>>> {
         todo!()
     }
 }

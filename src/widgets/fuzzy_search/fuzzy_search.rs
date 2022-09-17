@@ -1,6 +1,7 @@
 use std::cmp::min;
 
 use log::{debug, error, warn};
+use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -30,8 +31,7 @@ pub enum DrawComment {
 pub struct FuzzySearchWidget {
     id: WID,
     edit: EditBoxWidget,
-    providers: Vec<Box<dyn FuzzyItemsProvider>>,
-    context_shortcuts: Vec<String>,
+    provider: Box<dyn FuzzyItemsProvider>,
 
     draw_comment: DrawComment,
 
@@ -47,39 +47,19 @@ pub struct FuzzySearchWidget {
 }
 
 impl FuzzySearchWidget {
-    pub fn new(on_close: WidgetAction<Self>) -> Self {
+    pub fn new(on_close: WidgetAction<Self>, provider: Box<dyn FuzzyItemsProvider>) -> Self {
         let edit = EditBoxWidget::new();
 
         Self {
             id: get_new_widget_id(),
             edit,
-            providers: Vec::default(),
-            context_shortcuts: Vec::default(),
+            provider,
             draw_comment: DrawComment::None,
             last_height_limit: None,
             highlighted: 0,
             on_close,
             on_miss: None,
             width: DEFAULT_WIDTH,
-        }
-    }
-
-    pub fn with_provider(self, provider: Box<dyn FuzzyItemsProvider>) -> Self {
-        let mut contexts = self.providers;
-        contexts.push(provider);
-
-        let mut context_shortcuts: Vec<String> = vec![];
-        context_shortcuts.resize(contexts.len(), String::default());
-
-        // TODO add common prefixes bla bla bla
-        for (idx, c) in contexts.iter().enumerate() {
-            context_shortcuts[idx] += c.context_name().graphemes(true).next().unwrap_or("");
-        }
-
-        Self {
-            providers: contexts,
-            context_shortcuts,
-            ..self
         }
     }
 
@@ -101,69 +81,12 @@ impl FuzzySearchWidget {
         }
     }
 
-    pub fn shortened_contexts(&self) -> &Vec<String> {
-        &self.context_shortcuts
-    }
-
     fn width(&self) -> u16 {
         self.width
     }
 
-    fn items(&self) -> ItemIter {
-        let rows_limit = self.last_height_limit.unwrap_or_else(|| {
-            error!("items called before last_height_limit set, using 128 as 'safe default'");
-            128
-        });
-
-        ItemIter {
-            providers: &self.providers,
-            context_shortcuts: &self.shortened_contexts(),
-            query: self.edit.get_text().to_string(),
-            rows_limit: rows_limit as usize,
-            provider_idx: 0,
-            cur_iter: None,
-        }
-    }
-}
-
-struct ItemIter<'a> {
-    providers: &'a Vec<Box<dyn FuzzyItemsProvider>>,
-    context_shortcuts: &'a Vec<String>,
-    query: String,
-    rows_limit: usize,
-    provider_idx: usize,
-    cur_iter: Option<Box<dyn Iterator<Item=Box<dyn FuzzyItem + 'a>> + 'a>>,
-}
-
-
-impl<'a> Iterator for ItemIter<'a> {
-    type Item = Box<dyn FuzzyItem + 'a>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.rows_limit == 0 {
-            return None;
-        }
-
-        while self.provider_idx < self.providers.len() {
-            if self.cur_iter.is_none() {
-                self.cur_iter = Some(self.providers[self.provider_idx].items(self.query.clone(), self.rows_limit));
-            }
-
-            let iter = self.cur_iter.as_mut().unwrap();
-
-            match iter.next() {
-                Some(item) => {
-                    self.rows_limit -= 1;
-                    return Some(item);
-                }
-                None => {
-                    self.cur_iter = None;
-                    self.provider_idx += 1;
-                }
-            }
-        }
-
-        None
+    fn items(&self) -> Box<dyn StreamingIterator<Item=Box<dyn FuzzyItem + '_>> + '_> {
+        self.provider.items(self.edit.get_text().to_string())
     }
 }
 
@@ -191,10 +114,12 @@ impl Widget for FuzzySearchWidget {
         self.edit.layout(sc);
         self.width = sc.visible_hint().size.x;
 
+        let count = self.items().as_mut().count();
+
         let items_len = match self.draw_comment {
-            DrawComment::None => self.items().count() + 1,
-            DrawComment::Highlighted => self.items().count() + 2,
-            DrawComment::All => self.items().count() * 2 + 1,
+            DrawComment::None => count + 1,
+            DrawComment::Highlighted => count + 2,
+            DrawComment::All => count * 2 + 1,
         };
 
         //TODO
@@ -256,7 +181,7 @@ impl Widget for FuzzySearchWidget {
                         }
                     }
                     Navigation::ArrowDown => {
-                        if self.highlighted + 1 < self.items().count() {
+                        if self.highlighted + 1 < self.items().as_mut().count() {
                             self.highlighted += 1;
                         }
                     }
@@ -283,8 +208,10 @@ impl Widget for FuzzySearchWidget {
         let query = self.edit.get_text().to_string();
 
         let mut y = 1 as u16;
+        let mut items = self.items();
+        let mut item_idx = 0 as usize;
 
-        for (item_idx, item) in self.items().enumerate() {
+        while let Some(item) = items.next() {
             let mut query_it = query.graphemes(true).peekable();
             let mut x = 0 as u16;
 
@@ -354,6 +281,8 @@ impl Widget for FuzzySearchWidget {
             if y >= output.size_constraint().visible_hint().lower_right().y {
                 break;
             }
+
+            item_idx += 1;
         }
     }
 }
