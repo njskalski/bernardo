@@ -2,8 +2,8 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use log::error;
-use streaming_iterator::StreamingIterator;
+use log::{debug, error};
+use streaming_iterator::{Chain, Cloned, DoubleEndedStreamingIterator, Filter, FilterMap, FilterMapDeref, FlatMap, Fuse, Inspect, Map, MapDeref, MapRef, Rev, Skip, SkipWhile, StreamingIterator, Take, TakeWhile};
 
 use crate::fs::path::SPath;
 use crate::widgets::list_widget::list_widget_provider::ListWidgetProvider;
@@ -73,7 +73,12 @@ impl StreamingIterator for ArcVecWrapperFile {
     }
 
     fn get(&self) -> Option<&Self::Item> {
+        // debug!("returning {:?}", self.current_item);
         self.current_item.as_ref()
+    }
+
+    fn count(self) -> usize where Self: Sized {
+        self.arc_vec.len() - self.current_idx.unwrap_or(0)
     }
 }
 
@@ -119,6 +124,10 @@ impl StreamingIterator for ArcVecWrapperDir {
 
     fn get(&self) -> Option<&Self::Item> {
         self.current_item.as_ref()
+    }
+
+    fn count(self) -> usize where Self: Sized {
+        self.arc_vec.len() - self.current_idx.unwrap_or(0)
     }
 }
 

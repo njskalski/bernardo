@@ -330,7 +330,6 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
         let mut item_idx: usize = skip_rows;
         let mut items = self.items().skip(skip_rows);
         while let Some((depth, node)) = items.next() {
-
             // skipping lines that cannot be visible, because larger than the hint()
             if item_idx >= output.size_constraint().visible_hint().lower_right().y as usize {
                 break;

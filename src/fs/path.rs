@@ -364,14 +364,14 @@ impl Eq for SPath {}
 impl Display for SPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let path = self.relative_path();
-        write!(f, "{}", path.to_string_lossy())
+        write!(f, "[{}]", path.to_string_lossy())
     }
 }
 
 impl Debug for SPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let path = self.relative_path();
-        write!(f, "{}", path.to_string_lossy())
+        write!(f, "[{}]", path.to_string_lossy())
     }
 }
 

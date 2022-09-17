@@ -18,6 +18,7 @@ use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
 
+use log::debug;
 use streaming_iterator::StreamingIterator;
 
 use crate::widgets::tree_view::tree_view_node::{MaybeBool, TreeItFilter, TreeViewNode};
@@ -62,9 +63,14 @@ impl<'a, Key: Hash + Eq + Debug + Clone, TItem: TreeViewNode<Key>> StreamingIter
             return;
         }
 
-        while let Some((depth, node_ref)) = self.queue.pop() {
+        if let Some((depth, node_ref)) = self.queue.pop() {
             if self.expanded.contains(node_ref.id()) {
-                let children: Vec<TItem> = node_ref.child_iter().as_mut().cloned().collect();
+                let mut children: Vec<TItem> = Vec::new();
+                let mut child_it = node_ref.child_iter();
+                while let Some(child) = child_it.next() {
+                    children.push(child.clone());
+                }
+
                 for item in children.into_iter().rev() {
                     match self.filter_op {
                         // TODO this can be optimised by caching results of checks using item.key
@@ -85,36 +91,6 @@ impl<'a, Key: Hash + Eq + Debug + Clone, TItem: TreeViewNode<Key>> StreamingIter
     }
 
     fn get(&self) -> Option<&Self::Item> {
-        self.queue.first()
+        self.queue.last()
     }
-
-    // fn next(&mut self) -> Option<Self::Item> {
-    //     while self.queue.is_empty() == false {
-    //         let head = self.queue.pop().unwrap();
-    //         let (depth, node_ref) = head;
-    //
-    //         // If it's expanded, I have to throw all children on the stack.
-    //         if self.expanded.contains(node_ref.id()) {
-    //             let idx_and_items: Vec<(usize, TItem)> = node_ref.child_iter().enumerate().collect();
-    //             for (_idx, item) in idx_and_items.into_iter().rev() {
-    //                 match self.filter_op {
-    //                     Some(filter) => {
-    //                         if item.matching_self_or_children(filter.borrow(), self.filter_depth_op) == MaybeBool::False {
-    //                             continue;
-    //                         }
-    //                     }
-    //                     None => {}
-    //                 }
-    //
-    //                 self.queue.push(
-    //                     (depth + 1, item)
-    //                 );
-    //             }
-    //         }
-    //
-    //         return Some((depth, node_ref.clone()));
-    //     }
-    //
-    //     None
-    // }
 }
