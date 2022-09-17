@@ -16,7 +16,7 @@ So there are two things to consider:
 
 First brings two things:
 
-1) we don't want to reallocate unless contents dynamically change. No allocations on display.
+1) we don't want to reallocate unless contents dynamically change. No allocations per frame.
 2) no 'async' allowed in display. If we're waiting for output from different thread, we do a non-blocking poll.
 
 Ownership:
@@ -24,7 +24,38 @@ Ownership:
 3) widgets have to *own* a provider. Provider can be Arc<> of something, but Arc<RwLock<>> introduces risks of delay.
 Channel + Cell cache (internal mutability) is safer.
 
+4) I think it's desirable to require that provider implements Iterator trait, not StreamingIterator. The reason for that
+being, that exotic use-cases like "here is a list of randomly generated numbers" are rare, and forcing implementor to
+have memory ALLOCATED with contents of whatever they want to display is one way to make sure it's going to be available
+fast.
+
 A common situation is that I offer *immediate visual feedback* to user action while additional contents are still being
 loaded (search in files, fuzzy search, pulling definitions from remote server etc).
 
 So I have a feeling that a providers should offer at least "is_complete" call, so I can indicate load.
+
+So basically:
+1) providers OWN the data, or refer to it in lock-free manner.
+2) if data changes in time, previous version of data should remain available for immediate display with indication that
+there's a load.
+3) Arc<RwLock<>> is probably necessary, but we want the operation inside to fast. Maybe RwLock should be *inside* the
+provider, and Arc<Provider> be the default way to share it.
+
+OK, I got the idea:
+struct Provider<T> {
+    current_state : RwLock<Arc<Vec<T>>>,
+}
+
+impl Provider<T> {
+    /*
+        Tadaaa: we have something iterable, preallocated, that can be swapped atomically from other thread, and reader
+        never waits long for access.
+
+        Furthermore, I can even look up if readers use most recent state or some outdated one!
+    */
+    pub fn get_stuff(&self) -> Arc<Vec<T>> {
+        self.current_state.read().unwrap().clone();
+    }
+}
+
+4)

@@ -461,9 +461,9 @@ impl LspWrapper {
         loop {
             let notification = notification_receiver.recv();
             match notification {
-                Ok(_notification) => {
-                    //debug!("received LSP notification:\n---\n{:?}\n---\n", notification);
-                    debug!("received LSP notification");
+                Ok(notification) => {
+                    // debug!("received LSP notification:\n---\n{:?}\n---\n", notification);
+                    // debug!("received LSP notification");
                 }
                 Err(e) => {
                     debug!("notification channel closed: {:?}", e);

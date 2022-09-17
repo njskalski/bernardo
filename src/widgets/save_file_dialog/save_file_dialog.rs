@@ -35,7 +35,7 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction, Widget
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::generic_dialog::generic_dialog::GenericDialog;
-use crate::widgets::list_widget::ListWidget;
+use crate::widgets::list_widget::list_widget::ListWidget;
 use crate::widgets::save_file_dialog::dialogs::override_dialog;
 use crate::widgets::save_file_dialog::save_file_dialog_msg::SaveFileDialogMsg;
 use crate::widgets::spath_tree_view_node::DirTreeNode;

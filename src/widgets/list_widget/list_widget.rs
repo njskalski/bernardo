@@ -13,68 +13,8 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
-
-pub trait ListWidgetItem: Debug + Clone {
-    //TODO change to static str?
-    fn get_column_name(idx: usize) -> &'static str;
-    fn get_min_column_width(idx: usize) -> u16;
-    fn len_columns() -> usize;
-    fn get(&self, idx: usize) -> Option<String>;
-}
-
-/*
-    Keep the provider light
- */
-pub trait ListWidgetProvider<Item: ListWidgetItem>: Debug {
-    fn len(&self) -> usize;
-    fn get(&self, idx: usize) -> Option<Item>;
-}
-
-struct ProviderIter<'a, Item: ListWidgetItem> {
-    p: &'a dyn ListWidgetProvider<Item>,
-    idx: usize,
-}
-
-impl<'a, LItem: ListWidgetItem> Iterator for ProviderIter<'a, LItem> {
-    type Item = LItem;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.idx >= self.p.len() {
-            None
-        } else {
-            let item = self.p.get(self.idx);
-            self.idx += 1;
-            item
-        }
-    }
-
-    fn count(self) -> usize where Self: Sized {
-        self.p.len()
-    }
-}
-
-impl<Item: ListWidgetItem> dyn ListWidgetProvider<Item> {
-    pub fn iter(&self) -> impl std::iter::Iterator<Item=Item> + '_ {
-        ProviderIter {
-            p: self,
-            idx: 0,
-        }
-    }
-}
-
-impl<Item: ListWidgetItem> ListWidgetProvider<Item> for Vec<Item> {
-    fn len(&self) -> usize {
-        <[Item]>::len(self)
-    }
-
-    fn get(&self, idx: usize) -> Option<Item> {
-        // // Vec::get(self, idx)
-        // Some(self[idx].clone())
-        // let self_as_vec: &Vec<Item> = self as &Vec<Item>;
-        // self_as_vec.get(idx)
-        <[Item]>::get(self, idx).map(|f| f.clone())
-    }
-}
+use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
+use crate::widgets::list_widget::list_widget_provider::ListWidgetProvider;
 
 pub struct ListWidget<Item: ListWidgetItem> {
     id: WID,
@@ -219,7 +159,9 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        debug_assert!(sc.bigger_equal_than(self.min_size()));
+        debug_assert!(sc.bigger_equal_than(self.min_size()),
+                      "sc: {} self.min_size(): {}",
+                      sc, self.min_size());
 
         let from_items = self.min_size();
         let mut res = sc.visible_hint().size;

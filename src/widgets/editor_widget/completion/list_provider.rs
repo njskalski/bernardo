@@ -4,7 +4,7 @@ use log::error;
 
 use crate::w7e::navcomp_provider::Completion;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionsPromise;
-use crate::widgets::list_widget::{ListWidgetItem, ListWidgetProvider};
+use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 
 impl ListWidgetItem for Completion {
     fn get_column_name(idx: usize) -> &'static str {
@@ -16,7 +16,7 @@ impl ListWidgetItem for Completion {
     }
 
     fn get_min_column_width(idx: usize) -> u16 {
-        if idx == 0 { 30 } else {
+        if idx == 0 { 15 } else {
             error!("requested size of non-existent column");
             0
         }
@@ -35,13 +35,3 @@ impl ListWidgetItem for Completion {
         }
     }
 }
-
-// impl ListWidgetProvider<Completion> for CompletionsPromise {
-//     fn len(&self) -> usize {
-//         todo!()
-//     }
-//
-//     fn get(&self, idx: usize) -> Option<Completion> {
-//         todo!()
-//     }
-// }
