@@ -18,7 +18,9 @@ pub enum EditorWidgetMsg {
     OpenContextMenu,
     ContextMenuClose,
 
+    RequestCompletions,
     CompletionWidgetClose,
+
 }
 
 

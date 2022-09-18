@@ -49,7 +49,7 @@ impl Output for OverOutput<'_> {
 
         if text.width() > u16::MAX as usize {
             warn!("got text width that would overflow u16::MAX, not drawing.");
-            debug!("early exit 0");
+            // debug!("early exit 0");
             return;
         }
 
@@ -60,7 +60,7 @@ impl Output for OverOutput<'_> {
         // no analogue exit on x, as something starting left from frame might still overlap with it.
 
         if !self.size_constraint().bigger_equal_than(pos) {
-            debug!("early exit 2");
+            // debug!("early exit 2");
             debug!("drawing beyond output, early exit. pos: {} sc: {}", pos, self.size_constraint());
             return;
         }
@@ -78,7 +78,7 @@ impl Output for OverOutput<'_> {
             let x = x as u16;
 
             if self.output.size_constraint().x().map(|max_x| max_x <= x).unwrap_or(true) {
-                debug!("early exit 3");
+                // debug!("early exit 3");
                 break;
             }
 

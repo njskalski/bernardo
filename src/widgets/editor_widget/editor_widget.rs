@@ -338,18 +338,15 @@ impl EditorWidget {
             }
         }).unwrap_or(cursor_screen_pos);
 
-        // TODO the RECTs here are set with +-1 bug, I don't remember which one and why, they are later set right in update_and_layout.
-        // Maybe we should throw them away. Anyway, just so you know, fix it one day.
+        /*
+         TODO the RECTs here are set twice, I never checked if they match. Maybe we should throw
+              them away, or at least not set them here. Anyway, just so you know, fix it one day.
+         */
 
         if above {
             debug_assert!(cursor_screen_pos.y > height);
             Some(HoverSettings {
-                rect: Rect::xxyy(
-                    cursor_screen_pos.x,
-                    cursor_screen_pos.x + width,
-                    cursor_screen_pos.y, // TODO underflow
-                    cursor_screen_pos.y - height,
-                ),
+                rect: Rect::new(anchor - XY::new(0, height), XY::new(width, height)),
                 anchor,
                 above_cursor: true,
                 substring: trigger_and_substring.as_ref().map(|tas| tas.1.clone()),
@@ -358,12 +355,7 @@ impl EditorWidget {
         } else {
             debug_assert!(cursor_screen_pos.y + height < last_size.visible_hint().size.y);
             Some(HoverSettings {
-                rect: Rect::xxyy(
-                    cursor_screen_pos.x,
-                    cursor_screen_pos.x + width,
-                    cursor_screen_pos.y,
-                    cursor_screen_pos.y + height,
-                ),
+                rect: Rect::new(anchor + XY::new(0, 1), XY::new(width, height)),
                 anchor,
                 above_cursor: false,
                 substring: trigger_and_substring.as_ref().map(|tas| tas.1.clone()),
@@ -447,7 +439,6 @@ impl EditorWidget {
                 let hover_settings = self.todo_get_hover_settings();
                 let tick_sender = navcomp.todo_navcomp_sender().clone();
                 let promise_op = navcomp.completions(path.clone(), stupid_cursor, hover_settings.as_ref().map(|c| c.trigger.clone()).flatten());
-
 
                 match (promise_op, hover_settings) {
                     (Some(promise), Some(hover_settings)) => {
@@ -556,10 +547,9 @@ impl EditorWidget {
         while let Some(line) = lines_it.next() {
             // skipping lines that cannot be visible, because the are after the hint()
             if line_idx >= output.size_constraint().visible_hint().lower_right().y as usize {
-                debug!("early exit 7");
+                // debug!("early exit 7");
                 break;
             }
-            debug!("printing line {}", line_idx);
 
             let line_begin = match self.buffer.line_to_char(line_idx) {
                 Some(begin) => begin,
@@ -612,7 +602,7 @@ impl EditorWidget {
 
                 x_offset += tr.width();
                 if x_offset as u16 >= output.size_constraint().visible_hint().lower_right().x {
-                    debug!("early exit 6");
+                    // debug!("early exit 6");
                     break;
                 }
             }
@@ -620,7 +610,7 @@ impl EditorWidget {
             line_idx += 1;
             // TODO u16 overflow
             if line_idx as u16 >= output.size_constraint().visible_hint().lower_right().y {
-                debug!("early exit 5 : osc : {:?}, output : {:?}", output.size_constraint(), output);
+                // debug!("early exit 5 : osc : {:?}, output : {:?}", output.size_constraint(), output);
                 break;
             }
         }
@@ -727,6 +717,13 @@ impl Widget for EditorWidget {
 
                 EditorWidgetMsg::DropCursorFlip { cursor: special_cursor }.someboxed()
             }
+            (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.request_completions => {
+                debug!("requesting completions");
+                EditorWidgetMsg::RequestCompletions.someboxed()
+            }
+            (&EditorState::Editing, InputEvent::KeyInput(key)) if !key.modifiers.ctrl && key_to_edit_msg(key).is_some() => {
+                EditorWidgetMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
+            }
             // TODO change to if let Some() when it's stabilized
             (&EditorState::DroppingCursor { .. }, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
                 let cem = key_to_edit_msg(key).unwrap();
@@ -736,9 +733,7 @@ impl Widget for EditorWidget {
                     None
                 }
             }
-            (&EditorState::Editing, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
-                EditorWidgetMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
-            }
+
             _ => None,
         };
     }
@@ -764,7 +759,7 @@ impl Widget for EditorWidget {
                             _ => {}
                         }
 
-                        self.todo_request_completion();
+                        // self.todo_request_completion();
                     }
 
                     match cme_to_direction(cem) {
@@ -820,6 +815,10 @@ impl Widget for EditorWidget {
                     let height = self.page_height();
                     apply_cem(cem.clone(), &mut set, &mut self.buffer, height as usize, Some(&self.clipboard));
                     self.state = EditorState::DroppingCursor { special_cursor: *set.as_single().unwrap() };
+                    None
+                }
+                (&EditorState::Editing, EditorWidgetMsg::RequestCompletions) => {
+                    self.todo_request_completion();
                     None
                 }
                 (&EditorState::Editing, EditorWidgetMsg::CompletionWidgetClose) => {

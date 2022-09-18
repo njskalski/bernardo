@@ -61,6 +61,7 @@ pub struct Editor {
     pub find: Key,
     pub replace: Key,
     pub close_find_replace: Key,
+    pub request_completions: Key,
 }
 
 impl Default for Editor {
@@ -72,6 +73,7 @@ impl Default for Editor {
             find: Keycode::Char('f').to_key().with_ctrl(),
             replace: Keycode::Char('r').to_key().with_ctrl(),
             close_find_replace: Keycode::Esc.to_key(),
+            request_completions: Keycode::Space.to_key().with_ctrl(),
         }
     }
 }

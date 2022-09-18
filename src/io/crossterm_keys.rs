@@ -23,6 +23,7 @@ impl From<CKey> for Key {
                     KeyCode::Delete => Keycode::Delete,
                     KeyCode::Insert => Keycode::Insert,
                     KeyCode::F(f) => Keycode::F(f),
+                    KeyCode::Char(' ') => Keycode::Space,
                     KeyCode::Char(char) => Keycode::Char(char),
                     KeyCode::Null => Keycode::Null,
                     KeyCode::Esc => Keycode::Esc,

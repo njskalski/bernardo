@@ -2,7 +2,7 @@ use std::thread;
 
 use crossbeam_channel::Receiver;
 use crossterm::event::Event;
-use log::{error, warn};
+use log::{debug, error, warn};
 
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
@@ -37,6 +37,8 @@ impl CrosstermInput {
                                 None // TODO
                             }
                         };
+
+                        // debug!("got {:?}", processed_event);
 
                         match processed_event {
                             None => continue,
