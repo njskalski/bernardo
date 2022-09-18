@@ -12,9 +12,9 @@ use crate::experiments::focus_group::FocusUpdate;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
-use crate::primitives::promise::Promise;
 use crate::primitives::xy::XY;
-use crate::w7e::navcomp_provider::Completion;
+use crate::promise::promise::Promise;
+use crate::w7e::navcomp_provider::{Completion, CompletionsPromise};
 use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::AsAny;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
@@ -24,11 +24,9 @@ use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
 use crate::widgets::list_widget::list_widget::ListWidget;
 
-pub type CompletionsPromise = Arc<RwLock<Box<dyn Promise<Vec<Completion>>>>>;
-
 pub struct CompletionWidget {
     wid: WID,
-    completions_promise: Arc<RwLock<Box<dyn Promise<Vec<Completion>>>>>,
+    completions_promise: CompletionsPromise,
     fuzzy: bool,
     list_widget: ListWidget<Completion>,
     display_state: Option<DisplayState<Self>>,
@@ -45,14 +43,8 @@ impl CompletionWidget {
         }
     }
 
-    // TODO unnecessary clone
-    fn completions(&self) -> Option<Vec<Completion>> {
-        let lock = self.completions_promise
-            .try_read()
-            .map_err(|_| error!("failed acquiring rw lock"))
-            .ok()?;
-
-        lock.read().map(|c| c.clone())
+    fn completions(&self) -> Option<&Vec<Completion>> {
+        self.completions_promise.read()
     }
 }
 
@@ -71,24 +63,12 @@ impl Widget for CompletionWidget {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let set_focused_list = match self.completions_promise.try_write() {
-            Ok(mut lock) => {
-                if lock.update() {
-                    true
-                } else {
-                    false
-                }
-            }
-            Err(e) => {
-                error!("failed acquiring rwlock on completions_promise");
-                false
-            }
-        };
-        if set_focused_list {
+        self.completions_promise.update();
+
+        if self.completions_promise.read().is_some() {
             self.set_focused(subwidget!(Self.list_widget));
         }
-
-
+        
         self.complex_layout(sc)
     }
 

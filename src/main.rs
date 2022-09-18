@@ -57,6 +57,7 @@ mod config;
 mod gladius;
 mod lsp_client;
 mod w7e;
+mod promise;
 
 fn main() {
     let args = gladius::args::Args::parse();

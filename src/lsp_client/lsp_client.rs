@@ -24,7 +24,7 @@ use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::lsp_client::lsp_write::{internal_send_notification, internal_send_notification_no_params, internal_send_request};
 use crate::lsp_client::lsp_write_error::LspWriteError;
 use crate::lsp_client::promise::LSPPromise;
-use crate::primitives::promise::Promise;
+use crate::promise::promise::{Promise, PromiseState};
 use crate::tsw::lang_id::LangId;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 
@@ -272,7 +272,7 @@ impl LspWrapper {
         })?;
 
         //before returning I will send syn-ack as protocol demands.
-        if result.wait() {
+        if result.wait() == PromiseState::Ready {
             self.send_notification_no_params::<lsp_types::notification::Initialized>()?;
             Ok(result.take().unwrap())
         } else {

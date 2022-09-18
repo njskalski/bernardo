@@ -2,9 +2,9 @@ use std::fmt::{Debug, Formatter};
 
 use log::error;
 
-use crate::w7e::navcomp_provider::Completion;
-use crate::widgets::editor_widget::completion::completion_widget::CompletionsPromise;
+use crate::w7e::navcomp_provider::{Completion, CompletionsPromise};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
+use crate::widgets::list_widget::list_widget_provider::ListWidgetProvider;
 
 impl ListWidgetItem for Completion {
     fn get_column_name(idx: usize) -> &'static str {
@@ -33,5 +33,18 @@ impl ListWidgetItem for Completion {
             error!("requested size of non-existent column");
             None
         }
+    }
+}
+
+impl ListWidgetProvider<Completion> for CompletionsPromise {
+    fn len(&self) -> usize {
+        match self.read() {
+            None => 0,
+            Some(res) => res.len(),
+        }
+    }
+
+    fn get(&self, idx: usize) -> Option<&Completion> {
+        self.read().map(|res| res.get(idx)).flatten()
     }
 }

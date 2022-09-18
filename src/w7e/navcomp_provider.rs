@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use crate::fs::path::SPath;
 use crate::lsp_client::helpers::LspTextCursor;
 use crate::primitives::cursor_set::Cursor;
-use crate::primitives::promise::Promise;
+use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
 
 #[derive(Debug, Clone)]
@@ -18,6 +18,8 @@ pub struct Completion {
     pub action: CompletionAction,
 }
 
+pub type CompletionsPromise = Box<dyn Promise<Vec<Completion>>>;
+
 // this is a wrapper around LSP and "similar services".
 pub trait NavCompProvider: Debug {
     /*
@@ -30,7 +32,7 @@ pub trait NavCompProvider: Debug {
      */
     fn submit_edit_event(&self, path: &SPath, file_contents: String);
 
-    fn completions(&self, path: SPath, cursor: LspTextCursor) -> Option<Box<dyn Promise<Vec<Completion>>>>;
+    fn completions(&self, path: SPath, cursor: LspTextCursor) -> Option<CompletionsPromise>;
 
     // TODO this will probably get more complicated
     fn completion_triggers(&self, path: &SPath) -> Vec<String>;

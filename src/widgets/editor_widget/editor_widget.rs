@@ -28,9 +28,9 @@ use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
 use crate::primitives::helpers::fill_output;
-use crate::primitives::promise::Promise;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::{XY, ZERO};
+use crate::promise::promise::Promise;
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
@@ -458,7 +458,7 @@ impl EditorWidget {
                             debug!("no completions");
                         }
                         Some(promise) => {
-                            let comp = CompletionWidget::new(Arc::new(RwLock::new(promise)));
+                            let comp = CompletionWidget::new(promise);
                             self.hover = Some((hover_rect, EditorHover::Completion(comp)));
                             debug!("created completion");
                         }

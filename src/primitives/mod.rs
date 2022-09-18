@@ -21,7 +21,5 @@ pub mod tmtheme;
 pub mod common_edit_msgs;
 mod common_edit_msgs_tests;
 pub mod search_pattern;
-pub mod promise;
-pub mod promise_map;
 pub mod provider;
 

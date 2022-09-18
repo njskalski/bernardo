@@ -12,9 +12,9 @@ use crate::lsp_client::lsp_io_error::LspIOError;
 use crate::lsp_client::lsp_write_error::LspWriteError;
 use crate::lsp_client::promise::LSPPromise;
 use crate::primitives::cursor_set::Cursor;
-use crate::primitives::promise::Promise;
+use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
-use crate::w7e::navcomp_provider::{Completion, CompletionAction, NavCompProvider};
+use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider};
 
 /*
 This is work in progress. I do not know mutability rules. I am also not sure if I don't want
@@ -83,7 +83,7 @@ impl NavCompProvider for NavCompProviderLsp {
         }
     }
 
-    fn completions(&self, path: SPath, cursor: LspTextCursor) -> Option<Box<dyn Promise<Vec<Completion>>>> {
+    fn completions(&self, path: SPath, cursor: LspTextCursor) -> Option<CompletionsPromise> {
         let url = match path.to_url() {
             Ok(url) => url,
             Err(_) => {
