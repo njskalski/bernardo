@@ -191,116 +191,6 @@ impl EditorWidget {
         }
     }
 
-    fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let default = match self.state {
-            EditorState::Editing => { theme.default_text(focused) }
-            EditorState::DroppingCursor { .. } => {
-                theme.default_text(focused).with_background(theme.ui.mode_2_background)
-            }
-        };
-
-        helpers::fill_output(default.background, output);
-
-        let char_range_op = self.buffer.char_range(output);
-        let highlights = self.buffer.highlight(char_range_op);
-        let mut highlight_iter = highlights.iter().peekable();
-
-        let lines_to_skip = output.size_constraint().visible_hint().upper_left().y as usize;
-
-        let mut lines_it = self.buffer.lines().skip(lines_to_skip);
-        // skipping lines that cannot be visible, because they are before hint()
-        let mut line_idx = lines_to_skip;
-
-        // for (line_idx, line) in self.buffer.new_lines().enumerate()
-        //     // skipping lines that cannot be visible, because they are before hint()
-        //     .skip(output.size_constraint().visible_hint().upper_left().y as usize)
-        while let Some(line) = lines_it.next() {
-            // skipping lines that cannot be visible, because the are after the hint()
-            if line_idx >= output.size_constraint().visible_hint().lower_right().y as usize {
-                break;
-            }
-
-            let line_begin = match self.buffer.line_to_char(line_idx) {
-                Some(begin) => begin,
-                None => continue,
-            };
-
-            let mut x_offset: usize = 0;
-            for (c_idx, c) in line.graphemes(true).into_iter().enumerate() {
-                let char_idx = line_begin + c_idx;
-
-                while let Some(item) = highlight_iter.peek() {
-                    if char_idx >= item.char_end {
-                        highlight_iter.next();
-                    } else {
-                        break;
-                    }
-                }
-
-                // let cursor_status = self.cursors.get_cursor_status_for_char(char_idx);
-                let pos = XY::new(x_offset as u16, line_idx as u16);
-
-                // TODO optimise
-                let text = format!("{}", c);
-                let tr = if c == "\n" { NEWLINE } else { text.as_str() };
-
-                let mut style = default;
-
-                if tr != NEWLINE { // TODO cleanup
-                    if let Some(item) = highlight_iter.peek() {
-                        if let Some(color) = theme.name_to_theme(&item.identifier) {
-                            style = style.with_foreground(color);
-                        }
-                    }
-                }
-
-
-                self.pos_to_cursor(theme, char_idx).map(|mut bg| {
-                    if !focused {
-                        bg = bg.half();
-                    }
-                    style = style.with_background(bg);
-                });
-
-
-                if !focused {
-                    style.foreground = style.foreground.half();
-                }
-
-                output.print_at(pos, style, tr);
-
-                x_offset += tr.width();
-                if x_offset as u16 >= output.size_constraint().visible_hint().lower_right().x {
-                    break;
-                }
-            }
-
-            line_idx += 1;
-            if line_idx as u16 >= output.size_constraint().visible_hint().lower_right().y {
-                break;
-            }
-        }
-
-        let one_beyond_limit = self.buffer.len_chars();
-        let last_line = self.buffer.char_to_line(one_beyond_limit).unwrap();//TODO
-        let x_beyond_last = one_beyond_limit - self.buffer.line_to_char(last_line).unwrap(); //TODO
-
-        let one_beyond_last_pos = XY::new(x_beyond_last as u16, last_line as u16);
-
-        if one_beyond_last_pos < output.size_constraint().visible_hint().lower_right() {
-            let mut style = default;
-
-            self.pos_to_cursor(theme, one_beyond_limit).map(|mut bg| {
-                if !focused {
-                    bg = bg.half();
-                }
-                style = style.with_background(bg);
-            });
-
-            output.print_at(one_beyond_last_pos, style, BEYOND);
-        }
-    }
-
     pub fn enter_dropping_cursor_mode(&mut self) {
         debug_assert_matches!(self.state, EditorState::Editing);
         self.state = EditorState::DroppingCursor {
@@ -741,62 +631,113 @@ impl ComplexWidget for EditorWidget {
         self.display_state.as_mut()
     }
 
-    /*
-    now the reason I need to override this method highlights a shortcoming in my design I did not forsee:
-    namely, that "complex widget" can't really point to itself without overriding at least complex_render,
-    and then chances are something else will blow up.
+    fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let default = match self.state {
+            EditorState::Editing => { theme.default_text(focused) }
+            EditorState::DroppingCursor { .. } => {
+                theme.default_text(focused).with_background(theme.ui.mode_2_background)
+            }
+        };
 
-    Now here's why:
-    - if I don't override it, default implementation will call self.render(), causing infinite recursion, because
-        this is where "complex_render" should be called from
-    - if I move hover to say "editor view", editor widget will NOT appear on focus path between Hover and editorview,
-        introducing error in input handling, that would have to be bypassed by routing input back down, which is heresy.
-    - kosher way would be to introduce another layer between editor widget and editor view. It sounds the best, I just
-        need to come up with a fkn name for it. Editor_and_hover_view? Who owns LSP then? Fuck, this get's complicated.
+        helpers::fill_output(default.background, output);
 
-    It does beg a question whether "benedict" design is not superior, but I'd need a whiteboard to proove that,
-    and I am sitting in a cheap shack in Jeriquaquara right now, so I'll run with this and see where it takes me.
+        let char_range_op = self.buffer.char_range(output);
+        let highlights = self.buffer.highlight(char_range_op);
+        let mut highlight_iter = highlights.iter().peekable();
 
-    But if I am discussing it here, the primary argument *against* "benedict" is that it does not define well
-    focus transfer - what happens when we want to move focus to button that doesn't exist yet (deferred focus):
-    this process is inevitably risky. The item may fail to appear, and then we have to find a "general" focus
-    in rather flat hierarchy. I can "get back to the caller" to ask for "default", and if "caller" ceased to exist
-    continue up the tree asking for defaults. This *could* work.
+        let lines_to_skip = output.size_constraint().visible_hint().upper_left().y as usize;
 
-    No, focus seems to naturally flow DOWN the tree. Maybe I should just lift the requirement to add "exactly
-    one" focus path item? Maybe a single widget should be able to attach a chain of it's children?
+        let mut lines_it = self.buffer.lines().skip(lines_to_skip);
+        // skipping lines that cannot be visible, because they are before hint()
+        let mut line_idx = lines_to_skip;
 
-    It almost seems like the issue is in putting layouts as not separate widgets.
-     */
-    fn complex_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        fill_output(theme.ui.non_focused.background, output);
+        // for (line_idx, line) in self.buffer.new_lines().enumerate()
+        //     // skipping lines that cannot be visible, because they are before hint()
+        //     .skip(output.size_constraint().visible_hint().upper_left().y as usize)
+        while let Some(line) = lines_it.next() {
+            // skipping lines that cannot be visible, because the are after the hint()
+            if line_idx >= output.size_constraint().visible_hint().lower_right().y as usize {
+                break;
+            }
 
-        let mut focused_drawn = false;
+            let line_begin = match self.buffer.line_to_char(line_idx) {
+                Some(begin) => begin,
+                None => continue,
+            };
 
-        match self.get_display_state_op() {
-            None => error!("failed rendering {} without cached_sizes", self.typename()),
-            Some(ds) => {
-                let focused_subwidget = ds.focused.get(self);
+            let mut x_offset: usize = 0;
+            for (c_idx, c) in line.graphemes(true).into_iter().enumerate() {
+                let char_idx = line_begin + c_idx;
 
-                for wwr in &ds.wwrs {
-                    let sub_output = &mut SubOutput::new(output, *wwr.rect());
-                    let widget = wwr.widget().get(self);
-                    let subwidget_focused = focused && widget.id() == focused_subwidget.id();
-                    if widget.id() != self.id() {
-                        widget.render(theme,
-                                      subwidget_focused,
-                                      sub_output);
+                while let Some(item) = highlight_iter.peek() {
+                    if char_idx >= item.char_end {
+                        highlight_iter.next();
                     } else {
-                        self.internal_render(theme, subwidget_focused, sub_output);
+                        break;
                     }
-
-                    focused_drawn |= subwidget_focused;
                 }
+
+                // let cursor_status = self.cursors.get_cursor_status_for_char(char_idx);
+                let pos = XY::new(x_offset as u16, line_idx as u16);
+
+                // TODO optimise
+                let text = format!("{}", c);
+                let tr = if c == "\n" { NEWLINE } else { text.as_str() };
+
+                let mut style = default;
+
+                if tr != NEWLINE { // TODO cleanup
+                    if let Some(item) = highlight_iter.peek() {
+                        if let Some(color) = theme.name_to_theme(&item.identifier) {
+                            style = style.with_foreground(color);
+                        }
+                    }
+                }
+
+
+                self.pos_to_cursor(theme, char_idx).map(|mut bg| {
+                    if !focused {
+                        bg = bg.half();
+                    }
+                    style = style.with_background(bg);
+                });
+
+
+                if !focused {
+                    style.foreground = style.foreground.half();
+                }
+
+                output.print_at(pos, style, tr);
+
+                x_offset += tr.width();
+                if x_offset as u16 >= output.size_constraint().visible_hint().lower_right().x {
+                    break;
+                }
+            }
+
+            line_idx += 1;
+            if line_idx as u16 >= output.size_constraint().visible_hint().lower_right().y {
+                break;
             }
         }
 
-        if !focused_drawn {
-            error!("a focused widget is not drawn in {} #{}!", self.typename(), self.id())
+        let one_beyond_limit = self.buffer.len_chars();
+        let last_line = self.buffer.char_to_line(one_beyond_limit).unwrap();//TODO
+        let x_beyond_last = one_beyond_limit - self.buffer.line_to_char(last_line).unwrap(); //TODO
+
+        let one_beyond_last_pos = XY::new(x_beyond_last as u16, last_line as u16);
+
+        if one_beyond_last_pos < output.size_constraint().visible_hint().lower_right() {
+            let mut style = default;
+
+            self.pos_to_cursor(theme, one_beyond_limit).map(|mut bg| {
+                if !focused {
+                    bg = bg.half();
+                }
+                style = style.with_background(bg);
+            });
+
+            output.print_at(one_beyond_last_pos, style, BEYOND);
         }
     }
 
