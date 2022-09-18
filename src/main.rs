@@ -169,6 +169,7 @@ fn main() {
         ie: InputEvent,
     ) -> (bool, Option<Box<dyn AnyMsg>>) {
         let my_desc = format!("{:?}", &view).clone();
+        let my_id = view.id();
 
         let focused_child_op = view.get_focused_mut();
         let child_desc = format!("{:?}", &focused_child_op);
@@ -177,7 +178,14 @@ fn main() {
 
         // first, dig as deep as possible.
         let (child_have_consumed, message_from_child_op) = match focused_child_op {
-            Some(focused_child) => recursive_treat_views(focused_child, ie),
+            Some(focused_child) => {
+                debug_assert!(focused_child.id() != my_id,
+                              "widget {:?} pointed to itself as it's own child, causing stack overflow", view
+                );
+
+
+                recursive_treat_views(focused_child, ie)
+            }
             None => (false, None)
         };
         debug!(target: "recursive_treat_views", "{:?}: event {:?}, active_child: {:?}, child_consumed: {}, message_from_child: {:?}",

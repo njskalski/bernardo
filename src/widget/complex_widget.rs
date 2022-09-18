@@ -14,6 +14,12 @@ use crate::widget::widget::WID;
 
 // here one could merge focus_group.focused with ds.focused, but not it's not important.
 
+/*
+This widget got super complicated because I allowed widgets that are not "transparent", meaning they
+have their own render and not just layout (CompletionWidget). This led to conditions in render,
+layout, get_focused{ and mut} . Not sure if I want to keep it this way, or clean it up later.
+ */
+
 pub struct DisplayState<S: Widget> {
     pub focused: SubwidgetPointer<S>,
     pub wwrs: Vec<WidgetWithRect<S>>,
@@ -28,7 +34,7 @@ pub trait ComplexWidget: Widget + Sized {
 
     /*
     because using ComplexWidget helper requires routing calling complex_render from widget's render,
-    we require internal_render on widget's self, to avoid infinite recurson
+    we require internal_render on widget's self, to avoid infinite recursion
      */
     fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         fill_output(theme.default_text(focused).background, output);
@@ -110,18 +116,20 @@ pub trait ComplexWidget: Widget + Sized {
     fn complex_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         fill_output(theme.ui.non_focused.background, output);
 
-        let mut my_focused_drawn = false;
-        let self_id = self.id();
-
         match self.get_display_state_op() {
             None => error!("failed rendering {} without cached_sizes", self.typename()),
             Some(ds) => {
+                let mut my_focused_drawn = false;
+                let self_id = self.id();
+
                 let focused_subwidget = ds.focused.get(self);
+                let focused_desc = format!("{:?}", focused_subwidget);
 
                 for wwr in &ds.wwrs {
                     let sub_output = &mut SubOutput::new(output, *wwr.rect());
                     let widget = wwr.widget().get(self);
-                    let subwidget_focused = focused && widget.id() == focused_subwidget.id();
+                    // this is a hack
+                    let subwidget_focused = self.todo_all_focused() || (focused && widget.id() == focused_subwidget.id());
 
                     if widget.id() != self_id {
                         widget.render(theme,
@@ -132,11 +140,11 @@ pub trait ComplexWidget: Widget + Sized {
                     }
                     my_focused_drawn |= widget.id() == focused_subwidget.id();
                 }
-            }
-        }
 
-        if !my_focused_drawn {
-            error!("a focused widget is not drawn in {} #{}!", self.typename(), self.id())
+                if !my_focused_drawn {
+                    error!("a focused widget {} is not drawn in {} #{}!", focused_desc, self.typename(), self.id())
+                }
+            }
         }
     }
 
@@ -153,7 +161,14 @@ pub trait ComplexWidget: Widget + Sized {
             error!("requested complex_get_focused before layout");
         }
 
-        self.get_display_state_op().as_ref().map(|ds| ds.focused.get(self))
+        self.get_display_state_op().as_ref().map(|ds| {
+            let w = ds.focused.get(self);
+            if w.id() == self.id() {
+                None
+            } else {
+                Some(w)
+            }
+        }).flatten()
     }
 
     fn complex_get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
@@ -167,6 +182,22 @@ pub trait ComplexWidget: Widget + Sized {
                 ds.focused.clone()
             });
 
-        focused_ptr.map(|p| p.get_mut(self))
+        focused_ptr.map(|p| {
+            let self_id = self.id();
+            let w = p.get_mut(self);
+            if w.id() == self_id {
+                None
+            } else {
+                Some(w)
+            }
+        }).flatten()
+    }
+
+    /*
+    this should probably evolve into some Settings, with sensible defaults and options to override it
+    by users of this trait. Right now I just needed it to NOT grey out editor when LSP suggestions pop up.
+     */
+    fn todo_all_focused(&self) -> bool {
+        false
     }
 }

@@ -75,6 +75,10 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
+    pub fn items(&self) -> impl Iterator<Item=&Item> {
+        self.provider.iter()
+    }
+
     pub fn with_selection(self) -> Self {
         ListWidget {
             highlighted: Some(0),
@@ -135,6 +139,26 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         self.highlighted.map(
             |idx| self.provider.get(idx)
         ).flatten()
+    }
+
+    pub fn set_show_column_names(&mut self, show_column_names: bool) {
+        self.show_column_names = show_column_names;
+    }
+
+    pub fn with_show_column_names(self, show_column_names: bool) -> Self {
+        ListWidget {
+            show_column_names,
+            ..self
+        }
+    }
+
+    pub fn set_highlighted(&mut self, highlighted: usize) -> bool {
+        if self.items().count() >= highlighted {
+            self.highlighted = Some(highlighted);
+            true
+        } else {
+            false
+        }
     }
 }
 

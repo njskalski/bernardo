@@ -8,7 +8,7 @@ use std::sync::{Arc, RwLock};
 
 use log::{debug, error, warn};
 
-use crate::{AnyMsg, InputEvent, Output, selfwidget, SizeConstraint, subwidget, Theme, Widget};
+use crate::{AnyMsg, InputEvent, Keycode, Output, selfwidget, SizeConstraint, subwidget, Theme, Widget};
 use crate::experiments::focus_group::FocusUpdate;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::Layout;
@@ -43,7 +43,9 @@ impl CompletionWidget {
         CompletionWidget {
             wid: get_new_widget_id(),
             fuzzy: true,
-            list_widget: ListWidget::new(),
+            list_widget: ListWidget::new()
+                .with_selection()
+                .with_show_column_names(false),
             completions_promise: Some(completions_promise),
             display_state: None,
         }
@@ -78,6 +80,8 @@ impl CompletionWidget {
                             mem::swap(&mut self.completions_promise, &mut promise);
                             let value = promise.take().unwrap();
                             self.list_widget.set_provider(Box::new(value));
+
+                            self.set_focused(subwidget!(Self.list_widget));
                             true
                         }
                         PromiseState::Broken => {
@@ -117,7 +121,12 @@ impl Widget for CompletionWidget {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        None
+        return match input_event {
+            InputEvent::KeyInput(key) if key.keycode == Keycode::Esc => {
+                CompletionWidgetMsg::Close.someboxed()
+            }
+            _ => None
+        };
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {

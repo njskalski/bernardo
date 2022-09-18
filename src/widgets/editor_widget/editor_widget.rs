@@ -13,10 +13,12 @@ use unicode_width::UnicodeWidthStr;
 use crate::{AnyMsg, ConfigRef, InputEvent, Keycode, LangId, Output, selfwidget, SizeConstraint, subwidget, Widget};
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
+use crate::experiments::focus_group::FocusUpdate;
 use crate::experiments::regex_search::FindError;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
+use crate::io::keys::Key;
 use crate::io::sub_output::SubOutput;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
@@ -461,6 +463,7 @@ impl EditorWidget {
                         Some(promise) => {
                             let comp = CompletionWidget::new(promise);
                             self.hover = Some((hover_rect, EditorHover::Completion(comp)));
+                            self.get_hover_subwidget().map(|w| self.set_focused(w));
                             debug!("created completion");
                         }
                     }
@@ -678,6 +681,11 @@ impl Widget for EditorWidget {
                     self.state = EditorState::DroppingCursor { special_cursor: *set.as_single().unwrap() };
                     None
                 }
+                (&EditorState::Editing, EditorWidgetMsg::CompletionWidgetClose) => {
+                    self.hover = None;
+                    self.set_focused(selfwidget!(Self));
+                    None
+                }
                 (editor_state, msg) => {
                     error!("Unhandled combination of editor state {:?} and msg {:?}", editor_state, msg);
                     None
@@ -790,6 +798,10 @@ impl ComplexWidget for EditorWidget {
         if !focused_drawn {
             error!("a focused widget is not drawn in {} #{}!", self.typename(), self.id())
         }
+    }
+
+    fn todo_all_focused(&self) -> bool {
+        true
     }
 }
 
