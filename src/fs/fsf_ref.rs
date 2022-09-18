@@ -17,7 +17,7 @@ use crate::fs::write_error::WriteError;
 // Chaching should be implemented here or nowhere.
 
 pub struct DirCache {
-    vec: Vec<SPath>,
+    vec: Arc<Vec<SPath>>,
 }
 
 pub struct FsAndCache {
@@ -108,7 +108,7 @@ impl FsfRef {
         self.fs.fs.blocking_overwrite_with_str(&path, s)
     }
 
-    pub fn blocking_list(&self, spath: &SPath) -> Result<Vec<SPath>, ListError> {
+    pub fn blocking_list(&self, spath: &SPath) -> Result<Arc<Vec<SPath>>, ListError> {
         // TODO unwrap - not necessary
         if let Some(cache) = self.fs.caches.try_read().unwrap().get(spath) {
             return Ok(cache.vec.clone());
@@ -123,10 +123,12 @@ impl FsfRef {
             dir_cache.push(sp);
         }
 
+        let arc = Arc::new(dir_cache);
+
         match self.fs.caches.try_write() {
             Ok(mut cache) => {
                 cache.insert(spath.clone(), DirCache {
-                    vec: dir_cache.clone(),
+                    vec: arc.clone(),
                 });
             }
             Err(e) => {
@@ -134,7 +136,7 @@ impl FsfRef {
             }
         }
 
-        Ok(dir_cache)
+        Ok(arc)
     }
 
     pub fn blocking_read_entire_file(&self, spath: &SPath) -> Result<Vec<u8>, ReadError> {

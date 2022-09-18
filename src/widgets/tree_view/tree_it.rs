@@ -57,7 +57,12 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> Iterator for T
 
             // If it's expanded, I have to throw all children on the stack.
             if self.expanded.contains(node_ref.id()) {
-                let idx_and_items : Vec<(usize, Item)> = node_ref.child_iter().enumerate().collect();
+                let idx_and_items: Vec<(usize, Item)> = node_ref
+                    .child_iter()
+                    .enumerate()
+                    .map(|(idx, c)| (idx, c.clone()))
+                    .collect();
+
                 for (_idx, item) in idx_and_items.into_iter().rev() {
                     match self.filter_op {
                         Some(filter) => {
