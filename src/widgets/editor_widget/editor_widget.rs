@@ -6,6 +6,7 @@ use crossbeam_channel::TrySendError;
 use log::{debug, error, warn};
 use lsp_types::Hover;
 use streaming_iterator::StreamingIterator;
+use syntect::html::IncludeBackground::No;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -551,8 +552,20 @@ impl Widget for EditorWidget {
         MIN_EDITOR_SIZE
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
+    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
         self.last_size = Some(sc);
+
+        match self.hover.as_mut() {
+            None => {}
+            Some((_rect, hover)) => match hover {
+                EditorHover::Completion(comp) => {
+                    if !comp.should_draw() {
+                        self.hover = None;
+                    }
+                }
+            }
+        }
+
         self.complex_layout(sc)
     }
 

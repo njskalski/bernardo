@@ -1,6 +1,9 @@
+use std::cmp::min;
 use std::fmt::Debug;
+use std::string::String;
 
 use log::{debug, warn};
+use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
@@ -158,7 +161,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
         XY::new(cols, rows)
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
+    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
         debug_assert!(sc.bigger_equal_than(self.min_size()),
                       "sc: {} self.min_size(): {}",
                       sc, self.min_size());
@@ -313,16 +316,49 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
             };
 
             for c_idx in 0..Item::len_columns() {
-                let text: String = match item.get(c_idx) {
-                    Some(s) => s,
-                    None => "".to_string(),
-                };
-
                 let column_width = Item::get_min_column_width(c_idx);
+
+                let max_x = output.size_constraint()
+                    .x()
+                    .map(|max_x| min(max_x, column_width))
+                    .unwrap_or(column_width);
+
+                if x_offset >= max_x {
+                    warn!("completely skipping drawing a column {} and consecutive, because it's offset is beyond output", c_idx);
+                    break;
+                }
+
+                // at this point it's safe to substract
+                let actual_max_text_length = max_x - x_offset;
+                debug_assert!(actual_max_text_length > 0);
+
+                // huge block to "cut th text if necessary"
+                let mut text = {
+                    let full_text = match item.get(c_idx) {
+                        Some(s) => s,
+                        None => "".to_string(),
+                    };
+                    if full_text.len() <= actual_max_text_length as usize {
+                        full_text
+                    } else {
+                        let mut cut_text = String::new();
+                        let mut used_width: usize = 0;
+                        for grapheme in full_text.graphemes(true) {
+                            let grapheme_width = grapheme.width_cjk();
+                            if grapheme_width + used_width > actual_max_text_length as usize {
+                                break;
+                            } else {
+                                cut_text += grapheme;
+                                used_width += grapheme_width;
+                            }
+                        }
+                        cut_text
+                    }
+                };
+                debug_assert!(text.width_cjk() <= actual_max_text_length as usize);
 
                 output.print_at(
                     // TODO possible u16 overflow
-                    // TODO handle overflow of column length
                     XY::new(x_offset, y_offset + idx as u16),
                     style,
                     &text,

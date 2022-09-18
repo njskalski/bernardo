@@ -1,5 +1,6 @@
 use log::error;
 use unicode_width::UnicodeWidthStr;
+
 use crate::io::output::Output;
 use crate::io::style::{TEXT_STYLE_WHITE_ON_BLACK, TextStyle};
 use crate::primitives::rect::Rect;
@@ -24,17 +25,26 @@ impl<'a> SubOutput<'a> {
 }
 
 impl Output for SubOutput<'_> {
+    /*
+    Here pos is in "local space" of widget drawing to this SubOutput, which generally assumes it can
+    draw from (0,0) to widget.size()
+    and self.frame() is on "parent space".
+    So we compare for "drawing beyond border" against *size* of the frame, not it's position.
+     */
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
         let end_pos = pos + (text.width_cjk() as u16, 0);
 
         if cfg!(debug_assertions) {
-            debug_assert!(pos < self.frame.lower_right() && end_pos <= self.frame.lower_right(),
-                          "drawing outside the sub-output: ({} to {}) at {}",
-                          pos, end_pos, self.frame.lower_right());
+            debug_assert!(end_pos.x <= self.frame.size.x,
+                          "drawing outside (to the right) the sub-output: ({} to {}) of {}",
+                          pos, end_pos, self.frame.size);
+            debug_assert!(end_pos.y < self.frame.size.y,
+                          "drawing outside (below) the sub-output: ({} to {}) of {}",
+                          pos, end_pos, self.frame.size);
         } else {
-            if !(pos < self.frame.lower_right() && end_pos <= self.frame.lower_right()) {
-                error!("drawing outside the sub-output: ({} to {}) at {}",
-                    pos, end_pos, self.frame.lower_right());
+            if !(end_pos.x <= self.frame.size.x && end_pos.y < self.frame.size.y) {
+                error!("drawing outside the sub-output: ({} to {}) of {}",
+                    pos, end_pos, self.frame.size);
             }
         }
 

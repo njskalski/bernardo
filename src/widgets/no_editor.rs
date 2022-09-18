@@ -1,6 +1,6 @@
 use crate::{AnyMsg, InputEvent, Output, Widget};
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::config::theme::Theme;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::widget::{get_new_widget_id, WID};
 
@@ -33,7 +33,7 @@ impl Widget for NoEditorWidget {
         XY::new(NO_EDIT_TEXT.len() as u16, 3)
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
+    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
         let mut x = 0;
         if sc.visible_hint().size.x >= NO_EDIT_TEXT.len() as u16 {
             x = (sc.visible_hint().size.x - NO_EDIT_TEXT.len() as u16) / 2;

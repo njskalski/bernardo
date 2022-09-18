@@ -57,7 +57,7 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
                 let skip = root_id == widget.id();
 
                 if !skip {
-                    widget.layout(SizeConstraint::simple(rect.size));
+                    widget.update_and_layout(SizeConstraint::simple(rect.size));
                 }
 
                 vec![WidgetWithRect::new(

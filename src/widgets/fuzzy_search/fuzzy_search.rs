@@ -181,14 +181,14 @@ impl Widget for FuzzySearchWidget {
         XY::new(16, 5)
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
+    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
 
         // This is a reasonable assumption: I never want to display more elements in fuzzy search that
         // can be displayed on a "physical" screen. Even if fuzzy is inside a scroll, the latest position
         // I might be interested in is "lower_right().y".
         self.last_height_limit = Some(sc.visible_hint().lower_right().y);
 
-        self.edit.layout(sc);
+        self.edit.update_and_layout(sc);
         self.width = sc.visible_hint().size.x;
 
         let items_len = match self.draw_comment {

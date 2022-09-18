@@ -3,18 +3,18 @@ use ropey::Rope;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
+use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg, key_to_edit_msg};
 use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::helpers;
 use crate::primitives::size_constraint::SizeConstraint;
-use crate::config::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
-use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg, key_to_edit_msg};
 
 const MIN_WIDTH: u16 = 12;
 const MAX_WIDTH: u16 = 80; //completely arbitrary
@@ -160,7 +160,7 @@ impl Widget for EditBoxWidget {
         XY::new(MIN_WIDTH, 1)
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
+    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
         debug_assert!(sc.bigger_equal_than(self.min_size()));
 
         let x = sc.visible_hint().size.x;

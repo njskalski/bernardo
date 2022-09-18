@@ -42,7 +42,7 @@ impl Widget for TextWidget {
         self.text_size()
     }
 
-    fn layout(&mut self, _sc: SizeConstraint) -> XY {
+    fn update_and_layout(&mut self, _sc: SizeConstraint) -> XY {
         self.text_size()
     }
 

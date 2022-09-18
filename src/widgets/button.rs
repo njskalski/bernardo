@@ -1,13 +1,13 @@
 use log::warn;
 use unicode_width::UnicodeWidthStr;
 
+use crate::config::theme::Theme;
 use crate::experiments::deref_str::DerefStr;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::size_constraint::SizeConstraint;
-use crate::config::theme::Theme;
 use crate::primitives::xy::{XY, ZERO};
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
@@ -32,7 +32,7 @@ impl Widget for ButtonWidget {
         XY::new((self.text.as_ref_str().width_cjk() + 2) as u16, 1)
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
+    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
         debug_assert!(sc.bigger_equal_than(self.min_size()), "min_size {}, got {}", self.min_size(), sc);
         self.min_size()
     }

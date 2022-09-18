@@ -225,7 +225,7 @@ fn main() {
                 break;
             }
         }
-        main_view.layout(output.size_constraint());
+        main_view.update_and_layout(output.size_constraint());
         main_view.render(&theme, true, &mut output);
         match output.end_frame() {
             Ok(_) => {}

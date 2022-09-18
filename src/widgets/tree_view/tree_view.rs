@@ -231,7 +231,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
         XY::new(5, 1) //completely arbitrary
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
+    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
         let from_items = self.size_from_items(sc);
         let mut res = sc.visible_hint().size;
 

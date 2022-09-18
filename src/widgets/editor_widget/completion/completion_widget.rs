@@ -3,6 +3,7 @@ I guess I should reuse FuzzySearch Widget, this is a placeholder now.
  */
 
 use std::cmp::min;
+use std::mem;
 use std::sync::{Arc, RwLock};
 
 use log::{debug, error, warn};
@@ -13,7 +14,7 @@ use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::xy::XY;
-use crate::promise::promise::Promise;
+use crate::promise::promise::{Promise, PromiseState};
 use crate::w7e::navcomp_provider::{Completion, CompletionsPromise};
 use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::AsAny;
@@ -26,7 +27,12 @@ use crate::widgets::list_widget::list_widget::ListWidget;
 
 pub struct CompletionWidget {
     wid: WID,
-    completions_promise: CompletionsPromise,
+    /*
+     I store the promise until it's resolved, and then either keep broken promise OR move it's
+     contents to list_widget. If promise got broken, I expect EditorWidget to throw away entire
+     CompletionWidget in it's update_and_layout() and log error.
+     */
+    completions_promise: Option<CompletionsPromise>,
     fuzzy: bool,
     list_widget: ListWidget<Completion>,
     display_state: Option<DisplayState<Self>>,
@@ -38,13 +44,53 @@ impl CompletionWidget {
             wid: get_new_widget_id(),
             fuzzy: true,
             list_widget: ListWidget::new(),
-            completions_promise,
+            completions_promise: Some(completions_promise),
             display_state: None,
         }
     }
 
-    fn completions(&self) -> Option<&Vec<Completion>> {
-        self.completions_promise.read()
+    fn has_completions(&self) -> bool {
+        self.completions_promise.is_none()
+    }
+
+    /*
+    Returns whether it should be drawn (true) or can be discarded (false)
+     */
+    pub fn should_draw(&mut self) -> bool {
+        match self.completions_promise.as_mut() {
+            None => {
+                /*
+                 This indicates, that completions are executed correctly and have been moved away
+                 from promise to ListWidget.
+                 */
+                true
+            }
+            Some(promise) => {
+                let update = promise.update();
+                if update.has_changed {
+                    match update.state {
+                        PromiseState::Unresolved => {
+                            error!("changed to unresolved? makes no sense. Discarding entire widget.");
+                            false
+                        }
+                        PromiseState::Ready => {
+                            let mut promise = None;
+                            mem::swap(&mut self.completions_promise, &mut promise);
+                            let value = promise.take().unwrap();
+                            self.list_widget.set_provider(Box::new(value));
+                            true
+                        }
+                        PromiseState::Broken => {
+                            error!("discarding completion widget due to broken promise : {:?}", promise);
+                            false
+                        }
+                    }
+                } else {
+                    // still updating
+                    true
+                }
+            }
+        }
     }
 }
 
@@ -62,13 +108,11 @@ impl Widget for CompletionWidget {
         (10, 1).into()
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        self.completions_promise.update();
+    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+        self.completions_promise.as_mut().map(|cp| {
+            if cp.update().has_changed {}
+        });
 
-        if self.completions_promise.read().is_some() {
-            self.set_focused(subwidget!(Self.list_widget));
-        }
-        
         self.complex_layout(sc)
     }
 
@@ -79,7 +123,7 @@ impl Widget for CompletionWidget {
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         return match msg.as_msg::<CompletionWidgetMsg>() {
             None => {
-                warn!("expecetd CompletionWidgetMsg, got {:?}", msg);
+                warn!("expected CompletionWidgetMsg, got {:?}", msg);
                 None
             }
             Some(msg) => match msg {
@@ -109,7 +153,7 @@ impl Widget for CompletionWidget {
 
 impl ComplexWidget for CompletionWidget {
     fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
-        if self.completions().is_some() {
+        if self.has_completions() {
             Box::new(LeafLayout::new(subwidget!(Self.list_widget)))
         } else {
             Box::new(LeafLayout::new(selfwidget!(Self)))
@@ -117,7 +161,7 @@ impl ComplexWidget for CompletionWidget {
     }
 
     fn get_default_focused(&self) -> SubwidgetPointer<Self> {
-        if self.completions().is_some() {
+        if self.has_completions() {
             subwidget!(Self.list_widget)
         } else {
             selfwidget!(Self)

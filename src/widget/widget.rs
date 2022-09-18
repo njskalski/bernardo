@@ -24,7 +24,12 @@ pub trait Widget: 'static {
     // and the view cannot be focused.
     fn min_size(&self) -> XY;
 
-    // This is guaranteed to be called before render, but not before each render.
+    // This is guaranteed to be called before each render.
+    //
+    // This is an opportunity for widget to "update itself" and decide how it's going to be drawn.
+    // There is no enforced contract on whether widget should layout it's subwidgets first or
+    // afterwards, or if even at all. A widget can decide to remove child widget and *not* layout it
+    // for whatever reason.
     //
     // Widget is given size constraint and returns "how much space would it take to render fully".
     // Whether widget "fills" the space or just uses as little as it can depends on Widget, not on
@@ -34,12 +39,12 @@ pub trait Widget: 'static {
     // supported at this time.
     //
     // In case I forget why I added it: to inform the "split layout" on actual size of widgets.
-    // Without it, it would be impossible to decide "which widget get's how much space" before
+    // Without it, it would be impossible to decide "which widget gets how much space" before
     // rendering them.
     //
     // A lot of widgets decide based on sc.visible_hint() how much space to use, so their size is
     // dependent not on constraint, but on size of display.
-    fn layout(&mut self, sc: SizeConstraint) -> XY;
+    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY;
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>>;
