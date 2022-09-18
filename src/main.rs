@@ -44,6 +44,7 @@ use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
 
+#[macro_use]
 mod experiments;
 mod io;
 mod layout;

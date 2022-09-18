@@ -11,7 +11,7 @@ use syntect::html::IncludeBackground::No;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, ConfigRef, InputEvent, Keycode, LangId, Output, selfwidget, SizeConstraint, subwidget, Widget};
+use crate::{AnyMsg, ConfigRef, InputEvent, Keycode, LangId, Output, selfwidget, SizeConstraint, subwidget, unpack_or, Widget};
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::focus_group::FocusUpdate;
@@ -90,10 +90,19 @@ enum EditorState {
     },
 }
 
+/*
+These settings are now generated in todo_ something and then *updated* in update_and_layout (after layouting the widget).
+So modified in two places. Absolutely barbaric. To be changed.
+ */
 struct HoverSettings {
     pub rect: Rect,
+    /*
+     anchor is the character *in the line* (so it's never included in the rect). And it's
+     - position of last character of trigger (if available)
+     - just position of cursor
+     */
     pub anchor: XY,
-    pub looking_up: bool,
+    pub above_cursor: bool,
     pub substring: Option<String>,
     pub trigger: Option<String>,
 }
@@ -128,7 +137,8 @@ pub struct EditorWidget {
     state: EditorState,
 
     // This is completion or navigation
-    hover: Option<(HoverSettings, EditorHover)>,
+    // Settings are calculated based on last_size, and entire hover will be discarded on resize.
+    requested_hover: Option<(HoverSettings, EditorHover)>,
 }
 
 impl EditorWidget {
@@ -149,7 +159,7 @@ impl EditorWidget {
             clipboard,
             state: EditorState::Editing,
             navcomp,
-            hover: None,
+            requested_hover: None,
         }
     }
 
@@ -162,13 +172,13 @@ impl EditorWidget {
         self.navcomp = navcomp_op;
         let contents = self.buffer.text().to_string();
 
-        match (self.navcomp.clone(), self.buffer.get_file_front()) {
+        match (self.navcomp.clone(), self.buffer.get_path()) {
             (Some(navcomp), Some(spath)) => {
                 navcomp.file_open_for_edition(spath, contents);
             }
             _ => {
                 debug!("not starting navigation, because navcomp is some: {}, ff is some: {}",
-                    self.navcomp.is_some(), self.buffer.get_file_front().is_some() )
+                    self.navcomp.is_some(), self.buffer.get_path().is_some() )
             }
         }
 
@@ -219,32 +229,6 @@ impl EditorWidget {
     pub fn enter_editing_mode(&mut self) {
         debug_assert_matches!(self.state, EditorState::DroppingCursor { .. });
         self.state = EditorState::Editing;
-    }
-
-    pub fn auto_trigger_completion(&self) -> bool {
-        if let Some(cursor) = self.cursors().as_single() {
-            if let Some(navcomp) = &self.navcomp {
-                let path = match self.buffer().get_file_front() {
-                    None => {
-                        warn!("unimplemented autocompletion for non-saved files");
-                        return false;
-                    }
-                    Some(s) => s,
-                };
-
-                for symbol in navcomp.completion_triggers(path) {
-                    if self.buffer().text().ends_with_at(cursor.a, &symbol) {
-                        debug!("auto-trigger completion on symbol \"{}\"", &symbol);
-                        return true;
-                    }
-                }
-                false
-            } else {
-                false
-            }
-        } else {
-            false
-        }
     }
 
     pub fn get_single_cursor_screen_pos(&self, cursor: &Cursor) -> Option<CursorPosition> {
@@ -344,17 +328,30 @@ impl EditorWidget {
         let trigger_and_substring: Option<(&String, String)> = triggers.map(|triggers| find_trigger_and_substring(
             triggers, &self.buffer, &cursor_pos)).flatten();
 
+        let anchor = trigger_and_substring.as_ref().map(|tas| {
+            let substr_width = tas.1.width() as u16; //TODO overflow
+            if substr_width > cursor_screen_pos.x {
+                debug!("absourd");
+                cursor_screen_pos
+            } else {
+                cursor_screen_pos - XY::new(substr_width, 0)
+            }
+        }).unwrap_or(cursor_screen_pos);
+
+        // TODO the RECTs here are set with +-1 bug, I don't remember which one and why, they are later set right in update_and_layout.
+        // Maybe we should throw them away. Anyway, just so you know, fix it one day.
+
         if above {
             debug_assert!(cursor_screen_pos.y > height);
             Some(HoverSettings {
                 rect: Rect::xxyy(
                     cursor_screen_pos.x,
                     cursor_screen_pos.x + width,
-                    cursor_screen_pos.y - 1, // TODO underflow
+                    cursor_screen_pos.y, // TODO underflow
                     cursor_screen_pos.y - height,
                 ),
-                anchor: cursor_screen_pos - XY::new(0, 1),
-                looking_up: true,
+                anchor,
+                above_cursor: true,
                 substring: trigger_and_substring.as_ref().map(|tas| tas.1.clone()),
                 trigger: trigger_and_substring.as_ref().map(|tas| tas.0.clone()),
             })
@@ -364,78 +361,105 @@ impl EditorWidget {
                 rect: Rect::xxyy(
                     cursor_screen_pos.x,
                     cursor_screen_pos.x + width,
-                    cursor_screen_pos.y + 1,
+                    cursor_screen_pos.y,
                     cursor_screen_pos.y + height,
                 ),
-                anchor: cursor_screen_pos + XY::new(0, 1),
-                looking_up: false,
+                anchor,
+                above_cursor: false,
                 substring: trigger_and_substring.as_ref().map(|tas| tas.1.clone()),
                 trigger: trigger_and_substring.as_ref().map(|tas| tas.0.clone()),
             })
         }
     }
 
-    /*
-    So I guess a big TODO here is that I rely on previous-frame data to create information for
-        drawing of the completion. I should move it to update_and_layout
-     */
-    pub fn todo_update_completion(&mut self) {
+    fn todo_get_hover_settings(&self) -> Option<HoverSettings> {
+        let cursor = match self.cursors().as_single() {
+            None => {
+                warn!("requested hover settings with non-singular cursor");
+                return None;
+            }
+            Some(c) => c,
+        };
+
+        let path = match self.buffer().get_path() {
+            None => {
+                warn!("unimplemented autocompletion for non-saved files");
+                return None;
+            }
+            Some(s) => s.clone(),
+        };
+
+        let stupid_cursor = match get_lsp_text_cursor(self.buffer(), cursor) {
+            Ok(sc) => sc,
+            Err(e) => {
+                error!("failed converting cursor to lsp_cursor: {:?}", e);
+                return None;
+            }
+        };
+
+        let navcomp = match self.navcomp.as_ref() {
+            None => {
+                error!("no navcomp available");
+                return None;
+            }
+            Some(nc) => nc,
+        };
+
+        let trigger_op = {
+            let nt = navcomp.completion_triggers(&path);
+            if nt.is_empty() {
+                None
+            } else {
+                Some(nt)
+            }
+        };
+
+        let hover_settings = match self.get_cursor_related_hover_max(trigger_op) {
+            None => {
+                error!("no place to draw completions!");
+                return None;
+            }
+            Some(r) => r,
+        };
+
+        Some(hover_settings)
+    }
+
+    pub fn todo_request_completion(&mut self) {
         if let Some(cursor) = self.cursors().as_single() {
             if let Some(navcomp) = self.navcomp.clone() {
-                if self.auto_trigger_completion() {
+                let stupid_cursor = match get_lsp_text_cursor(self.buffer(), cursor) {
+                    Ok(sc) => sc,
+                    Err(e) => {
+                        error!("failed converting cursor to lsp_cursor: {:?}", e);
+                        return;
+                    }
+                };
 
-                    // TODO
-                    let path = match self.buffer().get_file_front() {
-                        None => {
-                            warn!("unimplemented autocompletion for non-saved files");
-                            return;
-                        }
-                        Some(s) => s.clone(),
-                    };
+                let path = match self.buffer.get_path() {
+                    None => {
+                        error!("path not available");
+                        return;
+                    }
+                    Some(p) => p,
+                };
 
-                    let stupid_cursor = match get_lsp_text_cursor(self.buffer(), cursor) {
-                        Ok(sc) => sc,
-                        Err(e) => {
-                            error!("failed converting cursor to lsp_cursor: {:?}", e);
-                            return;
-                        }
-                    };
+                let hover_settings = self.todo_get_hover_settings();
+                let tick_sender = navcomp.todo_navcomp_sender().clone();
+                let promise_op = navcomp.completions(path.clone(), stupid_cursor, hover_settings.as_ref().map(|c| c.trigger.clone()).flatten());
 
-                    // TODO
-                    let trigger_op = {
-                        let nt = navcomp.completion_triggers(&path);
-                        if nt.is_empty() {
-                            None
-                        } else {
-                            Some(nt)
-                        }
-                    };
 
-                    let hover_rect = match self.get_cursor_related_hover_max(trigger_op) {
-                        None => {
-                            error!("no place to draw completions!");
-                            return;
-                        }
-                        Some(r) => r,
-                    };
-
-                    let tick_sender = navcomp.todo_navcomp_sender().clone();
-                    let promise_op = navcomp.completions(path, stupid_cursor);
-
-                    match promise_op {
-                        None => {
-                            debug!("no completions");
-                        }
-                        Some(promise) => {
-                            let comp = CompletionWidget::new(promise);
-                            self.hover = Some((hover_rect, EditorHover::Completion(comp)));
-                            debug!("created completion");
-                        }
+                match (promise_op, hover_settings) {
+                    (Some(promise), Some(hover_settings)) => {
+                        let comp = CompletionWidget::new(promise);
+                        self.requested_hover = Some((hover_settings, EditorHover::Completion(comp)));
+                        debug!("created completion");
+                    }
+                    _ => {
+                        debug!("something missing - promise or hover settings");
                     }
                 }
             }
-        } else {
-            self.hover = None;
         }
     }
 
@@ -487,19 +511,19 @@ impl EditorWidget {
     }
 
     fn get_hover_subwidget(&self) -> Option<SubwidgetPointer<Self>> {
-        if self.hover.is_none() {
+        if self.requested_hover.is_none() {
             return None;
         }
 
         Some(SubwidgetPointer::<Self>::new(Box::new(
             |s: &EditorWidget| {
-                match s.hover.as_ref().unwrap() {
+                match s.requested_hover.as_ref().unwrap() {
                     (_, EditorHover::Completion(comp)) => comp as &dyn Widget,
                 }
             }
         ), Box::new(
             |s: &mut EditorWidget| {
-                match s.hover.as_mut().unwrap() {
+                match s.requested_hover.as_mut().unwrap() {
                     (_, EditorHover::Completion(comp)) => comp as &mut dyn Widget,
                 }
             }
@@ -622,7 +646,7 @@ impl EditorWidget {
     }
 
     fn render_hover(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        if let Some((rect, hover)) = self.hover.as_ref() {
+        if let Some((rect, hover)) = self.requested_hover.as_ref() {
             let mut sub_output = SubOutput::new(output, rect.rect);
             match hover {
                 EditorHover::Completion(completion) => {
@@ -647,9 +671,18 @@ impl Widget for EditorWidget {
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+        if self.last_size != Some(sc) {
+            debug!("changed size");
+
+            if self.requested_hover.is_some() {
+                warn!("closing hover because of resize - layout information got outdated");
+                self.requested_hover = None;
+            }
+        }
+
         self.last_size = Some(sc);
 
-        let should_remove_hover = match self.hover.as_mut() {
+        let should_remove_hover = match self.requested_hover.as_mut() {
             None => {
                 false
             }
@@ -659,13 +692,22 @@ impl Widget for EditorWidget {
                         true
                     } else {
                         let xy = comp.update_and_layout(SizeConstraint::simple(rect.rect.size));
+                        if rect.above_cursor == false {
+                            rect.rect.size = xy;
+                            rect.rect.pos = rect.anchor + XY::new(0, 1);
+                        } else {
+                            rect.rect.size = xy;
+                            // that's why we kept the anchor
+                            // why no +-1? Because higher bounds are *exclusive*, like *everywhere* on the planet
+                            rect.rect.pos = rect.anchor - XY::new(0, xy.y);
+                        }
                         false
                     }
                 }
             }
         };
         if should_remove_hover {
-            self.hover = None;
+            self.requested_hover = None;
         }
 
         sc.visible_hint().size
@@ -714,7 +756,7 @@ impl Widget for EditorWidget {
                     let changed = self.buffer.apply_cem(cem.clone(), page_height as usize, Some(&self.clipboard));
 
                     if changed {
-                        match (&self.navcomp, self.buffer.get_file_front()) {
+                        match (&self.navcomp, self.buffer.get_path()) {
                             (Some(navcomp), Some(path)) => {
                                 let contents = self.buffer.text().to_string();
                                 navcomp.submit_edit_event(path, contents);
@@ -722,7 +764,7 @@ impl Widget for EditorWidget {
                             _ => {}
                         }
 
-                        self.todo_update_completion();
+                        self.todo_request_completion();
                     }
 
                     match cme_to_direction(cem) {
@@ -781,7 +823,7 @@ impl Widget for EditorWidget {
                     None
                 }
                 (&EditorState::Editing, EditorWidgetMsg::CompletionWidgetClose) => {
-                    self.hover = None;
+                    self.requested_hover = None;
                     None
                 }
                 (editor_state, msg) => {
@@ -812,16 +854,16 @@ impl Widget for EditorWidget {
 
 impl Drop for EditorWidget {
     fn drop(&mut self) {
-        debug!("dropping editor widget for buffer : [{:?}]", self.buffer.get_file_front());
+        debug!("dropping editor widget for buffer : [{:?}]", self.buffer.get_path());
 
-        match (&self.navcomp, self.buffer.get_file_front()) {
+        match (&self.navcomp, self.buffer.get_path()) {
             (Some(navcomp), Some(spath)) => {
                 debug!("shutting down navcomp.");
                 // navcomp.file_closed(spath);
             }
             _ => {
                 debug!("not stoping navigation, because navcomp is some: {}, ff is some: {}",
-                    self.navcomp.is_some(), self.buffer.get_file_front().is_some() )
+                    self.navcomp.is_some(), self.buffer.get_path().is_some() )
             }
         }
     }

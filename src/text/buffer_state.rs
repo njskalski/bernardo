@@ -236,7 +236,7 @@ impl BufferState {
         self.file = ff_op;
     }
 
-    pub fn get_file_front(&self) -> Option<&SPath> {
+    pub fn get_path(&self) -> Option<&SPath> {
         self.file.as_ref()
     }
 

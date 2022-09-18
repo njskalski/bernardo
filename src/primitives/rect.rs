@@ -7,7 +7,7 @@ use crate::primitives::xy::XY;
 
 pub const ZERO_RECT: Rect = Rect::new(xy::ZERO, xy::ZERO);
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Rect {
     pub pos: XY,
     pub size: XY,

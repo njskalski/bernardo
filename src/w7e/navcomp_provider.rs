@@ -32,7 +32,7 @@ pub trait NavCompProvider: Debug {
      */
     fn submit_edit_event(&self, path: &SPath, file_contents: String);
 
-    fn completions(&self, path: SPath, cursor: LspTextCursor) -> Option<CompletionsPromise>;
+    fn completions(&self, path: SPath, cursor: LspTextCursor, trigger: Option<String>) -> Option<CompletionsPromise>;
 
     // TODO this will probably get more complicated
     fn completion_triggers(&self, path: &SPath) -> &Vec<String>;

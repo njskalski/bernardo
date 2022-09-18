@@ -19,7 +19,7 @@ pub enum AlignEnum {
     Greedy,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct SizeConstraint {
     // "infinite" dimension means we have a scroll, and widget is supposed to tell *how much it can
     // fill with meaningful output given infinite space*.

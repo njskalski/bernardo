@@ -91,7 +91,7 @@ impl EditorGroup {
 
     pub fn get_if_open(&self, ff: &SPath) -> Option<usize> {
         for (idx, editor) in self.editors.iter().enumerate() {
-            if let Some(cff) = editor.buffer_state().get_file_front() {
+            if let Some(cff) = editor.buffer_state().get_path() {
                 if cff == ff {
                     return Some(idx);
                 }
@@ -104,7 +104,7 @@ impl EditorGroup {
     pub fn get_buffer_list_provider(&self) -> Box<dyn ItemsProvider> {
         let mut free_id = 0 as u16;
         let buffer_descs: Vec<BufferDesc> = self.editors.iter().enumerate().map(|(idx, item)| {
-            match item.buffer_state().get_file_front() {
+            match item.buffer_state().get_path() {
                 None => {
                     free_id += 1;
                     BufferDesc::Unnamed { pos: idx, id: free_id }
@@ -148,7 +148,7 @@ impl Item for BufferDesc {
         match self {
             BufferDesc::File { pos, ff } => {
                 ff.file_name_str().unwrap_or("error getting filename").into()
-            },
+            }
             BufferDesc::Unnamed { pos, id } => format!("Unnamed #{}", id).into(),
         }
     }
@@ -158,7 +158,7 @@ impl Item for BufferDesc {
             BufferDesc::File { pos, ff } => {
                 // TODO this is shit
                 Some(ff.display_name())
-            },
+            }
             _ => None,
         }
     }

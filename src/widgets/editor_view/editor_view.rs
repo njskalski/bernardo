@@ -134,7 +134,7 @@ impl EditorView {
     }
 
     pub fn with_buffer(self, buffer: BufferState) -> Self {
-        let navcomp_op = buffer.get_file_front().map(|path| self.nav_comp_group.get_navcomp_for(path)).flatten();
+        let navcomp_op = buffer.get_path().map(|path| self.nav_comp_group.get_navcomp_for(path)).flatten();
         let editor = self.editor.mutate_internal(move |b| b.with_buffer(buffer, navcomp_op));
 
         EditorView {
@@ -156,7 +156,7 @@ impl EditorView {
     fn save_or_save_as(&mut self) {
         let buffer = self.editor.internal().buffer();
 
-        if let Some(ff) = buffer.get_file_front() {
+        if let Some(ff) = buffer.get_path() {
             ff.overwrite_with_stream(&mut buffer.streaming_iterator());
         } else {
             self.open_save_as_dialog()
@@ -200,7 +200,7 @@ impl EditorView {
      */
     fn get_save_file_dialog_path(&self) -> SPath {
         let buffer = self.editor.internal().buffer();
-        if let Some(ff) = buffer.get_file_front() {
+        if let Some(ff) = buffer.get_path() {
             return ff.clone();
         };
 

@@ -86,7 +86,7 @@ impl NavCompProvider for NavCompProviderLsp {
         }
     }
 
-    fn completions(&self, path: SPath, cursor: LspTextCursor) -> Option<CompletionsPromise> {
+    fn completions(&self, path: SPath, cursor: LspTextCursor, trigger: Option<String>) -> Option<CompletionsPromise> {
         let url = match path.to_url() {
             Ok(url) => url,
             Err(_) => {
