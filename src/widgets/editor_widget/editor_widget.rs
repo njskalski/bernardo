@@ -657,8 +657,10 @@ impl ComplexWidget for EditorWidget {
         while let Some(line) = lines_it.next() {
             // skipping lines that cannot be visible, because the are after the hint()
             if line_idx >= output.size_constraint().visible_hint().lower_right().y as usize {
+                debug!("early exit 7");
                 break;
             }
+            debug!("printing line {}", line_idx);
 
             let line_begin = match self.buffer.line_to_char(line_idx) {
                 Some(begin) => begin,
@@ -711,12 +713,15 @@ impl ComplexWidget for EditorWidget {
 
                 x_offset += tr.width();
                 if x_offset as u16 >= output.size_constraint().visible_hint().lower_right().x {
+                    debug!("early exit 6");
                     break;
                 }
             }
 
             line_idx += 1;
+            // TODO u16 overflow
             if line_idx as u16 >= output.size_constraint().visible_hint().lower_right().y {
+                debug!("early exit 5 : osc : {:?}, output : {:?}", output.size_constraint(), output);
                 break;
             }
         }

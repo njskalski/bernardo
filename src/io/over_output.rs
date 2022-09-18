@@ -1,3 +1,5 @@
+use std::fmt::{Debug, Formatter};
+
 use log::debug;
 use log::warn;
 use unicode_segmentation::UnicodeSegmentation;
@@ -31,6 +33,9 @@ impl<'a> OverOutput<'a> {
 }
 
 impl Output for OverOutput<'_> {
+    /*
+    Again, remember, pos is in "widget space", not in space where "size constraint" was created.
+     */
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
         // TODO: I have no clue why this was failing
         if !self.size_constraint.bigger_equal_than(
@@ -44,18 +49,20 @@ impl Output for OverOutput<'_> {
 
         if text.width() > u16::MAX as usize {
             warn!("got text width that would overflow u16::MAX, not drawing.");
+            debug!("early exit 0");
             return;
         }
 
         if pos.y < self.size_constraint.visible_hint().upper_left().y {
-            debug!("early exit 1");
+            // debug!("early exit 1");
             return;
         }
         // no analogue exit on x, as something starting left from frame might still overlap with it.
 
         if !self.size_constraint().bigger_equal_than(pos) {
+            debug!("early exit 2");
             debug!("drawing beyond output, early exit. pos: {} sc: {}", pos, self.size_constraint());
-            // return;
+            return;
         }
 
         let mut x_offset: i32 = 0;
@@ -71,6 +78,7 @@ impl Output for OverOutput<'_> {
             let x = x as u16;
 
             if self.output.size_constraint().x().map(|max_x| max_x <= x).unwrap_or(true) {
+                debug!("early exit 3");
                 break;
             }
 
@@ -88,5 +96,11 @@ impl Output for OverOutput<'_> {
 
     fn size_constraint(&self) -> SizeConstraint {
         self.size_constraint
+    }
+}
+
+impl<'a> Debug for OverOutput<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "( OverOutput sc {:?} over {:?} )", self.size_constraint, self.output)
     }
 }

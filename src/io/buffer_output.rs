@@ -1,4 +1,5 @@
 use std::default::Default;
+use std::fmt::{Debug, Formatter};
 
 use log::{debug, warn};
 use unicode_segmentation::UnicodeSegmentation;
@@ -75,5 +76,11 @@ impl Output for BufferOutput {
 
     fn size_constraint(&self) -> SizeConstraint {
         SizeConstraint::simple(self.size())
+    }
+}
+
+impl Debug for BufferOutput {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[BufferOutput {}]", self.size())
     }
 }

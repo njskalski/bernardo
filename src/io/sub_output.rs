@@ -1,3 +1,5 @@
+use std::fmt::{Debug, Formatter};
+
 use log::error;
 use unicode_width::UnicodeWidthStr;
 
@@ -67,6 +69,14 @@ impl Output for SubOutput<'_> {
     }
 
     fn size_constraint(&self) -> SizeConstraint {
+        let parent_sc = self.output.size_constraint();
+
         SizeConstraint::simple(self.frame.size)
+    }
+}
+
+impl Debug for SubOutput<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<SubOutput sc : {:?} of {:?} >", self.size_constraint(), self.output)
     }
 }

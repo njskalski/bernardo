@@ -1,0 +1,4 @@
+Currently using sub-output to draw a scrolled widget breaks scrolling. Basically the last output (the one widget
+comunicates with) must be OverOutput for scrolling to work.
+Reason for this is: both suboutput Frame and "visible hint" Frames are set in the same "overoutput" coordinates.
+And SubOutput overrides "visible hint" and limits the coordinates back, so the widget thinks it has a limited space.

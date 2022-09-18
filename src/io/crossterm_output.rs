@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter, write};
 use std::io::Write;
 
 use crossterm::{cursor, QueueableCommand, style, terminal};
@@ -209,5 +210,11 @@ impl<W: Write> Drop for CrosstermOutput<W> {
                 warn!("error while dropping output, {}", err);
             }
         }
+    }
+}
+
+impl<W: Write> Debug for CrosstermOutput<W> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "!RawCrosstermOutput!")
     }
 }
