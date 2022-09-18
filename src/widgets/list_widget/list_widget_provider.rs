@@ -7,7 +7,7 @@ use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 
 pub trait ListWidgetProvider<Item: ListWidgetItem>: Debug {
     fn len(&self) -> usize;
-    fn get(&self, idx: usize) -> Option<Item>;
+    fn get(&self, idx: usize) -> Option<&Item>;
 }
 
 impl<Item: ListWidgetItem> ListWidgetProvider<Item> for Vec<Item> {
@@ -15,12 +15,8 @@ impl<Item: ListWidgetItem> ListWidgetProvider<Item> for Vec<Item> {
         <[Item]>::len(self)
     }
 
-    fn get(&self, idx: usize) -> Option<Item> {
-        // // Vec::get(self, idx)
-        // Some(self[idx].clone())
-        // let self_as_vec: &Vec<Item> = self as &Vec<Item>;
-        // self_as_vec.get(idx)
-        <[Item]>::get(self, idx).map(|f| f.clone())
+    fn get(&self, idx: usize) -> Option<&Item> {
+        <[Item]>::get(self, idx)
     }
 }
 
@@ -30,7 +26,7 @@ struct ProviderIter<'a, Item: ListWidgetItem> {
 }
 
 impl<'a, LItem: ListWidgetItem> Iterator for ProviderIter<'a, LItem> {
-    type Item = LItem;
+    type Item = &'a LItem;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.idx >= self.p.len() {
@@ -48,7 +44,7 @@ impl<'a, LItem: ListWidgetItem> Iterator for ProviderIter<'a, LItem> {
 }
 
 impl<Item: ListWidgetItem> dyn ListWidgetProvider<Item> {
-    pub fn iter(&self) -> impl std::iter::Iterator<Item=Item> + '_ {
+    pub fn iter(&self) -> impl std::iter::Iterator<Item=&Item> + '_ {
         ProviderIter {
             p: self,
             idx: 0,

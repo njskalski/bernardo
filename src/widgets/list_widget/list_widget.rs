@@ -47,7 +47,7 @@ impl<Item: ListWidgetItem> ListWidgetProvider<Item> for () {
         0
     }
 
-    fn get(&self, _idx: usize) -> Option<Item> {
+    fn get(&self, _idx: usize) -> Option<&Item> {
         None
     }
 }
@@ -128,7 +128,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         self.provider = provider
     }
 
-    pub fn get_highlighted(&self) -> Option<Item> {
+    pub fn get_highlighted(&self) -> Option<&Item> {
         self.highlighted.map(
             |idx| self.provider.get(idx)
         ).flatten()

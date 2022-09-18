@@ -90,7 +90,7 @@ impl SaveFileDialogWidget {
         let list_widget: ListWidget<SPath> = ListWidget::new().with_selection()
             .with_on_hit(|w| {
                 w.get_highlighted().map(|item| {
-                    Some(SaveFileDialogMsg::FileListHit(item).boxed())
+                    Some(SaveFileDialogMsg::FileListHit(item.clone()).boxed())
                 }).flatten()
             });
         let edit_box = EditBoxWidget::new().with_enabled(true).with_on_hit(
