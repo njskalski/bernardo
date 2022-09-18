@@ -423,7 +423,7 @@ impl ComplexWidget for EditorView {
         let find_box_layout = LeafLayout::new(subwidget!(Self.find_box)).boxed();
         let find_layout =
             SplitLayout::new(SplitDirection::Horizontal)
-                .with(SplitRule::Fixed(PATTERN.width_cjk()), find_text_layout)
+                .with(SplitRule::Fixed(PATTERN.width()), find_text_layout)
                 .with(SplitRule::Proportional(1.0), find_box_layout)
                 .boxed();
 
@@ -431,7 +431,7 @@ impl ComplexWidget for EditorView {
         let replace_box_layout = LeafLayout::new(subwidget!(Self.replace_box)).boxed();
         let replace_layout =
             SplitLayout::new(SplitDirection::Horizontal)
-                .with(SplitRule::Fixed(REPLACE.width_cjk()), replace_text_layout)
+                .with(SplitRule::Fixed(REPLACE.width()), replace_text_layout)
                 .with(SplitRule::Proportional(1.0), replace_box_layout)
                 .boxed();
 

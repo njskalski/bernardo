@@ -13,7 +13,7 @@ pub struct MappedPromise<A, P: Promise<A> + Sized, B, F: FnOnce(A) -> B> {
     parent: Option<P>,
     value: Option<B>,
     mapper: Option<F>,
-    _phantomDate: PhantomData<A>,
+    _phantom: PhantomData<A>,
 }
 
 impl<A, P: Promise<A> + Sized, B, F: FnOnce(A) -> B> MappedPromise<A, P, B, F> {
@@ -22,7 +22,7 @@ impl<A, P: Promise<A> + Sized, B, F: FnOnce(A) -> B> MappedPromise<A, P, B, F> {
             parent: Some(parent),
             value: None,
             mapper: Some(mapper),
-            _phantomDate: Default::default(),
+            _phantom: Default::default(),
         }
     }
 

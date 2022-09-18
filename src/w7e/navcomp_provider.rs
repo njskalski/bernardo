@@ -35,7 +35,7 @@ pub trait NavCompProvider: Debug {
     fn completions(&self, path: SPath, cursor: LspTextCursor) -> Option<CompletionsPromise>;
 
     // TODO this will probably get more complicated
-    fn completion_triggers(&self, path: &SPath) -> Vec<String>;
+    fn completion_triggers(&self, path: &SPath) -> &Vec<String>;
 
     fn file_closed(&self, path: &SPath);
 

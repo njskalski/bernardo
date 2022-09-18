@@ -34,7 +34,7 @@ impl Output for SubOutput<'_> {
     So we compare for "drawing beyond border" against *size* of the frame, not it's position.
      */
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
-        let end_pos = pos + (text.width_cjk() as u16, 0);
+        let end_pos = pos + (text.width() as u16, 0);
 
         if cfg!(debug_assertions) {
             debug_assert!(end_pos.x <= self.frame.size.x,

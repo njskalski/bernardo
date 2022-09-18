@@ -25,6 +25,7 @@ pub struct NavCompProviderLsp {
     // TODO probably a RefCell would suffice
     lsp: RwLock<LspWrapper>,
     todo_tick_sender: NavCompTickSender,
+    triggers: Vec<String>,
 }
 
 impl NavCompProviderLsp {
@@ -32,6 +33,8 @@ impl NavCompProviderLsp {
         NavCompProviderLsp {
             lsp: RwLock::new(lsp),
             todo_tick_sender: tick_sender,
+            // TODO this will get lang specific
+            triggers: vec![".".to_string(), "::".to_string()],
         }
     }
 }
@@ -125,9 +128,8 @@ impl NavCompProvider for NavCompProviderLsp {
         }
     }
 
-    fn completion_triggers(&self, _path: &SPath) -> Vec<String> {
-        //TODO this will get language specific
-        vec![".".to_string(), "::".to_string()]
+    fn completion_triggers(&self, _path: &SPath) -> &Vec<String> {
+        &self.triggers
     }
 
     fn file_closed(&self, path: &SPath) {

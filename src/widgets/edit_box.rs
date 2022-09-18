@@ -235,7 +235,7 @@ impl Widget for EditBoxWidget {
                 style,
                 g,
             );
-            x += g.width_cjk();
+            x += g.width();
         }
         // one character after
         {
@@ -255,7 +255,7 @@ impl Widget for EditBoxWidget {
         // if cursor is after the text, we need to add an offset, so the background does not
         // overwrite cursor style.
         let cursor_offset: u16 = self.cursor_set.max_cursor_pos() as u16 + 1; //TODO
-        let text_width = self.text.to_string().width_cjk() as u16; //TODO
+        let text_width = self.text.to_string().width() as u16; //TODO
         let end_of_text = cursor_offset.max(text_width);
 
         // background after the text

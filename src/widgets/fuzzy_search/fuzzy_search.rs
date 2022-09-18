@@ -310,7 +310,7 @@ impl Widget for FuzzySearchWidget {
                     g,
                 );
 
-                x += g.width_cjk() as u16;
+                x += g.width() as u16;
                 if selected_grapheme {
                     query_it.next();
                 }
@@ -321,7 +321,7 @@ impl Widget for FuzzySearchWidget {
             }
 
             //TODO cast overflow
-            for x in (item.display_name().as_ref().width_cjk() as u16)..self.width() {
+            for x in (item.display_name().as_ref().width() as u16)..self.width() {
                 output.print_at(XY::new(x as u16, y),
                                 style,
                                 " ");
@@ -334,10 +334,10 @@ impl Widget for FuzzySearchWidget {
                         output.print_at(XY::new(x, y + 1),
                                         style,
                                         g);
-                        x += g.width_cjk() as u16; //TODO overflow
+                        x += g.width() as u16; //TODO overflow
                     }
                     //TODO cast overflow
-                    for x in (comment.as_ref().width_cjk() as u16)..self.width() {
+                    for x in (comment.as_ref().width() as u16)..self.width() {
                         output.print_at(XY::new(x as u16, y + 1),
                                         style,
                                         " ");

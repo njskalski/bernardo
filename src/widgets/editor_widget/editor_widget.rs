@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::cmp::min;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
@@ -19,6 +20,7 @@ use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::io::keys::Key;
+use crate::io::over_output::OverOutput;
 use crate::io::sub_output::SubOutput;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
@@ -30,7 +32,7 @@ use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_ed
 use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
-use crate::primitives::helpers::fill_output;
+use crate::primitives::helpers::{copy_last_n_columns, fill_output};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::{XY, ZERO};
 use crate::promise::promise::Promise;
@@ -45,14 +47,21 @@ use crate::widget::any_msg::AsAny;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
+use crate::widgets::editor_widget::helpers::{CursorPosition, find_trigger_and_substring};
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
-const MAX_HOVER_WIDTH: u16 = 15;
-const DEFAULT_HOVER_HEIGHT: u16 = 5;
+const MAX_HOVER_SIZE: XY = XY::new(64, 20);
 
 const NEWLINE: &'static str = "⏎";
 const BEYOND: &'static str = "⇱";
+
+/*
+This is heart and soul of Gladius Editor.
+
+One important thing is that unless I come up with a great idea about scrolling, the "OverOutput"
+has to be last output passed to render function, otherwise scrolling will fail to work.
+ */
 
 /*
 TODO:
@@ -79,6 +88,14 @@ enum EditorState {
     DroppingCursor {
         special_cursor: Cursor
     },
+}
+
+struct HoverSettings {
+    pub rect: Rect,
+    pub anchor: XY,
+    pub looking_up: bool,
+    pub substring: Option<String>,
+    pub trigger: Option<String>,
 }
 
 enum EditorHover {
@@ -111,8 +128,7 @@ pub struct EditorWidget {
     state: EditorState,
 
     // This is completion or navigation
-    hover: Option<(Rect, EditorHover)>,
-    display_state: Option<DisplayState<Self>>,
+    hover: Option<(HoverSettings, EditorHover)>,
 }
 
 impl EditorWidget {
@@ -134,7 +150,6 @@ impl EditorWidget {
             state: EditorState::Editing,
             navcomp,
             hover: None,
-            display_state: None,
         }
     }
 
@@ -232,13 +247,12 @@ impl EditorWidget {
         }
     }
 
-    pub fn get_single_cursor_screen_pos(&self) -> Option<XY> {
-        let c = self.cursors().as_single()?;
-        let lspc = get_lsp_text_cursor(self.buffer(), c).map_err(
+    pub fn get_single_cursor_screen_pos(&self, cursor: &Cursor) -> Option<CursorPosition> {
+        let lsp_cursor = get_lsp_text_cursor(self.buffer(), &cursor).map_err(
             |e| {
                 error!("failed mappint cursor to lsp-cursor")
             }).ok()?;
-        let lspcxy = match lspc.to_xy() {
+        let lsp_cursor_xy = match lsp_cursor.to_xy() {
             None => {
                 error!("lsp cursor beyond XY max");
                 return None;
@@ -252,24 +266,55 @@ impl EditorWidget {
                 return None;
             }
             Some(sc) => {
-                if !sc.visible_hint().contains(lspcxy) {
+                if !sc.visible_hint().contains(lsp_cursor_xy) {
                     warn!("cursor seems to be outside visible hint.");
-                    return None;
+                    return Some(CursorPosition {
+                        screen_space: None,
+                        absolute: lsp_cursor_xy,
+                    });
                 }
 
-                lspcxy - sc.visible_hint().upper_left()
+                lsp_cursor_xy - sc.visible_hint().upper_left()
             }
         };
 
-        debug!("cursor {:?} converted to {:?} positioned at {:?}", c, lspc, local_pos);
+        debug!("cursor {:?} converted to {:?} positioned at {:?}", cursor, lsp_cursor, local_pos);
         debug_assert!(local_pos >= ZERO);
         debug_assert!(local_pos < self.last_size.unwrap().visible_hint().size);
 
-        Some(local_pos)
+        Some(CursorPosition {
+            screen_space: Some(local_pos),
+            absolute: lsp_cursor_xy,
+        })
     }
 
-    pub fn get_cursor_related_hover(&self) -> Option<Rect> {
-        let cursor_pos = match self.get_single_cursor_screen_pos() {
+    /*
+    triggers - if none, current cursor will become "anchor" +-1 line. But if it is provided,
+        this function will stride left and aggregate substring between the cursor and ONE OF
+        TRIGGERS (in order of apperance, only within visible space)
+
+        I will use 1/2 height and all space right from cursor, capped by MAX_HOVER_SIZE.
+     */
+    pub fn get_cursor_related_hover_max(&self, triggers: Option<&Vec<String>>) -> Option<HoverSettings> {
+        let last_size = match self.last_size {
+            None => {
+                error!("requested hover before layout");
+                return None;
+            }
+            Some(ls) => {
+                ls
+            }
+        };
+
+        let cursor = match self.cursors().as_single() {
+            None => {
+                error!("multiple cursors or none, not doing hover");
+                return None;
+            }
+            Some(c) => c,
+        };
+
+        let cursor_pos = match self.get_single_cursor_screen_pos(cursor) {
             Some(cp) => cp,
             None => {
                 error!("can't position hover, no cursor local pos");
@@ -277,40 +322,63 @@ impl EditorWidget {
             }
         };
 
-        // TODO completely arbitrary choice
-        let last_size = match self.last_size {
+        let cursor_screen_pos = match cursor_pos.screen_space {
             None => {
-                error!("requested hover before layour");
+                error!("no cursor position in screen space");
                 return None;
             }
-            Some(ls) => ls,
+            Some(local) => local,
         };
 
+        if cursor_screen_pos.x < 1 {
+            debug!("too close to left edge");
+            return None;
+        }
+
         // if cursor is in upper part, we draw below cursor, otherwise above it
-        let above = cursor_pos.y > (last_size.visible_hint().size.y / 2);
-        let width = min(MAX_HOVER_WIDTH, last_size.visible_hint().size.x - cursor_pos.x);
-        // TODO underflow
-        let height = min(DEFAULT_HOVER_HEIGHT, (last_size.visible_hint().size.y / 2) - 1);
+        let above = cursor_screen_pos.y > (last_size.visible_hint().size.y / 2);
+        // TODO underflows
+        let width = min(MAX_HOVER_SIZE.x, last_size.visible_hint().size.x - cursor_screen_pos.x);
+        let height = min(MAX_HOVER_SIZE.y, (last_size.visible_hint().size.y / 2) - 1);
+
+        let trigger_and_substring: Option<(&String, String)> = triggers.map(|triggers| find_trigger_and_substring(
+            triggers, &self.buffer, &cursor_pos)).flatten();
 
         if above {
-            debug_assert!(cursor_pos.y > height);
-            Some(Rect::xxyy(
-                cursor_pos.x,
-                cursor_pos.x + width,
-                cursor_pos.y - 1, // TODO underflow
-                cursor_pos.y - height,
-            ))
+            debug_assert!(cursor_screen_pos.y > height);
+            Some(HoverSettings {
+                rect: Rect::xxyy(
+                    cursor_screen_pos.x,
+                    cursor_screen_pos.x + width,
+                    cursor_screen_pos.y - 1, // TODO underflow
+                    cursor_screen_pos.y - height,
+                ),
+                anchor: cursor_screen_pos - XY::new(0, 1),
+                looking_up: true,
+                substring: trigger_and_substring.as_ref().map(|tas| tas.1.clone()),
+                trigger: trigger_and_substring.as_ref().map(|tas| tas.0.clone()),
+            })
         } else {
-            debug_assert!(cursor_pos.y + height < last_size.visible_hint().size.y);
-            Some(Rect::xxyy(
-                cursor_pos.x,
-                cursor_pos.x + width,
-                cursor_pos.y + 1,
-                cursor_pos.y + height,
-            ))
+            debug_assert!(cursor_screen_pos.y + height < last_size.visible_hint().size.y);
+            Some(HoverSettings {
+                rect: Rect::xxyy(
+                    cursor_screen_pos.x,
+                    cursor_screen_pos.x + width,
+                    cursor_screen_pos.y + 1,
+                    cursor_screen_pos.y + height,
+                ),
+                anchor: cursor_screen_pos + XY::new(0, 1),
+                looking_up: false,
+                substring: trigger_and_substring.as_ref().map(|tas| tas.1.clone()),
+                trigger: trigger_and_substring.as_ref().map(|tas| tas.0.clone()),
+            })
         }
     }
 
+    /*
+    So I guess a big TODO here is that I rely on previous-frame data to create information for
+        drawing of the completion. I should move it to update_and_layout
+     */
     pub fn todo_update_completion(&mut self) {
         if let Some(cursor) = self.cursors().as_single() {
             if let Some(navcomp) = self.navcomp.clone() {
@@ -334,8 +402,16 @@ impl EditorWidget {
                     };
 
                     // TODO
+                    let trigger_op = {
+                        let nt = navcomp.completion_triggers(&path);
+                        if nt.is_empty() {
+                            None
+                        } else {
+                            Some(nt)
+                        }
+                    };
 
-                    let hover_rect = match self.get_cursor_related_hover() {
+                    let hover_rect = match self.get_cursor_related_hover_max(trigger_op) {
                         None => {
                             error!("no place to draw completions!");
                             return;
@@ -353,7 +429,6 @@ impl EditorWidget {
                         Some(promise) => {
                             let comp = CompletionWidget::new(promise);
                             self.hover = Some((hover_rect, EditorHover::Completion(comp)));
-                            self.get_hover_subwidget().map(|w| self.set_focused(w));
                             debug!("created completion");
                         }
                     }
@@ -429,206 +504,6 @@ impl EditorWidget {
                 }
             }
         )))
-    }
-}
-
-impl Widget for EditorWidget {
-    fn id(&self) -> WID {
-        self.wid
-    }
-
-    fn typename(&self) -> &'static str {
-        "editor_widget"
-    }
-
-    fn min_size(&self) -> XY {
-        MIN_EDITOR_SIZE
-    }
-
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
-        self.last_size = Some(sc);
-
-        match self.hover.as_mut() {
-            None => {}
-            Some((_rect, hover)) => match hover {
-                EditorHover::Completion(comp) => {
-                    if !comp.should_draw() {
-                        self.hover = None;
-                    }
-                }
-            }
-        }
-
-        self.complex_layout(sc)
-    }
-
-    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        let c = &self.config.keyboard_config.editor;
-        return match (&self.state, input_event) {
-            (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.enter_cursor_drop_mode => {
-                EditorWidgetMsg::ToCursorDropMode.someboxed()
-            }
-            (&EditorState::DroppingCursor { .. }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Esc => {
-                EditorWidgetMsg::ToEditMode.someboxed()
-            }
-            (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Enter => {
-                debug_assert!(special_cursor.is_simple());
-
-                EditorWidgetMsg::DropCursorFlip { cursor: special_cursor }.someboxed()
-            }
-            // TODO change to if let Some() when it's stabilized
-            (&EditorState::DroppingCursor { .. }, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
-                let cem = key_to_edit_msg(key).unwrap();
-                if !cem.is_editing() {
-                    EditorWidgetMsg::DropCursorMove { cem }.someboxed()
-                } else {
-                    None
-                }
-            }
-            (&EditorState::Editing, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
-                EditorWidgetMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
-            }
-            _ => None,
-        };
-    }
-
-    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        return match msg.as_msg::<EditorWidgetMsg>() {
-            None => {
-                warn!("expecetd EditorViewMsg, got {:?}", msg);
-                None
-            }
-            Some(msg) => match (&self.state, msg) {
-                (&EditorState::Editing, EditorWidgetMsg::EditMsg(cem)) => {
-                    let page_height = self.page_height();
-                    // page_height as usize is safe, since page_height is u16 and usize is larger.
-                    let changed = self.buffer.apply_cem(cem.clone(), page_height as usize, Some(&self.clipboard));
-
-                    if changed {
-                        match (&self.navcomp, self.buffer.get_file_front()) {
-                            (Some(navcomp), Some(path)) => {
-                                let contents = self.buffer.text().to_string();
-                                navcomp.submit_edit_event(path, contents);
-                            }
-                            _ => {}
-                        }
-
-                        self.todo_update_completion();
-                    }
-
-                    match cme_to_direction(cem) {
-                        None => {}
-                        Some(direction) => self.update_anchor(direction)
-                    };
-
-                    None
-                }
-                (&EditorState::Editing, EditorWidgetMsg::ToCursorDropMode) => {
-                    // self.cursors.simplify(); //TODO I removed it, but I don't know why it was here in the first place
-                    self.enter_dropping_cursor_mode();
-                    None
-                }
-                (&EditorState::DroppingCursor { .. }, EditorWidgetMsg::ToEditMode) => {
-                    self.enter_editing_mode();
-                    None
-                }
-                (&EditorState::DroppingCursor { special_cursor }, EditorWidgetMsg::DropCursorFlip { cursor }) => {
-                    debug_assert!(special_cursor.is_simple());
-
-                    if !self.buffer.text().cursor_set.are_simple() {
-                        warn!("Cursors were supposed to be simple at this point. Recovering, but there was error.");
-                        self.buffer.text_mut().cursor_set.simplify();
-                    }
-
-                    let has_cursor = self.buffer.text().cursor_set.get_cursor_status_for_char(special_cursor.a) == CursorStatus::UnderCursor;
-
-                    if has_cursor {
-                        let cs = &mut self.buffer.text_mut().cursor_set;
-
-                        // We don't remove a single cursor, to not invalidate invariant
-                        if cs.len() > 1 {
-                            if !cs.remove_by_anchor(special_cursor.a) {
-                                warn!("Failed to remove cursor by anchor {}, ignoring request", special_cursor.a);
-                            }
-                        } else {
-                            debug!("Not removing a single cursor at {}", special_cursor.a);
-                        }
-                    } else {
-                        if !self.buffer.text_mut().cursor_set.add_cursor(*cursor) {
-                            warn!("Failed to add cursor {:?} to set", cursor);
-                        }
-                    }
-
-                    debug_assert!(self.buffer.text().cursor_set.check_invariants());
-
-                    None
-                }
-                (&EditorState::DroppingCursor { special_cursor }, EditorWidgetMsg::DropCursorMove { cem }) => {
-                    let mut set = CursorSet::singleton(special_cursor);
-                    // TODO make sure this had no changing effect?
-                    let height = self.page_height();
-                    apply_cem(cem.clone(), &mut set, &mut self.buffer, height as usize, Some(&self.clipboard));
-                    self.state = EditorState::DroppingCursor { special_cursor: *set.as_single().unwrap() };
-                    None
-                }
-                (&EditorState::Editing, EditorWidgetMsg::CompletionWidgetClose) => {
-                    self.hover = None;
-                    self.set_focused(selfwidget!(Self));
-                    None
-                }
-                (editor_state, msg) => {
-                    error!("Unhandled combination of editor state {:?} and msg {:?}", editor_state, msg);
-                    None
-                }
-            }
-        };
-    }
-
-    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        self.complex_render(theme, focused, output)
-    }
-
-    fn anchor(&self) -> XY {
-        self.anchor
-    }
-
-    fn get_focused(&self) -> Option<&dyn Widget> {
-        self.get_hover_subwidget().map(|w| w.get(self))
-    }
-
-    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        self.get_hover_subwidget().map(|w| w.get_mut(self))
-    }
-}
-
-impl ComplexWidget for EditorWidget {
-    fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
-        match &self.hover {
-            None => Box::new(LeafLayout::new(selfwidget!(Self))),
-            Some((rect, _)) => {
-                Box::new(HoverLayout::new(
-                    Box::new(LeafLayout::new(selfwidget!(Self))),
-                    Box::new(LeafLayout::new(self.get_hover_subwidget().unwrap())),
-                    *rect,
-                ))
-            }
-        }
-    }
-
-    fn get_default_focused(&self) -> SubwidgetPointer<Self> {
-        selfwidget!(Self)
-    }
-
-    fn set_display_state(&mut self, display_state: DisplayState<Self>) {
-        self.display_state = Some(display_state);
-    }
-
-    fn get_display_state_op(&self) -> Option<&DisplayState<Self>> {
-        self.display_state.as_ref()
-    }
-
-    fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
-        self.display_state.as_mut()
     }
 
     fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
@@ -746,8 +621,192 @@ impl ComplexWidget for EditorWidget {
         }
     }
 
-    fn todo_all_focused(&self) -> bool {
-        true
+    fn render_hover(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        if let Some((rect, hover)) = self.hover.as_ref() {
+            let mut sub_output = SubOutput::new(output, rect.rect);
+            match hover {
+                EditorHover::Completion(completion) => {
+                    completion.render(theme, focused, &mut sub_output)
+                }
+            }
+        }
+    }
+}
+
+impl Widget for EditorWidget {
+    fn id(&self) -> WID {
+        self.wid
+    }
+
+    fn typename(&self) -> &'static str {
+        "editor_widget"
+    }
+
+    fn min_size(&self) -> XY {
+        MIN_EDITOR_SIZE
+    }
+
+    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+        self.last_size = Some(sc);
+
+        let should_remove_hover = match self.hover.as_mut() {
+            None => {
+                false
+            }
+            Some((rect, hover)) => match hover {
+                EditorHover::Completion(comp) => {
+                    if !comp.should_draw() {
+                        true
+                    } else {
+                        let xy = comp.update_and_layout(SizeConstraint::simple(rect.rect.size));
+                        false
+                    }
+                }
+            }
+        };
+        if should_remove_hover {
+            self.hover = None;
+        }
+
+        sc.visible_hint().size
+    }
+
+    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        let c = &self.config.keyboard_config.editor;
+        return match (&self.state, input_event) {
+            (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.enter_cursor_drop_mode => {
+                EditorWidgetMsg::ToCursorDropMode.someboxed()
+            }
+            (&EditorState::DroppingCursor { .. }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Esc => {
+                EditorWidgetMsg::ToEditMode.someboxed()
+            }
+            (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Enter => {
+                debug_assert!(special_cursor.is_simple());
+
+                EditorWidgetMsg::DropCursorFlip { cursor: special_cursor }.someboxed()
+            }
+            // TODO change to if let Some() when it's stabilized
+            (&EditorState::DroppingCursor { .. }, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
+                let cem = key_to_edit_msg(key).unwrap();
+                if !cem.is_editing() {
+                    EditorWidgetMsg::DropCursorMove { cem }.someboxed()
+                } else {
+                    None
+                }
+            }
+            (&EditorState::Editing, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
+                EditorWidgetMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
+            }
+            _ => None,
+        };
+    }
+
+    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+        return match msg.as_msg::<EditorWidgetMsg>() {
+            None => {
+                warn!("expecetd EditorViewMsg, got {:?}", msg);
+                None
+            }
+            Some(msg) => match (&self.state, msg) {
+                (&EditorState::Editing, EditorWidgetMsg::EditMsg(cem)) => {
+                    let page_height = self.page_height();
+                    // page_height as usize is safe, since page_height is u16 and usize is larger.
+                    let changed = self.buffer.apply_cem(cem.clone(), page_height as usize, Some(&self.clipboard));
+
+                    if changed {
+                        match (&self.navcomp, self.buffer.get_file_front()) {
+                            (Some(navcomp), Some(path)) => {
+                                let contents = self.buffer.text().to_string();
+                                navcomp.submit_edit_event(path, contents);
+                            }
+                            _ => {}
+                        }
+
+                        self.todo_update_completion();
+                    }
+
+                    match cme_to_direction(cem) {
+                        None => {}
+                        Some(direction) => self.update_anchor(direction)
+                    };
+
+                    None
+                }
+                (&EditorState::Editing, EditorWidgetMsg::ToCursorDropMode) => {
+                    // self.cursors.simplify(); //TODO I removed it, but I don't know why it was here in the first place
+                    self.enter_dropping_cursor_mode();
+                    None
+                }
+                (&EditorState::DroppingCursor { .. }, EditorWidgetMsg::ToEditMode) => {
+                    self.enter_editing_mode();
+                    None
+                }
+                (&EditorState::DroppingCursor { special_cursor }, EditorWidgetMsg::DropCursorFlip { cursor }) => {
+                    debug_assert!(special_cursor.is_simple());
+
+                    if !self.buffer.text().cursor_set.are_simple() {
+                        warn!("Cursors were supposed to be simple at this point. Recovering, but there was error.");
+                        self.buffer.text_mut().cursor_set.simplify();
+                    }
+
+                    let has_cursor = self.buffer.text().cursor_set.get_cursor_status_for_char(special_cursor.a) == CursorStatus::UnderCursor;
+
+                    if has_cursor {
+                        let cs = &mut self.buffer.text_mut().cursor_set;
+
+                        // We don't remove a single cursor, to not invalidate invariant
+                        if cs.len() > 1 {
+                            if !cs.remove_by_anchor(special_cursor.a) {
+                                warn!("Failed to remove cursor by anchor {}, ignoring request", special_cursor.a);
+                            }
+                        } else {
+                            debug!("Not removing a single cursor at {}", special_cursor.a);
+                        }
+                    } else {
+                        if !self.buffer.text_mut().cursor_set.add_cursor(*cursor) {
+                            warn!("Failed to add cursor {:?} to set", cursor);
+                        }
+                    }
+
+                    debug_assert!(self.buffer.text().cursor_set.check_invariants());
+
+                    None
+                }
+                (&EditorState::DroppingCursor { special_cursor }, EditorWidgetMsg::DropCursorMove { cem }) => {
+                    let mut set = CursorSet::singleton(special_cursor);
+                    // TODO make sure this had no changing effect?
+                    let height = self.page_height();
+                    apply_cem(cem.clone(), &mut set, &mut self.buffer, height as usize, Some(&self.clipboard));
+                    self.state = EditorState::DroppingCursor { special_cursor: *set.as_single().unwrap() };
+                    None
+                }
+                (&EditorState::Editing, EditorWidgetMsg::CompletionWidgetClose) => {
+                    self.hover = None;
+                    None
+                }
+                (editor_state, msg) => {
+                    error!("Unhandled combination of editor state {:?} and msg {:?}", editor_state, msg);
+                    None
+                }
+            }
+        };
+    }
+
+    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        self.internal_render(theme, focused, output);
+        self.render_hover(theme, focused, output);
+    }
+
+    fn anchor(&self) -> XY {
+        self.anchor
+    }
+
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        self.get_hover_subwidget().map(|w| w.get(self))
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        self.get_hover_subwidget().map(|w| w.get_mut(self))
     }
 }
 

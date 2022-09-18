@@ -29,7 +29,7 @@ impl Widget for ButtonWidget {
     }
 
     fn min_size(&self) -> XY {
-        XY::new((self.text.as_ref_str().width_cjk() + 2) as u16, 1)
+        XY::new((self.text.as_ref_str().width() + 2) as u16, 1)
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {

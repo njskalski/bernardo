@@ -21,7 +21,7 @@ impl TextWidget {
     pub fn text_size(&self) -> XY {
         let mut size = ZERO;
         for (idx, line) in self.text.as_ref_str().lines().enumerate() {
-            size.x = size.x.max(line.width_cjk() as u16); // TODO
+            size.x = size.x.max(line.width() as u16); // TODO
             size.y = (idx + 1) as u16; //TODO
         }
 

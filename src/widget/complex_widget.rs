@@ -128,8 +128,7 @@ pub trait ComplexWidget: Widget + Sized {
                 for wwr in &ds.wwrs {
                     let sub_output = &mut SubOutput::new(output, *wwr.rect());
                     let widget = wwr.widget().get(self);
-                    // this is a hack
-                    let subwidget_focused = self.todo_all_focused() || (focused && widget.id() == focused_subwidget.id());
+                    let subwidget_focused = (focused && widget.id() == focused_subwidget.id());
 
                     if widget.id() != self_id {
                         widget.render(theme,

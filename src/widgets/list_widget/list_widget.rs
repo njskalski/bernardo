@@ -368,7 +368,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                         let mut cut_text = String::new();
                         let mut used_width: usize = 0;
                         for grapheme in full_text.graphemes(true) {
-                            let grapheme_width = grapheme.width_cjk();
+                            let grapheme_width = grapheme.width();
                             if grapheme_width + used_width > actual_max_text_length as usize {
                                 break;
                             } else {
@@ -379,7 +379,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                         cut_text
                     }
                 };
-                debug_assert!(text.width_cjk() <= actual_max_text_length as usize);
+                debug_assert!(text.width() <= actual_max_text_length as usize);
 
                 output.print_at(
                     // TODO possible u16 overflow

@@ -1,7 +1,9 @@
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
+
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::color::Color;
-
 use crate::primitives::xy::XY;
 
 pub fn fill_output(color: Color, output: &mut dyn Output) {
@@ -21,5 +23,80 @@ pub fn fill_output(color: Color, output: &mut dyn Output) {
                 " ",
             )
         }
+    }
+}
+
+pub fn copy_first_n_columns(s: &str, n: usize, allow_shorter: bool) -> Option<String> {
+    let mut res = String::new();
+    let mut cols: usize = 0;
+    for g in s.graphemes(true) {
+        if cols < n {
+            res += g;
+            cols += g.width();
+        } else {
+            break;
+        }
+    }
+    debug_assert!(res.width() <= n);
+
+    if res.width() == n {
+        return Some(res);
+    } else {
+        if allow_shorter {
+            Some(res)
+        } else {
+            None
+        }
+    }
+}
+
+pub fn copy_last_n_columns(s: &str, n: usize, allow_shorter: bool) -> Option<String> {
+    let mut graphemes: Vec<&str> = vec![];
+    let mut cols: usize = 0;
+    for g in s.graphemes(true).rev() {
+        if cols < n {
+            graphemes.push(g);
+            cols += g.width();
+        } else {
+            break;
+        }
+    }
+    let res = graphemes.into_iter().rev().fold(String::new(), |a, b| a + b);
+
+    debug_assert!(res.width() <= n, "{} !<= {}", res.width(), n);
+
+    if res.width() == n {
+        return Some(res);
+    } else {
+        if allow_shorter {
+            Some(res)
+        } else {
+            None
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_copy_first_n_columns() {
+        let sentence = "Quel est votre film préféré?";
+
+        assert_eq!(copy_first_n_columns(sentence, 5, false), Some("Quel ".to_string()));
+        assert_eq!(copy_first_n_columns(sentence, 100, false), None);
+        assert_eq!(copy_first_n_columns(sentence, 100, true), Some(sentence.to_string()));
+        assert_eq!(copy_first_n_columns(sentence, 25, true), Some("Quel est votre film préfé".to_string()));
+    }
+
+    #[test]
+    fn test_copy_last_n_columns() {
+        let sentence = "Quel est votre film préféré?";
+
+        assert_eq!(copy_last_n_columns(sentence, 5, false), Some("féré?".to_string()));
+        assert_eq!(copy_last_n_columns(sentence, 100, false), None);
+        assert_eq!(copy_last_n_columns(sentence, 100, true), Some(sentence.to_string()));
+        assert_eq!(copy_last_n_columns(sentence, 9, true), Some(" préféré?".to_string()));
     }
 }
