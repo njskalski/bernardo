@@ -2,7 +2,7 @@ use std::cmp::min;
 use std::fmt::Debug;
 use std::string::String;
 
-use log::{debug, warn};
+use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -15,6 +15,7 @@ use crate::primitives::helpers;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
+use crate::widget::fill_policy::FillPolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 use crate::widgets::list_widget::list_widget_provider::ListWidgetProvider;
@@ -30,6 +31,10 @@ pub struct ListWidget<Item: ListWidgetItem> {
     on_change: Option<WidgetAction<Self>>,
     // miss is trying to make illegal move. Like backspace on empty, left on leftmost etc.
     on_miss: Option<WidgetAction<Self>>,
+
+    fill_policy: FillPolicy,
+
+    last_size: Option<XY>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -65,6 +70,8 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
             on_miss: None,
             on_hit: None,
             on_change: None,
+            last_size: None,
+            fill_policy: Default::default(),
         }
     }
 
@@ -160,6 +167,21 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
             false
         }
     }
+
+    pub fn with_fill_policy(self, fill_policy: FillPolicy) -> Self {
+        Self {
+            fill_policy,
+            ..self
+        }
+    }
+
+    pub fn set_fill_policy(&mut self, fill_policy: FillPolicy) {
+        self.fill_policy = fill_policy;
+    }
+
+    pub fn get_fill_policy(&self) -> FillPolicy {
+        self.fill_policy
+    }
 }
 
 
@@ -200,6 +222,9 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
         if from_items.y > res.y && sc.y().is_none() {
             res.y = from_items.y;
         }
+
+        let res = self.fill_policy.get_size_from_constraints(&sc, res);
+        self.last_size = Some(res);
 
         res
     }
@@ -299,6 +324,13 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let size = if self.last_size.is_none() {
+            error!("request to draw before layout, skipping.");
+            return;
+        } else {
+            self.last_size.unwrap()
+        };
+
         let primary_style = theme.default_text(focused);
         helpers::fill_output(primary_style.background, output);
         let cursor_style = theme.highlighted(focused);
@@ -316,6 +348,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                     header_style,
                     Item::get_column_name(c_idx), // TODO cut agaist overflow
                 );
+                // TODO adjust lenght for the last column
                 x_offset += Item::get_min_column_width(c_idx);
             }
             y_offset += 1;
@@ -324,11 +357,8 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
         for (idx, item) in self.provider.iter().enumerate() {
             debug!("y+idx = {}, osy = {:?}, item = {:?}", y_offset as usize + idx, output.size_constraint().y(), item);
 
-            match output.size_constraint().y() {
-                Some(y) => if y_offset as usize + idx >= y as usize {
-                    break;
-                }
-                None => {}
+            if y_offset as usize + idx >= size.y as usize {
+                break;
             }
 
             let mut x_offset: u16 = 0;
@@ -342,14 +372,17 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
             for c_idx in 0..Item::len_columns() {
                 let column_width = Item::get_min_column_width(c_idx);
 
-                let max_x = output.size_constraint()
-                    .x()
-                    .map(|max_x| min(max_x, column_width))
-                    .unwrap_or(column_width);
-
-                if x_offset >= max_x {
+                if x_offset >= size.x {
                     warn!("completely skipping drawing a column {} and consecutive, because it's offset is beyond output", c_idx);
                     break;
+                }
+
+                let mut max_x = min(size.x - x_offset, Item::get_min_column_width(c_idx));
+
+                // TODO implement proper dividing space between columns when fill_policy.fill_x == true
+                // If it's a last column and we are supposed to fill_x
+                if c_idx + 1 == Item::len_columns() && self.fill_policy.fill_x {
+                    max_x = size.x - x_offset;
                 }
 
                 // at this point it's safe to substract

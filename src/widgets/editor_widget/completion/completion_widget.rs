@@ -19,6 +19,7 @@ use crate::w7e::navcomp_provider::{Completion, CompletionsPromise};
 use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::AsAny;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
+use crate::widget::fill_policy::FillPolicy;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::editor_widget::completion::msg::CompletionWidgetMsg;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
@@ -33,22 +34,36 @@ pub struct CompletionWidget {
      CompletionWidget in it's update_and_layout() and log error.
      */
     completions_promise: Option<CompletionsPromise>,
-    fuzzy: bool,
+
     list_widget: ListWidget<Completion>,
     display_state: Option<DisplayState<Self>>,
+
+    fuzzy: bool,
+    query_string: Option<String>,
 }
 
 impl CompletionWidget {
     pub fn new(completions_promise: CompletionsPromise) -> Self {
         CompletionWidget {
             wid: get_new_widget_id(),
-            fuzzy: true,
             list_widget: ListWidget::new()
                 .with_selection()
-                .with_show_column_names(false),
+                .with_show_column_names(false)
+                .with_fill_policy(FillPolicy::FillWidth),
             completions_promise: Some(completions_promise),
             display_state: None,
+            fuzzy: true,
+            query_string: None,
         }
+    }
+
+    pub fn set_query_substring(&mut self, query: Option<String>) {
+        self.query_string = query;
+        debug!("updated query: {:?}", &self.query_string);
+    }
+
+    pub fn get_query_substring(&self) -> Option<&String> {
+        self.query_string.as_ref()
     }
 
     fn has_completions(&self) -> bool {

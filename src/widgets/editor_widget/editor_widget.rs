@@ -182,7 +182,6 @@ impl EditorWidget {
             }
         }
 
-
         self
     }
 
@@ -585,7 +584,6 @@ impl EditorWidget {
                     }
                 }
 
-
                 self.pos_to_cursor(theme, char_idx).map(|mut bg| {
                     if !focused {
                         bg = bg.half();
@@ -643,6 +641,61 @@ impl EditorWidget {
                     completion.render(theme, focused, &mut sub_output)
                 }
             }
+        }
+    }
+
+    /*
+    Returns whether a completions were closed or not.
+     */
+    pub fn close_hover(&mut self) -> bool {
+        if self.requested_hover.is_some() {
+            self.requested_hover = None;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn has_completions(&self) -> bool {
+        self.requested_hover.is_some()
+    }
+
+    /*
+    If
+     */
+    pub fn update_completions(&mut self) {
+        let cursor_pos = match self.cursors().as_single().map(|c| self.get_single_cursor_screen_pos(c)).flatten().clone() {
+            Some(c) => c,
+            None => {
+                debug!("not found single cursor on screen");
+                return;
+            }
+        };
+        let new_settings = match self.todo_get_hover_settings() {
+            Some(s) => s,
+            None => {
+                debug!("no good settings to update hover");
+                self.close_hover();
+                return;
+            }
+        };
+
+        let close: bool = if let Some((settings, EditorHover::Completion(completion_widget))) = self.requested_hover.as_mut() {
+            if Some(settings.anchor.y) != cursor_pos.screen_space.map(|xy| xy.y) {
+                debug!("closing hover because cursor moved");
+                true
+            } else {
+                let query = new_settings.substring.clone();
+                *settings = new_settings;
+                completion_widget.set_query_substring(query);
+                false
+            }
+        } else {
+            false
+        };
+
+        if close {
+            self.close_hover();
         }
     }
 }
@@ -759,7 +812,9 @@ impl Widget for EditorWidget {
                             _ => {}
                         }
 
-                        // self.todo_request_completion();
+                        if self.has_completions() {
+                            self.update_completions();
+                        }
                     }
 
                     match cme_to_direction(cem) {
@@ -833,6 +888,14 @@ impl Widget for EditorWidget {
         };
     }
 
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        self.get_hover_subwidget().map(|w| w.get(self))
+    }
+
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        self.get_hover_subwidget().map(|w| w.get_mut(self))
+    }
+
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         self.internal_render(theme, focused, output);
         self.render_hover(theme, focused, output);
@@ -840,14 +903,6 @@ impl Widget for EditorWidget {
 
     fn anchor(&self) -> XY {
         self.anchor
-    }
-
-    fn get_focused(&self) -> Option<&dyn Widget> {
-        self.get_hover_subwidget().map(|w| w.get(self))
-    }
-
-    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        self.get_hover_subwidget().map(|w| w.get_mut(self))
     }
 }
 

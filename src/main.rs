@@ -271,12 +271,6 @@ fn main() {
                     }
                 };
             }
-            // recv(fsf.tick_recv()) -> msg => {
-            //     // debug!("processing tick: {:?}", msg);
-            //     msg.map(|_| fsf.tick()).unwrap_or_else(|e| {
-            //         error!("failed receiving fsf_tick: {}", e);
-            //     });
-            // }
 
             recv(nav_comp_group_ref.recvr()) -> tick => {
                 match tick {

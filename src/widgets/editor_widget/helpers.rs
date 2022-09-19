@@ -8,6 +8,7 @@ use crate::primitives::helpers::copy_last_n_columns;
 use crate::primitives::xy::XY;
 use crate::text::buffer::Buffer;
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct CursorPosition {
     pub screen_space: Option<XY>,
     pub absolute: XY,
@@ -26,7 +27,7 @@ pub fn find_trigger_and_substring<'a>(triggers: &'a Vec<String>, buffer: &'a dyn
     let how_many_columns_visible = cursor_screen_pos.x;
     let how_many_columns_total = cursor_pos.absolute.x;
 
-    debug_assert!(how_many_columns_visible < how_many_columns_total);
+    debug_assert!(how_many_columns_visible <= how_many_columns_total);
     if how_many_columns_visible == 0 {
         debug!("no columns visible");
         return None;
