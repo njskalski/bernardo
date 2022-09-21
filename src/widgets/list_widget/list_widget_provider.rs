@@ -1,6 +1,7 @@
 /*
     Keep the provider light
  */
+use std::any::Any;
 use std::fmt::Debug;
 
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;

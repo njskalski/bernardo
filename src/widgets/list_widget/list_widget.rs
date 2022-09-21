@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::cmp::min;
 use std::fmt::Debug;
 use std::string::String;
@@ -11,6 +12,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
+use crate::primitives::common_query::CommonQuery;
 use crate::primitives::helpers;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
@@ -31,6 +33,8 @@ pub struct ListWidget<Item: ListWidgetItem> {
     on_change: Option<WidgetAction<Self>>,
     // miss is trying to make illegal move. Like backspace on empty, left on leftmost etc.
     on_miss: Option<WidgetAction<Self>>,
+
+    query: Option<CommonQuery>,
 
     fill_policy: FillPolicy,
 
@@ -72,6 +76,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
             on_change: None,
             last_size: None,
             fill_policy: Default::default(),
+            query: None,
         }
     }
 
@@ -181,6 +186,29 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
 
     pub fn get_fill_policy(&self) -> FillPolicy {
         self.fill_policy
+    }
+
+    pub fn get_provider(&self) -> &dyn ListWidgetProvider<Item> {
+        self.provider.as_ref()
+    }
+
+    pub fn get_provider_mut(&mut self) -> &mut dyn ListWidgetProvider<Item> {
+        self.provider.as_mut()
+    }
+
+    pub fn with_query(self, query: CommonQuery) -> Self {
+        Self {
+            query: Some(query),
+            ..self
+        }
+    }
+
+    pub fn set_query(&mut self, query: Option<CommonQuery>) {
+        self.query = query;
+    }
+
+    pub fn get_query(&self) -> Option<&CommonQuery> {
+        self.query.as_ref()
     }
 }
 
