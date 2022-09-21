@@ -18,7 +18,7 @@ pub struct Completion {
     pub action: CompletionAction,
 }
 
-pub type CompletionsPromise = Box<dyn Promise<Vec<Completion>>>;
+pub type CompletionsPromise = Box<dyn Promise<Vec<Completion>> + 'static>;
 
 // this is a wrapper around LSP and "similar services".
 pub trait NavCompProvider: Debug {

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use log::warn;
 
 use crate::fs::path::SPath;
@@ -25,11 +27,11 @@ impl ListWidgetItem for SPath {
         3
     }
 
-    fn get(&self, idx: usize) -> Option<String> {
+    fn get(&self, idx: usize) -> Option<Cow<'_, str>> {
         match idx {
-            0 => Some(self.display_name().to_string()), // TODO,
-            1 => Some("N/A".to_string()),
-            2 => Some("N/A".to_string()),
+            0 => Some(self.display_name()), // TODO,
+            1 => Some(Cow::Borrowed("N/A")),
+            2 => Some(Cow::Borrowed("N/A")),
             _ => None
         }
     }

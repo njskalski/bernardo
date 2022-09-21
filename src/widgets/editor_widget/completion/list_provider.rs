@@ -1,11 +1,13 @@
 use std::any::Any;
+use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
+use std::iter::empty;
 
 use log::error;
 
 use crate::w7e::navcomp_provider::{Completion, CompletionsPromise};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
-use crate::widgets::list_widget::list_widget_provider::ListWidgetProvider;
+use crate::widgets::list_widget::provider::Provider;
 
 impl ListWidgetItem for Completion {
     fn get_column_name(idx: usize) -> &'static str {
@@ -27,9 +29,9 @@ impl ListWidgetItem for Completion {
         1
     }
 
-    fn get(&self, idx: usize) -> Option<String> {
+    fn get(&self, idx: usize) -> Option<Cow<'_, str>> {
         if idx == 0 {
-            Some(self.key.clone())
+            Some(Cow::Borrowed(&self.key))
         } else {
             error!("requested size of non-existent column");
             None
@@ -37,15 +39,15 @@ impl ListWidgetItem for Completion {
     }
 }
 
-impl ListWidgetProvider<Completion> for CompletionsPromise {
-    fn len(&self) -> usize {
+impl Provider<Completion> for CompletionsPromise {
+    fn iter(&self) -> Box<dyn Iterator<Item=&Completion> + '_> {
         match self.read() {
-            None => 0,
-            Some(res) => res.len(),
+            None => {
+                Box::new(empty())
+            }
+            Some(vec) => {
+                Box::new(vec.into_iter())
+            }
         }
-    }
-
-    fn get(&self, idx: usize) -> Option<&Completion> {
-        self.read().map(|res| res.get(idx)).flatten()
     }
 }

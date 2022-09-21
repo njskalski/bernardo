@@ -25,6 +25,7 @@ use crate::widgets::editor_widget::completion::msg::CompletionWidgetMsg;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
 use crate::widgets::list_widget::list_widget::ListWidget;
+use crate::widgets::list_widget::provider::Provider;
 
 pub struct CompletionWidget {
     wid: WID,
@@ -91,10 +92,11 @@ impl CompletionWidget {
                             false
                         }
                         PromiseState::Ready => {
-                            let mut promise = None;
-                            mem::swap(&mut self.completions_promise, &mut promise);
-                            let value = promise.take().unwrap();
-                            self.list_widget.set_provider(Box::new(value));
+                            // let mut promise: Option<Box<dyn Promise<Vec<Completion>>>> = None;
+                            // mem::swap(&mut self.completions_promise, &mut promise);
+                            // let provider: Vec<Completion> = promise.unwrap().take().unwrap();
+                            let provider = self.completions_promise.take().unwrap();
+                            self.list_widget.set_provider(Box::new(provider));
 
                             self.set_focused(subwidget!(Self.list_widget));
                             true

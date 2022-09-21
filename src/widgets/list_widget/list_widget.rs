@@ -1,6 +1,8 @@
 use std::any::Any;
+use std::borrow::Cow;
 use std::cmp::min;
 use std::fmt::Debug;
+use std::iter::empty;
 use std::string::String;
 
 use log::{debug, error, warn};
@@ -20,12 +22,12 @@ use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::FillPolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
-use crate::widgets::list_widget::list_widget_provider::ListWidgetProvider;
+use crate::widgets::list_widget::provider::Provider;
 
 pub struct ListWidget<Item: ListWidgetItem> {
     id: WID,
 
-    provider: Box<dyn ListWidgetProvider<Item>>,
+    provider: Box<dyn Provider<Item>>,
     highlighted: Option<usize>,
     show_column_names: bool,
 
@@ -54,16 +56,6 @@ pub enum ListWidgetMsg {
 
 impl AnyMsg for ListWidgetMsg {}
 
-impl<Item: ListWidgetItem> ListWidgetProvider<Item> for () {
-    fn len(&self) -> usize {
-        0
-    }
-
-    fn get(&self, _idx: usize) -> Option<&Item> {
-        None
-    }
-}
-
 impl<Item: ListWidgetItem> ListWidget<Item> {
     pub fn new() -> Self {
         ListWidget {
@@ -80,15 +72,21 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
-    pub fn with_provider(self, provider: Box<dyn ListWidgetProvider<Item>>) -> Self {
+    pub fn with_provider(self, provider: Box<dyn Provider<Item>>) -> Self {
         ListWidget {
             provider,
             ..self
         }
     }
 
-    pub fn items(&self) -> impl Iterator<Item=&Item> {
-        self.provider.iter()
+    pub fn items(&self) -> Box<dyn Iterator<Item=&Item> + '_> {
+        if let Some(query) = self.query.as_ref() {
+            Box::new(self.provider.iter().filter(|item| {
+                item.get(0).map(|value| query.matches(&value)).unwrap_or(false)
+            }))
+        } else {
+            Box::new(self.provider.iter())
+        }
     }
 
     pub fn with_selection(self) -> Self {
@@ -143,13 +141,21 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
-    pub fn set_provider(&mut self, provider: Box<dyn ListWidgetProvider<Item>>) {
+    pub fn set_provider(&mut self, provider: Box<dyn Provider<Item> + 'static>) {
         self.provider = provider
+    }
+
+    pub fn get_provider(&self) -> &dyn Provider<Item> {
+        self.provider.as_ref()
+    }
+
+    pub fn get_provider_mut(&mut self) -> &mut dyn Provider<Item> {
+        self.provider.as_mut()
     }
 
     pub fn get_highlighted(&self) -> Option<&Item> {
         self.highlighted.map(
-            |idx| self.provider.get(idx)
+            |idx| self.provider.iter().nth(idx)
         ).flatten()
     }
 
@@ -186,14 +192,6 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
 
     pub fn get_fill_policy(&self) -> FillPolicy {
         self.fill_policy
-    }
-
-    pub fn get_provider(&self) -> &dyn ListWidgetProvider<Item> {
-        self.provider.as_ref()
-    }
-
-    pub fn get_provider_mut(&mut self) -> &mut dyn ListWidgetProvider<Item> {
-        self.provider.as_mut()
     }
 
     pub fn with_query(self, query: CommonQuery) -> Self {
@@ -269,7 +267,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                         }
                     }
                     Keycode::ArrowDown => {
-                        if self.highlighted.map(|f| f + 1 < self.provider.len()).unwrap_or(false) {
+                        if self.highlighted.map(|f| f + 1 < self.provider.iter().count()).unwrap_or(false) {
                             Some(ListWidgetMsg::Arrow(Arrow::Down))
                         } else {
                             None
@@ -326,8 +324,9 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                                 }
                             }
                             Arrow::Down => {
-                                debug!("items {}, old_high {}", self.provider.len(), old_highlighted);
-                                if old_highlighted + 1 < self.provider.len() {
+                                let provider_len = self.provider.iter().count();
+                                debug!("items {}, old_high {}", provider_len, old_highlighted);
+                                if old_highlighted + 1 < provider_len {
                                     self.highlighted = Some(old_highlighted + 1);
                                     self.on_change()
                                 } else {
@@ -418,9 +417,9 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                 debug_assert!(actual_max_text_length > 0);
 
                 // huge block to "cut th text if necessary"
-                let mut text = {
-                    let full_text = match item.get(c_idx) {
-                        Some(s) => s,
+                let mut text: String = {
+                    let full_text: String = match item.get(c_idx) {
+                        Some(s) => s.to_string(),
                         None => "".to_string(),
                     };
                     if full_text.len() <= actual_max_text_length as usize {
