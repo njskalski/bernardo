@@ -59,7 +59,7 @@ impl CompletionWidget {
 
     pub fn set_query_substring(&mut self, query: Option<String>) {
         self.list_widget.set_query(query.map(|q|
-            if self.fuzzy {
+            if !self.fuzzy {
                 CommonQuery::String(q)
             } else {
                 CommonQuery::Fuzzy(q)
