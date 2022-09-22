@@ -249,7 +249,7 @@ fn main() {
                 // debug!("processing input: {:?}", msg);
                 match msg {
                     Ok(mut ie) => {
-                        debug!("msg ie {:?}", ie);
+                        // debug!("msg ie {:?}", ie);
                         match ie {
                             InputEvent::KeyInput(key) if key.as_focus_update().is_some() && key.modifiers.alt => {
                                 ie = InputEvent::FocusUpdate(key.as_focus_update().unwrap());

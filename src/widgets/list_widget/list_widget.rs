@@ -2,6 +2,7 @@ use std::any::Any;
 use std::borrow::Cow;
 use std::cmp::min;
 use std::fmt::Debug;
+use std::iter;
 use std::iter::empty;
 use std::string::String;
 
@@ -16,6 +17,7 @@ use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::common_query::CommonQuery;
 use crate::primitives::helpers;
+use crate::primitives::helpers::copy_first_n_columns;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
@@ -381,34 +383,34 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
             y_offset += 1;
         }
 
-        for (idx, item) in self.provider.iter().enumerate() {
-            debug!("y+idx = {}, osy = {:?}, item = {:?}", y_offset as usize + idx, output.size_constraint().y(), item);
+        for (line_idx, item) in self.items().enumerate() {
+            debug!("y+idx = {}, osy = {:?}, item = {:?}", y_offset as usize + line_idx, output.size_constraint().y(), item);
 
-            if y_offset as usize + idx >= size.y as usize {
+            if y_offset as usize + line_idx >= size.y as usize {
                 break;
             }
 
             let mut x_offset: u16 = 0;
 
-            let style = if self.highlighted == Some(idx) {
+            let style = if self.highlighted == Some(line_idx) {
                 cursor_style
             } else {
                 primary_style
             };
 
-            for c_idx in 0..Item::len_columns() {
-                let column_width = Item::get_min_column_width(c_idx);
+            for column_idx in 0..Item::len_columns() {
+                let column_width = Item::get_min_column_width(column_idx);
 
                 if x_offset >= size.x {
-                    warn!("completely skipping drawing a column {} and consecutive, because it's offset is beyond output", c_idx);
+                    warn!("completely skipping drawing a column {} and consecutive, because it's offset is beyond output", column_idx);
                     break;
                 }
 
-                let mut max_x = min(size.x - x_offset, Item::get_min_column_width(c_idx));
+                let mut max_x = min(size.x - x_offset, Item::get_min_column_width(column_idx));
 
                 // TODO implement proper dividing space between columns when fill_policy.fill_x == true
                 // If it's a last column and we are supposed to fill_x
-                if c_idx + 1 == Item::len_columns() && self.fill_policy.fill_x {
+                if column_idx + 1 == Item::len_columns() && self.fill_policy.fill_x {
                     max_x = size.x - x_offset;
                 }
 
@@ -418,40 +420,57 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
 
                 // huge block to "cut th text if necessary"
                 let mut text: String = {
-                    let full_text: String = match item.get(c_idx) {
+                    let full_text: String = match item.get(column_idx) {
                         Some(s) => s.to_string(),
                         None => "".to_string(),
                     };
                     if full_text.len() <= actual_max_text_length as usize {
                         full_text
                     } else {
-                        let mut cut_text = String::new();
-                        let mut used_width: usize = 0;
-                        for grapheme in full_text.graphemes(true) {
-                            let grapheme_width = grapheme.width();
-                            if grapheme_width + used_width > actual_max_text_length as usize {
-                                break;
-                            } else {
-                                cut_text += grapheme;
-                                used_width += grapheme_width;
-                            }
-                        }
-                        cut_text
+                        copy_first_n_columns(&full_text, actual_max_text_length as usize, true).unwrap()
                     }
                 };
                 debug_assert!(text.width() <= actual_max_text_length as usize);
 
-                output.print_at(
-                    // TODO possible u16 overflow
-                    XY::new(x_offset, y_offset + idx as u16),
-                    style,
-                    &text,
-                );
+                match self.query.as_ref().map(|q| q.matches_highlights(&text)) {
+                    None => {
+                        output.print_at(
+                            // TODO possible u16 overflow
+                            XY::new(x_offset, y_offset + line_idx as u16),
+                            style,
+                            &text,
+                        );
+                    }
+                    Some(highlight_iter) => {
+                        let mut x_stride: usize = 0;
+                        let mut highlight_iter = highlight_iter.peekable();
+                        for (grapheme_idx, grapheme) in text.graphemes(true).enumerate() {
+                            let highlight = highlight_iter.peek() == Some(&grapheme_idx);
+                            if highlight {
+                                highlight_iter.next();
+                            }
+
+                            let style = if !highlight {
+                                style
+                            } else {
+                                theme.highlighted(focused)
+                            };
+
+                            output.print_at(
+                                XY::new(x_offset + (x_stride as u16), y_offset + line_idx as u16),
+                                style,
+                                grapheme,
+                            );
+
+                            x_stride += grapheme.width();
+                        }
+                    }
+                }
 
                 if text.width() < column_width as usize {
                     // since text.width() is < column_width, it's safe to cast to u16.
                     for x_stride in (text.width() as u16)..column_width {
-                        let pos = XY::new(x_offset + x_stride, y_offset + idx as u16);
+                        let pos = XY::new(x_offset + x_stride, y_offset + line_idx as u16);
                         // debug!("printing at pos {} size {}", pos, output.size());
                         output.print_at(
                             // TODO possible u16 oveflow
@@ -462,7 +481,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                     }
                 }
 
-                x_offset += Item::get_min_column_width(c_idx);
+                x_offset += Item::get_min_column_width(column_idx);
             }
         }
     }

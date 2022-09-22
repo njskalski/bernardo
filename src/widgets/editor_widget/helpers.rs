@@ -38,7 +38,7 @@ pub fn find_trigger_and_substring<'a>(triggers: &'a Vec<String>, buffer: &'a dyn
             error!("couldn't find line {} (drawn as +1) to harvest substring", cursor_pos.absolute.y);
             return None;
         }
-        Some(line_contents) => line_contents.clone(),
+        Some(line_contents) => line_contents.trim().to_string(),
     };
 
     debug!("read [{}] from begin of {} (drawn as +1) line", entire_line, cursor_pos.absolute.y);

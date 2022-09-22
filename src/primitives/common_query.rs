@@ -98,3 +98,17 @@ impl CommonQuery {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_fuzzy() {
+        let sentence = "Quel est votre film préféré?";
+
+        assert_eq!(CommonQuery::Fuzzy("hell".to_string()).matches("hello"), true);
+        assert_eq!(CommonQuery::Fuzzy("hell".to_string()).matches_highlights("hello").collect::<Vec<usize>>(), vec![0, 1, 2, 3]);
+        assert_eq!(CommonQuery::Fuzzy("hell".to_string()).matches("helo"), false);
+    }
+}

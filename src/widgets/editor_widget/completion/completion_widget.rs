@@ -13,6 +13,7 @@ use crate::experiments::focus_group::FocusUpdate;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
+use crate::primitives::common_query::CommonQuery;
 use crate::primitives::xy::XY;
 use crate::promise::promise::{Promise, PromiseState};
 use crate::w7e::navcomp_provider::{Completion, CompletionsPromise};
@@ -40,7 +41,6 @@ pub struct CompletionWidget {
     display_state: Option<DisplayState<Self>>,
 
     fuzzy: bool,
-    query_string: Option<String>,
 }
 
 impl CompletionWidget {
@@ -54,17 +54,18 @@ impl CompletionWidget {
             completions_promise: Some(completions_promise),
             display_state: None,
             fuzzy: true,
-            query_string: None,
         }
     }
 
     pub fn set_query_substring(&mut self, query: Option<String>) {
-        self.query_string = query;
-        debug!("updated query: {:?}", &self.query_string);
-    }
-
-    pub fn get_query_substring(&self) -> Option<&String> {
-        self.query_string.as_ref()
+        self.list_widget.set_query(query.map(|q|
+            if self.fuzzy {
+                CommonQuery::String(q)
+            } else {
+                CommonQuery::Fuzzy(q)
+            }
+        ));
+        debug!("updated query: {:?}", self.list_widget.get_query());
     }
 
     fn has_completions(&self) -> bool {
