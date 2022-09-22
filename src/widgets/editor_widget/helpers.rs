@@ -10,6 +10,7 @@ use crate::text::buffer::Buffer;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct CursorPosition {
+    pub cursor: Cursor,
     pub screen_space: Option<XY>,
     pub absolute: XY,
 }

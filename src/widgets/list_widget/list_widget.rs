@@ -22,7 +22,7 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::FillPolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction, WidgetActionParam};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 use crate::widgets::list_widget::provider::Provider;
 
@@ -282,7 +282,11 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                         None
                     }
                     Keycode::Enter => {
-                        Some(ListWidgetMsg::Hit)
+                        if self.on_hit.is_some() {
+                            Some(ListWidgetMsg::Hit)
+                        } else {
+                            None
+                        }
                     }
                     Keycode::Home => {
                         Some(ListWidgetMsg::Home)

@@ -28,7 +28,7 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::lsp_client::helpers::{get_lsp_text_cursor, LspTextCursor};
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
-use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};
+use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, CommonEditMsg, key_to_edit_msg};
 use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
@@ -41,7 +41,7 @@ use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_group::NavCompTick;
-use crate::w7e::navcomp_provider::Completion;
+use crate::w7e::navcomp_provider::{Completion, CompletionAction};
 use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::AsAny;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
@@ -102,6 +102,7 @@ struct HoverSettings {
      - just position of cursor
      */
     pub anchor: XY,
+    pub cursor_position: CursorPosition,
     pub above_cursor: bool,
     pub substring: Option<String>,
     pub trigger: Option<String>,
@@ -252,6 +253,7 @@ impl EditorWidget {
                 if !sc.visible_hint().contains(lsp_cursor_xy) {
                     warn!("cursor seems to be outside visible hint.");
                     return Some(CursorPosition {
+                        cursor: *cursor,
                         screen_space: None,
                         absolute: lsp_cursor_xy,
                     });
@@ -266,6 +268,7 @@ impl EditorWidget {
         debug_assert!(local_pos < self.last_size.unwrap().visible_hint().size);
 
         Some(CursorPosition {
+            cursor: *cursor,
             screen_space: Some(local_pos),
             absolute: lsp_cursor_xy,
         })
@@ -347,6 +350,7 @@ impl EditorWidget {
             Some(HoverSettings {
                 rect: Rect::new(anchor - XY::new(0, height), XY::new(width, height)),
                 anchor,
+                cursor_position: cursor_pos,
                 above_cursor: true,
                 substring: trigger_and_substring.as_ref().map(|tas| tas.1.clone()),
                 trigger: trigger_and_substring.as_ref().map(|tas| tas.0.clone()),
@@ -356,6 +360,7 @@ impl EditorWidget {
             Some(HoverSettings {
                 rect: Rect::new(anchor + XY::new(0, 1), XY::new(width, height)),
                 anchor,
+                cursor_position: cursor_pos,
                 above_cursor: false,
                 substring: trigger_and_substring.as_ref().map(|tas| tas.1.clone()),
                 trigger: trigger_and_substring.as_ref().map(|tas| tas.0.clone()),
@@ -698,6 +703,29 @@ impl EditorWidget {
             self.close_hover();
         }
     }
+
+    pub fn apply_completion_action(&mut self, completion_action: &CompletionAction) -> bool {
+        if let Some((hover, _)) = self.requested_hover.as_ref() {
+            if let Some(substring) = hover.substring.as_ref() {
+                if !substring.is_empty() {
+                    let len = substring.len();
+                    debug!("removing [{}..{})",hover.cursor_position.cursor.a, hover.cursor_position.cursor.a + len);
+                    self.buffer.remove(hover.cursor_position.cursor.a, hover.cursor_position.cursor.a + len);
+                }
+            }
+
+            let to_insert = match completion_action {
+                CompletionAction::Insert(what) => what,
+            };
+            self.buffer.insert_block(hover.cursor_position.cursor.a, to_insert);
+            self.close_hover();
+
+            true
+        } else {
+            error!("can't apply completion, hover settings are not present");
+            false
+        }
+    }
 }
 
 impl Widget for EditorWidget {
@@ -878,6 +906,10 @@ impl Widget for EditorWidget {
                 }
                 (&EditorState::Editing, EditorWidgetMsg::CompletionWidgetClose) => {
                     self.requested_hover = None;
+                    None
+                }
+                (&EditorState::Editing, EditorWidgetMsg::CompletionWidgetSelected(completion)) => {
+                    self.apply_completion_action(completion);
                     None
                 }
                 (editor_state, msg) => {

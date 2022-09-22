@@ -3,7 +3,7 @@ use std::sync::{RwLock, TryLockResult};
 use std::thread;
 
 use log::{debug, error, warn};
-use lsp_types::CompletionResponse;
+use lsp_types::{CompletionResponse, CompletionTextEdit};
 
 use crate::fs::path::SPath;
 use crate::lsp_client::helpers::LspTextCursor;
@@ -147,10 +147,22 @@ impl Debug for NavCompProviderLsp {
     }
 }
 
+// TODO convert suggestions to CEMs?
+
 fn translate_completion_item(i: lsp_types::CompletionItem) -> Completion {
+    debug!("[{:?}]", i);
     Completion {
         key: i.label,
         desc: i.detail,
-        action: CompletionAction::Insert(i.insert_text.unwrap_or("".to_string())),
+        action: CompletionAction::Insert(i.text_edit.map(|c|
+            match c {
+                CompletionTextEdit::Edit(e) => {
+                    e.new_text
+                }
+                CompletionTextEdit::InsertAndReplace(e) => {
+                    e.new_text
+                }
+            }
+        ).unwrap_or("".to_string())),
     }
 }

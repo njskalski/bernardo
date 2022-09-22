@@ -50,7 +50,13 @@ impl CompletionWidget {
             list_widget: ListWidget::new()
                 .with_selection()
                 .with_show_column_names(false)
-                .with_fill_policy(FillPolicy::FillWidth),
+                .with_fill_policy(FillPolicy::FillWidth)
+                .with_on_hit(|w| {
+                    w.get_highlighted().map(|c| {
+                        CompletionWidgetMsg::Selected(c.action.clone()).boxed()
+                    })
+                })
+            ,
             completions_promise: Some(completions_promise),
             display_state: None,
             fuzzy: false,
@@ -171,6 +177,9 @@ impl Widget for CompletionWidget {
             Some(msg) => match msg {
                 CompletionWidgetMsg::Close => {
                     EditorWidgetMsg::CompletionWidgetClose.someboxed()
+                }
+                CompletionWidgetMsg::Selected(action) => {
+                    EditorWidgetMsg::CompletionWidgetSelected(action.clone()).someboxed()
                 }
                 _ => {
                     warn!("ignoring message {:?}", msg);
