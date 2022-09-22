@@ -4,6 +4,7 @@ use crate::config::config::ConfigRef;
 use crate::fs::path::SPath;
 use crate::w7e::handler::Handler;
 use crate::w7e::handler_load_error::HandlerLoadError;
+use crate::w7e::navcomp_group::NavCompTickSender;
 use crate::w7e::rust::handler_rust::RustHandler;
 
 /*

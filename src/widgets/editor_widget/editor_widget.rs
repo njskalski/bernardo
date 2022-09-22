@@ -81,7 +81,7 @@ enum EditorState {
 These settings are now generated in todo_ something and then *updated* in update_and_layout (after layouting the widget).
 So modified in two places. Absolutely barbaric. To be changed.
  */
-struct HoverSettings {
+pub struct HoverSettings {
     pub rect: Rect,
     /*
      anchor is the character *in the line* (so it's never included in the rect). And it's
@@ -356,28 +356,12 @@ impl EditorWidget {
     }
 
     fn todo_get_hover_settings(&self) -> Option<HoverSettings> {
-        let cursor = match self.cursors().as_single() {
-            None => {
-                warn!("requested hover settings with non-singular cursor");
-                return None;
-            }
-            Some(c) => c,
-        };
-
         let path = match self.buffer().get_path() {
             None => {
                 warn!("unimplemented autocompletion for non-saved files");
                 return None;
             }
             Some(s) => s.clone(),
-        };
-
-        let stupid_cursor = match get_lsp_text_cursor(self.buffer(), cursor) {
-            Ok(sc) => sc,
-            Err(e) => {
-                error!("failed converting cursor to lsp_cursor: {:?}", e);
-                return None;
-            }
         };
 
         let navcomp = match self.navcomp.as_ref() {
@@ -428,7 +412,7 @@ impl EditorWidget {
                 };
 
                 let hover_settings = self.todo_get_hover_settings();
-                let tick_sender = navcomp.todo_navcomp_sender().clone();
+                // let tick_sender = navcomp.todo_navcomp_sender().clone();
                 let promise_op = navcomp.completions(path.clone(), stupid_cursor, hover_settings.as_ref().map(|c| c.trigger.clone()).flatten());
 
                 match (promise_op, hover_settings) {
@@ -930,7 +914,7 @@ impl Drop for EditorWidget {
         debug!("dropping editor widget for buffer : [{:?}]", self.buffer.get_path());
 
         match (&self.navcomp, self.buffer.get_path()) {
-            (Some(navcomp), Some(spath)) => {
+            (Some(_navcomp), Some(_spath)) => {
                 debug!("shutting down navcomp.");
                 // navcomp.file_closed(spath);
             }

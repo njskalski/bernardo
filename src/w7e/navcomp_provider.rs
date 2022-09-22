@@ -2,7 +2,6 @@ use std::fmt::Debug;
 
 use crate::fs::path::SPath;
 use crate::lsp_client::helpers::LspTextCursor;
-use crate::primitives::cursor_set::Cursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
 

@@ -17,22 +17,22 @@ pub struct FillPolicy {
 }
 
 impl FillPolicy {
-    pub const Constrained: FillPolicy = FillPolicy {
+    pub const CONSTRAINED: FillPolicy = FillPolicy {
         fill_x: false,
         fill_y: false,
     };
 
-    pub const FillWidth: FillPolicy = FillPolicy {
+    pub const FILL_WIDTH: FillPolicy = FillPolicy {
         fill_x: true,
         fill_y: false,
     };
 
-    pub const FillHeight: FillPolicy = FillPolicy {
+    pub const FILL_HEIGHT: FillPolicy = FillPolicy {
         fill_x: false,
         fill_y: true,
     };
 
-    pub const FillBoth: FillPolicy = FillPolicy {
+    pub const FILL_BOTH: FillPolicy = FillPolicy {
         fill_x: true,
         fill_y: true,
     };

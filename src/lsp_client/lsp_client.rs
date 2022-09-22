@@ -398,7 +398,7 @@ impl LspWrapper {
                     match tick_sender.try_send(NavCompTick::LspTick(LangId::RUST, 0)) {
                         Ok(_) => {}
                         Err(e) => {
-                            error!("non-fatal: failed to send navcomp tick");
+                            error!("non-fatal: failed to send navcomp tick: {:?}", e);
                         }
                     }
                 }
@@ -454,12 +454,12 @@ impl LspWrapper {
     This thread just dries the stderr
      */
     pub fn notification_thread(
-        mut notification_receiver: Receiver<LspServerNotification>,
+        notification_receiver: Receiver<LspServerNotification>,
     ) -> Result<(), ()> {
         loop {
             let notification = notification_receiver.recv();
             match notification {
-                Ok(notification) => {
+                Ok(_notification) => {
                     // debug!("received LSP notification:\n---\n{:?}\n---\n", notification);
                     // debug!("received LSP notification");
                 }

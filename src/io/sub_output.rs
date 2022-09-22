@@ -69,8 +69,6 @@ impl Output for SubOutput<'_> {
     }
 
     fn size_constraint(&self) -> SizeConstraint {
-        let parent_sc = self.output.size_constraint();
-
         SizeConstraint::simple(self.frame.size)
     }
 }

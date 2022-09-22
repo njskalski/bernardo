@@ -9,7 +9,7 @@ use crate::lsp_client::lsp_client::LspWrapper;
 use crate::tsw::lang_id::LangId;
 use crate::w7e::handler::{Handler, NavCompRef};
 use crate::w7e::handler_load_error::HandlerLoadError;
-use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
+use crate::w7e::navcomp_group::NavCompTickSender;
 use crate::w7e::navcomp_provider::NavCompProvider;
 use crate::w7e::navcomp_provider_lsp::NavCompProviderLsp;
 
@@ -64,8 +64,7 @@ impl RustHandler {
         let contents = cargo_file.read_entire_file()?;
         let cargo = cargo_toml::Manifest::from_slice(&contents)
             .map_err(|e| HandlerLoadError::DeserializationError(e.to_string()))?;
-
-        let mut lsp_ref_op: Option<LspWrapper> = None;
+        
         let mut navcomp_op: Option<NavCompRef> = None;
 
         if let Some(mut lsp) = LspWrapper::new(lsp_path,

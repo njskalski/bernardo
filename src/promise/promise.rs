@@ -1,7 +1,5 @@
 use std::fmt::{Debug, Formatter};
 
-use log::{error, warn};
-
 use crate::promise::promise_map::MappedPromise;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

@@ -174,19 +174,19 @@ mod tests {
                 unimplemented!()
             }
 
-            fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+            fn update_and_layout(&mut self, _sc: SizeConstraint) -> XY {
                 unimplemented!()
             }
 
-            fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+            fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
                 unimplemented!()
             }
 
-            fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+            fn update(&mut self, _msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
                 unimplemented!()
             }
 
-            fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+            fn render(&self, _theme: &Theme, _focused: bool, _output: &mut dyn Output) {
                 unimplemented!()
             }
         }
@@ -210,24 +210,24 @@ mod tests {
                 unimplemented!()
             }
 
-            fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+            fn update_and_layout(&mut self, _sc: SizeConstraint) -> XY {
                 unimplemented!()
             }
 
-            fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+            fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
                 unimplemented!()
             }
 
-            fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+            fn update(&mut self, _msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
                 unimplemented!()
             }
 
-            fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+            fn render(&self, _theme: &Theme, _focused: bool, _output: &mut dyn Output) {
                 unimplemented!()
             }
         }
 
-        let sp = SubwidgetPointer::new(
+        let _sp = SubwidgetPointer::new(
             Box::new(|dw: &DummyWidget| {
                 &dw.subwidget
             }),
@@ -238,7 +238,7 @@ mod tests {
 
         let sp3 = subwidget!(DummyWidget.subwidget);
 
-        let sp4 = sp3.clone();
+        let _sp4 = sp3.clone();
 
         impl DummyWidget {
             pub fn new() -> Self {

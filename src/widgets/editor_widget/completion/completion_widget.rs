@@ -45,7 +45,7 @@ impl CompletionWidget {
             list_widget: ListWidget::new()
                 .with_selection()
                 .with_show_column_names(false)
-                .with_fill_policy(FillPolicy::FillWidth)
+                .with_fill_policy(FillPolicy::FILL_WIDTH)
                 .with_on_hit(|w| {
                     w.get_highlighted().map(|c| {
                         CompletionWidgetMsg::Selected(c.action.clone()).boxed()

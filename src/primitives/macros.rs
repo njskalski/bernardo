@@ -58,7 +58,7 @@ mod tests {
         };
 
         let q = || {
-            let x = unpack_or!(none, "log this shit {:?}", none);
+            let _x = unpack_or!(none, "log this shit {:?}", none);
         };
 
         assert_eq!(x(), Some(4));

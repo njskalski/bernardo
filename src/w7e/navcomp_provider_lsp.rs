@@ -1,17 +1,12 @@
 use std::fmt::{Debug, Formatter};
-use std::sync::{RwLock, TryLockResult};
-use std::thread;
+use std::sync::RwLock;
 
-use log::{debug, error, warn};
+use log::{debug, error};
 use lsp_types::{CompletionResponse, CompletionTextEdit};
 
 use crate::fs::path::SPath;
 use crate::lsp_client::helpers::LspTextCursor;
 use crate::lsp_client::lsp_client::LspWrapper;
-use crate::lsp_client::lsp_io_error::LspIOError;
-use crate::lsp_client::lsp_write_error::LspWriteError;
-use crate::lsp_client::promise::LSPPromise;
-use crate::primitives::cursor_set::Cursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
 use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider};
@@ -86,7 +81,7 @@ impl NavCompProvider for NavCompProviderLsp {
         }
     }
 
-    fn completions(&self, path: SPath, cursor: LspTextCursor, trigger: Option<String>) -> Option<CompletionsPromise> {
+    fn completions(&self, path: SPath, cursor: LspTextCursor, _trigger: Option<String>) -> Option<CompletionsPromise> {
         let url = match path.to_url() {
             Ok(url) => url,
             Err(_) => {
@@ -132,7 +127,7 @@ impl NavCompProvider for NavCompProviderLsp {
         &self.triggers
     }
 
-    fn file_closed(&self, path: &SPath) {
+    fn file_closed(&self, _path: &SPath) {
         todo!()
     }
 

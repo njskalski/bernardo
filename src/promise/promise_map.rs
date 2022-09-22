@@ -1,8 +1,7 @@
 use std::marker::PhantomData;
 use std::mem;
 
-use json::value;
-use log::{debug, error, warn};
+use log::{debug, error};
 
 use crate::promise::promise::{Promise, PromiseState, UpdateResult};
 
@@ -52,7 +51,7 @@ impl<A, P: Promise<A> + Sized, B, F: FnOnce(A) -> B> MappedPromise<A, P, B, F> {
 
         let mut parent = None;
         mem::swap(&mut self.parent, &mut parent);
-        let mut parent = parent.unwrap();
+        let parent = parent.unwrap();
 
         match parent.state() {
             PromiseState::Unresolved => {

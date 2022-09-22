@@ -10,7 +10,7 @@ use crate::tsw::lang_id::LangId;
 use crate::w7e::handler::Handler;
 use crate::w7e::handler_factory::load_handler;
 use crate::w7e::handler_load_error::HandlerLoadError;
-use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
+use crate::w7e::navcomp_group::NavCompTickSender;
 
 pub struct ProjectScope {
     pub lang_id: LangId,
