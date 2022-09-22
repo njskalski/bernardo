@@ -6,8 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::config::global_editor_options::GlobalEditorOptions;
 use crate::config::load_error::LoadError;
 use crate::config::save_error::SaveError;
-use crate::io::keys::Key;
-use crate::Keycode;
+use crate::io::keys::{Key, Keycode};
 use crate::primitives::is_default::IsDefault;
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]

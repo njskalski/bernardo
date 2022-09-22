@@ -1,5 +1,5 @@
-use crate::Widget;
 use crate::widget::action_trigger::ActionTrigger;
+use crate::widget::widget::Widget;
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 
 pub struct Actions<W: Widget> {

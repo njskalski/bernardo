@@ -1,4 +1,4 @@
-use crate::Widget;
+use crate::widget::widget::Widget;
 
 pub trait Getter<W>: Fn(&W) -> &dyn Widget {
     fn clone_box(&self) -> Box<dyn Getter<W>>;
@@ -151,10 +151,12 @@ macro_rules! subwidget_op {
 
 #[cfg(test)]
 mod tests {
-    use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, Widget};
+    use crate::{Output, Theme, XY};
     use crate::experiments::subwidget_pointer::{SubwidgetPointer, SubwidgetPointerOp};
-    use crate::primitives::xy::XY;
-    use crate::widget::widget::WID;
+    use crate::io::input_event::InputEvent;
+    use crate::primitives::size_constraint::SizeConstraint;
+    use crate::widget::any_msg::AnyMsg;
+    use crate::widget::widget::{WID, Widget};
 
     #[test]
     fn test_interface() {

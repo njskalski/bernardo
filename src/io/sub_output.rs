@@ -6,8 +6,8 @@ use unicode_width::UnicodeWidthStr;
 use crate::io::output::Output;
 use crate::io::style::{TEXT_STYLE_WHITE_ON_BLACK, TextStyle};
 use crate::primitives::rect::Rect;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::SizeConstraint;
 
 pub struct SubOutput<'a> {
     output: &'a mut dyn Output,

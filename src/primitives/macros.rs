@@ -39,11 +39,6 @@ macro_rules! unpack_or {
 
 #[cfg(test)]
 mod tests {
-    use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Theme, Widget};
-    use crate::experiments::subwidget_pointer::{SubwidgetPointer, SubwidgetPointerOp};
-    use crate::primitives::xy::XY;
-    use crate::widget::widget::WID;
-
     #[test]
     fn test_interface_1() {
         let x = || -> Option<i32> {

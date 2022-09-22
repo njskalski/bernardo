@@ -12,7 +12,7 @@ use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg, key_to_edit_
 use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::helpers;
 use crate::primitives::size_constraint::SizeConstraint;
-use crate::primitives::xy::{XY, ZERO};
+use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
@@ -274,7 +274,7 @@ impl Widget for EditBoxWidget {
     }
 
     fn anchor(&self) -> XY {
-        ZERO
+        XY::ZERO
     }
 }
 

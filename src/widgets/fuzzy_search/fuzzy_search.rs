@@ -4,14 +4,18 @@ use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, InputEvent, Keycode, Output, SizeConstraint, Widget, ZERO};
 use crate::config::theme::Theme;
+use crate::io::input_event::InputEvent;
+use crate::io::keys::Keycode;
 use crate::io::sub_output::SubOutput;
+use crate::Output;
 use crate::primitives::common_edit_msgs::key_to_edit_msg;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::rect::Rect;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::widget::widget::{get_new_widget_id, WID, WidgetAction};
+use crate::widget::any_msg::AnyMsg;
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};
@@ -277,7 +281,7 @@ impl Widget for FuzzySearchWidget {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let mut suboutput = SubOutput::new(output,
-                                           Rect::new(ZERO, XY::new(self.width(), 1)));
+                                           Rect::new(XY::ZERO, XY::new(self.width(), 1)));
 
         self.edit.render(theme, focused, &mut suboutput);
         let query = self.edit.get_text().to_string();

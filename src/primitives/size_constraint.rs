@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display, Formatter};
 
 use crate::primitives::rect::Rect;
-use crate::primitives::xy::{XY, ZERO};
+use crate::primitives::xy::XY;
 
 //TODO find a shorter name
 
@@ -59,7 +59,7 @@ impl SizeConstraint {
         SizeConstraint {
             x: Some(xy.x),
             y: Some(xy.y),
-            visible: Rect::new(ZERO, xy),
+            visible: Rect::new(XY::ZERO, xy),
         }
     }
 

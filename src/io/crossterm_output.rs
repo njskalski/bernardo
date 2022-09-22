@@ -12,8 +12,8 @@ use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::output::{FinalOutput, Output};
 use crate::io::style::{Effect, TextStyle};
-use crate::primitives::xy::{XY, ZERO};
-use crate::SizeConstraint;
+use crate::primitives::size_constraint::SizeConstraint;
+use crate::primitives::xy::XY;
 
 pub struct CrosstermOutput<W: Write> {
     stdout: W,
@@ -121,7 +121,7 @@ impl<W: Write> FinalOutput for CrosstermOutput<W> {
             .queue(SetAttribute(Attribute::Reset))?;
 
         let mut last_style: Option<TextStyle> = None;
-        let mut curr_pos: XY = ZERO;
+        let mut curr_pos: XY = XY::ZERO;
 
         self.stdout.queue(cursor::MoveTo(0, 0))?;
 

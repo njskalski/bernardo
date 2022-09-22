@@ -1,8 +1,7 @@
 use log::{error, warn};
-use crate::experiments::clipboard::ClipboardRef;
 
-use crate::io::keys::Key;
-use crate::Keycode;
+use crate::experiments::clipboard::ClipboardRef;
+use crate::io::keys::{Key, Keycode};
 use crate::primitives::arrow::Arrow;
 use crate::primitives::cursor_set::CursorSet;
 use crate::text::buffer::Buffer;

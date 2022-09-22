@@ -3,7 +3,7 @@
 
 use std::borrow::Cow;
 
-use crate::AnyMsg;
+use crate::widget::any_msg::AnyMsg;
 
 pub trait Item {
     fn display_name(&self) -> Cow<str>;

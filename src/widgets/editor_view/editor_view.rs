@@ -3,11 +3,13 @@ use std::rc::Rc;
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, ConfigRef, InputEvent, Output, SizeConstraint, subwidget, Theme, TreeSitterWrapper, Widget, ZERO};
+use crate::{Output, subwidget, Theme};
+use crate::config::config::ConfigRef;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
+use crate::io::input_event::InputEvent;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
@@ -16,12 +18,14 @@ use crate::primitives::common_edit_msgs::CommonEditMsg;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::search_pattern::SearchPattern;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
+use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::navcomp_group::NavCompGroupRef;
-use crate::widget::any_msg::AsAny;
+use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::widget::{get_new_widget_id, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
@@ -404,7 +408,7 @@ impl Widget for EditorView {
     }
 
     fn anchor(&self) -> XY {
-        ZERO
+        XY::ZERO
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {

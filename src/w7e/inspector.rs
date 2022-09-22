@@ -4,7 +4,7 @@ use std::fmt::{Display, Formatter};
 use log::debug;
 
 use crate::fs::path::SPath;
-use crate::LangId;
+use crate::tsw::lang_id::LangId;
 use crate::w7e::project_scope::ProjectScope;
 use crate::w7e::rust::inspector_rust::RustLangInspector;
 

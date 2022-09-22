@@ -5,7 +5,7 @@ use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::size_constraint::SizeConstraint;
-use crate::primitives::xy::{XY, ZERO};
+use crate::primitives::xy::XY;
 use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::AnyMsg;
 
@@ -63,7 +63,7 @@ pub trait Widget: 'static {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output);
 
     fn anchor(&self) -> XY {
-        ZERO
+        XY::ZERO
     }
 
     fn as_any(&self) -> &dyn Widget where Self: Sized {

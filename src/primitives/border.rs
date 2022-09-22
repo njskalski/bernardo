@@ -1,5 +1,5 @@
-use crate::{Output, ZERO};
 use crate::io::style::TextStyle;
+use crate::Output;
 use crate::primitives::xy::XY;
 
 pub struct BorderStyle {
@@ -40,7 +40,7 @@ impl BorderStyle {
 fn draw_full_rect(style: TextStyle, border_style: &BorderStyle, output: &mut dyn Output) {
     let size = output.size_constraint().visible_hint().size;
     if size > XY::new(1, 1) {
-        output.print_at(ZERO,
+        output.print_at(XY::ZERO,
                         style,
                         border_style.upper_left);
         output.print_at(XY::new(0, size.y - 1),

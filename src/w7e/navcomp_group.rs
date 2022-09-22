@@ -5,7 +5,7 @@ use log::debug;
 
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::fs::path::SPath;
-use crate::LangId;
+use crate::tsw::lang_id::LangId;
 use crate::w7e::handler::NavCompRef;
 
 #[derive(Debug, Copy, Clone)]

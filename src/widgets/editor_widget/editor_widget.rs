@@ -11,7 +11,7 @@ use syntect::html::IncludeBackground::No;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AnyMsg, ConfigRef, InputEvent, Keycode, LangId, Output, selfwidget, SizeConstraint, subwidget, unpack_or, Widget};
+use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::focus_group::FocusUpdate;
@@ -19,13 +19,15 @@ use crate::experiments::regex_search::FindError;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
-use crate::io::keys::Key;
+use crate::io::input_event::InputEvent;
+use crate::io::keys::{Key, Keycode};
 use crate::io::over_output::OverOutput;
 use crate::io::sub_output::SubOutput;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::lsp_client::helpers::{get_lsp_text_cursor, LspTextCursor};
+use crate::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
 use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, CommonEditMsg, key_to_edit_msg};
@@ -34,7 +36,8 @@ use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
 use crate::primitives::helpers::{copy_last_n_columns, fill_output};
 use crate::primitives::rect::Rect;
-use crate::primitives::xy::{XY, ZERO};
+use crate::primitives::size_constraint::SizeConstraint;
+use crate::primitives::xy::XY;
 use crate::promise::promise::Promise;
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
@@ -43,9 +46,9 @@ use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_group::NavCompTick;
 use crate::w7e::navcomp_provider::{Completion, CompletionAction};
 use crate::widget::action_trigger::ActionTrigger;
-use crate::widget::any_msg::AsAny;
+use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::widget::{get_new_widget_id, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
 use crate::widgets::editor_widget::helpers::{CursorPosition, find_trigger_and_substring};
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
@@ -153,7 +156,7 @@ impl EditorWidget {
             wid: get_new_widget_id(),
             last_size: None,
             buffer: BufferState::new(tree_sitter.clone()),
-            anchor: ZERO,
+            anchor: XY::ZERO,
             tree_sitter,
             fsf,
             config,
@@ -264,7 +267,7 @@ impl EditorWidget {
         };
 
         debug!("cursor {:?} converted to {:?} positioned at {:?}", cursor, lsp_cursor, local_pos);
-        debug_assert!(local_pos >= ZERO);
+        debug_assert!(local_pos >= XY::ZERO);
         debug_assert!(local_pos < self.last_size.unwrap().visible_hint().size);
 
         Some(CursorPosition {

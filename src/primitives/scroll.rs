@@ -1,5 +1,5 @@
 use crate::primitives::scroll::ScrollDirection::{Both, Vertical};
-use crate::primitives::xy::{XY, ZERO};
+use crate::primitives::xy::XY;
 
 #[derive(PartialEq, Eq)]
 pub enum ScrollDirection {
@@ -27,7 +27,7 @@ pub struct Scroll {
 impl Scroll {
     pub fn new(direction: ScrollDirection) -> Self {
         Scroll {
-            offset: ZERO,
+            offset: XY::ZERO,
             direction,
         }
     }

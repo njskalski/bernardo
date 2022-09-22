@@ -7,8 +7,8 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::io::output::Output;
 use crate::io::style::TextStyle;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::SizeConstraint;
 
 // Over output (maybe I'll rename it as super output) is an output that is bigger than original,
 // physical or in-memory display. All write operations targeting lines/columns beyond it's borders

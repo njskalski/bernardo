@@ -7,7 +7,7 @@ use log::error;
 use crate::layout::layout::{Layout, WidgetWithRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
-use crate::Widget;
+use crate::widget::widget::Widget;
 
 pub struct HoverLayout<W: Widget> {
     parent: Box<dyn Layout<W>>,

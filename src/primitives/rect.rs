@@ -5,8 +5,6 @@ use std::ops::Add;
 use crate::primitives::xy;
 use crate::primitives::xy::XY;
 
-pub const ZERO_RECT: Rect = Rect::new(xy::ZERO, xy::ZERO);
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Rect {
     pub pos: XY,
@@ -14,6 +12,8 @@ pub struct Rect {
 }
 
 impl Rect {
+    pub const ZERO: Rect = Rect::new(XY::ZERO, XY::ZERO);
+
     pub const fn new(pos: XY, size: XY) -> Self {
         Rect { pos, size }
     }

@@ -1,13 +1,16 @@
 use log::error;
 
-use crate::{AnyMsg, InputEvent, Output, SizeConstraint, Widget};
 use crate::config::theme::Theme;
+use crate::io::input_event::InputEvent;
 use crate::io::over_output::OverOutput;
 use crate::io::sub_output::SubOutput;
+use crate::Output;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::{Scroll, ScrollDirection};
-use crate::primitives::xy::{XY, ZERO};
-use crate::widget::widget::WID;
+use crate::primitives::size_constraint::SizeConstraint;
+use crate::primitives::xy::XY;
+use crate::widget::any_msg::AnyMsg;
+use crate::widget::widget::{WID, Widget};
 
 const DEFAULT_MARGIN_WIDTH: u16 = 4;
 
@@ -215,6 +218,6 @@ impl<W: Widget> Widget for WithScroll<W> {
 
     fn anchor(&self) -> XY {
         // scroll nesting would probably affect that
-        ZERO
+        XY::ZERO
     }
 }

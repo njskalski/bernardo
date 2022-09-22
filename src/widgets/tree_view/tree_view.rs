@@ -13,7 +13,7 @@ use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
 use crate::primitives::size_constraint::SizeConstraint;
-use crate::primitives::xy::{XY, ZERO};
+use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::tree_view::tree_it::TreeIt;
@@ -134,7 +134,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
     }
 
     fn size_from_items(&self, sc: SizeConstraint) -> XY {
-        let mut size = ZERO;
+        let mut size = XY::ZERO;
 
         for item in self.items() {
             if size.y == sc.visible_hint().lower_right().y {

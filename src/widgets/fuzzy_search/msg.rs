@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
-use crate::AnyMsg;
 use crate::primitives::common_edit_msgs::CommonEditMsg;
+use crate::widget::any_msg::AnyMsg;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Navigation {

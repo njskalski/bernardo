@@ -1,6 +1,6 @@
 use crate::layout::layout::{Layout, WidgetWithRect};
-use crate::primitives::xy::{XY, ZERO};
-use crate::Widget;
+use crate::primitives::xy::XY;
+use crate::widget::widget::Widget;
 
 // This layout exists only to "fill"
 
@@ -25,7 +25,7 @@ impl EmptyLayout {
 
 impl<W: Widget> Layout<W> for EmptyLayout {
     fn min_size(&self, _root: &W) -> XY {
-        self.size.unwrap_or(ZERO)
+        self.size.unwrap_or(XY::ZERO)
     }
 
     fn layout(&self, _root: &mut W, _output_size: XY) -> Vec<WidgetWithRect<W>> {

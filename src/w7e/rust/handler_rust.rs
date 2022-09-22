@@ -3,9 +3,10 @@ use std::time::Duration;
 
 use log::{debug, error};
 
-use crate::{ConfigRef, LangId};
+use crate::config::config::ConfigRef;
 use crate::fs::path::SPath;
 use crate::lsp_client::lsp_client::LspWrapper;
+use crate::tsw::lang_id::LangId;
 use crate::w7e::handler::{Handler, NavCompRef};
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};

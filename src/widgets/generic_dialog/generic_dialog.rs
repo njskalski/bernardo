@@ -3,19 +3,22 @@ use std::fmt::Debug;
 
 use log::{debug, error, warn};
 
-use crate::{AnyMsg, InputEvent, Output, SizeConstraint, subwidget, Theme, Widget, ZERO};
+use crate::{Output, subwidget, Theme};
 use crate::experiments::deref_str::DerefStr;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
+use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use crate::layout::frame_layout::FrameLayout;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::border::BorderStyle;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::widget::any_msg::AnyMsg;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::widget::{get_new_widget_id, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::text_widget::TextWidget;
 
@@ -136,7 +139,7 @@ impl Widget for GenericDialog {
             }
         }
 
-        total_size + if self.with_border.is_some() { XY::new(2, 2) } else { ZERO }
+        total_size + if self.with_border.is_some() { XY::new(2, 2) } else { XY::ZERO }
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {

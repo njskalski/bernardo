@@ -5,7 +5,7 @@ items, like run configurations, test targets, and LSP clients.
 
 use std::sync::Arc;
 
-use crate::LangId;
+use crate::tsw::lang_id::LangId;
 use crate::w7e::navcomp_provider::NavCompProvider;
 
 // TODO this might become a more complex type, so all methods on it can be sync, but they are

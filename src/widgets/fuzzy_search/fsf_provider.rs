@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-use crate::AnyMsg;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
+use crate::widget::any_msg::AnyMsg;
 use crate::widgets::fuzzy_search::helpers::is_subsequence;
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 

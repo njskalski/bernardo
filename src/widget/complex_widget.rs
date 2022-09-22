@@ -1,6 +1,6 @@
 use log::{error, warn};
 
-use crate::{Output, SizeConstraint, Theme, Widget};
+use crate::{Output, Theme};
 use crate::experiments::focus_group::{FocusGraph, FocusUpdate};
 use crate::experiments::from_geometry::from_geometry;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
@@ -9,8 +9,9 @@ use crate::layout::layout::{Layout, WidgetWithRect};
 use crate::primitives::helpers;
 use crate::primitives::helpers::fill_output;
 use crate::primitives::rect::Rect;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::widget::widget::WID;
+use crate::widget::widget::{WID, Widget};
 
 // here one could merge focus_group.focused with ds.focused, but not it's not important.
 

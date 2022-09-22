@@ -1,4 +1,5 @@
-use crate::{AnyMsg, Widget};
+use crate::widget::any_msg::AnyMsg;
+use crate::widget::widget::Widget;
 
 pub struct ActionTrigger<W: Widget> {
     title: String,

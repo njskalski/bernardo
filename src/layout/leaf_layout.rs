@@ -6,7 +6,7 @@ use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::{Layout, WidgetWithRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
-use crate::primitives::xy::{XY, ZERO};
+use crate::primitives::xy::XY;
 use crate::widget::complex_widget::ComplexWidget;
 use crate::widget::widget::Widget;
 
@@ -35,7 +35,7 @@ impl<W: Widget> LeafLayout<W> {
                 None
             }
         } else {
-            Some(Rect::new(ZERO, output_size))
+            Some(Rect::new(XY::ZERO, output_size))
         }
     }
 }

@@ -4,8 +4,10 @@ Loads config, reconfigures and exits on errors.
 use std::path::PathBuf;
 use std::process::exit;
 use std::time::SystemTime;
+
 use log::error;
-use crate::{Config, ConfigRef};
+
+use crate::config::config::{Config, ConfigRef};
 use crate::gladius::constants::{CONFIG_FILE_NAME, PROGRAM_NAME};
 
 pub fn load_config(reconfigure: bool) -> ConfigRef {

@@ -10,9 +10,9 @@ use crate::io::buffer::Buffer;
 use crate::io::cell::Cell;
 use crate::io::output::Output;
 use crate::io::style::TextStyle;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
-use crate::SizeConstraint;
 
 pub type BufferOutput = Buffer<Cell>;
 

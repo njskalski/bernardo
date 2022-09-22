@@ -12,12 +12,12 @@ I hope I will discover most of functional constraints while implementing it.
 
 use log::{debug, error, warn};
 
-use crate::{Keycode, subwidget};
 use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::io::input_event::InputEvent;
+use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::layout::empty_layout::EmptyLayout;
 use crate::layout::frame_layout::FrameLayout;
@@ -29,6 +29,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::subwidget;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction, WidgetActionParam};

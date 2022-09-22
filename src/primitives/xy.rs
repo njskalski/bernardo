@@ -9,8 +9,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::primitives::size_constraint::SizeConstraint;
 
-pub const ZERO: XY = XY::new(0, 0);
-
 #[derive(Clone, Copy, Debug, Hash, Eq, Serialize, Deserialize)]
 pub struct XY {
     pub x: u16,
@@ -18,6 +16,8 @@ pub struct XY {
 }
 
 impl XY {
+    pub const ZERO: XY = XY::new(0, 0);
+
     pub const fn new(x: u16, y: u16) -> Self {
         XY { x, y }
     }

@@ -3,14 +3,16 @@ use std::rc::Rc;
 
 use log::error;
 
-use crate::{AnyMsg, ConfigRef, TreeSitterWrapper};
+use crate::config::config::ConfigRef;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::fs::read_error::ReadError;
 use crate::text::buffer_state::BufferState;
+use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::navcomp_group::NavCompGroupRef;
+use crate::widget::any_msg::AnyMsg;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::fuzzy_search::helpers::is_subsequence;
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};

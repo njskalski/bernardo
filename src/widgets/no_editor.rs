@@ -1,8 +1,10 @@
-use crate::{AnyMsg, InputEvent, Output, Widget};
 use crate::config::theme::Theme;
+use crate::io::input_event::InputEvent;
+use crate::Output;
 use crate::primitives::size_constraint::SizeConstraint;
-use crate::primitives::xy::{XY, ZERO};
-use crate::widget::widget::{get_new_widget_id, WID};
+use crate::primitives::xy::XY;
+use crate::widget::any_msg::AnyMsg;
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
 const NO_EDIT_TEXT: &'static str = "no editor loaded.";
 
@@ -15,7 +17,7 @@ impl Default for NoEditorWidget {
     fn default() -> Self {
         NoEditorWidget {
             wid: get_new_widget_id(),
-            text_pos: ZERO,
+            text_pos: XY::ZERO,
         }
     }
 }

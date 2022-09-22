@@ -3,9 +3,10 @@ use std::path::PathBuf;
 use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 
-use crate::{ConfigRef, LangId};
+use crate::config::config::ConfigRef;
 use crate::experiments::pretty_ron::ToPrettyRonString;
 use crate::fs::path::SPath;
+use crate::tsw::lang_id::LangId;
 use crate::w7e::handler::Handler;
 use crate::w7e::handler_factory::load_handler;
 use crate::w7e::handler_load_error::HandlerLoadError;

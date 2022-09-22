@@ -7,8 +7,8 @@ Also, if there is no limit on dimension (scrolling) widget will fall back to "co
 
 use log::warn;
 
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::SizeConstraint;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct FillPolicy {

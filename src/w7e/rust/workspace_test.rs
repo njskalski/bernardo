@@ -2,9 +2,10 @@
 mod tests {
     use std::path::{Path, PathBuf};
 
-    use crate::{FilesystemFront, LangId, spath};
+    use crate::{FilesystemFront, spath};
     use crate::experiments::pretty_ron::ToPrettyRonString;
     use crate::fs::mock_fs::MockFS;
+    use crate::tsw::lang_id::LangId;
     use crate::w7e::project_scope::SerializableProjectScope;
     use crate::w7e::workspace::{ScopeLoadErrors, SerializableWorkspace, Workspace};
 

@@ -1,8 +1,8 @@
 use log::error;
 
 use crate::primitives::cursor_set::{Cursor, CursorSet};
-use crate::primitives::rect::{Rect, ZERO_RECT};
-use crate::primitives::xy::{XY, ZERO};
+use crate::primitives::rect::Rect;
+use crate::primitives::xy::XY;
 use crate::text::buffer::Buffer;
 
 fn cursor_to_xy(c: &Cursor, buffer: &dyn Buffer) -> XY {
@@ -20,7 +20,7 @@ fn cursor_to_xy(c: &Cursor, buffer: &dyn Buffer) -> XY {
 
     if x > u16::MAX as usize || y > u16::MAX as usize {
         error!("failed translating cursor to XY (3), x/y too big. c: {:?} x: {} y: {}", c, x, y);
-        ZERO
+        XY::ZERO
     } else {
         XY::new(x as u16, y as u16)
     }
@@ -29,11 +29,11 @@ fn cursor_to_xy(c: &Cursor, buffer: &dyn Buffer) -> XY {
 pub fn cursor_set_to_rect(cs: &CursorSet, buffer: &dyn Buffer) -> Rect {
     if cs.set().is_empty() {
         error!("asked for cursor_rect on an empty cursor set, returning 0,0");
-        return ZERO_RECT;
+        return Rect::ZERO;
     }
 
     let first_cursor_as_xy = cursor_to_xy(&cs.set()[0], buffer);
-    let mut result = Rect::new(first_cursor_as_xy, ZERO);
+    let mut result = Rect::new(first_cursor_as_xy, XY::ZERO);
 
     for i in 1..cs.set().len() {
         let cursor_as_xy = cursor_to_xy(&cs.set()[i], buffer);
