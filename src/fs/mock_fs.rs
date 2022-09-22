@@ -1,15 +1,11 @@
-use std::borrow::BorrowMut;
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::fmt::{Debug, Formatter};
-use std::path::{Component, Components, Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::sync::RwLock;
 
-use log::{debug, error, warn};
+use log::error;
 use streaming_iterator::StreamingIterator;
 
-use crate::experiments::array_streaming_iterator::ArrayStreamingIt;
 use crate::fs::dir_entry::DirEntry;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::fsf_ref::FsfRef;
@@ -75,7 +71,7 @@ impl Record {
     fn is_dir(&self) -> bool {
         match &self {
             Record::File(_) => false,
-            Record::Dir(contents) => true,
+            Record::Dir(_contents) => true,
         }
     }
 
@@ -157,7 +153,7 @@ impl MockFS {
         self
     }
 
-    pub fn with_dir<P: AsRef<Path>>(mut self, path: P) -> Self {
+    pub fn with_dir<P: AsRef<Path>>(self, path: P) -> Self {
         self.add_dir(path.as_ref()).unwrap_or_else(
             |_| error!("failed creating dir in mockfs"));
         self
@@ -299,7 +295,7 @@ mod tests {
 
     #[test]
     fn make_some_records() {
-        let mut record = Record::Dir(HashMap::new());
+        let record = Record::Dir(HashMap::new());
 
         let some_path = PathBuf::from("hello/some/path/item.txt");
         let comps: Vec<_> = some_path.components().collect();

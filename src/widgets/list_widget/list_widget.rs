@@ -1,9 +1,5 @@
-use std::any::Any;
-use std::borrow::Cow;
 use std::cmp::min;
 use std::fmt::Debug;
-use std::iter;
-use std::iter::empty;
 use std::string::String;
 
 use log::{debug, error, warn};
@@ -22,7 +18,7 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::FillPolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction, WidgetActionParam};
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 use crate::widgets::list_widget::provider::Provider;
 
@@ -423,7 +419,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                 debug_assert!(actual_max_text_length > 0);
 
                 // huge block to "cut th text if necessary"
-                let mut text: String = {
+                let text: String = {
                     let full_text: String = match item.get(column_idx) {
                         Some(s) => s.to_string(),
                         None => "".to_string(),

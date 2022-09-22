@@ -1,14 +1,11 @@
-use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
 
-use crossbeam_channel::{Receiver, RecvError, TryRecvError};
+use crossbeam_channel::{Receiver, TryRecvError};
 use log::{debug, error, warn};
 use lsp_types::request::Request;
-use serde_json::Error;
 
 use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::promise::promise::{Promise, PromiseState, UpdateResult};
-use crate::promise::promise_map::MappedPromise;
 
 pub struct LSPPromise<R: Request> {
     //Invariant: never item and error are set in the same time. They can be both empty though.

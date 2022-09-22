@@ -1,5 +1,4 @@
-use std::{process, thread, time};
-use std::any::Any;
+use std::{process, thread};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::io::BufRead;
@@ -9,11 +8,10 @@ use std::process::{ChildStderr, ChildStdout, Stdio};
 use std::sync::{Arc, RwLock};
 use std::thread::JoinHandle;
 
-use crossbeam_channel::{Receiver, select, Sender, TrySendError};
+use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error, warn};
-use lsp_types::{CompletionContext, CompletionResponse, CompletionTriggerKind, Position, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentPositionParams, Url, VersionedTextDocumentIdentifier};
+use lsp_types::{CompletionContext, CompletionTriggerKind, Position, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentPositionParams, Url, VersionedTextDocumentIdentifier};
 use lsp_types::request::Completion;
-use serde_json::Value;
 
 use crate::lsp_client::debug_helpers::lsp_debug_save;
 use crate::lsp_client::helpers::LspTextCursor;

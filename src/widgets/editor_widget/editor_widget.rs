@@ -1,53 +1,37 @@
-use std::borrow::Borrow;
 use std::cmp::min;
 use std::rc::Rc;
-use std::sync::{Arc, RwLock};
 
-use crossbeam_channel::TrySendError;
 use log::{debug, error, warn};
-use lsp_types::Hover;
 use streaming_iterator::StreamingIterator;
-use syntect::html::IncludeBackground::No;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
-use crate::experiments::focus_group::FocusUpdate;
 use crate::experiments::regex_search::FindError;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
-use crate::fs::path::SPath;
 use crate::io::input_event::InputEvent;
-use crate::io::keys::{Key, Keycode};
-use crate::io::over_output::OverOutput;
+use crate::io::keys::Keycode;
 use crate::io::sub_output::SubOutput;
-use crate::layout::hover_layout::HoverLayout;
-use crate::layout::layout::Layout;
-use crate::layout::leaf_layout::LeafLayout;
-use crate::lsp_client::helpers::{get_lsp_text_cursor, LspTextCursor};
+use crate::lsp_client::helpers::get_lsp_text_cursor;
 use crate::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
-use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, CommonEditMsg, key_to_edit_msg};
+use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};
 use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
-use crate::primitives::helpers::{copy_last_n_columns, fill_output};
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::promise::promise::Promise;
 use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::handler::NavCompRef;
-use crate::w7e::navcomp_group::NavCompTick;
-use crate::w7e::navcomp_provider::{Completion, CompletionAction};
-use crate::widget::action_trigger::ActionTrigger;
+use crate::w7e::navcomp_provider::CompletionAction;
 use crate::widget::any_msg::{AnyMsg, AsAny};
-use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
 use crate::widgets::editor_widget::helpers::{CursorPosition, find_trigger_and_substring};
@@ -236,8 +220,8 @@ impl EditorWidget {
 
     pub fn get_single_cursor_screen_pos(&self, cursor: &Cursor) -> Option<CursorPosition> {
         let lsp_cursor = get_lsp_text_cursor(self.buffer(), &cursor).map_err(
-            |e| {
-                error!("failed mappint cursor to lsp-cursor")
+            |_| {
+                error!("failed mapping cursor to lsp-cursor")
             }).ok()?;
         let lsp_cursor_xy = match lsp_cursor.to_xy() {
             None => {

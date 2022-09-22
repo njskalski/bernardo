@@ -2,14 +2,9 @@
 I guess I should reuse FuzzySearch Widget, this is a placeholder now.
  */
 
-use std::cmp::min;
-use std::mem;
-use std::sync::{Arc, RwLock};
-
 use log::{debug, error, warn};
 
 use crate::{Output, selfwidget, subwidget, Theme};
-use crate::experiments::focus_group::FocusUpdate;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
@@ -18,18 +13,15 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::common_query::CommonQuery;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::promise::promise::{Promise, PromiseState};
+use crate::promise::promise::PromiseState;
 use crate::w7e::navcomp_provider::{Completion, CompletionsPromise};
-use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::fill_policy::FillPolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::editor_widget::completion::msg::CompletionWidgetMsg;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
-use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
 use crate::widgets::list_widget::list_widget::ListWidget;
-use crate::widgets::list_widget::provider::Provider;
 
 pub struct CompletionWidget {
     wid: WID,
@@ -206,7 +198,7 @@ impl Widget for CompletionWidget {
 }
 
 impl ComplexWidget for CompletionWidget {
-    fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, _max_size: XY) -> Box<dyn Layout<Self>> {
         if self.has_completions() {
             Box::new(LeafLayout::new(subwidget!(Self.list_widget)))
         } else {
@@ -234,7 +226,7 @@ impl ComplexWidget for CompletionWidget {
         self.display_state.as_mut()
     }
 
-    fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+    fn internal_render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
         for x in 0..output.size_constraint().visible_hint().size.x {
             for y in 0..output.size_constraint().visible_hint().size.y {
                 output.print_at(XY::new(x, y), theme.ui.focused_highlighted, "!");

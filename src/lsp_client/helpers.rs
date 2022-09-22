@@ -43,7 +43,7 @@ pub fn get_lsp_text_cursor(buffer: &dyn Buffer, cursor: &Cursor) -> Result<LspTe
         return Err(());
     }
 
-    let col = (cursor.a - begin_line);
+    let col = cursor.a - begin_line;
 
     Ok(LspTextCursor {
         row: line as u32,

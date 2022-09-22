@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 use std::fmt::Debug;
-use std::iter::empty;
 
 pub trait ListWidgetItem: Debug + Clone {
     //TODO change to static str?

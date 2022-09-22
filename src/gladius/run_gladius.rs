@@ -17,7 +17,6 @@ use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::inspector::{inspect_workspace, InspectError};
 use crate::w7e::workspace::{LoadError, ScopeLoadErrors, Workspace};
 use crate::w7e::workspace::WORKSPACE_FILE_NAME;
-use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
 

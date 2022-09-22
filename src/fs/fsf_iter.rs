@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use log::{debug, error};
+use log::error;
 
 use crate::fs::path::SPath;
 
