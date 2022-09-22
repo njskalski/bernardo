@@ -53,8 +53,23 @@ impl CompletionWidget {
                 .with_fill_policy(FillPolicy::FillWidth),
             completions_promise: Some(completions_promise),
             display_state: None,
-            fuzzy: true,
+            fuzzy: false,
         }
+    }
+
+    pub fn with_fuzzy(self, fuzzy: bool) -> Self {
+        Self {
+            fuzzy,
+            ..self
+        }
+    }
+
+    pub fn set_fuzzy(&mut self, fuzzy: bool) {
+        self.fuzzy = fuzzy;
+    }
+
+    pub fn get_fuzzy(&self) -> bool {
+        self.fuzzy
     }
 
     pub fn set_query_substring(&mut self, query: Option<String>) {

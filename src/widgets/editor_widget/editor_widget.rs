@@ -441,7 +441,7 @@ impl EditorWidget {
 
                 match (promise_op, hover_settings) {
                     (Some(promise), Some(hover_settings)) => {
-                        let comp = CompletionWidget::new(promise);
+                        let comp = CompletionWidget::new(promise).with_fuzzy(true);
                         self.requested_hover = Some((hover_settings, EditorHover::Completion(comp)));
                         debug!("created completion");
                     }
