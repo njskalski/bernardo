@@ -1,7 +1,9 @@
 use std::fmt::Formatter;
 use std::str::FromStr;
+
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Visitor;
+
 use crate::experiments::focus_group::FocusUpdate;
 
 // TODO (hardening) here potentially impossible combinations, like ALT+LeftAlt are deserializable, should be fixed someday
@@ -13,7 +15,7 @@ const ALT: &'static str = "ALT";
 const CTRL: &'static str = "CTRL";
 const SHIFT: &'static str = "SHIFT";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Keycode {
     Char(char),
     F(u8),

@@ -17,3 +17,4 @@ pub mod spath_list_widget_item;
 pub mod dir_tree_view;
 pub mod action_triggers_fuzzy_provicer;
 pub mod list_widget;
+pub mod dump_visualizer_widget;

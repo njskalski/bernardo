@@ -2,9 +2,9 @@ use log::error;
 
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
+use crate::io::output::Output;
 use crate::io::over_output::OverOutput;
 use crate::io::sub_output::SubOutput;
-use crate::Output;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::{Scroll, ScrollDirection};
 use crate::primitives::size_constraint::SizeConstraint;

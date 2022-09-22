@@ -4,10 +4,12 @@ I guess I should reuse FuzzySearch Widget, this is a placeholder now.
 
 use log::{debug, error, warn};
 
-use crate::{Output, selfwidget, subwidget, Theme};
+use crate::{selfwidget, subwidget};
+use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
+use crate::io::output::Output;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::common_query::CommonQuery;

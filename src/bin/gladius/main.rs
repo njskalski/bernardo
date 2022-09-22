@@ -15,40 +15,22 @@ use clap::Parser;
 use crossterm::terminal;
 use log::{debug, error};
 
-use config::theme::Theme;
-
-use crate::experiments::clipboard::get_me_some_clipboard;
-use crate::fs::filesystem_front::FilesystemFront;
-use crate::fs::real_fs::RealFS;
-use crate::gladius::load_config::load_config;
-use crate::gladius::logger_setup::logger_setup;
-use crate::gladius::run_gladius::run_gladius;
-use crate::io::crossterm_input::CrosstermInput;
-use crate::io::crossterm_output::CrosstermOutput;
-use crate::io::output::Output;
-use crate::primitives::xy::XY;
-
-#[macro_use]
-mod experiments;
-mod io;
-mod layout;
-mod primitives;
-mod widget;
-mod text;
-mod widgets;
-mod tsw;
-mod fs;
-mod config;
-mod gladius;
-mod lsp_client;
-mod w7e;
-mod promise;
+use bernardo::config::theme::Theme;
+use bernardo::experiments::clipboard::get_me_some_clipboard;
+use bernardo::fs::filesystem_front::FilesystemFront;
+use bernardo::fs::real_fs::RealFS;
+use bernardo::gladius::load_config::load_config;
+use bernardo::gladius::logger_setup::logger_setup;
+use bernardo::gladius::run_gladius::run_gladius;
+use bernardo::io::crossterm_input::CrosstermInput;
+use bernardo::io::crossterm_output::CrosstermOutput;
+use bernardo::io::output::Output;
+use bernardo::primitives::xy::XY;
 
 // I need an option to record IO to "build" tests, not write them.
 
-
 fn main() {
-    let args = gladius::args::Args::parse();
+    let args = bernardo::gladius::args::Args::parse();
     logger_setup(args.verbosity.log_level_filter());
 
     // Initializing subsystems

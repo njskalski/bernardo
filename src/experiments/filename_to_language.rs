@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 
+use lazy_static::lazy_static;
+use maplit::hashmap;
+
 use crate::fs::path::SPath;
 use crate::tsw::lang_id::LangId;
 

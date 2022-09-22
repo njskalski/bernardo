@@ -6,6 +6,9 @@ edition = "2021"
 license = "GPLv3"
 autobins = true
 
+[lib]
+name = "bernardo"
+
 [dependencies]
 async-trait = "0.1.57"
 arboard = "2.1.0"

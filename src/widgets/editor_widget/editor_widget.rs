@@ -2,6 +2,7 @@ use std::cmp::min;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
+use matches::debug_assert_matches;
 use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -14,9 +15,9 @@ use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
+use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::lsp_client::helpers::get_lsp_text_cursor;
-use crate::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
 use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};

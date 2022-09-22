@@ -1,5 +1,5 @@
+use crate::io::output::Output;
 use crate::io::style::TextStyle;
-use crate::Output;
 use crate::primitives::xy::XY;
 
 pub struct BorderStyle {

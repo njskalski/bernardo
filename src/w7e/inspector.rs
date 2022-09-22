@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
+use lazy_static::lazy_static;
 use log::debug;
+use maplit::hashmap;
 
 use crate::fs::path::SPath;
 use crate::tsw::lang_id::LangId;

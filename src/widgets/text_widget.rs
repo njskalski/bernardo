@@ -1,8 +1,9 @@
 use unicode_width::UnicodeWidthStr;
 
-use crate::{Output, Theme};
+use crate::config::theme::Theme;
 use crate::experiments::deref_str::DerefStr;
 use crate::io::input_event::InputEvent;
+use crate::io::output::Output;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;

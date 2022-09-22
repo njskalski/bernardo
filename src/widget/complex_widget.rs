@@ -1,9 +1,10 @@
 use log::error;
 
-use crate::{Output, Theme};
+use crate::config::theme::Theme;
 use crate::experiments::focus_group::{FocusGraph, FocusUpdate};
 use crate::experiments::from_geometry::from_geometry;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
+use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::layout::{Layout, WidgetWithRect};
 use crate::primitives::helpers::fill_output;

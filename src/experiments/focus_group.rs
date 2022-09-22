@@ -2,10 +2,11 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 
 use log::error;
+use serde::{Deserialize, Serialize};
 
 use crate::widget::widget::WID;
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum FocusUpdate {
     Left,
     Right,
