@@ -1,5 +1,6 @@
 use std::default::Default;
 use std::fmt::{Debug, Formatter};
+use std::io::Error;
 
 use log::{debug, warn};
 use unicode_segmentation::UnicodeSegmentation;

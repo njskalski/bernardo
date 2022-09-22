@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::io::style::{TEXT_STYLE_WHITE_ON_BLACK, TextStyle};
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Cell {
     Begin { style: TextStyle, grapheme: String },
     Continuation,

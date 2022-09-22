@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Formatter, write};
-use std::io::Write;
+use std::io::{Error, Write};
+use std::marker::PhantomData;
 
 use crossterm::{cursor, QueueableCommand, style, terminal};
 use crossterm::style::{Attribute, Color, Print, SetAttribute, SetBackgroundColor, SetForegroundColor};
@@ -9,7 +10,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
-use crate::io::output::Output;
+use crate::io::output::{FinalOutput, Output};
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::xy::{XY, ZERO};
 use crate::SizeConstraint;
@@ -65,8 +66,40 @@ impl<W: Write> CrosstermOutput<W> {
             .queue(cursor::Show)?;
         Ok(())
     }
+}
 
-    pub fn end_frame(&mut self) -> Result<(), std::io::Error> {
+impl<W: Write> Output for CrosstermOutput<W> {
+    fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
+        let buffer = if self.current_buffer == false {
+            &mut self.front_buffer
+        } else {
+            &mut self.back_buffer
+        };
+
+        // debug!("printing {} at {}", text, pos);
+
+        buffer.print_at(pos, style, text)
+    }
+
+    fn clear(&mut self) -> Result<(), std::io::Error> {
+        self.stdout.queue(Clear(ClearType::All))?;
+
+        self.current_buffer = !self.current_buffer;
+        let buffer = if self.current_buffer == false {
+            &mut self.front_buffer
+        } else {
+            &mut self.back_buffer
+        };
+        buffer.clear()
+    }
+
+    fn size_constraint(&self) -> SizeConstraint {
+        SizeConstraint::simple(self.size)
+    }
+}
+
+impl<W: Write> FinalOutput for CrosstermOutput<W> {
+    fn end_frame(&mut self) -> Result<(), std::io::Error> {
         if log::log_enabled!(log::Level::Debug) {
             let size: XY = terminal::size().unwrap().into();
             debug_assert!(
@@ -162,36 +195,6 @@ impl<W: Write> CrosstermOutput<W> {
         }
 
         self.stdout.flush()
-    }
-}
-
-impl<W: Write> Output for CrosstermOutput<W> {
-    fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
-        let buffer = if self.current_buffer == false {
-            &mut self.front_buffer
-        } else {
-            &mut self.back_buffer
-        };
-
-        // debug!("printing {} at {}", text, pos);
-
-        buffer.print_at(pos, style, text)
-    }
-
-    fn clear(&mut self) -> Result<(), std::io::Error> {
-        self.stdout.queue(Clear(ClearType::All))?;
-
-        self.current_buffer = !self.current_buffer;
-        let buffer = if self.current_buffer == false {
-            &mut self.front_buffer
-        } else {
-            &mut self.back_buffer
-        };
-        buffer.clear()
-    }
-
-    fn size_constraint(&self) -> SizeConstraint {
-        SizeConstraint::simple(self.size)
     }
 }
 

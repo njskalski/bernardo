@@ -5,12 +5,13 @@ use std::hash::Hash;
 use std::ops::{Add, Div, Mul, Sub};
 
 use log::error;
+use serde::{Deserialize, Serialize};
 
 use crate::primitives::size_constraint::SizeConstraint;
 
 pub const ZERO: XY = XY::new(0, 0);
 
-#[derive(Clone, Copy, Debug, Hash, Eq)]
+#[derive(Clone, Copy, Debug, Hash, Eq, Serialize, Deserialize)]
 pub struct XY {
     pub x: u16,
     pub y: u16,

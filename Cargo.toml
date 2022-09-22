@@ -4,6 +4,8 @@ version = "0.2.0"
 authors = ["Andrzej J Skalski <gitstuff@s5i.ch>"]
 edition = "2021"
 license = "GPLv3"
+autobins = true
+default-run = "bernardo"
 
 [dependencies]
 async-trait = "0.1.57"
@@ -28,6 +30,7 @@ log = "0.4.14"
 maplit = "1.0.2"
 matches = "0.1.9"
 num = "0.4.0"
+postcard = { version = "1.0.2", features = ["alloc"] }
 regex = "1.5.6"
 ron = "0.7.0"
 ropey = "1.3.1"

@@ -11,6 +11,7 @@ extern crate matches;
 
 
 use std::io::stdout;
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use clap::Parser;
@@ -21,8 +22,9 @@ use log::{debug, error, warn};
 use config::theme::Theme;
 
 use crate::config::config::{Config, ConfigRef};
-use crate::experiments::clipboard::get_me_some_clipboard;
+use crate::experiments::clipboard::{Clipboard, ClipboardRef, get_me_some_clipboard};
 use crate::fs::filesystem_front::FilesystemFront;
+use crate::fs::fsf_ref::FsfRef;
 use crate::fs::real_fs::RealFS;
 use crate::gladius::load_config::load_config;
 use crate::gladius::logger_setup::logger_setup;
@@ -31,7 +33,7 @@ use crate::io::crossterm_output::CrosstermOutput;
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::io::output::Output;
+use crate::io::output::{FinalOutput, Output};
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::ZERO;
 use crate::tsw::lang_id::LangId;
@@ -60,20 +62,20 @@ mod lsp_client;
 mod w7e;
 mod promise;
 
-fn main() {
-    let args = gladius::args::Args::parse();
-    logger_setup(args.verbosity.log_level_filter());
+// I need an option to record IO to "build" tests, not write them.
 
-    // Initializing subsystems
-    let config_ref = load_config(args.reconfigure);
-    let theme = Theme::load_or_create_default(&config_ref.config_dir).unwrap();
-    let clipboard = get_me_some_clipboard();
+fn run_gladius<
+    I: Input,
+    O: FinalOutput>(
+    fsf: FsfRef,
+    config: ConfigRef,
+    clipboard: ClipboardRef,
+    input: I,
+    mut output: O,
+    files: Vec<PathBuf>,
+    theme: &Theme,
+) {
     let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
-
-    // Parsing arguments
-    debug!("{:?}", args.paths());
-    let (start_dir, files) = args.paths();
-    let fsf = RealFS::new(start_dir).to_fsf();
 
     // Loading / Building workspace file
     let workspace_dir = fsf.root();
@@ -135,24 +137,13 @@ fn main() {
     // At this point it is guaranteed that we have a Workspace present, though it might be not saved!
 
     // Initializing handlers
-    let (nav_comp_group_ref, scope_errors) = workspace.initialize_handlers(&config_ref);
+    let (nav_comp_group_ref, scope_errors) = workspace.initialize_handlers(&config);
     if !scope_errors.is_empty() {
         debug!("{} handlers failed to load, details : {:?}", scope_errors.len(), scope_errors);
     }
 
-    // Initializing Bernardo TUI
-    terminal::enable_raw_mode().expect("failed entering raw mode");
-    let input = CrosstermInput::new();
-    let stdout = stdout();
-    let mut output = CrosstermOutput::new(stdout);
-
-    if output.size_constraint().visible_hint().size == ZERO {
-        error!("it seems like the screen has zero size.");
-        return;
-    }
-
     let mut main_view = MainView::new(
-        config_ref.clone(),
+        config.clone(),
         tree_sitter,
         fsf.clone(),
         clipboard,
@@ -254,11 +245,11 @@ fn main() {
                             InputEvent::KeyInput(key) if key.as_focus_update().is_some() && key.modifiers.alt => {
                                 ie = InputEvent::FocusUpdate(key.as_focus_update().unwrap());
                             },
-                            InputEvent::KeyInput(key) if key == config_ref.keyboard_config.global.everything_bar => {
+                            InputEvent::KeyInput(key) if key == config.keyboard_config.global.everything_bar => {
                                 ie = InputEvent::EverythingBarTrigger;
                             }
                             // TODO move to message, to handle signals in the same way?
-                            InputEvent::KeyInput(key) if key == config_ref.keyboard_config.global.close => {
+                            InputEvent::KeyInput(key) if key == config.keyboard_config.global.close => {
                                 break 'main;
                             }
                             _ => {}
@@ -281,4 +272,41 @@ fn main() {
             }
         }
     }
+}
+
+
+fn main() {
+    let args = gladius::args::Args::parse();
+    logger_setup(args.verbosity.log_level_filter());
+
+    // Initializing subsystems
+    let config_ref = load_config(args.reconfigure);
+    let theme = Theme::load_or_create_default(&config_ref.config_dir).unwrap();
+    let clipboard = get_me_some_clipboard();
+
+    // Parsing arguments
+    debug!("{:?}", args.paths());
+    let (start_dir, files) = args.paths();
+    let fsf = RealFS::new(start_dir).to_fsf();
+
+    // Initializing Bernardo TUI
+    terminal::enable_raw_mode().expect("failed entering raw mode");
+    let input = CrosstermInput::new();
+    let stdout = stdout();
+    let mut output = CrosstermOutput::new(stdout);
+
+    if output.size_constraint().visible_hint().size == ZERO {
+        error!("it seems like the screen has zero size.");
+        return;
+    }
+
+    run_gladius(
+        fsf,
+        config_ref,
+        clipboard,
+        input,
+        output,
+        files,
+        &theme,
+    )
 }
