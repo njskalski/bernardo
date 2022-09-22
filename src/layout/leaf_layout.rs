@@ -1,5 +1,3 @@
-use std::any::Any;
-
 use log::warn;
 
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
@@ -7,7 +5,6 @@ use crate::layout::layout::{Layout, WidgetWithRect};
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::widget::complex_widget::ComplexWidget;
 use crate::widget::widget::Widget;
 
 pub struct LeafLayout<W: Widget> {

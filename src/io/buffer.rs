@@ -1,4 +1,3 @@
-use std::marker::PhantomData;
 use std::ops::{Index, IndexMut};
 
 use log::error;

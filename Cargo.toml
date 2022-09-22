@@ -5,7 +5,6 @@ authors = ["Andrzej J Skalski <gitstuff@s5i.ch>"]
 edition = "2021"
 license = "GPLv3"
 autobins = true
-default-run = "bernardo"
 
 [dependencies]
 async-trait = "0.1.57"

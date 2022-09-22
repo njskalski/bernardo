@@ -1,6 +1,5 @@
-use std::fmt::{Debug, Formatter, write};
-use std::io::{Error, Write};
-use std::marker::PhantomData;
+use std::fmt::{Debug, Formatter};
+use std::io::Write;
 
 use crossterm::{cursor, QueueableCommand, style, terminal};
 use crossterm::style::{Attribute, Color, Print, SetAttribute, SetBackgroundColor, SetForegroundColor};

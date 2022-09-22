@@ -10,13 +10,10 @@ extern crate maplit;
 extern crate matches;
 
 use std::io::stdout;
-use std::path::PathBuf;
-use std::rc::Rc;
 
 use clap::Parser;
-use crossbeam_channel::select;
 use crossterm::terminal;
-use log::{debug, error, warn};
+use log::{debug, error};
 
 use config::theme::Theme;
 
@@ -68,7 +65,7 @@ fn main() {
     terminal::enable_raw_mode().expect("failed entering raw mode");
     let input = CrosstermInput::new();
     let stdout = stdout();
-    let mut output = CrosstermOutput::new(stdout);
+    let output = CrosstermOutput::new(stdout);
 
     if output.size_constraint().visible_hint().size == XY::ZERO {
         error!("it seems like the screen has zero size.");

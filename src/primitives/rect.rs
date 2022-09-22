@@ -2,7 +2,6 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::ops::Add;
 
-use crate::primitives::xy;
 use crate::primitives::xy::XY;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

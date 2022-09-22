@@ -1,4 +1,4 @@
-use log::{error, warn};
+use log::error;
 
 use crate::{Output, Theme};
 use crate::experiments::focus_group::{FocusGraph, FocusUpdate};
@@ -6,7 +6,6 @@ use crate::experiments::from_geometry::from_geometry;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::sub_output::SubOutput;
 use crate::layout::layout::{Layout, WidgetWithRect};
-use crate::primitives::helpers;
 use crate::primitives::helpers::fill_output;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
@@ -129,7 +128,7 @@ pub trait ComplexWidget: Widget + Sized {
                 for wwr in &ds.wwrs {
                     let sub_output = &mut SubOutput::new(output, *wwr.rect());
                     let widget = wwr.widget().get(self);
-                    let subwidget_focused = (focused && widget.id() == focused_subwidget.id());
+                    let subwidget_focused = focused && widget.id() == focused_subwidget.id();
 
                     if widget.id() != self_id {
                         widget.render(theme,
