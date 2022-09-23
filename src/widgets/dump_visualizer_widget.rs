@@ -9,7 +9,6 @@ use crate::io::output::Output;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
-use crate::text::buffer::Buffer;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
@@ -56,15 +55,15 @@ impl Widget for DumpVisualizerWidget {
         sc.visible_hint().size
     }
 
-    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+    fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         None
     }
 
-    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+    fn update(&mut self, _msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         None
     }
 
-    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+    fn render(&self, _theme: &Theme, _focused: bool, output: &mut dyn Output) {
         if let Some(dump) = self.dump_op.as_ref() {
             let max_x = min(dump.size().x, output.size_constraint().visible_hint().size.x);
             let max_y = min(dump.size().y, output.size_constraint().visible_hint().size.y);
