@@ -38,9 +38,10 @@ impl TreeViewWidget<SPath, DirTreeNode> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{FilesystemFront, spath};
+    use crate::fs::filesystem_front::FilesystemFront;
     use crate::fs::mock_fs::MockFS;
     use crate::fs::path::SPath;
+    use crate::spath;
     use crate::widgets::spath_tree_view_node::DirTreeNode;
     use crate::widgets::tree_view::tree_view::TreeViewWidget;
 

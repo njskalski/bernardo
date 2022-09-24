@@ -399,8 +399,9 @@ impl Ord for SPath {
 mod tests {
     use streaming_iterator::StreamingIterator;
 
-    use crate::{FilesystemFront, spath};
+    use crate::fs::filesystem_front::FilesystemFront;
     use crate::fs::mock_fs::MockFS;
+    use crate::spath;
 
     #[test]
     fn eq() {

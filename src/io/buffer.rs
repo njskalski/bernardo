@@ -1,4 +1,5 @@
 use std::ops::{Index, IndexMut};
+use std::path::Path;
 
 use log::error;
 use serde::{Deserialize, Serialize};
@@ -70,7 +71,7 @@ impl<T: Default + Clone> IndexMut<XY> for Buffer<T> {
 
 // TODO these are debug helpers, I will not invest in them much
 impl<T: Default + Clone> Buffer<T> where T: Serialize + DeserializeOwned + ?Sized {
-    pub fn save_to_file(&self, filename: &str) -> Result<(), ()> {
+    pub fn save_to_file(&self, filename: &Path) -> Result<(), ()> {
         let vec: Vec<u8> = postcard::to_allocvec::<Self>(&self).map_err(|e| {
             error!("failed to serialize: {:?}", e);
         })?.to_vec();
@@ -86,5 +87,20 @@ impl<T: Default + Clone> Buffer<T> where T: Serialize + DeserializeOwned + ?Size
         postcard::from_bytes::<Self>(&contents).map_err(|e| {
             error!("deserialization error: {:?}", e);
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::io::buffer_output::BufferOutput;
+    use crate::primitives::xy::XY;
+
+    #[test]
+    fn ser_de() {
+        let dump = BufferOutput::new(XY::new(10, 10));
+        let vec = postcard::to_allocvec(&dump).unwrap();
+        let dump2 = postcard::from_bytes::<BufferOutput>(&vec).unwrap();
+
+        assert_eq!(dump.size, dump2.size);
     }
 }

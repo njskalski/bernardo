@@ -5,6 +5,7 @@ authors = ["Andrzej J Skalski <gitstuff@s5i.ch>"]
 edition = "2021"
 license = "GPLv3"
 autobins = true
+default-run = "gladius"
 
 [lib]
 name = "bernardo"

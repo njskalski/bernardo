@@ -1,3 +1,4 @@
+use std::io::Stdout;
 use std::path::PathBuf;
 use std::rc::Rc;
 
@@ -7,11 +8,14 @@ use log::{debug, error};
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
+use crate::experiments::screen_shot::screenshot;
 use crate::fs::fsf_ref::FsfRef;
 use crate::gladius::paradigm::recursive_treat_views;
+use crate::io::crossterm_output::CrosstermOutput;
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
-use crate::io::output::FinalOutput;
+use crate::io::keys::Keycode;
+use crate::io::output::{FinalOutput, Output};
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::inspector::{inspect_workspace, InspectError};
@@ -21,13 +25,12 @@ use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
 
 pub fn run_gladius<
-    I: Input,
-    O: FinalOutput>(
+    I: Input>(
     fsf: FsfRef,
     config: ConfigRef,
     clipboard: ClipboardRef,
     input: I,
-    mut output: O,
+    mut output: CrosstermOutput<Stdout>,
     files: Vec<PathBuf>,
     theme: &Theme,
 ) {
@@ -143,6 +146,10 @@ pub fn run_gladius<
                             },
                             InputEvent::KeyInput(key) if key == config.keyboard_config.global.everything_bar => {
                                 ie = InputEvent::EverythingBarTrigger;
+                            }
+                            InputEvent::KeyInput(key) if key.keycode == Keycode::Char('u') && key.modifiers.ctrl => {
+                                let buffer = output.get_front_buffer();
+                                screenshot(&buffer);
                             }
                             // TODO move to message, to handle signals in the same way?
                             InputEvent::KeyInput(key) if key == config.keyboard_config.global.close => {

@@ -65,9 +65,10 @@ impl Iterator for RecursiveFsIter {
 
 #[cfg(test)]
 mod tests {
-    use crate::{FilesystemFront, spath};
+    use crate::fs::filesystem_front::FilesystemFront;
     use crate::fs::fsf_iter::RecursiveFsIter;
     use crate::fs::mock_fs::MockFS;
+    use crate::spath;
 
     #[test]
     fn test_all_iter() {

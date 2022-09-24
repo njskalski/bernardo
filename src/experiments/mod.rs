@@ -8,3 +8,4 @@ pub mod pretty_ron;
 pub mod subwidget_pointer;
 pub mod path_prefixes;
 pub mod array_streaming_iterator;
+pub mod screen_shot;

@@ -65,6 +65,14 @@ impl<W: Write> CrosstermOutput<W> {
             .queue(cursor::Show)?;
         Ok(())
     }
+
+    pub fn get_front_buffer(&self) -> &BufferOutput {
+        &self.front_buffer
+    }
+
+    pub fn get_back_buffer(&self) -> &BufferOutput {
+        &self.back_buffer
+    }
 }
 
 impl<W: Write> Output for CrosstermOutput<W> {
