@@ -2,6 +2,7 @@ use std::ops::{Index, IndexMut};
 use std::path::Path;
 
 use log::error;
+use ron::to_string;
 use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
 
@@ -72,19 +73,19 @@ impl<T: Default + Clone> IndexMut<XY> for Buffer<T> {
 // TODO these are debug helpers, I will not invest in them much
 impl<T: Default + Clone> Buffer<T> where T: Serialize + DeserializeOwned + ?Sized {
     pub fn save_to_file(&self, filename: &Path) -> Result<(), ()> {
-        let vec: Vec<u8> = postcard::to_allocvec::<Self>(&self).map_err(|e| {
+        let s: String = ron::to_string(&self).map_err(|e| {
             error!("failed to serialize: {:?}", e);
-        })?.to_vec();
-        std::fs::write(filename, &vec).map_err(|e| {
+        })?;
+        std::fs::write(filename, &s).map_err(|e| {
             error!("failed to write: {:?}", e);
         })
     }
 
     pub fn from_file(filename: &str) -> Result<Buffer<T>, ()> {
-        let contents = std::fs::read(filename).map_err(|e| {
+        let contents = std::fs::read_to_string(filename).map_err(|e| {
             error!("failed to read: {:?}", e);
         })?;
-        postcard::from_bytes::<Self>(&contents).map_err(|e| {
+        ron::from_str::<Self>(&contents).map_err(|e| {
             error!("deserialization error: {:?}", e);
         })
     }
@@ -98,8 +99,9 @@ mod test {
     #[test]
     fn ser_de() {
         let dump = BufferOutput::new(XY::new(10, 10));
-        let vec = postcard::to_allocvec(&dump).unwrap();
-        let dump2 = postcard::from_bytes::<BufferOutput>(&vec).unwrap();
+
+        let s = ron::to_string(&dump).unwrap();
+        let dump2 = ron::from_str::<BufferOutput>(&s).unwrap();
 
         assert_eq!(dump.size, dump2.size);
     }
