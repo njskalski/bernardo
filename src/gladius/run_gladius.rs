@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::fs;
 use std::io::Stdout;
 use std::path::{Path, PathBuf};
@@ -27,12 +28,14 @@ use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
 
 pub fn run_gladius<
-    I: Input>(
+    I: Input,
+    O: FinalOutput,
+>(
     fsf: FsfRef,
     config: ConfigRef,
     clipboard: ClipboardRef,
     input: I,
-    mut output: CrosstermOutput<Stdout>,
+    mut output: O,
     files: Vec<PathBuf>,
     theme: &Theme,
     recording: bool,

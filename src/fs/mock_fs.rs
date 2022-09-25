@@ -216,15 +216,15 @@ impl MockFS {
         }
     }
 
-    pub fn generate_from_real(path: &Path) -> Result<Self, ()> {
-        let root = Record::from_real(path).map_err(|_| ())?;
+    pub fn generate_from_real<P: AsRef<Path>>(path: P) -> Result<Self, ()> {
+        let root = Record::from_real(path.as_ref()).map_err(|_| ())?;
 
         if !root.is_dir() {
             return Err(());
         }
 
         Ok(MockFS {
-            root_path: path.to_path_buf(),
+            root_path: path.as_ref().to_path_buf(),
             root_dir: RwLock::new(root),
         })
     }

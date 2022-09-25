@@ -1,5 +1,7 @@
+use std::any::Any;
 use std::fmt::Debug;
 
+use crate::io::buffer_output::BufferOutput;
 use crate::io::style::TextStyle;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
@@ -12,4 +14,5 @@ pub trait Output: Debug {
 
 pub trait FinalOutput: Output {
     fn end_frame(&mut self) -> Result<(), std::io::Error>;
+    fn get_front_buffer(&self) -> &BufferOutput;
 }
