@@ -11,16 +11,21 @@ use crate::mocks::full_setup::FullSetupBuilder;
 use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
 use crate::mocks::mock_output::MockOutput;
+use crate::spath;
 
 #[test]
 fn completion_test_1() {
-    let mock_fs = MockFS::generate_from_real("./test_envs/completion_test_1").unwrap();
-    assert!(mock_fs.is_file(&PathBuf::from("src/main.rs")));
-
     let mut full_setup = FullSetupBuilder::new("./test_envs/completion_test_1")
         .with_files(["src/main.rs"])
         .build();
 
+
+    let file = spath!(full_setup.fsf(), "src", "main.rs").unwrap();
+
     assert!(full_setup.wait_frame());
     assert!(full_setup.is_editor_opened());
+
+    full_setup.finish();
+
+    // assert!(full_setup.navcomp_pilot().wait_for_load(&file).is_some())
 }

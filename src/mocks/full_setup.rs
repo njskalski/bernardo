@@ -1,10 +1,13 @@
 use std::ffi::OsStr;
+use std::option::Option;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::thread::JoinHandle;
+use std::time::Duration;
 
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::{Receiver, select, Sender};
+use crossbeam_channel::after;
 use log::error;
 use which::Path;
 
@@ -19,11 +22,10 @@ use crate::io::buffer_output::BufferOutput;
 use crate::io::input_event::InputEvent;
 use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
+use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
 use crate::mocks::mock_output::MockOutput;
 use crate::primitives::xy::XY;
 use crate::widgets::no_editor::NoEditorWidget;
-
-const DEFAULT_MOCK_OUTPUT_SIZE: XY = XY::new(120, 36);
 
 pub struct FullSetupBuilder {
     path: PathBuf,
@@ -32,17 +34,21 @@ pub struct FullSetupBuilder {
     size: XY,
     recording: bool,
     step_frame: bool,
+    nav_comp_pilot: MockNavCompProviderPilot,
 }
 
 impl FullSetupBuilder {
+    const DEFAULT_MOCK_OUTPUT_SIZE: XY = XY::new(120, 36);
+
     pub fn new<P: AsRef<OsStr>>(path: P) -> Self {
         FullSetupBuilder {
             path: PathBuf::from(path.as_ref()),
             config: None,
             files: vec![],
-            size: DEFAULT_MOCK_OUTPUT_SIZE,
+            size: Self::DEFAULT_MOCK_OUTPUT_SIZE,
             recording: false,
             step_frame: false,
+            nav_comp_pilot: MockNavCompProviderPilot::new(),
         }
     }
 
@@ -93,11 +99,14 @@ pub struct FullSetup {
     theme: Theme,
     gladius_thread_handle: JoinHandle<()>,
     last_frame: Option<BufferOutput>,
+    nav_comp_pilot: MockNavCompProviderPilot,
 }
 
 impl FullSetupBuilder {
     pub fn build(self) -> FullSetup {
         // TODO setup logging too!
+
+        env_logger::init();
 
         let mock_fs = MockFS::generate_from_real(self.path).unwrap();
         let fsf = mock_fs.to_fsf();
@@ -135,41 +144,37 @@ impl FullSetupBuilder {
             theme,
             gladius_thread_handle: handle,
             last_frame: None,
+            nav_comp_pilot: MockNavCompProviderPilot::new(),
         }
     }
 }
 
 impl FullSetup {
-    // TODO not finished
-    pub fn finish(self) -> FinishedFullRun {
-        self.input_sender.send(InputEvent::KeyInput(self.config.keyboard_config.global.close)).unwrap();
-        self.gladius_thread_handle.join().unwrap();
-
-        FinishedFullRun {}
-    }
+    const DEFAULT_TIMEOUT: Duration = Duration::from_secs(1);
 
     pub fn wait_frame(&mut self) -> bool {
-        match self.output_receiver.recv() {
-            Ok(buffer) => {
-                self.last_frame = Some(buffer);
-                true
-            }
-            Err(e) => {
-                error!("failed retrieving frame: {:?}", e);
+        select! {
+            recv(self.output_receiver) -> frame_res => {
+                match frame_res {
+                    Ok(frame) => {
+                        self.last_frame = Some(frame);
+                        true
+                    }
+                    Err(e) => {
+                        error!("failed retrieving frame : {:?}", e);
+                        false
+                    }
+                }
+            },
+            default(Self::DEFAULT_TIMEOUT) => {
+                error!("timeout");
                 false
-            }
+            },
         }
     }
 
-    pub fn dry(&mut self) -> bool {
-        let mut res = false;
-        let mut iter = self.output_receiver.try_iter();
-        while let Some(frame) = iter.next() {
-            self.last_frame = Some(frame);
-            res = true;
-        }
-
-        res
+    pub fn navcomp_pilot(&self) -> &MockNavCompProviderPilot {
+        &self.nav_comp_pilot
     }
 
     pub fn get_frame(&self) -> Option<&BufferOutput> {
@@ -187,10 +192,29 @@ impl FullSetup {
         }
     }
 
+    pub fn fsf(&self) -> &FsfRef {
+        &self.fsf
+    }
+
     /*
     returns lines which have cursors (editor must be opened)
      */
-    pub fn get_cursor_lines(&self) {}
+    // pub fn get_cursor_lines(&self) {}
+
+    pub fn finish(self) -> FinishedFullSetupRun {
+        self.input_sender.send(InputEvent::KeyInput(self.config.keyboard_config.global.close)).unwrap();
+        self.gladius_thread_handle.join().unwrap();
+
+        FinishedFullSetupRun {
+            fsf: self.fsf,
+            last_frame: self.last_frame,
+            clipboard: self.clipboard,
+        }
+    }
 }
 
-pub struct FinishedFullRun {}
+pub struct FinishedFullSetupRun {
+    pub fsf: FsfRef,
+    pub last_frame: Option<BufferOutput>,
+    pub clipboard: ClipboardRef,
+}
