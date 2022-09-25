@@ -13,3 +13,5 @@ Here's what I need:
 4) a smart way to inspect state at the end of the test. I figured out I can query the "dump" for pieces that are
     focused, highlighted or marked in some other smart way. - DONE, TESTED
 5) put item into tick?
+6) with all these items, I need a common "test setup object", so I don't redo setup in 100s of tests, just say
+    "give me a setup no 1"

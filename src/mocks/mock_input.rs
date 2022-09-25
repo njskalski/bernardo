@@ -1,12 +1,13 @@
-use crossbeam_channel::{Receiver, Sender};
+use std::sync::Arc;
+
+use crossbeam_channel::{Receiver, Sender, unbounded};
 use which::Path;
 
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::input_source::InputSource;
 
-struct MockInput {
-    sender: Sender<InputEvent>,
+pub struct MockInput {
     receiver: Receiver<InputEvent>,
 }
 
@@ -17,7 +18,11 @@ impl Input for MockInput {
 }
 
 impl MockInput {
-    pub fn send_event(&self, ie: InputEvent) {
-        self.sender.send(ie).unwrap()
+    pub fn new() -> (MockInput, Sender<InputEvent>) {
+        let (sender, receiver) = unbounded::<InputEvent>();
+
+        (MockInput {
+            receiver
+        }, sender)
     }
 }

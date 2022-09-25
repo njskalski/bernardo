@@ -1,38 +1,40 @@
-use std::cell::{ RefCell};
+use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::{Arc, RwLock};
+
 use log::error;
 
 const EMPTY_STRING: String = String::new();
 
-pub type ClipboardRef = Rc<Box<dyn Clipboard>>;
+pub type ClipboardRef = Arc<Box<dyn Clipboard>>;
 
-pub trait Clipboard {
+pub trait Clipboard: Sync + Send {
     fn get(&self) -> String;
     fn set(&self, s: String) -> bool;
 }
 
 pub fn get_me_some_clipboard() -> ClipboardRef {
     match DefaultClipboard::new() {
-        Some(dc) => Rc::new(Box::new(dc)),
+        Some(dc) => Arc::new(Box::new(dc)),
         None => {
             error!("using failsafe fake clipboard");
-            Rc::new(Box::new(FakeClipboard::default()))
+            Arc::new(Box::new(FakeClipboard::default()))
         }
     }
 }
 
 pub fn get_me_fake_clipboard() -> ClipboardRef {
-    Rc::new(Box::new(FakeClipboard::default()))
+    Arc::new(Box::new(FakeClipboard::default()))
 }
 
 struct DefaultClipboard {
-    clipboard: RefCell<arboard::Clipboard>,
+    clipboard: RwLock<arboard::Clipboard>,
 }
 
 impl DefaultClipboard {
     pub fn new() -> Option<Self> {
         match arboard::Clipboard::new() {
-            Ok(c) => Some(DefaultClipboard { clipboard: RefCell::new(c) }),
+            Ok(c) => Some(DefaultClipboard { clipboard: RwLock::new(c) }),
             Err(e) => {
                 error!("failed acquiring clipboard: {:?}", e);
                 None
@@ -43,7 +45,7 @@ impl DefaultClipboard {
 
 impl Clipboard for DefaultClipboard {
     fn get(&self) -> String {
-        match self.clipboard.try_borrow_mut() {
+        match self.clipboard.try_read() {
             Ok(mut clipboard) => {
                 match clipboard.get_text() {
                     Ok(text) => text,
@@ -61,7 +63,7 @@ impl Clipboard for DefaultClipboard {
     }
 
     fn set(&self, contents: String) -> bool {
-        match self.clipboard.try_borrow_mut() {
+        match self.clipboard.try_write() {
             Ok(mut clipboard) => {
                 clipboard.set_text(contents).map_err(|e| {
                     error!("error setting clipboard contents: {:?}", e)
@@ -76,20 +78,20 @@ impl Clipboard for DefaultClipboard {
 }
 
 struct FakeClipboard {
-    contents: RefCell<String>,
+    contents: RwLock<String>,
 }
 
 impl Default for FakeClipboard {
     fn default() -> Self {
         FakeClipboard {
-            contents: RefCell::new(EMPTY_STRING),
+            contents: RwLock::new(EMPTY_STRING),
         }
     }
 }
 
 impl Clipboard for FakeClipboard {
     fn get(&self) -> String {
-        match self.contents.try_borrow() {
+        match self.contents.try_read() {
             Ok(clipboard) => {
                 clipboard.clone()
             }
@@ -101,7 +103,7 @@ impl Clipboard for FakeClipboard {
     }
 
     fn set(&self, contents: String) -> bool {
-        match self.contents.try_borrow_mut() {
+        match self.contents.try_write() {
             Ok(mut cr) => {
                 *cr = contents;
                 true

@@ -1,6 +1,7 @@
 use std::fmt::{Debug, Formatter};
 use std::io::Error;
 
+use crate::io::buffer::Buffer;
 use crate::io::buffer_output::BufferOutput;
 use crate::io::output::{FinalOutput, Output};
 use crate::io::style::TextStyle;
@@ -14,7 +15,15 @@ pub struct MockOutput {
 }
 
 impl MockOutput {
-    fn frontbuffer(&self) -> &BufferOutput {
+    pub fn new(size: XY) -> MockOutput {
+        MockOutput {
+            buffer_0: BufferOutput::new(size),
+            buffer_1: BufferOutput::new(size),
+            which_front: false,
+        }
+    }
+
+    pub fn frontbuffer(&self) -> &BufferOutput {
         if self.which_front == false {
             &self.buffer_0
         } else {
@@ -22,7 +31,7 @@ impl MockOutput {
         }
     }
 
-    fn frontbuffer_mut(&mut self) -> &mut BufferOutput {
+    pub fn frontbuffer_mut(&mut self) -> &mut BufferOutput {
         if self.which_front == false {
             &mut self.buffer_0
         } else {
@@ -30,7 +39,7 @@ impl MockOutput {
         }
     }
 
-    fn backbuffer(&self) -> &BufferOutput {
+    pub fn backbuffer(&self) -> &BufferOutput {
         if self.which_front {
             &self.buffer_0
         } else {
@@ -38,7 +47,7 @@ impl MockOutput {
         }
     }
 
-    fn backbuffer_mut(&mut self) -> &mut BufferOutput {
+    pub fn backbuffer_mut(&mut self) -> &mut BufferOutput {
         if self.which_front {
             &mut self.buffer_0
         } else {

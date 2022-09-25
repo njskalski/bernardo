@@ -13,6 +13,7 @@ impl Into<Color> for syntect::highlighting::Color {
     }
 }
 
+#[derive(Clone)]
 pub struct TmTheme {
     theme: syntect::highlighting::Theme,
 

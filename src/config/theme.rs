@@ -12,7 +12,7 @@ use crate::primitives::color::Color;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::tmtheme::TmTheme;
 
-#[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Theme {
     #[serde(default)]
     pub ui: UiTheme,
@@ -73,7 +73,7 @@ impl Theme {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct UiTheme {
     pub non_focused: TextStyle,
     pub focused: TextStyle,
@@ -148,7 +148,7 @@ impl Default for UiTheme {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct CursorsSettings {
     pub primary_anchor_background: Color,
     pub secondary_anchor_background: Color,
