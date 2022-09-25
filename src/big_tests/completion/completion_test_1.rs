@@ -1,16 +1,4 @@
-use std::path::PathBuf;
-use std::rc::Rc;
-use std::sync::Arc;
-
-use crate::config::config::Config;
-use crate::config::theme::Theme;
-use crate::fs::filesystem_front::FilesystemFront;
-use crate::fs::mock_fs::MockFS;
-use crate::gladius::run_gladius::run_gladius;
 use crate::mocks::full_setup::FullSetupBuilder;
-use crate::mocks::mock_clipboard::MockClipboard;
-use crate::mocks::mock_input::MockInput;
-use crate::mocks::mock_output::MockOutput;
 use crate::spath;
 
 #[test]

@@ -28,7 +28,7 @@ pub fn screenshot(dump: &BufferOutput) -> bool {
             true
         }
         Err(e) => {
-            error!("failed to write screenshot");
+            error!("failed to write screenshot: {:?}", e);
             false
         }
     }

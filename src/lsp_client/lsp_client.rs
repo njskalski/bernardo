@@ -26,13 +26,6 @@ use crate::promise::promise::{Promise, PromiseState};
 use crate::tsw::lang_id::LangId;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 
-const DEFAULT_RESPONSE_PREALLOCATION_SIZE: usize = 4192;
-
-/*
-Number of LanguageServerProtocol messages we don't know what to with do kept in memory.
- */
-const DEFAULT_MAX_UNPROCESSED_MSGS: usize = 24;
-
 // I use ID == String, because i32 might be small, and i64 is safe, so I send i64 as string and so I store it.
 // LSP defines id integer as i32, while jsonrpc_core as u64.
 pub struct CallInfo {

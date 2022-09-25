@@ -1,9 +1,8 @@
 use std::fmt::{Debug, Formatter};
 use std::io::Error;
 
-use crossbeam_channel::{bounded, Receiver, Sender};
+use crossbeam_channel::{Receiver, Sender};
 
-use crate::io::buffer::Buffer;
 use crate::io::buffer_output::BufferOutput;
 use crate::io::output::{FinalOutput, Output};
 use crate::io::style::TextStyle;

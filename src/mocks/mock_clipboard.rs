@@ -1,5 +1,5 @@
 use std::ops::Deref;
-use std::sync::{LockResult, RwLock, TryLockResult};
+use std::sync::RwLock;
 
 use log::error;
 

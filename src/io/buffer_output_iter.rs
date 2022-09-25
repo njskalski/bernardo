@@ -1,7 +1,5 @@
 use std::string::String;
 
-use unicode_width::UnicodeWidthStr;
-
 use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::style::TextStyle;
@@ -79,7 +77,6 @@ mod tests {
     use crate::config::theme::Theme;
     use crate::io::buffer_output::BufferOutput;
     use crate::io::cell::Cell;
-    use crate::io::style::TextStyle;
     use crate::primitives::xy::XY;
 
     #[test]

@@ -1,7 +1,4 @@
-use std::sync::Arc;
-
 use crossbeam_channel::{Receiver, Sender, unbounded};
-use which::Path;
 
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;

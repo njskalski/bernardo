@@ -1,4 +1,4 @@
-use log::{debug, error};
+use log::debug;
 
 use crate::config::config::ConfigRef;
 use crate::fs::path::SPath;

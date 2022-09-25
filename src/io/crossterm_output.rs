@@ -1,4 +1,3 @@
-use std::any::Any;
 use std::fmt::{Debug, Formatter};
 use std::io::Write;
 
@@ -106,7 +105,7 @@ impl<W: Write> FinalOutput for CrosstermOutput<W> {
     fn get_front_buffer(&self) -> &BufferOutput {
         &self.front_buffer
     }
-    
+
     fn end_frame(&mut self) -> Result<(), std::io::Error> {
         if log::log_enabled!(log::Level::Debug) {
             let size: XY = terminal::size().unwrap().into();

@@ -1,8 +1,7 @@
 use std::fmt::{Debug, Formatter};
 use std::time::Duration;
 
-use crossbeam_channel::{Receiver, select, Sender, unbounded};
-use jsonrpc_core::futures::future::select;
+use crossbeam_channel::{Receiver, select, Sender};
 use lazy_static::lazy_static;
 use log::{debug, error};
 

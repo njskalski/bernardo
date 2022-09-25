@@ -1,15 +1,12 @@
 use std::ffi::OsStr;
 use std::option::Option;
 use std::path::PathBuf;
-use std::rc::Rc;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 use std::time::Duration;
 
 use crossbeam_channel::{Receiver, select, Sender};
-use crossbeam_channel::after;
 use log::{error, LevelFilter};
-use which::Path;
 
 use crate::config::config::{Config, ConfigRef};
 use crate::config::theme::Theme;
