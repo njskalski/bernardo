@@ -1,6 +1,8 @@
 use std::fmt::{Debug, Formatter};
 use std::io::Error;
 
+use crossbeam_channel::{bounded, Receiver, Sender};
+
 use crate::io::buffer::Buffer;
 use crate::io::buffer_output::BufferOutput;
 use crate::io::output::{FinalOutput, Output};
@@ -12,15 +14,24 @@ pub struct MockOutput {
     buffer_0: BufferOutput,
     buffer_1: BufferOutput,
     which_front: bool,
+
+    sender: Sender<BufferOutput>,
 }
 
 impl MockOutput {
-    pub fn new(size: XY) -> MockOutput {
-        MockOutput {
+    pub fn new(size: XY, bounded: bool) -> (MockOutput, Receiver<BufferOutput>) {
+        let (sender, receiver) = if bounded {
+            crossbeam_channel::bounded::<BufferOutput>(1)
+        } else {
+            crossbeam_channel::unbounded::<BufferOutput>()
+        };
+
+        (MockOutput {
             buffer_0: BufferOutput::new(size),
             buffer_1: BufferOutput::new(size),
             which_front: false,
-        }
+            sender,
+        }, receiver)
     }
 
     pub fn frontbuffer(&self) -> &BufferOutput {

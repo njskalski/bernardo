@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 
-use crossbeam_channel::Sender;
+use crossbeam_channel::{Receiver, Sender};
 use which::Path;
 
 use crate::config::config::{Config, ConfigRef};
@@ -13,6 +13,7 @@ use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::mock_fs::MockFS;
 use crate::gladius::run_gladius::run_gladius;
+use crate::io::buffer_output::BufferOutput;
 use crate::io::input_event::InputEvent;
 use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
@@ -27,6 +28,7 @@ pub struct FullSetupBuilder {
     files: Vec<PathBuf>,
     size: XY,
     recording: bool,
+    step_frame: bool,
 }
 
 impl FullSetupBuilder {
@@ -37,6 +39,7 @@ impl FullSetupBuilder {
             files: vec![],
             size: DEFAULT_MOCK_OUTPUT_SIZE,
             recording: false,
+            step_frame: false,
         }
     }
 
@@ -69,11 +72,19 @@ impl FullSetupBuilder {
             ..self
         }
     }
+
+    pub fn with_step_frame(self) -> Self {
+        Self {
+            step_frame: true,
+            ..self
+        }
+    }
 }
 
 pub struct FullSetup {
     fsf: FsfRef,
-    input: Sender<InputEvent>,
+    input_sender: Sender<InputEvent>,
+    output_receiver: Receiver<BufferOutput>,
     config: ConfigRef,
     clipboard: ClipboardRef,
     theme: Theme,
@@ -86,8 +97,8 @@ impl FullSetupBuilder {
 
         let mock_fs = MockFS::generate_from_real(self.path).unwrap();
         let fsf = mock_fs.to_fsf();
-        let (input, sender) = MockInput::new();
-        let output = MockOutput::new(self.size);
+        let (input, input_sender) = MockInput::new();
+        let (output, output_receiver) = MockOutput::new(self.size, self.step_frame);
         let config: ConfigRef = Arc::new(self.config.unwrap_or(Config::default()));
         let clipboard: ClipboardRef = Arc::new(Box::new(MockClipboard::default()) as Box<dyn Clipboard + 'static>);
 
@@ -113,7 +124,8 @@ impl FullSetupBuilder {
 
         FullSetup {
             fsf,
-            input: sender,
+            input_sender,
+            output_receiver,
             config,
             clipboard,
             theme,
@@ -121,3 +133,15 @@ impl FullSetupBuilder {
         }
     }
 }
+
+impl FullSetup {
+    // TODO
+    pub fn finish(self) -> FinishedFullRun {
+        self.input_sender.send(InputEvent::KeyInput(self.config.keyboard_config.global.close)).unwrap();
+        self.gladius_thread_handle.join().unwrap();
+
+        FinishedFullRun {}
+    }
+}
+
+pub struct FinishedFullRun {}
