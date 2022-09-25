@@ -16,6 +16,39 @@ impl Cell {
     pub fn continuation() -> Cell {
         Cell::Continuation
     }
+
+    pub fn style(&self) -> Option<&TextStyle> {
+        match self {
+            Cell::Begin { style, grapheme } => {
+                Some(style)
+            }
+            Cell::Continuation => None,
+        }
+    }
+
+    pub fn grapheme(&self) -> Option<&str> {
+        match self {
+            Cell::Begin { style, grapheme } => {
+                Some(grapheme)
+            }
+            Cell::Continuation => None,
+        }
+    }
+
+    // TODO dirty workaround, probably I'd like the Cell to impl Copy
+    pub fn set(&mut self, other: &Self) {
+        match other {
+            Cell::Begin { style, grapheme } => {
+                *self = Cell::Begin {
+                    style: *style,
+                    grapheme: grapheme.clone(),
+                }
+            }
+            Cell::Continuation => {
+                *self = Cell::Continuation;
+            }
+        }
+    }
 }
 
 impl Default for Cell {

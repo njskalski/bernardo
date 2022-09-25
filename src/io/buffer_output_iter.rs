@@ -1,5 +1,7 @@
 use std::string::String;
 
+use unicode_width::UnicodeWidthStr;
+
 use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::style::TextStyle;
@@ -30,11 +32,12 @@ impl<'a> Iterator for BufferOutputIter<'a> {
         if self.pos >= self.buffer.size() {
             None
         } else {
-            while self.pos < self.buffer.size() {
-                if self.pos.x >= self.buffer.size().x {
-                    if self.pos.y < self.buffer.size().y {
+            while self.pos.y < self.buffer.size().y {
+                if self.pos.x == self.buffer.size().x {
+                    if self.pos.y + 1 < self.buffer.size().y {
                         self.pos.x = 0;
                         self.pos.y += 1;
+                        debug_assert!(self.pos.y <= self.buffer.size().y);
                     } else {
                         self.pos = self.buffer.size();
                         return None;
@@ -45,8 +48,11 @@ impl<'a> Iterator for BufferOutputIter<'a> {
 
                 'sticking:
                 for x in self.pos.x..self.buffer.size().x {
-                    let pos = XY::new(x, self.pos.y);
-                    let cell = &self.buffer[pos];
+                    let cell = &self.buffer[self.pos];
+                    self.pos = XY::new(x + 1, self.pos.y);
+                    debug_assert!(self.pos.x <= self.buffer.size().x);
+
+
                     if let Cell::Begin { style, grapheme } = cell {
                         if *style == self.text_style {
                             result += grapheme;
@@ -88,9 +94,35 @@ mod tests {
         let b = Cell::new(focused, "b".to_string());
 
         for x in 0..10 as u16 {
-            for y in 0..4 as u16 {
-                buffer[XY::new(x, y)] = a;
+            for y in 0..3 as u16 {
+                if x < 3 || x >= 8 {
+                    buffer[XY::new(x, y)].set(&b);
+                } else {
+                    buffer[XY::new(x, y)].set(&a);
+                }
             }
         }
+
+        for x in 0..10 as u16 {
+            buffer[XY::new(x, 1)].set(&b);
+        }
+
+        /*
+         01234567890
+        0bbbaaaaabb
+        1bbbbbbbbbb
+        2bbbaaaaabb
+        3
+         */
+
+        let mut iter = buffer.items_of_style(focused);
+        assert_eq!(iter.next(), Some("bbb".to_string()));
+        assert_eq!(iter.next(), Some("bb".to_string()));
+
+        assert_eq!(iter.next(), Some("bbbbbbbbbb".to_string()));
+
+        assert_eq!(iter.next(), Some("bbb".to_string()));
+        assert_eq!(iter.next(), Some("bb".to_string()));
+        assert_eq!(iter.next(), None);
     }
 }
