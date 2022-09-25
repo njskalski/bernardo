@@ -6,15 +6,55 @@ use crate::io::style::TextStyle;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 
-pub struct BufferOutputIter<'a> {
+pub struct BufferOutputCellsIter<'a> {
+    buffer: &'a BufferOutput,
+    pos: XY,
+}
+
+impl<'a> BufferOutputCellsIter<'a> {
+    pub fn new(buffer: &'a BufferOutput) -> Self {
+        BufferOutputCellsIter {
+            buffer,
+            pos: XY::ZERO,
+        }
+    }
+}
+
+impl<'a> Iterator for BufferOutputCellsIter<'a> {
+    type Item = (XY, &'a Cell);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pos >= self.buffer.size() {
+            None
+        } else {
+            let res: (XY, &'a Cell) = (self.pos.clone(), &self.buffer[self.pos]);
+
+            self.pos.x += 1;
+
+            if self.pos.x == self.buffer.size().x {
+                if self.pos.y + 1 < self.buffer.size().y {
+                    self.pos.x = 0;
+                    self.pos.y += 1;
+                    debug_assert!(self.pos.y <= self.buffer.size().y);
+                } else {
+                    self.pos = self.buffer.size();
+                }
+            }
+
+            Some(res)
+        }
+    }
+}
+
+pub struct BufferOutputSubsequenceIter<'a> {
     buffer: &'a BufferOutput,
     text_style: TextStyle,
     pos: XY,
 }
 
-impl<'a> BufferOutputIter<'a> {
+impl<'a> BufferOutputSubsequenceIter<'a> {
     pub fn new(buffer: &'a BufferOutput, text_style: TextStyle) -> Self {
-        BufferOutputIter {
+        BufferOutputSubsequenceIter {
             buffer,
             text_style,
             pos: XY::ZERO,
@@ -23,7 +63,7 @@ impl<'a> BufferOutputIter<'a> {
 }
 
 // TODO test
-impl<'a> Iterator for BufferOutputIter<'a> {
+impl<'a> Iterator for BufferOutputSubsequenceIter<'a> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -120,6 +160,39 @@ mod tests {
 
         assert_eq!(iter.next(), Some("bbb".to_string()));
         assert_eq!(iter.next(), Some("bb".to_string()));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_buffer_output_cell_iter() {
+        let theme = Theme::default();
+        let non_focused = theme.ui.non_focused;
+        let focused = theme.ui.focused;
+
+        let mut buffer: BufferOutput = BufferOutput::new(XY::new(2, 2));
+
+        let a = Cell::new(non_focused, "a".to_string());
+        let b = Cell::new(focused, "b".to_string());
+
+        buffer[XY::new(0, 0)].set(&b);
+        buffer[XY::new(0, 1)].set(&a);
+        buffer[XY::new(1, 0)].set(&a);
+        buffer[XY::new(1, 1)].set(&b);
+
+
+        /*
+         01234567890
+        0ba
+        1ab
+        2
+        3
+         */
+
+        let mut iter = buffer.cells_iter();
+        assert_eq!(iter.next(), Some((XY::new(0, 0), &b)));
+        assert_eq!(iter.next(), Some((XY::new(1, 0), &a)));
+        assert_eq!(iter.next(), Some((XY::new(0, 1), &a)));
+        assert_eq!(iter.next(), Some((XY::new(1, 1), &b)));
         assert_eq!(iter.next(), None);
     }
 }

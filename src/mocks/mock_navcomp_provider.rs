@@ -10,6 +10,7 @@ use crate::lsp_client::helpers::LspTextCursor;
 use crate::mocks::mock_navcomp_provider::MockNavCompEvent::FileOpened;
 use crate::w7e::navcomp_group::NavCompTickSender;
 use crate::w7e::navcomp_provider::{CompletionsPromise, NavCompProvider};
+use crate::w7e::navcomp_provider_lsp::NavCompProviderLsp;
 
 lazy_static! {
     static ref pair: (Sender<MockNavCompEvent>, Receiver<MockNavCompEvent>) = crossbeam_channel::unbounded();

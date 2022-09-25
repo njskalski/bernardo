@@ -6,7 +6,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::buffer::Buffer;
-use crate::io::buffer_output_iter::BufferOutputIter;
+use crate::io::buffer_output_iter::{BufferOutputCellsIter, BufferOutputSubsequenceIter};
 use crate::io::cell::Cell;
 use crate::io::output::Output;
 use crate::io::style::TextStyle;
@@ -87,8 +87,19 @@ impl Debug for BufferOutput {
 }
 
 impl BufferOutput {
-    pub fn items_of_style(&self, style: TextStyle) -> BufferOutputIter {
-        BufferOutputIter::new(&self, style)
+    pub fn items_of_style(&self, style: TextStyle) -> BufferOutputSubsequenceIter {
+        BufferOutputSubsequenceIter::new(&self, style)
+    }
+
+    pub fn cells_iter(&self) -> BufferOutputCellsIter {
+        BufferOutputCellsIter::new(self)
+    }
+
+    pub fn find_focused_cursor_anchor_positions(&self) -> Vec<XY> {
+        let mut res = Vec::new();
+
+
+        res
     }
 }
 
