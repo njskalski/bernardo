@@ -1,4 +1,5 @@
 use std::ffi::OsStr;
+use std::iter::empty;
 use std::option::Option;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -7,6 +8,7 @@ use std::time::Duration;
 
 use crossbeam_channel::{Receiver, select, Sender};
 use log::{error, LevelFilter};
+use unicode_segmentation::UnicodeSegmentation;
 
 use crate::config::config::{Config, ConfigRef};
 use crate::config::theme::Theme;
@@ -17,11 +19,14 @@ use crate::fs::fsf_ref::FsfRef;
 use crate::fs::mock_fs::MockFS;
 use crate::gladius::run_gladius::run_gladius;
 use crate::io::buffer_output::BufferOutput;
+use crate::io::cell::Cell;
 use crate::io::input_event::InputEvent;
+use crate::io::keys::{Key, Keycode};
 use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
 use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
 use crate::mocks::mock_output::MockOutput;
+use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::xy::XY;
 use crate::widgets::no_editor::NoEditorWidget;
 
@@ -151,24 +156,30 @@ impl FullSetup {
     const DEFAULT_TIMEOUT: Duration = Duration::from_secs(1);
 
     pub fn wait_frame(&mut self) -> bool {
+        let mut res = false;
         select! {
             recv(self.output_receiver) -> frame_res => {
                 match frame_res {
                     Ok(frame) => {
                         self.last_frame = Some(frame);
-                        true
+                        res = true;
                     }
                     Err(e) => {
                         error!("failed retrieving frame : {:?}", e);
-                        false
                     }
                 }
             },
             default(Self::DEFAULT_TIMEOUT) => {
                 error!("timeout");
-                false
             },
         }
+
+        while let Ok(bo) = self.output_receiver.try_recv() {
+            self.last_frame = Some(bo);
+            res = true;
+        }
+
+        res
     }
 
     pub fn navcomp_pilot(&self) -> &MockNavCompProviderPilot {
@@ -207,6 +218,80 @@ impl FullSetup {
             fsf: self.fsf,
             last_frame: self.last_frame,
             clipboard: self.clipboard,
+        }
+    }
+
+    pub fn focused_cursors(&self) -> Box<dyn Iterator<Item=(XY, &'_ Cell)> + '_> {
+        match self.last_frame.as_ref() {
+            None => {
+                Box::new(empty())
+            }
+            Some(frame) => {
+                Box::new(frame.cells_iter().filter(
+                    |(pos, cell)| {
+                        match cell {
+                            Cell::Begin { style, .. } => {
+                                style.background == self.theme.cursor_background(CursorStatus::UnderCursor).unwrap()
+                            }
+                            Cell::Continuation => {
+                                false
+                            }
+                        }
+                    }
+                ))
+            }
+        }
+    }
+
+    pub fn focused_cursor_lines(&self) -> Box<dyn Iterator<Item=(u16, String)> + '_> {
+        Box::new(self.focused_cursors().map(|(pos, _)| (pos.y, self.last_frame.as_ref().unwrap().get_line(pos.y).unwrap())))
+    }
+
+    pub fn send_input(&self, ie: InputEvent) -> bool {
+        self.input_sender.send(ie).is_ok()
+    }
+
+    pub fn send_key(&self, key: Key) -> bool {
+        self.input_sender.send(InputEvent::KeyInput(key)).is_ok()
+    }
+
+    pub fn type_in(&self, text: &str) -> bool {
+        let mut res = true;
+        for c in text.chars() {
+            res &= self.send_input(InputEvent::KeyInput(Keycode::Char(c).to_key()));
+            if !res {
+                break;
+            }
+        }
+
+        res
+    }
+
+    /*
+    waits with default timeout for condition F to be satisfied, returns whether that happened or not
+     */
+    pub fn wait_for<F: Fn(&FullSetup) -> bool>(&mut self, condition: F) -> bool {
+        loop {
+            select! {
+                recv(self.output_receiver) -> frame_res => {
+                    match frame_res {
+                        Ok(frame) => {
+                            self.last_frame = Some(frame);
+                            if condition(&self) {
+                                return true;
+                            }
+                        }
+                        Err(e) => {
+                            error!("error receiving frame: {:?}", e);
+                            return false;
+                        }
+                    }
+                },
+                default(Self::DEFAULT_TIMEOUT) => {
+                    error!("timeout");
+                    return false;
+                }
+            }
         }
     }
 }

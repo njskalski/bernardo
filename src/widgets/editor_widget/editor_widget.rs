@@ -803,6 +803,7 @@ impl Widget for EditorWidget {
                     // page_height as usize is safe, since page_height is u16 and usize is larger.
                     let changed = self.buffer.apply_cem(cem.clone(), page_height as usize, Some(&self.clipboard));
 
+                    // TODO this needs to happen only if CONTENTS changed, not if cursor positions changed
                     if changed {
                         match (&self.navcomp, self.buffer.get_path()) {
                             (Some(navcomp), Some(path)) => {

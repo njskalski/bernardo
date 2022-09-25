@@ -95,11 +95,26 @@ impl BufferOutput {
         BufferOutputCellsIter::new(self)
     }
 
-    pub fn find_focused_cursor_anchor_positions(&self) -> Vec<XY> {
-        let mut res = Vec::new();
+    pub fn get_line(&self, line_idx: u16) -> Option<String> {
+        if line_idx >= self.size().y {
+            return None;
+        }
 
+        let mut res = String::new();
+        res.reserve(self.size().x as usize);
 
-        res
+        for x in 0..self.size().x {
+            let pos = XY::new(x, line_idx);
+            let cell = &self[pos];
+            match cell {
+                Cell::Begin { style, grapheme } => {
+                    res += grapheme;
+                }
+                Cell::Continuation => {}
+            }
+        }
+
+        Some(res)
     }
 }
 

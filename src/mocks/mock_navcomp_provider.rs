@@ -7,7 +7,7 @@ use log::{debug, error};
 
 use crate::fs::path::SPath;
 use crate::lsp_client::helpers::LspTextCursor;
-use crate::mocks::mock_navcomp_provider::MockNavCompEvent::FileOpened;
+use crate::mocks::mock_navcomp_provider::MockNavCompEvent::{FileOpened, FileUpdated};
 use crate::w7e::navcomp_group::NavCompTickSender;
 use crate::w7e::navcomp_provider::{CompletionsPromise, NavCompProvider};
 use crate::w7e::navcomp_provider_lsp::NavCompProviderLsp;
@@ -23,11 +23,13 @@ pub struct MockCompletionMatcher {
 #[derive(Clone, Debug)]
 pub enum MockNavCompEvent {
     FileOpened(SPath, String),
+    FileUpdated(SPath, String),
 }
 
 pub struct MockNavCompProvider {
     pub completions: Vec<MockCompletionMatcher>,
 
+    triggers: Vec<String>,
     event_sender: Sender<MockNavCompEvent>,
 }
 
@@ -36,6 +38,7 @@ impl MockNavCompProvider {
         MockNavCompProvider {
             completions: Default::default(),
             event_sender: pair.0.clone(),
+            triggers: vec![".".to_string(), "::".to_string()],
         }
     }
 
@@ -93,7 +96,7 @@ impl NavCompProvider for MockNavCompProvider {
     }
 
     fn submit_edit_event(&self, path: &SPath, file_contents: String) {
-        todo!()
+        self.event_sender.send(MockNavCompEvent::FileUpdated(path.clone(), file_contents)).unwrap()
     }
 
     fn completions(&self, path: SPath, cursor: LspTextCursor, trigger: Option<String>) -> Option<CompletionsPromise> {
@@ -101,7 +104,7 @@ impl NavCompProvider for MockNavCompProvider {
     }
 
     fn completion_triggers(&self, path: &SPath) -> &Vec<String> {
-        todo!()
+        &self.triggers
     }
 
     fn file_closed(&self, path: &SPath) {
