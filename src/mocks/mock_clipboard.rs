@@ -25,7 +25,7 @@ impl Clipboard for MockClipboard {
 
     fn set(&self, s: String) -> bool {
         match self.contents.write() {
-            Ok(lock) => {
+            Ok(mut lock) => {
                 *lock = s;
                 true
             }

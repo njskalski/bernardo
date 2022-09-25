@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use log::error;
@@ -45,7 +43,7 @@ impl DefaultClipboard {
 
 impl Clipboard for DefaultClipboard {
     fn get(&self) -> String {
-        match self.clipboard.try_read() {
+        match self.clipboard.try_write() {
             Ok(mut clipboard) => {
                 match clipboard.get_text() {
                     Ok(text) => text,
