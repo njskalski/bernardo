@@ -9,7 +9,7 @@ use serde::de::DeserializeOwned;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Buffer<T: Default + Clone> {
     size: XY,
     cells: Vec<T>,

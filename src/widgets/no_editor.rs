@@ -6,11 +6,13 @@ use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
-const NO_EDIT_TEXT: &'static str = "no editor loaded.";
-
 pub struct NoEditorWidget {
     wid: WID,
     text_pos: XY,
+}
+
+impl NoEditorWidget {
+    pub const NO_EDIT_TEXT: &'static str = "no editor loaded.";
 }
 
 impl Default for NoEditorWidget {
@@ -32,13 +34,13 @@ impl Widget for NoEditorWidget {
     }
 
     fn min_size(&self) -> XY {
-        XY::new(NO_EDIT_TEXT.len() as u16, 3)
+        XY::new(Self::NO_EDIT_TEXT.len() as u16, 3)
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
         let mut x = 0;
-        if sc.visible_hint().size.x >= NO_EDIT_TEXT.len() as u16 {
-            x = (sc.visible_hint().size.x - NO_EDIT_TEXT.len() as u16) / 2;
+        if sc.visible_hint().size.x >= Self::NO_EDIT_TEXT.len() as u16 {
+            x = (sc.visible_hint().size.x - Self::NO_EDIT_TEXT.len() as u16) / 2;
         };
 
         let y = sc.visible_hint().size.y / 2;
@@ -59,7 +61,7 @@ impl Widget for NoEditorWidget {
 
         output.print_at(self.text_pos,
                         theme.default_text(focused),
-                        NO_EDIT_TEXT,
+                        Self::NO_EDIT_TEXT,
         );
     }
 }

@@ -1,7 +1,5 @@
-use std::any::Any;
 use std::fs;
-use std::io::Stdout;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use crossbeam_channel::select;
@@ -13,11 +11,10 @@ use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::screen_shot::screenshot;
 use crate::fs::fsf_ref::FsfRef;
 use crate::gladius::paradigm::recursive_treat_views;
-use crate::io::crossterm_output::CrosstermOutput;
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::io::output::{FinalOutput, Output};
+use crate::io::output::FinalOutput;
 use crate::primitives::helpers::get_next_filename;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;

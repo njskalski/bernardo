@@ -1,9 +1,11 @@
+use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 
 use crossbeam_channel::{Receiver, Sender};
+use log::error;
 use which::Path;
 
 use crate::config::config::{Config, ConfigRef};
@@ -19,6 +21,7 @@ use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
 use crate::mocks::mock_output::MockOutput;
 use crate::primitives::xy::XY;
+use crate::widgets::no_editor::NoEditorWidget;
 
 const DEFAULT_MOCK_OUTPUT_SIZE: XY = XY::new(120, 36);
 
@@ -32,9 +35,9 @@ pub struct FullSetupBuilder {
 }
 
 impl FullSetupBuilder {
-    pub fn new<P: AsRef<Path>>(path: P) -> Self {
+    pub fn new<P: AsRef<OsStr>>(path: P) -> Self {
         FullSetupBuilder {
-            path: path.as_ref().to_path_buf(),
+            path: PathBuf::from(path.as_ref()),
             config: None,
             files: vec![],
             size: DEFAULT_MOCK_OUTPUT_SIZE,
@@ -50,8 +53,8 @@ impl FullSetupBuilder {
         }
     }
 
-    pub fn with_files<I: Iterator<Item=PathBuf>>(self, iter: I) -> Self {
-        let files: Vec<PathBuf> = iter.collect();
+    pub fn with_files<P: AsRef<OsStr>, I: IntoIterator<Item=P>>(self, items: I) -> Self {
+        let files: Vec<PathBuf> = items.into_iter().map(|p| PathBuf::from(p.as_ref())).collect();
 
         FullSetupBuilder {
             files,
@@ -89,6 +92,7 @@ pub struct FullSetup {
     clipboard: ClipboardRef,
     theme: Theme,
     gladius_thread_handle: JoinHandle<()>,
+    last_frame: Option<BufferOutput>,
 }
 
 impl FullSetupBuilder {
@@ -130,18 +134,63 @@ impl FullSetupBuilder {
             clipboard,
             theme,
             gladius_thread_handle: handle,
+            last_frame: None,
         }
     }
 }
 
 impl FullSetup {
-    // TODO
+    // TODO not finished
     pub fn finish(self) -> FinishedFullRun {
         self.input_sender.send(InputEvent::KeyInput(self.config.keyboard_config.global.close)).unwrap();
         self.gladius_thread_handle.join().unwrap();
 
         FinishedFullRun {}
     }
+
+    pub fn wait_frame(&mut self) -> bool {
+        match self.output_receiver.recv() {
+            Ok(buffer) => {
+                self.last_frame = Some(buffer);
+                true
+            }
+            Err(e) => {
+                error!("failed retrieving frame: {:?}", e);
+                false
+            }
+        }
+    }
+
+    pub fn dry(&mut self) -> bool {
+        let mut res = false;
+        let mut iter = self.output_receiver.try_iter();
+        while let Some(frame) = iter.next() {
+            self.last_frame = Some(frame);
+            res = true;
+        }
+
+        res
+    }
+
+    pub fn get_frame(&self) -> Option<&BufferOutput> {
+        self.last_frame.as_ref()
+    }
+
+    /*
+    Looks for default "no editor opened" text of NoEditorWidget.
+     */
+    pub fn is_editor_opened(&self) -> bool {
+        if self.last_frame.as_ref().unwrap().to_string().find(NoEditorWidget::NO_EDIT_TEXT).is_some() {
+            false
+        } else {
+            true
+        }
+    }
+
+    /*
+    returns lines which have cursors (editor must be opened)
+     */
+    pub fn get_cursor_lines(&self) {}
 }
 
 pub struct FinishedFullRun {}

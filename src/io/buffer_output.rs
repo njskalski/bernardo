@@ -91,3 +91,27 @@ impl BufferOutput {
         BufferOutputIter::new(&self, style)
     }
 }
+
+impl ToString for BufferOutput {
+    fn to_string(&self) -> String {
+        let mut wchujdlugistring = String::new();
+        wchujdlugistring.reserve((self.size().x * self.size().y + 1) as usize);
+
+        for x in 0..self.size().x {
+            for y in 0..self.size().y {
+                let pos = XY::new(x, y);
+                let cell = &self[pos];
+                match cell {
+                    Cell::Begin { style, grapheme } => {
+                        wchujdlugistring += grapheme;
+                    }
+                    Cell::Continuation => {}
+                }
+            }
+            wchujdlugistring += "\n";
+        }
+
+        wchujdlugistring
+    }
+}
+

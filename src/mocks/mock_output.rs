@@ -90,6 +90,10 @@ impl Output for MockOutput {
 impl FinalOutput for MockOutput {
     fn end_frame(&mut self) -> Result<(), Error> {
         self.which_front = !self.which_front;
+
+        let msg = self.frontbuffer().clone();
+        self.sender.send(msg).unwrap();
+
         Ok(())
     }
 
