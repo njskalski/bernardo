@@ -4,7 +4,7 @@ use std::time::Duration;
 use crossbeam_channel::{Receiver, select, Sender, unbounded};
 use jsonrpc_core::futures::future::select;
 use lazy_static::lazy_static;
-use log::error;
+use log::{debug, error};
 
 use crate::fs::path::SPath;
 use crate::lsp_client::helpers::LspTextCursor;
@@ -20,6 +20,7 @@ pub struct MockCompletionMatcher {
     pub path: Option<SPath>,
 }
 
+#[derive(Clone, Debug)]
 pub enum MockNavCompEvent {
     FileOpened(SPath, String),
 }
@@ -66,7 +67,8 @@ impl MockNavCompProviderPilot {
                                 FileOpened(opened_path, contents) if &opened_path == requested_path => {
                                     return Some(contents);
                                 }
-                                _ => {
+                                other => {
+                                    debug!("received {:?}", other);
                                     continue;
                                 }
                             }

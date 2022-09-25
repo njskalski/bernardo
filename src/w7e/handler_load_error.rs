@@ -6,6 +6,7 @@ use crate::lsp_client::lsp_io_error::LspIOError;
 #[derive(Debug, Eq, PartialEq)]
 pub enum HandlerLoadError {
     HandlerNotFound,
+    HandlerNotAvailable,
     NotAProject,
     LspNotFound,
     ReadError(ReadError),

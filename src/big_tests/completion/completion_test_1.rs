@@ -25,7 +25,8 @@ fn completion_test_1() {
     assert!(full_setup.wait_frame());
     assert!(full_setup.is_editor_opened());
 
-    full_setup.finish();
+    assert!(full_setup.navcomp_pilot().wait_for_load(&file).is_some());
 
-    // assert!(full_setup.navcomp_pilot().wait_for_load(&file).is_some())
+    let end = full_setup.finish();
+    assert!(end.screenshot());
 }

@@ -64,31 +64,39 @@ impl RustHandler {
         let contents = cargo_file.read_entire_file()?;
         let cargo = cargo_toml::Manifest::from_slice(&contents)
             .map_err(|e| HandlerLoadError::DeserializationError(e.to_string()))?;
-        
+
         let mut navcomp_op: Option<NavCompRef> = None;
 
-        if let Some(mut lsp) = LspWrapper::new(lsp_path,
-                                               ff.absolute_path(),
-                                               tick_sender.clone(),
-        ) {
-            // TODO reintroduce timeout?
-            debug!("initializing lsp");
-            match lsp.initialize() {
-                Ok(_init_result) => {
-                    debug!("lsp initialized successfully.");
+        #[cfg(not(test))]
+        {
+            if let Some(mut lsp) = LspWrapper::new(lsp_path,
+                                                   ff.absolute_path(),
+                                                   tick_sender.clone(),
+            ) {
+                // TODO reintroduce timeout?
+                debug!("initializing lsp");
+                match lsp.initialize() {
+                    Ok(_init_result) => {
+                        debug!("lsp initialized successfully.");
 
-                    navcomp_op = Some(
-                        Arc::new(Box::new(NavCompProviderLsp::new(lsp, tick_sender.clone())) as Box<dyn NavCompProvider>)
-                    );
+                        navcomp_op = Some(
+                            Arc::new(Box::new(NavCompProviderLsp::new(lsp, tick_sender.clone())) as Box<dyn NavCompProvider>)
+                        );
+                    }
+                    Err(e) => {
+                        error!("Lsp init failed: {:?}", e);
+                    }
                 }
-                Err(e) => {
-                    error!("Lsp init failed: {:?}", e);
-                }
+            } else {
+                error!("LspWrapper construction failed.")
             }
-        } else {
-            error!("LspWrapper construction failed.")
         }
 
+        #[cfg(test)]
+        {
+            debug!("initializing MockNavCompProvider");
+            navcomp_op = Some(Arc::new(Box::new(crate::mocks::mock_navcomp_provider::MockNavCompProvider::new()) as Box<dyn NavCompProvider>))
+        }
 
         Ok(RustHandler {
             root: ff,

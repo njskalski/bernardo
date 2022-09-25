@@ -8,12 +8,13 @@ use std::time::Duration;
 
 use crossbeam_channel::{Receiver, select, Sender};
 use crossbeam_channel::after;
-use log::error;
+use log::{error, LevelFilter};
 use which::Path;
 
 use crate::config::config::{Config, ConfigRef};
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::{Clipboard, ClipboardRef};
+use crate::experiments::screen_shot::screenshot;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::mock_fs::MockFS;
@@ -104,9 +105,9 @@ pub struct FullSetup {
 
 impl FullSetupBuilder {
     pub fn build(self) -> FullSetup {
-        // TODO setup logging too!
-
-        env_logger::init();
+        let mut logger_builder = env_logger::builder();
+        logger_builder.filter_level(LevelFilter::Debug);
+        logger_builder.init();
 
         let mock_fs = MockFS::generate_from_real(self.path).unwrap();
         let fsf = mock_fs.to_fsf();
@@ -217,4 +218,10 @@ pub struct FinishedFullSetupRun {
     pub fsf: FsfRef,
     pub last_frame: Option<BufferOutput>,
     pub clipboard: ClipboardRef,
+}
+
+impl FinishedFullSetupRun {
+    pub fn screenshot(&self) -> bool {
+        self.last_frame.as_ref().map(|frame| screenshot(frame)).unwrap_or(false)
+    }
 }

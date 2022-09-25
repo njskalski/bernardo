@@ -77,7 +77,7 @@ impl<T: Default + Clone> Buffer<T> where T: Serialize + DeserializeOwned + ?Size
             error!("failed to serialize: {:?}", e);
         })?;
         std::fs::write(filename, &s).map_err(|e| {
-            error!("failed to write: {:?}", e);
+            error!("failed to write to {:?}: {:?}", filename, e);
         })
     }
 
