@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::sync::RwLock;
 
@@ -14,6 +15,9 @@ use crate::fs::write_error::WriteError;
 
 pub enum Record {
     File(Vec<u8>),
+    /*
+    PathBuf represents here only the *last* component of full PathBuf
+     */
     Dir(HashMap<PathBuf, Record>),
 }
 
@@ -132,6 +136,35 @@ impl Record {
             }
         }
     }
+
+    fn from_real(path: &Path) -> std::io::Result<Record> {
+        if path.is_file() {
+            fs::read(path).map(|contents| Record::File(contents))
+        } else {
+            let read_dir = fs::read_dir(path)?;
+            let mut dir_contents: HashMap<PathBuf, Record> = Default::default();
+            for dir_entry_res in read_dir {
+                match dir_entry_res {
+                    Ok(dir_entry) => {
+                        let name: PathBuf = dir_entry.file_name().into();
+                        let item = match Self::from_real(&dir_entry.path()) {
+                            Ok(i) => i,
+                            Err(e) => {
+                                error!("failed creating item {:?} because: {:?}", name, e);
+                                continue;
+                            }
+                        };
+                        dir_contents.insert(name, item);
+                    }
+                    Err(e) => {
+                        error!("failed retrieving dir_entry, skipping: {:?}", e);
+                        continue;
+                    }
+                }
+            }
+            Ok(Record::Dir(dir_contents))
+        }
+    }
 }
 
 pub struct MockFS {
@@ -181,6 +214,19 @@ impl MockFS {
         } else {
             Err(WriteError::FileNotFound)
         }
+    }
+
+    pub fn generate_from_real(path: &Path) -> Result<Self, ()> {
+        let root = Record::from_real(path).map_err(|_| ())?;
+
+        if !root.is_dir() {
+            return Err(());
+        }
+
+        Ok(MockFS {
+            root_path: path.to_path_buf(),
+            root_dir: RwLock::new(root),
+        })
     }
 }
 

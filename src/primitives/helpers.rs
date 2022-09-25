@@ -1,3 +1,8 @@
+use std::collections::HashSet;
+use std::fs;
+use std::path::{Path, PathBuf};
+
+use log::error;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -5,6 +10,35 @@ use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::color::Color;
 use crate::primitives::xy::XY;
+
+pub fn get_next_filename(dir: &Path, prefix: &str, suffix: &str) -> Option<PathBuf> {
+    return match fs::read_dir(&dir) {
+        Err(e) => {
+            error!("failed read_dir: {:?}", e);
+            None
+        }
+        Ok(contents) => {
+            let all_files = contents
+                .map(|r| r.ok().map(|de| {
+                    de.path()
+                        .file_name()
+                        .map(|c| c.to_string_lossy().to_string())
+                }))
+                .flatten()
+                .flatten()
+                .collect::<HashSet<String>>();
+
+            let mut idx: usize = 0;
+            let mut filename = format!("{}{}{}", prefix, idx, suffix);
+            while all_files.contains(&filename) {
+                idx += 1;
+                filename = format!("{}{}{}", prefix, idx, suffix);
+            }
+
+            Some(dir.join(filename))
+        }
+    };
+}
 
 pub fn fill_output(color: Color, output: &mut dyn Output) {
     let style = TextStyle::new(

@@ -62,5 +62,6 @@ fn main() {
         output,
         files,
         &theme,
+        args.recording,
     )
 }

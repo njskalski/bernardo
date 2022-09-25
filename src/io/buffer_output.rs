@@ -6,6 +6,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::buffer::Buffer;
+use crate::io::buffer_output_iter::BufferOutputIter;
 use crate::io::cell::Cell;
 use crate::io::output::Output;
 use crate::io::style::TextStyle;
@@ -82,5 +83,11 @@ impl Output for BufferOutput {
 impl Debug for BufferOutput {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "[BufferOutput {}]", self.size())
+    }
+}
+
+impl BufferOutput {
+    pub fn items_of_style(&self, style: TextStyle) -> BufferOutputIter {
+        BufferOutputIter::new(&self, style)
     }
 }

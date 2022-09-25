@@ -1,5 +1,6 @@
+use std::fs;
 use std::io::Stdout;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use crossbeam_channel::select;
@@ -16,6 +17,7 @@ use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::{FinalOutput, Output};
+use crate::primitives::helpers::get_next_filename;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::inspector::{inspect_workspace, InspectError};
@@ -33,6 +35,7 @@ pub fn run_gladius<
     mut output: CrosstermOutput<Stdout>,
     files: Vec<PathBuf>,
     theme: &Theme,
+    recording: bool,
 ) {
     let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
 
@@ -114,6 +117,8 @@ pub fn run_gladius<
         }
     }
 
+    let mut recorded_input: Vec<InputEvent> = Vec::new();
+
     // Genesis
     'main:
     loop {
@@ -140,6 +145,10 @@ pub fn run_gladius<
                 match msg {
                     Ok(mut ie) => {
                         // debug!("msg ie {:?}", ie);
+                        if recording {
+                            recorded_input.push(ie.clone());
+                        }
+
                         match ie {
                             InputEvent::KeyInput(key) if key.as_focus_update().is_some() && key.modifiers.alt => {
                                 ie = InputEvent::FocusUpdate(key.as_focus_update().unwrap());
@@ -167,11 +176,47 @@ pub fn run_gladius<
             }
 
             recv(nav_comp_group_ref.recvr()) -> tick => {
+
+                if recording {
+                    recorded_input.push(InputEvent::Tick);
+                }
+
                 match tick {
                     _ => {
                         // warn!("unhandled tick : {:?}", tick)
                     }
                 }
+            }
+        }
+    }
+
+    if recording {
+        let bytes = match ron::to_string(&recorded_input) {
+            Ok(b) => b,
+            Err(e) => {
+                error!("failed to serialzie recording: {:?}", e);
+                return;
+            }
+        };
+
+        let recordings_path = PathBuf::from("./input_recordings/");
+        if let Err(e) = fs::create_dir_all(&recordings_path) {
+            error!("failed to create dir for recordings: {:?}", e);
+            return;
+        }
+
+        let filename = match get_next_filename(&recordings_path, "recording_", ".ron") {
+            Some(f) => f,
+            None => {
+                error!("no filename for recording");
+                return;
+            }
+        };
+
+        match fs::write(filename, bytes) {
+            Ok(_) => {}
+            Err(e) => {
+                error!("failed to write recordings: {:?}", e);
             }
         }
     }

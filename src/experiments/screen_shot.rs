@@ -6,37 +6,21 @@ use std::path::PathBuf;
 use log::{debug, error};
 
 use crate::io::buffer_output::BufferOutput;
+use crate::primitives::helpers::get_next_filename;
 
 pub fn screenshot(dump: &BufferOutput) {
     let SCREENSHOT_DIR: PathBuf = PathBuf::from("./screenshots/");
-    fs::create_dir_all(&SCREENSHOT_DIR);
+    if let Err(e) = fs::create_dir_all(&SCREENSHOT_DIR) {
+        error!("failed to screenshot: can't create dir: {:?}", e);
+        return;
+    }
 
-    let filename = match fs::read_dir(&SCREENSHOT_DIR) {
-        Err(e) => {
-            error!("failed making screenshot, read_dir: {:?}", e);
+    let filename = match get_next_filename(SCREENSHOT_DIR.as_path(), "screenshot_", ".ron") {
+        None => {
+            error!("failed to screenshot : no filename");
             return;
         }
-        Ok(contents) => {
-            let all_files = contents
-                .map(|r| r.ok().map(|de| {
-                    de.path()
-                        .file_name()
-                        .map(|c| c.to_string_lossy().to_string())
-                }))
-                .flatten()
-                .flatten()
-                .collect::<HashSet<String>>();
-
-
-            let mut idx: usize = 0;
-            let mut filename = format!("screenshot_{}.dump", idx);
-            while all_files.contains(&filename) {
-                idx += 1;
-                filename = format!("screenshot_{}.dump", idx);
-            }
-
-            filename
-        }
+        Some(f) => f,
     };
 
     debug!("writing screenshot to file {:?}", &filename);
