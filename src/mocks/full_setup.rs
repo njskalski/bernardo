@@ -19,6 +19,7 @@ use crate::fs::fsf_ref::FsfRef;
 use crate::fs::mock_fs::MockFS;
 use crate::gladius::run_gladius::run_gladius;
 use crate::io::buffer_output::BufferOutput;
+use crate::io::buffer_output_iter::BufferOutputSubsequenceIter;
 use crate::io::cell::Cell;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::{Key, Keycode};
@@ -153,7 +154,7 @@ impl FullSetupBuilder {
 }
 
 impl FullSetup {
-    const DEFAULT_TIMEOUT: Duration = Duration::from_secs(1);
+    const DEFAULT_TIMEOUT: Duration = Duration::from_secs(2);
 
     pub fn wait_frame(&mut self) -> bool {
         let mut res = false;
@@ -245,6 +246,10 @@ impl FullSetup {
 
     pub fn focused_cursor_lines(&self) -> Box<dyn Iterator<Item=(u16, String)> + '_> {
         Box::new(self.focused_cursors().map(|(pos, _)| (pos.y, self.last_frame.as_ref().unwrap().get_line(pos.y).unwrap())))
+    }
+
+    pub fn highlighted_items(&self, focused: bool) -> BufferOutputSubsequenceIter<'_> {
+        self.last_frame.as_ref().unwrap().items_of_style(self.theme.highlighted(focused))
     }
 
     pub fn send_input(&self, ie: InputEvent) -> bool {

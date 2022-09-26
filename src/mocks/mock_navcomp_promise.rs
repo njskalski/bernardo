@@ -1,22 +1,24 @@
 use std::thread;
 use std::time::Duration;
 
-use crossbeam_channel::{Receiver, TryRecvError};
+use crossbeam_channel::{Receiver, Sender, TryRecvError};
 use log::debug;
 
 use crate::promise::promise::{Promise, PromiseState, UpdateResult};
+use crate::w7e::navcomp_group::NavCompTick;
 use crate::w7e::navcomp_provider::Completion;
 
 pub struct MockNavCompPromise<T: Send + 'static> {
     receiver: Receiver<T>,
+    tick_sender: Sender<NavCompTick>,
     item: Option<T>,
     done: bool,
 }
 
 impl<T: Send + 'static> MockNavCompPromise<T> {
-    const DEFAULT_DELAY: Duration = Duration::from_millis(600);
+    const DEFAULT_DELAY: Duration = Duration::from_millis(300);
 
-    pub fn new_succ(value: T) -> Self {
+    pub fn new_succ(tick_sender: Sender<NavCompTick>, value: T) -> Self {
         let (sender, receiver) = crossbeam_channel::bounded::<T>(1);
 
         thread::spawn(move || {
@@ -26,12 +28,13 @@ impl<T: Send + 'static> MockNavCompPromise<T> {
 
         MockNavCompPromise {
             receiver,
+            tick_sender,
             item: None,
             done: false,
         }
     }
 
-    pub fn new_broken() -> Self {
+    pub fn new_broken(tick_sender: Sender<NavCompTick>) -> Self {
         let (sender, receiver) = crossbeam_channel::bounded::<T>(1);
 
         thread::spawn(move || {
@@ -42,6 +45,7 @@ impl<T: Send + 'static> MockNavCompPromise<T> {
 
         MockNavCompPromise {
             receiver,
+            tick_sender,
             item: None,
             done: false,
         }

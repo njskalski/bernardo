@@ -95,7 +95,12 @@ impl RustHandler {
         #[cfg(test)]
         {
             debug!("initializing MockNavCompProvider");
-            navcomp_op = Some(Arc::new(Box::new(crate::mocks::mock_navcomp_provider::MockNavCompProvider::new()) as Box<dyn NavCompProvider>))
+            navcomp_op = Some(
+                Arc::new(
+                    Box::new(
+                        crate::mocks::mock_navcomp_provider::MockNavCompProvider::new(tick_sender.clone())
+                    ) as Box<dyn NavCompProvider>)
+            )
         }
 
         Ok(RustHandler {
