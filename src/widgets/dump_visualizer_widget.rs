@@ -71,7 +71,7 @@ impl Widget for DumpVisualizerWidget {
             for x in 0..max_x {
                 for y in 0..max_y {
                     let xy = XY::new(x, y);
-                    let cell = &dump[xy].0;
+                    let cell = &dump[xy].cell;
                     match cell {
                         Cell::Continuation => {}
                         Cell::Begin { style, grapheme } => {

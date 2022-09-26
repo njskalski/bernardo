@@ -1,13 +1,13 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 use crate::widget::widget::WID;
 
 #[cfg(test)]
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug)]
 pub struct ExtInfo(pub &'static str, pub WID);
 
 #[cfg(not(test))]
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug)]
 pub struct ExtInfo();
 
 impl Default for ExtInfo {

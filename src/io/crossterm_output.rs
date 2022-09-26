@@ -147,7 +147,7 @@ impl<W: Write> FinalOutput for CrosstermOutput<W> {
                 }
 
                 if true {
-                    match &cell.0 {
+                    match &cell.cell {
                         Cell::Begin { style, grapheme } => {
                             if last_style != Some(*style) {
                                 let bgcolor = Color::Rgb {
