@@ -34,21 +34,6 @@ impl Cell {
             Cell::Continuation => None,
         }
     }
-
-    // TODO dirty workaround, probably I'd like the Cell to impl Copy
-    pub fn set(&mut self, other: &Self) {
-        match other {
-            Cell::Begin { style, grapheme } => {
-                *self = Cell::Begin {
-                    style: *style,
-                    grapheme: grapheme.clone(),
-                }
-            }
-            Cell::Continuation => {
-                *self = Cell::Continuation;
-            }
-        }
-    }
 }
 
 impl Default for Cell {

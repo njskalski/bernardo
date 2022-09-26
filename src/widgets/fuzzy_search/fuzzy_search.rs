@@ -312,6 +312,7 @@ impl Widget for FuzzySearchWidget {
                     XY::new(x, y),
                     grapheme_style,
                     g,
+                    self.ext(),
                 );
 
                 x += g.width() as u16;
@@ -328,7 +329,9 @@ impl Widget for FuzzySearchWidget {
             for x in (item.display_name().as_ref().width() as u16)..self.width() {
                 output.print_at(XY::new(x as u16, y),
                                 style,
-                                " ");
+                                " ",
+                                self.ext(),
+                );
             }
 
             if self.draw_comment == DrawComment::All || (self.draw_comment == DrawComment::Highlighted && selected_line) {
@@ -337,14 +340,18 @@ impl Widget for FuzzySearchWidget {
                     for g in comment.as_ref().graphemes(true) {
                         output.print_at(XY::new(x, y + 1),
                                         style,
-                                        g);
+                                        g,
+                                        self.ext(),
+                        );
                         x += g.width() as u16; //TODO overflow
                     }
                     //TODO cast overflow
                     for x in (comment.as_ref().width() as u16)..self.width() {
                         output.print_at(XY::new(x as u16, y + 1),
                                         style,
-                                        " ");
+                                        " ",
+                                        self.ext(),
+                        );
                     }
                 }
             }

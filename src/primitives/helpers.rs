@@ -6,6 +6,7 @@ use log::error;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use crate::io::ext_info::ExtInfo;
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::color::Color;
@@ -40,7 +41,7 @@ pub fn get_next_filename(dir: &Path, prefix: &str, suffix: &str) -> Option<PathB
     };
 }
 
-pub fn fill_output(color: Color, output: &mut dyn Output) {
+pub fn fill_output(color: Color, output: &mut dyn Output, ext: ExtInfo) {
     let style = TextStyle::new(
         Color::new(0, 0, 0),
         color,
@@ -55,6 +56,7 @@ pub fn fill_output(color: Color, output: &mut dyn Output) {
                 XY::new(x, y),
                 style,
                 " ",
+                ext,
             )
         }
     }

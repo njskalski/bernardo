@@ -2,6 +2,7 @@ use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::config::theme::Theme;
+use crate::io::ext_info::ExtInfo;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::size_constraint::SizeConstraint;
@@ -76,6 +77,18 @@ pub trait Widget: 'static {
 
     fn get_actions(&self) -> Box<dyn Iterator<Item=ActionTrigger<Self>> + '_> where Self: Sized {
         Box::new(std::iter::empty())
+    }
+
+    fn ext(&self) -> ExtInfo {
+        #[cfg(test)]
+        {
+            ExtInfo(self.typename(), self.id())
+        }
+
+        #[cfg(not(test))]
+        {
+            ExtInfo()
+        }
     }
 }
 

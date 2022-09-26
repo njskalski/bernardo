@@ -132,6 +132,7 @@ impl<W: Widget> WithScroll<W> {
                     XY::new(px, idx),
                     style,
                     " ",
+                    self.ext(),
                 )
             }
 
@@ -139,6 +140,7 @@ impl<W: Widget> WithScroll<W> {
                 XY::new(offset, idx),
                 style,
                 &item,
+                self.ext(),
             );
         }
     }

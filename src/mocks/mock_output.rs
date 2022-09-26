@@ -4,6 +4,7 @@ use std::io::Error;
 use crossbeam_channel::{Receiver, Sender};
 
 use crate::io::buffer_output::BufferOutput;
+use crate::io::ext_info::ExtInfo;
 use crate::io::output::{FinalOutput, Output};
 use crate::io::style::TextStyle;
 use crate::primitives::size_constraint::SizeConstraint;
@@ -73,8 +74,8 @@ impl Debug for MockOutput {
 }
 
 impl Output for MockOutput {
-    fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
-        self.backbuffer_mut().print_at(pos, style, text)
+    fn print_at(&mut self, pos: XY, style: TextStyle, text: &str, ext: ExtInfo) {
+        self.backbuffer_mut().print_at(pos, style, text, ext)
     }
 
     fn clear(&mut self) -> Result<(), Error> {

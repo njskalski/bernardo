@@ -9,6 +9,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
+use crate::io::ext_info::ExtInfo;
 use crate::io::output::{FinalOutput, Output};
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::size_constraint::SizeConstraint;
@@ -72,7 +73,7 @@ impl<W: Write> CrosstermOutput<W> {
 }
 
 impl<W: Write> Output for CrosstermOutput<W> {
-    fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
+    fn print_at(&mut self, pos: XY, style: TextStyle, text: &str, ext: ExtInfo) {
         let buffer = if self.current_buffer == false {
             &mut self.front_buffer
         } else {
@@ -81,7 +82,7 @@ impl<W: Write> Output for CrosstermOutput<W> {
 
         // debug!("printing {} at {}", text, pos);
 
-        buffer.print_at(pos, style, text)
+        buffer.print_at(pos, style, text, ext)
     }
 
     fn clear(&mut self) -> Result<(), std::io::Error> {
@@ -146,7 +147,7 @@ impl<W: Write> FinalOutput for CrosstermOutput<W> {
                 }
 
                 if true {
-                    match cell {
+                    match &cell.0 {
                         Cell::Begin { style, grapheme } => {
                             if last_style != Some(*style) {
                                 let bgcolor = Color::Rgb {

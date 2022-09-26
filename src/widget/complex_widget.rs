@@ -38,7 +38,7 @@ pub trait ComplexWidget: Widget + Sized {
     we require internal_render on widget's self, to avoid infinite recursion
      */
     fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        fill_output(theme.default_text(focused).background, output);
+        fill_output(theme.default_text(focused).background, output, self.ext());
     }
 
     // Called when we set initial "focus" within a complex widget and then as a fallback, whenever
@@ -115,7 +115,7 @@ pub trait ComplexWidget: Widget + Sized {
     }
 
     fn complex_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        fill_output(theme.ui.non_focused.background, output);
+        fill_output(theme.ui.non_focused.background, output, self.ext());
 
         match self.get_display_state_op() {
             None => error!("failed rendering {} without cached_sizes", self.typename()),

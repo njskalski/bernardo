@@ -231,7 +231,7 @@ impl ComplexWidget for CompletionWidget {
     fn internal_render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
         for x in 0..output.size_constraint().visible_hint().size.x {
             for y in 0..output.size_constraint().visible_hint().size.y {
-                output.print_at(XY::new(x, y), theme.ui.focused_highlighted, "!");
+                output.print_at(XY::new(x, y), theme.ui.focused_highlighted, "!", self.ext());
             }
         }
     }

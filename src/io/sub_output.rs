@@ -3,6 +3,7 @@ use std::fmt::{Debug, Formatter};
 use log::error;
 use unicode_width::UnicodeWidthStr;
 
+use crate::io::ext_info::ExtInfo;
 use crate::io::output::Output;
 use crate::io::style::{TEXT_STYLE_WHITE_ON_BLACK, TextStyle};
 use crate::primitives::rect::Rect;
@@ -33,7 +34,7 @@ impl Output for SubOutput<'_> {
     and self.frame() is on "parent space".
     So we compare for "drawing beyond border" against *size* of the frame, not it's position.
      */
-    fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
+    fn print_at(&mut self, pos: XY, style: TextStyle, text: &str, ext: ExtInfo) {
         let end_pos = pos + (text.width() as u16, 0);
 
         if cfg!(debug_assertions) {
@@ -51,7 +52,7 @@ impl Output for SubOutput<'_> {
         }
 
         // TODO add grapheme cutting
-        self.output.print_at(self.frame.pos + pos, style, text)
+        self.output.print_at(self.frame.pos + pos, style, text, ext)
     }
 
     fn clear(&mut self) -> Result<(), std::io::Error> {
@@ -62,7 +63,7 @@ impl Output for SubOutput<'_> {
         for x in 0..self.frame.size.x {
             for y in 0..self.frame.size.y {
                 self.output
-                    .print_at(self.frame.pos + XY::new(x, y), style, " ")
+                    .print_at(self.frame.pos + XY::new(x, y), style, " ", ExtInfo::default())
             }
         }
         Ok(())

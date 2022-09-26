@@ -505,7 +505,7 @@ impl EditorWidget {
             }
         };
 
-        helpers::fill_output(default.background, output);
+        helpers::fill_output(default.background, output, self.ext());
 
         let char_range_op = self.buffer.char_range(output);
         let highlights = self.buffer.highlight(char_range_op);
@@ -573,7 +573,7 @@ impl EditorWidget {
                     style.foreground = style.foreground.half();
                 }
 
-                output.print_at(pos, style, tr);
+                output.print_at(pos, style, tr, self.ext());
 
                 x_offset += tr.width();
                 if x_offset as u16 >= output.size_constraint().visible_hint().lower_right().x {
@@ -606,7 +606,7 @@ impl EditorWidget {
                 style = style.with_background(bg);
             });
 
-            output.print_at(one_beyond_last_pos, style, BEYOND);
+            output.print_at(one_beyond_last_pos, style, BEYOND, self.ext());
         }
     }
 

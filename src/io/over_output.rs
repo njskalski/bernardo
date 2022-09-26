@@ -5,6 +5,7 @@ use log::warn;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use crate::io::ext_info::ExtInfo;
 use crate::io::output::Output;
 use crate::io::style::TextStyle;
 use crate::primitives::size_constraint::SizeConstraint;
@@ -36,7 +37,7 @@ impl Output for OverOutput<'_> {
     /*
     Again, remember, pos is in "widget space", not in space where "size constraint" was created.
      */
-    fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
+    fn print_at(&mut self, pos: XY, style: TextStyle, text: &str, ext: ExtInfo) {
         // TODO: I have no clue why this was failing
         if !self.size_constraint.bigger_equal_than(
             self.size_constraint.visible_hint().lower_right()
@@ -85,7 +86,7 @@ impl Output for OverOutput<'_> {
             let y = pos.y - self.size_constraint.visible_hint().upper_left().y; // >= 0, tested above and < u16::MAX since no addition.
             let local_pos = XY::new(x as u16, y);
 
-            self.output.print_at(local_pos, style, grapheme);
+            self.output.print_at(local_pos, style, grapheme, ext);
             x_offset += grapheme.width() as i32; //TODO
         }
     }

@@ -220,7 +220,7 @@ impl Widget for EditBoxWidget {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let primary_style = theme.highlighted(focused);
-        helpers::fill_output(primary_style.background, output);
+        helpers::fill_output(primary_style.background, output, self.ext());
 
         let mut x: usize = 0;
         for (char_idx, g) in self.text.to_string().graphemes(true).enumerate() {
@@ -234,6 +234,7 @@ impl Widget for EditBoxWidget {
                 XY::new(x as u16, 0), //TODO
                 style,
                 g,
+                self.ext(),
             );
             x += g.width();
         }
@@ -249,6 +250,7 @@ impl Widget for EditBoxWidget {
                 XY::new(x as u16, 0),
                 style,
                 " ",
+                self.ext(),
             );
         }
 
@@ -268,6 +270,7 @@ impl Widget for EditBoxWidget {
                     pos,
                     primary_style,
                     " ",
+                    self.ext(),
                 );
             }
         }

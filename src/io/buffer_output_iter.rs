@@ -27,7 +27,7 @@ impl<'a> Iterator for BufferOutputCellsIter<'a> {
         if self.pos >= self.buffer.size() {
             None
         } else {
-            let res: (XY, &'a Cell) = (self.pos.clone(), &self.buffer[self.pos]);
+            let res: (XY, &'a Cell) = (self.pos.clone(), &self.buffer[self.pos].0);
 
             self.pos.x += 1;
 
@@ -86,7 +86,7 @@ impl<'a> Iterator for BufferOutputSubsequenceIter<'a> {
 
                 'sticking:
                 for x in self.pos.x..self.buffer.size().x {
-                    let cell = &self.buffer[self.pos];
+                    let cell = &self.buffer[self.pos].0;
                     self.pos = XY::new(x + 1, self.pos.y);
                     debug_assert!(self.pos.x <= self.buffer.size().x);
 
@@ -117,6 +117,7 @@ mod tests {
     use crate::config::theme::Theme;
     use crate::io::buffer_output::BufferOutput;
     use crate::io::cell::Cell;
+    use crate::io::ext_info::ExtInfo;
     use crate::primitives::xy::XY;
 
     #[test]
@@ -133,15 +134,15 @@ mod tests {
         for x in 0..10 as u16 {
             for y in 0..3 as u16 {
                 if x < 3 || x >= 8 {
-                    buffer[XY::new(x, y)].set(&b);
+                    buffer[XY::new(x, y)] = (b, ExtInfo::default());
                 } else {
-                    buffer[XY::new(x, y)].set(&a);
+                    buffer[XY::new(x, y)] = (a, ExtInfo::default());
                 }
             }
         }
 
         for x in 0..10 as u16 {
-            buffer[XY::new(x, 1)].set(&b);
+            buffer[XY::new(x, 1)] = (b, ExtInfo::default());
         }
 
         /*
@@ -174,10 +175,10 @@ mod tests {
         let a = Cell::new(non_focused, "a".to_string());
         let b = Cell::new(focused, "b".to_string());
 
-        buffer[XY::new(0, 0)].set(&b);
-        buffer[XY::new(0, 1)].set(&a);
-        buffer[XY::new(1, 0)].set(&a);
-        buffer[XY::new(1, 1)].set(&b);
+        buffer[XY::new(0, 0)] = (b, ExtInfo::default());
+        buffer[XY::new(0, 1)] = (a, ExtInfo::default());
+        buffer[XY::new(1, 0)] = (a, ExtInfo::default());
+        buffer[XY::new(1, 1)] = (b, ExtInfo::default());
 
 
         /*

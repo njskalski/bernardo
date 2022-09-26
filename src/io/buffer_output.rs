@@ -8,16 +8,17 @@ use unicode_width::UnicodeWidthStr;
 use crate::io::buffer::Buffer;
 use crate::io::buffer_output_iter::{BufferOutputCellsIter, BufferOutputSubsequenceIter};
 use crate::io::cell::Cell;
+use crate::io::ext_info::ExtInfo;
 use crate::io::output::Output;
 use crate::io::style::TextStyle;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 
-pub type BufferOutput = Buffer<Cell>;
+pub type BufferOutput = Buffer<(Cell, ExtInfo)>;
 
 impl Output for BufferOutput {
-    fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
+    fn print_at(&mut self, pos: XY, style: TextStyle, text: &str, ext: ExtInfo) {
         if !self.size_constraint().strictly_bigger_than(pos) {
             warn!(
                 "early exit on drawing beyond border (req {}, border {:?})",
@@ -50,10 +51,10 @@ impl Output for BufferOutput {
 
 
             let xy = pos + XY::new(shift_x as u16, 0);
-            self[xy] = Cell::Begin {
+            self[xy] = (Cell::Begin {
                 style,
                 grapheme: grapheme.to_string(),
-            };
+            }, ext);
 
             // TODO this can go outside the line or even cause a panic.
             if grapheme.width() > 0 {
@@ -62,7 +63,7 @@ impl Output for BufferOutput {
                     let cont_shift_x = (idx as u16) + offset;
                     let xy2 = pos + XY::new(cont_shift_x as u16, 0 as u16);
 
-                    self[xy2] = Cell::continuation();
+                    self[xy2] = (Cell::continuation(), ext);
                 }
             }
         }
@@ -70,7 +71,7 @@ impl Output for BufferOutput {
 
     fn clear(&mut self) -> Result<(), std::io::Error> {
         for idx in 0..self.cells().len() {
-            self.cells_mut()[idx] = Cell::default();
+            self.cells_mut()[idx] = (Cell::default(), ExtInfo::default());
         }
         Ok(())
     }
@@ -105,7 +106,7 @@ impl BufferOutput {
 
         for x in 0..self.size().x {
             let pos = XY::new(x, line_idx);
-            let cell = &self[pos];
+            let cell = &self[pos].0;
             match cell {
                 Cell::Begin { style, grapheme } => {
                     res += grapheme;
@@ -126,7 +127,7 @@ impl ToString for BufferOutput {
         for x in 0..self.size().x {
             for y in 0..self.size().y {
                 let pos = XY::new(x, y);
-                let cell = &self[pos];
+                let cell = &self[pos].0;
                 match cell {
                     Cell::Begin { style, grapheme } => {
                         wchujdlugistring += grapheme;

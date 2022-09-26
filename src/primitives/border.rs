@@ -1,3 +1,4 @@
+use crate::io::ext_info::ExtInfo;
 use crate::io::output::Output;
 use crate::io::style::TextStyle;
 use crate::primitives::xy::XY;
@@ -31,44 +32,52 @@ pub const SINGLE_BORDER_STYLE: BorderStyle = BorderStyle {
 };
 
 impl BorderStyle {
-    pub fn draw_edges(&self, style: TextStyle, output: &mut dyn Output) {
-        draw_full_rect(style, self, output)
+    pub fn draw_edges(&self, style: TextStyle, output: &mut dyn Output, ext: ExtInfo) {
+        draw_full_rect(style, self, output, ext)
     }
 }
 
 
-fn draw_full_rect(style: TextStyle, border_style: &BorderStyle, output: &mut dyn Output) {
+fn draw_full_rect(style: TextStyle, border_style: &BorderStyle, output: &mut dyn Output, ext: ExtInfo) {
     let size = output.size_constraint().visible_hint().size;
     if size > XY::new(1, 1) {
         output.print_at(XY::ZERO,
                         style,
-                        border_style.upper_left);
+                        border_style.upper_left,
+                        ext);
         output.print_at(XY::new(0, size.y - 1),
                         style,
-                        border_style.bottom_left);
+                        border_style.bottom_left,
+                        ext);
         output.print_at(XY::new(size.x - 1, 0),
                         style,
-                        border_style.upper_right);
+                        border_style.upper_right,
+                        ext);
         output.print_at(XY::new(size.x - 1, size.y - 1),
                         style,
-                        border_style.bottom_right);
+                        border_style.bottom_right,
+                        ext);
 
         for x in 1..size.x - 1 {
             output.print_at(XY::new(x, 0),
                             style,
-                            border_style.horizontal_line);
+                            border_style.horizontal_line,
+                            ext);
             output.print_at(XY::new(x, size.y - 1),
                             style,
-                            border_style.horizontal_line);
+                            border_style.horizontal_line,
+                            ext);
         }
 
         for y in 1..size.y - 1 {
             output.print_at(XY::new(0, y),
                             style,
-                            border_style.vertical_line);
+                            border_style.vertical_line,
+                            ext);
             output.print_at(XY::new(size.x - 1, y),
                             style,
-                            border_style.vertical_line);
+                            border_style.vertical_line,
+                            ext);
         }
     } else {
         for x in 0..size.x {
@@ -77,6 +86,7 @@ fn draw_full_rect(style: TextStyle, border_style: &BorderStyle, output: &mut dyn
                     XY::new(x, y),
                     style,
                     "╳",
+                    ext,
                 );
             }
         }

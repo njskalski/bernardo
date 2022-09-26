@@ -83,7 +83,7 @@ impl Widget for ButtonWidget {
             full_text = ">".to_string() + self.text.as_ref_str() + "<"
         }
 
-        output.print_at((0, 0).into(), style, full_text.as_str());
+        output.print_at((0, 0).into(), style, full_text.as_str(), self.ext());
     }
 
     fn anchor(&self) -> XY {

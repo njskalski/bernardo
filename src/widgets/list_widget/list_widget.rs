@@ -361,7 +361,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
         };
 
         let primary_style = theme.default_text(focused);
-        helpers::fill_output(primary_style.background, output);
+        helpers::fill_output(primary_style.background, output, self.ext());
         let cursor_style = theme.highlighted(focused);
         let header_style = theme.header(focused);
 
@@ -376,6 +376,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                     XY::new(x_offset, y_offset),
                     header_style,
                     Item::get_column_name(c_idx), // TODO cut agaist overflow
+                    self.ext(),
                 );
                 // TODO adjust lenght for the last column
                 x_offset += Item::get_min_column_width(c_idx);
@@ -439,6 +440,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                             XY::new(x_offset, y_offset + line_idx as u16),
                             style,
                             &text,
+                            self.ext(),
                         );
                     }
                     Some(highlight_iter) => {
@@ -460,6 +462,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                                 XY::new(x_offset + (x_stride as u16), y_offset + line_idx as u16),
                                 style,
                                 grapheme,
+                                self.ext(),
                             );
 
                             x_stride += grapheme.width();
@@ -477,6 +480,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                             pos,
                             style,
                             " ",
+                            self.ext(),
                         );
                     }
                 }

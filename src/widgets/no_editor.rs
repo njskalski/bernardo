@@ -62,6 +62,7 @@ impl Widget for NoEditorWidget {
         output.print_at(self.text_pos,
                         theme.default_text(focused),
                         Self::NO_EDIT_TEXT,
+                        self.ext(),
         );
     }
 }

@@ -317,7 +317,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let primary_style = theme.default_text(focused);
-        helpers::fill_output(primary_style.background, output);
+        helpers::fill_output(primary_style.background, output, self.ext());
         let cursor_style = theme.highlighted(focused);
 
         for (item_idx, (depth, node)) in self.items().enumerate()
@@ -388,6 +388,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
                     XY::new(x, y),
                     local_style,
                     g,
+                    self.ext(),
                 );
 
                 x_offset += g.width();

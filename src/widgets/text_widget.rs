@@ -62,7 +62,7 @@ impl Widget for TextWidget {
         let text = theme.default_text(focused);
 
         for (idx, line) in self.text.as_ref_str().lines().enumerate() {
-            output.print_at(XY::new(0, idx as u16), text, line); //TODO
+            output.print_at(XY::new(0, idx as u16), text, line, self.ext()); //TODO
         }
     }
 }
