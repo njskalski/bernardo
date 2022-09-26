@@ -78,6 +78,15 @@ impl Output for BufferOutput {
     fn size_constraint(&self) -> SizeConstraint {
         SizeConstraint::simple(self.size())
     }
+
+    #[cfg(test)]
+    fn get_final_position(&self, local_pos: XY) -> Option<XY> {
+        if self.within(local_pos) {
+            Some(local_pos)
+        } else {
+            None
+        }
+    }
 }
 
 impl Debug for BufferOutput {

@@ -222,7 +222,7 @@ impl PartialOrd for XY {
         }
 
         if self.x < other.x && self.y < other.y {
-            return Some(Ordering::Greater);
+            return Some(Ordering::Less);
         }
 
         None

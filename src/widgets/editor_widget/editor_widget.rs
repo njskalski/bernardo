@@ -902,6 +902,14 @@ impl Widget for EditorWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(test)]
+        {
+            let upper_left = output.get_final_position(XY::ZERO);
+            let inc_size = output.size_constraint().visible_hint().size - XY::new(1, 1);
+            let lower_right = output.get_final_position(inc_size);
+            warn!("rendering Editor at {:?} - {:?}",  upper_left, lower_right);
+        }
+
         self.internal_render(theme, focused, output);
         self.render_hover(theme, focused, output);
     }

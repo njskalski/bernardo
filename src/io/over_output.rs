@@ -97,6 +97,22 @@ impl Output for OverOutput<'_> {
     fn size_constraint(&self) -> SizeConstraint {
         self.size_constraint
     }
+
+    #[cfg(test)]
+    fn get_final_position(&self, local_pos: XY) -> Option<XY> {
+        let upper_left = self.size_constraint.visible_hint().upper_left();
+
+        if local_pos.x < upper_left.x || local_pos.y < upper_left.y {
+            None
+        } else {
+            let parent_pos = local_pos - upper_left;
+            if self.output.size_constraint().visible_hint().contains(parent_pos) {
+                self.output.get_final_position(parent_pos)
+            } else {
+                None
+            }
+        }
+    }
 }
 
 impl<'a> Debug for OverOutput<'a> {

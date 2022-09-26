@@ -99,6 +99,15 @@ impl<W: Write> Output for CrosstermOutput<W> {
     fn size_constraint(&self) -> SizeConstraint {
         SizeConstraint::simple(self.size)
     }
+
+    #[cfg(test)]
+    fn get_final_position(&self, local_pos: XY) -> Option<XY> {
+        if local_pos < self.size {
+            Some(local_pos)
+        } else {
+            None
+        }
+    }
 }
 
 impl<W: Write> FinalOutput for CrosstermOutput<W> {

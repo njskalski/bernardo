@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::io::Error;
 
@@ -6,8 +7,13 @@ use crossbeam_channel::{Receiver, Sender};
 use crate::io::buffer_output::BufferOutput;
 use crate::io::output::{FinalOutput, Output};
 use crate::io::style::TextStyle;
+use crate::mocks::extended_info::ExtendedInfo;
 use crate::primitives::size_constraint::SizeConstraint;
+use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
+use crate::widget::widget::WID;
+
+pub type ExtInfo = HashMap<(&'static str, WID), ExtendedInfo>;
 
 pub struct MockOutput {
     buffer_0: BufferOutput,
@@ -83,6 +89,14 @@ impl Output for MockOutput {
 
     fn size_constraint(&self) -> SizeConstraint {
         self.buffer_0.size_constraint()
+    }
+
+    fn get_final_position(&self, local_pos: XY) -> Option<XY> {
+        if local_pos < self.buffer_0.size() {
+            Some(local_pos)
+        } else {
+            None
+        }
     }
 }
 

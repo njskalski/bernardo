@@ -71,6 +71,16 @@ impl Output for SubOutput<'_> {
     fn size_constraint(&self) -> SizeConstraint {
         SizeConstraint::simple(self.frame.size)
     }
+
+    #[cfg(test)]
+    fn get_final_position(&self, local_pos: XY) -> Option<XY> {
+        let parent_pos = local_pos + self.frame.pos;
+        if self.frame.contains(parent_pos) {
+            self.output.get_final_position(parent_pos)
+        } else {
+            None
+        }
+    }
 }
 
 impl Debug for SubOutput<'_> {
