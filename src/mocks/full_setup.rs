@@ -18,7 +18,7 @@ use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::mock_fs::MockFS;
 use crate::gladius::run_gladius::run_gladius;
-use crate::io::buffer_output::BufferOutput;
+use crate::io::buffer_output::{BufferOutput, CellExt};
 use crate::io::buffer_output_iter::BufferOutputSubsequenceIter;
 use crate::io::cell::Cell;
 use crate::io::input_event::InputEvent;
@@ -222,7 +222,7 @@ impl FullSetup {
         }
     }
 
-    pub fn focused_cursors(&self) -> Box<dyn Iterator<Item=(XY, &'_ Cell)> + '_> {
+    pub fn focused_cursors(&self) -> Box<dyn Iterator<Item=(XY, &'_ CellExt)> + '_> {
         match self.last_frame.as_ref() {
             None => {
                 Box::new(empty())
@@ -230,7 +230,7 @@ impl FullSetup {
             Some(frame) => {
                 Box::new(frame.cells_iter().filter(
                     |(pos, cell)| {
-                        match cell {
+                        match cell.cell {
                             Cell::Begin { style, .. } => {
                                 style.background == self.theme.cursor_background(CursorStatus::UnderCursor).unwrap()
                             }

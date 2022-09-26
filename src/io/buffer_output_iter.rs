@@ -1,6 +1,6 @@
 use std::string::String;
 
-use crate::io::buffer_output::BufferOutput;
+use crate::io::buffer_output::{BufferOutput, CellExt};
 use crate::io::cell::Cell;
 use crate::io::style::TextStyle;
 use crate::primitives::sized_xy::SizedXY;
@@ -21,13 +21,13 @@ impl<'a> BufferOutputCellsIter<'a> {
 }
 
 impl<'a> Iterator for BufferOutputCellsIter<'a> {
-    type Item = (XY, &'a Cell);
+    type Item = (XY, &'a CellExt);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos >= self.buffer.size() {
             None
         } else {
-            let res: (XY, &'a Cell) = (self.pos.clone(), &self.buffer[self.pos].cell);
+            let res: (XY, &'a CellExt) = (self.pos.clone(), &self.buffer[self.pos]);
 
             self.pos.x += 1;
 
@@ -115,7 +115,7 @@ impl<'a> Iterator for BufferOutputSubsequenceIter<'a> {
 #[cfg(test)]
 mod tests {
     use crate::config::theme::Theme;
-    use crate::io::buffer_output::{BufferOutput, CellPair};
+    use crate::io::buffer_output::{BufferOutput, CellExt};
     use crate::io::cell::Cell;
     use crate::io::ext_info::ExtInfo;
     use crate::primitives::xy::XY;
@@ -134,15 +134,15 @@ mod tests {
         for x in 0..10 as u16 {
             for y in 0..3 as u16 {
                 if x < 3 || x >= 8 {
-                    buffer[XY::new(x, y)] = CellPair { cell: b.clone(), ext: ExtInfo::default() };
+                    buffer[XY::new(x, y)] = CellExt { cell: b.clone(), ext: ExtInfo::default() };
                 } else {
-                    buffer[XY::new(x, y)] = CellPair { cell: a.clone(), ext: ExtInfo::default() };
+                    buffer[XY::new(x, y)] = CellExt { cell: a.clone(), ext: ExtInfo::default() };
                 }
             }
         }
 
         for x in 0..10 as u16 {
-            buffer[XY::new(x, 1)] = CellPair { cell: b.clone(), ext: ExtInfo::default() };
+            buffer[XY::new(x, 1)] = CellExt { cell: b.clone(), ext: ExtInfo::default() };
         }
 
         /*
@@ -172,13 +172,13 @@ mod tests {
 
         let mut buffer: BufferOutput = BufferOutput::new(XY::new(2, 2));
 
-        let a = Cell::new(non_focused, "a".to_string());
-        let b = Cell::new(focused, "b".to_string());
+        let a = CellExt { cell: Cell::new(non_focused, "a".to_string()), ext: ExtInfo::default() };
+        let b = CellExt { cell: Cell::new(non_focused, "b".to_string()), ext: ExtInfo::default() };
 
-        buffer[XY::new(0, 0)] = CellPair { cell: b.clone(), ext: ExtInfo::default() };
-        buffer[XY::new(0, 1)] = CellPair { cell: a.clone(), ext: ExtInfo::default() };
-        buffer[XY::new(1, 0)] = CellPair { cell: a.clone(), ext: ExtInfo::default() };
-        buffer[XY::new(1, 1)] = CellPair { cell: b.clone(), ext: ExtInfo::default() };
+        buffer[XY::new(0, 0)] = b.clone();
+        buffer[XY::new(0, 1)] = a.clone();
+        buffer[XY::new(1, 0)] = a.clone();
+        buffer[XY::new(1, 1)] = b.clone();
 
 
         /*

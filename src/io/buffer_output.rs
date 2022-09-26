@@ -16,15 +16,15 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct CellPair {
+#[derive(Clone, Debug, Default, Serialize, Deserialize, Eq, PartialEq)]
+pub struct CellExt {
     pub cell: Cell,
 
     #[serde(skip_serializing, skip_deserializing)]
     pub ext: ExtInfo,
 }
 
-pub type BufferOutput = Buffer<CellPair>;
+pub type BufferOutput = Buffer<CellExt>;
 
 impl Output for BufferOutput {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str, ext: ExtInfo) {
@@ -60,7 +60,7 @@ impl Output for BufferOutput {
 
 
             let xy = pos + XY::new(shift_x as u16, 0);
-            self[xy] = CellPair {
+            self[xy] = CellExt {
                 cell: Cell::Begin {
                     style,
                     grapheme: grapheme.to_string(),
@@ -75,7 +75,7 @@ impl Output for BufferOutput {
                     let cont_shift_x = (idx as u16) + offset;
                     let xy2 = pos + XY::new(cont_shift_x as u16, 0 as u16);
 
-                    self[xy2] = CellPair { cell: Cell::continuation(), ext };
+                    self[xy2] = CellExt { cell: Cell::continuation(), ext };
                 }
             }
         }
@@ -83,7 +83,7 @@ impl Output for BufferOutput {
 
     fn clear(&mut self) -> Result<(), std::io::Error> {
         for idx in 0..self.cells().len() {
-            self.cells_mut()[idx] = CellPair::default();
+            self.cells_mut()[idx] = CellExt::default();
         }
         Ok(())
     }
