@@ -19,7 +19,7 @@ impl Default for ExtInfo {
 
         #[cfg(not(test))]
         {
-            ()
+            ExtInfo()
         }
     }
 }
