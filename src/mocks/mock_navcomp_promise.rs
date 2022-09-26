@@ -5,49 +5,53 @@ use crossbeam_channel::{Receiver, Sender, TryRecvError};
 use log::debug;
 
 use crate::promise::promise::{Promise, PromiseState, UpdateResult};
+use crate::tsw::lang_id::LangId;
 use crate::w7e::navcomp_group::NavCompTick;
 use crate::w7e::navcomp_provider::Completion;
 
 pub struct MockNavCompPromise<T: Send + 'static> {
     receiver: Receiver<T>,
-    tick_sender: Sender<NavCompTick>,
     item: Option<T>,
     done: bool,
+    join_handle: thread::JoinHandle<()>,
 }
 
 impl<T: Send + 'static> MockNavCompPromise<T> {
-    const DEFAULT_DELAY: Duration = Duration::from_millis(300);
+    const DEFAULT_DELAY: Duration = Duration::from_millis(100);
 
     pub fn new_succ(tick_sender: Sender<NavCompTick>, value: T) -> Self {
         let (sender, receiver) = crossbeam_channel::bounded::<T>(1);
 
-        thread::spawn(move || {
+        let join_handle = thread::spawn(move || {
             thread::sleep(Self::DEFAULT_DELAY);
             sender.send(value).unwrap();
+            tick_sender.send(NavCompTick::LspTick(LangId::RUST, 0)).unwrap();
+            debug!("sent succ");
         });
 
         MockNavCompPromise {
             receiver,
-            tick_sender,
             item: None,
             done: false,
+            join_handle,
         }
     }
 
     pub fn new_broken(tick_sender: Sender<NavCompTick>) -> Self {
         let (sender, receiver) = crossbeam_channel::bounded::<T>(1);
 
-        thread::spawn(move || {
+        let join_handle = thread::spawn(move || {
             thread::sleep(Self::DEFAULT_DELAY);
             //bs call so it's taken
+            tick_sender.send(NavCompTick::LspTick(LangId::RUST, 0)).unwrap();
             debug!("breaking promise {}", sender.is_full());
         });
 
         MockNavCompPromise {
             receiver,
-            tick_sender,
             item: None,
             done: false,
+            join_handle,
         }
     }
 }

@@ -49,10 +49,20 @@ fn completion_test_1() {
 
     assert!(full_setup.send_key(Keycode::Space.to_key().with_ctrl()));
 
-    full_setup.wait_for(|full_setup| {
+    assert!(full_setup.wait_for(|full_setup| {
         full_setup.highlighted_items(true)
             .fold(false, |prev, this| prev || this.contains("into_os_string"))
-    });
+    }));
+
+    assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.highlighted_items(true)
+            .fold(false, |prev, this| prev || this.contains("into_boxed_path"))
+    }));
+
+    assert!(full_setup.send_key(Keycode::Enter.to_key()));
+    assert!(full_setup.wait_for(|f| f.focused_cursor_lines().next().unwrap().1.contains("path.into_boxed_path")));
 
     let end = full_setup.finish();
     assert!(end.screenshot());
