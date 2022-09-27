@@ -131,6 +131,8 @@ pub struct EditorWidget {
 }
 
 impl EditorWidget {
+    pub const TYPENAME: &'static str = "editor_widget";
+
     pub fn new(config: ConfigRef,
                tree_sitter: Rc<TreeSitterWrapper>,
                fsf: FsfRef,
@@ -706,7 +708,7 @@ impl Widget for EditorWidget {
     }
 
     fn typename(&self) -> &'static str {
-        "editor_widget"
+        Self::TYPENAME
     }
 
     fn min_size(&self) -> XY {
