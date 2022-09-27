@@ -1,9 +1,9 @@
 use std::fmt::{Debug, Formatter};
 
-use log::error;
+use log::{debug, error};
 use unicode_width::UnicodeWidthStr;
 
-use crate::io::output::Output;
+use crate::io::output::{Metadata, Output};
 use crate::io::style::{TEXT_STYLE_WHITE_ON_BLACK, TextStyle};
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
@@ -70,6 +70,26 @@ impl Output for SubOutput<'_> {
 
     fn size_constraint(&self) -> SizeConstraint {
         SizeConstraint::simple(self.frame.size)
+    }
+
+    #[cfg(test)]
+    fn get_final_position(&self, local_pos: XY) -> Option<XY> {
+        let parent_pos = local_pos + self.frame.pos;
+        if parent_pos <= self.frame.lower_right() {
+            self.output.get_final_position(parent_pos)
+        } else {
+            None
+        }
+    }
+
+    #[cfg(test)]
+    fn emit_metadata(&mut self, mut meta: Metadata) {
+        meta.rect.pos = meta.rect.pos + self.frame.pos;
+        if meta.rect.lower_right() <= self.frame.lower_right() {
+            self.output.emit_metadata(meta)
+        } else {
+            debug!("suppressing metadata: {:?} - out of view", meta)
+        }
     }
 }
 

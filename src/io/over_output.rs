@@ -5,7 +5,7 @@ use log::warn;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::io::output::Output;
+use crate::io::output::{Metadata, Output};
 use crate::io::style::TextStyle;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
@@ -96,6 +96,34 @@ impl Output for OverOutput<'_> {
 
     fn size_constraint(&self) -> SizeConstraint {
         self.size_constraint
+    }
+
+    #[cfg(test)]
+    fn get_final_position(&self, local_pos: XY) -> Option<XY> {
+        let upper_left = self.size_constraint.visible_hint().upper_left();
+
+        if local_pos.x <= upper_left.x || local_pos.y <= upper_left.y {
+            None
+        } else {
+            let parent_pos = local_pos - upper_left;
+            self.output.get_final_position(parent_pos)
+        }
+    }
+
+    #[cfg(test)]
+    fn emit_metadata(&mut self, mut meta: Metadata) {
+        let upper_left = self.size_constraint.visible_hint().upper_left();
+
+        if meta.rect.pos.x >= upper_left.x && meta.rect.pos.y >= upper_left.y {
+            meta.rect.pos = meta.rect.pos - upper_left;
+            if meta.rect.lower_right() <= self.size_constraint.visible_hint().lower_right() {
+                self.output.emit_metadata(meta);
+            } else {
+                debug!("discarding metadata, because it's below the view: {:?} vs {:?}", meta, self.size_constraint.visible_hint());
+            }
+        } else {
+            debug!("discarding metadata, because it's above the view: {:?} vs {:?}", meta, self.size_constraint.visible_hint());
+        }
     }
 }
 

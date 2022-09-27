@@ -8,7 +8,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::io::buffer::Buffer;
 use crate::io::buffer_output_iter::{BufferOutputCellsIter, BufferOutputSubsequenceIter};
 use crate::io::cell::Cell;
-use crate::io::output::Output;
+use crate::io::output::{Metadata, Output};
 use crate::io::style::TextStyle;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::sized_xy::SizedXY;
@@ -78,6 +78,14 @@ impl Output for BufferOutput {
     fn size_constraint(&self) -> SizeConstraint {
         SizeConstraint::simple(self.size())
     }
+
+    #[cfg(test)]
+    fn get_final_position(&self, local_pos: XY) -> Option<XY> {
+        Some(local_pos)
+    }
+    
+    #[cfg(test)]
+    fn emit_metadata(&mut self, meta: Metadata) {}
 }
 
 impl Debug for BufferOutput {

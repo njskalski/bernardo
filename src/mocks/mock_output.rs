@@ -4,7 +4,7 @@ use std::io::Error;
 use crossbeam_channel::{Receiver, Sender};
 
 use crate::io::buffer_output::BufferOutput;
-use crate::io::output::{FinalOutput, Output};
+use crate::io::output::{FinalOutput, Metadata, Output};
 use crate::io::style::TextStyle;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
@@ -83,6 +83,16 @@ impl Output for MockOutput {
 
     fn size_constraint(&self) -> SizeConstraint {
         self.buffer_0.size_constraint()
+    }
+
+    #[cfg(test)]
+    fn get_final_position(&self, local_pos: XY) -> Option<XY> {
+        todo!()
+    }
+
+    #[cfg(test)]
+    fn emit_metadata(&mut self, meta: Metadata) {
+        todo!()
     }
 }
 

@@ -9,7 +9,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
-use crate::io::output::{FinalOutput, Output};
+use crate::io::output::{FinalOutput, Metadata, Output};
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
@@ -98,6 +98,20 @@ impl<W: Write> Output for CrosstermOutput<W> {
 
     fn size_constraint(&self) -> SizeConstraint {
         SizeConstraint::simple(self.size)
+    }
+
+    #[cfg(test)]
+    fn get_final_position(&self, local_pos: XY) -> Option<XY> {
+        if local_pos <= self.size {
+            Some(local_pos)
+        } else {
+            None
+        }
+    }
+
+    #[cfg(test)]
+    fn emit_metadata(&mut self, meta: Metadata) {
+        todo!()
     }
 }
 

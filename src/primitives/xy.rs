@@ -38,6 +38,14 @@ impl XY {
         res
     }
 
+    pub fn maybe_minus(&self, other: XY) -> Option<XY> {
+        if self.x >= other.x && self.y >= other.y {
+            Some(XY::new(self.x - other.x, self.y - other.y))
+        } else {
+            None
+        }
+    }
+
     pub fn neighbours(&self) -> NeighboursIterator {
         NeighboursIterator::new(*self)
     }
