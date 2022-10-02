@@ -19,7 +19,7 @@ use crate::fs::fsf_ref::FsfRef;
 use crate::fs::mock_fs::MockFS;
 use crate::gladius::run_gladius::run_gladius;
 use crate::io::buffer_output::BufferOutput;
-use crate::io::buffer_output_iter::BufferOutputSubsequenceIter;
+use crate::io::buffer_output_iter::BufferStyleIter;
 use crate::io::cell::Cell;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::{Key, Keycode};
@@ -248,7 +248,7 @@ impl FullSetup {
         Box::new(self.focused_cursors().map(|(pos, _)| (pos.y, self.last_frame.as_ref().unwrap().get_line(pos.y).unwrap())))
     }
 
-    pub fn highlighted_items(&self, focused: bool) -> BufferOutputSubsequenceIter<'_> {
+    pub fn highlighted_items(&self, focused: bool) -> BufferStyleIter<'_> {
         self.last_frame.as_ref().unwrap().items_of_style(self.theme.highlighted(focused))
     }
 

@@ -5,7 +5,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::primitives::cursor_set::Cursor;
 use crate::primitives::helpers::copy_last_n_columns;
 use crate::primitives::xy::XY;
-use crate::text::buffer::Buffer;
+use crate::text::text_buffer::TextBuffer;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct CursorPosition {
@@ -15,7 +15,7 @@ pub struct CursorPosition {
 }
 
 //TODO tests
-pub fn find_trigger_and_substring<'a>(triggers: &'a Vec<String>, buffer: &'a dyn Buffer, cursor_pos: &'a CursorPosition) -> Option<(&'a String, String)> {
+pub fn find_trigger_and_substring<'a>(triggers: &'a Vec<String>, buffer: &'a dyn TextBuffer, cursor_pos: &'a CursorPosition) -> Option<(&'a String, String)> {
     let cursor_screen_pos = match cursor_pos.screen_space {
         None => {
             debug!("cursor not visible");

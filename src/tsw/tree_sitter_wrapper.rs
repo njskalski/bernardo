@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::fmt::{Debug};
+use std::fmt::Debug;
 use std::ops::Range;
 use std::rc::Rc;
 
@@ -8,7 +8,7 @@ use log::{error, warn};
 use ropey::Rope;
 use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor};
 
-use crate::text::buffer::Buffer;
+use crate::text::text_buffer::TextBuffer;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::parsing_tuple::ParsingTuple;

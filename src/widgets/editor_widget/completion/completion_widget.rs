@@ -3,6 +3,7 @@ I guess I should reuse FuzzySearch Widget, this is a placeholder now.
  */
 
 use log::{debug, error, warn};
+use unicode_width::UnicodeWidthStr;
 
 use crate::{selfwidget, subwidget};
 use crate::config::theme::Theme;
@@ -41,6 +42,8 @@ pub struct CompletionWidget {
 }
 
 impl CompletionWidget {
+    pub const LOADING: &'static str = "loading...";
+
     pub fn new(completions_promise: CompletionsPromise) -> Self {
         CompletionWidget {
             wid: get_new_widget_id(),
@@ -144,8 +147,7 @@ impl Widget for CompletionWidget {
     }
 
     fn min_size(&self) -> XY {
-        // TODO completely arbitrary
-        (10, 1).into()
+        XY::new(Self::LOADING.width() as u16, 1);
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
@@ -186,16 +188,23 @@ impl Widget for CompletionWidget {
         };
     }
 
-    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        self.complex_render(theme, focused, output)
-    }
-
     fn get_focused(&self) -> Option<&dyn Widget> {
         self.complex_get_focused()
     }
 
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
         self.complex_get_focused_mut()
+    }
+
+    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(test)]
+        {
+            if let Some(ds) = self.get_display_state_op() {
+                ds.
+            }
+        }
+
+        self.complex_render(theme, focused, output)
     }
 }
 
@@ -228,11 +237,7 @@ impl ComplexWidget for CompletionWidget {
         self.display_state.as_mut()
     }
 
-    fn internal_render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
-        for x in 0..output.size_constraint().visible_hint().size.x {
-            for y in 0..output.size_constraint().visible_hint().size.y {
-                output.print_at(XY::new(x, y), theme.ui.focused_highlighted, "!");
-            }
-        }
+    fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        output.print_at(XY::ZERO, theme.highlighted(focused), Self::LOADING);
     }
 }

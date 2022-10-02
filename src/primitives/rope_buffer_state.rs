@@ -5,12 +5,12 @@ use ropey::iter::{Chars, Chunks};
 use ropey::Rope;
 use tree_sitter::Point;
 
-use crate::text::buffer::{Buffer, LinesIter};
+use crate::text::text_buffer::{LinesIter, TextBuffer};
 use crate::tsw::tree_sitter_wrapper::pack_rope_with_callback;
 
 static EMPTY_SLICE: [u8; 0] = [0; 0];
 
-impl Buffer for Rope {
+impl TextBuffer for Rope {
     fn len_lines(&self) -> usize {
         self.len_lines()
     }

@@ -3,6 +3,8 @@ use std::string::String;
 use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::style::TextStyle;
+use crate::primitives::common_query::CommonQuery::String;
+use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 
@@ -46,15 +48,15 @@ impl<'a> Iterator for BufferOutputCellsIter<'a> {
     }
 }
 
-pub struct BufferOutputSubsequenceIter<'a> {
+pub struct BufferStyleIter<'a> {
     buffer: &'a BufferOutput,
     text_style: TextStyle,
     pos: XY,
 }
 
-impl<'a> BufferOutputSubsequenceIter<'a> {
+impl<'a> BufferStyleIter<'a> {
     pub fn new(buffer: &'a BufferOutput, text_style: TextStyle) -> Self {
-        BufferOutputSubsequenceIter {
+        BufferStyleIter {
             buffer,
             text_style,
             pos: XY::ZERO,
@@ -63,7 +65,7 @@ impl<'a> BufferOutputSubsequenceIter<'a> {
 }
 
 // TODO test
-impl<'a> Iterator for BufferOutputSubsequenceIter<'a> {
+impl<'a> Iterator for BufferStyleIter<'a> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -107,6 +109,56 @@ impl<'a> Iterator for BufferOutputSubsequenceIter<'a> {
                 }
             }
 
+            None
+        }
+    }
+}
+
+pub struct BufferLinesIter<'a> {
+    buffer: &'a BufferOutput,
+    rect: Rect,
+    pos: XY,
+}
+
+impl<'a> BufferLinesIter<'a> {
+    pub fn new(buffer: &'a BufferOutput) -> Self {
+        let rect = Rect::new(XY::ZERO, buffer.size());
+        BufferLinesIter {
+            buffer,
+            rect,
+            pos: XY::ZERO,
+        }
+    }
+
+    pub fn with_rect(self, rect: Rect) -> Self {
+        Self {
+            rect,
+            ..self
+        }
+    }
+}
+
+impl<'a> Iterator for BufferLinesIter<'a> {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pos.y < self.rect.lower_right().y {
+            let mut result = String::new();
+            result.reserve(self.rect.size.x as usize);
+
+            for x in self.rect.size.x..self.rect.lower_right().x {
+                let pos = XY::new(x, self.pos.y);
+                let cell = &self.buffer[pos];
+                match cell {
+                    Cell::Begin { style, grapheme } => {
+                        result += grapheme;
+                    }
+                    Cell::Continuation => {}
+                }
+            }
+
+            Some(result)
+        } else {
             None
         }
     }

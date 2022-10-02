@@ -8,7 +8,7 @@ use crate::tsw::lang_id::LangId;
 
 //TODO create tests for undo/redo/set milestone
 
-pub trait Buffer: ToString {
+pub trait TextBuffer: ToString {
     fn len_lines(&self) -> usize;
 
     fn lines(&self) -> LinesIter;
@@ -94,7 +94,7 @@ impl<'a> StreamingIterator for LinesIter<'a> {
     }
 }
 
-impl Debug for dyn Buffer {
+impl Debug for dyn TextBuffer {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut chunks = self.chunks();
         if let Some(chunk) = chunks.next() {

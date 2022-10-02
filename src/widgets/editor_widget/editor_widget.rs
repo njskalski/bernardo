@@ -15,7 +15,7 @@ use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::io::output::Output;
+use crate::io::output::{Metadata, Output};
 use crate::io::sub_output::SubOutput;
 use crate::lsp_client::helpers::get_lsp_text_cursor;
 use crate::primitives::arrow::Arrow;
@@ -27,8 +27,8 @@ use crate::primitives::helpers;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::text::buffer::Buffer;
 use crate::text::buffer_state::BufferState;
+use crate::text::text_buffer::TextBuffer;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_provider::CompletionAction;
@@ -131,6 +131,8 @@ pub struct EditorWidget {
 }
 
 impl EditorWidget {
+    pub const TYPENAME: &'static str = "editor_widget";
+
     pub fn new(config: ConfigRef,
                tree_sitter: Rc<TreeSitterWrapper>,
                fsf: FsfRef,
@@ -706,7 +708,7 @@ impl Widget for EditorWidget {
     }
 
     fn typename(&self) -> &'static str {
-        "editor_widget"
+        Self::TYPENAME
     }
 
     fn min_size(&self) -> XY {
@@ -902,6 +904,15 @@ impl Widget for EditorWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(test)]
+        output.emit_metadata(
+            Metadata {
+                id: self.wid,
+                typename: self.typename(),
+                rect: output.size_constraint().visible_hint().clone(),
+            }
+        );
+
         self.internal_render(theme, focused, output);
         self.render_hover(theme, focused, output);
     }

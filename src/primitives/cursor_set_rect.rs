@@ -3,9 +3,9 @@ use log::error;
 use crate::primitives::cursor_set::{Cursor, CursorSet};
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
-use crate::text::buffer::Buffer;
+use crate::text::text_buffer::TextBuffer;
 
-fn cursor_to_xy(c: &Cursor, buffer: &dyn Buffer) -> XY {
+fn cursor_to_xy(c: &Cursor, buffer: &dyn TextBuffer) -> XY {
     let y = buffer.char_to_line(c.a).unwrap_or_else(|| {
         error!("failed translating cursor to XY (1), most likely wrong buffer provided. c: {:?}", c);
         0
@@ -26,7 +26,7 @@ fn cursor_to_xy(c: &Cursor, buffer: &dyn Buffer) -> XY {
     }
 }
 
-pub fn cursor_set_to_rect(cs: &CursorSet, buffer: &dyn Buffer) -> Rect {
+pub fn cursor_set_to_rect(cs: &CursorSet, buffer: &dyn TextBuffer) -> Rect {
     if cs.set().is_empty() {
         error!("asked for cursor_rect on an empty cursor set, returning 0,0");
         return Rect::ZERO;

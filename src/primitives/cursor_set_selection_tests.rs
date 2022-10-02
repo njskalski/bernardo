@@ -5,7 +5,7 @@ pub mod tests {
     use ropey::Rope;
 
     use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
-    use crate::text::buffer::Buffer;
+    use crate::text::text_buffer::TextBuffer;
 
     // In this variant, a cursor is represented by a pair [ ) or ( ], with [ or ] marking the anchor.
 // No overlaps allowed.
@@ -56,13 +56,13 @@ pub mod tests {
         (Rope::from(text), CursorSet::new(cursors))
     }
 
-    pub fn apply_sel(input: &str, f: fn(&mut CursorSet, &dyn Buffer) -> ()) -> String {
+    pub fn apply_sel(input: &str, f: fn(&mut CursorSet, &dyn TextBuffer) -> ()) -> String {
         let (bs, mut cs) = text_to_buffer_cursors_with_selections(input);
         f(&mut cs, &bs);
         buffer_cursors_sel_to_text(&bs, &cs)
     }
 
-    pub fn buffer_cursors_sel_to_text(b: &dyn Buffer, cs: &CursorSet) -> String {
+    pub fn buffer_cursors_sel_to_text(b: &dyn TextBuffer, cs: &CursorSet) -> String {
         // first we validate there is no overlaps. I initially wanted to sort beginnings and ends, but
         // since ends are exclusive, the false-positives could appear this way. So I'll just color
         // the vector.
@@ -232,7 +232,7 @@ pub mod tests {
 
     #[test]
     fn apply_sel_works() {
-        let f: fn(&mut CursorSet, &dyn Buffer) = |_c: &mut CursorSet, _b: &dyn Buffer| {};
+        let f: fn(&mut CursorSet, &dyn TextBuffer) = |_c: &mut CursorSet, _b: &dyn TextBuffer| {};
 
         assert_eq!(apply_sel("text", f), "text");
         assert_eq!(apply_sel("te[xt)", f), "te[xt)");
@@ -243,7 +243,7 @@ pub mod tests {
 
     #[test]
     fn walking_over_selection_begin() {
-        let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, b: &dyn Buffer| {
+        let f: fn(&mut CursorSet, &dyn TextBuffer) = |c: &mut CursorSet, b: &dyn TextBuffer| {
             c.move_right(b, true);
         };
 
@@ -268,7 +268,7 @@ pub mod tests {
 
     #[test]
     fn home() {
-        let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, b: &dyn Buffer| {
+        let f: fn(&mut CursorSet, &dyn TextBuffer) = |c: &mut CursorSet, b: &dyn TextBuffer| {
             c.move_home(b, true);
         };
 
@@ -282,7 +282,7 @@ pub mod tests {
 
     #[test]
     fn end() {
-        let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, b: &dyn Buffer| {
+        let f: fn(&mut CursorSet, &dyn TextBuffer) = |c: &mut CursorSet, b: &dyn TextBuffer| {
             c.move_end(b, true);
         };
 
@@ -296,7 +296,7 @@ pub mod tests {
 
     #[test]
     fn arrow_up_1() {
-        let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, b: &dyn Buffer| {
+        let f: fn(&mut CursorSet, &dyn TextBuffer) = |c: &mut CursorSet, b: &dyn TextBuffer| {
             c.move_vertically_by(b, -1, true);
         };
 
@@ -310,7 +310,7 @@ pub mod tests {
 
     #[test]
     fn arrow_up_2() {
-        let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, b: &dyn Buffer| {
+        let f: fn(&mut CursorSet, &dyn TextBuffer) = |c: &mut CursorSet, b: &dyn TextBuffer| {
             c.move_vertically_by(b, -1, true);
         };
 
@@ -321,7 +321,7 @@ pub mod tests {
 
     #[test]
     fn arrow_down_1() {
-        let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, b: &dyn Buffer| {
+        let f: fn(&mut CursorSet, &dyn TextBuffer) = |c: &mut CursorSet, b: &dyn TextBuffer| {
             c.move_vertically_by(b, 1, true);
         };
 
@@ -335,7 +335,7 @@ pub mod tests {
 
     #[test]
     fn arrow_down_2() {
-        let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, b: &dyn Buffer| {
+        let f: fn(&mut CursorSet, &dyn TextBuffer) = |c: &mut CursorSet, b: &dyn TextBuffer| {
             c.move_vertically_by(b, 1, true);
         };
 
@@ -346,7 +346,7 @@ pub mod tests {
 
     #[test]
     fn single_cursor_word_begin_with_selection() {
-        let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, bs: &dyn Buffer| {
+        let f: fn(&mut CursorSet, &dyn TextBuffer) = |c: &mut CursorSet, bs: &dyn TextBuffer| {
             c.word_begin_default(bs, true);
         };
 
@@ -367,7 +367,7 @@ pub mod tests {
 
     #[test]
     fn single_cursor_word_end_with_selection() {
-        let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, bs: &dyn Buffer| {
+        let f: fn(&mut CursorSet, &dyn TextBuffer) = |c: &mut CursorSet, bs: &dyn TextBuffer| {
             c.word_end_default(bs, true);
         };
 
@@ -388,7 +388,7 @@ pub mod tests {
 
     #[test]
     fn multiple_cursors_word_end_with_selection() {
-        let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, bs: &dyn Buffer| {
+        let f: fn(&mut CursorSet, &dyn TextBuffer) = |c: &mut CursorSet, bs: &dyn TextBuffer| {
             c.word_end_default(bs, true);
         };
 
@@ -415,7 +415,7 @@ pub mod tests {
 
     #[test]
     fn multiple_cursors_word_begin_with_selection() {
-        let f: fn(&mut CursorSet, &dyn Buffer) = |c: &mut CursorSet, bs: &dyn Buffer| {
+        let f: fn(&mut CursorSet, &dyn TextBuffer) = |c: &mut CursorSet, bs: &dyn TextBuffer| {
             c.word_begin_default(bs, true);
         };
 

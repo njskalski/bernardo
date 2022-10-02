@@ -1,5 +1,6 @@
 use regex::Regex;
-use crate::text::buffer::Buffer;
+
+use crate::text::text_buffer::TextBuffer;
 
 /*
 I wasted hours trying to do regex search on the
@@ -24,7 +25,7 @@ pub struct RegexMatches {
 /*
 This will work with both regexes and simple strings.
  */
-pub fn regex_find<'a>(pattern: &'a str, rope: &'a dyn Buffer, start_pos_chars: Option<usize>) -> Result<RegexMatches, FindError> {
+pub fn regex_find<'a>(pattern: &'a str, rope: &'a dyn TextBuffer, start_pos_chars: Option<usize>) -> Result<RegexMatches, FindError> {
     if pattern.is_empty() {
         return Err(FindError::EmptyPattern);
     }

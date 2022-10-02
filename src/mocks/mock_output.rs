@@ -6,8 +6,12 @@ use crossbeam_channel::{Receiver, Sender};
 use crate::io::buffer_output::BufferOutput;
 use crate::io::output::{FinalOutput, Metadata, Output};
 use crate::io::style::TextStyle;
+use crate::mocks::editor_interpreter::EditorInterpreter;
 use crate::primitives::size_constraint::SizeConstraint;
+use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
+use crate::widget::widget::Widget;
+use crate::widgets::editor_widget::editor_widget::EditorWidget;
 
 pub struct MockOutput {
     buffer_0: BufferOutput,
@@ -15,6 +19,8 @@ pub struct MockOutput {
     which_front: bool,
 
     sender: Sender<BufferOutput>,
+
+    metadata: Vec<Metadata>,
 }
 
 impl MockOutput {
@@ -30,6 +36,7 @@ impl MockOutput {
             buffer_1: BufferOutput::new(size),
             which_front: false,
             sender,
+            metadata: Vec::new(),
         }, receiver)
     }
 
@@ -64,6 +71,10 @@ impl MockOutput {
             &mut self.buffer_1
         }
     }
+
+    pub fn get_meta_by_type(&self, typename: &'static str) -> impl Iterator<Item=&Metadata> {
+        self.metadata.iter().filter(move |i| i.typename == typename)
+    }
 }
 
 impl Debug for MockOutput {
@@ -78,7 +89,9 @@ impl Output for MockOutput {
     }
 
     fn clear(&mut self) -> Result<(), Error> {
-        self.backbuffer_mut().clear()
+        self.backbuffer_mut().clear();
+        self.metadata.clear();
+        Ok(())
     }
 
     fn size_constraint(&self) -> SizeConstraint {
@@ -87,12 +100,16 @@ impl Output for MockOutput {
 
     #[cfg(test)]
     fn get_final_position(&self, local_pos: XY) -> Option<XY> {
-        todo!()
+        if local_pos <= self.buffer_0.size() {
+            Some(local_pos)
+        } else {
+            None
+        }
     }
 
     #[cfg(test)]
     fn emit_metadata(&mut self, meta: Metadata) {
-        todo!()
+        self.metadata.push(meta)
     }
 }
 

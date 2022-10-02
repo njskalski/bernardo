@@ -16,7 +16,7 @@ use crate::io::output::Output;
 use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg};
 use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
 use crate::primitives::search_pattern::SearchPattern;
-use crate::text::buffer::{Buffer, LinesIter};
+use crate::text::text_buffer::{LinesIter, TextBuffer};
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
@@ -352,7 +352,7 @@ impl ToString for BufferState {
     }
 }
 
-impl Buffer for BufferState {
+impl TextBuffer for BufferState {
     fn len_lines(&self) -> usize {
         self.text().rope.len_lines()
     }

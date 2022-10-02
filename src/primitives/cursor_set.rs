@@ -39,7 +39,7 @@ use std::slice::{Iter, IterMut};
 
 use log::{error, warn};
 
-use crate::text::buffer::Buffer;
+use crate::text::text_buffer::TextBuffer;
 
 const NEWLINE_LENGTH: usize = 1; // TODO(njskalski): add support for multisymbol newlines?
 
@@ -277,7 +277,7 @@ impl Cursor {
     }
 
     // Returns FALSE if noop.
-    pub fn move_home(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
+    pub fn move_home(&mut self, rope: &dyn TextBuffer, selecting: bool) -> bool {
         let old_pos = self.a;
         let line = rope.char_to_line(self.a).unwrap(); //TODO
         let new_pos = rope.line_to_char(line).unwrap(); //TODO
@@ -311,7 +311,7 @@ impl Cursor {
     }
 
     // Returns FALSE if noop.
-    pub fn move_end(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
+    pub fn move_end(&mut self, rope: &dyn TextBuffer, selecting: bool) -> bool {
         let old_pos = self.a;
         let next_line = rope.char_to_line(self.a).unwrap() + 1; // TODO
 
@@ -383,7 +383,7 @@ impl Cursor {
         old_pos != self.a
     }
 
-    fn word_end<F: Fn(usize) -> bool>(&mut self, buffer: &dyn Buffer, selecting: bool, word_determinant: F) -> bool {
+    fn word_end<F: Fn(usize) -> bool>(&mut self, buffer: &dyn TextBuffer, selecting: bool, word_determinant: F) -> bool {
         if self.a == buffer.len_chars() {
             return false;
         }
@@ -626,11 +626,11 @@ impl CursorSet {
         res
     }
 
-    pub fn move_right(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
+    pub fn move_right(&mut self, rope: &dyn TextBuffer, selecting: bool) -> bool {
         self.move_right_by(rope, 1, selecting)
     }
 
-    pub fn move_right_by(&mut self, rope: &dyn Buffer, l: usize, selecting: bool) -> bool {
+    pub fn move_right_by(&mut self, rope: &dyn TextBuffer, l: usize, selecting: bool) -> bool {
         if self.max_cursor_pos() > rope.len_chars() {
             error!("buffer shorter than cursor positions. Returning prematurely to avoid crash.");
             return false;
@@ -684,7 +684,7 @@ impl CursorSet {
         res
     }
 
-    pub fn move_vertically_by(&mut self, rope: &dyn Buffer, l: isize, selecting: bool) -> bool {
+    pub fn move_vertically_by(&mut self, rope: &dyn TextBuffer, l: isize, selecting: bool) -> bool {
         if self.max_cursor_pos() > rope.len_chars() {
             error!("buffer shorter than cursor positions. Returning prematurely to avoid crash.");
             return false;
@@ -870,7 +870,7 @@ impl CursorSet {
     }
 
     // Returns FALSE if results in no-op
-    pub fn move_home(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
+    pub fn move_home(&mut self, rope: &dyn TextBuffer, selecting: bool) -> bool {
         if self.max_cursor_pos() > rope.len_chars() {
             error!("buffer shorter than cursor positions. Returning prematurely to avoid crash.");
             return false;
@@ -888,7 +888,7 @@ impl CursorSet {
     }
 
     // Returns FALSE if results in noop.
-    pub fn move_end(&mut self, rope: &dyn Buffer, selecting: bool) -> bool {
+    pub fn move_end(&mut self, rope: &dyn TextBuffer, selecting: bool) -> bool {
         if self.max_cursor_pos() > rope.len_chars() {
             error!("buffer shorter than cursor positions. Returning prematurely to avoid crash.");
             return false;
@@ -1082,7 +1082,7 @@ impl CursorSet {
         res
     }
 
-    pub fn word_end<F: Fn(usize) -> bool>(&mut self, buffer: &dyn Buffer, selecting: bool, word_determinant: &F) -> bool {
+    pub fn word_end<F: Fn(usize) -> bool>(&mut self, buffer: &dyn TextBuffer, selecting: bool, word_determinant: &F) -> bool {
         let mut res = false;
 
         for c in self.set.iter_mut() {
@@ -1094,7 +1094,7 @@ impl CursorSet {
         res
     }
 
-    pub fn word_begin_default(&mut self, buffer: &dyn Buffer, selecting: bool) -> bool {
+    pub fn word_begin_default(&mut self, buffer: &dyn TextBuffer, selecting: bool) -> bool {
         self.word_begin(
             selecting,
             &|idx: usize| -> bool {
@@ -1106,7 +1106,7 @@ impl CursorSet {
         )
     }
 
-    pub fn word_end_default(&mut self, buffer: &dyn Buffer, selecting: bool) -> bool {
+    pub fn word_end_default(&mut self, buffer: &dyn TextBuffer, selecting: bool) -> bool {
         self.word_end(
             buffer,
             selecting,

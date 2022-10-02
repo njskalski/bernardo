@@ -4,7 +4,7 @@ use crate::experiments::clipboard::ClipboardRef;
 use crate::io::keys::{Key, Keycode};
 use crate::primitives::arrow::Arrow;
 use crate::primitives::cursor_set::CursorSet;
-use crate::text::buffer::Buffer;
+use crate::text::text_buffer::TextBuffer;
 
 /*
 So I don't have to reimplement basic edit properties for multiple widgets, I moved all (cursor, content) related code here.
@@ -156,7 +156,7 @@ returns tuple
  */
 // TODO assumptions that filelen < usize all over the place, assumption that diff < usize
 fn insert_to_rope(cs: &mut CursorSet,
-                  rope: &mut dyn Buffer,
+                  rope: &mut dyn TextBuffer,
                   // if None, all cursors will input the same. If Some(idx) only this cursor will insert and rest will get updated.
                   specific_cursor: Option<usize>,
                   what: &str) -> (usize, bool) {
@@ -224,7 +224,7 @@ fn insert_to_rope(cs: &mut CursorSet,
 //      FALSE iff the command results in no-op.
 pub fn apply_cem(cem: CommonEditMsg,
                  cs: &mut CursorSet,
-                 rope: &mut dyn Buffer,
+                 rope: &mut dyn TextBuffer,
                  page_height: usize,
                  clipboard: Option<&ClipboardRef>) -> (usize, bool) {
     let res = match cem {

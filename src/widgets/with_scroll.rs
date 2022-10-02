@@ -2,7 +2,7 @@ use log::error;
 
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
-use crate::io::output::Output;
+use crate::io::output::{Metadata, Output};
 use crate::io::over_output::OverOutput;
 use crate::io::sub_output::SubOutput;
 use crate::primitives::rect::Rect;
@@ -10,19 +10,24 @@ use crate::primitives::scroll::{Scroll, ScrollDirection};
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::widget::{WID, Widget};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
 const DEFAULT_MARGIN_WIDTH: u16 = 4;
 
 pub struct WithScroll<W: Widget> {
+    id: WID,
     widget: W,
     scroll: Scroll,
     line_no: bool,
 }
 
 impl<W: Widget> WithScroll<W> {
+    pub const TYPENAME: &'static str = "scroll";
+
     pub fn new(widget: W, scroll_direction: ScrollDirection) -> Self {
+        let id = get_new_widget_id();
         Self {
+            id,
             widget,
             scroll: Scroll::new(scroll_direction),
             line_no: false,
@@ -89,6 +94,11 @@ impl<W: Widget> WithScroll<W> {
         }
     }
 
+    fn line_count_margin_width_for_lower_right(&self, lower_right: XY) -> u16 {
+        let width = format!("{}", lower_right.y).len() as u16 + 2;
+        width
+    }
+
     fn line_count_margin_width(&self, sc: SizeConstraint) -> u16 {
         /*
         there's a little chicken-egg problem here: to determine width of line_no margin I need to know
@@ -101,11 +111,17 @@ impl<W: Widget> WithScroll<W> {
          */
 
         let lower_right = self.scroll.offset + sc.visible_hint().lower_right();
-        let width = format!("{}", lower_right.y).len() as u16 + 2;
-        width
+        self.line_count_margin_width_for_lower_right(lower_right)
     }
 
     fn render_line_no(&self, margin_width: u16, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(test)]
+        output.emit_metadata(Metadata {
+            id: self.id(),
+            typename: self.typename(),
+            rect: Rect::new(XY::ZERO, XY::new(margin_width, output.size_constraint().visible_hint().size.y)),
+        });
+
         debug_assert!(self.line_no);
         let start_idx = self.scroll.offset.y;
 
@@ -146,15 +162,21 @@ impl<W: Widget> WithScroll<W> {
 
 impl<W: Widget> Widget for WithScroll<W> {
     fn id(&self) -> WID {
-        self.widget.id()
+        self.id
     }
 
     fn typename(&self) -> &'static str {
-        self.widget.typename()
+        "scroll"
     }
 
     fn min_size(&self) -> XY {
-        self.widget.min_size()
+        let child = self.widget.min_size();
+        if self.line_no {
+            let margin = self.line_count_margin_width_for_lower_right(child);
+            child + XY::new(margin, 0)
+        } else {
+            child
+        }
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {

@@ -2,7 +2,7 @@ use log::error;
 
 use crate::primitives::cursor_set::Cursor;
 use crate::primitives::xy::XY;
-use crate::text::buffer::Buffer;
+use crate::text::text_buffer::TextBuffer;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct LspTextCursor {
@@ -20,7 +20,7 @@ impl LspTextCursor {
     }
 }
 
-pub fn get_lsp_text_cursor(buffer: &dyn Buffer, cursor: &Cursor) -> Result<LspTextCursor, ()> {
+pub fn get_lsp_text_cursor(buffer: &dyn TextBuffer, cursor: &Cursor) -> Result<LspTextCursor, ()> {
     // TODO I did not implement PositionEncodingKind, so I am not sure if "offset" is utf-8 or byte or soccer fields, or whatever unit of length Americans use now
     let line = match buffer.char_to_line(cursor.a) {
         None => {

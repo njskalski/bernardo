@@ -21,6 +21,7 @@ have their own render and not just layout (CompletionWidget). This led to condit
 layout, get_focused{ and mut} . Not sure if I want to keep it this way, or clean it up later.
  */
 
+// TODO add "for size" here, I need it to do right "emit_*"
 pub struct DisplayState<S: Widget> {
     pub focused: SubwidgetPointer<S>,
     pub wwrs: Vec<WidgetWithRect<S>>,

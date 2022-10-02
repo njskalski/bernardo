@@ -6,7 +6,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::buffer::Buffer;
-use crate::io::buffer_output_iter::{BufferOutputCellsIter, BufferOutputSubsequenceIter};
+use crate::io::buffer_output_iter::{BufferLinesIter, BufferOutputCellsIter, BufferStyleIter};
 use crate::io::cell::Cell;
 use crate::io::output::{Metadata, Output};
 use crate::io::style::TextStyle;
@@ -83,7 +83,7 @@ impl Output for BufferOutput {
     fn get_final_position(&self, local_pos: XY) -> Option<XY> {
         Some(local_pos)
     }
-    
+
     #[cfg(test)]
     fn emit_metadata(&mut self, meta: Metadata) {}
 }
@@ -95,13 +95,15 @@ impl Debug for BufferOutput {
 }
 
 impl BufferOutput {
-    pub fn items_of_style(&self, style: TextStyle) -> BufferOutputSubsequenceIter {
-        BufferOutputSubsequenceIter::new(&self, style)
+    pub fn items_of_style(&self, style: TextStyle) -> BufferStyleIter {
+        BufferStyleIter::new(&self, style)
     }
 
     pub fn cells_iter(&self) -> BufferOutputCellsIter {
         BufferOutputCellsIter::new(self)
     }
+
+    pub fn lines_iter(&self) -> BufferLinesIter { BufferLinesIter::new(self) }
 
     pub fn get_line(&self, line_idx: u16) -> Option<String> {
         if line_idx >= self.size().y {
