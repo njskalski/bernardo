@@ -75,6 +75,12 @@ impl MockOutput {
     pub fn get_meta_by_type(&self, typename: &'static str) -> impl Iterator<Item=&Metadata> {
         self.metadata.iter().filter(move |i| i.typename == typename)
     }
+
+    pub fn get_editors(&self) -> impl Iterator<Item=EditorInterpreter> {
+        self.get_meta_by_type(EditorWidget::TYPENAME).map(|meta|
+            EditorInterpreter::new(self, meta)
+        )
+    }
 }
 
 impl Debug for MockOutput {

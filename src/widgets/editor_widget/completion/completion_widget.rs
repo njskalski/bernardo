@@ -10,10 +10,11 @@ use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::io::output::Output;
+use crate::io::output::{Metadata, Output};
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::common_query::CommonQuery;
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::promise::promise::PromiseState;
@@ -43,6 +44,7 @@ pub struct CompletionWidget {
 
 impl CompletionWidget {
     pub const LOADING: &'static str = "loading...";
+    pub const TYPENAME: &'static str = "completion_widget";
 
     pub fn new(completions_promise: CompletionsPromise) -> Self {
         CompletionWidget {
@@ -143,11 +145,11 @@ impl Widget for CompletionWidget {
     }
 
     fn typename(&self) -> &'static str {
-        "CompletionWidget"
+        Self::TYPENAME
     }
 
     fn min_size(&self) -> XY {
-        XY::new(Self::LOADING.width() as u16, 1);
+        XY::new(Self::LOADING.width() as u16, 1)
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
@@ -200,7 +202,12 @@ impl Widget for CompletionWidget {
         #[cfg(test)]
         {
             if let Some(ds) = self.get_display_state_op() {
-                ds.
+                let size = ds.todo_size();
+                output.emit_metadata(Metadata {
+                    id: self.wid,
+                    typename: self.typename(),
+                    rect: Rect::new(XY::ZERO, size),
+                });
             }
         }
 

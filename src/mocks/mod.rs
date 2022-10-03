@@ -11,3 +11,4 @@ pub mod full_setup;
 pub mod mock_navcomp_promise;
 pub mod editor_interpreter;
 pub mod scroll_interpreter;
+pub mod completion_interpreter;

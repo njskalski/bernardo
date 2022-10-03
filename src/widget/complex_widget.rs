@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 use log::error;
 
 use crate::config::theme::Theme;
@@ -26,6 +28,17 @@ pub struct DisplayState<S: Widget> {
     pub focused: SubwidgetPointer<S>,
     pub wwrs: Vec<WidgetWithRect<S>>,
     pub focus_group: FocusGraph<SubwidgetPointer<S>>,
+}
+
+impl<S: Widget> DisplayState<S> {
+    pub fn todo_size(&self) -> XY {
+        let mut res = XY::ZERO;
+        for w in self.wwrs.iter() {
+            res.x = max(res.x, w.rect().lower_right().x);
+            res.y = max(res.y, w.rect().lower_right().y);
+        }
+        res
+    }
 }
 
 pub trait ComplexWidget: Widget + Sized {

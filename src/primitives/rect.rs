@@ -135,6 +135,10 @@ impl Rect {
     pub fn contains(&self, what: XY) -> bool {
         return self.upper_left() <= what && what < self.lower_right();
     }
+
+    pub fn contains_rect(&self, what: Rect) -> bool {
+        self.pos <= what.pos && self.lower_right() >= what.lower_right()
+    }
 }
 
 pub struct CornersIterator {

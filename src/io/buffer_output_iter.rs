@@ -3,7 +3,6 @@ use std::string::String;
 use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::style::TextStyle;
-use crate::primitives::common_query::CommonQuery::String;
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
