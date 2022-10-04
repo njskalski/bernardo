@@ -25,6 +25,17 @@ pub struct EditorInterpreter<'a> {
     compeltion_op: Option<CompletionInterpreter<'a>>,
 }
 
+pub struct LineIdxPair {
+    pub y: u16,
+    pub visible_idx: usize,
+}
+
+pub struct LineIdxTuple {
+    pub y: u16,
+    pub visible_idx: usize,
+    pub contents: String,
+}
+
 impl<'a> EditorInterpreter<'a> {
     pub fn new(mock_output: &'a MetaOutputFrame, meta: &'a Metadata) -> Option<Self> {
         let scrolls: Vec<&Metadata> = mock_output
@@ -73,9 +84,9 @@ impl<'a> EditorInterpreter<'a> {
     first item is u16 0-based screen position
     second item is usize 1-based display line idx
      */
-    pub fn get_visible_cursor_line_indices(&self) -> impl Iterator<Item=(u16, usize)> + '_ {
+    pub fn get_visible_cursor_line_indices(&self) -> impl Iterator<Item=LineIdxPair> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
-        self.get_visible_cursor_cells().map(move |(xy, _)| (xy.y, xy.y as usize + offset))
+        self.get_visible_cursor_cells().map(move |(xy, _)| LineIdxPair { y: xy.y, visible_idx: xy.y as usize + offset })
     }
 
     /*
@@ -83,9 +94,13 @@ impl<'a> EditorInterpreter<'a> {
     second item is usize 1-based display line idx
     third item is line contents
      */
-    pub fn get_visible_cursor_lines(&self) -> impl Iterator<Item=(u16, usize, String)> + '_ {
+    pub fn get_visible_cursor_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
-        self.get_visible_cursor_cells().map(move |(xy, _)| (xy.y, xy.y as usize + offset, self.get_line_by_y(xy.y).unwrap()))
+        self.get_visible_cursor_cells().map(move |(xy, _)| LineIdxTuple {
+            y: xy.y,
+            visible_idx: xy.y as usize + offset,
+            contents: self.get_line_by_y(xy.y).unwrap(),
+        })
     }
 
     pub fn get_line_by_y(&self, screen_pos_y: u16) -> Option<String> {

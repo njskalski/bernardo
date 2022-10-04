@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use log::error;
+use log::{debug, error};
 
 use crate::config::theme::Theme;
 use crate::io::buffer_output::BufferOutput;
@@ -22,6 +22,10 @@ pub struct MetaOutputFrame {
 
 impl MetaOutputFrame {
     pub fn get_meta_by_type(&self, typename: &'static str) -> impl Iterator<Item=&Metadata> {
+        for x in self.metadata.iter() {
+            debug!("meta : {:?}", x);
+        }
+
         self.metadata.iter().filter(move |i| i.typename == typename)
     }
 

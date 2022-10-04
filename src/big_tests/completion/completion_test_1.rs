@@ -19,16 +19,16 @@ fn completion_test_1() {
     assert!(full_setup.navcomp_pilot().wait_for_load(&file).is_some());
 
 
-    assert_eq!(full_setup.get_first_editor().unwrap().get_visible_cursor_line_indices().map(|c| c.1).collect::<Vec<usize>>(), vec![0]);
+    assert_eq!(full_setup.get_first_editor().unwrap().get_visible_cursor_line_indices().map(|c| c.visible_idx).collect::<Vec<usize>>(), vec![1]);
 
     for _ in 0..4 {
         assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
     }
 
-    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_line_indices().map(|c| c.1).next() == Some(4)));
+    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_line_indices().map(|c| c.visible_idx).next() == Some(5)));
 
     assert!(full_setup.type_in("path."));
-    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().next().unwrap().2.contains("path.")));
+    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().next().unwrap().contents.contains("path.")));
 
     full_setup.navcomp_pilot().completions().unwrap().push(
         MockCompletionMatcher {
@@ -62,7 +62,7 @@ fn completion_test_1() {
     }));
 
     assert!(full_setup.send_key(Keycode::Enter.to_key()));
-    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().next().unwrap().2.contains("path.into_boxed_path")));
+    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().next().unwrap().contents.contains("path.into_boxed_path")));
 
     let end = full_setup.finish();
     assert!(end.screenshot());

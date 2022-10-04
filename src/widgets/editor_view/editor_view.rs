@@ -10,7 +10,7 @@ use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::io::input_event::InputEvent;
-use crate::io::output::Output;
+use crate::io::output::{Metadata, Output};
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
@@ -408,6 +408,15 @@ impl Widget for EditorView {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(test)]
+        output.emit_metadata(
+            Metadata {
+                id: self.wid,
+                typename: self.typename().to_string(),
+                rect: output.size_constraint().visible_hint().clone(),
+            }
+        );
+
         self.complex_render(theme, focused, output)
     }
 
