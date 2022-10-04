@@ -10,7 +10,6 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::widget::WID;
 
-#[cfg(test)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Metadata {
     pub id: WID,

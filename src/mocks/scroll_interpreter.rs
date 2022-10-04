@@ -1,3 +1,5 @@
+use log::debug;
+
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_output::MockOutput;
 use crate::primitives::rect::Rect;
@@ -17,7 +19,7 @@ impl<'a> ScrollInterpreter<'a> {
 
     pub fn lowest_number(&self) -> Option<usize> {
         self.output.buffer.lines_iter().with_rect(self.rect).next().map(|line| {
-            line.parse::<usize>().ok()
+            line.trim().parse::<usize>().ok()
         }).flatten()
     }
 

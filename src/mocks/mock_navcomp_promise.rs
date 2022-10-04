@@ -2,7 +2,7 @@ use std::thread;
 use std::time::Duration;
 
 use crossbeam_channel::{Receiver, Sender, TryRecvError};
-use log::debug;
+use log::{debug, error};
 
 use crate::promise::promise::{Promise, PromiseState, UpdateResult};
 use crate::tsw::lang_id::LangId;
@@ -24,9 +24,12 @@ impl<T: Send + 'static> MockNavCompPromise<T> {
 
         let join_handle = thread::spawn(move || {
             thread::sleep(Self::DEFAULT_DELAY);
-            sender.send(value).unwrap();
-            tick_sender.send(NavCompTick::LspTick(LangId::RUST, 0)).unwrap();
-            debug!("sent succ");
+            if sender.send(value).is_ok() {
+                tick_sender.send(NavCompTick::LspTick(LangId::RUST, 0)).unwrap();
+                debug!("sent succ");
+            } else {
+                error!("succ mock DID NOT send");
+            }
         });
 
         MockNavCompPromise {

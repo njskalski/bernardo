@@ -3,6 +3,7 @@ use std::path::Path;
 use log::{debug, error};
 
 use crate::config::theme::Theme;
+use crate::experiments::screen_shot::screenshot;
 use crate::io::buffer_output::BufferOutput;
 use crate::io::output::Metadata;
 use crate::mocks::editor_interpreter::EditorInterpreter;

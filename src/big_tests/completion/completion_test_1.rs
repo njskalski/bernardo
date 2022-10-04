@@ -51,14 +51,16 @@ fn completion_test_1() {
     assert!(full_setup.send_key(Keycode::Space.to_key().with_ctrl()));
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().completions().is_some()
+        full_setup.get_first_editor().unwrap().completions().map(|comp| comp.highlighted(true).is_some()).unwrap_or(false)
     }));
 
     assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
 
+    full_setup.screenshot();
+
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().completions().unwrap().highlighted(true).unwrap().1
-            == "into_boxed_path"
+        full_setup.get_first_editor().unwrap().completions().map(|comp| comp.highlighted(true).unwrap().1
+            == "into_boxed_path").unwrap_or(false)
     }));
 
     assert!(full_setup.send_key(Keycode::Enter.to_key()));

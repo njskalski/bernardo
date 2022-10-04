@@ -274,6 +274,10 @@ impl FullSetup {
             }
         }
     }
+
+    pub fn screenshot(&self) -> bool {
+        self.last_frame.as_ref().map(|frame| screenshot(&frame.buffer)).unwrap_or(false)
+    }
 }
 
 pub struct FinishedFullSetupRun {
