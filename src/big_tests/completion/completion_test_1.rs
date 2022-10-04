@@ -14,10 +14,7 @@ fn completion_test_1() {
 
     let file = spath!(full_setup.fsf(), "src", "main.rs").unwrap();
 
-    assert!(full_setup.wait_frame());
-    assert!(full_setup.is_editor_opened());
-    assert!(full_setup.navcomp_pilot().wait_for_load(&file).is_some());
-
+    assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
     assert_eq!(full_setup.get_first_editor().unwrap().get_visible_cursor_line_indices().map(|c| c.visible_idx).collect::<Vec<usize>>(), vec![1]);
 
