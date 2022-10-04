@@ -47,7 +47,7 @@ impl<'a> EditorInterpreter<'a> {
         let compeltion_op: Option<CompletionInterpreter> = if comps.is_empty() {
             None
         } else {
-            Some(CompletionInterpreter::new(comps[0].rect, mock_output))
+            Some(CompletionInterpreter::new(comps[0], mock_output))
         };
 
 
@@ -69,8 +69,31 @@ impl<'a> EditorInterpreter<'a> {
         )
     }
 
-    pub fn get_visible_cursor_line_indices(&self) -> impl Iterator<Item=(usize)> + '_ {
+    /*
+    first item is u16 0-based screen position
+    second item is usize 1-based display line idx
+     */
+    pub fn get_visible_cursor_line_indices(&self) -> impl Iterator<Item=(u16, usize)> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
-        self.get_visible_cursor_cells().map(move |(xy, _)| xy.y as usize + offset)
+        self.get_visible_cursor_cells().map(move |(xy, _)| (xy.y, xy.y as usize + offset))
+    }
+
+    /*
+    first item is u16 0-based screen position
+    second item is usize 1-based display line idx
+    third item is line contents
+     */
+    pub fn get_visible_cursor_lines(&self) -> impl Iterator<Item=(u16, usize, String)> + '_ {
+        let offset = self.scroll.lowest_number().unwrap();
+        self.get_visible_cursor_cells().map(move |(xy, _)| (xy.y, xy.y as usize + offset, self.get_line_by_y(xy.y).unwrap()))
+    }
+
+    pub fn get_line_by_y(&self, screen_pos_y: u16) -> Option<String> {
+        debug_assert!(self.meta.rect.lower_right().y > screen_pos_y);
+        self.mock_output.buffer.lines_iter().with_rect(self.meta.rect).skip(screen_pos_y as usize).next()
+    }
+
+    pub fn completions(&self) -> Option<&CompletionInterpreter<'a>> {
+        self.compeltion_op.as_ref()
     }
 }

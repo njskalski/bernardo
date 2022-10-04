@@ -1,4 +1,5 @@
 use std::ffi::OsStr;
+use std::iter;
 use std::iter::empty;
 use std::option::Option;
 use std::path::PathBuf;
@@ -220,36 +221,11 @@ impl FullSetup {
         }
     }
 
-    pub fn get_first_editor_cursor_line_indices(&self) -> Box<dyn Iterator<Item=usize> + '_> {
-        match self.last_frame.as_ref() {
-            None => {
-                Box::new(empty())
-            }
-            Some(frame) => match frame.get_editors().next() {
-                None => {
-                    Box::new(empty())
-                }
-                Some(editor) => {
-                    Box::new(editor.get_visible_cursor_line_indices())
-                }
-            }
-        }
+    pub fn get_first_editor(&self) -> Option<EditorInterpreter<'_>> {
+        self.last_frame.as_ref().map(|frame| {
+            frame.get_editors().next()
+        }).flatten()
     }
-
-    /*
-    get first-editor first-cursor line index
-     */
-    pub fn get_ff_cursor_line(&self) -> Option<usize> {
-        self.get_first_editor_cursor_line_indices().next()
-    }
-
-    // pub fn focused_cursor_lines(&self) -> Box<dyn Iterator<Item=(u16, String)> + '_> {
-    //     Box::new(self.focused_cursors().map(|(pos, _)| (pos.y, self.last_frame.as_ref().unwrap().get_line(pos.y).unwrap())))
-    // }
-
-    // pub fn highlighted_items(&self, focused: bool) -> BufferStyleIter<'_> {
-    //     self.last_frame.as_ref().unwrap().items_of_style(self.theme.highlighted(focused))
-    // }
 
     pub fn send_input(&self, ie: InputEvent) -> bool {
         self.input_sender.send(ie).is_ok()

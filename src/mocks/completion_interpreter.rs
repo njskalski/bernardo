@@ -1,17 +1,45 @@
+use crate::io::output::Metadata;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_output::MockOutput;
 use crate::primitives::rect::Rect;
+use crate::primitives::xy::XY;
 
 pub struct CompletionInterpreter<'a> {
-    rect: Rect,
+    meta: &'a Metadata,
     output: &'a MetaOutputFrame,
 }
 
 impl<'a> CompletionInterpreter<'a> {
-    pub fn new(rect: Rect, output: &'a MetaOutputFrame) -> CompletionInterpreter {
-        CompletionInterpreter {
-            rect,
+    pub fn new(meta: &'a Metadata, output: &'a MetaOutputFrame) -> Self {
+        Self {
+            meta,
             output,
         }
+    }
+
+    pub fn items(&self) -> impl Iterator<Item=String> + '_ {
+        self.output.buffer.lines_iter().with_rect(self.meta.rect)
+    }
+
+    pub fn highlighted(&self, highlighted: bool) -> Option<(u16, String)> {
+        // So here the issue is, that since completions are fuzzy filtered, no common text style
+        // appears over an entire item (some letters are highlighted). Therefore a specialized code
+        // is created.
+        let first_column = self.meta.rect.pos.x;
+
+        let mut idx: Option<u16> = None;
+
+        for y in self.meta.rect.pos.y..self.meta.rect.lower_right().y {
+            let pos = XY::new(first_column, y);
+            let cell = &self.output.buffer[pos];
+            if cell.style().unwrap().background == self.output.theme.highlighted(highlighted).background {
+                idx = Some(y);
+                break;
+            }
+        }
+
+        idx.map(|idx| {
+            (idx, self.output.buffer.lines_iter().with_rect(self.meta.rect).skip(idx as usize).next().unwrap())
+        })
     }
 }

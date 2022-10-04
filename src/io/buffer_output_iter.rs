@@ -117,6 +117,8 @@ pub struct BufferLinesIter<'a> {
     buffer: &'a BufferOutput,
     rect: Rect,
     pos: XY,
+    // If style is set, only lines conforming to this style in it's entirety will be allowed.
+    style_op: Option<TextStyle>,
 }
 
 impl<'a> BufferLinesIter<'a> {
@@ -126,6 +128,7 @@ impl<'a> BufferLinesIter<'a> {
             buffer,
             rect,
             pos: XY::ZERO,
+            style_op: None,
         }
     }
 
@@ -135,13 +138,20 @@ impl<'a> BufferLinesIter<'a> {
             ..self
         }
     }
+
+    pub fn with_style(self, text_style: TextStyle) -> Self {
+        Self {
+            style_op: Some(text_style),
+            ..self
+        }
+    }
 }
 
 impl<'a> Iterator for BufferLinesIter<'a> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.pos.y < self.rect.lower_right().y {
+        while self.pos.y < self.rect.lower_right().y {
             let mut result = String::new();
             result.reserve(self.rect.size.x as usize);
 
@@ -150,16 +160,23 @@ impl<'a> Iterator for BufferLinesIter<'a> {
                 let cell = &self.buffer[pos];
                 match cell {
                     Cell::Begin { style, grapheme } => {
+                        if let Some(set_style) = self.style_op {
+                            if set_style != *style {
+                                self.pos.y += 1;
+                                continue;
+                            }
+                        }
                         result += grapheme;
                     }
                     Cell::Continuation => {}
                 }
             }
 
-            Some(result)
-        } else {
-            None
+            self.pos.y += 1;
+            return Some(result);
         }
+
+        None
     }
 }
 
@@ -246,4 +263,6 @@ mod tests {
         assert_eq!(iter.next(), Some((XY::new(1, 1), &b)));
         assert_eq!(iter.next(), None);
     }
+
+    //TODO: buffer_lines_iter
 }

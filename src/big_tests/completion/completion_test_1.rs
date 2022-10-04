@@ -19,16 +19,16 @@ fn completion_test_1() {
     assert!(full_setup.navcomp_pilot().wait_for_load(&file).is_some());
 
 
-    assert_eq!(full_setup.get_first_editor_cursor_line_indices().collect(), vec![1]);
+    assert_eq!(full_setup.get_first_editor().unwrap().get_visible_cursor_line_indices().map(|c| c.1).collect::<Vec<usize>>(), vec![0]);
 
     for _ in 0..4 {
         assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
     }
 
-    assert!(full_setup.wait_for(|f| f.get_ff_cursor_line() == Some(5)));
+    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_line_indices().map(|c| c.1).next() == Some(4)));
 
     assert!(full_setup.type_in("path."));
-    assert!(full_setup.wait_for(|f| f.focused_cursor_lines().next().unwrap().1.contains("path.")));
+    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().next().unwrap().2.contains("path.")));
 
     full_setup.navcomp_pilot().completions().unwrap().push(
         MockCompletionMatcher {
@@ -51,19 +51,18 @@ fn completion_test_1() {
     assert!(full_setup.send_key(Keycode::Space.to_key().with_ctrl()));
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.highlighted_items(true)
-            .fold(false, |prev, this| prev || this.contains("into_os_string"))
+        full_setup.get_first_editor().unwrap().completions().is_some()
     }));
 
     assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.highlighted_items(true)
-            .fold(false, |prev, this| prev || this.contains("into_boxed_path"))
+        full_setup.get_first_editor().unwrap().completions().unwrap().highlighted(true).unwrap().1
+            == "into_boxed_path"
     }));
 
     assert!(full_setup.send_key(Keycode::Enter.to_key()));
-    assert!(full_setup.wait_for(|f| f.focused_cursor_lines().next().unwrap().1.contains("path.into_boxed_path")));
+    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().next().unwrap().2.contains("path.into_boxed_path")));
 
     let end = full_setup.finish();
     assert!(end.screenshot());
