@@ -7,6 +7,7 @@ use crate::io::buffer_output::BufferOutput;
 use crate::io::output::{FinalOutput, Metadata, Output};
 use crate::io::style::TextStyle;
 use crate::mocks::editor_interpreter::EditorInterpreter;
+use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
@@ -18,17 +19,17 @@ pub struct MockOutput {
     buffer_1: BufferOutput,
     which_front: bool,
 
-    sender: Sender<BufferOutput>,
+    sender: Sender<MetaOutputFrame>,
 
     metadata: Vec<Metadata>,
 }
 
 impl MockOutput {
-    pub fn new(size: XY, bounded: bool) -> (MockOutput, Receiver<BufferOutput>) {
+    pub fn new(size: XY, bounded: bool) -> (MockOutput, Receiver<MetaOutputFrame>) {
         let (sender, receiver) = if bounded {
-            crossbeam_channel::bounded::<BufferOutput>(1)
+            crossbeam_channel::bounded::<MetaOutputFrame>(1)
         } else {
-            crossbeam_channel::unbounded::<BufferOutput>()
+            crossbeam_channel::unbounded::<MetaOutputFrame>()
         };
 
         (MockOutput {
@@ -70,16 +71,6 @@ impl MockOutput {
         } else {
             &mut self.buffer_1
         }
-    }
-
-    pub fn get_meta_by_type(&self, typename: &'static str) -> impl Iterator<Item=&Metadata> {
-        self.metadata.iter().filter(move |i| i.typename == typename)
-    }
-
-    pub fn get_editors(&self) -> impl Iterator<Item=EditorInterpreter> {
-        self.get_meta_by_type(EditorWidget::TYPENAME).map(|meta|
-            EditorInterpreter::new(self, meta)
-        )
     }
 }
 
@@ -123,7 +114,11 @@ impl FinalOutput for MockOutput {
     fn end_frame(&mut self) -> Result<(), Error> {
         self.which_front = !self.which_front;
 
-        let msg = self.frontbuffer().clone();
+        let msg = MetaOutputFrame {
+            buffer: self.frontbuffer().clone(),
+            metadata: self.metadata.clone(),
+        };
+
         self.sender.send(msg).unwrap();
 
         Ok(())

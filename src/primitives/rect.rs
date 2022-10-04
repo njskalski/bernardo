@@ -2,9 +2,11 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::ops::Add;
 
+use serde::{Deserialize, Serialize};
+
 use crate::primitives::xy::XY;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Rect {
     pub pos: XY,
     pub size: XY,

@@ -82,6 +82,8 @@ pub struct EditorView {
 }
 
 impl EditorView {
+    pub const TYPENAME: &'static str = "editor_view";
+
     pub fn new(
         config: ConfigRef,
         tree_sitter: Rc<TreeSitterWrapper>,
@@ -286,7 +288,7 @@ impl Widget for EditorView {
     }
 
     fn typename(&self) -> &'static str {
-        "editor_view"
+        Self::TYPENAME
     }
 
     fn min_size(&self) -> XY {

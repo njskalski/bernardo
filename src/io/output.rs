@@ -1,4 +1,7 @@
+use std::borrow::Cow;
 use std::fmt::Debug;
+
+use serde::{Deserialize, Serialize};
 
 use crate::io::buffer_output::BufferOutput;
 use crate::io::style::TextStyle;
@@ -8,10 +11,11 @@ use crate::primitives::xy::XY;
 use crate::widget::widget::WID;
 
 #[cfg(test)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Metadata {
     pub id: WID,
-    pub typename: &'static str,
+    //could be static str, but I want serialize
+    pub typename: String,
     pub rect: Rect,
 }
 

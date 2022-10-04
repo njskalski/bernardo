@@ -6,6 +6,7 @@ use crate::config::theme::Theme;
 use crate::io::buffer_output::BufferOutput;
 use crate::io::output::Metadata;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
+use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_output::MockOutput;
 use crate::mocks::scroll_interpreter::ScrollInterpreter;
 use crate::primitives::rect::Rect;
@@ -15,14 +16,14 @@ use crate::widgets::with_scroll::WithScroll;
 
 pub struct EditorInterpreter<'a> {
     meta: &'a Metadata,
-    mock_output: &'a MockOutput,
+    mock_output: &'a MetaOutputFrame,
 
     scroll: Option<ScrollInterpreter<'a>>,
     compeltion_op: Option<CompletionInterpreter<'a>>,
 }
 
 impl<'a> EditorInterpreter<'a> {
-    pub fn new(mock_output: &'a MockOutput, meta: &'a Metadata) -> Self {
+    pub fn new(mock_output: &'a MetaOutputFrame, meta: &'a Metadata) -> Self {
         let scrolls: Vec<&Metadata> = mock_output
             .get_meta_by_type(WithScroll::<EditorWidget>::TYPENAME)
             .filter(|c| meta.rect.contains_rect(c.rect))
@@ -53,5 +54,9 @@ impl<'a> EditorInterpreter<'a> {
             scroll,
             compeltion_op,
         }
+    }
+
+    pub fn visible_cursors(&self, theme : Theme) {
+        self.
     }
 }

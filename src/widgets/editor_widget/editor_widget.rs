@@ -908,7 +908,7 @@ impl Widget for EditorWidget {
         output.emit_metadata(
             Metadata {
                 id: self.wid,
-                typename: self.typename(),
+                typename: self.typename().to_string(),
                 rect: output.size_constraint().visible_hint().clone(),
             }
         );

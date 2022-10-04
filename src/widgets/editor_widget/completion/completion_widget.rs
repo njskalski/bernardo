@@ -205,7 +205,7 @@ impl Widget for CompletionWidget {
                 let size = ds.todo_size();
                 output.emit_metadata(Metadata {
                     id: self.wid,
-                    typename: self.typename(),
+                    typename: self.typename().to_string(),
                     rect: Rect::new(XY::ZERO, size),
                 });
             }

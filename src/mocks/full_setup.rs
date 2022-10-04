@@ -23,6 +23,7 @@ use crate::io::buffer_output_iter::BufferStyleIter;
 use crate::io::cell::Cell;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::{Key, Keycode};
+use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
 use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
@@ -97,12 +98,12 @@ impl FullSetupBuilder {
 pub struct FullSetup {
     fsf: FsfRef,
     input_sender: Sender<InputEvent>,
-    output_receiver: Receiver<BufferOutput>,
+    output_receiver: Receiver<MetaOutputFrame>,
     config: ConfigRef,
     clipboard: ClipboardRef,
     theme: Theme,
     gladius_thread_handle: JoinHandle<()>,
-    last_frame: Option<BufferOutput>,
+    last_frame: Option<MetaOutputFrame>,
     nav_comp_pilot: MockNavCompProviderPilot,
 }
 
@@ -187,7 +188,7 @@ impl FullSetup {
         &self.nav_comp_pilot
     }
 
-    pub fn get_frame(&self) -> Option<&BufferOutput> {
+    pub fn get_frame(&self) -> Option<&MetaOutputFrame> {
         self.last_frame.as_ref()
     }
 
@@ -195,11 +196,7 @@ impl FullSetup {
     Looks for default "no editor opened" text of NoEditorWidget.
      */
     pub fn is_editor_opened(&self) -> bool {
-        if self.last_frame.as_ref().unwrap().to_string().find(NoEditorWidget::NO_EDIT_TEXT).is_some() {
-            false
-        } else {
-            true
-        }
+        self.last_frame.as_ref().unwrap().get_editors().next().is_some()
     }
 
     pub fn fsf(&self) -> &FsfRef {
@@ -222,35 +219,35 @@ impl FullSetup {
         }
     }
 
-    pub fn focused_cursors(&self) -> Box<dyn Iterator<Item=(XY, &'_ Cell)> + '_> {
-        match self.last_frame.as_ref() {
-            None => {
-                Box::new(empty())
-            }
-            Some(frame) => {
-                Box::new(frame.cells_iter().filter(
-                    |(pos, cell)| {
-                        match cell {
-                            Cell::Begin { style, .. } => {
-                                style.background == self.theme.cursor_background(CursorStatus::UnderCursor).unwrap()
-                            }
-                            Cell::Continuation => {
-                                false
-                            }
-                        }
-                    }
-                ))
-            }
-        }
-    }
+    // pub fn focused_cursors(&self) -> Box<dyn Iterator<Item=(XY, &'_ Cell)> + '_> {
+    //     match self.last_frame.as_ref() {
+    //         None => {
+    //             Box::new(empty())
+    //         }
+    //         Some(frame) => {
+    //             Box::new(frame.cells_iter().filter(
+    //                 |(pos, cell)| {
+    //                     match cell {
+    //                         Cell::Begin { style, .. } => {
+    //                             style.background == self.theme.cursor_background(CursorStatus::UnderCursor).unwrap()
+    //                         }
+    //                         Cell::Continuation => {
+    //                             false
+    //                         }
+    //                     }
+    //                 }
+    //             ))
+    //         }
+    //     }
+    // }
 
-    pub fn focused_cursor_lines(&self) -> Box<dyn Iterator<Item=(u16, String)> + '_> {
-        Box::new(self.focused_cursors().map(|(pos, _)| (pos.y, self.last_frame.as_ref().unwrap().get_line(pos.y).unwrap())))
-    }
+    // pub fn focused_cursor_lines(&self) -> Box<dyn Iterator<Item=(u16, String)> + '_> {
+    //     Box::new(self.focused_cursors().map(|(pos, _)| (pos.y, self.last_frame.as_ref().unwrap().get_line(pos.y).unwrap())))
+    // }
 
-    pub fn highlighted_items(&self, focused: bool) -> BufferStyleIter<'_> {
-        self.last_frame.as_ref().unwrap().items_of_style(self.theme.highlighted(focused))
-    }
+    // pub fn highlighted_items(&self, focused: bool) -> BufferStyleIter<'_> {
+    //     self.last_frame.as_ref().unwrap().items_of_style(self.theme.highlighted(focused))
+    // }
 
     pub fn send_input(&self, ie: InputEvent) -> bool {
         self.input_sender.send(ie).is_ok()
@@ -303,12 +300,12 @@ impl FullSetup {
 
 pub struct FinishedFullSetupRun {
     pub fsf: FsfRef,
-    pub last_frame: Option<BufferOutput>,
+    pub last_frame: Option<MetaOutputFrame>,
     pub clipboard: ClipboardRef,
 }
 
 impl FinishedFullSetupRun {
     pub fn screenshot(&self) -> bool {
-        self.last_frame.as_ref().map(|frame| screenshot(frame)).unwrap_or(false)
+        self.last_frame.as_ref().map(|frame| screenshot(&frame.buffer)).unwrap_or(false)
     }
 }
