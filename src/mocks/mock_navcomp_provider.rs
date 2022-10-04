@@ -57,7 +57,7 @@ pub struct MockNavCompProviderPilot {
 }
 
 impl MockNavCompProviderPilot {
-    const DEFAULT_TIMEOUT: Duration = Duration::from_secs(1);
+    const DEFAULT_TIMEOUT: Duration = Duration::from_secs(3);
 
     pub fn new() -> Self {
         MockNavCompProviderPilot {
