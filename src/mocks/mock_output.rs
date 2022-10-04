@@ -2,6 +2,7 @@ use std::fmt::{Debug, Formatter};
 use std::io::Error;
 
 use crossbeam_channel::{Receiver, Sender};
+use log::debug;
 
 use crate::config::theme::Theme;
 use crate::io::buffer_output::BufferOutput;
@@ -116,6 +117,8 @@ impl Output for MockOutput {
 impl FinalOutput for MockOutput {
     fn end_frame(&mut self) -> Result<(), Error> {
         self.which_front = !self.which_front;
+
+        debug!("MockOutput.end_frame");
 
         let msg = MetaOutputFrame {
             buffer: self.frontbuffer().clone(),

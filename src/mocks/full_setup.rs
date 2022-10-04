@@ -8,7 +8,7 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 use crossbeam_channel::{Receiver, select, Sender};
-use log::{error, LevelFilter};
+use log::{debug, error, LevelFilter};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::config::config::{Config, ConfigRef};
@@ -157,7 +157,7 @@ impl FullSetupBuilder {
 }
 
 impl FullSetup {
-    const DEFAULT_TIMEOUT: Duration = Duration::from_secs(2);
+    const DEFAULT_TIMEOUT: Duration = Duration::from_secs(3);
 
     pub fn wait_frame(&mut self) -> bool {
         let mut res = false;
@@ -260,6 +260,7 @@ impl FullSetup {
                             if condition(&self) {
                                 return true;
                             }
+                            debug!("no hit on condition");
                         }
                         Err(e) => {
                             error!("error receiving frame: {:?}", e);
@@ -268,7 +269,8 @@ impl FullSetup {
                     }
                 },
                 default(Self::DEFAULT_TIMEOUT) => {
-                    error!("timeout");
+                    error!("timeout, making screenshot.");
+                    self.screenshot();
                     return false;
                 }
             }

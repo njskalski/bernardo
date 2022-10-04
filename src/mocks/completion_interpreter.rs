@@ -1,3 +1,5 @@
+use log::debug;
+
 use crate::io::output::Metadata;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_output::MockOutput;
@@ -18,6 +20,10 @@ impl<'a> CompletionInterpreter<'a> {
     }
 
     pub fn items(&self) -> impl Iterator<Item=String> + '_ {
+        // for d in self.output.buffer.lines_iter().with_rect(self.meta.rect) {
+        //     debug!("items: [{}]", d);
+        // }
+
         self.output.buffer.lines_iter().with_rect(self.meta.rect)
     }
 
@@ -33,7 +39,7 @@ impl<'a> CompletionInterpreter<'a> {
             let pos = XY::new(first_column, y);
             let cell = &self.output.buffer[pos];
             if cell.style().unwrap().background == self.output.theme.highlighted(highlighted).background {
-                idx = Some(y);
+                idx = Some(y - self.meta.rect.pos.y);
                 break;
             }
         }
