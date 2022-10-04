@@ -2,6 +2,7 @@ use std::path::Path;
 
 use log::error;
 
+use crate::config::theme::Theme;
 use crate::io::buffer_output::BufferOutput;
 use crate::io::output::Metadata;
 use crate::mocks::editor_interpreter::EditorInterpreter;
@@ -16,6 +17,7 @@ was rendered.
 pub struct MetaOutputFrame {
     pub buffer: BufferOutput,
     pub metadata: Vec<Metadata>,
+    pub theme: Theme,
 }
 
 impl MetaOutputFrame {
@@ -26,6 +28,6 @@ impl MetaOutputFrame {
     pub fn get_editors(&self) -> impl Iterator<Item=EditorInterpreter> {
         self.get_meta_by_type(EditorView::TYPENAME).map(|meta|
             EditorInterpreter::new(self, meta)
-        )
+        ).flatten()
     }
 }

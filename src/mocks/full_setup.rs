@@ -23,6 +23,7 @@ use crate::io::buffer_output_iter::BufferStyleIter;
 use crate::io::cell::Cell;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::{Key, Keycode};
+use crate::mocks::editor_interpreter::EditorInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
@@ -113,14 +114,14 @@ impl FullSetupBuilder {
         logger_builder.filter_level(LevelFilter::Debug);
         logger_builder.init();
 
+        let theme = Theme::default();
+
         let mock_fs = MockFS::generate_from_real(self.path).unwrap();
         let fsf = mock_fs.to_fsf();
         let (input, input_sender) = MockInput::new();
-        let (output, output_receiver) = MockOutput::new(self.size, self.step_frame);
+        let (output, output_receiver) = MockOutput::new(self.size, self.step_frame, theme.clone());
         let config: ConfigRef = Arc::new(self.config.unwrap_or(Config::default()));
         let clipboard: ClipboardRef = Arc::new(Box::new(MockClipboard::default()) as Box<dyn Clipboard + 'static>);
-
-        let theme = Theme::default();
 
         let local_fsf = fsf.clone();
         let local_config = config.clone();
@@ -219,27 +220,28 @@ impl FullSetup {
         }
     }
 
-    // pub fn focused_cursors(&self) -> Box<dyn Iterator<Item=(XY, &'_ Cell)> + '_> {
-    //     match self.last_frame.as_ref() {
-    //         None => {
-    //             Box::new(empty())
-    //         }
-    //         Some(frame) => {
-    //             Box::new(frame.cells_iter().filter(
-    //                 |(pos, cell)| {
-    //                     match cell {
-    //                         Cell::Begin { style, .. } => {
-    //                             style.background == self.theme.cursor_background(CursorStatus::UnderCursor).unwrap()
-    //                         }
-    //                         Cell::Continuation => {
-    //                             false
-    //                         }
-    //                     }
-    //                 }
-    //             ))
-    //         }
-    //     }
-    // }
+    pub fn get_first_editor_cursor_line_indices(&self) -> Box<dyn Iterator<Item=usize> + '_> {
+        match self.last_frame.as_ref() {
+            None => {
+                Box::new(empty())
+            }
+            Some(frame) => match frame.get_editors().next() {
+                None => {
+                    Box::new(empty())
+                }
+                Some(editor) => {
+                    Box::new(editor.get_visible_cursor_line_indices())
+                }
+            }
+        }
+    }
+
+    /*
+    get first-editor first-cursor line index
+     */
+    pub fn get_ff_cursor_line(&self) -> Option<usize> {
+        self.get_first_editor_cursor_line_indices().next()
+    }
 
     // pub fn focused_cursor_lines(&self) -> Box<dyn Iterator<Item=(u16, String)> + '_> {
     //     Box::new(self.focused_cursors().map(|(pos, _)| (pos.y, self.last_frame.as_ref().unwrap().get_line(pos.y).unwrap())))

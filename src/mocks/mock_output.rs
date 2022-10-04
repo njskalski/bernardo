@@ -3,6 +3,7 @@ use std::io::Error;
 
 use crossbeam_channel::{Receiver, Sender};
 
+use crate::config::theme::Theme;
 use crate::io::buffer_output::BufferOutput;
 use crate::io::output::{FinalOutput, Metadata, Output};
 use crate::io::style::TextStyle;
@@ -18,6 +19,7 @@ pub struct MockOutput {
     buffer_0: BufferOutput,
     buffer_1: BufferOutput,
     which_front: bool,
+    theme: Theme,
 
     sender: Sender<MetaOutputFrame>,
 
@@ -25,7 +27,7 @@ pub struct MockOutput {
 }
 
 impl MockOutput {
-    pub fn new(size: XY, bounded: bool) -> (MockOutput, Receiver<MetaOutputFrame>) {
+    pub fn new(size: XY, bounded: bool, theme: Theme) -> (MockOutput, Receiver<MetaOutputFrame>) {
         let (sender, receiver) = if bounded {
             crossbeam_channel::bounded::<MetaOutputFrame>(1)
         } else {
@@ -36,6 +38,7 @@ impl MockOutput {
             buffer_0: BufferOutput::new(size),
             buffer_1: BufferOutput::new(size),
             which_front: false,
+            theme,
             sender,
             metadata: Vec::new(),
         }, receiver)
@@ -117,6 +120,7 @@ impl FinalOutput for MockOutput {
         let msg = MetaOutputFrame {
             buffer: self.frontbuffer().clone(),
             metadata: self.metadata.clone(),
+            theme: self.theme.clone(),
         };
 
         self.sender.send(msg).unwrap();

@@ -18,13 +18,14 @@ fn completion_test_1() {
     assert!(full_setup.is_editor_opened());
     assert!(full_setup.navcomp_pilot().wait_for_load(&file).is_some());
 
-    assert_eq!(full_setup.focused_cursors().map(|x| x.0.y).collect::<Vec<u16>>(), vec![0]);
+
+    assert_eq!(full_setup.get_first_editor_cursor_line_indices().collect(), vec![1]);
 
     for _ in 0..4 {
         assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
     }
 
-    assert!(full_setup.wait_for(|f| f.focused_cursor_lines().next().unwrap().1.contains("5")));
+    assert!(full_setup.wait_for(|f| f.get_ff_cursor_line() == Some(5)));
 
     assert!(full_setup.type_in("path."));
     assert!(full_setup.wait_for(|f| f.focused_cursor_lines().next().unwrap().1.contains("path.")));
