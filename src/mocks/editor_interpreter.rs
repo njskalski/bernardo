@@ -21,6 +21,7 @@ pub struct EditorInterpreter<'a> {
     meta: &'a Metadata,
     mock_output: &'a MetaOutputFrame,
 
+    rect_without_scroll: Rect,
     scroll: ScrollInterpreter<'a>,
     compeltion_op: Option<CompletionInterpreter<'a>>,
 }
@@ -61,10 +62,14 @@ impl<'a> EditorInterpreter<'a> {
             Some(CompletionInterpreter::new(comps[0], mock_output))
         };
 
+        let rect_without_scroll = mock_output
+            .get_meta_by_type(EditorWidget::TYPENAME)
+            .next().unwrap().rect;
 
         Some(Self {
             meta,
             mock_output,
+            rect_without_scroll,
             scroll,
             compeltion_op,
         })
@@ -105,7 +110,7 @@ impl<'a> EditorInterpreter<'a> {
 
     pub fn get_line_by_y(&self, screen_pos_y: u16) -> Option<String> {
         debug_assert!(self.meta.rect.lower_right().y > screen_pos_y);
-        self.mock_output.buffer.lines_iter().with_rect(self.meta.rect).skip(screen_pos_y as usize).next()
+        self.mock_output.buffer.lines_iter().with_rect(self.rect_without_scroll).skip(screen_pos_y as usize).next()
     }
 
     pub fn completions(&self) -> Option<&CompletionInterpreter<'a>> {
@@ -128,7 +133,8 @@ impl<'a> EditorInterpreter<'a> {
             let mut prev_within_sel = false;
             let mut was_more_than_anchor = false;
 
-            for x in self.meta.rect.pos.x..self.meta.rect.lower_right().x {
+            'line_loop:
+            for x in self.rect_without_scroll.pos.x..self.rect_without_scroll.lower_right().x {
                 let pos = XY::new(x, line_idx.y);
                 let cell = &self.mock_output.buffer[pos];
                 let mut grapheme_added = false;
@@ -161,6 +167,10 @@ impl<'a> EditorInterpreter<'a> {
                         if !grapheme_added {
                             result += grapheme;
                             grapheme_added = true;
+                        }
+
+                        if grapheme == "⏎" {
+                            break 'line_loop;
                         }
                     }
                     Cell::Continuation => {}
