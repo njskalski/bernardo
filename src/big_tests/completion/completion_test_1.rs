@@ -1,3 +1,5 @@
+use log::debug;
+
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::{FullSetup, FullSetupBuilder};
@@ -64,7 +66,10 @@ fn completion_test_1() {
 
     assert!(full_setup.send_key(Keycode::Enter.to_key()));
     assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().next().unwrap().contents.contains("path.into_boxed_path")));
-
-    let end = full_setup.finish();
-    assert!(end.screenshot());
+    assert!(full_setup.wait_for(|f|
+        f.get_first_editor().unwrap()
+            .get_visible_coded_cursor_lines().next()
+            .map(|c| {
+                c.contents.contains("#")
+            }).unwrap_or(false)))
 }

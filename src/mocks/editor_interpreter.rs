@@ -111,4 +111,68 @@ impl<'a> EditorInterpreter<'a> {
     pub fn completions(&self) -> Option<&CompletionInterpreter<'a>> {
         self.compeltion_op.as_ref()
     }
+
+    /*
+    Returns "coded" cursor lines, where cursor is coded as in cursor tests, so:
+    # <- this is cursor
+    [ <- this is a left edge of cursor with anchor
+    ( <- this is a left edge of cursor with anchor on the opposite edge
+
+    CURRENTLY DOES NOT SUPPORT MULTI LINE CURSORS
+    also, this is not properly tested. It's Bullshit and Duct Tape™ quality.
+     */
+    pub fn get_visible_coded_cursor_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+        self.get_visible_cursor_lines().map(|mut line_idx| {
+            let mut result = String::new();
+            let mut cursor_open = false;
+            let mut prev_within_sel = false;
+            let mut was_more_than_anchor = false;
+
+            for x in self.meta.rect.pos.x..self.meta.rect.lower_right().x {
+                let pos = XY::new(x, line_idx.y);
+                let cell = &self.mock_output.buffer[pos];
+                let mut grapheme_added = false;
+                match cell {
+                    Cell::Begin { style, grapheme } => {
+                        if style.background == self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap() {
+                            if !cursor_open {
+                                result += "[";
+                                cursor_open = true;
+                            } else {
+                                result += grapheme;
+                                grapheme_added = true;
+                                result += "]";
+                                cursor_open = false;
+                            }
+                        }
+                        let now_within_sel = style.background == self.mock_output.theme.cursor_background(CursorStatus::WithinSelection).unwrap();
+                        if now_within_sel {
+                            was_more_than_anchor = true;
+                        }
+
+                        if !prev_within_sel && now_within_sel {
+                            result += "(";
+                        }
+                        if prev_within_sel && !now_within_sel {
+                            result += ")";
+                        }
+                        prev_within_sel = now_within_sel;
+
+                        if !grapheme_added {
+                            result += grapheme;
+                            grapheme_added = true;
+                        }
+                    }
+                    Cell::Continuation => {}
+                }
+            }
+
+            if !was_more_than_anchor {
+                result = result.replace("[", "#");
+            }
+
+            line_idx.contents = result;
+            line_idx
+        })
+    }
 }

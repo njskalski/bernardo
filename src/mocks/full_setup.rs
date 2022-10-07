@@ -18,6 +18,7 @@ use crate::experiments::screen_shot::screenshot;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::mock_fs::MockFS;
+use crate::gladius::logger_setup::logger_setup;
 use crate::gladius::run_gladius::run_gladius;
 use crate::io::buffer_output::BufferOutput;
 use crate::io::buffer_output_iter::BufferStyleIter;
@@ -111,9 +112,7 @@ pub struct FullSetup {
 
 impl FullSetupBuilder {
     pub fn build(self) -> FullSetup {
-        let mut logger_builder = env_logger::builder();
-        logger_builder.filter_level(LevelFilter::Debug);
-        logger_builder.init();
+        logger_setup(LevelFilter::Debug);
 
         let theme = Theme::default();
 
@@ -251,6 +250,13 @@ impl FullSetup {
     waits with default timeout for condition F to be satisfied, returns whether that happened or not
      */
     pub fn wait_for<F: Fn(&FullSetup) -> bool>(&mut self, condition: F) -> bool {
+        // maybe it's already true?
+        if self.last_frame.as_ref().is_some() {
+            if condition(&self) {
+                return true;
+            }
+        }
+
         loop {
             select! {
                 recv(self.output_receiver) -> frame_res => {

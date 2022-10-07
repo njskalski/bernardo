@@ -1,3 +1,5 @@
+extern crate core;
+
 pub mod config;
 pub mod experiments;
 pub mod fs;
