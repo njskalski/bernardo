@@ -9,12 +9,14 @@ use crate::io::output::Metadata;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_output::MockOutput;
+use crate::mocks::savefile_interpreter::SaveFileInterpreter;
 use crate::mocks::scroll_interpreter::ScrollInterpreter;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
+use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::with_scroll::WithScroll;
 
 pub struct EditorInterpreter<'a> {
@@ -24,6 +26,8 @@ pub struct EditorInterpreter<'a> {
     rect_without_scroll: Rect,
     scroll: ScrollInterpreter<'a>,
     compeltion_op: Option<CompletionInterpreter<'a>>,
+
+    saveas_op: Option<SaveFileInterpreter<'a>>,
 }
 
 pub struct LineIdxPair {
@@ -62,6 +66,16 @@ impl<'a> EditorInterpreter<'a> {
             Some(CompletionInterpreter::new(comps[0], mock_output))
         };
 
+        let saveases: Vec<&Metadata> = mock_output.get_meta_by_type(SaveFileDialogWidget::TYPENAME)
+            .filter(|c| meta.rect.contains_rect(c.rect))
+            .collect();
+        debug_assert!(saveases.len() < 2);
+        let saveas_op: Option<SaveFileInterpreter> = if saveases.is_empty() {
+            None
+        } else {
+            Some(SaveFileInterpreter::new(comps[0], mock_output))
+        };
+
         let rect_without_scroll = mock_output
             .get_meta_by_type(EditorWidget::TYPENAME)
             .next().unwrap().rect;
@@ -72,6 +86,7 @@ impl<'a> EditorInterpreter<'a> {
             rect_without_scroll,
             scroll,
             compeltion_op,
+            saveas_op,
         })
     }
 
@@ -116,6 +131,8 @@ impl<'a> EditorInterpreter<'a> {
     pub fn completions(&self) -> Option<&CompletionInterpreter<'a>> {
         self.compeltion_op.as_ref()
     }
+
+    pub fn save_file_dialog(&self) -> Option<&SaveFileInterpreter<'a>> { self.saveas_op.as_ref() }
 
     /*
     Returns "coded" cursor lines, where cursor is coded as in cursor tests, so:

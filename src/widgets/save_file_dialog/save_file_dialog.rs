@@ -18,7 +18,7 @@ use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::io::output::Output;
+use crate::io::output::{Metadata, Output};
 use crate::layout::empty_layout::EmptyLayout;
 use crate::layout::frame_layout::FrameLayout;
 use crate::layout::hover_layout::HoverLayout;
@@ -72,6 +72,8 @@ pub struct SaveFileDialogWidget {
 }
 
 impl SaveFileDialogWidget {
+    pub const TYPENAME: &'static str = "save_file_dialog";
+
     pub fn new(fsf: FsfRef) -> Self {
         let root = fsf.root();
 
@@ -262,7 +264,7 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn typename(&self) -> &'static str {
-        "SaveFileDialog"
+        Self::TYPENAME
     }
 
     fn min_size(&self) -> XY {
@@ -385,6 +387,15 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(test)]
+        output.emit_metadata(
+            Metadata {
+                id: self.id(),
+                typename: self.typename().to_string(),
+                rect: output.size_constraint().visible_hint().clone(),
+            }
+        );
+
         self.complex_render(theme, focused, output)
     }
 }

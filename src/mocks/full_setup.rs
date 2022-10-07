@@ -46,19 +46,7 @@ pub struct FullSetupBuilder {
 }
 
 impl FullSetupBuilder {
-    const DEFAULT_MOCK_OUTPUT_SIZE: XY = XY::new(120, 36);
-
-    pub fn new<P: AsRef<OsStr>>(path: P) -> Self {
-        FullSetupBuilder {
-            path: PathBuf::from(path.as_ref()),
-            config: None,
-            files: vec![],
-            size: Self::DEFAULT_MOCK_OUTPUT_SIZE,
-            recording: false,
-            step_frame: false,
-            nav_comp_pilot: MockNavCompProviderPilot::new(),
-        }
-    }
+    pub const DEFAULT_MOCK_OUTPUT_SIZE: XY = XY::new(120, 36);
 
     pub fn with_config(self, config: Config) -> Self {
         FullSetupBuilder {
@@ -157,6 +145,22 @@ impl FullSetupBuilder {
 
 impl FullSetup {
     const DEFAULT_TIMEOUT: Duration = Duration::from_secs(3);
+
+    pub fn config(&self) -> &ConfigRef {
+        &self.config
+    }
+
+    pub fn new<P: AsRef<OsStr>>(path: P) -> FullSetupBuilder {
+        FullSetupBuilder {
+            path: PathBuf::from(path.as_ref()),
+            config: None,
+            files: vec![],
+            size: FullSetupBuilder::DEFAULT_MOCK_OUTPUT_SIZE,
+            recording: false,
+            step_frame: false,
+            nav_comp_pilot: MockNavCompProviderPilot::new(),
+        }
+    }
 
     pub fn wait_frame(&mut self) -> bool {
         let mut res = false;

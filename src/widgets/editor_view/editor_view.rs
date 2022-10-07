@@ -198,7 +198,7 @@ impl EditorView {
         path.parent().map(|_| {
             self.start_path = Some(path.clone())
         }).unwrap_or_else(|| {
-            error!("failed setting save_as_dialog starting position - most likely parent is outside fsf root");
+            error!("failed setting save_file_dialog starting position - most likely parent is outside fsf root");
         });
     }
 
