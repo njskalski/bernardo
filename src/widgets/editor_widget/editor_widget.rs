@@ -20,7 +20,7 @@ use crate::io::sub_output::SubOutput;
 use crate::lsp_client::helpers::get_lsp_text_cursor;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
-use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, key_to_edit_msg};
+use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, CommonEditMsg, key_to_edit_msg};
 use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
@@ -691,7 +691,9 @@ impl EditorWidget {
             let to_insert = match completion_action {
                 CompletionAction::Insert(what) => what,
             };
-            self.buffer.insert_block(hover.cursor_position.cursor.a, to_insert);
+            self.buffer.apply_cem(CommonEditMsg::Block(to_insert.clone()),
+                                  self.page_height() as usize,
+                                  Some(&self.clipboard)); // TODO unnecessary clone
             self.close_hover();
 
             true

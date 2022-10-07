@@ -70,7 +70,6 @@ fn completion_test_1() {
         f.get_first_editor().unwrap()
             .get_visible_coded_cursor_lines().next()
             .map(|c| {
-                debug!("contents: |{}|", c.contents);
-                c.contents.contains("#")
+                c.contents == "path.into_boxed_path#⏎"
             }).unwrap_or(false)))
 }

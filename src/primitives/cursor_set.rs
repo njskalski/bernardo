@@ -541,20 +541,20 @@ impl CursorSet {
         &mut self.set
     }
 
-    // This is supposed to be called after insert
-    // pub fn advance_and_clear_all(&mut self, advance_by: usize) {
-    //     for cidx in 0..self.set.len() {
-    //         // TODO overflow
-    //         self.set[cidx].advance_and_clear(advance_by * (cidx + 1));
-    //     }
-    // }
-
     // Returns only element OR None if the set is NOT a singleton.
     pub fn as_single(&self) -> Option<&Cursor> {
         if self.set.len() != 1 {
             None
         } else {
             self.set.first()
+        }
+    }
+
+    pub fn as_single_mut(&mut self) -> Option<&mut Cursor> {
+        if self.set.len() != 1 {
+            None
+        } else {
+            self.set.first_mut()
         }
     }
 
