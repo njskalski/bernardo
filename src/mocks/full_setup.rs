@@ -20,6 +20,7 @@ use crate::fs::fsf_ref::FsfRef;
 use crate::fs::mock_fs::MockFS;
 use crate::gladius::logger_setup::logger_setup;
 use crate::gladius::run_gladius::run_gladius;
+use crate::gladius::sidechannel::x::SideChannel;
 use crate::io::buffer_output::BufferOutput;
 use crate::io::buffer_output_iter::BufferStyleIter;
 use crate::io::cell::Cell;
@@ -116,7 +117,11 @@ impl FullSetupBuilder {
         let local_clipboard = clipboard.clone();
         let local_theme = theme.clone();
         let files = self.files;
-        let recording = self.recording;
+
+        let mut sidechannel = SideChannel::default();
+        if self.recording {
+            sidechannel = sidechannel.with_recording();
+        }
 
         let handle = std::thread::spawn(move || {
             run_gladius(local_fsf,
@@ -126,7 +131,7 @@ impl FullSetupBuilder {
                         output,
                         files,
                         &local_theme,
-                        recording)
+                        sidechannel)
         });
 
         FullSetup {

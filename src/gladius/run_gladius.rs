@@ -11,6 +11,7 @@ use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::screen_shot::screenshot;
 use crate::fs::fsf_ref::FsfRef;
 use crate::gladius::paradigm::recursive_treat_views;
+use crate::gladius::sidechannel::x::SideChannel;
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
@@ -35,7 +36,7 @@ pub fn run_gladius<
     mut output: O,
     files: Vec<PathBuf>,
     theme: &Theme,
-    recording: bool,
+    sidechannel: SideChannel,
 ) {
     let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
 
@@ -145,7 +146,7 @@ pub fn run_gladius<
                 match msg {
                     Ok(mut ie) => {
                         // debug!("msg ie {:?}", ie);
-                        if recording {
+                        if sidechannel.is_recording() {
                             recorded_input.push(ie.clone());
                         }
 
@@ -177,7 +178,7 @@ pub fn run_gladius<
 
             recv(nav_comp_group_ref.recvr()) -> tick => {
 
-                if recording {
+                if sidechannel.is_recording() {
                     recorded_input.push(InputEvent::Tick);
                 }
 
@@ -190,7 +191,7 @@ pub fn run_gladius<
         }
     }
 
-    if recording {
+    if sidechannel.is_recording() {
         let bytes = match ron::to_string(&recorded_input) {
             Ok(b) => b,
             Err(e) => {
