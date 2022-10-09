@@ -46,9 +46,6 @@ use crate::widgets::with_scroll::WithScroll;
 
 // TODO now it displays both files and directories in tree view, it should only directories
 
-const OK_LABEL: &'static str = "OK";
-const CANCEL_LABEL: &'static str = "CANCEL";
-
 pub struct SaveFileDialogWidget {
     id: WID,
 
@@ -74,6 +71,8 @@ pub struct SaveFileDialogWidget {
 
 impl SaveFileDialogWidget {
     pub const TYPENAME: &'static str = "save_file_dialog";
+    pub const OK_LABEL: &'static str = "OK";
+    pub const CANCEL_LABEL: &'static str = "CANCEL";
 
     pub fn new(fsf: FsfRef) -> Self {
         let root = fsf.root();
@@ -104,10 +103,10 @@ impl SaveFileDialogWidget {
         let edit_box = EditBoxWidget::new().with_enabled(true).with_on_hit(
             |_| SaveFileDialogMsg::EditBoxHit.someboxed()
         );
-        let ok_button = ButtonWidget::new(Box::new(OK_LABEL)).with_on_hit(
+        let ok_button = ButtonWidget::new(Box::new(Self::OK_LABEL)).with_on_hit(
             |_| SaveFileDialogMsg::Save.someboxed()
         );
-        let cancel_button = ButtonWidget::new(Box::new(CANCEL_LABEL)).with_on_hit(
+        let cancel_button = ButtonWidget::new(Box::new(Self::CANCEL_LABEL)).with_on_hit(
             |_| SaveFileDialogMsg::Cancel.someboxed()
         );
 

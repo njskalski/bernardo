@@ -6,6 +6,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::treeview_interpreter::TreeViewInterpreterItem;
+use crate::spath;
 
 fn common_start() -> FullSetup {
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/save_file_dialog_test_1")
@@ -60,8 +61,6 @@ fn no_leak_focus() {
 
 #[test]
 fn expanded_and_highlighted_path() {
-    // this test validates, that when save-dialog is open, editor cannot be modified, but tree view can.
-
     let mut full_setup = common_start();
 
 
@@ -79,8 +78,6 @@ fn expanded_and_highlighted_path() {
 
 #[test]
 fn hit_on_dir_expands_it() {
-    // this test validates, that when save-dialog is open, editor cannot be modified, but tree view can.
-
     let mut full_setup = common_start();
 
     assert_eq!(full_setup.get_first_editor().unwrap()
@@ -100,8 +97,6 @@ fn hit_on_dir_expands_it() {
 
 #[test]
 fn hit_on_leaf_dir_moves_focus() {
-    // this test validates, that when save-dialog is open, editor cannot be modified, but tree view can.
-
     let mut full_setup = common_start();
 
     assert_eq!(full_setup.get_first_editor().unwrap()
@@ -119,15 +114,34 @@ fn hit_on_leaf_dir_moves_focus() {
 
     assert!(full_setup.wait_for(|full_setup| {
         full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().list_view().is_focused()
+    }));
+}
+
+#[test]
+fn hit_on_list_item_moves_to_edit() {
+    let mut full_setup = common_start();
+
+    assert_eq!(full_setup.get_first_editor().unwrap()
+                   .save_file_dialog().unwrap()
+                   .tree_view().is_focused(), true
+    );
+
+    full_setup.send_key(Keycode::ArrowRight.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().list_view().is_focused() == true
+    }));
+
+    full_setup.send_key(Keycode::Enter.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().edit_widget().is_focused() == true
     }));
 
     full_setup.screenshot();
 }
 
-#[test]
-fn hit_on_list_item_moves_to_edit() {
-    // this test validates, that when save-dialog is open, editor cannot be modified, but tree view can.
-
+fn over_ok() -> FullSetup {
     let mut full_setup = common_start();
 
     assert_eq!(full_setup.get_first_editor().unwrap()
@@ -135,17 +149,73 @@ fn hit_on_list_item_moves_to_edit() {
                    .tree_view().is_focused(), true
     );
 
-    full_setup.send_key(Keycode::Enter.to_key());
-    full_setup.send_key(Keycode::ArrowDown.to_key());
+    full_setup.send_key(Keycode::ArrowRight.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().list_view().is_focused() == true
+    }));
+
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().tree_view().is_focused() == false
+        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().edit_widget().is_focused() == true
     }));
+
+    assert_eq!(full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().edit_widget().contents(), "main.rs");
+
+    full_setup.send_key(Keycode::ArrowLeft.to_key());
+    full_setup.send_key(Keycode::ArrowLeft.to_key());
+    full_setup.send_key(Keycode::ArrowLeft.to_key());
+    full_setup.send_key(Keycode::Char('2').to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().list_view().is_focused()
+        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().edit_widget().contents() == "main2.rs"
     }));
 
-    full_setup.screenshot();
+    full_setup.send_key(Keycode::Enter.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().ok_button().is_focused()
+    }));
+
+    full_setup
+}
+
+#[test]
+fn happy_path() {
+    let mut full_setup = over_ok();
+
+    full_setup.send_key(Keycode::Enter.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        spath!(full_setup.fsf(), "src", "main2.rs").map(|path| path.is_file()).unwrap_or(false)
+    }));
+}
+
+#[test]
+fn esc_cancels_path() {
+    let mut full_setup = common_start();
+
+    full_setup.send_key(Keycode::Esc.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().save_file_dialog().is_none()
+    }));
+}
+
+#[test]
+fn cancel_cancels() {
+    let mut full_setup = over_ok();
+
+    full_setup.send_key(Keycode::ArrowLeft.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().cancel_button().is_focused()
+    }));
+
+    full_setup.send_key(Keycode::Enter.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().save_file_dialog().is_none()
+    }));
 }

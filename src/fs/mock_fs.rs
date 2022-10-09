@@ -4,7 +4,7 @@ use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::sync::RwLock;
 
-use log::error;
+use log::{debug, error};
 use streaming_iterator::StreamingIterator;
 
 use crate::fs::dir_entry::DirEntry;
@@ -308,6 +308,7 @@ impl FilesystemFront for MockFS {
     }
 
     fn blocking_overwrite_with_stream(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
+        debug!("writing to [{:?}]", path);
         let mut bytes = Vec::<u8>::new();
         while let Some(chunk) = stream.next() {
             for i in chunk.into_iter() {

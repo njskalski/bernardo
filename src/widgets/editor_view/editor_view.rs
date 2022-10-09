@@ -3,6 +3,7 @@ use std::rc::Rc;
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
+use crate::{selfwidget, subwidget};
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
@@ -21,7 +22,6 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::search_pattern::SearchPattern;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::subwidget;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::navcomp_group::NavCompGroupRef;
@@ -359,6 +359,7 @@ impl Widget for EditorView {
                 }
                 EditorViewMsg::OnSaveAsCancel => {
                     self.hover_dialog = None;
+                    self.set_focused(selfwidget!(Self));
                     None
                 }
                 EditorViewMsg::OnSaveAsHit { ff } => {
@@ -369,6 +370,7 @@ impl Widget for EditorView {
                     }
 
                     self.hover_dialog = None;
+                    self.set_focused(selfwidget!(Self));
                     None
                 }
                 EditorViewMsg::FocusUpdateMsg(focus_update) => {

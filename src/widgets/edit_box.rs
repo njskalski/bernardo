@@ -7,7 +7,7 @@ use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
-use crate::io::output::Output;
+use crate::io::output::{Metadata, Output};
 use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg, key_to_edit_msg};
 use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::helpers;
@@ -45,6 +45,8 @@ pub struct EditBoxWidget {
 
 
 impl EditBoxWidget {
+    pub const TYPENAME: &'static str = "edit_box";
+
     pub fn new() -> Self {
         EditBoxWidget {
             id: get_new_widget_id(),
@@ -153,7 +155,7 @@ impl Widget for EditBoxWidget {
     }
 
     fn typename(&self) -> &'static str {
-        "EditBox"
+        Self::TYPENAME
     }
 
     fn min_size(&self) -> XY {
@@ -219,6 +221,16 @@ impl Widget for EditBoxWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(test)]
+        output.emit_metadata(
+            Metadata {
+                id: self.id(),
+                typename: self.typename().to_string(),
+                rect: output.size_constraint().visible_hint().clone(),
+                focused,
+            }
+        );
+
         let primary_style = theme.highlighted(focused);
         helpers::fill_output(primary_style.background, output);
 
