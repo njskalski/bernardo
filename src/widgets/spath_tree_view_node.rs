@@ -74,7 +74,7 @@ impl TreeViewNode<SPath> for DirTreeNode {
     fn label(&self) -> Cow<str> { self.sp.label() }
 
     fn is_leaf(&self) -> bool {
-        self.sp.is_file()
+        self.child_iter().next().is_none()
     }
 
     fn child_iter(&self) -> Box<dyn Iterator<Item=Self>> {

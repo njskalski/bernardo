@@ -2,7 +2,7 @@
 This is a piece of specialized code for TreeView of DirTreeNode
  */
 
-use log::{error, warn};
+use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
 
 use crate::fs::path::SPath;
@@ -11,7 +11,7 @@ use crate::widgets::tree_view::tree_view::TreeViewWidget;
 
 impl TreeViewWidget<SPath, DirTreeNode> {
     pub fn expand_path(&mut self, path: &SPath) -> bool {
-        dbg!("setting path to {}", path);
+        debug!("setting path to {:?}", path);
 
         if path.is_file() {
             warn!("setting DirTreeView to file {}", path);
@@ -28,7 +28,7 @@ impl TreeViewWidget<SPath, DirTreeNode> {
 
         let mut parent_ref_iter = path.ancestors_and_self_ref();
         while let Some(anc) = parent_ref_iter.next() {
-            dbg!("setting expanded {}", anc);
+            debug!("setting expanded {}", anc);
             exp_mut.insert(anc.clone());
         }
 

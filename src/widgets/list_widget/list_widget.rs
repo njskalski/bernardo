@@ -20,12 +20,12 @@ use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::FillPolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
-use crate::widgets::list_widget::provider::Provider;
+use crate::widgets::list_widget::provider::ListItemProvider;
 
 pub struct ListWidget<Item: ListWidgetItem> {
     id: WID,
 
-    provider: Box<dyn Provider<Item>>,
+    provider: Box<dyn ListItemProvider<Item>>,
     highlighted: Option<usize>,
     show_column_names: bool,
 
@@ -70,7 +70,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
-    pub fn with_provider(self, provider: Box<dyn Provider<Item>>) -> Self {
+    pub fn with_provider(self, provider: Box<dyn ListItemProvider<Item>>) -> Self {
         ListWidget {
             provider,
             ..self
@@ -79,11 +79,11 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
 
     pub fn items(&self) -> Box<dyn Iterator<Item=&Item> + '_> {
         if let Some(query) = self.query.as_ref() {
-            Box::new(self.provider.iter().filter(|item| {
+            Box::new(self.provider.items().filter(|item| {
                 item.get(0).map(|value| query.matches(&value)).unwrap_or(false)
             }))
         } else {
-            Box::new(self.provider.iter())
+            Box::new(self.provider.items())
         }
     }
 
@@ -139,21 +139,21 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
-    pub fn set_provider(&mut self, provider: Box<dyn Provider<Item> + 'static>) {
+    pub fn set_provider(&mut self, provider: Box<dyn ListItemProvider<Item> + 'static>) {
         self.provider = provider
     }
 
-    pub fn get_provider(&self) -> &dyn Provider<Item> {
+    pub fn get_provider(&self) -> &dyn ListItemProvider<Item> {
         self.provider.as_ref()
     }
 
-    pub fn get_provider_mut(&mut self) -> &mut dyn Provider<Item> {
+    pub fn get_provider_mut(&mut self) -> &mut dyn ListItemProvider<Item> {
         self.provider.as_mut()
     }
 
     pub fn get_highlighted(&self) -> Option<&Item> {
         self.highlighted.map(
-            |idx| self.provider.iter().nth(idx)
+            |idx| self.provider.items().nth(idx)
         ).flatten()
     }
 
@@ -265,7 +265,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                         }
                     }
                     Keycode::ArrowDown => {
-                        if self.highlighted.map(|f| f + 1 < self.provider.iter().count()).unwrap_or(false) {
+                        if self.highlighted.map(|f| f + 1 < self.provider.items().count()).unwrap_or(false) {
                             Some(ListWidgetMsg::Arrow(Arrow::Down))
                         } else {
                             None
@@ -326,7 +326,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                                 }
                             }
                             Arrow::Down => {
-                                let provider_len = self.provider.iter().count();
+                                let provider_len = self.provider.items().count();
                                 debug!("items {}, old_high {}", provider_len, old_highlighted);
                                 if old_highlighted + 1 < provider_len {
                                     self.highlighted = Some(old_highlighted + 1);
@@ -399,23 +399,22 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
             };
 
             for column_idx in 0..Item::len_columns() {
-                let column_width = Item::get_min_column_width(column_idx);
-
                 if x_offset >= size.x {
                     warn!("completely skipping drawing a column {} and consecutive, because it's offset is beyond output", column_idx);
                     break;
                 }
 
-                let mut max_x = min(size.x - x_offset, Item::get_min_column_width(column_idx));
+                // it get's at most "what's left", but not more than it requires
+                let mut column_width = min(Item::get_min_column_width(column_idx), size.x - x_offset);
+                debug_assert!(column_width > 0);
 
                 // TODO implement proper dividing space between columns when fill_policy.fill_x == true
-                // If it's a last column and we are supposed to fill_x
+                // that is unless it's a last cell, then it gets all there is
                 if column_idx + 1 == Item::len_columns() && self.fill_policy.fill_x {
-                    max_x = size.x - x_offset;
+                    column_width = size.x - x_offset;
                 }
-
-                // at this point it's safe to substract
-                let actual_max_text_length = max_x - x_offset;
+                
+                let actual_max_text_length = column_width;
                 debug_assert!(actual_max_text_length > 0);
 
                 // huge block to "cut th text if necessary"

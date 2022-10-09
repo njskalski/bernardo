@@ -16,6 +16,7 @@ use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
+use crate::fs::read_error::ListError;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
@@ -139,37 +140,48 @@ impl SaveFileDialogWidget {
             (Some(path), None)
         };
 
+        debug!("setting path to {:?}, {:?}", dir, file);
+
         let mut changed = false;
-        dir.map(|p| changed = self.tree_widget.internal_mut().expand_path(&p));
-        file.map(|p| {
-            self.edit_box.set_text(p.label().as_ref());
+        if let Some(dir) = dir {
+            debug_assert!(dir.is_dir());
+
+            if let Some(parent) = dir.parent_ref() {
+                changed = self.tree_widget.internal_mut().expand_path(parent);
+            }
+
+            self.show_files_on_right_panel(&dir);
+        }
+
+        if let Some(file) = file {
+            self.edit_box.set_text(file.label().as_ref());
             changed = true;
-        });
+        }
 
         changed
     }
 
 
-    // fn show_files_on_right_panel(&mut self, directory: &Arc<PathBuf>) -> bool {
-    //     // if !self.fsf.is_dir(&directory) {
-    //     //     warn!("expected directory, got {:?}", directory);
-    //     //     return false;
-    //     // }
-    //     //
-    //     // let item = match self.fsf.get_item(directory) {
-    //     //     Some(i) => i,
-    //     //     None => {
-    //     //         warn!("failed retrieving {:?} from fsf", directory);
-    //     //         return false;
-    //     //     }
-    //     // };
-    //     //
-    //     // // self.list_widget.set_provider(
-    //     // //     Box::new(FilteredSPath::new(item, |f| f.is_file()))
-    //     // // );
-    //     //
-    //     // true
-    // }
+    // returns whether succeeded
+    fn show_files_on_right_panel(&mut self, directory: &SPath) -> bool {
+        if !directory.is_dir() {
+            warn!("expected directory, got {:?}", directory);
+            return false;
+        }
+
+        match directory.blocking_list() {
+            Ok(items) => {
+                let files: Vec<SPath> = items.into_iter().filter(|i| i.is_file()).collect();
+                self.list_widget.set_provider(Box::new(files));
+                true
+            }
+            Err(e) => {
+                error!("failed to list {:?}", directory);
+                self.list_widget.set_provider(Box::new(()));
+                false
+            }
+        }
+    }
 
     pub fn with_path(mut self, path: SPath) -> Self {
         self.set_path(path);

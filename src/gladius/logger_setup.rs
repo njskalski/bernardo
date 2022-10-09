@@ -1,4 +1,4 @@
-use log::{error, LevelFilter, SetLoggerError, warn};
+use log::{LevelFilter, warn};
 
 const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     // this is for git ignore

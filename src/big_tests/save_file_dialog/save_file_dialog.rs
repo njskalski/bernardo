@@ -36,6 +36,8 @@ fn path_expanded() {
 
 #[test]
 fn no_leak_focus() {
+    // this test validates, that when save-dialog is open, editor cannot be modified, but tree view can.
+
     let mut full_setup = common_start();
 
     assert_eq!(full_setup.get_first_editor().unwrap().is_editor_focused(), false);

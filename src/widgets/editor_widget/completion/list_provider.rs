@@ -5,7 +5,7 @@ use log::error;
 
 use crate::w7e::navcomp_provider::{Completion, CompletionsPromise};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
-use crate::widgets::list_widget::provider::Provider;
+use crate::widgets::list_widget::provider::ListItemProvider;
 
 impl ListWidgetItem for Completion {
     fn get_column_name(idx: usize) -> &'static str {
@@ -37,8 +37,8 @@ impl ListWidgetItem for Completion {
     }
 }
 
-impl Provider<Completion> for CompletionsPromise {
-    fn iter(&self) -> Box<dyn Iterator<Item=&Completion> + '_> {
+impl ListItemProvider<Completion> for CompletionsPromise {
+    fn items(&self) -> Box<dyn Iterator<Item=&Completion> + '_> {
         match self.read() {
             None => {
                 Box::new(empty())
