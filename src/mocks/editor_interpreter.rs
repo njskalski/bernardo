@@ -1,12 +1,16 @@
+use streaming_iterator::StreamingIterator;
+
 use crate::io::cell::Cell;
 use crate::io::output::Metadata;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
+use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::savefile_interpreter::SaveFileInterpreter;
 use crate::mocks::scroll_interpreter::ScrollInterpreter;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
+use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
@@ -21,6 +25,9 @@ pub struct EditorInterpreter<'a> {
     compeltion_op: Option<CompletionInterpreter<'a>>,
 
     saveas_op: Option<SaveFileInterpreter<'a>>,
+
+    find_op: Option<EditWidgetInterpreter<'a>>,
+    replace_op: Option<EditWidgetInterpreter<'a>>,
 }
 
 pub struct LineIdxPair {
@@ -73,6 +80,10 @@ impl<'a> EditorInterpreter<'a> {
             .get_meta_by_type(EditorWidget::TYPENAME)
             .next().unwrap().rect;
 
+        let edit_boxes: Vec<&Metadata> = mock_output.get_meta_by_type(EditBoxWidget::TYPENAME)
+            .filter(|c| meta.rect.contains_rect(c.rect))
+            .collect();
+
         Some(Self {
             meta,
             mock_output,
@@ -80,6 +91,8 @@ impl<'a> EditorInterpreter<'a> {
             scroll,
             compeltion_op,
             saveas_op,
+            find_op: None,
+            replace_op: None
         })
     }
 

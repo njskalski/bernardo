@@ -47,6 +47,14 @@ impl<'a> Iterator for BufferOutputCellsIter<'a> {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct VerticalIterItem {
+    absolute_pos: XY,
+    // Set iff style was consistent over entire item
+    text_style: Option<TextStyle>,
+    text: String,
+}
+
 pub struct BufferStyleIter<'a> {
     buffer: &'a BufferOutput,
     text_style: TextStyle,
@@ -63,9 +71,8 @@ impl<'a> BufferStyleIter<'a> {
     }
 }
 
-// TODO test
 impl<'a> Iterator for BufferStyleIter<'a> {
-    type Item = String;
+    type Item = VerticalIterItem;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos >= self.buffer.size() {
@@ -84,6 +91,7 @@ impl<'a> Iterator for BufferStyleIter<'a> {
                 }
 
                 let mut result = String::new();
+                let mut begin: Option<XY> = None;
 
                 'sticking:
                 for x in self.pos.x..self.buffer.size().x {
@@ -91,9 +99,12 @@ impl<'a> Iterator for BufferStyleIter<'a> {
                     self.pos = XY::new(x + 1, self.pos.y);
                     debug_assert!(self.pos.x <= self.buffer.size().x);
 
-
                     if let Cell::Begin { style, grapheme } = cell {
                         if *style == self.text_style {
+                            if begin.is_none() {
+                                begin = Some(self.pos);
+                            }
+
                             result += grapheme;
                         } else {
                             if !result.is_empty() {
@@ -104,7 +115,11 @@ impl<'a> Iterator for BufferStyleIter<'a> {
                 }
 
                 if !result.is_empty() {
-                    return Some(result);
+                    return Some(VerticalIterItem {
+                        absolute_pos: begin.unwrap(),
+                        text_style: Some(self.text_style),
+                        text: result,
+                    });
                 }
             }
 
@@ -225,13 +240,13 @@ mod tests {
          */
 
         let mut iter = buffer.items_of_style(focused);
-        assert_eq!(iter.next(), Some("bbb".to_string()));
-        assert_eq!(iter.next(), Some("bb".to_string()));
+        assert_eq!(iter.next().unwrap().text, "bbb");
+        assert_eq!(iter.next().unwrap().text, "bb");
 
-        assert_eq!(iter.next(), Some("bbbbbbbbbb".to_string()));
+        assert_eq!(iter.next().unwrap().text, "bbbbbbbbbb");
 
-        assert_eq!(iter.next(), Some("bbb".to_string()));
-        assert_eq!(iter.next(), Some("bb".to_string()));
+        assert_eq!(iter.next().unwrap().text, "bbb");
+        assert_eq!(iter.next().unwrap().text, "bb");
         assert_eq!(iter.next(), None);
     }
 
