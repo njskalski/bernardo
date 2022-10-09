@@ -118,7 +118,7 @@ impl FinalOutput for MockOutput {
     fn end_frame(&mut self) -> Result<(), Error> {
         self.which_front = !self.which_front;
 
-        debug!("MockOutput.end_frame");
+        // debug!("MockOutput.end_frame");
 
         let msg = MetaOutputFrame {
             buffer: self.frontbuffer().clone(),

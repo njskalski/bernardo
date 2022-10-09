@@ -200,20 +200,26 @@ impl MockFS {
         if self.root_dir.try_write().unwrap().create_file(path, bytes) { Ok(()) } else { Err(()) }
     }
 
-    pub fn blocking_overwrite_with_bytes(&self, path: &Path, bytes: Vec<u8>) -> Result<usize, WriteError> {
+    pub fn blocking_overwrite_with_bytes(&self, path: &Path, bytes: &[u8], must_exist: bool) -> Result<usize, WriteError> {
         let comp: Vec<_> = path.components().collect();
 
-        if let Some(record) = self.root_dir.try_write().unwrap().get_mut(&comp, false) {
+        if let Some(record) = self.root_dir.try_read().unwrap().get(&comp) {
             if record.is_dir() {
                 return Err(WriteError::NotAFile);
             }
-
-            let len_bytes = bytes.len();
-            *record = Record::File(bytes);
-            Ok(len_bytes)
         } else {
-            Err(WriteError::FileNotFound)
+            if must_exist {
+                return Err(WriteError::FileNotFound);
+            }
         }
+
+        let len_bytes = bytes.len();
+
+        let mut binding = self.root_dir.try_write().unwrap();
+        let mut record = binding.get_mut(&comp, true).unwrap();
+
+        *record = Record::File(bytes.to_vec());
+        Ok(len_bytes)
     }
 
     pub fn generate_from_real<P: AsRef<Path>>(path: P) -> Result<Self, ()> {
@@ -261,6 +267,10 @@ impl FilesystemFront for MockFS {
 
     fn is_file(&self, path: &Path) -> bool {
         let comp: Vec<_> = path.components().collect();
+
+        debug!("is_file path: [{:?}]", &path);
+        debug!("is_file comps : [{:?}]", &comp);
+
         self.root_dir.read().unwrap().get(&comp).map(|r| r.is_file()).unwrap_or(false)
     }
 
@@ -307,7 +317,7 @@ impl FilesystemFront for MockFS {
         self.root_dir.read().unwrap().get(&comp).is_some()
     }
 
-    fn blocking_overwrite_with_stream(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
+    fn blocking_overwrite_with_stream(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>, must_exist: bool) -> Result<usize, WriteError> {
         debug!("writing to [{:?}]", path);
         let mut bytes = Vec::<u8>::new();
         while let Some(chunk) = stream.next() {
@@ -316,12 +326,11 @@ impl FilesystemFront for MockFS {
             }
         };
 
-        self.blocking_overwrite_with_bytes(path, bytes)
+        self.blocking_overwrite_with_bytes(path, &bytes, must_exist)
     }
 
-    fn blocking_overwrite_with_str(&self, path: &Path, s: &str) -> Result<usize, WriteError> {
-        let bytes: Vec<_> = s.bytes().collect();
-        self.blocking_overwrite_with_bytes(path, bytes)
+    fn blocking_overwrite_with_bytes(&self, path: &Path, s: &[u8], must_exist: bool) -> Result<usize, WriteError> {
+        self.blocking_overwrite_with_bytes(path, s, must_exist)
     }
 
     fn to_fsf(self) -> FsfRef {

@@ -137,8 +137,6 @@ fn hit_on_list_item_moves_to_edit() {
     assert!(full_setup.wait_for(|full_setup| {
         full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().edit_widget().is_focused() == true
     }));
-
-    full_setup.screenshot();
 }
 
 fn over_ok() -> FullSetup {
@@ -188,6 +186,10 @@ fn happy_path() {
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
+        for i in full_setup.fsf().root().ancestors_and_self() {
+            debug!("print {:?}", i);
+        }
+
         spath!(full_setup.fsf(), "src", "main2.rs").map(|path| path.is_file()).unwrap_or(false)
     }));
 }

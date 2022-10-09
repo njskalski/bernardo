@@ -83,7 +83,13 @@ impl FilesystemFront for RealFS {
         path.exists()
     }
 
-    fn blocking_overwrite_with_stream(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
+    fn blocking_overwrite_with_stream(&self, path: &Path, stream: &mut dyn StreamingIterator<Item=[u8]>, must_exist: bool) -> Result<usize, WriteError> {
+        if must_exist {
+            if path.exists() {
+                return Err(WriteError::FileNotFound);
+            }
+        }
+
         let mut file = std::fs::File::open(path)?;
 
         let mut bytes_written: usize = 0;
@@ -100,7 +106,7 @@ impl FilesystemFront for RealFS {
         Ok(bytes_written)
     }
 
-    fn blocking_overwrite_with_str(&self, path: &Path, s: &str) -> Result<usize, WriteError> {
+    fn blocking_overwrite_with_bytes(&self, path: &Path, s: &[u8], must_exist: bool) -> Result<usize, WriteError> {
         std::fs::write(path, s)?;
         Ok(s.len())
     }

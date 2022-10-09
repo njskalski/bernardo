@@ -72,7 +72,7 @@ impl Workspace {
     pub fn save(&self) -> Result<usize, WriteOrSerError> {
         let file = self.root_path.descendant_unchecked(WORKSPACE_FILE_NAME).unwrap();
         let pill = self.serializable();
-        file.overwrite_with_ron(&pill)
+        file.overwrite_with_ron(&pill, false)
     }
 
     pub fn from(sw: SerializableWorkspace, root_path: SPath) -> Result<(Workspace, ScopeLoadErrors), LoadError> {

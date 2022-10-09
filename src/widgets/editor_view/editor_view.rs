@@ -165,7 +165,7 @@ impl EditorView {
         let buffer = self.editor.internal().buffer();
 
         if let Some(ff) = buffer.get_path() {
-            ff.overwrite_with_stream(&mut buffer.streaming_iterator());
+            ff.overwrite_with_stream(&mut buffer.streaming_iterator(), false);
         } else {
             self.open_save_as_dialog()
         }
@@ -359,18 +359,18 @@ impl Widget for EditorView {
                 }
                 EditorViewMsg::OnSaveAsCancel => {
                     self.hover_dialog = None;
-                    self.set_focused(selfwidget!(Self));
+                    self.set_focused(subwidget!(Self.editor));
                     None
                 }
                 EditorViewMsg::OnSaveAsHit { ff } => {
                     // TODO handle errors
                     let editor = self.editor.internal_mut();
-                    if ff.overwrite_with_stream(&mut editor.buffer().streaming_iterator()).is_ok() {
+                    if ff.overwrite_with_stream(&mut editor.buffer().streaming_iterator(), false).is_ok() {
                         self.set_file_name(ff);
                     }
 
                     self.hover_dialog = None;
-                    self.set_focused(selfwidget!(Self));
+                    self.set_focused(subwidget!(Self.editor));
                     None
                 }
                 EditorViewMsg::FocusUpdateMsg(focus_update) => {

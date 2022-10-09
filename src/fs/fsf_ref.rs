@@ -96,14 +96,16 @@ impl FsfRef {
         Some(spath)
     }
 
-    pub fn overwrite_with_stream(&self, spath: &SPath, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
+    pub fn overwrite_with_stream(&self, spath: &SPath, stream: &mut dyn StreamingIterator<Item=[u8]>, must_exist: bool) -> Result<usize, WriteError> {
         let path = spath.relative_path();
-        self.fs.fs.blocking_overwrite_with_stream(&path, stream)
+        self.fs.fs.blocking_overwrite_with_stream(&path, stream, must_exist)
     }
 
-    pub fn overwrite_with_str(&self, spath: &SPath, s: &str) -> Result<usize, WriteError> {
+    pub fn overwrite_with_str(&self, spath: &SPath, s: &str, must_exist: bool) -> Result<usize, WriteError> {
         let path = spath.relative_path();
-        self.fs.fs.blocking_overwrite_with_str(&path, s)
+        let bytes: Vec<u8> = s.bytes().collect();
+
+        self.fs.fs.blocking_overwrite_with_bytes(&path, &bytes, must_exist)
     }
 
     pub fn blocking_list(&self, spath: &SPath) -> Result<Vec<SPath>, ListError> {

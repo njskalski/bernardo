@@ -252,20 +252,20 @@ impl SPath {
         fsf.exists(self)
     }
 
-    pub fn overwrite_with_stream(&self, stream: &mut dyn StreamingIterator<Item=[u8]>) -> Result<usize, WriteError> {
+    pub fn overwrite_with_stream(&self, stream: &mut dyn StreamingIterator<Item=[u8]>, must_exist: bool) -> Result<usize, WriteError> {
         let fsf = self.fsf();
-        fsf.overwrite_with_stream(self, stream)
+        fsf.overwrite_with_stream(self, stream, must_exist)
     }
 
-    pub fn overwrite_with_str<T: AsRef<str>>(&self, s: T) -> Result<usize, WriteError> {
+    pub fn overwrite_with_str<T: AsRef<str>>(&self, s: T, must_exist: bool) -> Result<usize, WriteError> {
         let fsf = self.fsf();
         let ss = s.as_ref();
-        fsf.overwrite_with_str(self, ss)
+        fsf.overwrite_with_str(self, ss, must_exist)
     }
 
-    pub fn overwrite_with_ron<T: Serialize>(&self, item: &T) -> Result<usize, WriteOrSerError> {
+    pub fn overwrite_with_ron<T: Serialize>(&self, item: &T, must_exist: bool) -> Result<usize, WriteOrSerError> {
         let ron_item = ron::ser::to_string_pretty::<T>(item, ron::ser::PrettyConfig::default())?;
-        self.overwrite_with_str(&ron_item).map_err(|e| e.into())
+        self.overwrite_with_str(&ron_item, must_exist).map_err(|e| e.into())
     }
 
     pub fn blocking_list(&self) -> Result<Vec<SPath>, ListError> {
