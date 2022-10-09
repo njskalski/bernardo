@@ -82,8 +82,24 @@ impl<'a> EditorInterpreter<'a> {
             .next().unwrap().rect;
 
         let edit_boxes: Vec<&Metadata> = mock_output.get_meta_by_type(EditBoxWidget::TYPENAME)
-            .filter(|c| meta.rect.contains_rect(c.rect))
+            .filter(|eb|
+                meta.rect.contains_rect(eb.rect)
+                    // and is NOT contained by eventual save as
+                    && saveas_op.as_ref().map(|s| !s.meta().rect.contains_rect(eb.rect)).unwrap_or(true)
+            )
             .collect();
+
+        assert!(edit_boxes.len() <= 2);
+
+        let (find_op, replace_op): (Option<EditWidgetInterpreter>, Option<EditWidgetInterpreter>) = match edit_boxes.len() {
+            1 => {
+                (Some(EditWidgetInterpreter::new(edit_boxes[0], mock_output)), None)
+            }
+            2 => {
+                (Some(EditWidgetInterpreter::new(edit_boxes[0], mock_output)), Some(EditWidgetInterpreter::new(edit_boxes[1], mock_output)))
+            }
+            _ => (None, None),
+        };
 
         Some(Self {
             meta,
@@ -92,8 +108,8 @@ impl<'a> EditorInterpreter<'a> {
             scroll,
             compeltion_op,
             saveas_op,
-            find_op: None,
-            replace_op: None,
+            find_op,
+            replace_op,
         })
     }
 
@@ -218,5 +234,13 @@ impl<'a> EditorInterpreter<'a> {
         self.mock_output.get_meta_by_type(EditorWidget::TYPENAME).filter(
             |meta| self.meta.rect.contains_rect(meta.rect)
         ).next().unwrap().focused
+    }
+
+    pub fn find_op(&self) -> Option<&EditWidgetInterpreter<'a>> {
+        self.find_op.as_ref()
+    }
+
+    pub fn replace_op(&self) -> Option<&EditWidgetInterpreter<'a>> {
+        self.replace_op.as_ref()
     }
 }

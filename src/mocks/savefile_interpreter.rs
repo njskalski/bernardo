@@ -83,4 +83,8 @@ impl<'a> SaveFileInterpreter<'a> {
     pub fn ok_button(&self) -> &ButtonWidgetInterpreter<'a> { &self.ok_button }
 
     pub fn cancel_button(&self) -> &ButtonWidgetInterpreter<'a> { &self.cancel_button }
+
+    pub fn meta(&self) -> &Metadata {
+        self.meta
+    }
 }
