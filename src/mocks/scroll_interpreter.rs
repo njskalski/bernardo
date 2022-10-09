@@ -1,7 +1,4 @@
-use log::debug;
-
 use crate::mocks::meta_frame::MetaOutputFrame;
-use crate::mocks::mock_output::MockOutput;
 use crate::primitives::rect::Rect;
 
 pub struct ScrollInterpreter<'a> {

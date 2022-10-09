@@ -1,6 +1,5 @@
 use log::warn;
 
-use crate::experiments::focus_group::{FocusGraph, FocusGraphNode};
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::{Layout, WidgetWithRect};
 use crate::primitives::rect::Rect;

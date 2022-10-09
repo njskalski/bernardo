@@ -1,10 +1,7 @@
-use log::debug;
-
-use crate::{de, spath};
-use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::mock_navcomp_provider::MockCompletionMatcher;
+use crate::spath;
 use crate::w7e::navcomp_provider::Completion;
 use crate::w7e::navcomp_provider::CompletionAction::Insert;
 

@@ -1,7 +1,5 @@
 use std::string::String;
 
-use log::debug;
-
 use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::style::TextStyle;

@@ -1,5 +1,4 @@
 use log::debug;
-use lsp_types::lsif::Item;
 
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::input_event::InputEvent;
@@ -28,7 +27,7 @@ fn tree_items(full_setup: &FullSetup) -> Vec<TreeViewInterpreterItem> {
 
 #[test]
 fn path_expanded() {
-    let mut full_setup = common_start();
+    let full_setup = common_start();
 
     let expanded: Vec<String> = full_setup
         .get_first_editor().unwrap()

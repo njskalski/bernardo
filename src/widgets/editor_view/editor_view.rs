@@ -3,7 +3,7 @@ use std::rc::Rc;
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
-use crate::{selfwidget, subwidget};
+use crate::subwidget;
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;

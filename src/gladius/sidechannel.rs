@@ -27,7 +27,7 @@ pub mod x {
 
     use crossbeam_channel::{Receiver, Sender};
 
-    use crate::mocks::mock_navcomp_provider::{MockCompletionMatcher, MockNavCompEvent, MockNavCompProvider, MockNavCompProviderPilot};
+    use crate::mocks::mock_navcomp_provider::{MockCompletionMatcher, MockNavCompEvent, MockNavCompProviderPilot};
 
     pub struct SideChannelInternal {
         is_recording: bool,

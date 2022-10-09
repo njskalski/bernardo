@@ -7,7 +7,6 @@ use log::{debug, error};
 use crate::promise::promise::{Promise, PromiseState, UpdateResult};
 use crate::tsw::lang_id::LangId;
 use crate::w7e::navcomp_group::NavCompTick;
-use crate::w7e::navcomp_provider::Completion;
 
 pub struct MockNavCompPromise<T: Send + 'static> {
     receiver: Receiver<T>,
@@ -79,7 +78,7 @@ impl<T: Send + 'static> Promise<T> for MockNavCompPromise<T> {
                 self.done = true;
                 PromiseState::Ready
             }
-            Err(e) => {
+            Err(_) => {
                 self.done = true;
                 PromiseState::Broken
             }

@@ -1,15 +1,9 @@
-use std::ops::Range;
-
 use streaming_iterator::StreamingIterator;
-use syntect::html::IncludeBackground::No;
 
-use crate::config::theme::Theme;
-use crate::io::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::output::Metadata;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
-use crate::mocks::mock_output::MockOutput;
 use crate::mocks::savefile_interpreter::SaveFileInterpreter;
 use crate::mocks::scroll_interpreter::ScrollInterpreter;
 use crate::primitives::cursor_set::CursorStatus;

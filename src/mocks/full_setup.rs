@@ -1,6 +1,4 @@
 use std::ffi::OsStr;
-use std::iter;
-use std::iter::empty;
 use std::option::Option;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -9,7 +7,6 @@ use std::time::Duration;
 
 use crossbeam_channel::{Receiver, select, Sender};
 use log::{debug, error, LevelFilter};
-use unicode_segmentation::UnicodeSegmentation;
 
 use crate::config::config::{Config, ConfigRef};
 use crate::config::theme::Theme;
@@ -22,22 +19,16 @@ use crate::gladius::logger_setup::logger_setup;
 use crate::gladius::run_gladius::run_gladius;
 use crate::gladius::sidechannel::x::SideChannel;
 use crate::gladius::sidechannel::x::SideChannelInternal;
-use crate::io::buffer_output::BufferOutput;
-use crate::io::buffer_output_iter::BufferStyleIter;
-use crate::io::cell::Cell;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::{Key, Keycode};
 use crate::mocks::editor_interpreter::EditorInterpreter;
-use crate::mocks::full_setup::tree_view::tree_view::TYPENAME;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
 use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
 use crate::mocks::mock_output::MockOutput;
 use crate::mocks::treeview_interpreter::TreeViewInterpreter;
-use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::xy::XY;
-use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::tree_view;
 
 pub struct FullSetupBuilder {

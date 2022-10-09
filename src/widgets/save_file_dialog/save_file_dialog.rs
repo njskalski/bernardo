@@ -16,7 +16,6 @@ use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
-use crate::fs::read_error::ListError;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
@@ -364,10 +363,6 @@ impl Widget for SaveFileDialogWidget {
             SaveFileDialogMsg::CancelOverride => {
                 self.hover_dialog = None;
                 None
-            }
-            SaveFileDialogMsg::CancelOverride => {
-                self.hover_dialog = None;
-                self.save_positively()
             }
             SaveFileDialogMsg::FocusUpdateMsg(fu_msg) => {
                 self.update_focus(*fu_msg);

@@ -1,8 +1,5 @@
-use unicode_segmentation::UnicodeSegmentation;
-
 use crate::io::output::Metadata;
 use crate::mocks::meta_frame::MetaOutputFrame;
-use crate::primitives::xy::XY;
 use crate::widgets::list_widget::list_widget;
 
 pub struct ListViewInterpreter<'a> {

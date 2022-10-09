@@ -1,14 +1,8 @@
-use std::path::Path;
-
-use log::{debug, error};
-
 use crate::config::theme::Theme;
-use crate::experiments::screen_shot::screenshot;
 use crate::io::buffer_output::BufferOutput;
 use crate::io::output::Metadata;
 use crate::mocks::editor_interpreter::EditorInterpreter;
 use crate::widgets::editor_view::editor_view::EditorView;
-use crate::widgets::editor_widget::editor_widget::EditorWidget;
 
 /*
 No time to come up with good name. It's basically a frame with "metadata" that was emited while it

@@ -1,20 +1,17 @@
 use std::fmt::{Debug, Formatter};
-use std::sync::{Arc, LockResult, RwLock, RwLockWriteGuard};
+use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use std::time::Duration;
 
 use crossbeam_channel::{Receiver, select, Sender};
-use lazy_static::lazy_static;
 use log::{debug, error};
 
 use crate::fs::path::SPath;
-use crate::gladius::sidechannel::x::SideChannel;
 use crate::lsp_client::helpers::LspTextCursor;
 use crate::mocks::mock_navcomp_promise::MockNavCompPromise;
-use crate::mocks::mock_navcomp_provider::MockNavCompEvent::{FileOpened, FileUpdated};
+use crate::mocks::mock_navcomp_provider::MockNavCompEvent::FileOpened;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 use crate::w7e::navcomp_provider::{Completion, CompletionsPromise, NavCompProvider};
-use crate::w7e::navcomp_provider_lsp::NavCompProviderLsp;
 
 pub struct MockCompletionMatcher {
     // None matches all
@@ -81,7 +78,7 @@ impl MockNavCompProviderPilot {
                             }
                         },
                         Err(e) => {
-                            error!("failed retrieving msg");
+                            error!("failed retrieving msg: {:?}", e);
                             return None;
                         }
                     }
@@ -113,7 +110,7 @@ impl NavCompProvider for MockNavCompProvider {
         self.event_sender.send(MockNavCompEvent::FileUpdated(path.clone(), file_contents)).unwrap()
     }
 
-    fn completions(&self, path: SPath, cursor: LspTextCursor, trigger: Option<String>) -> Option<CompletionsPromise> {
+    fn completions(&self, path: SPath, _cursor: LspTextCursor, trigger: Option<String>) -> Option<CompletionsPromise> {
         match self.completions.read() {
             Err(e) => {
                 error!("failed acquiring lock on completions: {:?}", e);
