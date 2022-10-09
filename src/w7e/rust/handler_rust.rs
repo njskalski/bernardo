@@ -1,16 +1,18 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use log::debug;
+use log::{debug, error};
 
 use crate::config::config::ConfigRef;
 use crate::fs::path::SPath;
 use crate::gladius::sidechannel::x::SideChannel;
+use crate::lsp_client::lsp_client::LspWrapper;
 use crate::tsw::lang_id::LangId;
 use crate::w7e::handler::{Handler, NavCompRef};
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::navcomp_group::NavCompTickSender;
 use crate::w7e::navcomp_provider::NavCompProvider;
+use crate::w7e::navcomp_provider_lsp::NavCompProviderLsp;
 
 pub const INIT_TIMEOUT: Duration = Duration::from_millis(2000);
 
