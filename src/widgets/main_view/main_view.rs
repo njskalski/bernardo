@@ -393,6 +393,7 @@ impl ComplexWidget for MainView {
                         bg_layout.boxed(),
                         hover,
                         rect,
+                        true,
                     ).boxed()
                 }
             }

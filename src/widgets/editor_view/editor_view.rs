@@ -498,6 +498,7 @@ impl ComplexWidget for EditorView {
             HoverLayout::new(background,
                              hover,
                              rect,
+                             true,
             ).boxed()
         }
     }

@@ -102,7 +102,9 @@ pub trait ComplexWidget: Widget + Sized {
         let layout = self.get_layout(xy);
         let wwrs = layout.layout(self, xy);
 
-        let widgets_and_positions: Vec<(WID, SubwidgetPointer<Self>, Rect)> = wwrs.iter().map(|w| {
+        let widgets_and_positions: Vec<(WID, SubwidgetPointer<Self>, Rect)> = wwrs.iter().filter(
+            |wwr| wwr.focusable()
+        ).map(|w| {
             let rect = w.rect().clone();
             let wid = w.widget().get(self).id();
             (wid, w.widget().clone(), rect)

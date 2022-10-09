@@ -431,6 +431,7 @@ impl ComplexWidget for SaveFileDialogWidget {
                                                   margins, // TODO
                                                   max_size - margins * 2,
                                               ),
+                                              true,
             ).boxed(), frame).boxed()
         }
     }

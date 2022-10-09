@@ -1,5 +1,6 @@
 use log::warn;
 
+use crate::experiments::focus_group::{FocusGraph, FocusGraphNode};
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::{Layout, WidgetWithRect};
 use crate::primitives::rect::Rect;
@@ -60,19 +61,10 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
                 vec![WidgetWithRect::new(
                     self.widget.clone(),
                     rect,
+                    true,
                 )]
             }
         }
     }
-
-    // fn render(&self, root: &W, theme: &Theme, output: &mut dyn Output, focused: Option<WID>) {
-    //     let widget = self.widget.get(root);
-    //     let wid = widget.id();
-    //     let focused: bool = focused == Some(wid);
-    //
-    //     // let sub_output = &mut SubOutput::new(output, wir.rect);
-    //
-    //     widget.render(theme, focused, output)
-    // }
 }
 

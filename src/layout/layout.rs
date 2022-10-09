@@ -1,3 +1,4 @@
+use crate::experiments::focus_group::FocusGraph;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
@@ -35,6 +36,7 @@ impl WidgetIdRect {
 pub struct WidgetWithRect<W: Widget> {
     widget: SubwidgetPointer<W>,
     rect: Rect,
+    focusable: bool,
 }
 
 impl<W: Widget> Clone for WidgetWithRect<W> {
@@ -42,15 +44,17 @@ impl<W: Widget> Clone for WidgetWithRect<W> {
         Self {
             widget: self.widget.clone(),
             rect: self.rect.clone(),
+            focusable: self.focusable,
         }
     }
 }
 
 impl<W: Widget> WidgetWithRect<W> {
-    pub fn new(widget: SubwidgetPointer<W>, rect: Rect) -> Self {
+    pub fn new(widget: SubwidgetPointer<W>, rect: Rect, focusable: bool) -> Self {
         Self {
             widget,
             rect,
+            focusable,
         }
     }
 
@@ -69,16 +73,16 @@ impl<W: Widget> WidgetWithRect<W> {
         }
     }
 
-    #[deprecated]
-    pub fn todo_into_wir(&self, root: &W) -> WidgetIdRect {
-        WidgetIdRect {
-            wid: self.widget.get(root).id(),
-            rect: self.rect,
-        }
-    }
-
     pub fn unpack(self) -> (SubwidgetPointer<W>, Rect) {
         (self.widget, self.rect)
+    }
+
+    pub fn set_focusable(&mut self, focusable: bool) {
+        self.focusable = focusable;
+    }
+
+    pub fn focusable(&self) -> bool {
+        self.focusable
     }
 }
 
@@ -94,6 +98,8 @@ pub trait Layout<W: Widget> {
 
     // We do not support layouting on infinite spaces, I am too tired to implement it
     fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>>;
+
+    // fn focus_graph(&self) -> FocusGraph<SubwidgetPointer<W>>;
 
     fn boxed(self) -> Box<dyn Layout<W>> where Self: Sized, Self: 'static {
         Box::new(self)
