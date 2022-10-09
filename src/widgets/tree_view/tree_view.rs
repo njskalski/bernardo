@@ -9,7 +9,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::io::output::Output;
+use crate::io::output::{Metadata, Output};
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
 use crate::primitives::size_constraint::SizeConstraint;
@@ -18,6 +18,8 @@ use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::tree_view::tree_it::TreeIt;
 use crate::widgets::tree_view::tree_view_node::{TreeItFilter, TreeViewNode};
+
+pub const TYPENAME: &'static str = "tree_view";
 
 // expectation is that these are sorted
 pub type LabelHighlighter = fn(&str) -> Vec<usize>;
@@ -224,7 +226,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
     }
 
     fn typename(&self) -> &'static str {
-        "TreeView"
+        TYPENAME
     }
 
     fn min_size(&self) -> XY {
@@ -316,6 +318,15 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(test)]
+        output.emit_metadata(
+            Metadata {
+                id: self.id(),
+                typename: self.typename().to_string(),
+                rect: output.size_constraint().visible_hint().clone(),
+            }
+        );
+
         let primary_style = theme.default_text(focused);
         helpers::fill_output(primary_style.background, output);
         let cursor_style = theme.highlighted(focused);

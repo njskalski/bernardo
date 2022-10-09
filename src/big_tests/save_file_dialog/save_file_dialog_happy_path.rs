@@ -1,4 +1,5 @@
 use crossterm::event::KeyCode;
+use log::debug;
 
 use crate::mocks::full_setup::FullSetup;
 
@@ -11,5 +12,10 @@ fn save_file_dialog_happy_path() {
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
     assert!(full_setup.send_key(full_setup.config().keyboard_config.editor.save_as));
 
-    // assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().save_file_dialog().is_some()))
+    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().save_file_dialog().is_some()));
+
+    let x = full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().tree_view().items();
+
+    debug!("{:?}", x);
+    full_setup.screenshot();
 }

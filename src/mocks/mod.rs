@@ -14,3 +14,4 @@ pub mod scroll_interpreter;
 pub mod completion_interpreter;
 pub mod meta_frame;
 pub mod savefile_interpreter;
+pub mod treeview_interpreter;

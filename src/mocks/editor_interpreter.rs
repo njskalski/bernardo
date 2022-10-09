@@ -73,7 +73,7 @@ impl<'a> EditorInterpreter<'a> {
         let saveas_op: Option<SaveFileInterpreter> = if saveases.is_empty() {
             None
         } else {
-            Some(SaveFileInterpreter::new(comps[0], mock_output))
+            Some(SaveFileInterpreter::new(saveases[0], mock_output))
         };
 
         let rect_without_scroll = mock_output
