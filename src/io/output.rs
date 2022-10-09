@@ -19,17 +19,6 @@ pub struct Metadata {
     pub focused: bool,
 }
 
-macro_rules! emit {
-($output: ident, $rect: expr, $focused : expr) => {
-    output.emit_metadata(Metadata{
-        id : self.id(),
-        typename : self.typename(),
-        rect : rect,
-        focused: focused,
-    })
-}
-}
-
 pub trait Output: Debug {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str);
     fn clear(&mut self) -> Result<(), std::io::Error>;
