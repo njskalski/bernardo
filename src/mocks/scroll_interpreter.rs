@@ -16,13 +16,13 @@ impl<'a> ScrollInterpreter<'a> {
 
     pub fn lowest_number(&self) -> Option<usize> {
         self.output.buffer.lines_iter().with_rect(self.rect).next().map(|line| {
-            line.trim().parse::<usize>().ok()
+            line.text.trim().parse::<usize>().ok()
         }).flatten()
     }
 
     pub fn highest_number(&self) -> Option<usize> {
         self.output.buffer.lines_iter().with_rect(self.rect).last().map(|line| {
-            line.parse::<usize>().ok()
+            line.text.parse::<usize>().ok()
         }).flatten()
     }
 }

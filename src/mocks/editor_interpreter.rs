@@ -1,5 +1,6 @@
 use streaming_iterator::StreamingIterator;
 
+use crate::io::buffer_output_iter::VerticalIterItem;
 use crate::io::cell::Cell;
 use crate::io::output::Metadata;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
@@ -38,7 +39,7 @@ pub struct LineIdxPair {
 pub struct LineIdxTuple {
     pub y: u16,
     pub visible_idx: usize,
-    pub contents: String,
+    pub contents: VerticalIterItem,
 }
 
 impl<'a> EditorInterpreter<'a> {
@@ -92,7 +93,7 @@ impl<'a> EditorInterpreter<'a> {
             compeltion_op,
             saveas_op,
             find_op: None,
-            replace_op: None
+            replace_op: None,
         })
     }
 
@@ -129,7 +130,7 @@ impl<'a> EditorInterpreter<'a> {
         })
     }
 
-    pub fn get_line_by_y(&self, screen_pos_y: u16) -> Option<String> {
+    pub fn get_line_by_y(&self, screen_pos_y: u16) -> Option<VerticalIterItem> {
         debug_assert!(self.meta.rect.lower_right().y > screen_pos_y);
         self.mock_output.buffer.lines_iter().with_rect(self.rect_without_scroll).skip(screen_pos_y as usize).next()
     }
@@ -204,7 +205,7 @@ impl<'a> EditorInterpreter<'a> {
                 result = result.replace("[", "#");
             }
 
-            line_idx.contents = result;
+            line_idx.contents.text = result;
             line_idx
         })
     }

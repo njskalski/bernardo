@@ -49,10 +49,10 @@ impl<'a> Iterator for BufferOutputCellsIter<'a> {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VerticalIterItem {
-    absolute_pos: XY,
+    pub absolute_pos: XY,
     // Set iff style was consistent over entire item
-    text_style: Option<TextStyle>,
-    text: String,
+    pub text_style: Option<TextStyle>,
+    pub text: String,
 }
 
 pub struct BufferStyleIter<'a> {
@@ -164,25 +164,44 @@ impl<'a> BufferLinesIter<'a> {
 }
 
 impl<'a> Iterator for BufferLinesIter<'a> {
-    type Item = String;
+    type Item = VerticalIterItem;
 
     fn next(&mut self) -> Option<Self::Item> {
         'primary:
         while self.pos.y < self.rect.lower_right().y {
             let mut result = String::new();
+            let mut style: Option<TextStyle> = None;
+            let mut style_never_set = true;
+            let mut begin_pos: Option<XY> = None;
+
             result.reserve(self.rect.size.x as usize);
 
             for x in self.rect.pos.x..self.rect.lower_right().x {
                 let pos = XY::new(x, self.pos.y);
                 let cell = &self.buffer[pos];
                 match cell {
-                    Cell::Begin { style, grapheme } => {
+                    Cell::Begin { style: cell_style, grapheme } => {
                         if let Some(set_style) = self.style_op {
-                            if set_style != *style {
+                            if set_style != *cell_style {
                                 self.pos.y += 1;
                                 continue 'primary;
                             }
                         }
+
+                        // from here
+                        if begin_pos.is_none() {
+                            begin_pos = Some(pos);
+                        }
+                        if let Some(old_style) = &style {
+                            if old_style != cell_style {
+                                style = None;
+                            }
+                        }
+                        if style_never_set {
+                            style = Some(cell_style.clone());
+                            style_never_set = false;
+                        }
+                        // to here is just setting data
 
                         result += grapheme;
                     }
@@ -191,7 +210,11 @@ impl<'a> Iterator for BufferLinesIter<'a> {
             }
 
             self.pos.y += 1;
-            return Some(result);
+            return Some(VerticalIterItem {
+                absolute_pos: begin_pos.unwrap(),
+                text_style: style,
+                text: result,
+            });
         }
 
         None
@@ -317,9 +340,21 @@ mod tests {
          */
 
         let mut iter = buffer.lines_iter();
-        assert_eq!(iter.next(), Some("bbbaaaaabb".to_string()));
-        assert_eq!(iter.next(), Some("bbbbbbbbbb".to_string()));
-        assert_eq!(iter.next(), Some("bbbaaaaabb".to_string()));
+        let first_item = iter.next().unwrap();
+        assert_eq!(first_item.text, "bbbaaaaabb");
+        assert_eq!(first_item.absolute_pos, XY::ZERO);
+        assert_eq!(first_item.text_style, None);
+
+        let second_item = iter.next().unwrap();
+        assert_eq!(second_item.text, "bbbbbbbbbb");
+        assert_eq!(second_item.absolute_pos, XY::new(0, 1));
+        assert_eq!(second_item.text_style.as_ref(), b.style());
+
+        let third_item = iter.next().unwrap();
+        assert_eq!(third_item.text, "bbbaaaaabb");
+        assert_eq!(third_item.absolute_pos, XY::new(0, 2));
+        assert_eq!(third_item.text_style, None);
+
         assert_eq!(iter.next(), None);
     }
 
@@ -357,8 +392,17 @@ mod tests {
          */
 
         let mut iter = buffer.lines_iter().with_rect(Rect::new(XY::new(1, 1), XY::new(4, 2)));
-        assert_eq!(iter.next(), Some("bbbb".to_string()));
-        assert_eq!(iter.next(), Some("bbaa".to_string()));
+
+        let first_item = iter.next().unwrap();
+        assert_eq!(first_item.text, "bbbb");
+        assert_eq!(first_item.absolute_pos, XY::new(1, 1));
+        assert_eq!(first_item.text_style.as_ref(), b.style());
+
+        let second_item = iter.next().unwrap();
+        assert_eq!(second_item.text, "bbaa");
+        assert_eq!(second_item.absolute_pos, XY::new(1, 2));
+        assert_eq!(second_item.text_style, None);
+
         assert_eq!(iter.next(), None);
     }
 
@@ -398,8 +442,17 @@ mod tests {
         let mut iter = buffer.lines_iter()
             .with_rect(Rect::new(XY::new(3, 0), XY::new(4, 3)))
             .with_style(*a.style().unwrap());
-        assert_eq!(iter.next(), Some("aaaa".to_string()));
-        assert_eq!(iter.next(), Some("aaaa".to_string()));
+
+        let first_item = iter.next().unwrap();
+        assert_eq!(first_item.text, "aaaa");
+        assert_eq!(first_item.absolute_pos, XY::new(3, 0));
+        assert_eq!(first_item.text_style.as_ref(), a.style());
+
+        let second_item = iter.next().unwrap();
+        assert_eq!(second_item.text, "aaaa");
+        assert_eq!(second_item.absolute_pos, XY::new(3, 2));
+        assert_eq!(first_item.text_style.as_ref(), a.style());
+
         assert_eq!(iter.next(), None);
     }
 }

@@ -33,14 +33,14 @@ impl<'a> TreeViewInterpreter<'a> {
         let mut res: Vec<TreeViewInterpreterItem> = Vec::new();
 
         for (line_idx, line) in self.output.buffer.lines_iter().with_rect(self.meta.rect).enumerate() {
-            if line.trim().is_empty() {
+            if line.text.trim().is_empty() {
                 continue;
             }
 
-            let expanded = line.contains("▶");
-            let is_dir = expanded || line.contains("▼");
+            let expanded = line.text.contains("▶");
+            let is_dir = expanded || line.text.contains("▼");
 
-            let line_no_sham = line.replace("▼", " ").replace("▶", " ");
+            let line_no_sham = line.text.replace("▼", " ").replace("▶", " ");
             let mut first_non_blank: u16 = 0;
             for c in line_no_sham.graphemes(true) {
                 if c == " " {

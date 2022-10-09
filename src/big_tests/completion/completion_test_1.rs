@@ -24,7 +24,7 @@ fn completion_test_1() {
     assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_line_indices().map(|c| c.visible_idx).next() == Some(5)));
 
     assert!(full_setup.type_in("path."));
-    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().next().unwrap().contents.contains("path.")));
+    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().next().unwrap().contents.text.contains("path.")));
 
     full_setup.navcomp_pilot().completions().unwrap().push(
         MockCompletionMatcher {
@@ -50,7 +50,7 @@ fn completion_test_1() {
         full_setup
             .get_first_editor().unwrap()
             .completions()
-            .map(|comp| comp.items().fold(false, |acc, item| acc || item.contains("into")))
+            .map(|comp| comp.items().fold(false, |acc, item| acc || item.text.contains("into")))
             .unwrap_or(false)
     }));
 
@@ -62,12 +62,12 @@ fn completion_test_1() {
     }));
 
     assert!(full_setup.send_key(Keycode::Enter.to_key()));
-    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().next().unwrap().contents.contains("path.into_boxed_path")));
+    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().next().unwrap().contents.text.contains("path.into_boxed_path")));
     assert!(full_setup.wait_for(|f|
         f.get_first_editor().unwrap()
             .get_visible_coded_cursor_lines().next()
             .map(|c| {
-                c.contents == "path.into_boxed_path#⏎"
+                c.contents.text == "path.into_boxed_path#⏎"
             }).unwrap_or(false)));
 
     full_setup.finish();

@@ -1,3 +1,4 @@
+use crate::io::buffer_output_iter::VerticalIterItem;
 use crate::io::output::Metadata;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::primitives::xy::XY;
@@ -15,7 +16,7 @@ impl<'a> CompletionInterpreter<'a> {
         }
     }
 
-    pub fn items(&self) -> impl Iterator<Item=String> + '_ {
+    pub fn items(&self) -> impl Iterator<Item=VerticalIterItem> + '_ {
         // for d in self.output.buffer.lines_iter().with_rect(self.meta.rect) {
         //     debug!("items: [{}]", d);
         // }
@@ -41,7 +42,7 @@ impl<'a> CompletionInterpreter<'a> {
         }
 
         idx.map(|idx| {
-            (idx, self.output.buffer.lines_iter().with_rect(self.meta.rect).skip(idx as usize).next().unwrap())
+            (idx, self.output.buffer.lines_iter().with_rect(self.meta.rect).skip(idx as usize).next().unwrap().text)
         })
     }
 }

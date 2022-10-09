@@ -23,6 +23,6 @@ impl<'a> ButtonWidgetInterpreter<'a> {
     }
 
     pub fn contents(&self) -> String {
-        self.output.buffer.lines_iter().with_rect(self.meta.rect).next().unwrap().trim().to_string()
+        self.output.buffer.lines_iter().with_rect(self.meta.rect).next().unwrap().text.trim().to_string()
     }
 }
