@@ -7,13 +7,13 @@ use crate::io::buffer_output::BufferOutput;
 use crate::primitives::helpers::get_next_filename;
 
 pub fn screenshot(dump: &BufferOutput) -> bool {
-    let SCREENSHOT_DIR: PathBuf = PathBuf::from("./screenshots/");
-    if let Err(e) = fs::create_dir_all(&SCREENSHOT_DIR) {
+    let screenshot_dir: PathBuf = PathBuf::from("./screenshots/");
+    if let Err(e) = fs::create_dir_all(&screenshot_dir) {
         error!("failed to screenshot: can't create dir: {:?}", e);
         return false;
     }
 
-    let filename = match get_next_filename(SCREENSHOT_DIR.as_path(), "screenshot_", ".ron") {
+    let filename = match get_next_filename(screenshot_dir.as_path(), "screenshot_", ".ron") {
         None => {
             error!("failed to screenshot : no filename");
             return false;

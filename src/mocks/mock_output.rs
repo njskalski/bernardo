@@ -90,7 +90,7 @@ impl Output for MockOutput {
     }
 
     fn clear(&mut self) -> Result<(), Error> {
-        self.backbuffer_mut().clear();
+        self.backbuffer_mut().clear()?;
         self.metadata.clear();
         Ok(())
     }

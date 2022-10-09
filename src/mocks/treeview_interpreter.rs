@@ -12,10 +12,10 @@ pub struct TreeViewInterpreter<'a> {
 
 #[derive(Clone, Debug)]
 pub struct TreeViewInterpreterItem {
-    label: String,
-    depth: u16,
-    leaf: bool,
-    expanded: bool,
+    pub label: String,
+    pub depth: u16,
+    pub leaf: bool,
+    pub expanded: bool,
 }
 
 impl<'a> TreeViewInterpreter<'a> {

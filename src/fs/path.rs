@@ -186,7 +186,7 @@ impl SPath {
     pub fn file_name_str(&self) -> Option<&str> {
         match self.0.as_ref() {
             PathCell::Head(_) => None,
-            PathCell::Segment { prev, cell } => {
+            PathCell::Segment { prev: _, cell } => {
                 cell.to_str().or_else(|| {
                     warn!("failed casting last item of path {:?}", self);
                     None
