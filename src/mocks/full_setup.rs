@@ -28,14 +28,17 @@ use crate::io::cell::Cell;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::{Key, Keycode};
 use crate::mocks::editor_interpreter::EditorInterpreter;
+use crate::mocks::full_setup::tree_view::tree_view::TYPENAME;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
 use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
 use crate::mocks::mock_output::MockOutput;
+use crate::mocks::treeview_interpreter::TreeViewInterpreter;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::xy::XY;
 use crate::widgets::no_editor::NoEditorWidget;
+use crate::widgets::tree_view;
 
 pub struct FullSetupBuilder {
     path: PathBuf,
@@ -235,6 +238,15 @@ impl FullSetup {
     pub fn get_first_editor(&self) -> Option<EditorInterpreter<'_>> {
         self.last_frame.as_ref().map(|frame| {
             frame.get_editors().next()
+        }).flatten()
+    }
+
+    pub fn get_file_tree_view(&self) -> Option<TreeViewInterpreter<'_>> {
+        self.last_frame.as_ref().map(|frame| {
+            frame.get_meta_by_type(crate::mocks::full_setup::tree_view::tree_view::TYPENAME)
+                .filter(|meta| meta.rect.pos == XY::ZERO)
+                .next()
+                .map(|meta| TreeViewInterpreter::new(meta, frame))
         }).flatten()
     }
 

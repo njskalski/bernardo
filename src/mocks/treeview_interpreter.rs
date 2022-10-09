@@ -59,4 +59,8 @@ impl<'a> TreeViewInterpreter<'a> {
 
         res
     }
+
+    pub fn is_focused(&self) -> bool {
+        self.meta.focused
+    }
 }

@@ -1,5 +1,6 @@
 use std::ops::Range;
 
+use streaming_iterator::StreamingIterator;
 use syntect::html::IncludeBackground::No;
 
 use crate::config::theme::Theme;
@@ -201,5 +202,15 @@ impl<'a> EditorInterpreter<'a> {
             line_idx.contents = result;
             line_idx
         })
+    }
+
+    pub fn is_view_focused(&self) -> bool {
+        self.meta.focused
+    }
+
+    pub fn is_editor_focused(&self) -> bool {
+        self.mock_output.get_meta_by_type(EditorWidget::TYPENAME).filter(
+            |meta| self.meta.rect.contains_rect(meta.rect)
+        ).next().unwrap().focused
     }
 }
