@@ -1,4 +1,4 @@
-use log::LevelFilter;
+use log::{error, LevelFilter, SetLoggerError, warn};
 
 const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     // this is for git ignore
@@ -39,5 +39,10 @@ pub fn logger_setup(level_filter: LevelFilter) {
     for item in DEBUG_PARAMS {
         logger_builder.filter(Some(item.0), item.1);
     }
-    logger_builder.init();
+    match logger_builder.try_init() {
+        Ok(_) => {}
+        Err(e) => {
+            warn!("failed initializing log: {:?}", e);
+        }
+    }
 }

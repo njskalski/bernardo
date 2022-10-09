@@ -57,6 +57,7 @@ which = "4.2.5"
 opt-level = 0
 debug = 2
 lto = false
+features = ["test"]
 
 [profile.release]
 #uncomment for profiling

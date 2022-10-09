@@ -5,6 +5,7 @@ use log::{debug, error};
 
 use crate::config::config::ConfigRef;
 use crate::fs::path::SPath;
+use crate::gladius::sidechannel::x::SideChannel;
 use crate::lsp_client::lsp_client::LspWrapper;
 use crate::tsw::lang_id::LangId;
 use crate::w7e::handler::{Handler, NavCompRef};
@@ -48,6 +49,7 @@ impl RustHandler {
     pub fn load(config: &ConfigRef,
                 ff: SPath,
                 tick_sender: NavCompTickSender,
+                sidechannel: SideChannel,
     ) -> Result<RustHandler, HandlerLoadError> {
         if !ff.is_dir() {
             return Err(HandlerLoadError::NotAProject);
@@ -95,10 +97,16 @@ impl RustHandler {
         #[cfg(test)]
         {
             debug!("initializing MockNavCompProvider");
+            let args = sidechannel.get_navcomp_prov_args();
+
             navcomp_op = Some(
                 Arc::new(
                     Box::new(
-                        crate::mocks::mock_navcomp_provider::MockNavCompProvider::new(tick_sender.clone())
+                        crate::mocks::mock_navcomp_provider::MockNavCompProvider::new(
+                            tick_sender.clone(),
+                            args.0,
+                            args.1,
+                        )
                     ) as Box<dyn NavCompProvider>)
             )
         }

@@ -22,6 +22,7 @@ use bernardo::fs::real_fs::RealFS;
 use bernardo::gladius::load_config::load_config;
 use bernardo::gladius::logger_setup::logger_setup;
 use bernardo::gladius::run_gladius::run_gladius;
+use bernardo::gladius::sidechannel::x::SideChannel;
 use bernardo::io::crossterm_input::CrosstermInput;
 use bernardo::io::crossterm_output::CrosstermOutput;
 use bernardo::io::output::Output;
@@ -54,6 +55,8 @@ fn main() {
         return;
     }
 
+    let sidechannel = SideChannel::default();
+
     run_gladius(
         fsf,
         config_ref,
@@ -62,6 +65,6 @@ fn main() {
         output,
         files,
         &theme,
-        args.recording,
+        sidechannel,
     )
 }

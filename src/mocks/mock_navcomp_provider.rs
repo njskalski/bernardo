@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Formatter};
-use std::sync::{LockResult, RwLock, RwLockWriteGuard};
+use std::sync::{Arc, LockResult, RwLock, RwLockWriteGuard};
 use std::time::Duration;
 
 use crossbeam_channel::{Receiver, select, Sender};
@@ -7,6 +7,7 @@ use lazy_static::lazy_static;
 use log::{debug, error};
 
 use crate::fs::path::SPath;
+use crate::gladius::sidechannel::x::SideChannel;
 use crate::lsp_client::helpers::LspTextCursor;
 use crate::mocks::mock_navcomp_promise::MockNavCompPromise;
 use crate::mocks::mock_navcomp_provider::MockNavCompEvent::{FileOpened, FileUpdated};
@@ -14,11 +15,6 @@ use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 use crate::w7e::navcomp_provider::{Completion, CompletionsPromise, NavCompProvider};
 use crate::w7e::navcomp_provider_lsp::NavCompProviderLsp;
-
-lazy_static! {
-    static ref pair: (Sender<MockNavCompEvent>, Receiver<MockNavCompEvent>) = crossbeam_channel::unbounded();
-    static ref completions_behind_lock : RwLock<Vec<MockCompletionMatcher>> = Default::default();
-}
 
 pub struct MockCompletionMatcher {
     // None matches all
@@ -36,32 +32,35 @@ pub struct MockNavCompProvider {
     triggers: Vec<String>,
     event_sender: Sender<MockNavCompEvent>,
     navcomp_tick_server: Sender<NavCompTick>,
+    completions: Arc<RwLock<Vec<MockCompletionMatcher>>>,
 }
 
 impl MockNavCompProvider {
-    pub fn new(navcomp_tick_server: Sender<NavCompTick>) -> Self {
+    pub fn new(navcomp_tick_server: Sender<NavCompTick>,
+               event_sender: Sender<MockNavCompEvent>,
+               completions: Arc<RwLock<Vec<MockCompletionMatcher>>>,
+    ) -> Self {
         MockNavCompProvider {
-            event_sender: pair.0.clone(),
+            event_sender,
             triggers: vec![".".to_string(), "::".to_string()],
             navcomp_tick_server,
+            completions,
         }
-    }
-
-    pub fn recvr() -> &'static Receiver<MockNavCompEvent> {
-        &pair.1
     }
 }
 
 pub struct MockNavCompProviderPilot {
     recvr: Receiver<MockNavCompEvent>,
+    completions: Arc<RwLock<Vec<MockCompletionMatcher>>>,
 }
 
 impl MockNavCompProviderPilot {
     const DEFAULT_TIMEOUT: Duration = Duration::from_secs(3);
 
-    pub fn new() -> Self {
+    pub fn new(recvr: Receiver<MockNavCompEvent>, completions: Arc<RwLock<Vec<MockCompletionMatcher>>>) -> Self {
         MockNavCompProviderPilot {
-            recvr: pair.1.clone()
+            recvr,
+            completions,
         }
     }
 
@@ -95,7 +94,7 @@ impl MockNavCompProviderPilot {
     }
 
     pub fn completions(&self) -> Option<RwLockWriteGuard<Vec<MockCompletionMatcher>>> {
-        match completions_behind_lock.write() {
+        match self.completions.write() {
             Ok(lock) => Some(lock),
             Err(e) => {
                 error!("failed acquiring competions lock: {:?}", e);
@@ -115,7 +114,7 @@ impl NavCompProvider for MockNavCompProvider {
     }
 
     fn completions(&self, path: SPath, cursor: LspTextCursor, trigger: Option<String>) -> Option<CompletionsPromise> {
-        match completions_behind_lock.read() {
+        match self.completions.read() {
             Err(e) => {
                 error!("failed acquiring lock on completions: {:?}", e);
                 None

@@ -21,6 +21,7 @@ use crate::fs::mock_fs::MockFS;
 use crate::gladius::logger_setup::logger_setup;
 use crate::gladius::run_gladius::run_gladius;
 use crate::gladius::sidechannel::x::SideChannel;
+use crate::gladius::sidechannel::x::SideChannelInternal;
 use crate::io::buffer_output::BufferOutput;
 use crate::io::buffer_output_iter::BufferStyleIter;
 use crate::io::cell::Cell;
@@ -43,7 +44,7 @@ pub struct FullSetupBuilder {
     size: XY,
     recording: bool,
     step_frame: bool,
-    nav_comp_pilot: MockNavCompProviderPilot,
+
 }
 
 impl FullSetupBuilder {
@@ -96,7 +97,7 @@ pub struct FullSetup {
     theme: Theme,
     gladius_thread_handle: JoinHandle<()>,
     last_frame: Option<MetaOutputFrame>,
-    nav_comp_pilot: MockNavCompProviderPilot,
+    sidechannel: SideChannel,
 }
 
 impl FullSetupBuilder {
@@ -118,10 +119,12 @@ impl FullSetupBuilder {
         let local_theme = theme.clone();
         let files = self.files;
 
-        let mut sidechannel = SideChannel::default();
+        let mut sidechannelint = SideChannelInternal::default();
         if self.recording {
-            sidechannel = sidechannel.with_recording();
+            sidechannelint = sidechannelint.with_recording();
         }
+        let sidechannel: SideChannel = Arc::new(sidechannelint);
+        let sidechannel_clone = sidechannel.clone();
 
         let handle = std::thread::spawn(move || {
             run_gladius(local_fsf,
@@ -131,7 +134,7 @@ impl FullSetupBuilder {
                         output,
                         files,
                         &local_theme,
-                        sidechannel)
+                        sidechannel_clone)
         });
 
         FullSetup {
@@ -143,7 +146,7 @@ impl FullSetupBuilder {
             theme,
             gladius_thread_handle: handle,
             last_frame: None,
-            nav_comp_pilot: MockNavCompProviderPilot::new(),
+            sidechannel,
         }
     }
 }
@@ -163,7 +166,7 @@ impl FullSetup {
             size: FullSetupBuilder::DEFAULT_MOCK_OUTPUT_SIZE,
             recording: false,
             step_frame: false,
-            nav_comp_pilot: MockNavCompProviderPilot::new(),
+
         }
     }
 
@@ -195,7 +198,7 @@ impl FullSetup {
     }
 
     pub fn navcomp_pilot(&self) -> &MockNavCompProviderPilot {
-        &self.nav_comp_pilot
+        &self.sidechannel.get_navcomp_pilot()
     }
 
     pub fn get_frame(&self) -> Option<&MetaOutputFrame> {

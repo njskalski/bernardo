@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::config::config::ConfigRef;
 use crate::experiments::pretty_ron::ToPrettyRonString;
 use crate::fs::path::SPath;
+use crate::gladius::sidechannel::x::SideChannel;
 use crate::tsw::lang_id::LangId;
 use crate::w7e::handler::Handler;
 use crate::w7e::handler_factory::load_handler;
@@ -69,6 +70,7 @@ impl ProjectScope {
     pub fn load_handler(&mut self,
                         config: &ConfigRef,
                         navcomp_tick_sender: NavCompTickSender,
+                        sidechannel: SideChannel,
     ) -> Result<(), HandlerLoadError> {
         let handler = match &self.handler_id {
             None => {
@@ -80,6 +82,7 @@ impl ProjectScope {
                              &handler_id,
                              self.path.clone(),
                              navcomp_tick_sender.clone(),
+                             sidechannel,
                 )?
             }
         };

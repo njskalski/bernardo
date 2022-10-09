@@ -100,7 +100,7 @@ pub fn run_gladius<
     // At this point it is guaranteed that we have a Workspace present, though it might be not saved!
 
     // Initializing handlers
-    let (nav_comp_group_ref, scope_errors) = workspace.initialize_handlers(&config);
+    let (nav_comp_group_ref, scope_errors) = workspace.initialize_handlers(&config, sidechannel.clone());
     if !scope_errors.is_empty() {
         debug!("{} handlers failed to load, details : {:?}", scope_errors.len(), scope_errors);
     }
