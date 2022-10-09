@@ -120,6 +120,7 @@ impl<W: Widget> WithScroll<W> {
             id: self.id(),
             typename: self.typename().to_string(),
             rect: Rect::new(XY::ZERO, XY::new(margin_width, output.size_constraint().visible_hint().size.y)),
+            focused,
         });
 
         debug_assert!(self.line_no);

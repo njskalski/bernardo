@@ -912,6 +912,7 @@ impl Widget for EditorWidget {
                 id: self.wid,
                 typename: self.typename().to_string(),
                 rect: output.size_constraint().visible_hint().clone(),
+                focused,
             }
         );
 

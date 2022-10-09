@@ -324,6 +324,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
                 id: self.id(),
                 typename: self.typename().to_string(),
                 rect: output.size_constraint().visible_hint().clone(),
+                focused,
             }
         );
 

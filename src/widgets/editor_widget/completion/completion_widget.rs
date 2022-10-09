@@ -207,6 +207,7 @@ impl Widget for CompletionWidget {
                     id: self.wid,
                     typename: self.typename().to_string(),
                     rect: Rect::new(XY::ZERO, size),
+                    focused,
                 });
             }
         }
