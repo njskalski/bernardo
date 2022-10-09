@@ -150,6 +150,10 @@ impl SaveFileDialogWidget {
                 changed = self.tree_widget.internal_mut().expand_path(parent);
             }
 
+            if !self.tree_widget.internal_mut().set_selected(&dir) {
+                error!("failed setting selected {:?}", dir);
+            }
+
             self.show_files_on_right_panel(&dir);
         }
 

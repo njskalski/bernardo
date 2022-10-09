@@ -4,6 +4,7 @@ use log::debug;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::io::input_event::InputEvent;
 use crate::mocks::full_setup::FullSetup;
+use crate::mocks::treeview_interpreter::TreeViewInterpreterItem;
 
 fn common_start() -> FullSetup {
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/save_file_dialog_test_1")
@@ -30,7 +31,6 @@ fn path_expanded() {
 
     assert_eq!(expanded, vec![
         "save_file_dialog_test_1".to_string(),
-        "src".to_string(),
     ]);
 }
 
@@ -49,4 +49,30 @@ fn no_leak_focus() {
     assert!(full_setup.wait_for(|f| {
         f.get_file_tree_view().unwrap().is_focused()
     }));
+}
+
+#[test]
+fn expanded_and_highlighted_path() {
+    // this test validates, that when save-dialog is open, editor cannot be modified, but tree view can.
+
+    let mut full_setup = common_start();
+
+    let tree_items = |full_setup: &FullSetup| {
+        full_setup.get_first_editor().unwrap()
+            .save_file_dialog().unwrap()
+            .tree_view().items()
+    };
+
+    assert_eq!(tree_items(&full_setup).iter()
+                   .filter(|i| i.expanded)
+                   .map(|i| i.label.clone())
+                   .collect::<Vec<_>>(), vec!["save_file_dialog_test_1"]);
+
+    let src = tree_items(&full_setup).iter().find(|i| i.label == "src").unwrap().clone();
+
+    assert_eq!(src.expanded, false);
+    assert_eq!(src.depth, 1);
+    assert_eq!(src.highlighted, true);
+
+    full_setup.screenshot();
 }

@@ -168,7 +168,7 @@ pub trait ComplexWidget: Widget + Sized {
         if let Some(ds) = self.get_display_state_mut_op() {
             ds.focused = subwidget_pointer;
         } else {
-            error!("failed setting focused before layout. Use get_default_focused instead?");
+            error!("failed setting focused before layout on {}. Use get_default_focused instead?", self.typename());
         }
     }
 
