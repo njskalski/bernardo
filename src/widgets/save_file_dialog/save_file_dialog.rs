@@ -302,18 +302,18 @@ impl Widget for SaveFileDialogWidget {
             InputEvent::KeyInput(key) => {
                 match key.keycode {
                     Keycode::Esc => SaveFileDialogMsg::Cancel.someboxed(),
-                    // keycode if keycode.is_arrow() => {
-                    //     if let (Some(msg), Some(ds)) = (key.as_focus_update(), &self.display_state) {
-                    //         if ds.focus_group.can_update_focus(msg) {
-                    //             SaveFileDialogMsg::FocusUpdateMsg(msg).someboxed()
-                    //         } else {
-                    //             None
-                    //         }
-                    //     } else {
-                    //         error!("failed to cast arrow to focus update");
-                    //         None
-                    //     }
-                    // }
+                    keycode if keycode.is_arrow() => {
+                        if let (Some(msg), Some(ds)) = (key.as_focus_update(), &self.display_state) {
+                            if ds.focus_group.can_update_focus(msg) {
+                                SaveFileDialogMsg::FocusUpdateMsg(msg).someboxed()
+                            } else {
+                                None
+                            }
+                        } else {
+                            error!("failed to cast arrow to focus update");
+                            None
+                        }
+                    }
                     _ => None
                 }
             }
@@ -369,6 +369,10 @@ impl Widget for SaveFileDialogWidget {
             SaveFileDialogMsg::CancelOverride => {
                 self.hover_dialog = None;
                 self.save_positively()
+            }
+            SaveFileDialogMsg::FocusUpdateMsg(fu_msg) => {
+                self.update_focus(*fu_msg);
+                None
             }
             unknown_msg => {
                 warn!("SaveFileDialog.update : unknown message {:?}", unknown_msg);

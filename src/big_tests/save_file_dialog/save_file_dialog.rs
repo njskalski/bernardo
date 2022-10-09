@@ -120,4 +120,32 @@ fn hit_on_leaf_dir_moves_focus() {
     assert!(full_setup.wait_for(|full_setup| {
         full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().list_view().is_focused()
     }));
+
+    full_setup.screenshot();
+}
+
+#[test]
+fn hit_on_list_item_moves_to_edit() {
+    // this test validates, that when save-dialog is open, editor cannot be modified, but tree view can.
+
+    let mut full_setup = common_start();
+
+    assert_eq!(full_setup.get_first_editor().unwrap()
+                   .save_file_dialog().unwrap()
+                   .tree_view().is_focused(), true
+    );
+
+    full_setup.send_key(Keycode::Enter.to_key());
+    full_setup.send_key(Keycode::ArrowDown.to_key());
+    full_setup.send_key(Keycode::Enter.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().tree_view().is_focused() == false
+    }));
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().list_view().is_focused()
+    }));
+
+    full_setup.screenshot();
 }
