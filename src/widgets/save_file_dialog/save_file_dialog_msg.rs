@@ -9,6 +9,9 @@ pub enum SaveFileDialogMsg {
     TreeExpanded(SPath),
     // Sent when a left hand-side file-tree subtree selection changed
     TreeHighlighted(SPath),
+
+    TreeHit(SPath),
+    
     FileListHit(SPath),
     EditBoxHit,
 

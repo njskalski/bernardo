@@ -87,6 +87,10 @@ impl SaveFileDialogWidget {
             .with_on_highlighted_changed(|widget| {
                 let (_, item) = widget.get_highlighted();
                 Some(Box::new(SaveFileDialogMsg::TreeHighlighted(item.spath().clone())))
+            })
+            .with_on_select_hightlighted(|widget| {
+                let (_, item) = widget.get_highlighted();
+                SaveFileDialogMsg::TreeHit(item.spath().clone()).someboxed()
             });
 
         let scroll_tree_widget = WithScroll::new(tree_widget, ScrollDirection::Vertical);
@@ -335,6 +339,10 @@ impl Widget for SaveFileDialogWidget {
                     warn!("failed to set path {:?}", node);
                 }
 
+                None
+            }
+            SaveFileDialogMsg::TreeHit(_) => {
+                self.set_focused(subwidget!(Self.list_widget));
                 None
             }
             SaveFileDialogMsg::FileListHit(file) => {

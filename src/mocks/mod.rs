@@ -15,3 +15,4 @@ pub mod completion_interpreter;
 pub mod meta_frame;
 pub mod savefile_interpreter;
 pub mod treeview_interpreter;
+pub mod listview_interpreter;

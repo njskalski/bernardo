@@ -9,7 +9,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::io::output::Output;
+use crate::io::output::{Metadata, Output};
 use crate::primitives::arrow::Arrow;
 use crate::primitives::common_query::CommonQuery;
 use crate::primitives::helpers;
@@ -21,6 +21,8 @@ use crate::widget::fill_policy::FillPolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 use crate::widgets::list_widget::provider::ListItemProvider;
+
+pub const TYPENAME: &'static str = "list_widget";
 
 pub struct ListWidget<Item: ListWidgetItem> {
     id: WID,
@@ -215,7 +217,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     }
 
     fn typename(&self) -> &'static str {
-        "List"
+        TYPENAME
     }
 
     fn min_size(&self) -> XY {
@@ -353,6 +355,16 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(test)]
+        output.emit_metadata(
+            Metadata {
+                id: self.id(),
+                typename: self.typename().to_string(),
+                rect: output.size_constraint().visible_hint().clone(),
+                focused,
+            }
+        );
+
         let size = if self.last_size.is_none() {
             error!("request to draw before layout, skipping.");
             return;
@@ -413,7 +425,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                 if column_idx + 1 == Item::len_columns() && self.fill_policy.fill_x {
                     column_width = size.x - x_offset;
                 }
-                
+
                 let actual_max_text_length = column_width;
                 debug_assert!(actual_max_text_length > 0);
 
