@@ -312,7 +312,7 @@ impl Widget for MainView {
                     None
                 }
                 _ => {
-                    warn!("unprocessed event");
+                    warn!("unprocessed event {:?}", main_view_msg);
                     None
                 }
             };

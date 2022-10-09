@@ -110,8 +110,8 @@ impl<W: Write> Output for CrosstermOutput<W> {
     }
 
     #[cfg(test)]
-    fn emit_metadata(&mut self, meta: Metadata) {
-        todo!()
+    fn emit_metadata(&mut self, _meta: Metadata) {
+        debug_assert!(false, "you should not be emmiting metadata to an actual output");
     }
 }
 

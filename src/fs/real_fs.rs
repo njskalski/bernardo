@@ -107,6 +107,10 @@ impl FilesystemFront for RealFS {
     }
 
     fn blocking_overwrite_with_bytes(&self, path: &Path, s: &[u8], must_exist: bool) -> Result<usize, WriteError> {
+        if must_exist && path.exists() {
+            return Err(WriteError::FileNotFound);
+        }
+
         std::fs::write(path, s)?;
         Ok(s.len())
     }

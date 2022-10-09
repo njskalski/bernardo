@@ -1,12 +1,6 @@
-use log::debug;
-
 use crate::io::output::Metadata;
 use crate::mocks::meta_frame::MetaOutputFrame;
-use crate::mocks::mock_output::MockOutput;
-use crate::primitives::rect::Rect;
-use crate::primitives::xy::XY;
 use crate::widgets::button::ButtonWidget;
-use crate::widgets::edit_box::EditBoxWidget;
 
 #[derive(Clone, Debug)]
 pub struct ButtonWidgetInterpreter<'a> {

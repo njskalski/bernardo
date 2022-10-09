@@ -58,8 +58,6 @@ pub struct SaveFileDialogWidget {
     ok_button: ButtonWidget,
     cancel_button: ButtonWidget,
 
-    fsf: FsfRef,
-
     on_cancel: Option<WidgetAction<Self>>,
     on_save: Option<WidgetActionParam<Self, SPath>>,
 
@@ -119,7 +117,6 @@ impl SaveFileDialogWidget {
             edit_box,
             ok_button,
             cancel_button,
-            fsf,
             on_save: None,
             on_cancel: None,
             root_path: path,
@@ -182,7 +179,7 @@ impl SaveFileDialogWidget {
                 true
             }
             Err(e) => {
-                error!("failed to list {:?}", directory);
+                error!("failed to list {:?}: {:?}", directory, e);
                 self.list_widget.set_provider(Box::new(()));
                 false
             }

@@ -1,5 +1,3 @@
-use streaming_iterator::StreamingIterator;
-
 use crate::io::cell::Cell;
 use crate::io::output::Metadata;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
@@ -89,7 +87,7 @@ impl<'a> EditorInterpreter<'a> {
     pub fn get_visible_cursor_cells(&self) -> impl Iterator<Item=(XY, &Cell)> + '_ {
         self.mock_output.buffer.cells_iter().filter(|(pos, cell)|
             match cell {
-                Cell::Begin { style, grapheme } => style.background == self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap(),
+                Cell::Begin { style, grapheme: _ } => style.background == self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap(),
                 Cell::Continuation => false,
             }
         )

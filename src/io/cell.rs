@@ -19,7 +19,7 @@ impl Cell {
 
     pub fn style(&self) -> Option<&TextStyle> {
         match self {
-            Cell::Begin { style, grapheme } => {
+            Cell::Begin { style, grapheme: _ } => {
                 Some(style)
             }
             Cell::Continuation => None,
@@ -28,7 +28,7 @@ impl Cell {
 
     pub fn grapheme(&self) -> Option<&str> {
         match self {
-            Cell::Begin { style, grapheme } => {
+            Cell::Begin { style: _, grapheme } => {
                 Some(grapheme)
             }
             Cell::Continuation => None,

@@ -110,7 +110,7 @@ impl NavCompProvider for MockNavCompProvider {
         self.event_sender.send(MockNavCompEvent::FileUpdated(path.clone(), file_contents)).unwrap()
     }
 
-    fn completions(&self, path: SPath, _cursor: LspTextCursor, trigger: Option<String>) -> Option<CompletionsPromise> {
+    fn completions(&self, path: SPath, _cursor: LspTextCursor, _trigger: Option<String>) -> Option<CompletionsPromise> {
         match self.completions.read() {
             Err(e) => {
                 error!("failed acquiring lock on completions: {:?}", e);
@@ -138,11 +138,11 @@ impl NavCompProvider for MockNavCompProvider {
         }
     }
 
-    fn completion_triggers(&self, path: &SPath) -> &Vec<String> {
+    fn completion_triggers(&self, _path: &SPath) -> &Vec<String> {
         &self.triggers
     }
 
-    fn file_closed(&self, path: &SPath) {}
+    fn file_closed(&self, _path: &SPath) {}
 
     fn todo_navcomp_sender(&self) -> &NavCompTickSender {
         &self.navcomp_tick_server

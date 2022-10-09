@@ -63,7 +63,7 @@ impl PathCell {
     pub fn as_path(&self) -> Option<&Path> {
         match &self {
             PathCell::Head(_) => None,
-            PathCell::Segment { prev, cell } => Some(cell),
+            PathCell::Segment { prev: _, cell } => Some(cell),
         }
     }
 
@@ -172,7 +172,7 @@ impl SPath {
     pub fn parent_ref(&self) -> Option<&SPath> {
         match self.0.as_ref() {
             PathCell::Head(_) => None,
-            PathCell::Segment { prev, cell } => Some(prev),
+            PathCell::Segment { prev, cell: _ } => Some(prev),
         }
     }
 
@@ -208,7 +208,7 @@ impl SPath {
                         "<root>".into()
                     })
             }
-            PathCell::Segment { prev, cell } => {
+            PathCell::Segment { prev: _, cell } => {
                 cell.to_string_lossy().into()
             }
         }

@@ -85,7 +85,7 @@ impl Output for BufferOutput {
     }
 
     #[cfg(test)]
-    fn emit_metadata(&mut self, meta: Metadata) {}
+    fn emit_metadata(&mut self, _meta: Metadata) {}
 }
 
 impl Debug for BufferOutput {
@@ -117,7 +117,7 @@ impl BufferOutput {
             let pos = XY::new(x, line_idx);
             let cell = &self[pos];
             match cell {
-                Cell::Begin { style, grapheme } => {
+                Cell::Begin { style: _, grapheme } => {
                     res += grapheme;
                 }
                 Cell::Continuation => {}
@@ -138,7 +138,7 @@ impl ToString for BufferOutput {
                 let pos = XY::new(x, y);
                 let cell = &self[pos];
                 match cell {
-                    Cell::Begin { style, grapheme } => {
+                    Cell::Begin { style: _, grapheme } => {
                         wchujdlugistring += grapheme;
                     }
                     Cell::Continuation => {}
