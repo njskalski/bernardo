@@ -279,17 +279,6 @@ impl Widget for SaveFileDialogWidget {
         // debug!("save_file_dialog.on_input {:?}", input_event);
 
         return match input_event {
-            // InputEvent::FocusUpdate(focus_update) => {
-            //     let can_update = self.display_state.as_ref().map(|ds| {
-            //         ds.focus_group().can_update_focus(focus_update)
-            //     }).unwrap_or(false);
-            //
-            //     if can_update {
-            //         Some(Box::new(SaveFileDialogMsg::FocusUpdateMsg(focus_update)))
-            //     } else {
-            //         None
-            //     }
-            // }
             InputEvent::KeyInput(key) => {
                 match key.keycode {
                     Keycode::Esc => SaveFileDialogMsg::Cancel.someboxed(),
@@ -322,20 +311,6 @@ impl Widget for SaveFileDialogWidget {
         }
 
         return match our_msg.unwrap() {
-            // SaveFileDialogMsg::FocusUpdateMsg(focus_update) => {
-            //     // debug!("updating focus");
-            //     self.display_state.as_mut().map(
-            //         |ds| {
-            //             if !ds.focus_group.update_focus(*focus_update) {
-            //                 warn!("focus update accepted but failed");
-            //             }
-            //             None
-            //         }
-            //     ).unwrap_or_else(|| {
-            //         error!("failed retrieving display_state");
-            //         None
-            //     })
-            // }
             SaveFileDialogMsg::TreeExpanded(..) => {
                 None
             }

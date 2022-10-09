@@ -219,6 +219,16 @@ impl EditorView {
         self.fsf.root()
     }
 
+    fn get_hover_subwidget(&self) -> SubwidgetPointer<Self> {
+        SubwidgetPointer::new(Box::new(|w: &Self| {
+            w.hover_dialog.as_ref().unwrap() // TODO
+        }),
+                              Box::new(|w: &mut Self| {
+                                  w.hover_dialog.as_mut().unwrap() // TODO
+                              }),
+        )
+    }
+
     pub fn buffer_state(&self) -> &BufferState {
         self.editor.internal().buffer()
     }
@@ -344,6 +354,7 @@ impl Widget for EditorView {
                 }
                 EditorViewMsg::SaveAs => {
                     self.open_save_as_dialog();
+                    self.set_focused(self.get_hover_subwidget());
                     None
                 }
                 EditorViewMsg::OnSaveAsCancel => {
