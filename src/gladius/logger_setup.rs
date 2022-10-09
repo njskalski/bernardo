@@ -15,6 +15,8 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("bernardo::widgets::fuzzy_search::fuzzy_search", log::LevelFilter::Warn),
     ("bernardo::widgets::edit_box", log::LevelFilter::Warn),
     ("bernardo::widgets::list_widget::list_widget", log::LevelFilter::Warn),
+    ("bernardo::widgets::save_file_dialog::save_file_dialog", log::LevelFilter::Warn),
+    ("bernardo::widgets::dir_tree_view", log::LevelFilter::Warn),
 
     // This guy leaves a lot of data in trace, it seems like it spawns a new thread. I think it deserves profiling.
     ("arboard::x11_clipboard", log::LevelFilter::Warn),
@@ -23,6 +25,7 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("bernardo::config", log::LevelFilter::Debug),
     ("bernardo::lsp_client::lsp_read", log::LevelFilter::Warn),
     ("bernardo::lsp_client::lsp_write", log::LevelFilter::Warn),
+    ("bernardo::mocks::full_setup", log::LevelFilter::Warn),
 ];
 
 

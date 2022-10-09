@@ -267,10 +267,6 @@ impl FilesystemFront for MockFS {
 
     fn is_file(&self, path: &Path) -> bool {
         let comp: Vec<_> = path.components().collect();
-
-        debug!("is_file path: [{:?}]", &path);
-        debug!("is_file comps : [{:?}]", &comp);
-
         self.root_dir.read().unwrap().get(&comp).map(|r| r.is_file()).unwrap_or(false)
     }
 

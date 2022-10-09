@@ -40,6 +40,8 @@ fn path_expanded() {
     assert_eq!(expanded, vec![
         "save_file_dialog_test_1".to_string(),
     ]);
+
+    full_setup.finish();
 }
 
 #[test]
@@ -57,6 +59,8 @@ fn no_leak_focus() {
     assert!(full_setup.wait_for(|f| {
         f.get_file_tree_view().unwrap().is_focused()
     }));
+
+    full_setup.finish();
 }
 
 #[test]
@@ -74,6 +78,8 @@ fn expanded_and_highlighted_path() {
     assert_eq!(src.expanded, false);
     assert_eq!(src.depth, 1);
     assert_eq!(src.highlighted, true);
+
+    full_setup.finish();
 }
 
 #[test]
@@ -93,6 +99,8 @@ fn hit_on_dir_expands_it() {
             .map(|i| i.label.clone())
             .collect::<Vec<_>>() == vec!["save_file_dialog_test_1".to_string(), "src".to_string()]
     }));
+
+    full_setup.finish();
 }
 
 #[test]
@@ -115,6 +123,8 @@ fn hit_on_leaf_dir_moves_focus() {
     assert!(full_setup.wait_for(|full_setup| {
         full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().list_view().is_focused()
     }));
+
+    full_setup.finish();
 }
 
 #[test]
@@ -137,6 +147,8 @@ fn hit_on_list_item_moves_to_edit() {
     assert!(full_setup.wait_for(|full_setup| {
         full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().edit_widget().is_focused() == true
     }));
+
+    full_setup.finish();
 }
 
 fn over_ok() -> FullSetup {
@@ -192,6 +204,8 @@ fn happy_path() {
 
         spath!(full_setup.fsf(), "src", "main2.rs").map(|path| path.is_file()).unwrap_or(false)
     }));
+
+    full_setup.finish();
 }
 
 #[test]
@@ -203,6 +217,8 @@ fn esc_cancels_path() {
     assert!(full_setup.wait_for(|full_setup| {
         full_setup.get_first_editor().unwrap().save_file_dialog().is_none()
     }));
+
+    full_setup.finish();
 }
 
 #[test]
@@ -220,4 +236,6 @@ fn cancel_cancels() {
     assert!(full_setup.wait_for(|full_setup| {
         full_setup.get_first_editor().unwrap().save_file_dialog().is_none()
     }));
+
+    full_setup.finish();
 }

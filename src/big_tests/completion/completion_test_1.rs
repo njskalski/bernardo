@@ -71,5 +71,7 @@ fn completion_test_1() {
             .get_visible_coded_cursor_lines().next()
             .map(|c| {
                 c.contents == "path.into_boxed_path#⏎"
-            }).unwrap_or(false)))
+            }).unwrap_or(false)));
+
+    full_setup.finish();
 }
