@@ -1,3 +1,4 @@
+use log::debug;
 use streaming_iterator::StreamingIterator;
 
 use crate::io::buffer_output_iter::VerticalIterItem;
@@ -117,7 +118,14 @@ impl<'a> EditorInterpreter<'a> {
     pub fn get_visible_cursor_cells(&self) -> impl Iterator<Item=(XY, &Cell)> + '_ {
         self.mock_output.buffer.cells_iter().filter(|(pos, cell)|
             match cell {
-                Cell::Begin { style, grapheme: _ } => style.background == self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap(),
+                Cell::Begin { style, grapheme: _ } => {
+                    let mut cursor_background = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
+                    if !self.is_editor_focused() {
+                        cursor_background = cursor_background.half();
+                    }
+
+                    style.background == cursor_background
+                }
                 Cell::Continuation => false,
             }
         )
@@ -180,7 +188,12 @@ impl<'a> EditorInterpreter<'a> {
                 let mut grapheme_added = false;
                 match cell {
                     Cell::Begin { style, grapheme } => {
-                        if style.background == self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap() {
+                        let mut under_cursor = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
+                        if !self.is_editor_focused() {
+                            under_cursor = under_cursor.half();
+                        }
+
+                        if style.background == under_cursor {
                             if !cursor_open {
                                 result += "[";
                                 cursor_open = true;
@@ -191,13 +204,19 @@ impl<'a> EditorInterpreter<'a> {
                                 cursor_open = false;
                             }
                         }
-                        let now_within_sel = style.background == self.mock_output.theme.cursor_background(CursorStatus::WithinSelection).unwrap();
+                        let mut within_selection = self.mock_output.theme.cursor_background(CursorStatus::WithinSelection).unwrap();
+                        if !self.is_editor_focused() {
+                            within_selection = within_selection.half();
+                        }
+
+                        let now_within_sel = style.background == within_selection;
                         if now_within_sel {
                             was_more_than_anchor = true;
                         }
 
                         if !prev_within_sel && now_within_sel {
                             result += "(";
+                            cursor_open = true;
                         }
                         if prev_within_sel && !now_within_sel {
                             result += ")";
@@ -220,6 +239,8 @@ impl<'a> EditorInterpreter<'a> {
             if !was_more_than_anchor {
                 result = result.replace("[", "#");
             }
+
+            debug!("res [{}]", &result);
 
             line_idx.contents.text = result;
             line_idx

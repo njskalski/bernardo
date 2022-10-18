@@ -1,3 +1,5 @@
+use log::debug;
+
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 
@@ -82,5 +84,25 @@ fn esc_closes_both() {
     full_setup.send_key(Keycode::Esc.to_key());
     assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().find_op().is_none()));
     assert!(full_setup.get_first_editor().unwrap().is_view_focused());
+    full_setup.finish();
+}
+
+#[test]
+fn actual_find() {
+    let mut full_setup = common_start();
+    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().find_op().unwrap().is_focused()));
+
+    full_setup.type_in("path");
+    full_setup.send_key(Keycode::Enter.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().get_visible_coded_cursor_lines().find(|line| {
+            debug!("line [{}]", line.contents.text);
+            line.contents.text.contains("::(path]")
+        }).is_some()
+    }));
+
+    full_setup.screenshot();
+
     full_setup.finish();
 }
