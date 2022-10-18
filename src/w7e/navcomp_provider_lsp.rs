@@ -9,7 +9,7 @@ use crate::lsp_client::helpers::LspTextCursor;
 use crate::lsp_client::lsp_client::LspWrapper;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
-use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider};
+use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, DefinitionPromise, NavCompProvider, SymbolOptions};
 
 /*
 This is work in progress. I do not know mutability rules. I am also not sure if I don't want
@@ -133,6 +133,33 @@ impl NavCompProvider for NavCompProviderLsp {
 
     fn todo_navcomp_sender(&self) -> &NavCompTickSender {
         &self.todo_tick_sender
+    }
+
+    fn todo_symbol_options(&self, path: SPath, cursor: LspTextCursor) -> Vec<SymbolOptions> {
+        vec![SymbolOptions::GoToDefinition]
+    }
+
+    fn todo_get_goto_definition_link(&self, path: SPath, cursor: LspTextCursor) -> Option<DefinitionPromise> {
+        let url = match path.to_url() {
+            Ok(url) => url,
+            Err(_) => {
+                error!("failed goto definition, because path->url cast failed.");
+                return None;
+            }
+        };
+
+        match self.lsp.try_write() {
+            Err(_) => {
+                // this should never happen
+                error!("failed acquiring write lock");
+            }
+            Ok(mut lock) => {
+                match lock.text_document_go_to_definition(url, cursor) {
+                    Ok(resp) => {}
+                    Err(_) => error!("failed sending text_document_go_to_definition"),
+                }
+            }
+        }
     }
 }
 

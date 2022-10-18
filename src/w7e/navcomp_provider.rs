@@ -6,6 +6,12 @@ use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
 
 #[derive(Debug, Clone)]
+pub enum SymbolOptions {
+    GoToDefinition,
+    SeeUsages,
+}
+
+#[derive(Debug, Clone)]
 pub enum CompletionAction {
     Insert(String)
 }
@@ -18,6 +24,7 @@ pub struct Completion {
 }
 
 pub type CompletionsPromise = Box<dyn Promise<Vec<Completion>> + 'static>;
+pub type DefinitionPromise = Box<dyn Promise<SymbolOptions> + 'static>;
 
 // this is a wrapper around LSP and "similar services".
 pub trait NavCompProvider: Debug {
@@ -39,4 +46,8 @@ pub trait NavCompProvider: Debug {
     fn file_closed(&self, path: &SPath);
 
     fn todo_navcomp_sender(&self) -> &NavCompTickSender;
+
+    fn todo_symbol_options(&self, path: SPath, cursor: LspTextCursor) -> Vec<SymbolOptions>;
+
+    fn todo_get_goto_definition_link(&self, path: SPath, cursor: LspTextCursor) -> Option<DefinitionPromise>;
 }

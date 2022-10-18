@@ -10,8 +10,8 @@ use std::thread::JoinHandle;
 
 use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error, warn};
-use lsp_types::{CompletionContext, CompletionTriggerKind, Position, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentPositionParams, Url, VersionedTextDocumentIdentifier};
-use lsp_types::request::Completion;
+use lsp_types::{CompletionContext, CompletionTriggerKind, PartialResultParams, Position, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentPositionParams, Url, VersionedTextDocumentIdentifier, WorkDoneProgressParams};
+use lsp_types::request::{Completion, GotoDefinition};
 
 use crate::lsp_client::debug_helpers::lsp_debug_save;
 use crate::lsp_client::helpers::LspTextCursor;
@@ -325,6 +325,18 @@ impl LspWrapper {
         )
     }
 
+    pub fn text_document_position_params(url: Url, cursor: LspTextCursor) -> TextDocumentPositionParams {
+        TextDocumentPositionParams {
+            text_document: TextDocumentIdentifier {
+                uri: url
+            },
+            position: Position {
+                line: cursor.row,
+                character: cursor.col,
+            },
+        }
+    }
+
     pub fn text_document_completion(&mut self,
                                     url: Url,
                                     cursor: LspTextCursor,
@@ -339,13 +351,7 @@ impl LspWrapper {
     ) -> Result<LSPPromise<Completion>, LspIOError> {
         self.send_message::<lsp_types::request::Completion>(
             lsp_types::CompletionParams {
-                text_document_position: TextDocumentPositionParams {
-                    text_document: TextDocumentIdentifier { uri: url },
-                    position: Position {
-                        line: cursor.row,
-                        character: cursor.col,
-                    },
-                },
+                text_document_position: Self::text_document_position_params(url, cursor),
                 work_done_progress_params: Default::default(),
                 partial_result_params: Default::default(),
                 context: Some(CompletionContext {
@@ -356,6 +362,21 @@ impl LspWrapper {
                     },
                     trigger_character,
                 }),
+            }
+        )
+    }
+
+    pub fn text_document_go_to_definition(&mut self, url: Url,
+                                          cursor: LspTextCursor) -> Result<LSPPromise<GotoDefinition>, LspIOError> {
+        self.send_message::<lsp_types::request::GotoDefinition>(
+            lsp_types::GotoDefinitionParams {
+                text_document_position_params: Self::text_document_position_params(url, cursor),
+                work_done_progress_params: WorkDoneProgressParams {
+                    work_done_token: None
+                },
+                partial_result_params: PartialResultParams {
+                    partial_result_token: None
+                },
             }
         )
     }

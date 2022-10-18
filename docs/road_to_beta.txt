@@ -5,14 +5,21 @@ Here is what I want to be present in Gladius Beta:
 3) the context menu
 4) git filtering in file search
 5) fuzzy file search covered with tests
+6) insert
 
 Nice to haves (only if they turn out to be low hanging fruits):
 1) guessing programming language from code
 2) user-focus-path (aka bookmark stack)
 3) tumblerview
 4) errors/warnings in editor
+5) scoped undo/
+6) notebook document?
 
 Docs:
 1) how views work
 2) how main loop works
 3) how filesystems are implemented
+
+Tests:
+1) save scenarios like cancel, overwrite etc
+2) undo/redo with LSP
