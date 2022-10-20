@@ -87,6 +87,7 @@ fn esc_closes_both() {
     full_setup.finish();
 }
 
+// TODO(nj) add notifier indicating end-of-file
 #[test]
 fn actual_find() {
     let mut full_setup = common_start();
@@ -102,7 +103,14 @@ fn actual_find() {
         }).is_some()
     }));
 
-    full_setup.screenshot();
+    full_setup.send_key(Keycode::Enter.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().get_visible_coded_cursor_lines().find(|line| {
+            debug!("line [{}]", line.contents.text);
+            line.contents.text.contains("let (path] =")
+        }).is_some()
+    }));
 
     full_setup.finish();
 }
