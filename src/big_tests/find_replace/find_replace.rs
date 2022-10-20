@@ -16,7 +16,6 @@ fn common_start() -> FullSetup {
     full_setup
 }
 
-
 #[test]
 fn find_shows_up() {
     let mut full_setup = common_start();
@@ -102,6 +101,45 @@ fn actual_find() {
             line.contents.text.contains("::(path]")
         }).is_some()
     }));
+
+    full_setup.send_key(Keycode::Enter.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().get_visible_coded_cursor_lines().find(|line| {
+            debug!("line [{}]", line.contents.text);
+            line.contents.text.contains("let (path] =")
+        }).is_some()
+    }));
+
+    full_setup.finish();
+}
+
+#[test]
+fn actual_replace() {
+    let mut full_setup: FullSetup = FullSetup::new("./test_envs/save_file_dialog_test_1")
+        .with_files(["src/main.rs"])
+        .build();
+
+    assert!(full_setup.wait_for(|f| f.is_editor_opened()));
+    assert!(full_setup.send_key(full_setup.config().keyboard_config.editor.find));
+    assert!(full_setup.type_in("path"));
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().find_op().map(|find_op| find_op.contents().contains("path")).unwrap_or(false)
+    }));
+
+    assert!(full_setup.send_key(full_setup.config().keyboard_config.editor.replace));
+
+    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().replace_op().is_some()));
+
+    assert!(full_setup.get_first_editor().unwrap().replace_op().is_some());
+
+    assert!(full_setup.type_in("wrath"));
+    assert!(full_setup.send_key(Keycode::Enter.to_key()));
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().replace_op().map(|replace_op| replace_op.contents().contains("wrath")).unwrap_or(false)
+    }));
+    full_setup.screenshot();
 
     full_setup.send_key(Keycode::Enter.to_key());
 

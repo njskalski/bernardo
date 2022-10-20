@@ -149,11 +149,15 @@ impl<'a> EditorInterpreter<'a> {
      */
     pub fn get_visible_cursor_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
-        self.get_visible_cursor_cells().map(move |(xy, _)| LineIdxTuple {
-            y: xy.y,
-            visible_idx: xy.y as usize + offset,
-            contents: self.get_line_by_y(xy.y).unwrap(),
-        })
+        self.get_visible_cursor_cells().map(move |(xy, _)|
+            self.get_line_by_y(xy.y).map(|line| {
+                LineIdxTuple {
+                    y: xy.y,
+                    visible_idx: xy.y as usize + offset,
+                    contents: line,
+                }
+            })
+        ).flatten()
     }
 
     pub fn get_line_by_y(&self, screen_pos_y: u16) -> Option<VerticalIterItem> {
