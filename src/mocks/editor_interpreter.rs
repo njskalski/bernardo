@@ -4,11 +4,13 @@ use streaming_iterator::StreamingIterator;
 use crate::io::buffer_output_iter::VerticalIterItem;
 use crate::io::cell::Cell;
 use crate::io::output::Metadata;
+use crate::io::style::TextStyle;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
 use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::savefile_interpreter::SaveFileInterpreter;
 use crate::mocks::scroll_interpreter::ScrollInterpreter;
+use crate::primitives::color::Color;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
@@ -175,69 +177,84 @@ impl<'a> EditorInterpreter<'a> {
     also, this is not properly tested. It's Bullshit and Duct Tape™ quality.
      */
     pub fn get_visible_coded_cursor_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
-        self.get_visible_cursor_lines().map(|mut line_idx| {
-            let mut result = String::new();
-            let mut cursor_open = false;
-            let mut prev_within_sel = false;
-            let mut was_more_than_anchor = false;
+        // Setting colors
+        let mut under_cursor = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
+        if !self.is_editor_focused() {
+            under_cursor = under_cursor.half();
+        }
+        let mut within_selection = self.mock_output.theme.cursor_background(CursorStatus::WithinSelection).unwrap();
+        if !self.is_editor_focused() {
+            within_selection = within_selection.half();
+        }
+        let mut default = self.mock_output.theme.default_text(self.is_editor_focused()).background;
 
-            'line_loop:
+
+        // This does not support multi-column chars now
+        self.get_visible_cursor_lines().map(move |mut line_idx| {
+            let mut prev_cell_color: Option<Color> = None;
+
+            let mut first: Option<u16> = None;
+            let mut last: Option<u16> = None;
+            let mut anchor: Option<u16> = None;
+
+            'line_loop_1:
             for x in self.rect_without_scroll.pos.x..self.rect_without_scroll.lower_right().x {
                 let pos = XY::new(x, line_idx.y);
                 let cell = &self.mock_output.buffer[pos];
-                let mut grapheme_added = false;
                 match cell {
                     Cell::Begin { style, grapheme } => {
-                        let mut under_cursor = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
-                        if !self.is_editor_focused() {
-                            under_cursor = under_cursor.half();
-                        }
-
-                        if style.background == under_cursor {
-                            if !cursor_open {
-                                result += "[";
-                                cursor_open = true;
-                            } else {
-                                result += grapheme;
-                                grapheme_added = true;
-                                result += "]";
-                                cursor_open = false;
+                        if style.background == under_cursor || style.background == within_selection {
+                            if first.is_none() {
+                                first = Some(x);
                             }
+                            last = Some(x);
                         }
-                        let mut within_selection = self.mock_output.theme.cursor_background(CursorStatus::WithinSelection).unwrap();
-                        if !self.is_editor_focused() {
-                            within_selection = within_selection.half();
-                        }
-
-                        let now_within_sel = style.background == within_selection;
-                        if now_within_sel {
-                            was_more_than_anchor = true;
-                        }
-
-                        if !prev_within_sel && now_within_sel {
-                            result += "(";
-                            cursor_open = true;
-                        }
-                        if prev_within_sel && !now_within_sel {
-                            result += ")";
-                        }
-                        prev_within_sel = now_within_sel;
-
-                        if !grapheme_added {
-                            result += grapheme;
-                            grapheme_added = true;
+                        if style.background == under_cursor {
+                            debug_assert!(anchor.is_none());
+                            anchor = Some(x);
                         }
 
                         if grapheme == "⏎" {
-                            break 'line_loop;
+                            break 'line_loop_1;
                         }
                     }
                     Cell::Continuation => {}
                 }
             }
 
-            if !was_more_than_anchor {
-                result = result.replace("[", "#");
+            debug_assert!(anchor == first || anchor == last);
+            let mut result = String::new();
+
+            'line_loop_2:
+            for x in self.rect_without_scroll.pos.x..self.rect_without_scroll.lower_right().x {
+                let pos = XY::new(x, line_idx.y);
+                let cell = &self.mock_output.buffer[pos];
+                match cell {
+                    Cell::Begin { style, grapheme } => {
+                        if Some(x) == first {
+                            if first == last {
+                                result += "#";
+                            } else {
+                                result += if first == anchor { "[" } else { "(" };
+                            }
+                        }
+
+                        if Some(x) == last {
+                            if first == last {
+                                //nothing
+                            } else {
+                                result += if last == anchor { "]" } else { ")" };
+                            }
+                        }
+
+                        result += grapheme;
+
+                        if grapheme == "⏎" {
+                            break 'line_loop_2;
+                        }
+                    }
+                    Cell::Continuation => {}
+                }
             }
 
             debug!("res [{}]", &result);
