@@ -165,6 +165,17 @@ impl<'a> EditorInterpreter<'a> {
         self.mock_output.buffer.lines_iter().with_rect(self.rect_without_scroll).skip(screen_pos_y as usize).next()
     }
 
+    pub fn get_all_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+        let offset = self.scroll.lowest_number().unwrap();
+        self.mock_output.buffer.lines_iter().with_rect(self.rect_without_scroll).map(move |line| {
+            LineIdxTuple {
+                y: line.absolute_pos.y,
+                visible_idx: line.absolute_pos.y as usize + offset,
+                contents: line,
+            }
+        })
+    }
+
     pub fn completions(&self) -> Option<&CompletionInterpreter<'a>> {
         self.compeltion_op.as_ref()
     }

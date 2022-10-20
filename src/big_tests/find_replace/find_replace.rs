@@ -139,9 +139,15 @@ fn actual_replace() {
     assert!(full_setup.wait_for(|full_setup| {
         full_setup.get_first_editor().unwrap().replace_op().map(|replace_op| replace_op.contents().contains("wrath")).unwrap_or(false)
     }));
-    full_setup.screenshot();
+
 
     full_setup.send_key(Keycode::Enter.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().get_all_lines().find(
+            |line| line.contents.text.contains("use std::wrath::PathBuf;")
+        ).is_some()
+    }));
 
     assert!(full_setup.wait_for(|full_setup| {
         full_setup.get_first_editor().unwrap().get_visible_coded_cursor_lines().find(|line| {
@@ -149,6 +155,16 @@ fn actual_replace() {
             line.contents.text.contains("let (path] =")
         }).is_some()
     }));
+
+    full_setup.send_key(Keycode::Enter.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_first_editor().unwrap().get_all_lines().find(
+            |line| line.contents.text.contains("let wrath = PathBuf")
+        ).is_some()
+    }));
+
+    full_setup.screenshot();
 
     full_setup.finish();
 }
