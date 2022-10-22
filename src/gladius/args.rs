@@ -16,8 +16,7 @@ pub struct Args {
 
     #[clap(long = "record")]
     pub recording: bool,
-
-    #[clap(parse(from_os_str))]
+    
     pub paths: Vec<PathBuf>,
 }
 

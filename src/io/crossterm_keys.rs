@@ -1,12 +1,13 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use crossterm::event::KeyEvent as CKey;
+use log::error;
 
 use crate::io::keys::{Key, Keycode, Modifiers};
 
 impl From<CKey> for Key {
     fn from(ckey: CKey) -> Self {
         return match ckey {
-            KeyEvent { code, modifiers } => {
+            KeyEvent { code, modifiers, kind, state } => {
                 let kc: Keycode = match code {
                     KeyCode::Backspace => Keycode::Backspace,
                     KeyCode::Enter => Keycode::Enter,
@@ -27,6 +28,10 @@ impl From<CKey> for Key {
                     KeyCode::Char(char) => Keycode::Char(char),
                     KeyCode::Null => Keycode::Null,
                     KeyCode::Esc => Keycode::Esc,
+                    keycode => {
+                        error!("unhandled keycode {:?}", keycode);
+                        Keycode::Unhandled
+                    }
                 };
 
                 let md: Modifiers = Modifiers::new(

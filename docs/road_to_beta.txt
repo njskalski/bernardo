@@ -16,3 +16,7 @@ Docs:
 1) how views work
 2) how main loop works
 3) how filesystems are implemented
+
+TODOs:
+- support resize event (start in crossterm_input.rs)
+- support paste event too?

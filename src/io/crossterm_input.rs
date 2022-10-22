@@ -36,6 +36,10 @@ impl CrosstermInput {
                             Event::Resize(_, _) => {
                                 None // TODO
                             }
+                            Event::FocusGained => None,
+                            Event::FocusLost => None,
+                            //TODO
+                            Event::Paste(..) => None,
                         };
 
                         // debug!("got {:?}", processed_event);

@@ -56,3 +56,10 @@ impl From<FromUtf8Error> for ReadError {
         ReadError::Utf8Error(fue.utf8_error())
     }
 }
+
+//TODO
+impl From<ron::error::SpannedError> for ReadError {
+    fn from(e: ron::error::SpannedError) -> Self {
+        ReadError::UnmappedError(format!("{}", e))
+    }
+}
