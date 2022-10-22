@@ -3,7 +3,7 @@ use std::ops::Range;
 use std::sync::{RwLock, RwLockWriteGuard};
 
 use log::{debug, error};
-use lsp_types::{CompletionResponse, CompletionTextEdit, DocumentSymbolResponse};
+use lsp_types::{CompletionResponse, CompletionTextEdit, DocumentSymbolResponse, SymbolKind};
 use lsp_types::request::DocumentSymbolRequest;
 
 use crate::fs::path::SPath;
@@ -13,7 +13,7 @@ use crate::lsp_client::lsp_io_error::LspIOError;
 use crate::lsp_client::promise::LSPPromise;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
-use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider, Symbol, SymbolContextActionsPromise, SymbolPromise};
+use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider, Symbol, SymbolContextActionsPromise, SymbolPromise, SymbolType};
 
 /*
 TODO I am silently ignoring errors here. I guess that if NavComp fails it should get re-started.
@@ -105,45 +105,6 @@ impl NavCompProvider for NavCompProviderLsp {
 
     fn todo_get_context_options(&self, path: &SPath, cursor: LspTextCursor) -> Option<SymbolContextActionsPromise> {
         todo!()
-        // let url = match path.to_url() {
-        //     Ok(url) => url,
-        //     Err(_) => {
-        //         error!("failed opening for edition, because path->url cast failed.");
-        //         return None;
-        //     }
-        // };
-        //
-        // match self.lsp.try_write() {
-        //     Err(_) => {
-        //         // this should never happen
-        //         error!("failed acquiring write lock");
-        //         None
-        //     }
-        //     Ok(mut lock) => {
-        //         match lock.text_document_completion(url, cursor, true /*TODO*/, None /*TODO*/) {
-        //             Err(e) => {
-        //                 error!("failed sending text_document_completion: {:?}", e);
-        //                 None
-        //             }
-        //             Ok(resp) => Some(Box::new(resp.map(|cop| -> Vec<Completion> {
-        //                 match cop {
-        //                     None => vec![],
-        //                     Some(comps) => {
-        //                         match comps {
-        //                             CompletionResponse::Array(arr) => {
-        //                                 arr.into_iter().map(translate_completion_item).collect()
-        //                             }
-        //                             CompletionResponse::List(list) => {
-        //                                 // TODO is complete ignored
-        //                                 list.items.into_iter().map(translate_completion_item).collect()
-        //                             }
-        //                         }
-        //                     }
-        //                 }
-        //             }))),
-        //         }
-        //     }
-        // }
     }
 
     fn todo_get_symbol_at(&self, path: &SPath, cursor: LspTextCursor) -> Option<SymbolPromise> {
@@ -155,32 +116,41 @@ impl NavCompProvider for NavCompProviderLsp {
                 }
                 Ok(p) => {
                     Some(Box::new(p.map(|response| {
+                        let mut symbol_op: Option<Symbol> = None;
+                        
                         response.map(|symbol| {
-                            let mut range: Option<lsp_types::Range> = None;
-
                             match symbol {
                                 DocumentSymbolResponse::Flat(v) => {
                                     v.first().map(|f| {
-                                        range = Some(f.location.range);
-                                    })
+                                        symbol_op = Some(Symbol {
+                                            symbol_type: f.kind.into(),
+                                            // range: f.location.range,
+                                            range: 0..1,
+                                        })
+                                    });
                                 }
                                 DocumentSymbolResponse::Nested(v) => {
                                     v.first().map(|f| {
-                                        range = Some(f.range);
-                                    })
+                                        symbol_op = Some(Symbol {
+                                            symbol_type: f.kind.into(),
+                                            // range: f.selection_range,
+                                            range: 0..1,
+                                        })
+                                    });
                                 }
                             }
                         });
-
-                        Some(Symbol {})
+                        symbol_op
                     })) as Box<dyn Promise<Option<Symbol>> + 'static>)
                 }
             }
         }).flatten()
     }
 
-    fn file_closed(&self, _path: &SPath) {
-        todo!()
+    fn file_closed(&self, path: &SPath) {
+        self.get_url_and_lock(path).map(|(url, mut lock)| {
+            lock.text_document_did_close(url);
+        });
     }
 
     fn todo_navcomp_sender(&self) -> &NavCompTickSender {
@@ -216,5 +186,39 @@ fn translate_completion_item(i: lsp_types::CompletionItem) -> Completion {
                 }
             }
         ).unwrap_or("".to_string())),
+    }
+}
+
+impl From<SymbolKind> for SymbolType {
+    fn from(sk: SymbolKind) -> Self {
+        match sk {
+            SymbolKind::FILE => SymbolType::File,
+            SymbolKind::MODULE => SymbolType::Module,
+            SymbolKind::NAMESPACE => SymbolType::Namespace,
+            SymbolKind::PACKAGE => SymbolType::Package,
+            SymbolKind::CLASS => SymbolType::Class,
+            SymbolKind::METHOD => SymbolType::Method,
+            SymbolKind::PROPERTY => SymbolType::Property,
+            SymbolKind::FIELD => SymbolType::Field,
+            SymbolKind::CONSTRUCTOR => SymbolType::Constructor,
+            SymbolKind::ENUM => SymbolType::Enum,
+            SymbolKind::INTERFACE => SymbolType::Interface,
+            SymbolKind::FUNCTION => SymbolType::Function,
+            SymbolKind::VARIABLE => SymbolType::Variable,
+            SymbolKind::CONSTANT => SymbolType::Constant,
+            SymbolKind::STRING => SymbolType::String,
+            SymbolKind::NUMBER => SymbolType::Number,
+            SymbolKind::BOOLEAN => SymbolType::Boolean,
+            SymbolKind::ARRAY => SymbolType::Array,
+            SymbolKind::OBJECT => SymbolType::Object,
+            SymbolKind::KEY => SymbolType::Key,
+            SymbolKind::NULL => SymbolType::Null,
+            SymbolKind::ENUM_MEMBER => SymbolType::EnumMember,
+            SymbolKind::STRUCT => SymbolType::Struct,
+            SymbolKind::EVENT => SymbolType::Event,
+            SymbolKind::OPERATOR => SymbolType::Operator,
+            SymbolKind::TYPE_PARAMETER => SymbolType::TypeParameter,
+            _ => SymbolType::Unmapped(format!("{:?}", sk)),
+        }
     }
 }

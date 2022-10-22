@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::ops::Range;
 
 use crate::fs::path::SPath;
 use crate::lsp_client::helpers::LspTextCursor;
@@ -20,6 +21,10 @@ use crate::w7e::navcomp_group::NavCompTickSender;
 // Programmers are allowed to make such mistakes. Look on how we dress and ask yourself: "would
 //  I take esthetics advice from this person?"
 
+// Also, I am tired of making boilerplate code here between LSP and "other navcomps", that I am not
+//  sure will ever exist. But then I recall that without it, I'd be exposed to whatever becomes of
+//  LSP in the future.
+
 #[derive(Debug, Clone)]
 pub enum CompletionAction {
     Insert(String)
@@ -34,11 +39,44 @@ pub struct Completion {
 
 pub type CompletionsPromise = Box<dyn Promise<Vec<Completion>> + 'static>;
 
+// Currently these map LSP types 1:1, but this might change. Most importantly I have a feeling I
+//  might prefer to use tree-sitter symbols instead.
 #[derive(Debug, Clone)]
-pub enum SymbolType {}
+pub enum SymbolType {
+    File,
+    Module,
+    Namespace,
+    Package,
+    Class,
+    Method,
+    Property,
+    Field,
+    Constructor,
+    Enum,
+    Interface,
+    Function,
+    Variable,
+    Constant,
+    String,
+    Number,
+    Boolean,
+    Array,
+    Object,
+    Key,
+    Null,
+    EnumMember,
+    Event,
+    Struct,
+    Operator,
+    TypeParameter,
+    Unmapped(String),
+}
 
 #[derive(Debug, Clone)]
-pub struct Symbol {}
+pub struct Symbol {
+    pub(crate) symbol_type: SymbolType,
+    pub(crate) range: Range<usize>,
+}
 
 /*
 This is super work in progress, I added some top of the head options to "smoke out" what they imply.

@@ -326,6 +326,16 @@ impl LspWrapper {
         )
     }
 
+    pub fn text_document_did_close(&mut self, url: Url) -> Result<(), LspWriteError> {
+        self.send_notification::<lsp_types::notification::DidCloseTextDocument>(
+            lsp_types::DidCloseTextDocumentParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url
+                }
+            }
+        )
+    }
+
     pub fn text_document_completion(&mut self,
                                     url: Url,
                                     cursor: LspTextCursor,
