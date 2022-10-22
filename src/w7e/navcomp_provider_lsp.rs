@@ -1,15 +1,19 @@
 use std::fmt::{Debug, Formatter};
+use std::ops::Range;
 use std::sync::{RwLock, RwLockWriteGuard};
 
 use log::{debug, error};
-use lsp_types::{CompletionResponse, CompletionTextEdit};
+use lsp_types::{CompletionResponse, CompletionTextEdit, DocumentSymbolResponse};
+use lsp_types::request::DocumentSymbolRequest;
 
 use crate::fs::path::SPath;
 use crate::lsp_client::helpers::LspTextCursor;
 use crate::lsp_client::lsp_client::LspWrapper;
+use crate::lsp_client::lsp_io_error::LspIOError;
+use crate::lsp_client::promise::LSPPromise;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
-use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider, Symbol, SymbolContextActionsPromise};
+use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider, Symbol, SymbolContextActionsPromise, SymbolPromise};
 
 /*
 TODO I am silently ignoring errors here. I guess that if NavComp fails it should get re-started.
@@ -142,8 +146,37 @@ impl NavCompProvider for NavCompProviderLsp {
         // }
     }
 
-    fn todo_get_symbol_at(&self, path: &SPath, cursor: LspTextCursor) -> Option<Symbol> {
-        todo!()
+    fn todo_get_symbol_at(&self, path: &SPath, cursor: LspTextCursor) -> Option<SymbolPromise> {
+        self.get_url_and_lock(path).map(|(url, mut lock)| {
+            match lock.text_document_document_symbol(url, cursor) {
+                Err(e) => {
+                    error!("failed sending text_document_completion: {:?}", e);
+                    None
+                }
+                Ok(p) => {
+                    Some(Box::new(p.map(|response| {
+                        response.map(|symbol| {
+                            let mut range: Option<lsp_types::Range> = None;
+
+                            match symbol {
+                                DocumentSymbolResponse::Flat(v) => {
+                                    v.first().map(|f| {
+                                        range = Some(f.location.range);
+                                    })
+                                }
+                                DocumentSymbolResponse::Nested(v) => {
+                                    v.first().map(|f| {
+                                        range = Some(f.range);
+                                    })
+                                }
+                            }
+                        });
+
+                        Some(Symbol {})
+                    })) as Box<dyn Promise<Option<Symbol>> + 'static>)
+                }
+            }
+        }).flatten()
     }
 
     fn file_closed(&self, _path: &SPath) {
@@ -152,6 +185,11 @@ impl NavCompProvider for NavCompProviderLsp {
 
     fn todo_navcomp_sender(&self) -> &NavCompTickSender {
         &self.todo_tick_sender
+    }
+
+    fn todo_is_healthy(&self) -> bool {
+        //TODO
+        true
     }
 }
 

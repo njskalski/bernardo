@@ -5,12 +5,20 @@ use crate::lsp_client::helpers::LspTextCursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
 
-#[derive(Debug)]
-pub enum NavcompError {
-    UnmappedError(String)
-}
+// So I am not sure if I want to escalate errors from underlying implementation (LSP most likely)
+//  or just provide some generic "check health" status, that would trigger a reload when LSP dies.
+// The latter seems cleaner than just escalating all results to be what, handled, ignored in UI?
 
-pub type NavCompRes<T> = Result<NavcompError, T>;
+// Yeah, I get this feeling more and more. It's a programmers' move to deliver results of both
+//  successful and failed calls to the same place, which results in terrible UX.
+// A successful navcomp call results in options available to user.
+// Failed navcomp calls should lead to logs, automated restart of underlying service, and if problem
+//  persists a tiny tiny warning to the user "hey, this shit is so broken I can't cope with it".
+//
+// Bottom line, if your UX designer comes up with a popup
+//                                                        then you should fire your UX designer.
+// Programmers are allowed to make such mistakes. Look on how we dress and ask yourself: "would
+//  I take esthetics advice from this person?"
 
 #[derive(Debug, Clone)]
 pub enum CompletionAction {
@@ -27,7 +35,10 @@ pub struct Completion {
 pub type CompletionsPromise = Box<dyn Promise<Vec<Completion>> + 'static>;
 
 #[derive(Debug, Clone)]
-pub enum Symbol {}
+pub enum SymbolType {}
+
+#[derive(Debug, Clone)]
+pub struct Symbol {}
 
 /*
 This is super work in progress, I added some top of the head options to "smoke out" what they imply.
@@ -41,6 +52,7 @@ pub enum NavCompSymbolContextActions {
 }
 
 pub type SymbolContextActionsPromise = Box<dyn Promise<Vec<Completion>> + 'static>;
+pub type SymbolPromise = Box<dyn Promise<Option<Symbol>> + 'static>;
 
 // this is a wrapper around LSP and "similar services".
 pub trait NavCompProvider: Debug {
@@ -61,9 +73,11 @@ pub trait NavCompProvider: Debug {
 
     fn todo_get_context_options(&self, path: &SPath, cursor: LspTextCursor) -> Option<SymbolContextActionsPromise>;
 
-    fn todo_get_symbol_at(&self, path: &SPath, cursor: LspTextCursor) -> Option<Symbol>;
+    fn todo_get_symbol_at(&self, path: &SPath, cursor: LspTextCursor) -> Option<SymbolPromise>;
 
     fn file_closed(&self, path: &SPath);
 
     fn todo_navcomp_sender(&self) -> &NavCompTickSender;
+
+    fn todo_is_healthy(&self) -> bool;
 }

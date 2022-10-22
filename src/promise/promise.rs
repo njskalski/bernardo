@@ -63,6 +63,10 @@ pub trait Promise<T> {
     fn map<B, F: FnOnce(T) -> B>(self, mapper: F) -> MappedPromise<T, Self, B, F> where Self: Sized {
         MappedPromise::new(self, mapper)
     }
+
+    fn boxed(self) -> Box<dyn Promise<T>> where Self: Sized + 'static {
+        Box::new(self)
+    }
 }
 
 pub struct ResolvedPromise<A> {

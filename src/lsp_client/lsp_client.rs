@@ -11,7 +11,7 @@ use std::thread::JoinHandle;
 use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error, warn};
 use lsp_types::{CompletionContext, CompletionTriggerKind, Position, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentPositionParams, Url, VersionedTextDocumentIdentifier};
-use lsp_types::request::Completion;
+use lsp_types::request::{Completion, DocumentSymbolRequest};
 
 use crate::lsp_client::debug_helpers::lsp_debug_save;
 use crate::lsp_client::helpers::LspTextCursor;
@@ -25,6 +25,7 @@ use crate::lsp_client::promise::LSPPromise;
 use crate::promise::promise::{Promise, PromiseState};
 use crate::tsw::lang_id::LangId;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
+use crate::w7e::navcomp_provider::Symbol;
 
 // I use ID == String, because i32 might be small, and i64 is safe, so I send i64 as string and so I store it.
 // LSP defines id integer as i32, while jsonrpc_core as u64.
@@ -336,7 +337,7 @@ impl LspWrapper {
                                     '.' or '::' or other thing like that
                                      */
                                     trigger_character: Option<String>,
-    ) -> Result<LSPPromise<Completion>, LspIOError> {
+    ) -> Result<LSPPromise<lsp_types::request::Completion>, LspIOError> {
         self.send_message::<lsp_types::request::Completion>(
             lsp_types::CompletionParams {
                 text_document_position: TextDocumentPositionParams {
@@ -356,6 +357,19 @@ impl LspWrapper {
                     },
                     trigger_character,
                 }),
+            }
+        )
+    }
+
+    pub fn text_document_document_symbol(&mut self,
+                                         url: Url,
+                                         cursor: LspTextCursor,
+    ) -> Result<LSPPromise<DocumentSymbolRequest>, LspIOError> {
+        self.send_message::<DocumentSymbolRequest>(
+            lsp_types::DocumentSymbolParams {
+                text_document: TextDocumentIdentifier { uri: url },
+                work_done_progress_params: Default::default(),
+                partial_result_params: Default::default(),
             }
         )
     }
