@@ -1,13 +1,16 @@
+use log::debug;
 use streaming_iterator::StreamingIterator;
 
 use crate::io::buffer_output_iter::VerticalIterItem;
 use crate::io::cell::Cell;
 use crate::io::output::Metadata;
+use crate::io::style::TextStyle;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
 use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::savefile_interpreter::SaveFileInterpreter;
 use crate::mocks::scroll_interpreter::ScrollInterpreter;
+use crate::primitives::color::Color;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
@@ -117,7 +120,14 @@ impl<'a> EditorInterpreter<'a> {
     pub fn get_visible_cursor_cells(&self) -> impl Iterator<Item=(XY, &Cell)> + '_ {
         self.mock_output.buffer.cells_iter().filter(|(pos, cell)|
             match cell {
-                Cell::Begin { style, grapheme: _ } => style.background == self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap(),
+                Cell::Begin { style, grapheme: _ } => {
+                    let mut cursor_background = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
+                    if !self.is_editor_focused() {
+                        cursor_background = cursor_background.half();
+                    }
+
+                    style.background == cursor_background
+                }
                 Cell::Continuation => false,
             }
         )
@@ -139,16 +149,31 @@ impl<'a> EditorInterpreter<'a> {
      */
     pub fn get_visible_cursor_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
-        self.get_visible_cursor_cells().map(move |(xy, _)| LineIdxTuple {
-            y: xy.y,
-            visible_idx: xy.y as usize + offset,
-            contents: self.get_line_by_y(xy.y).unwrap(),
-        })
+        self.get_visible_cursor_cells().map(move |(xy, _)|
+            self.get_line_by_y(xy.y).map(|line| {
+                LineIdxTuple {
+                    y: xy.y,
+                    visible_idx: xy.y as usize + offset,
+                    contents: line,
+                }
+            })
+        ).flatten()
     }
 
     pub fn get_line_by_y(&self, screen_pos_y: u16) -> Option<VerticalIterItem> {
         debug_assert!(self.meta.rect.lower_right().y > screen_pos_y);
         self.mock_output.buffer.lines_iter().with_rect(self.rect_without_scroll).skip(screen_pos_y as usize).next()
+    }
+
+    pub fn get_all_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+        let offset = self.scroll.lowest_number().unwrap();
+        self.mock_output.buffer.lines_iter().with_rect(self.rect_without_scroll).map(move |line| {
+            LineIdxTuple {
+                y: line.absolute_pos.y,
+                visible_idx: line.absolute_pos.y as usize + offset,
+                contents: line,
+            }
+        })
     }
 
     pub fn completions(&self) -> Option<&CompletionInterpreter<'a>> {
@@ -167,59 +192,87 @@ impl<'a> EditorInterpreter<'a> {
     also, this is not properly tested. It's Bullshit and Duct Tape™ quality.
      */
     pub fn get_visible_coded_cursor_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
-        self.get_visible_cursor_lines().map(|mut line_idx| {
-            let mut result = String::new();
-            let mut cursor_open = false;
-            let mut prev_within_sel = false;
-            let mut was_more_than_anchor = false;
+        // Setting colors
+        let mut under_cursor = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
+        if !self.is_editor_focused() {
+            under_cursor = under_cursor.half();
+        }
+        let mut within_selection = self.mock_output.theme.cursor_background(CursorStatus::WithinSelection).unwrap();
+        if !self.is_editor_focused() {
+            within_selection = within_selection.half();
+        }
+        let mut default = self.mock_output.theme.default_text(self.is_editor_focused()).background;
 
-            'line_loop:
+
+        // This does not support multi-column chars now
+        self.get_visible_cursor_lines().map(move |mut line_idx| {
+            let mut prev_cell_color: Option<Color> = None;
+
+            let mut first: Option<u16> = None;
+            let mut last: Option<u16> = None;
+            let mut anchor: Option<u16> = None;
+
+            'line_loop_1:
             for x in self.rect_without_scroll.pos.x..self.rect_without_scroll.lower_right().x {
                 let pos = XY::new(x, line_idx.y);
                 let cell = &self.mock_output.buffer[pos];
-                let mut grapheme_added = false;
                 match cell {
                     Cell::Begin { style, grapheme } => {
-                        if style.background == self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap() {
-                            if !cursor_open {
-                                result += "[";
-                                cursor_open = true;
-                            } else {
-                                result += grapheme;
-                                grapheme_added = true;
-                                result += "]";
-                                cursor_open = false;
+                        if style.background == under_cursor || style.background == within_selection {
+                            if first.is_none() {
+                                first = Some(x);
                             }
+                            last = Some(x);
                         }
-                        let now_within_sel = style.background == self.mock_output.theme.cursor_background(CursorStatus::WithinSelection).unwrap();
-                        if now_within_sel {
-                            was_more_than_anchor = true;
-                        }
-
-                        if !prev_within_sel && now_within_sel {
-                            result += "(";
-                        }
-                        if prev_within_sel && !now_within_sel {
-                            result += ")";
-                        }
-                        prev_within_sel = now_within_sel;
-
-                        if !grapheme_added {
-                            result += grapheme;
-                            grapheme_added = true;
+                        if style.background == under_cursor {
+                            debug_assert!(anchor.is_none());
+                            anchor = Some(x);
                         }
 
                         if grapheme == "⏎" {
-                            break 'line_loop;
+                            break 'line_loop_1;
                         }
                     }
                     Cell::Continuation => {}
                 }
             }
 
-            if !was_more_than_anchor {
-                result = result.replace("[", "#");
+            debug_assert!(anchor == first || anchor == last);
+            let mut result = String::new();
+
+            'line_loop_2:
+            for x in self.rect_without_scroll.pos.x..self.rect_without_scroll.lower_right().x {
+                let pos = XY::new(x, line_idx.y);
+                let cell = &self.mock_output.buffer[pos];
+                match cell {
+                    Cell::Begin { style, grapheme } => {
+                        if Some(x) == first {
+                            if first == last {
+                                result += "#";
+                            } else {
+                                result += if first == anchor { "[" } else { "(" };
+                            }
+                        }
+
+                        if Some(x) == last {
+                            if first == last {
+                                //nothing
+                            } else {
+                                result += if last == anchor { "]" } else { ")" };
+                            }
+                        }
+
+                        result += grapheme;
+
+                        if grapheme == "⏎" {
+                            break 'line_loop_2;
+                        }
+                    }
+                    Cell::Continuation => {}
+                }
             }
+
+            debug!("res [{}]", &result);
 
             line_idx.contents.text = result;
             line_idx
