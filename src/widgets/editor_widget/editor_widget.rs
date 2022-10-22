@@ -35,6 +35,7 @@ use crate::w7e::navcomp_provider::CompletionAction;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
+use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::helpers::{CursorPosition, find_trigger_and_substring};
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 
@@ -97,7 +98,8 @@ pub struct HoverSettings {
 }
 
 enum EditorHover {
-    Completion(CompletionWidget)
+    Completion(CompletionWidget),
+    Context(ContextBarWidget),
 }
 
 pub struct EditorWidget {
@@ -428,7 +430,40 @@ impl EditorWidget {
                         debug!("something missing - promise or hover settings");
                     }
                 }
+            } else {
+                debug!("not opening completions - navcomp not available.")
             }
+        } else {
+            debug!("not opening completions - cursor not single.")
+        }
+    }
+
+    pub fn todo_request_context_bar(&mut self) {
+        if let Some(cursor) = self.cursors().as_single() {
+            if let Some(navcomp) = self.navcomp.clone() {
+                let stupid_cursor = match get_lsp_text_cursor(self.buffer(), cursor) {
+                    Ok(sc) => sc,
+                    Err(e) => {
+                        error!("failed converting cursor to lsp_cursor: {:?}", e);
+                        return;
+                    }
+                };
+
+                let path = match self.buffer.get_path() {
+                    None => {
+                        error!("path not available");
+                        return;
+                    }
+                    Some(p) => p,
+                };
+
+                let hover_settings = self.todo_get_hover_settings();
+                // navcomp.
+            } else {
+                debug!("not opening contextbar - navcomp not available.")
+            }
+        } else {
+            debug!("not opening contextbar - cursor not single.")
         }
     }
 
@@ -488,12 +523,14 @@ impl EditorWidget {
             |s: &EditorWidget| {
                 match s.requested_hover.as_ref().unwrap() {
                     (_, EditorHover::Completion(comp)) => comp as &dyn Widget,
+                    (_, EditorHover::Context(cont)) => cont as &dyn Widget,
                 }
             }
         ), Box::new(
             |s: &mut EditorWidget| {
                 match s.requested_hover.as_mut().unwrap() {
                     (_, EditorHover::Completion(comp)) => comp as &mut dyn Widget,
+                    (_, EditorHover::Context(cont)) => cont as &mut dyn Widget,
                 }
             }
         )))
@@ -618,6 +655,9 @@ impl EditorWidget {
             match hover {
                 EditorHover::Completion(completion) => {
                     completion.render(theme, focused, &mut sub_output)
+                }
+                EditorHover::Context(context) => {
+                    context.render(theme, focused, &mut sub_output)
                 }
             }
         }
@@ -751,6 +791,18 @@ impl Widget for EditorWidget {
                         false
                     }
                 }
+                EditorHover::Context(context_bar) => {
+                    let xy = context_bar.update_and_layout(SizeConstraint::simple(rect.rect.size));
+                    // TODO Copy-pasted from above, reduce.
+                    if rect.above_cursor == false {
+                        rect.rect.size = xy;
+                        rect.rect.pos = rect.anchor + XY::new(0, 1);
+                    } else {
+                        rect.rect.size = xy;
+                        rect.rect.pos = rect.anchor - XY::new(0, xy.y);
+                    }
+                    false
+                }
             }
         };
         if should_remove_hover {
@@ -775,7 +827,6 @@ impl Widget for EditorWidget {
                 EditorWidgetMsg::DropCursorFlip { cursor: special_cursor }.someboxed()
             }
             (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.request_completions => {
-                debug!("requesting completions");
                 EditorWidgetMsg::RequestCompletions.someboxed()
             }
             (&EditorState::Editing, InputEvent::KeyInput(key)) if !key.modifiers.ctrl && key_to_edit_msg(key).is_some() => {
@@ -790,7 +841,9 @@ impl Widget for EditorWidget {
                     None
                 }
             }
-
+            (&EditorState::Editing, InputEvent::EverythingBarTrigger) => {
+                EditorWidgetMsg::RequestContextBar.someboxed()
+            }
             _ => None,
         };
     }
@@ -881,12 +934,16 @@ impl Widget for EditorWidget {
                     self.todo_request_completion();
                     None
                 }
-                (&EditorState::Editing, EditorWidgetMsg::CompletionWidgetClose) => {
+                (&EditorState::Editing, EditorWidgetMsg::HoverClose) => {
                     self.requested_hover = None;
                     None
                 }
                 (&EditorState::Editing, EditorWidgetMsg::CompletionWidgetSelected(completion)) => {
                     self.apply_completion_action(completion);
+                    None
+                }
+                (&EditorState::Editing, EditorWidgetMsg::RequestContextBar) => {
+                    self.todo_request_context_bar();
                     None
                 }
                 (editor_state, msg) => {

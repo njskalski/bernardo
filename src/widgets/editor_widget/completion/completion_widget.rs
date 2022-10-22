@@ -177,7 +177,7 @@ impl Widget for CompletionWidget {
             }
             Some(msg) => match msg {
                 CompletionWidgetMsg::Close => {
-                    EditorWidgetMsg::CompletionWidgetClose.someboxed()
+                    EditorWidgetMsg::HoverClose.someboxed()
                 }
                 CompletionWidgetMsg::Selected(action) => {
                     EditorWidgetMsg::CompletionWidgetSelected(action.clone()).someboxed()

@@ -20,8 +20,10 @@ pub enum EditorWidgetMsg {
     ContextMenuClose,
 
     RequestCompletions,
-    CompletionWidgetClose,
+    HoverClose,
     CompletionWidgetSelected(CompletionAction),
+
+    RequestContextBar,
 }
 
 
