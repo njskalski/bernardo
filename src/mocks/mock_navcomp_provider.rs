@@ -11,7 +11,7 @@ use crate::mocks::mock_navcomp_promise::MockNavCompPromise;
 use crate::mocks::mock_navcomp_provider::MockNavCompEvent::FileOpened;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
-use crate::w7e::navcomp_provider::{Completion, CompletionsPromise, NavCompProvider};
+use crate::w7e::navcomp_provider::{Completion, CompletionsPromise, NavCompProvider, Symbol, SymbolContextActionsPromise};
 
 pub struct MockCompletionMatcher {
     // None matches all
@@ -140,6 +140,14 @@ impl NavCompProvider for MockNavCompProvider {
 
     fn completion_triggers(&self, _path: &SPath) -> &Vec<String> {
         &self.triggers
+    }
+
+    fn todo_get_context_options(&self, path: &SPath, cursor: LspTextCursor) -> Option<SymbolContextActionsPromise> {
+        todo!()
+    }
+
+    fn todo_get_symbol_at(&self, path: &SPath, cursor: LspTextCursor) -> Option<Symbol> {
+        todo!()
     }
 
     fn file_closed(&self, _path: &SPath) {}

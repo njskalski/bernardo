@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Formatter};
-use std::sync::RwLock;
+use std::sync::{RwLock, RwLockWriteGuard};
 
 use log::{debug, error};
 use lsp_types::{CompletionResponse, CompletionTextEdit};
@@ -9,13 +9,13 @@ use crate::lsp_client::helpers::LspTextCursor;
 use crate::lsp_client::lsp_client::LspWrapper;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
-use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider};
+use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider, Symbol, SymbolContextActionsPromise};
 
 /*
-This is work in progress. I do not know mutability rules. I am also not sure if I don't want
-to introduce some channels to facilitate async communication. Right now I just call async functions
-from non-async and hope it works out.
+TODO I am silently ignoring errors here. I guess that if NavComp fails it should get re-started.
+TODO (same as above) Use NavCompRes everywhere.
  */
+
 pub struct NavCompProviderLsp {
     // TODO probably a RefCell would suffice
     lsp: RwLock<LspWrapper>,
@@ -32,99 +32,118 @@ impl NavCompProviderLsp {
             triggers: vec![".".to_string(), "::".to_string()],
         }
     }
-}
 
-impl NavCompProvider for NavCompProviderLsp {
-    fn file_open_for_edition(&self, path: &SPath, file_contents: String) {
+    pub fn get_url_and_lock(&self, path: &SPath) -> Option<(url::Url, RwLockWriteGuard<LspWrapper>)> {
         let url = match path.to_url() {
             Ok(url) => url,
-            Err(_) => {
-                error!("failed opening for edition, because path->url cast failed.");
-                return;
-            }
-        };
-
-        match self.lsp.try_write() {
-            Err(_) => {
-                // this should never happen
-                error!("failed acquiring write lock");
-            }
-            Ok(mut lock) => {
-                match lock.text_document_did_open(url.clone(), file_contents) {
-                    Ok(_) => {}
-                    Err(_) => error!("failed sending text_document_did_open"),
-                }
-            }
-        }
-    }
-
-    fn submit_edit_event(&self, path: &SPath, file_contents: String) {
-        let url = match path.to_url() {
-            Ok(url) => url,
-            Err(_) => {
-                error!("failed opening for edition, because path->url cast failed.");
-                return;
-            }
-        };
-
-        match self.lsp.try_write() {
-            Err(_) => {
-                // this should never happen
-                error!("failed acquiring write lock");
-            }
-            Ok(mut lock) => {
-                match lock.text_document_did_change(url.clone(), file_contents) {
-                    Ok(_) => {}
-                    Err(_) => error!("failed sending text_document_did_change"),
-                }
-            }
-        }
-    }
-
-    fn completions(&self, path: SPath, cursor: LspTextCursor, _trigger: Option<String>) -> Option<CompletionsPromise> {
-        let url = match path.to_url() {
-            Ok(url) => url,
-            Err(_) => {
-                error!("failed opening for edition, because path->url cast failed.");
+            Err(e) => {
+                error!("failed to convert spath [{}] to url", path);
                 return None;
             }
         };
 
         match self.lsp.try_write() {
-            Err(_) => {
-                // this should never happen
-                error!("failed acquiring write lock");
+            Err(e) => {
+                error!("failed acquiring write lock: {}", e);
                 None
             }
-            Ok(mut lock) => {
-                match lock.text_document_completion(url, cursor, true /*TODO*/, None /*TODO*/) {
-                    Err(e) => {
-                        error!("failed sending text_document_completion: {:?}", e);
-                        None
-                    }
-                    Ok(resp) => Some(Box::new(resp.map(|cop| -> Vec<Completion> {
-                        match cop {
-                            None => vec![],
-                            Some(comps) => {
-                                match comps {
-                                    CompletionResponse::Array(arr) => {
-                                        arr.into_iter().map(translate_completion_item).collect()
-                                    }
-                                    CompletionResponse::List(list) => {
-                                        // TODO is complete ignored
-                                        list.items.into_iter().map(translate_completion_item).collect()
-                                    }
+            Ok(lock) => {
+                Some((url, lock))
+            }
+        }
+    }
+}
+
+
+impl NavCompProvider for NavCompProviderLsp {
+    fn file_open_for_edition(&self, path: &SPath, file_contents: String) {
+        self.get_url_and_lock(path).map(|(url, mut lock)| {
+            lock.text_document_did_open(url, file_contents);
+        });
+    }
+
+    fn submit_edit_event(&self, path: &SPath, file_contents: String) {
+        self.get_url_and_lock(path).map(|(url, mut lock)| {
+            lock.text_document_did_change(url, file_contents);
+        });
+    }
+
+    fn completions(&self, path: SPath, cursor: LspTextCursor, _trigger: Option<String>) -> Option<CompletionsPromise> {
+        self.get_url_and_lock(&path).map(|(url, mut lock)| {
+            match lock.text_document_completion(url, cursor, true /*TODO*/, None /*TODO*/) {
+                Err(e) => {
+                    error!("failed sending text_document_completion: {:?}", e);
+                    None
+                }
+                Ok(resp) => Some(Box::new(resp.map(|cop| -> Vec<Completion> {
+                    match cop {
+                        None => vec![],
+                        Some(comps) => {
+                            match comps {
+                                CompletionResponse::Array(arr) => {
+                                    arr.into_iter().map(translate_completion_item).collect()
+                                }
+                                CompletionResponse::List(list) => {
+                                    // TODO is complete ignored
+                                    list.items.into_iter().map(translate_completion_item).collect()
                                 }
                             }
                         }
-                    }))),
-                }
+                    }
+                })) as Box<dyn Promise<Vec<Completion>> + 'static>),
             }
-        }
+        }).flatten()
     }
 
     fn completion_triggers(&self, _path: &SPath) -> &Vec<String> {
         &self.triggers
+    }
+
+    fn todo_get_context_options(&self, path: &SPath, cursor: LspTextCursor) -> Option<SymbolContextActionsPromise> {
+        todo!()
+        // let url = match path.to_url() {
+        //     Ok(url) => url,
+        //     Err(_) => {
+        //         error!("failed opening for edition, because path->url cast failed.");
+        //         return None;
+        //     }
+        // };
+        //
+        // match self.lsp.try_write() {
+        //     Err(_) => {
+        //         // this should never happen
+        //         error!("failed acquiring write lock");
+        //         None
+        //     }
+        //     Ok(mut lock) => {
+        //         match lock.text_document_completion(url, cursor, true /*TODO*/, None /*TODO*/) {
+        //             Err(e) => {
+        //                 error!("failed sending text_document_completion: {:?}", e);
+        //                 None
+        //             }
+        //             Ok(resp) => Some(Box::new(resp.map(|cop| -> Vec<Completion> {
+        //                 match cop {
+        //                     None => vec![],
+        //                     Some(comps) => {
+        //                         match comps {
+        //                             CompletionResponse::Array(arr) => {
+        //                                 arr.into_iter().map(translate_completion_item).collect()
+        //                             }
+        //                             CompletionResponse::List(list) => {
+        //                                 // TODO is complete ignored
+        //                                 list.items.into_iter().map(translate_completion_item).collect()
+        //                             }
+        //                         }
+        //                     }
+        //                 }
+        //             }))),
+        //         }
+        //     }
+        // }
+    }
+
+    fn todo_get_symbol_at(&self, path: &SPath, cursor: LspTextCursor) -> Option<Symbol> {
+        todo!()
     }
 
     fn file_closed(&self, _path: &SPath) {
