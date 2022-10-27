@@ -35,7 +35,7 @@ impl From<Position> for StupidCursor {
 
 #[derive(Debug, Clone)]
 pub enum LspError {
-    ReadError(LspReadError),
+    IOError(LspIOError),
     // ProtocolError
 }
 
@@ -79,6 +79,12 @@ impl NavCompProviderLsp {
             }
         }
     }
+
+    // pub fn map_err<R: lsp_types::request::Request>(promise: LSPPromise<R>, error_sink: Sender<LspError>) -> Box<dyn Promise<Option<R::Result>>>{
+    //     promise.map(|result| {
+    //         match result { }
+    //     })
+    // }
 }
 
 
@@ -96,10 +102,14 @@ impl NavCompProvider for NavCompProviderLsp {
     }
 
     fn completions(&self, path: SPath, cursor: StupidCursor, _trigger: Option<String>) -> Option<CompletionsPromise> {
-        self.get_url_and_lock(&path).map(|(url, mut lock)| {
+        let error_sink = self.error_channel.0.clone();
+
+        self.get_url_and_lock(&path).map(move |(url, mut lock)| {
             match lock.text_document_completion(url, cursor, true /*TODO*/, None /*TODO*/) {
                 Err(e) => {
-                    error!("failed sending text_document_completion: {:?}", e);
+                    if error_sink.try_send(LspError::IOError(e)).is_err() {
+                        error!("failed sending lsp error to sink")
+                    };
                     None
                 }
                 Ok(resp) => Some(Box::new(resp.map(|cop| -> Vec<Completion> {
@@ -131,10 +141,14 @@ impl NavCompProvider for NavCompProviderLsp {
     }
 
     fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
+        let error_sink = self.error_channel.0.clone();
+
         self.get_url_and_lock(path).map(|(url, mut lock)| {
             match lock.text_document_document_symbol(url, cursor) {
                 Err(e) => {
-                    error!("failed sending text_document_completion: {:?}", e);
+                    if error_sink.try_send(LspError::IOError(e)).is_err() {
+                        error!("failed sending lsp error to sink")
+                    };
                     None
                 }
                 Ok(p) => {

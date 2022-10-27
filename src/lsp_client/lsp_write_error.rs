@@ -1,7 +1,7 @@
 use std::io;
 use std::sync::PoisonError;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum LspWriteError {
     WrongValueType,
     SerializationError(String),
