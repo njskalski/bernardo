@@ -1,16 +1,20 @@
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::ops::Range;
 use std::sync::{RwLock, RwLockWriteGuard};
 
+use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error};
-use lsp_types::{CompletionResponse, CompletionTextEdit, DocumentSymbolResponse, SymbolKind};
+use lsp_types::{CompletionResponse, CompletionTextEdit, DocumentSymbolResponse, Location, Position, SymbolKind};
 use lsp_types::request::DocumentSymbolRequest;
 
 use crate::fs::path::SPath;
-use crate::lsp_client::helpers::LspTextCursor;
 use crate::lsp_client::lsp_client::LspWrapper;
 use crate::lsp_client::lsp_io_error::LspIOError;
+use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::lsp_client::promise::LSPPromise;
+use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
 use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider, Symbol, SymbolContextActionsPromise, SymbolPromise, SymbolType};
@@ -20,11 +24,29 @@ TODO I am silently ignoring errors here. I guess that if NavComp fails it should
 TODO (same as above) Use NavCompRes everywhere.
  */
 
+impl From<Position> for StupidCursor {
+    fn from(loc: Position) -> Self {
+        StupidCursor {
+            char_idx: loc.character,
+            line: loc.line,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum LspError {
+    ReadError(LspReadError),
+    // ProtocolError
+}
+
 pub struct NavCompProviderLsp {
     // TODO probably a RefCell would suffice
     lsp: RwLock<LspWrapper>,
     todo_tick_sender: NavCompTickSender,
     triggers: Vec<String>,
+
+    error_channel: (Sender<LspError>, Receiver<LspError>),
+
 }
 
 impl NavCompProviderLsp {
@@ -34,6 +56,7 @@ impl NavCompProviderLsp {
             todo_tick_sender: tick_sender,
             // TODO this will get lang specific
             triggers: vec![".".to_string(), "::".to_string()],
+            error_channel: crossbeam_channel::unbounded(),
         }
     }
 
@@ -60,19 +83,19 @@ impl NavCompProviderLsp {
 
 
 impl NavCompProvider for NavCompProviderLsp {
-    fn file_open_for_edition(&self, path: &SPath, file_contents: String) {
+    fn file_open_for_edition(&self, path: &SPath, file_contents: ropey::Rope) {
         self.get_url_and_lock(path).map(|(url, mut lock)| {
-            lock.text_document_did_open(url, file_contents);
+            lock.text_document_did_open(url, file_contents.to_string());
         });
     }
 
-    fn submit_edit_event(&self, path: &SPath, file_contents: String) {
+    fn submit_edit_event(&self, path: &SPath, file_contents: ropey::Rope) {
         self.get_url_and_lock(path).map(|(url, mut lock)| {
-            lock.text_document_did_change(url, file_contents);
+            lock.text_document_did_change(url, file_contents.to_string());
         });
     }
 
-    fn completions(&self, path: SPath, cursor: LspTextCursor, _trigger: Option<String>) -> Option<CompletionsPromise> {
+    fn completions(&self, path: SPath, cursor: StupidCursor, _trigger: Option<String>) -> Option<CompletionsPromise> {
         self.get_url_and_lock(&path).map(|(url, mut lock)| {
             match lock.text_document_completion(url, cursor, true /*TODO*/, None /*TODO*/) {
                 Err(e) => {
@@ -103,11 +126,11 @@ impl NavCompProvider for NavCompProviderLsp {
         &self.triggers
     }
 
-    fn todo_get_context_options(&self, path: &SPath, cursor: LspTextCursor) -> Option<SymbolContextActionsPromise> {
+    fn todo_get_context_options(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolContextActionsPromise> {
         todo!()
     }
 
-    fn todo_get_symbol_at(&self, path: &SPath, cursor: LspTextCursor) -> Option<SymbolPromise> {
+    fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
         self.get_url_and_lock(path).map(|(url, mut lock)| {
             match lock.text_document_document_symbol(url, cursor) {
                 Err(e) => {
@@ -117,7 +140,7 @@ impl NavCompProvider for NavCompProviderLsp {
                 Ok(p) => {
                     Some(Box::new(p.map(|response| {
                         let mut symbol_op: Option<Symbol> = None;
-                        
+
                         response.map(|symbol| {
                             match symbol {
                                 DocumentSymbolResponse::Flat(v) => {
@@ -125,7 +148,7 @@ impl NavCompProvider for NavCompProviderLsp {
                                         symbol_op = Some(Symbol {
                                             symbol_type: f.kind.into(),
                                             // range: f.location.range,
-                                            range: 0..1,
+                                            stupid_range: (f.location.range.start.into(), f.location.range.end.into()),
                                         })
                                     });
                                 }
@@ -133,8 +156,7 @@ impl NavCompProvider for NavCompProviderLsp {
                                     v.first().map(|f| {
                                         symbol_op = Some(Symbol {
                                             symbol_type: f.kind.into(),
-                                            // range: f.selection_range,
-                                            range: 0..1,
+                                            stupid_range: (f.range.start.into(), f.range.end.into()),
                                         })
                                     });
                                 }

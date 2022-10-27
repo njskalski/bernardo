@@ -14,7 +14,6 @@ use lsp_types::{CompletionContext, CompletionTriggerKind, Position, TextDocument
 use lsp_types::request::{Completion, DocumentSymbolRequest};
 
 use crate::lsp_client::debug_helpers::lsp_debug_save;
-use crate::lsp_client::helpers::LspTextCursor;
 use crate::lsp_client::lsp_io_error::LspIOError;
 use crate::lsp_client::lsp_notification::LspServerNotification;
 use crate::lsp_client::lsp_read::read_lsp;
@@ -22,10 +21,12 @@ use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::lsp_client::lsp_write::{internal_send_notification, internal_send_notification_no_params, internal_send_request};
 use crate::lsp_client::lsp_write_error::LspWriteError;
 use crate::lsp_client::promise::LSPPromise;
+use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::{Promise, PromiseState};
 use crate::tsw::lang_id::LangId;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 use crate::w7e::navcomp_provider::Symbol;
+use crate::w7e::navcomp_provider_lsp::LspError;
 
 // I use ID == String, because i32 might be small, and i64 is safe, so I send i64 as string and so I store it.
 // LSP defines id integer as i32, while jsonrpc_core as u64.
@@ -139,6 +140,7 @@ impl LspWrapper {
                 reader_handle,
                 logger_handle,
                 notification_reader_handle,
+
             }
         )
     }
@@ -338,7 +340,7 @@ impl LspWrapper {
 
     pub fn text_document_completion(&mut self,
                                     url: Url,
-                                    cursor: LspTextCursor,
+                                    cursor: StupidCursor,
                                     /*
                                     just typing or ctrl-space?
                                      */
@@ -353,8 +355,8 @@ impl LspWrapper {
                 text_document_position: TextDocumentPositionParams {
                     text_document: TextDocumentIdentifier { uri: url },
                     position: Position {
-                        line: cursor.row,
-                        character: cursor.col,
+                        line: cursor.line,
+                        character: cursor.char_idx,
                     },
                 },
                 work_done_progress_params: Default::default(),
@@ -373,7 +375,7 @@ impl LspWrapper {
 
     pub fn text_document_document_symbol(&mut self,
                                          url: Url,
-                                         cursor: LspTextCursor,
+                                         cursor: StupidCursor,
     ) -> Result<LSPPromise<DocumentSymbolRequest>, LspIOError> {
         self.send_message::<DocumentSymbolRequest>(
             lsp_types::DocumentSymbolParams {

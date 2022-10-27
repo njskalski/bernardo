@@ -17,7 +17,6 @@ use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
 use crate::io::sub_output::SubOutput;
-use crate::lsp_client::helpers::get_lsp_text_cursor;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
 use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, CommonEditMsg, key_to_edit_msg};
@@ -26,6 +25,7 @@ use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
+use crate::primitives::stupid_cursor::StupidCursor;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
@@ -163,7 +163,7 @@ impl EditorWidget {
     pub fn with_buffer(mut self, buffer: BufferState, navcomp_op: Option<NavCompRef>) -> Self {
         self.buffer = buffer;
         self.navcomp = navcomp_op;
-        let contents = self.buffer.text().to_string();
+        let contents = self.buffer.text().rope.clone();
 
         match (self.navcomp.clone(), self.buffer.get_path()) {
             (Some(navcomp), Some(spath)) => {
@@ -224,11 +224,11 @@ impl EditorWidget {
     }
 
     pub fn get_single_cursor_screen_pos(&self, cursor: &Cursor) -> Option<CursorPosition> {
-        let lsp_cursor = get_lsp_text_cursor(self.buffer(), &cursor).map_err(
+        let lsp_cursor = StupidCursor::from_real_cursor(self.buffer(), &cursor).map_err(
             |_| {
                 error!("failed mapping cursor to lsp-cursor")
             }).ok()?;
-        let lsp_cursor_xy = match lsp_cursor.to_xy() {
+        let lsp_cursor_xy = match lsp_cursor.to_xy(&self.buffer().text().rope) {
             None => {
                 error!("lsp cursor beyond XY max");
                 return None;
@@ -400,7 +400,7 @@ impl EditorWidget {
     pub fn todo_request_completion(&mut self) {
         if let Some(cursor) = self.cursors().as_single() {
             if let Some(navcomp) = self.navcomp.clone() {
-                let stupid_cursor = match get_lsp_text_cursor(self.buffer(), cursor) {
+                let stupid_cursor = match StupidCursor::from_real_cursor(self.buffer(), cursor) {
                     Ok(sc) => sc,
                     Err(e) => {
                         error!("failed converting cursor to lsp_cursor: {:?}", e);
@@ -441,7 +441,7 @@ impl EditorWidget {
     pub fn todo_request_context_bar(&mut self) {
         if let Some(cursor) = self.cursors().as_single() {
             if let Some(navcomp) = self.navcomp.clone() {
-                let stupid_cursor = match get_lsp_text_cursor(self.buffer(), cursor) {
+                let stupid_cursor = match StupidCursor::from_real_cursor(self.buffer(), cursor) {
                     Ok(sc) => sc,
                     Err(e) => {
                         error!("failed converting cursor to lsp_cursor: {:?}", e);
@@ -864,7 +864,7 @@ impl Widget for EditorWidget {
                     if changed {
                         match (&self.navcomp, self.buffer.get_path()) {
                             (Some(navcomp), Some(path)) => {
-                                let contents = self.buffer.text().to_string();
+                                let contents = self.buffer.text().rope.clone();
                                 navcomp.submit_edit_event(path, contents);
                             }
                             _ => {}

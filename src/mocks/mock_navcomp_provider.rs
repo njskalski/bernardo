@@ -6,9 +6,9 @@ use crossbeam_channel::{Receiver, select, Sender};
 use log::{debug, error};
 
 use crate::fs::path::SPath;
-use crate::lsp_client::helpers::LspTextCursor;
 use crate::mocks::mock_navcomp_promise::MockNavCompPromise;
 use crate::mocks::mock_navcomp_provider::MockNavCompEvent::FileOpened;
+use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 use crate::w7e::navcomp_provider::{Completion, CompletionsPromise, NavCompProvider, Symbol, SymbolContextActionsPromise, SymbolPromise};
@@ -102,15 +102,15 @@ impl MockNavCompProviderPilot {
 }
 
 impl NavCompProvider for MockNavCompProvider {
-    fn file_open_for_edition(&self, path: &SPath, file_contents: String) {
-        self.event_sender.send(MockNavCompEvent::FileOpened(path.clone(), file_contents)).unwrap()
+    fn file_open_for_edition(&self, path: &SPath, file_contents: ropey::Rope) {
+        self.event_sender.send(MockNavCompEvent::FileOpened(path.clone(), file_contents.to_string())).unwrap()
     }
 
-    fn submit_edit_event(&self, path: &SPath, file_contents: String) {
-        self.event_sender.send(MockNavCompEvent::FileUpdated(path.clone(), file_contents)).unwrap()
+    fn submit_edit_event(&self, path: &SPath, file_contents: ropey::Rope) {
+        self.event_sender.send(MockNavCompEvent::FileUpdated(path.clone(), file_contents.to_string())).unwrap()
     }
 
-    fn completions(&self, path: SPath, _cursor: LspTextCursor, _trigger: Option<String>) -> Option<CompletionsPromise> {
+    fn completions(&self, path: SPath, _cursor: StupidCursor, _trigger: Option<String>) -> Option<CompletionsPromise> {
         match self.completions.read() {
             Err(e) => {
                 error!("failed acquiring lock on completions: {:?}", e);
@@ -142,11 +142,11 @@ impl NavCompProvider for MockNavCompProvider {
         &self.triggers
     }
 
-    fn todo_get_context_options(&self, path: &SPath, cursor: LspTextCursor) -> Option<SymbolContextActionsPromise> {
+    fn todo_get_context_options(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolContextActionsPromise> {
         todo!()
     }
 
-    fn todo_get_symbol_at(&self, path: &SPath, cursor: LspTextCursor) -> Option<SymbolPromise> {
+    fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
         todo!()
     }
 

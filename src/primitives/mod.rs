@@ -24,4 +24,7 @@ pub mod search_pattern;
 pub mod provider;
 pub mod macros;
 pub mod common_query;
+pub mod stupid_cursor;
+
+
 

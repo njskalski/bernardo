@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use std::ops::Range;
 
 use crate::fs::path::SPath;
-use crate::lsp_client::helpers::LspTextCursor;
+use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
 
@@ -74,8 +74,8 @@ pub enum SymbolType {
 
 #[derive(Debug, Clone)]
 pub struct Symbol {
-    pub(crate) symbol_type: SymbolType,
-    pub(crate) range: Range<usize>,
+    pub symbol_type: SymbolType,
+    pub stupid_range: (StupidCursor, StupidCursor),
 }
 
 /*
@@ -83,7 +83,7 @@ This is super work in progress, I added some top of the head options to "smoke o
  */
 #[derive(Debug, Clone)]
 pub enum NavCompSymbolContextActions {
-    GoToDefiniton,
+    GoToDefinition,
     FindUsages,
     NextUsage,
     PrevUsage,
@@ -97,21 +97,21 @@ pub trait NavCompProvider: Debug {
     /*
     file_contents are strictly LSP requirement
      */
-    fn file_open_for_edition(&self, path: &SPath, file_contents: String);
+    fn file_open_for_edition(&self, path: &SPath, file_contents: ropey::Rope);
 
     /*
     I will add "incremental updates" at later stage.
      */
-    fn submit_edit_event(&self, path: &SPath, file_contents: String);
+    fn submit_edit_event(&self, path: &SPath, file_contents: ropey::Rope);
 
-    fn completions(&self, path: SPath, cursor: LspTextCursor, trigger: Option<String>) -> Option<CompletionsPromise>;
+    fn completions(&self, path: SPath, cursor: StupidCursor, trigger: Option<String>) -> Option<CompletionsPromise>;
 
     // TODO this will probably get more complicated
     fn completion_triggers(&self, path: &SPath) -> &Vec<String>;
 
-    fn todo_get_context_options(&self, path: &SPath, cursor: LspTextCursor) -> Option<SymbolContextActionsPromise>;
+    fn todo_get_context_options(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolContextActionsPromise>;
 
-    fn todo_get_symbol_at(&self, path: &SPath, cursor: LspTextCursor) -> Option<SymbolPromise>;
+    fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise>;
 
     fn file_closed(&self, path: &SPath);
 

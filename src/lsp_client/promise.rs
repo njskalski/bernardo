@@ -1,11 +1,12 @@
 use std::fmt::{Debug, Formatter};
 
-use crossbeam_channel::{Receiver, TryRecvError};
+use crossbeam_channel::{Receiver, Sender, TryRecvError};
 use log::{debug, error, warn};
 use lsp_types::request::Request;
 
 use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::promise::promise::{Promise, PromiseState, UpdateResult};
+use crate::w7e::navcomp_provider_lsp::LspError;
 
 pub struct LSPPromise<R: Request> {
     //Invariant: never item and error are set in the same time. They can be both empty though.

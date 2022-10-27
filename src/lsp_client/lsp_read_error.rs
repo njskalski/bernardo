@@ -3,7 +3,7 @@ use std::sync::PoisonError;
 
 use crossbeam_channel::RecvError;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum LspReadError {
     NoLine,
     NoContentLength,
