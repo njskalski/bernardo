@@ -1,5 +1,7 @@
 use std::borrow::Cow;
+use std::convert::Into;
 use std::fmt::{Debug, Formatter};
+use std::string::ToString;
 
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 
@@ -41,9 +43,18 @@ use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 
  */
 
+/*
+TODO
+ I am not sure how this struct should look like inside, I just know how I want it to look in UI.
+ Therefore I delay this design until I have working tests.
+ */
 #[derive(Debug, Clone)]
 pub struct ContextBarItem {
-    title: String,
+    title: Cow<'static, str>,
+}
+
+impl ContextBarItem {
+    pub const GO_TO_DEFINITION: ContextBarItem = ContextBarItem { title: Cow::Borrowed("go to definition") };
 }
 
 impl ListWidgetItem for ContextBarItem {

@@ -73,7 +73,7 @@ pub enum SymbolType {
 }
 
 #[derive(Debug, Clone)]
-pub struct Symbol {
+pub struct NavCompSymbol {
     pub symbol_type: SymbolType,
     pub stupid_range: (StupidCursor, StupidCursor),
 }
@@ -90,7 +90,7 @@ pub enum NavCompSymbolContextActions {
 }
 
 pub type SymbolContextActionsPromise = Box<dyn Promise<Vec<Completion>> + 'static>;
-pub type SymbolPromise = Box<dyn Promise<Option<Symbol>> + 'static>;
+pub type SymbolPromise = Box<dyn Promise<Option<NavCompSymbol>> + 'static>;
 
 // this is a wrapper around LSP and "similar services".
 pub trait NavCompProvider: Debug {

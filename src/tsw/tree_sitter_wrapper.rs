@@ -168,6 +168,7 @@ impl TreeSitterWrapper {
     }
 }
 
+#[derive(Debug)]
 pub struct HighlightItem {
     pub char_begin: usize,
     pub char_end: usize,

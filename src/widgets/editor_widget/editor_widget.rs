@@ -27,11 +27,12 @@ use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::primitives::xy::XY;
+use crate::promise::promise::Promise;
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::handler::NavCompRef;
-use crate::w7e::navcomp_provider::CompletionAction;
+use crate::w7e::navcomp_provider::{CompletionAction, NavCompSymbol};
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
@@ -57,10 +58,17 @@ TODO:
 - display save error (and write tests)
 - support for files with more than u16 lines
 - I should probably remember "milestones" every several mb of file for big files.
+- we have a lot of places where we check for Some on path, single cursor, navcomp and cast from cursor to stupid cursor.
+    they need unification.
  */
 
+/*
+Yes, I know it should be private, but to be honest an opportunity to break apart a potentially
+several thousand lines long file into logical components was more important to me than visibility
+rules.
+*/
 #[derive(Debug)]
-enum EditorState {
+pub enum EditorState {
     Editing,
     /*
     Dropping cursor mode works in a following way:
@@ -125,6 +133,8 @@ pub struct EditorWidget {
     // navcomp is to submit edit messages, suggestion display will probably be somewhere else
     navcomp: Option<NavCompRef>,
 
+    nacomp_symbol: Option<Box<dyn Promise<Option<NavCompSymbol>>>>,
+
     state: EditorState,
 
     // This is completion or navigation
@@ -153,6 +163,8 @@ impl EditorWidget {
             state: EditorState::Editing,
             navcomp,
             requested_hover: None,
+
+            nacomp_symbol: None,
         }
     }
 
@@ -177,6 +189,18 @@ impl EditorWidget {
 
         self
     }
+
+    // fn single_cursor_params(&self) -> (Option<String>, Option<String>) {
+    //     if let Some(cur) = self.cursors().as_single() {
+    //         self.navcomp.map(|navcomp| {
+    //             navcomp.get
+    //         })
+    //
+    //
+    //     } else {
+    //         None
+    //     }
+    // }
 
     // This updates the "anchor" of view to match the direction of editing. Remember, the scroll will
     // follow the "anchor" with least possible change.
@@ -548,6 +572,8 @@ impl EditorWidget {
 
         let char_range_op = self.buffer.char_range(output);
         let highlights = self.buffer.highlight(char_range_op);
+        debug!("higlights: [{:?}]", &highlights);
+
         let mut highlight_iter = highlights.iter().peekable();
 
         let lines_to_skip = output.size_constraint().visible_hint().upper_left().y as usize;
@@ -742,6 +768,20 @@ impl EditorWidget {
             false
         }
     }
+
+    // This is supposed to be called each time cursor is moved
+    fn todo_after_cursor_moved(&mut self) {
+        // TODO add support for scrachpad (path == None)
+        if let (Some(cursor), Some(path)) = (self.cursors().as_single(), self.buffer().get_path()) {
+            if let Some(stupid_cursor) = StupidCursor::from_real_cursor(self.buffer(), cursor).ok() {
+                self.nacomp_symbol = self.navcomp.as_ref().map(|navcomp|
+                    navcomp.todo_get_symbol_at(path, stupid_cursor)
+                ).flatten()
+            }
+        }
+
+        // self.tree_sitter
+    }
 }
 
 impl Widget for EditorWidget {
@@ -879,6 +919,8 @@ impl Widget for EditorWidget {
                         None => {}
                         Some(direction) => self.update_anchor(direction)
                     };
+
+                    self.todo_after_cursor_moved();
 
                     None
                 }

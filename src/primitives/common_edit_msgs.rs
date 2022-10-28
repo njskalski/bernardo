@@ -445,6 +445,7 @@ pub fn apply_cem(cem: CommonEditMsg,
 
 // This maps a cme into a direction that the cursor has (probably) moved. It's used to update
 // scrolling information.
+// TODO Undo/Redo should update cursor!
 pub fn cme_to_direction(cme: &CommonEditMsg) -> Option<Arrow> {
     match cme {
         CommonEditMsg::Char(_) => Some(Arrow::Right),

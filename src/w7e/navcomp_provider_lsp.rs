@@ -17,7 +17,7 @@ use crate::lsp_client::promise::LSPPromise;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
-use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider, Symbol, SymbolContextActionsPromise, SymbolPromise, SymbolType};
+use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider, NavCompSymbol, SymbolContextActionsPromise, SymbolPromise, SymbolType};
 
 /*
 TODO I am silently ignoring errors here. I guess that if NavComp fails it should get re-started.
@@ -153,13 +153,13 @@ impl NavCompProvider for NavCompProviderLsp {
                 }
                 Ok(p) => {
                     Some(Box::new(p.map(|response| {
-                        let mut symbol_op: Option<Symbol> = None;
+                        let mut symbol_op: Option<NavCompSymbol> = None;
 
                         response.map(|symbol| {
                             match symbol {
                                 DocumentSymbolResponse::Flat(v) => {
                                     v.first().map(|f| {
-                                        symbol_op = Some(Symbol {
+                                        symbol_op = Some(NavCompSymbol {
                                             symbol_type: f.kind.into(),
                                             // range: f.location.range,
                                             stupid_range: (f.location.range.start.into(), f.location.range.end.into()),
@@ -168,7 +168,7 @@ impl NavCompProvider for NavCompProviderLsp {
                                 }
                                 DocumentSymbolResponse::Nested(v) => {
                                     v.first().map(|f| {
-                                        symbol_op = Some(Symbol {
+                                        symbol_op = Some(NavCompSymbol {
                                             symbol_type: f.kind.into(),
                                             stupid_range: (f.range.start.into(), f.range.end.into()),
                                         })
@@ -177,7 +177,7 @@ impl NavCompProvider for NavCompProviderLsp {
                             }
                         });
                         symbol_op
-                    })) as Box<dyn Promise<Option<Symbol>> + 'static>)
+                    })) as Box<dyn Promise<Option<NavCompSymbol>> + 'static>)
                 }
             }
         }).flatten()
