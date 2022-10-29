@@ -4,7 +4,8 @@ use crate::io::output::Output;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::widget::{WID, Widget};
+use crate::widget::fill_policy::FillPolicy;
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::editor_widget::context_bar::context_bar_item::ContextBarItem;
 use crate::widgets::list_widget::list_widget::ListWidget;
 
@@ -15,6 +16,18 @@ pub struct ContextBarWidget {
 
 impl ContextBarWidget {
     pub const TYPENAME: &'static str = "context_bar";
+
+    pub fn new(items: Vec<ContextBarItem>) -> Self {
+        ContextBarWidget {
+            id: get_new_widget_id(),
+            list: ListWidget::new()
+                .with_provider(Box::new(items))
+                .with_show_column_names(false)
+                .with_fill_policy(FillPolicy::FILL_WIDTH)
+            
+            ,
+        }
+    }
 }
 
 impl Widget for ContextBarWidget {

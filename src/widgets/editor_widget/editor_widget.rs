@@ -20,7 +20,7 @@ use crate::io::sub_output::SubOutput;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
 use crate::primitives::common_edit_msgs::{apply_cem, cme_to_direction, CommonEditMsg, key_to_edit_msg};
-use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
+use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus, Selection};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
 use crate::primitives::rect::Rect;
@@ -37,6 +37,7 @@ use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
 use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
+use crate::widgets::editor_widget::context_options_matrix::get_context_options;
 use crate::widgets::editor_widget::helpers::{CursorPosition, find_trigger_and_substring};
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 
@@ -384,7 +385,7 @@ impl EditorWidget {
         }
     }
 
-    fn todo_get_hover_settings(&self) -> Option<HoverSettings> {
+    fn todo_get_hover_settings_anchored_at_trigger(&self) -> Option<HoverSettings> {
         let path = match self.buffer().get_path() {
             None => {
                 warn!("unimplemented autocompletion for non-saved files");
@@ -440,7 +441,7 @@ impl EditorWidget {
                     Some(p) => p,
                 };
 
-                let hover_settings = self.todo_get_hover_settings();
+                let hover_settings = self.todo_get_hover_settings_anchored_at_trigger();
                 // let tick_sender = navcomp.todo_navcomp_sender().clone();
                 let promise_op = navcomp.completions(path.clone(), stupid_cursor, hover_settings.as_ref().map(|c| c.trigger.clone()).flatten());
 
@@ -463,32 +464,52 @@ impl EditorWidget {
     }
 
     pub fn todo_request_context_bar(&mut self) {
-        if let Some(cursor) = self.cursors().as_single() {
-            if let Some(navcomp) = self.navcomp.clone() {
-                let stupid_cursor = match StupidCursor::from_real_cursor(self.buffer(), cursor) {
-                    Ok(sc) => sc,
-                    Err(e) => {
-                        error!("failed converting cursor to lsp_cursor: {:?}", e);
-                        return;
-                    }
-                };
+        debug!("request_context_bar");
+        let single_cursor = self.cursors().as_single();
+        let stupid_cursor_op = single_cursor.map(
+            |c| StupidCursor::from_real_cursor(self.buffer(), c).ok()
+        ).flatten();
 
-                let path = match self.buffer.get_path() {
-                    None => {
-                        error!("path not available");
-                        return;
-                    }
-                    Some(p) => p,
-                };
+        let lsp_symbol_op = self.nacomp_symbol.as_ref().map(|ncsp| {
+            ncsp.read().map(|c| c.as_ref())
+        }).flatten().flatten();
 
-                let hover_settings = self.todo_get_hover_settings();
-                // navcomp.
-            } else {
-                debug!("not opening contextbar - navcomp not available.")
+        let char_range_op = single_cursor.map(|a| {
+            match a.s {
+                None => {
+                    a.a..a.a + 1
+                }
+                Some(sel) => {
+                    sel.b..sel.e
+                }
             }
-        } else {
-            debug!("not opening contextbar - cursor not single.")
-        }
+        });
+
+        // The reason I unpack and pack char_range_op, because I'm not interested in "all highlights"
+        let tree_sitter_highlight = char_range_op.map(|range| {
+            self.buffer.highlight(Some(range))
+        }).map(|highlight_items| {
+            // TODO I assume here that "first" is the smallest, it probably is not true
+            // debug!("highlight items: [{:?}]", &highlight_items);
+            highlight_items.first().map(|c| (*c).clone())
+        }).flatten().map(|highlight_item| {
+            highlight_item.identifier.to_string()
+        });
+
+        let items = get_context_options(
+            &self.state,
+            single_cursor,
+            self.cursors(),
+            stupid_cursor_op,
+            lsp_symbol_op,
+            tree_sitter_highlight.as_ref().map(|c| c.as_str()));
+
+        let hover_settings_op = self.get_cursor_related_hover_max(None);
+
+        self.requested_hover = hover_settings_op.map(|hs| {
+            let hover = EditorHover::Context(ContextBarWidget::new(items));
+            (hs, hover)
+        });
     }
 
     fn pos_to_cursor(&self, theme: &Theme, char_idx: usize) -> Option<Color> {
@@ -571,8 +592,7 @@ impl EditorWidget {
         helpers::fill_output(default.background, output);
 
         let char_range_op = self.buffer.char_range(output);
-        let highlights = self.buffer.highlight(char_range_op);
-        debug!("higlights: [{:?}]", &highlights);
+        let highlights = self.buffer.highlight(char_range_op.clone());
 
         let mut highlight_iter = highlights.iter().peekable();
 
@@ -716,7 +736,7 @@ impl EditorWidget {
                 return;
             }
         };
-        let new_settings = match self.todo_get_hover_settings() {
+        let new_settings = match self.todo_get_hover_settings_anchored_at_trigger() {
             Some(s) => s,
             None => {
                 debug!("no good settings to update hover");
@@ -779,8 +799,6 @@ impl EditorWidget {
                 ).flatten()
             }
         }
-
-        // self.tree_sitter
     }
 }
 
