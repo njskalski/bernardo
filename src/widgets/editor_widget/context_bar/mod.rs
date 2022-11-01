@@ -3,3 +3,4 @@
 
 pub mod widget;
 pub mod context_bar_item;
+pub mod msg;

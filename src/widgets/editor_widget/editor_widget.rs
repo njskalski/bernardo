@@ -504,12 +504,17 @@ impl EditorWidget {
             lsp_symbol_op,
             tree_sitter_highlight.as_ref().map(|c| c.as_str()));
 
-        let hover_settings_op = self.get_cursor_related_hover_max(None);
+        if items.is_empty() {
+            warn!("ignoring everything bar, no items");
+            self.requested_hover = None;
+        } else {
+            let hover_settings_op = self.get_cursor_related_hover_max(None);
 
-        self.requested_hover = hover_settings_op.map(|hs| {
-            let hover = EditorHover::Context(ContextBarWidget::new(items));
-            (hs, hover)
-        });
+            self.requested_hover = hover_settings_op.map(|hs| {
+                let hover = EditorHover::Context(ContextBarWidget::new(items));
+                (hs, hover)
+            });
+        }
     }
 
     fn pos_to_cursor(&self, theme: &Theme, char_idx: usize) -> Option<Color> {
