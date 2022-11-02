@@ -146,9 +146,17 @@ impl ToString for Text {
     }
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum BufferType {
+    Full,
+    SingleLine,
+}
+
 #[derive(Debug)]
 pub struct BufferState {
-    tree_sitter: Rc<TreeSitterWrapper>,
+    subtype: BufferType,
+
+    tree_sitter_op: Option<Rc<TreeSitterWrapper>>,
 
     history: Vec<Text>,
     history_pos: usize,
@@ -156,23 +164,41 @@ pub struct BufferState {
     lang_id: Option<LangId>,
 
     file: Option<SPath>,
+
 }
 
 impl BufferState {
-    pub fn new(tree_sitter: Rc<TreeSitterWrapper>) -> BufferState {
-        let res = BufferState {
-            tree_sitter,
+    pub fn full(tree_sitter: Rc<TreeSitterWrapper>) -> BufferState {
+        BufferState {
+            subtype: BufferType::Full,
+            tree_sitter_op: Some(tree_sitter),
             history: vec![Text::default()],
             history_pos: 0,
-
-            file: None,
             lang_id: None,
-        };
+            file: None,
+        }
+    }
 
-        res
+    pub fn simplified_single_line() -> BufferState {
+        BufferState {
+            subtype: BufferType::SingleLine,
+            tree_sitter_op: None,
+            history: vec![Text::default()],
+            history_pos: 0,
+            lang_id: None,
+            file: None,
+        }
+    }
+
+    pub fn subtype(&self) -> &BufferType {
+        &self.subtype
     }
 
     pub fn with_lang(self, lang_id: LangId) -> Self {
+        if self.subtype != BufferType::Full {
+            error!("setting lang in non TextBuffer::Full!");
+        }
+
         Self {
             lang_id: Some(lang_id),
             ..self
@@ -194,12 +220,16 @@ impl BufferState {
         let mut text = Text::default().with_rope(rope);
 
         if let Some(lang_id) = lang_id {
-            if text.parse(self.tree_sitter.clone(), lang_id) {
-                text.parsing.as_mut().map(|parsing| {
-                    parsing.try_reparse(&copy_rope);
-                });
+            if let Some(tree_sitter) = self.tree_sitter_op.as_ref() {
+                if text.parse(tree_sitter.clone(), lang_id) {
+                    text.parsing.as_mut().map(|parsing| {
+                        parsing.try_reparse(&copy_rope);
+                    });
+                } else {
+                    error!("creation of parse_tuple failed");
+                }
             } else {
-                error!("creation of parse_tuple failed");
+                error!("will not parse, because TreeSitter not available - simplified buffer?");
             }
         }
 
@@ -241,10 +271,35 @@ impl BufferState {
     }
 
     pub fn set_lang(&mut self, lang_id: Option<LangId>) {
+        if self.subtype != BufferType::Full {
+            error!("setting lang in non TextBuffer::Full!");
+        }
+
         self.lang_id = lang_id;
     }
 
-    pub fn apply_cem(&mut self, cem: CommonEditMsg, page_height: usize, clipboard: Option<&ClipboardRef>) -> bool {
+    pub fn apply_cem(&mut self, mut cem: CommonEditMsg, page_height: usize, clipboard: Option<&ClipboardRef>) -> bool {
+        if self.subtype == BufferType::SingleLine {
+            if page_height != 1 {
+                error!("page_height required to be 1 on SingleLine buffers!");
+                return false;
+            }
+
+            match cem {
+                CommonEditMsg::Char('\n') => {
+                    error!("not adding newline to a single-line buffer");
+                    return false;
+                }
+                CommonEditMsg::Block(block) => {
+                    let new_block = block.replace("\n", "");
+                    cem = CommonEditMsg::Block(new_block);
+                }
+                _ => {}
+            }
+        }
+
+        let cem = cem;
+
         /*
         TODO the fact that Undo/Redo requires special handling here a lot suggests that maybe these shouldn't be CEMs. But it works now.
          */
