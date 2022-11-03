@@ -7,11 +7,14 @@ use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
-use crate::primitives::common_edit_msgs::key_to_edit_msg;
+use crate::primitives::common_edit_msgs::{_apply_cem, CommonEditMsg, key_to_edit_msg};
+use crate::primitives::common_query::CommonQuery;
+use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::subwidget;
+use crate::text::buffer_state::BufferState;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::any_msg::AsAny;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
@@ -26,11 +29,9 @@ pub struct ContextBarWidget {
     id: WID,
     list: ListWidget<ContextBarItem>,
 
-    //
     display_state: Option<DisplayState<Self>>,
 
-    //
-    query: String,
+    query: BufferState,
 }
 
 impl ContextBarWidget {
@@ -46,7 +47,17 @@ impl ContextBarWidget {
                 .with_fill_policy(FillPolicy::FILL_WIDTH)
             ,
             display_state: None,
-            query: "".to_string(),
+            query: BufferState::simplified_single_line(),
+        }
+    }
+
+    fn on_query_change(&mut self) {
+        let query_str = self.query.to_string();
+        if query_str.is_empty() {
+            self.list.set_query(None);
+        } else {
+            let query = CommonQuery::Fuzzy(self.query.to_string());
+            self.list.set_query(Some(query));
         }
     }
 }
@@ -75,7 +86,33 @@ impl Widget for ContextBarWidget {
             }
             InputEvent::KeyInput(key) if key_to_edit_msg(key).is_some() => {
                 let msg = key_to_edit_msg(key).unwrap();
-                ContextBarWidgetMsg::Edit(msg).someboxed()
+
+                let ignore: bool = match msg {
+                    CommonEditMsg::Char(_) => false,
+                    CommonEditMsg::Block(_) => true,
+                    CommonEditMsg::CursorUp { .. } => true,
+                    CommonEditMsg::CursorDown { .. } => true,
+                    CommonEditMsg::CursorLeft { .. } => false,
+                    CommonEditMsg::CursorRight { .. } => false,
+                    CommonEditMsg::Backspace => false,
+                    CommonEditMsg::LineBegin { .. } => true,
+                    CommonEditMsg::LineEnd { .. } => true,
+                    CommonEditMsg::WordBegin { .. } => true,
+                    CommonEditMsg::WordEnd { .. } => true,
+                    CommonEditMsg::PageUp { .. } => true,
+                    CommonEditMsg::PageDown { .. } => true,
+                    CommonEditMsg::Delete => true,
+                    CommonEditMsg::Copy => true,
+                    CommonEditMsg::Paste => true,
+                    CommonEditMsg::Undo => true,
+                    CommonEditMsg::Redo => true,
+                };
+
+                if !ignore {
+                    ContextBarWidgetMsg::Edit(msg).someboxed()
+                } else {
+                    None
+                }
             }
             _ => None
         };
@@ -90,6 +127,12 @@ impl Widget for ContextBarWidget {
             Some(msg) => match msg {
                 ContextBarWidgetMsg::Close => {
                     EditorWidgetMsg::HoverClose.someboxed()
+                }
+                ContextBarWidgetMsg::Edit(cem) => {
+                    if self.query.apply_cem(cem.clone(), 1, None) {
+                        self.on_query_change();
+                    }
+                    None
                 }
                 _ => {
                     warn!("ignoring message {:?}", msg);
