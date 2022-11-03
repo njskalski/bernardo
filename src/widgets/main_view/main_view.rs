@@ -150,7 +150,8 @@ impl MainView {
     fn open_fuzzy_search_in_files_and_focus(&mut self) {
         self.hover = Some(
             HoverItem::FuzzySearch(FuzzySearchWidget::new(
-                |_| Some(Box::new(MainViewMsg::ClozeHover))
+                |_| Some(Box::new(MainViewMsg::ClozeHover)),
+                Some(self.clipboard.clone()),
             ).with_provider(
                 Box::new(FsfProvider::new(self.fsf.clone()).with_ignores_filter())
             ).with_draw_comment_setting(DrawComment::Highlighted))
@@ -161,7 +162,8 @@ impl MainView {
     fn open_fuzzy_buffer_list_and_focus(&mut self) {
         self.hover = Some(
             HoverItem::FuzzySearch(FuzzySearchWidget::new(
-                |_| Some(Box::new(MainViewMsg::ClozeHover))
+                |_| Some(Box::new(MainViewMsg::ClozeHover)),
+                Some(self.clipboard.clone()),
             ).with_provider(
                 self.editors.get_buffer_list_provider()
             ).with_draw_comment_setting(DrawComment::Highlighted))

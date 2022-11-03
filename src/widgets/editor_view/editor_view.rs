@@ -102,12 +102,16 @@ impl EditorView {
         let find_label = TextWidget::new(Box::new(PATTERN));
         let replace_label = TextWidget::new(Box::new(REPLACE));
 
-        let find_box = EditBoxWidget::new().with_on_hit(|_| {
-            EditorViewMsg::FindHit.someboxed()
-        });
-        let replace_box = EditBoxWidget::new().with_on_hit(|_| {
-            EditorViewMsg::ReplaceHit.someboxed()
-        });
+        let find_box = EditBoxWidget::new()
+            .with_on_hit(|_| {
+                EditorViewMsg::FindHit.someboxed()
+            })
+            .with_clipboard(clipboard.clone());
+        let replace_box = EditBoxWidget::new()
+            .with_on_hit(|_| {
+                EditorViewMsg::ReplaceHit.someboxed()
+            })
+            .with_clipboard(clipboard.clone());
 
         EditorView {
             wid: get_new_widget_id(),

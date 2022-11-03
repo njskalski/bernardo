@@ -4,6 +4,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
+use crate::experiments::clipboard::ClipboardRef;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
@@ -42,6 +43,8 @@ pub struct EditBoxWidget {
 
     //display state
     display_state: EditBoxDisplayState,
+
+    clipboard_op: Option<ClipboardRef>,
 }
 
 
@@ -60,6 +63,14 @@ impl EditBoxWidget {
             display_state: EditBoxDisplayState {
                 width: MIN_WIDTH
             },
+            clipboard_op: None,
+        }
+    }
+
+    pub fn with_clipboard(self, clipboard: ClipboardRef) -> Self {
+        Self {
+            clipboard_op: Some(clipboard),
+            ..self
         }
     }
 
@@ -216,8 +227,9 @@ impl Widget for EditBoxWidget {
         return match our_msg.unwrap() {
             EditBoxWidgetMsg::Hit => self.event_hit(),
             EditBoxWidgetMsg::CommonEditMsg(cem) => {
-                // TODO add clipboard
-                if self.buffer.apply_cem(cem.clone(), 1, None) {
+                if self.buffer.apply_cem(cem.clone(),
+                                         1,
+                                         self.clipboard_op.as_ref()) {
                     self.event_changed()
                 } else {
                     None

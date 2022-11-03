@@ -5,6 +5,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
+use crate::experiments::clipboard::ClipboardRef;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
@@ -51,8 +52,15 @@ pub struct FuzzySearchWidget {
 }
 
 impl FuzzySearchWidget {
-    pub fn new(on_close: WidgetAction<Self>) -> Self {
-        let edit = EditBoxWidget::new();
+    pub fn new(on_close: WidgetAction<Self>, clipboard_op: Option<ClipboardRef>) -> Self {
+        let mut edit = EditBoxWidget::new();
+
+        match clipboard_op {
+            None => {}
+            Some(clipboard) => {
+                edit = edit.with_clipboard(clipboard);
+            }
+        }
 
         Self {
             id: get_new_widget_id(),
