@@ -30,6 +30,7 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::subwidget;
+use crate::text::text_buffer::TextBuffer;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction, WidgetActionParam};
@@ -215,10 +216,10 @@ impl SaveFileDialogWidget {
 
     // TODO tests!
     pub fn get_path(&self) -> Option<SPath> {
-        if self.edit_box.get_text().len_chars() == 0 {
+        if self.edit_box.get_buffer().len_chars() == 0 {
             None
         } else {
-            let file_name = self.edit_box.get_text().to_string();
+            let file_name = self.edit_box.get_buffer().to_string();
             let path = self.tree_widget.internal().get_highlighted().1.spath().clone();
             let result = path.descendant_unchecked(file_name);
 
@@ -245,7 +246,7 @@ impl SaveFileDialogWidget {
         };
 
         if path.exists() {
-            let filename = self.edit_box.get_text().to_string();
+            let filename = self.edit_box.get_buffer().to_string();
 
             self.hover_dialog = Some(override_dialog(filename));
             return None;

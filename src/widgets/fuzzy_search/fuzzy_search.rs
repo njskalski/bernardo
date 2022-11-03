@@ -122,7 +122,7 @@ impl FuzzySearchWidget {
         ItemIter {
             providers: &self.providers,
             context_shortcuts: &self.shortened_contexts(),
-            query: self.edit.get_text().to_string(),
+            query: self.edit.get_buffer().to_string(),
             rows_limit: rows_limit as usize,
             provider_idx: 0,
             cur_iter: None,
@@ -284,7 +284,7 @@ impl Widget for FuzzySearchWidget {
                                            Rect::new(XY::ZERO, XY::new(self.width(), 1)));
 
         self.edit.render(theme, focused, &mut suboutput);
-        let query = self.edit.get_text().to_string();
+        let query = self.edit.get_buffer().to_string();
 
         let mut y = 1 as u16;
 

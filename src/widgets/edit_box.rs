@@ -8,11 +8,13 @@ use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
-use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg, key_to_edit_msg};
+use crate::primitives::common_edit_msgs::{_apply_cem, CommonEditMsg, key_to_edit_msg};
 use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::helpers;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::text::buffer_state::BufferState;
+use crate::text::text_buffer::TextBuffer;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
@@ -34,7 +36,7 @@ pub struct EditBoxWidget {
     on_change: Option<WidgetAction<EditBoxWidget>>,
     // miss is trying to make illegal move. Like backspace on empty, left on leftmost etc.
     on_miss: Option<WidgetAction<EditBoxWidget>>,
-    text: ropey::Rope,
+    buffer: BufferState,
     cursor_set: CursorSet,
 
     max_width_op: Option<u16>,
@@ -52,7 +54,7 @@ impl EditBoxWidget {
             id: get_new_widget_id(),
             cursor_set: CursorSet::single(),
             enabled: true,
-            text: "".into(),
+            buffer: BufferState::simplified_single_line(),
             on_hit: None,
             on_change: None,
             on_miss: None,
@@ -95,32 +97,37 @@ impl EditBoxWidget {
         EditBoxWidget { enabled, ..self }
     }
 
-    pub fn with_text<'a, T: Into<&'a str>>(self, text: T) -> Self {
+    pub fn with_text<'a, T: AsRef<str>>(self, text: T) -> Self {
         EditBoxWidget {
-            text: ropey::Rope::from_str(text.into()),
+            buffer: BufferState::simplified_single_line().with_text(text),
             ..self
         }
     }
 
-    pub fn get_text(&self) -> &ropey::Rope {
-        &self.text
+    pub fn get_buffer(&self) -> &BufferState {
+        &self.buffer
+    }
+
+    pub fn get_text(&self) -> String {
+        self.buffer.text().to_string()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.text.len_bytes() == 0 //TODO
+        self.buffer.len_bytes() == 0 //TODO
     }
 
-    pub fn set_text<'a, T: Into<&'a str>>(&mut self, text: T) {
-        self.text = Rope::from(text.into());
-        self.cursor_set.move_home(&self.text, false);
+    pub fn set_text<'a, T: AsRef<str>>(&mut self, text: T) {
+        self.buffer = BufferState::simplified_single_line().with_text(text);
+        self.cursor_set.move_end(&self.buffer, false);
     }
 
     pub fn set_cursor_end(&mut self) {
-        self.cursor_set.move_end(&self.text, false);
+        self.cursor_set.move_end(&self.buffer, false);
     }
 
     pub fn clear(&mut self) {
-        self.text = Rope::new();
+        self.buffer = BufferState::simplified_single_line();
+        self.cursor_set = CursorSet::single();
     }
 
     fn event_changed(&self) -> Option<Box<dyn AnyMsg>> {
@@ -189,7 +196,7 @@ impl Widget for EditBoxWidget {
                             CommonEditMsg::CursorDown { selecting: _ } => None,
                             CommonEditMsg::CursorLeft { selecting: _ } if self.cursor_set.as_single().map(|c| c.a == 0).unwrap_or(false) => None,
                             CommonEditMsg::CursorRight { selecting: _ } if self.cursor_set.as_single()
-                                .map(|c| c.a > self.text.len_chars()).unwrap_or(false) => None,
+                                .map(|c| c.a > self.buffer.len_chars()).unwrap_or(false) => None,
                             _ => Some(Box::new(EditBoxWidgetMsg::CommonEditMsg(cem))),
                         }
                         None => None,
@@ -211,7 +218,7 @@ impl Widget for EditBoxWidget {
         return match our_msg.unwrap() {
             EditBoxWidgetMsg::Hit => self.event_hit(),
             EditBoxWidgetMsg::CommonEditMsg(cem) => {
-                if apply_cem(cem.clone(), &mut self.cursor_set, &mut self.text, 1, None).1 {
+                if _apply_cem(cem.clone(), &mut self.cursor_set, &mut self.buffer, 1, None).1 {
                     self.event_changed()
                 } else {
                     None
@@ -235,7 +242,7 @@ impl Widget for EditBoxWidget {
         helpers::fill_output(primary_style.background, output);
 
         let mut x: usize = 0;
-        for (char_idx, g) in self.text.to_string().graphemes(true).enumerate() {
+        for (char_idx, g) in self.buffer.to_string().graphemes(true).enumerate() {
             let style = match theme.cursor_background(self.cursor_set.get_cursor_status_for_char(char_idx)) {
                 Some(bg) => {
                     primary_style.with_background(if focused { bg } else { bg.half() })
@@ -251,7 +258,7 @@ impl Widget for EditBoxWidget {
         }
         // one character after
         {
-            let style = match theme.cursor_background(self.cursor_set.get_cursor_status_for_char(self.text.len_chars())) {
+            let style = match theme.cursor_background(self.cursor_set.get_cursor_status_for_char(self.buffer.len_chars())) {
                 Some(bg) => {
                     primary_style.with_background(if focused { bg } else { bg.half() })
                 }
@@ -267,7 +274,7 @@ impl Widget for EditBoxWidget {
         // if cursor is after the text, we need to add an offset, so the background does not
         // overwrite cursor style.
         let cursor_offset: u16 = self.cursor_set.max_cursor_pos() as u16 + 1; //TODO
-        let text_width = self.text.to_string().width() as u16; //TODO
+        let text_width = self.buffer.to_string().width() as u16; //TODO
         let end_of_text = cursor_offset.max(text_width);
 
         // background after the text

@@ -143,11 +143,11 @@ impl NavCompProvider for MockNavCompProvider {
     }
 
     fn todo_get_context_options(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolContextActionsPromise> {
-        todo!()
+        None
     }
 
     fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
-        todo!()
+        None
     }
 
     fn file_closed(&self, _path: &SPath) {}

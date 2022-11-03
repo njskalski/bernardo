@@ -222,11 +222,11 @@ fn insert_to_rope(cs: &mut CursorSet,
 // Returns tuple:
 //      first is number of chars that changed (inserted, removed, changed), or 0 in case of UNDO/REDO
 //      FALSE iff the command results in no-op.
-pub fn apply_cem(cem: CommonEditMsg,
-                 cs: &mut CursorSet,
-                 rope: &mut dyn TextBuffer,
-                 page_height: usize,
-                 clipboard: Option<&ClipboardRef>) -> (usize, bool) {
+pub fn _apply_cem(cem: CommonEditMsg,
+                  cs: &mut CursorSet,
+                  rope: &mut dyn TextBuffer,
+                  page_height: usize,
+                  clipboard: Option<&ClipboardRef>) -> (usize, bool) {
     let res = match cem {
         CommonEditMsg::Char(char) => {
             // TODO optimise

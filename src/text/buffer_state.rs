@@ -13,7 +13,7 @@ use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::regex_search::{FindError, regex_find};
 use crate::fs::path::SPath;
 use crate::io::output::Output;
-use crate::primitives::common_edit_msgs::{apply_cem, CommonEditMsg};
+use crate::primitives::common_edit_msgs::{_apply_cem, CommonEditMsg};
 use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
 use crate::primitives::search_pattern::SearchPattern;
 use crate::text::text_buffer::{LinesIter, TextBuffer};
@@ -212,6 +212,15 @@ impl BufferState {
         }
     }
 
+    pub fn with_text<T: AsRef<str>>(self, text: T) -> Self {
+        let rope = ropey::Rope::from_str(text.as_ref());
+        Self {
+            history: vec![Text::default().with_rope(rope)],
+            history_pos: 0,
+            ..self
+        }
+    }
+
     /*
     This is expected to be used only in construction, it clears the history.
      */
@@ -312,7 +321,7 @@ impl BufferState {
 
         // TODO optimise
         let mut cursors = self.text().cursor_set.clone();
-        let (_diff_len_chars, any_change) = apply_cem(cem.clone(), &mut cursors, self, page_height as usize, clipboard);
+        let (_diff_len_chars, any_change) = _apply_cem(cem.clone(), &mut cursors, self, page_height as usize, clipboard);
 
         //undo/redo invalidates cursors copy, so I need to watch for those
         match cem {

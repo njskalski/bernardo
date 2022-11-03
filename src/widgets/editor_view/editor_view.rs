@@ -3,7 +3,6 @@ use std::rc::Rc;
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
-use crate::subwidget;
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
@@ -22,6 +21,7 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::search_pattern::SearchPattern;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::subwidget;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::navcomp_group::NavCompGroupRef;
@@ -234,7 +234,7 @@ impl EditorView {
     }
 
     fn hit_find_once(&mut self) -> bool {
-        let phrase = self.find_box.get_text().to_string();
+        let phrase = self.find_box.get_buffer().to_string();
         match self.editor.internal_mut().find_once(&phrase) {
             Ok(changed) => changed,
             Err(_e) => {
@@ -260,7 +260,7 @@ impl EditorView {
 
         let curr_text = self.editor.internal().buffer().text();
         if curr_text.cursor_set.is_single() && curr_text.do_cursors_match_regex(&phrase) {
-            let with_what = self.replace_box.get_text().to_string();
+            let with_what = self.replace_box.get_buffer().to_string();
             let page_height = self.editor.internal().page_height() as usize;
             let bf = self.editor.internal_mut().buffer_mut();
             bf.apply_cem(

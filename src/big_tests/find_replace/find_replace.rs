@@ -164,7 +164,5 @@ fn actual_replace() {
         ).is_some()
     }));
 
-    full_setup.screenshot();
-
     full_setup.finish();
 }
