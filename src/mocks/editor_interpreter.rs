@@ -254,17 +254,17 @@ impl<'a> EditorInterpreter<'a> {
                             }
                         }
 
-                        if Some(x) == last {
-                            if first == last {
-                                //nothing
-                            } else {
-                                result += if last == anchor { "]" } else { ")" };
-                            }
+                        if first != last && Some(x) == last && Some(x) == anchor {
+                            result += "]";
                         }
 
                         result += grapheme;
 
-                        if grapheme == "⏎" {
+                        if first != last && Some(x) == last && Some(x) != anchor {
+                            result += ")";
+                        }
+
+                        if grapheme == "⏎" || grapheme == "⇱" {
                             break 'line_loop_2;
                         }
                     }
@@ -272,7 +272,7 @@ impl<'a> EditorInterpreter<'a> {
                 }
             }
 
-            debug!("res [{}]", &result);
+            // debug!("res [{}]", &result);
 
             line_idx.contents.text = result;
             line_idx

@@ -1,0 +1,1 @@
+This test env is a base for test "whether dropping cursor still works"

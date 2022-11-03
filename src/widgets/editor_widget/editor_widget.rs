@@ -892,9 +892,6 @@ impl Widget for EditorWidget {
             (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.request_completions => {
                 EditorWidgetMsg::RequestCompletions.someboxed()
             }
-            (&EditorState::Editing, InputEvent::KeyInput(key)) if !key.modifiers.ctrl && key_to_edit_msg(key).is_some() => {
-                EditorWidgetMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
-            }
             // TODO change to if let Some() when it's stabilized
             (&EditorState::DroppingCursor { .. }, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
                 let cem = key_to_edit_msg(key).unwrap();
@@ -906,6 +903,9 @@ impl Widget for EditorWidget {
             }
             (&EditorState::Editing, InputEvent::EverythingBarTrigger) => {
                 EditorWidgetMsg::RequestContextBar.someboxed()
+            }
+            (&EditorState::Editing, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
+                EditorWidgetMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
             }
             _ => None,
         };

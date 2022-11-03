@@ -1,3 +1,5 @@
+use log::debug;
+
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::mock_navcomp_provider::MockCompletionMatcher;
@@ -67,6 +69,7 @@ fn completion_test_1() {
         f.get_first_editor().unwrap()
             .get_visible_coded_cursor_lines().next()
             .map(|c| {
+                debug!("c [{:?}]", c.contents.text);
                 c.contents.text == "path.into_boxed_path#⏎"
             }).unwrap_or(false)));
 
