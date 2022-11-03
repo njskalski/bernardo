@@ -8,7 +8,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
-use crate::primitives::common_edit_msgs::{_apply_cem, CommonEditMsg, key_to_edit_msg};
+use crate::primitives::common_edit_msgs::{CommonEditMsg, key_to_edit_msg};
 use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::helpers;
 use crate::primitives::size_constraint::SizeConstraint;
@@ -37,7 +37,6 @@ pub struct EditBoxWidget {
     // miss is trying to make illegal move. Like backspace on empty, left on leftmost etc.
     on_miss: Option<WidgetAction<EditBoxWidget>>,
     buffer: BufferState,
-    cursor_set: CursorSet,
 
     max_width_op: Option<u16>,
 
@@ -52,7 +51,6 @@ impl EditBoxWidget {
     pub fn new() -> Self {
         EditBoxWidget {
             id: get_new_widget_id(),
-            cursor_set: CursorSet::single(),
             enabled: true,
             buffer: BufferState::simplified_single_line(),
             on_hit: None,
@@ -118,16 +116,16 @@ impl EditBoxWidget {
 
     pub fn set_text<'a, T: AsRef<str>>(&mut self, text: T) {
         self.buffer = BufferState::simplified_single_line().with_text(text);
-        self.cursor_set.move_end(&self.buffer, false);
     }
 
     pub fn set_cursor_end(&mut self) {
-        self.cursor_set.move_end(&self.buffer, false);
+        let mut cursor_set = CursorSet::single();
+        cursor_set.move_end(&self.buffer, false);
+        self.buffer.text_mut().cursor_set = cursor_set;
     }
 
     pub fn clear(&mut self) {
         self.buffer = BufferState::simplified_single_line();
-        self.cursor_set = CursorSet::single();
     }
 
     fn event_changed(&self) -> Option<Box<dyn AnyMsg>> {
@@ -194,8 +192,8 @@ impl Widget for EditBoxWidget {
                             // the 4 cases below are designed to NOT consume the event in case it cannot be used.
                             CommonEditMsg::CursorUp { selecting: _ } |
                             CommonEditMsg::CursorDown { selecting: _ } => None,
-                            CommonEditMsg::CursorLeft { selecting: _ } if self.cursor_set.as_single().map(|c| c.a == 0).unwrap_or(false) => None,
-                            CommonEditMsg::CursorRight { selecting: _ } if self.cursor_set.as_single()
+                            CommonEditMsg::CursorLeft { selecting: _ } if self.buffer.text().cursor_set.as_single().map(|c| c.a == 0).unwrap_or(false) => None,
+                            CommonEditMsg::CursorRight { selecting: _ } if self.buffer.text().cursor_set.as_single()
                                 .map(|c| c.a > self.buffer.len_chars()).unwrap_or(false) => None,
                             _ => Some(Box::new(EditBoxWidgetMsg::CommonEditMsg(cem))),
                         }
@@ -218,7 +216,8 @@ impl Widget for EditBoxWidget {
         return match our_msg.unwrap() {
             EditBoxWidgetMsg::Hit => self.event_hit(),
             EditBoxWidgetMsg::CommonEditMsg(cem) => {
-                if _apply_cem(cem.clone(), &mut self.cursor_set, &mut self.buffer, 1, None).1 {
+                // TODO add clipboard
+                if self.buffer.apply_cem(cem.clone(), 1, None) {
                     self.event_changed()
                 } else {
                     None
@@ -243,7 +242,7 @@ impl Widget for EditBoxWidget {
 
         let mut x: usize = 0;
         for (char_idx, g) in self.buffer.to_string().graphemes(true).enumerate() {
-            let style = match theme.cursor_background(self.cursor_set.get_cursor_status_for_char(char_idx)) {
+            let style = match theme.cursor_background(self.buffer.text().cursor_set.get_cursor_status_for_char(char_idx)) {
                 Some(bg) => {
                     primary_style.with_background(if focused { bg } else { bg.half() })
                 }
@@ -258,7 +257,7 @@ impl Widget for EditBoxWidget {
         }
         // one character after
         {
-            let style = match theme.cursor_background(self.cursor_set.get_cursor_status_for_char(self.buffer.len_chars())) {
+            let style = match theme.cursor_background(self.buffer.text().cursor_set.get_cursor_status_for_char(self.buffer.len_chars())) {
                 Some(bg) => {
                     primary_style.with_background(if focused { bg } else { bg.half() })
                 }
@@ -273,7 +272,7 @@ impl Widget for EditBoxWidget {
 
         // if cursor is after the text, we need to add an offset, so the background does not
         // overwrite cursor style.
-        let cursor_offset: u16 = self.cursor_set.max_cursor_pos() as u16 + 1; //TODO
+        let cursor_offset: u16 = self.buffer.text().cursor_set.max_cursor_pos() as u16 + 1; //TODO
         let text_width = self.buffer.to_string().width() as u16; //TODO
         let end_of_text = cursor_offset.max(text_width);
 

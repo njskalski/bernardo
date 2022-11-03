@@ -21,13 +21,14 @@ use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
 
+// TODO it would use a method "would_accept_cem" to be used in "on_input" but before "update"
+
 #[derive(Clone, Debug, Default)]
 pub struct Text {
     pub rope: Rope,
     pub parsing: Option<ParsingTuple>,
     pub cursor_set: CursorSet,
 }
-
 
 impl Text {
     pub fn with_rope(self, rope: Rope) -> Self {

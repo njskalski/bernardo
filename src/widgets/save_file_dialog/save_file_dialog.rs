@@ -159,6 +159,7 @@ impl SaveFileDialogWidget {
 
         if let Some(file) = file {
             self.edit_box.set_text(file.label().as_ref());
+            self.edit_box.set_cursor_end();
             changed = true;
         }
 
