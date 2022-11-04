@@ -7,7 +7,7 @@ use std::sync::{RwLock, RwLockWriteGuard};
 
 use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error};
-use lsp_types::{CompletionResponse, CompletionTextEdit, DocumentSymbolResponse, Location, Position, SymbolKind};
+use lsp_types::{CompletionResponse, CompletionTextEdit, DocumentSymbolResponse, Location, Position, SymbolKind, TextEdit};
 use lsp_types::request::{DocumentSymbolRequest, Request};
 
 use crate::fs::path::SPath;
@@ -19,7 +19,7 @@ use crate::lsp_client::promise::LSPPromise;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
-use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider, NavCompSymbol, StupidSubstituteMessage, SymbolContextActionsPromise, SymbolPromise, SymbolType};
+use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, StupidSubstituteMessage, SymbolContextActionsPromise, SymbolPromise, SymbolType};
 
 /*
 TODO I am silently ignoring errors here. I guess that if NavComp fails it should get re-started.
@@ -223,13 +223,53 @@ impl NavCompProvider for NavCompProviderLsp {
         }
     }
 
-    fn todo_reformat(&self, path: &SPath) -> Option<Vec<StupidSubstituteMessage>> {
-        // self.get_url_and_lock(path).map(|(url, mut lock)| {
-        //     lock.text_document_formatting(url).map(|c| {
-        //         c.
-        //     })
-        // })
-        todo!()
+    fn todo_reformat(&self, path: &SPath) -> Option<FormattingPromise> {
+        let url = match path.to_url() {
+            Ok(url) => url,
+            Err(e) => {
+                error!("failed to convert spath [{}] to url", path);
+                return None;
+            }
+        };
+
+        if let Ok(mut lock) = self.lsp.try_write() {
+            match lock.text_document_formatting(url) {
+                Ok(resp) => {
+                    let new_promise = resp.map(|response| {
+                        match response {
+                            None => {
+                                None
+                            }
+                            Some(vte) => {
+                                let stupid_edits: Vec<StupidSubstituteMessage> = vte.into_iter().map(|te| {
+                                    StupidSubstituteMessage {
+                                        substitute: te.new_text,
+                                        stupid_range: (StupidCursor {
+                                            char_idx: te.range.start.character,
+                                            line: te.range.start.line,
+                                        }, StupidCursor {
+                                            char_idx: te.range.end.character,
+                                            line: te.range.end.line,
+                                        }),
+                                    }
+                                }).collect();
+
+                                Some(stupid_edits)
+                            }
+                        }
+                    });
+
+                    Some(Box::new(new_promise))
+                }
+                Err(e) => {
+                    self.eat_write_error(e);
+                    None
+                }
+            }
+        } else {
+            error!("failed acquiring lock");
+            None
+        }
     }
 
     fn file_closed(&self, path: &SPath) {

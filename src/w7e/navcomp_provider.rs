@@ -38,6 +38,7 @@ pub struct Completion {
 }
 
 pub type CompletionsPromise = Box<dyn Promise<Vec<Completion>> + 'static>;
+pub type FormattingPromise = Box<dyn Promise<Option<Vec<StupidSubstituteMessage>>> + 'static>;
 
 // Currently these map LSP types 1:1, but this might change. Most importantly I have a feeling I
 //  might prefer to use tree-sitter symbols instead.
@@ -123,7 +124,7 @@ pub trait NavCompProvider: Debug {
     missing items:
     - formatting non-saved files
      */
-    fn todo_reformat(&self, path: &SPath) -> Option<Vec<StupidSubstituteMessage>>;
+    fn todo_reformat(&self, path: &SPath) -> Option<FormattingPromise>;
 
     fn file_closed(&self, path: &SPath);
 
