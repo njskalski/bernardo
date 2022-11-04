@@ -10,8 +10,8 @@ use std::thread::JoinHandle;
 
 use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error, warn};
-use lsp_types::{CompletionContext, CompletionTriggerKind, Position, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentPositionParams, Url, VersionedTextDocumentIdentifier};
-use lsp_types::request::{Completion, DocumentSymbolRequest};
+use lsp_types::{CompletionContext, CompletionTriggerKind, FormattingOptions, Position, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentPositionParams, Url, VersionedTextDocumentIdentifier};
+use lsp_types::request::{Completion, DocumentSymbolRequest, Formatting};
 
 use crate::lsp_client::debug_helpers::lsp_debug_save;
 use crate::lsp_client::lsp_io_error::LspIOError;
@@ -55,6 +55,8 @@ pub struct LspWrapper {
     reader_handle: JoinHandle<Result<(), LspReadError>>,
     logger_handle: JoinHandle<Result<(), ()>>,
     notification_reader_handle: JoinHandle<Result<(), ()>>,
+
+    error_sink: Sender<LspReadError>,
 }
 
 // pub type LspWrapperRef = Arc<RwLock<LspWrapper>>;
@@ -64,9 +66,12 @@ impl LspWrapper {
     This spawns a reader thread that awaits server's stdout/stderr and pipes messages.
 
      */
+    // TODO make result
     pub fn new(lsp_path: PathBuf,
                workspace_root: PathBuf,
-               tick_sender: NavCompTickSender) -> Option<LspWrapper> {
+               tick_sender: NavCompTickSender,
+               error_sink: Sender<LspReadError>,
+    ) -> Option<LspWrapper> {
         debug!("starting LspWrapper for directory {:?}", &workspace_root);
         let mut child = process::Command::new(lsp_path.as_os_str())
             // .args(&["--cli"])
@@ -140,12 +145,23 @@ impl LspWrapper {
                 reader_handle,
                 logger_handle,
                 notification_reader_handle,
-
+                error_sink,
             }
         )
     }
 
-    fn send_message<R: lsp_types::request::Request>(&mut self, params: R::Params) -> Result<LSPPromise<R>, LspIOError> where <R as lsp_types::request::Request>::Result: std::marker::Send {
+    fn get_formatting_options(&self) -> lsp_types::FormattingOptions {
+        FormattingOptions {
+            tab_size: 4,
+            insert_spaces: true,
+            properties: Default::default(),
+            trim_trailing_whitespace: Some(true),
+            insert_final_newline: Some(true),
+            trim_final_newlines: Some(true),
+        }
+    }
+
+    fn send_message<R: lsp_types::request::Request>(&mut self, params: R::Params) -> Result<LSPPromise<R>, LspWriteError> where <R as lsp_types::request::Request>::Result: std::marker::Send {
         let new_id = format!("{}", self.curr_id);
         self.curr_id += 1;
 
@@ -163,9 +179,9 @@ impl LspWrapper {
 
         if let Some(stdin) = self.child.stdin.as_mut() {
             internal_send_request::<R, _>(stdin, new_id.clone(), params)?;
-            Ok(LSPPromise::<R>::new(receiver))
+            Ok(LSPPromise::<R>::new(receiver, self.error_sink.clone()))
         } else {
-            Err(LspIOError::Write(LspWriteError::BrokenPipe.into()))
+            Err(LspWriteError::BrokenPipe)
         }
     }
 
@@ -297,6 +313,18 @@ impl LspWrapper {
         )
     }
 
+    pub fn text_document_formatting(&mut self, url: Url) -> Result<LSPPromise<Formatting>, LspWriteError> {
+        self.send_message::<lsp_types::request::Formatting>(
+            lsp_types::DocumentFormattingParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url
+                },
+                options: self.get_formatting_options(),
+                work_done_progress_params: Default::default(),
+            }
+        )
+    }
+
     /*
     This is a non-incremental variant of text_document_did_change
      */
@@ -349,7 +377,7 @@ impl LspWrapper {
                                     '.' or '::' or other thing like that
                                      */
                                     trigger_character: Option<String>,
-    ) -> Result<LSPPromise<lsp_types::request::Completion>, LspIOError> {
+    ) -> Result<LSPPromise<lsp_types::request::Completion>, LspWriteError> {
         self.send_message::<lsp_types::request::Completion>(
             lsp_types::CompletionParams {
                 text_document_position: TextDocumentPositionParams {
@@ -376,7 +404,7 @@ impl LspWrapper {
     pub fn text_document_document_symbol(&mut self,
                                          url: Url,
                                          cursor: StupidCursor,
-    ) -> Result<LSPPromise<DocumentSymbolRequest>, LspIOError> {
+    ) -> Result<LSPPromise<DocumentSymbolRequest>, LspWriteError> {
         self.send_message::<DocumentSymbolRequest>(
             lsp_types::DocumentSymbolParams {
                 text_document: TextDocumentIdentifier { uri: url },

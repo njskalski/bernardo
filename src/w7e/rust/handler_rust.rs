@@ -54,6 +54,8 @@ impl RustHandler {
         if !ff.is_dir() {
             return Err(HandlerLoadError::NotAProject);
         }
+
+        let workspace_root = ff.absolute_path();
         let lsp_path = config.global.get_rust_lsp_path().ok_or(HandlerLoadError::LspNotFound)?;
 
         let cargo_file = ff
@@ -71,24 +73,8 @@ impl RustHandler {
 
         #[cfg(not(test))]
         {
-            if let Some(mut lsp) = LspWrapper::new(lsp_path,
-                                                   ff.absolute_path(),
-                                                   tick_sender.clone(),
-            ) {
-                // TODO reintroduce timeout?
-                debug!("initializing lsp");
-                match lsp.initialize() {
-                    Ok(_init_result) => {
-                        debug!("lsp initialized successfully.");
-
-                        navcomp_op = Some(
-                            Arc::new(Box::new(NavCompProviderLsp::new(lsp, tick_sender.clone())) as Box<dyn NavCompProvider>)
-                        );
-                    }
-                    Err(e) => {
-                        error!("Lsp init failed: {:?}", e);
-                    }
-                }
+            if let Some(navcomp_lsp) = NavCompProviderLsp::new(lsp_path, workspace_root, tick_sender) {
+                navcomp_op = Some(Arc::new(Box::new(navcomp_lsp)));
             } else {
                 error!("LspWrapper construction failed.")
             }

@@ -1,23 +1,25 @@
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::ops::Range;
+use std::path::PathBuf;
 use std::sync::{RwLock, RwLockWriteGuard};
 
 use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error};
 use lsp_types::{CompletionResponse, CompletionTextEdit, DocumentSymbolResponse, Location, Position, SymbolKind};
-use lsp_types::request::DocumentSymbolRequest;
+use lsp_types::request::{DocumentSymbolRequest, Request};
 
 use crate::fs::path::SPath;
 use crate::lsp_client::lsp_client::LspWrapper;
 use crate::lsp_client::lsp_io_error::LspIOError;
 use crate::lsp_client::lsp_read_error::LspReadError;
+use crate::lsp_client::lsp_write_error::LspWriteError;
 use crate::lsp_client::promise::LSPPromise;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
-use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider, NavCompSymbol, SymbolContextActionsPromise, SymbolPromise, SymbolType};
+use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, NavCompProvider, NavCompSymbol, StupidSubstituteMessage, SymbolContextActionsPromise, SymbolPromise, SymbolType};
 
 /*
 TODO I am silently ignoring errors here. I guess that if NavComp fails it should get re-started.
@@ -40,23 +42,43 @@ pub enum LspError {
 }
 
 pub struct NavCompProviderLsp {
-    // TODO probably a RefCell would suffice
     lsp: RwLock<LspWrapper>,
     todo_tick_sender: NavCompTickSender,
     triggers: Vec<String>,
+    read_error_channel: (Sender<LspReadError>, Receiver<LspReadError>),
 
-    error_channel: (Sender<LspError>, Receiver<LspError>),
-
+    //
+    crashed: Cell<bool>,
 }
 
 impl NavCompProviderLsp {
-    pub fn new(lsp: LspWrapper, tick_sender: NavCompTickSender) -> Self {
-        NavCompProviderLsp {
-            lsp: RwLock::new(lsp),
-            todo_tick_sender: tick_sender,
-            // TODO this will get lang specific
-            triggers: vec![".".to_string(), "::".to_string()],
-            error_channel: crossbeam_channel::unbounded(),
+    // TODO add errors
+    pub fn new(
+        lsp_path: PathBuf,
+        workspace_root: PathBuf,
+        tick_sender: NavCompTickSender,
+    ) -> Option<Self> {
+        let error_channel = crossbeam_channel::unbounded::<LspReadError>();
+
+        if let Some(mut lsp) = LspWrapper::new(lsp_path,
+                                               workspace_root, tick_sender.clone(), error_channel.0.clone()) {
+            if lsp.initialize().is_ok() {
+                Some(
+                    NavCompProviderLsp {
+                        lsp: RwLock::new(lsp),
+                        todo_tick_sender: tick_sender,
+                        // TODO this will get lang specific
+                        triggers: vec![".".to_string(), "::".to_string()],
+                        read_error_channel: error_channel,
+                        crashed: Cell::new(false),
+                    }
+                )
+            } else {
+                error!("swallowed lsp init error");
+                None
+            }
+        } else {
+            None
         }
     }
 
@@ -80,11 +102,10 @@ impl NavCompProviderLsp {
         }
     }
 
-    // pub fn map_err<R: lsp_types::request::Request>(promise: LSPPromise<R>, error_sink: Sender<LspError>) -> Box<dyn Promise<Option<R::Result>>>{
-    //     promise.map(|result| {
-    //         match result { }
-    //     })
-    // }
+    pub fn eat_write_error(&self, error: LspWriteError) {
+        error!("LSP: marking as crashed, failed write: {:?}", error);
+        self.crashed.set(true);
+    }
 }
 
 
@@ -102,34 +123,45 @@ impl NavCompProvider for NavCompProviderLsp {
     }
 
     fn completions(&self, path: SPath, cursor: StupidCursor, _trigger: Option<String>) -> Option<CompletionsPromise> {
-        let error_sink = self.error_channel.0.clone();
+        let url = match path.to_url() {
+            Ok(url) => url,
+            Err(e) => {
+                error!("failed to convert spath [{}] to url", path);
+                return None;
+            }
+        };
 
-        self.get_url_and_lock(&path).map(move |(url, mut lock)| {
+        if let Ok(mut lock) = self.lsp.try_write() {
             match lock.text_document_completion(url, cursor, true /*TODO*/, None /*TODO*/) {
-                Err(e) => {
-                    if error_sink.try_send(LspError::IOError(e)).is_err() {
-                        error!("failed sending lsp error to sink")
-                    };
-                    None
-                }
-                Ok(resp) => Some(Box::new(resp.map(|cop| -> Vec<Completion> {
-                    match cop {
-                        None => vec![],
-                        Some(comps) => {
-                            match comps {
-                                CompletionResponse::Array(arr) => {
-                                    arr.into_iter().map(translate_completion_item).collect()
-                                }
-                                CompletionResponse::List(list) => {
-                                    // TODO is complete ignored
-                                    list.items.into_iter().map(translate_completion_item).collect()
+                Ok(resp) => {
+                    let new_promise = resp.map(|cop| {
+                        match cop {
+                            None => vec![],
+                            Some(comps) => {
+                                match comps {
+                                    CompletionResponse::Array(arr) => {
+                                        arr.into_iter().map(translate_completion_item).collect()
+                                    }
+                                    CompletionResponse::List(list) => {
+                                        // TODO is complete ignored
+                                        list.items.into_iter().map(translate_completion_item).collect()
+                                    }
                                 }
                             }
                         }
-                    }
-                })) as Box<dyn Promise<Vec<Completion>> + 'static>),
+                    });
+
+                    Some(Box::new(new_promise))
+                }
+                Err(e) => {
+                    self.eat_write_error(e);
+                    None
+                }
             }
-        }).flatten()
+        } else {
+            error!("failed acquiring lock");
+            None
+        }
     }
 
     fn completion_triggers(&self, _path: &SPath) -> &Vec<String> {
@@ -141,20 +173,19 @@ impl NavCompProvider for NavCompProviderLsp {
     }
 
     fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
-        let error_sink = self.error_channel.0.clone();
+        let url = match path.to_url() {
+            Ok(url) => url,
+            Err(e) => {
+                error!("failed to convert spath [{}] to url", path);
+                return None;
+            }
+        };
 
-        self.get_url_and_lock(path).map(|(url, mut lock)| {
+        if let Ok(mut lock) = self.lsp.try_write() {
             match lock.text_document_document_symbol(url, cursor) {
-                Err(e) => {
-                    if error_sink.try_send(LspError::IOError(e)).is_err() {
-                        error!("failed sending lsp error to sink")
-                    };
-                    None
-                }
-                Ok(p) => {
-                    Some(Box::new(p.map(|response| {
+                Ok(resp) => {
+                    let new_promise = resp.map(|response| {
                         let mut symbol_op: Option<NavCompSymbol> = None;
-
                         response.map(|symbol| {
                             match symbol {
                                 DocumentSymbolResponse::Flat(v) => {
@@ -177,10 +208,28 @@ impl NavCompProvider for NavCompProviderLsp {
                             }
                         });
                         symbol_op
-                    })) as Box<dyn Promise<Option<NavCompSymbol>> + 'static>)
+                    });
+
+                    Some(Box::new(new_promise))
+                }
+                Err(e) => {
+                    self.eat_write_error(e);
+                    None
                 }
             }
-        }).flatten()
+        } else {
+            error!("failed acquiring lock");
+            None
+        }
+    }
+
+    fn todo_reformat(&self, path: &SPath) -> Option<Vec<StupidSubstituteMessage>> {
+        // self.get_url_and_lock(path).map(|(url, mut lock)| {
+        //     lock.text_document_formatting(url).map(|c| {
+        //         c.
+        //     })
+        // })
+        todo!()
     }
 
     fn file_closed(&self, path: &SPath) {

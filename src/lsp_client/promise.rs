@@ -4,6 +4,7 @@ use crossbeam_channel::{Receiver, Sender, TryRecvError};
 use log::{debug, error, warn};
 use lsp_types::request::Request;
 
+use crate::lsp_client::lsp_io_error::LspIOError;
 use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::promise::promise::{Promise, PromiseState, UpdateResult};
 use crate::w7e::navcomp_provider_lsp::LspError;
@@ -17,7 +18,7 @@ pub struct LSPPromise<R: Request> {
 }
 
 impl<R: Request> LSPPromise<R> {
-    pub fn new(receiver: Receiver<jsonrpc_core::Value>) -> Self {
+    pub fn new(receiver: Receiver<jsonrpc_core::Value>, error_sink: Sender<LspReadError>) -> Self {
         LSPPromise {
             receiver,
             item: None,
@@ -131,13 +132,11 @@ impl<R: Request> Promise<R::Result> for LSPPromise<R> {
         self.item.as_ref()
     }
 
-
     fn take(mut self) -> Option<R::Result> {
         self.update();
         self.item.take()
     }
 }
-
 
 // TODO remove!
 impl<R: Request> Debug for LSPPromise<R> {

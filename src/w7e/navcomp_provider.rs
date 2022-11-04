@@ -78,6 +78,12 @@ pub struct NavCompSymbol {
     pub stupid_range: (StupidCursor, StupidCursor),
 }
 
+#[derive(Debug, Clone)]
+pub struct StupidSubstituteMessage {
+    pub substitute: String,
+    pub stupid_range: (StupidCursor, StupidCursor),
+}
+
 /*
 This is super work in progress, I added some top of the head options to "smoke out" what they imply.
  */
@@ -112,6 +118,12 @@ pub trait NavCompProvider: Debug {
     fn todo_get_context_options(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolContextActionsPromise>;
 
     fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise>;
+
+    /*
+    missing items:
+    - formatting non-saved files
+     */
+    fn todo_reformat(&self, path: &SPath) -> Option<Vec<StupidSubstituteMessage>>;
 
     fn file_closed(&self, path: &SPath);
 
