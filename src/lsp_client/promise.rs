@@ -13,8 +13,8 @@ pub struct LSPPromise<R: Request> {
     //Invariant: never item and error are set in the same time. They can be both empty though.
     receiver: Receiver<jsonrpc_core::Value>,
     item: Option<R::Result>,
-    // Error can occur twofold: first, pipe was broken. Second, deserialization failed. Both of these result in broken promise.
     err: Option<LspReadError>,
+    error_sink: Sender<LspReadError>,
 }
 
 impl<R: Request> LSPPromise<R> {
@@ -23,6 +23,7 @@ impl<R: Request> LSPPromise<R> {
             receiver,
             item: None,
             err: None,
+            error_sink,
         }
     }
 
@@ -35,7 +36,10 @@ impl<R: Request> LSPPromise<R> {
             }
             Err(err) => {
                 error!("failed deserializing to {}", std::any::type_name::<R::Result>());
-                self.err = Some(err.into());
+                self.err = Some(LspReadError::DeError(err.to_string()));
+                if let Err(e) = self.error_sink.try_send(self.err.as_ref().unwrap().clone()) {
+                    error!("failed sending LSP Error [{:?}] to sink, due [{:?}]", self.err, e);
+                }
                 PromiseState::Broken
             }
         }
@@ -112,6 +116,10 @@ impl<R: Request> Promise<R::Result> for LSPPromise<R> {
                         TryRecvError::Disconnected => {
                             warn!("promise {:?} broken", self);
                             self.err = Some(LspReadError::BrokenChannel);
+                            if let Err(e) = self.error_sink.try_send(self.err.as_ref().unwrap().clone()) {
+                                error!("failed sending LSP Error [{:?}] to sink, due [{:?}]", self.err, e);
+                            }
+                            
                             UpdateResult {
                                 state: PromiseState::Unresolved,
                                 has_changed: true,
