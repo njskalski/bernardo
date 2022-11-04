@@ -206,8 +206,6 @@ impl<'a> EditorInterpreter<'a> {
 
         // This does not support multi-column chars now
         self.get_visible_cursor_lines().map(move |mut line_idx| {
-            let mut prev_cell_color: Option<Color> = None;
-
             let mut first: Option<u16> = None;
             let mut last: Option<u16> = None;
             let mut anchor: Option<u16> = None;

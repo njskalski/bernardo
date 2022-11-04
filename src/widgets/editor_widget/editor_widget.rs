@@ -333,11 +333,6 @@ impl EditorWidget {
             Some(local) => local,
         };
 
-        if cursor_screen_pos.x < 1 {
-            debug!("too close to left edge");
-            return None;
-        }
-
         // if cursor is in upper part, we draw below cursor, otherwise above it
         let above = cursor_screen_pos.y > (last_size.visible_hint().size.y / 2);
         // TODO underflows
