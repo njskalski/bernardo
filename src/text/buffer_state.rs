@@ -20,6 +20,8 @@ use crate::text::text_buffer::{LinesIter, TextBuffer};
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
+use crate::unpack_or;
+use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 
 // TODO it would use a method "would_accept_cem" to be used in "on_input" but before "update"
 
@@ -288,7 +290,11 @@ impl BufferState {
         self.lang_id = lang_id;
     }
 
-    pub fn apply_cem(&mut self, mut cem: CommonEditMsg, page_height: usize, clipboard: Option<&ClipboardRef>) -> bool {
+    pub fn apply_cem(&mut self,
+                     mut cem: CommonEditMsg,
+                     page_height: usize,
+                     clipboard: Option<&ClipboardRef>,
+    ) -> bool {
         if self.subtype == BufferType::SingleLine {
             if page_height != 1 {
                 error!("page_height required to be 1 on SingleLine buffers!");
@@ -313,12 +319,14 @@ impl BufferState {
         /*
         TODO the fact that Undo/Redo requires special handling here a lot suggests that maybe these shouldn't be CEMs. But it works now.
          */
+
         match cem {
             CommonEditMsg::Undo | CommonEditMsg::Redo => {}
             _ => {
                 self.set_milestone();
             }
         }
+
 
         // TODO optimise
         let mut cursors = self.text().cursor_set.clone();
@@ -401,6 +409,65 @@ impl BufferState {
             chunks: self.chunks(),
             curr_chunk: None,
         }
+    }
+
+    pub fn apply_stupid_substitute_message(&mut self,
+                                           stupid_message: StupidSubstituteMessage,
+                                           set_milestone: bool) -> bool {
+        if !self.text().cursor_set.are_simple() {
+            error!("refuse to apply stupid_edit_to_cem: cursors are not simple");
+            return false;
+        }
+
+        // I always set the milestone, the setting above determines if I strip it or not.
+        self.set_milestone();
+
+        let begin = unpack_or!(stupid_message.stupid_range.0.to_real_cursor(self), false, "failed to cast (1) to real cursor");
+        let end = unpack_or!(stupid_message.stupid_range.1.to_real_cursor(self), false, "failed to cast (2) to real cursor");
+
+        // removing old item
+        if stupid_message.stupid_range.0 != stupid_message.stupid_range.1 {
+            if self.text_mut().rope.try_remove(begin.a..end.a).is_err() {
+                error!("failed removing range [{}..{})", begin.a, end.a);
+                self.strip_milestone();
+                return false;
+            }
+
+            let mut cursors = &mut self.text_mut().cursor_set;
+
+            // removing cursors that were inside
+            let mut to_remove: Vec<usize> = Vec::new();
+            for c in cursors.iter() {
+                if begin.a <= c.a && c.a < end.a {
+                    to_remove.push(c.a);
+                }
+            }
+            for ca in to_remove.into_iter() {
+                let paranoia = cursors.remove_by_anchor(ca);
+                debug_assert!(paranoia);
+            }
+            let stride = end.a - begin.a;
+
+            for mut c in cursors.iter_mut() {
+                if c.a >= end.a {
+                    c.a -= stride;
+                }
+            }
+        }
+
+        if !stupid_message.substitute.is_empty() {
+            if self.text_mut().rope.try_insert(begin.a, stupid_message.substitute.as_str()).is_err() {
+                error!("failed to insert to rope");
+                self.strip_milestone();
+                return false;
+            }
+        }
+
+        if !set_milestone {
+            self.strip_milestone();
+        }
+
+        true
     }
 }
 

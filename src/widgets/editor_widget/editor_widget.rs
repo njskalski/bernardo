@@ -27,10 +27,11 @@ use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::primitives::xy::XY;
-use crate::promise::promise::Promise;
+use crate::promise::promise::{Promise, PromiseState};
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::unpack_or;
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_provider::{CompletionAction, NavCompSymbol};
 use crate::widget::any_msg::{AnyMsg, AsAny};
@@ -522,6 +523,28 @@ impl EditorWidget {
         }
     }
 
+    pub fn reformat(&mut self) -> bool {
+        let navcomp = unpack_or!(self.navcomp.as_ref(), false, "can't reformat: navcomp not available");
+        let path = unpack_or!(self.buffer.get_path(), false , "can't reformat: unsaved file");
+        let mut promise = unpack_or!(navcomp.todo_reformat(path), false, "can't reformat: no promise for reformat");
+
+        if !self.buffer.text().cursor_set.are_simple() {
+            warn!("can't format: unimplemented for non-simple cursors, sorry");
+            return false;
+        }
+
+        if promise.wait() == PromiseState::Ready {
+            // invariant : promise ready => take.is_some()
+            let edits = unpack_or!(promise.read().unwrap(), false, "can't reformat: promise empty");
+
+
+            true
+        } else {
+            warn!("reformat promise broken");
+            false
+        }
+    }
+
     fn pos_to_cursor(&self, theme: &Theme, char_idx: usize) -> Option<Color> {
         match &self.state {
             EditorState::DroppingCursor { special_cursor } => {
@@ -789,7 +812,8 @@ impl EditorWidget {
             };
             self.buffer.apply_cem(CommonEditMsg::Block(to_insert.clone()),
                                   self.page_height() as usize,
-                                  Some(&self.clipboard)); // TODO unnecessary clone
+                                  Some(&self.clipboard),
+            ); // TODO unnecessary clone
             self.close_hover();
 
             true
@@ -897,6 +921,9 @@ impl Widget for EditorWidget {
             (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.request_completions => {
                 EditorWidgetMsg::RequestCompletions.someboxed()
             }
+            (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.reformat => {
+                EditorWidgetMsg::Reformat.someboxed()
+            }
             // TODO change to if let Some() when it's stabilized
             (&EditorState::DroppingCursor { .. }, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
                 let cem = key_to_edit_msg(key).unwrap();
@@ -926,7 +953,11 @@ impl Widget for EditorWidget {
                 (&EditorState::Editing, EditorWidgetMsg::EditMsg(cem)) => {
                     let page_height = self.page_height();
                     // page_height as usize is safe, since page_height is u16 and usize is larger.
-                    let changed = self.buffer.apply_cem(cem.clone(), page_height as usize, Some(&self.clipboard));
+                    let changed = self.buffer.apply_cem(
+                        cem.clone(),
+                        page_height as usize,
+                        Some(&self.clipboard),
+                    );
 
                     // TODO this needs to happen only if CONTENTS changed, not if cursor positions changed
                     if changed {
@@ -1014,6 +1045,10 @@ impl Widget for EditorWidget {
                 }
                 (&EditorState::Editing, EditorWidgetMsg::RequestContextBar) => {
                     self.todo_request_context_bar();
+                    None
+                }
+                (&EditorState::Editing, EditorWidgetMsg::Reformat) => {
+                    self.reformat();
                     None
                 }
                 (editor_state, msg) => {

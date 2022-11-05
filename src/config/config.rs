@@ -61,6 +61,8 @@ pub struct Editor {
     pub replace: Key,
     pub close_find_replace: Key,
     pub request_completions: Key,
+
+    pub reformat: Key,
 }
 
 impl Default for Editor {
@@ -73,6 +75,9 @@ impl Default for Editor {
             replace: Keycode::Char('r').to_key().with_ctrl(),
             close_find_replace: Keycode::Esc.to_key(),
             request_completions: Keycode::Space.to_key().with_ctrl(),
+            // I know it's stupid, but at this point I am out of keys on under my left hand
+            //  normal people will use context options anyway
+            reformat: Keycode::Char('g').to_key().with_ctrl(),
         }
     }
 }

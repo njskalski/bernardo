@@ -24,6 +24,8 @@ pub enum EditorWidgetMsg {
     CompletionWidgetSelected(CompletionAction),
 
     RequestContextBar,
+
+    Reformat,
 }
 
 

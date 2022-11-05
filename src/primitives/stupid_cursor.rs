@@ -6,6 +6,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::primitives::cursor_set::Cursor;
 use crate::primitives::xy::XY;
 use crate::text::text_buffer::TextBuffer;
+use crate::unpack_or;
 
 /*
 This is a completely useless variant of cursor, that is used only because LSP uses it.
@@ -17,6 +18,8 @@ pub struct StupidCursor {
     pub char_idx: u32,
     pub line: u32,
 }
+
+// TODO fuzzy some test!
 
 impl StupidCursor {
     pub fn from_real_cursor(buffer: &dyn TextBuffer, cursor: &Cursor) -> Result<StupidCursor, ()> {
@@ -69,5 +72,27 @@ impl StupidCursor {
         }
 
         Some(XY::new(x, line_idx))
+    }
+
+    pub fn to_real_cursor(&self, buffer: &dyn TextBuffer) -> Option<Cursor> {
+        let line_begin_char = unpack_or!(buffer.line_to_char(self.line as usize), None, "can't cast stupid cursor to real cursor: not enough lines");
+        let candidate = line_begin_char + self.char_idx as usize;
+        if let Some(next_line_begin_char) = buffer.line_to_char((self.line + 1) as usize) {
+            // here the comparison is sharp, because "enter" is the last character of line, so next_line_begin_char is the first char of NEXT line (though it can be ENTER if NEXT line is blank)
+            if candidate < next_line_begin_char {
+                Some(Cursor::new(candidate))
+            } else {
+                debug!("can't cast stupid cursor to real cursor: not enough chars in given line");
+                None
+            }
+        } else {
+            // here we ALLOW character pointing to one-after-buffer
+            if candidate <= buffer.len_chars() {
+                Some(Cursor::new(candidate))
+            } else {
+                debug!("can't cast stupid cursor to real cursor: not enough chars in last line");
+                None
+            }
+        }
     }
 }

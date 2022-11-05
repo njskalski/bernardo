@@ -8,15 +8,6 @@ macro_rules! unpack_or {
             }
         }
     };
-    ($ee: expr, $msg:literal, $($arg:tt)+) => {
-    match $ee {
-        Some(item) => item,
-        None => {
-            log::log!(log::Level::Debug, $msg, $($arg)+);
-            return;
-        }
-    }
-   };
     ($ee: expr, $ret_val: expr) => {
         match $ee {
             Some(item) => item,
@@ -25,16 +16,33 @@ macro_rules! unpack_or {
             }
         }
     };
-    ($ee: expr, $ret_val: expr, $msg:literal, $($arg:tt)+) => {
+    ($ee: expr, $ret_val: expr, $msg:literal) => {
         match $ee {
             Some(item) => item,
             None => {
-                log::log!(log::Level::Debug, $msg, $($arg)+);
+                log::log!(log::Level::Debug, $msg);
                 return $ret_val;
             }
         }
     };
-
+    ($ee: expr, $ret_val: expr, $msg:literal, $($arg:tt)*) => {
+        match $ee {
+            Some(item) => item,
+            None => {
+                log::log!(log::Level::Debug, $msg, $($arg)*);
+                return $ret_val;
+            }
+        }
+    };
+    ($ee: expr, $msg:literal, $($arg:tt)*) => {
+        match $ee {
+            Some(item) => item,
+            None => {
+                log::log!(log::Level::Debug, $msg, $($arg)*);
+                return;
+            }
+        }
+    };
 }
 
 #[cfg(test)]
