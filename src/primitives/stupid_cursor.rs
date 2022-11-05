@@ -78,8 +78,8 @@ impl StupidCursor {
         let line_begin_char = unpack_or!(buffer.line_to_char(self.line as usize), None, "can't cast stupid cursor to real cursor: not enough lines");
         let candidate = line_begin_char + self.char_idx as usize;
         if let Some(next_line_begin_char) = buffer.line_to_char((self.line + 1) as usize) {
-            // here the comparison is sharp, because "enter" is the last character of line, so next_line_begin_char is the first char of NEXT line (though it can be ENTER if NEXT line is blank)
-            if candidate < next_line_begin_char {
+            // I don't know why it works, but it works. So maybe test it, but sharp inequality was failing.
+            if candidate <= next_line_begin_char {
                 Some(Cursor::new(candidate))
             } else {
                 debug!("can't cast stupid cursor to real cursor: not enough chars in given line");

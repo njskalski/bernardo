@@ -371,9 +371,9 @@ impl BufferState {
 
     // removes previous to last milestone, and moves last one to it's position.
     // used to chain multiple operations into a single milestone
-    fn reduce_milestone(&mut self) {
+    fn reduce_merge_milestone(&mut self) {
         debug_assert!(self.history_pos + 1 == self.history.len());
-        debug_assert!(self.history_pos >= 2);
+        debug_assert!(self.history_pos >= 1);
 
         self.history.remove(self.history_pos - 1);
         self.history_pos -= 1;
@@ -424,18 +424,39 @@ impl BufferState {
 
     // returns whether a change happened. Undoes changes on fail.
     // TODO fuzzy that invariant: false => unchanged
-    pub fn apply_stupid_substitute_message(&mut self,
-                                           stupid_message: &StupidSubstituteMessage,
-                                           set_milestone: bool) -> bool {
+    pub fn apply_stupid_substitute_messages(&mut self, stupid_messages: &Vec<StupidSubstituteMessage>) -> bool {
+        if stupid_messages.is_empty() {
+            warn!("calling apply_stupid_substitute_messages with empty list");
+            return false;
+        }
+
+        let mut res = false;
+
+        for msg in stupid_messages.iter() {
+            if self._apply_stupid_substitute_message(msg) {
+                self.reduce_merge_milestone();
+                res = true;
+            }
+        }
+
+        res
+    }
+
+
+    // returns whether a change happened. Undoes changes on fail.
+    // TODO fuzzy that invariant: false => unchanged
+    // TODO maybe, just maybe, these stupid messages should go to CEM, not sure. Because moving them out already made me forgot about updating navcomp and updating treesitter.
+    fn _apply_stupid_substitute_message(&mut self,
+                                        stupid_message: &StupidSubstituteMessage) -> bool {
         if !self.text().cursor_set.are_simple() {
             error!("refuse to apply stupid_edit_to_cem: cursors are not simple");
             return false;
         }
 
-        self.set_milestone();
-
         let begin = unpack_or!(stupid_message.stupid_range.0.to_real_cursor(self), false, "failed to cast (1) to real cursor");
         let end = unpack_or!(stupid_message.stupid_range.1.to_real_cursor(self), false, "failed to cast (2) to real cursor");
+
+        self.set_milestone();
 
         // removing old item
         if stupid_message.stupid_range.0 != stupid_message.stupid_range.1 {
@@ -465,6 +486,16 @@ impl BufferState {
                     c.a -= stride;
                 }
             }
+
+            // updating treesitter
+            let rope = self.text().rope.clone();
+            self.text_mut().parsing.as_mut().map_or_else(
+                || {
+                    debug!("failed to acquire parse_tuple 1");
+                },
+                |r| {
+                    r.update_parse_on_delete(&rope, begin.a, end.a);
+                });
         }
 
         if !stupid_message.substitute.is_empty() {
@@ -474,17 +505,23 @@ impl BufferState {
                 return false;
             }
 
-            let offset = stupid_message.substitute.width();
+            let char_len = stupid_message.substitute.graphemes(true).count();
+
+            let rope = self.text().rope.clone();
+            self.text_mut().parsing.as_mut().map_or_else(
+                || {
+                    debug!("failed to acquire parse_tuple 1");
+                },
+                |r| {
+                    r.update_parse_on_insert(&rope, begin.a, begin.a + char_len);
+                });
+
 
             for c in self.text_mut().cursor_set.iter_mut() {
                 if c.a >= begin.a {
-                    c.a += offset;
+                    c.a += char_len;
                 }
             }
-        }
-
-        if !set_milestone {
-            self.reduce_milestone();
         }
 
         true

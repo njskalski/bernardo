@@ -537,18 +537,12 @@ impl EditorWidget {
             // invariant : promise ready => take.is_some()
             let edits = unpack_or!(promise.read().unwrap(), false, "can't reformat: promise empty");
 
-            let mut res = true;
-            for (idx, edit) in edits.iter().enumerate() {
-                let last = idx == edits.len() - 1;
+            let res = self.buffer_mut().apply_stupid_substitute_messages(edits);
 
-                res &= self.buffer_mut().apply_stupid_substitute_message(
-                    edit,
-                    last);
-
-                if !res {
-                    error!("breaking chaing of stupid substitute messages")
-                }
-            }
+            // This theoretically could be optimised out, but maybe it's not worth it, it leads to
+            // a new category of bugs if statement above turns out to be false, and it rarely is,
+            // so it's very very hard to test. So I keep this here for peace of mind.
+            self.after_content_changed();
 
             res
         } else {
@@ -846,6 +840,16 @@ impl EditorWidget {
             }
         }
     }
+
+    fn after_content_changed(&self) {
+        match (&self.navcomp, self.buffer.get_path()) {
+            (Some(navcomp), Some(path)) => {
+                let contents = self.buffer.text().rope.clone();
+                navcomp.submit_edit_event(path, contents);
+            }
+            _ => {}
+        }
+    }
 }
 
 impl Widget for EditorWidget {
@@ -973,13 +977,7 @@ impl Widget for EditorWidget {
 
                     // TODO this needs to happen only if CONTENTS changed, not if cursor positions changed
                     if changed {
-                        match (&self.navcomp, self.buffer.get_path()) {
-                            (Some(navcomp), Some(path)) => {
-                                let contents = self.buffer.text().rope.clone();
-                                navcomp.submit_edit_event(path, contents);
-                            }
-                            _ => {}
-                        }
+                        self.after_content_changed();
 
                         if self.has_completions() {
                             self.update_completions();
