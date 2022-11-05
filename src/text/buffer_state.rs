@@ -422,6 +422,8 @@ impl BufferState {
         }
     }
 
+    // returns whether a change happened. Undoes changes on fail.
+    // TODO fuzzy that invariant: false => unchanged
     pub fn apply_stupid_substitute_message(&mut self,
                                            stupid_message: &StupidSubstituteMessage,
                                            set_milestone: bool) -> bool {

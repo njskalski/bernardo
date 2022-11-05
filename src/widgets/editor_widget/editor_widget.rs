@@ -537,15 +537,20 @@ impl EditorWidget {
             // invariant : promise ready => take.is_some()
             let edits = unpack_or!(promise.read().unwrap(), false, "can't reformat: promise empty");
 
+            let mut res = true;
             for (idx, edit) in edits.iter().enumerate() {
                 let last = idx == edits.len() - 1;
 
-                self.buffer_mut().apply_stupid_substitute_message(
+                res &= self.buffer_mut().apply_stupid_substitute_message(
                     edit,
                     last);
+
+                if !res {
+                    error!("breaking chaing of stupid substitute messages")
+                }
             }
 
-            true
+            res
         } else {
             warn!("reformat promise broken");
             false
