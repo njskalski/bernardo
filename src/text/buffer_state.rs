@@ -8,6 +8,7 @@ use ropey::Rope;
 use streaming_iterator::StreamingIterator;
 use tree_sitter::Point;
 use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::regex_search::{FindError, regex_find};
@@ -339,7 +340,7 @@ impl BufferState {
                 self.text_mut().cursor_set = cursors;
 
                 if !any_change {
-                    self.strip_milestone();
+                    self.undo_milestone();
                 }
             }
         }
@@ -361,11 +362,21 @@ impl BufferState {
     }
 
     // to be used only in apply_cem
-    fn strip_milestone(&mut self) {
+    fn undo_milestone(&mut self) {
         debug_assert!(self.history_pos + 1 == self.history.len());
         debug_assert!(self.history_pos > 0);
         self.history_pos -= 1;
         self.history.truncate(self.history_pos + 1);
+    }
+
+    // removes previous to last milestone, and moves last one to it's position.
+    // used to chain multiple operations into a single milestone
+    fn reduce_milestone(&mut self) {
+        debug_assert!(self.history_pos + 1 == self.history.len());
+        debug_assert!(self.history_pos >= 2);
+
+        self.history.remove(self.history_pos - 1);
+        self.history_pos -= 1;
     }
 
     pub fn text(&self) -> &Text {
@@ -390,12 +401,12 @@ impl BufferState {
         match self.text_mut().find_once(pattern) {
             Err(e) => {
                 // not even started the search: strip milestone and propagate error.
-                self.strip_milestone();
+                self.undo_milestone();
                 Err(e)
             }
             Ok(false) => {
                 // there was no occurrences, so nothing changed - strip milestone.
-                self.strip_milestone();
+                self.undo_milestone();
                 Ok(false)
             }
             Ok(true) => {
@@ -412,14 +423,13 @@ impl BufferState {
     }
 
     pub fn apply_stupid_substitute_message(&mut self,
-                                           stupid_message: StupidSubstituteMessage,
+                                           stupid_message: &StupidSubstituteMessage,
                                            set_milestone: bool) -> bool {
         if !self.text().cursor_set.are_simple() {
             error!("refuse to apply stupid_edit_to_cem: cursors are not simple");
             return false;
         }
 
-        // I always set the milestone, the setting above determines if I strip it or not.
         self.set_milestone();
 
         let begin = unpack_or!(stupid_message.stupid_range.0.to_real_cursor(self), false, "failed to cast (1) to real cursor");
@@ -429,7 +439,7 @@ impl BufferState {
         if stupid_message.stupid_range.0 != stupid_message.stupid_range.1 {
             if self.text_mut().rope.try_remove(begin.a..end.a).is_err() {
                 error!("failed removing range [{}..{})", begin.a, end.a);
-                self.strip_milestone();
+                self.undo_milestone();
                 return false;
             }
 
@@ -448,7 +458,7 @@ impl BufferState {
             }
             let stride = end.a - begin.a;
 
-            for mut c in cursors.iter_mut() {
+            for c in cursors.iter_mut() {
                 if c.a >= end.a {
                     c.a -= stride;
                 }
@@ -458,13 +468,21 @@ impl BufferState {
         if !stupid_message.substitute.is_empty() {
             if self.text_mut().rope.try_insert(begin.a, stupid_message.substitute.as_str()).is_err() {
                 error!("failed to insert to rope");
-                self.strip_milestone();
+                self.undo_milestone();
                 return false;
+            }
+
+            let offset = stupid_message.substitute.width();
+
+            for c in self.text_mut().cursor_set.iter_mut() {
+                if c.a >= begin.a {
+                    c.a += offset;
+                }
             }
         }
 
         if !set_milestone {
-            self.strip_milestone();
+            self.reduce_milestone();
         }
 
         true
