@@ -1243,7 +1243,8 @@ impl CursorSet {
         for i in 0..self.set.len() {
             if self.set[i].a == anchor_char {
                 self.set.remove(i);
-                debug_assert!(self.check_invariants());
+                // disabled, we now allow "temporarily" empty sets in processing shift_tab
+                //debug_assert!(self.check_invariants());
                 return true;
             }
         }

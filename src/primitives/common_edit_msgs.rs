@@ -356,6 +356,7 @@ fn remove_from_rope_at_random_place(cs: &mut CursorSet,
                         if let Some(sel) = c.s.as_mut() {
                             debug_assert!(sel.b <= char_range.start);
                             debug_assert!(char_range.end <= sel.e);
+                            debug_assert!(sel.e - sel.b >= char_range.len());
 
                             if c.a == sel.e {
                                 c.a -= stride;
@@ -371,16 +372,9 @@ fn remove_from_rope_at_random_place(cs: &mut CursorSet,
                 }
             }
 
-            // moving all cursors that are
-
+            // moving all cursors that were after the removed block
             for c in cs.iter_mut() {
-                // some assertions that previous loops did what they should
-                debug_assert!(!char_range.contains(&c.get_begin()));
-                if c.get_end() > 0 {
-                    debug_assert!(!char_range.contains(&(c.get_end() - 1)));
-                }
-
-                if char_range.start <= c.get_begin() {
+                if char_range.end <= c.get_begin() {
                     c.shift_by(-(stride as isize)); // TODO overflow
                 }
             }
@@ -673,6 +667,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
                     if charat == '\t' {
                         how_many_chars_to_eat = 1;
                     } else {
+                        'dig_prefix:
                         for offset in 0..rope.tab_width() {
                             // I ignore the '\t' characters.
                             let new_charat = match rope.char_at(char_begin_idx + offset) {
@@ -685,6 +680,8 @@ pub fn _apply_cem(cem: CommonEditMsg,
                             debug!("line {} char2 {} : [{}]", *line_idx, char_begin_idx, new_charat);
                             if new_charat == ' ' {
                                 how_many_chars_to_eat += 1;
+                            } else {
+                                break 'dig_prefix;
                             }
                         }
                     }
