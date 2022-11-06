@@ -275,8 +275,15 @@ fn insert_to_rope_at_random_place(cs: &mut CursorSet,
                 c.shift_by(stride as isize); // TODO overflow
             } else {
                 // "dupa[kot)" + { char_pos: 5, what: "nic" } -> "dupa[knicot)"
-                if !c.is_simple() && char_pos < c.get_end() {
-                    c.s.as_mut().map(|sel| sel.e += stride); // TODO overflow
+                if char_pos < c.get_end() {
+                    if let Some(mut sel) = c.s.as_mut() {
+                        if c.a == sel.e {
+                            c.a += stride;
+                            sel.e += stride;
+                        } else {
+                            sel.e += stride;
+                        }
+                    }
                 }
             }
         }

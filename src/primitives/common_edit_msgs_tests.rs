@@ -103,4 +103,47 @@ mod tests {
         assert_eq!(text_to_text("#alamakota#kot#", CommonEditMsg::InsertBlock { char_pos: 0, what: "dupa".to_string() }, None), "dupa#alamakota#kot#");
         assert_eq!(text_to_text("dupa[kot)", CommonEditMsg::InsertBlock { char_pos: 5, what: "nic".to_string() }, None), "dupa[knicot)");
     }
+
+    #[test]
+    fn shift_tab() {
+        let text_1 = "
+aa#aa
+    bbbb#
+      ccc#c";
+        let text_1_after = "
+aa#aa
+bbbb#
+  ccc#c";
+
+        assert_eq!(text_to_text(text_1, CommonEditMsg::ShiftTab, None), text_1_after);
+    }
+
+    #[test]
+    fn tab_1() {
+        let text_1 = "
+aa#aa
+    bbbb#
+      ccc#c";
+        let text_1_after = "
+aa    #aa
+    bbbb    #
+      ccc    #c";
+
+        assert_eq!(text_to_text(text_1, CommonEditMsg::Tab, None), text_1_after);
+    }
+
+    #[test]
+    fn tab_2() {
+        let text_1 = "
+aa(aa
+    bbbb
+      ccc]c
+      dddd";
+        let text_1_after = "
+    aa(aa
+        bbbb
+          ccc]c
+      dddd";
+        assert_eq!(text_to_text(text_1, CommonEditMsg::Tab, None), text_1_after);
+    }
 }
