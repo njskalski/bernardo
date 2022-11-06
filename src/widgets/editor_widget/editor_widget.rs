@@ -527,7 +527,8 @@ impl EditorWidget {
             // invariant : promise ready => take.is_some()
             let edits = unpack_or!(promise.read().unwrap(), false, "can't reformat: promise empty");
 
-            let res = self.buffer_mut().apply_stupid_substitute_messages(edits);
+            let page_height = self.page_height();
+            let res = self.buffer_mut().apply_stupid_substitute_messages(edits, page_height as usize);
 
             // This theoretically could be optimised out, but maybe it's not worth it, it leads to
             // a new category of bugs if statement above turns out to be false, and it rarely is,

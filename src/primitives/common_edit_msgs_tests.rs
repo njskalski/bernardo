@@ -105,7 +105,7 @@ mod tests {
     }
 
     #[test]
-    fn shift_tab() {
+    fn shift_tab_1() {
         let text_1 = "
 aa#aa
     bbbb#
@@ -114,6 +114,26 @@ aa#aa
 aa#aa
 bbbb#
   ccc#c";
+
+        assert_eq!(text_to_text(text_1, CommonEditMsg::ShiftTab, None), text_1_after);
+    }
+
+    #[test]
+    fn shift_tab_2() {
+        env_logger::builder().is_test(true).try_init();
+
+        let text_1 = "
+somebs
+[
+aaaa
+    bbbb
+      ccc)c";
+        let text_1_after = "
+somebs
+[
+aaaa
+bbbb
+  ccc)c";
 
         assert_eq!(text_to_text(text_1, CommonEditMsg::ShiftTab, None), text_1_after);
     }

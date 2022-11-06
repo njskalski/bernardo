@@ -424,7 +424,7 @@ impl BufferState {
 
     // returns whether a change happened. Undoes changes on fail.
     // TODO fuzzy that invariant: false => unchanged
-    pub fn apply_stupid_substitute_messages(&mut self, stupid_messages: &Vec<StupidSubstituteMessage>) -> bool {
+    pub fn apply_stupid_substitute_messages(&mut self, stupid_messages: &Vec<StupidSubstituteMessage>, page_height: usize) -> bool {
         if stupid_messages.is_empty() {
             warn!("calling apply_stupid_substitute_messages with empty list");
             return false;
@@ -433,7 +433,7 @@ impl BufferState {
         let mut res = false;
 
         for msg in stupid_messages.iter() {
-            if self._apply_stupid_substitute_message(msg) {
+            if self._apply_stupid_substitute_message(msg, page_height) {
                 self.reduce_merge_milestone();
                 res = true;
             }
@@ -447,7 +447,9 @@ impl BufferState {
     // TODO fuzzy that invariant: false => unchanged
     // TODO maybe, just maybe, these stupid messages should go to CEM, not sure. Because moving them out already made me forgot about updating navcomp and updating treesitter.
     fn _apply_stupid_substitute_message(&mut self,
-                                        stupid_message: &StupidSubstituteMessage) -> bool {
+                                        stupid_message: &StupidSubstituteMessage,
+                                        page_height: usize,
+    ) -> bool {
         if !self.text().cursor_set.are_simple() {
             error!("refuse to apply stupid_edit_to_cem: cursors are not simple");
             return false;
@@ -460,67 +462,47 @@ impl BufferState {
 
         // removing old item
         if stupid_message.stupid_range.0 != stupid_message.stupid_range.1 {
-            if self.text_mut().rope.try_remove(begin.a..end.a).is_err() {
-                error!("failed removing range [{}..{})", begin.a, end.a);
+            if self.apply_cem(
+                CommonEditMsg::DeleteBlock { char_range: begin.a..end.a },
+                page_height,
+                None,
+            ) {
+                let rope = self.text().rope.clone(); // shallow copy
+                self.text_mut().parsing.as_mut().map_or_else(
+                    || {
+                        debug!("failed to acquire parse_tuple 1");
+                    },
+                    |r| {
+                        r.update_parse_on_delete(&rope, begin.a, end.a);
+                    });
+            } else {
+                error!("failed to remove range [{}..{}) from rope", begin.a, end.a);
                 self.undo_milestone();
                 return false;
             }
-
-            let mut cursors = &mut self.text_mut().cursor_set;
-
-            // removing cursors that were inside
-            let mut to_remove: Vec<usize> = Vec::new();
-            for c in cursors.iter() {
-                if begin.a <= c.a && c.a < end.a {
-                    to_remove.push(c.a);
-                }
-            }
-            for ca in to_remove.into_iter() {
-                let paranoia = cursors.remove_by_anchor(ca);
-                debug_assert!(paranoia);
-            }
-            let stride = end.a - begin.a;
-
-            for c in cursors.iter_mut() {
-                if c.a >= end.a {
-                    c.a -= stride;
-                }
-            }
-
-            // updating treesitter
-            let rope = self.text().rope.clone();
-            self.text_mut().parsing.as_mut().map_or_else(
-                || {
-                    debug!("failed to acquire parse_tuple 1");
-                },
-                |r| {
-                    r.update_parse_on_delete(&rope, begin.a, end.a);
-                });
         }
 
         if !stupid_message.substitute.is_empty() {
-            if self.text_mut().rope.try_insert(begin.a, stupid_message.substitute.as_str()).is_err() {
-                error!("failed to insert to rope");
+            let what = stupid_message.substitute.clone();
+            let char_len = what.graphemes(true).count();
+            if self.apply_cem(
+                // TODO unnecessary clone
+                CommonEditMsg::InsertBlock { char_pos: begin.a, what },
+                page_height,
+                None,
+            ) {
+                let rope = self.text().rope.clone(); // shallow copy
+                self.text_mut().parsing.as_mut().map_or_else(
+                    || {
+                        debug!("failed to acquire parse_tuple 1");
+                    },
+                    |r| {
+                        r.update_parse_on_insert(&rope, begin.a, begin.a + char_len);
+                    });
+            } else {
+                error!("failed to remove range [{}..{}) from rope", begin.a, end.a);
                 self.undo_milestone();
                 return false;
-            }
-
-            let char_len = stupid_message.substitute.graphemes(true).count();
-
-            let rope = self.text().rope.clone();
-            self.text_mut().parsing.as_mut().map_or_else(
-                || {
-                    debug!("failed to acquire parse_tuple 1");
-                },
-                |r| {
-                    r.update_parse_on_insert(&rope, begin.a, begin.a + char_len);
-                });
-
-
-            for c in self.text_mut().cursor_set.iter_mut() {
-                if c.a >= begin.a {
-                    c.a += char_len;
-                }
             }
         }
 

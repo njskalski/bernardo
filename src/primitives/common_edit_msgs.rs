@@ -319,6 +319,7 @@ fn remove_from_rope_at_random_place(cs: &mut CursorSet,
                     debug_assert!(paranoia);
                 }
             }
+            let stride = char_range.len();
             // second, cutting cursors overlapping with block
             {
                 for c in cs.iter_mut() {
@@ -326,24 +327,60 @@ fn remove_from_rope_at_random_place(cs: &mut CursorSet,
                         // end inside
                         if char_range.contains(&c.get_end()) {
                             debug_assert!(char_range.contains(&c.s.unwrap().e));
-                            c.s.as_mut().map(|sel| sel.e = char_range.end);
+
+                            if let Some(sel) = c.s.as_mut() {
+                                if c.a == sel.e {
+                                    sel.e = char_range.start;
+                                    c.a = char_range.start;
+                                } else {
+                                    sel.e = char_range.start;
+                                }
+                            }
+                            continue;
                         }
 
                         // begin inside
                         if char_range.contains(&c.a) {
-                            c.a = char_range.end;
-                            c.s.as_mut().map(|sel| sel.b = char_range.end);
+                            if let Some(sel) = c.s.as_mut() {
+                                if c.a == sel.b {
+                                    sel.b = char_range.end;
+                                    c.a = char_range.end;
+                                } else {
+                                    sel.b = char_range.end;
+                                }
+                            }
+                            continue;
                         }
+
+                        // entire block was inside cursor
+                        if let Some(sel) = c.s.as_mut() {
+                            debug_assert!(sel.b <= char_range.start);
+                            debug_assert!(char_range.end <= sel.e);
+
+                            if c.a == sel.e {
+                                c.a -= stride;
+                                sel.e -= stride;
+                            } else {
+                                sel.e -= stride;
+                            }
+                            continue;
+                        }
+
+                        debug_assert!(false);
                     }
                 }
             }
 
-            let stride = char_range.len();
-            for c in cs.iter_mut() {
-                debug_assert!(!char_range.contains(&c.get_begin()));
-                debug_assert!(!char_range.contains(&c.get_end()));
+            // moving all cursors that are
 
-                if c.a > char_range.start /*doesn't really matter if start or end */ {
+            for c in cs.iter_mut() {
+                // some assertions that previous loops did what they should
+                debug_assert!(!char_range.contains(&c.get_begin()));
+                if c.get_end() > 0 {
+                    debug_assert!(!char_range.contains(&(c.get_end() - 1)));
+                }
+
+                if char_range.start <= c.get_begin() {
                     c.shift_by(-(stride as isize)); // TODO overflow
                 }
             }
@@ -624,13 +661,29 @@ pub fn _apply_cem(cem: CommonEditMsg,
             for line_idx in indices.iter().rev() {
                 if let Some(char_begin_idx) = rope.line_to_char(*line_idx) {
                     let mut how_many_chars_to_eat: usize = 0;
+                    let charat = match rope.char_at(char_begin_idx) {
+                        Some(c) => c,
+                        None => {
+                            error!("no character at char_begin_idx {}", char_begin_idx);
+                            continue;
+                        }
+                    };
+                    debug!("line {} char {} : [{}]", *line_idx, char_begin_idx, charat);
 
-                    if rope.char_at(char_begin_idx) == Some('\t') {
+                    if charat == '\t' {
                         how_many_chars_to_eat = 1;
                     } else {
                         for offset in 0..rope.tab_width() {
                             // I ignore the '\t' characters.
-                            if rope.char_at(char_begin_idx + offset) == Some(' ') {
+                            let new_charat = match rope.char_at(char_begin_idx + offset) {
+                                Some(c) => c,
+                                None => {
+                                    error!("no character at char_begin_idx + offset {}", char_begin_idx + offset);
+                                    continue;
+                                }
+                            };
+                            debug!("line {} char2 {} : [{}]", *line_idx, char_begin_idx, new_charat);
+                            if new_charat == ' ' {
                                 how_many_chars_to_eat += 1;
                             }
                         }
@@ -640,6 +693,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
                         continue;
                     }
 
+                    debug!("ordering to remove from line {} [{}] chars", line_idx, how_many_chars_to_eat);
                     let partial_res = remove_from_rope_at_random_place(cs, rope, char_begin_idx..char_begin_idx + how_many_chars_to_eat);
 
                     chars_removed += partial_res.0;
@@ -654,6 +708,10 @@ pub fn _apply_cem(cem: CommonEditMsg,
     };
 
     debug_assert!(cs.check_invariants());
+
+    for c in cs.iter() {
+        debug_assert!(c.get_end() <= rope.len_chars());
+    }
 
     res
 }
