@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::ops::Range;
 
 use log::{debug, error, warn};
@@ -164,6 +165,32 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
     }
 }
 
+// returns sorted vector of line indices, reduced (no duplicates)
+fn cursors_to_line_indices(rope: &dyn TextBuffer, cs: &CursorSet) -> Vec<usize> {
+    let mut hs: HashSet<usize> = HashSet::new();
+    for c in cs.iter() {
+        rope.char_to_line(c.a).map(|line_idx| {
+            hs.insert(line_idx);
+        }).unwrap_or_else(|| {
+            error!("failed finding line for anchor {}", c.a);
+        });
+
+        c.s.map(|sel| {
+            for char_idx in sel.b..sel.e {
+                rope.char_to_line(char_idx).map(|line_idx| {
+                    hs.insert(line_idx);
+                }).unwrap_or_else(|| {
+                    error!("failed finding line for selected index {}", char_idx);
+                })
+            }
+        });
+    }
+
+    let mut res: Vec<usize> = hs.into_iter().collect();
+    res.sort();
+    res
+}
+
 /*
 returns tuple
     char changed (I aim at "Levenstein distance", but I have not tested that)
@@ -232,6 +259,91 @@ fn insert_to_rope(cs: &mut CursorSet,
     cs.reduce_right();
     debug_assert!(cs.check_invariants());
     (diff_len, res)
+}
+
+fn insert_to_rope_at_random_place(cs: &mut CursorSet,
+                                  rope: &mut dyn TextBuffer,
+                                  char_pos: usize,
+                                  what: &str) -> (usize, bool) {
+    if !rope.insert_block(char_pos, &what) {
+        (0, false)
+    } else {
+        let stride = what.graphemes(true).count();
+
+        for c in cs.iter_mut() {
+            if c.get_begin() >= char_pos {
+                c.shift_by(stride as isize); // TODO overflow
+            }
+        }
+
+        debug_assert!(cs.check_invariants());
+
+        (stride, true)
+    }
+}
+
+fn remove_from_rope_at_random_place(cs: &mut CursorSet,
+                                    rope: &mut dyn TextBuffer,
+                                    char_range: Range<usize>) -> (usize, bool) {
+    if char_range.is_empty() {
+        error!("delete block with empty range, ignoring");
+        (0, false)
+    } else {
+        if !rope.remove(char_range.start, char_range.end) {
+            error!("failed to remove block");
+            (0, false)
+        } else {
+            // first, throwing away cursors inside the block
+            {
+                let mut to_remove: Vec<usize> = Vec::new();
+                for c in cs.iter() {
+                    if char_range.start <= c.get_begin() && c.get_end() <= char_range.end {
+                        to_remove.push(c.a);
+                    }
+                }
+
+                for ca in to_remove.into_iter() {
+                    let paranoia = cs.remove_by_anchor(ca);
+                    debug_assert!(paranoia);
+                }
+            }
+            // second, cutting cursors overlapping with block
+            {
+                for c in cs.iter_mut() {
+                    if c.intersects(&char_range) {
+                        // end inside
+                        if char_range.contains(&c.get_end()) {
+                            debug_assert!(char_range.contains(&c.s.unwrap().e));
+                            c.s.as_mut().map(|sel| sel.e = char_range.end);
+                        }
+
+                        // begin inside
+                        if char_range.contains(&c.a) {
+                            c.a = char_range.end;
+                            c.s.as_mut().map(|sel| sel.b = char_range.end);
+                        }
+                    }
+                }
+            }
+
+            let stride = char_range.len();
+            for c in cs.iter_mut() {
+                debug_assert!(!char_range.contains(&c.get_begin()));
+                debug_assert!(!char_range.contains(&c.get_end()));
+
+                if c.a > char_range.start /*doesn't really matter if start or end */ {
+                    c.shift_by(-(stride as isize)); // TODO overflow
+                }
+            }
+
+            if cs.len() == 0 {
+                error!("cs empty after removing block, will set to a single cursor at block start");
+                cs.add_cursor(Cursor::new(char_range.start));
+            }
+
+            (stride, true)
+        }
+    }
 }
 
 // Returns tuple:
@@ -452,86 +564,80 @@ pub fn _apply_cem(cem: CommonEditMsg,
             (0, rope.redo())
         }
         CommonEditMsg::DeleteBlock { char_range } => {
-            if char_range.is_empty() {
-                error!("delete block with empty range, ignoring");
-                (0, false)
-            } else {
-                if !rope.remove(char_range.start, char_range.end) {
-                    error!("failed to remove block");
-                    (0, false)
-                } else {
-                    // first, throwing away cursors inside the block
-                    {
-                        let mut to_remove: Vec<usize> = Vec::new();
-                        for c in cs.iter() {
-                            if char_range.start <= c.get_begin() && c.get_end() <= char_range.end {
-                                to_remove.push(c.a);
-                            }
-                        }
-
-                        for ca in to_remove.into_iter() {
-                            let paranoia = cs.remove_by_anchor(ca);
-                            debug_assert!(paranoia);
-                        }
-                    }
-                    // second, cutting cursors overlapping with block
-                    {
-                        for c in cs.iter_mut() {
-                            if c.intersects(&char_range) {
-                                // end inside
-                                if char_range.contains(&c.get_end()) {
-                                    debug_assert!(char_range.contains(&c.s.unwrap().e));
-                                    c.s.as_mut().map(|sel| sel.e = char_range.end);
-                                }
-
-                                // begin inside
-                                if char_range.contains(&c.a) {
-                                    c.a = char_range.end;
-                                    c.s.as_mut().map(|sel| sel.b = char_range.end);
-                                }
-                            }
-                        }
-                    }
-
-                    let stride = char_range.len();
-                    for c in cs.iter_mut() {
-                        debug_assert!(!char_range.contains(&c.get_begin()));
-                        debug_assert!(!char_range.contains(&c.get_end()));
-
-                        if c.a > char_range.start /*doesn't really matter if start or end */ {
-                            c.shift_by(-(stride as isize)); // TODO overflow
-                        }
-                    }
-
-                    if cs.len() == 0 {
-                        error!("cs empty after removing block, will set to a single cursor at block start");
-                        cs.add_cursor(Cursor::new(char_range.start));
-                    }
-
-                    (stride, true)
-                }
-            }
+            remove_from_rope_at_random_place(cs, rope, char_range)
         }
         CommonEditMsg::InsertBlock { char_pos, what } => {
-            if !rope.insert_block(char_pos, &what) {
-                (0, false)
-            } else {
-                let stride = what.graphemes(true).count();
-
-                for c in cs.iter_mut() {
-                    if c.get_begin() >= char_pos {
-                        c.shift_by(stride as isize); // TODO overflow
-                    }
-                }
-
-                (stride, true)
-            }
+            insert_to_rope_at_random_place(cs, rope, char_pos, &what)
         }
         CommonEditMsg::Tab => {
-            todo!()
+            let mut tab: String = String::new();
+            for i in 0..rope.tab_width() {
+                tab.push(' ');
+            }
+            let tab = tab;
+
+            let mut inserted: usize = 0;
+
+            // if they are simple, we just add spaces
+            if cs.are_simple() {
+                insert_to_rope(cs, rope, None, &tab)
+            } else {
+                let all_complex = cs.iter().fold(true, |acc, c| acc && !c.is_simple());
+                if !all_complex {
+                    error!("ignoring tab on mixed cursor set");
+                    (0, false)
+                } else {
+                    let mut num_chars: usize = 0;
+                    let mut modified = false;
+
+                    let indices = cursors_to_line_indices(rope, cs);
+                    for line_idx in indices.into_iter() {
+                        if let Some(char_begin_idx) = rope.line_to_char(line_idx) {
+                            let res = insert_to_rope_at_random_place(cs, rope, char_begin_idx, &tab);
+                            num_chars += res.0;
+                            modified |= res.1;
+                        } else {
+                            error!("failed casting line_idx to begin char (1)");
+                        }
+                    }
+                    (num_chars, modified)
+                }
+            }
         }
         CommonEditMsg::ShiftTab => {
-            todo!()
+            let indices = cursors_to_line_indices(rope, cs);
+            let mut chars_removed: usize = 0;
+            let mut modified = false;
+
+            for line_idx in indices.iter().rev() {
+                if let Some(char_begin_idx) = rope.line_to_char(*line_idx) {
+                    let mut how_many_chars_to_eat: usize = 0;
+
+                    if rope.char_at(char_begin_idx) == Some('\t') {
+                        how_many_chars_to_eat = 1;
+                    } else {
+                        for offset in 0..rope.tab_width() {
+                            // I ignore the '\t' characters.
+                            if rope.char_at(char_begin_idx + offset) == Some(' ') {
+                                how_many_chars_to_eat += 1;
+                            }
+                        }
+                    }
+
+                    if how_many_chars_to_eat == 0 {
+                        continue;
+                    }
+
+                    let partial_res = remove_from_rope_at_random_place(cs, rope, char_begin_idx..char_begin_idx + how_many_chars_to_eat);
+
+                    chars_removed += partial_res.0;
+                    modified |= partial_res.1;
+                } else {
+                    error!("failed casting line_idx to begin char (2)");
+                }
+            }
+
+            (chars_removed, modified)
         }
     };
 
