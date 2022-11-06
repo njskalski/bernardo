@@ -4,6 +4,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
 use crate::text::buffer_state::{BufferState, BufferType};
 
+#[cfg(feature = "arbitrary")]
 impl<'a> Arbitrary<'a> for BufferState {
     fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
         let subtype = u.arbitrary::<BufferType>()?;

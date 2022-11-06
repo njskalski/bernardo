@@ -243,15 +243,16 @@ fn insert_to_rope(cs: &mut CursorSet,
             }
             c.clear_pc();
 
+            let what_len = what.graphemes(true).count();
             if rope.insert_block(c.a, what) {
                 res |= true;
-                cursor_specific_diff_len = std::cmp::max(cursor_specific_diff_len, what.len());
+                cursor_specific_diff_len = std::cmp::max(cursor_specific_diff_len, what_len);
             } else {
-                warn!("expected to insert {} characters at {}, but failed", what.len(), c.a);
+                warn!("expected to insert {} characters at {}, but failed", what_len, c.a);
             }
 
-            c.shift_by(what.len() as isize);
-            modifier += what.len() as isize;
+            c.shift_by(what_len as isize);
+            modifier += what_len as isize;
             diff_len += cursor_specific_diff_len;
 
             debug_assert!(c.check_invariant());
