@@ -151,6 +151,7 @@ impl ToString for Text {
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum BufferType {
     Full,
     SingleLine,
@@ -172,10 +173,10 @@ pub struct BufferState {
 }
 
 impl BufferState {
-    pub fn full(tree_sitter: Rc<TreeSitterWrapper>) -> BufferState {
+    pub fn full(tree_sitter_op: Option<Rc<TreeSitterWrapper>>) -> BufferState {
         BufferState {
             subtype: BufferType::Full,
-            tree_sitter_op: Some(tree_sitter),
+            tree_sitter_op,
             history: vec![Text::default()],
             history_pos: 0,
             lang_id: None,

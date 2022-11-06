@@ -78,7 +78,7 @@ impl EditorGroup {
                 clipboard,
                 self.nav_comp_group.clone(),
             ).with_buffer(
-                BufferState::full(tree_sitter)
+                BufferState::full(Some(tree_sitter))
                     .with_text_from_rope(file_contents, lang_id_op)
                     .with_file_front(ff.clone())
             ).with_path_op(

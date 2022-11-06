@@ -47,6 +47,7 @@ const NEWLINE_LENGTH: usize = 1; // TODO(njskalski): add support for multisymbol
 const ZERO_CURSOR: Cursor = Cursor::new(0);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum CursorStatus {
     None,
     WithinSelection,
@@ -105,6 +106,7 @@ impl Ord for Selection {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Cursor {
     // selection. Invariant: anchor is either at begin or end of selection, never inside.
     pub s: Option<Selection>,
@@ -534,6 +536,7 @@ impl Into<Cursor> for usize {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct CursorSet {
     set: Vec<Cursor>,
 }

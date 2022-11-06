@@ -156,7 +156,7 @@ impl EditorWidget {
         EditorWidget {
             wid: get_new_widget_id(),
             last_size: None,
-            buffer: BufferState::full(tree_sitter.clone()),
+            buffer: BufferState::full(Some(tree_sitter.clone())),
             anchor: XY::ZERO,
             tree_sitter,
             fsf,

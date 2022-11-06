@@ -26,5 +26,7 @@ pub mod macros;
 pub mod common_query;
 pub mod stupid_cursor;
 
+pub mod cursor_set_fuzz;
+
 
 

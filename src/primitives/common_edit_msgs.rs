@@ -24,6 +24,7 @@ edit
 undo/redo
  */
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum CommonEditMsg {
     Char(char),
     Block(String),
