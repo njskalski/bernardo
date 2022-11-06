@@ -20,12 +20,21 @@ pub fn get_context_options(state: &EditorState,
 ) -> Vec<ContextBarItem> {
     let mut results: Vec<ContextBarItem> = Vec::new();
 
+    // WARNING matches are exclusive, with no passthrough, so don't forget about it
     match (state, single_cursor, multiple_cursors, single_stupid_cursor, lsp_symbol, tree_sitter_symbol) {
         (_, Some(single_cursor), _, _, _, Some("function")) => {
             results.push(ContextBarItem::GO_TO_DEFINITION);
         }
         _ => {}
     }
+
+    match (state, single_cursor, multiple_cursors, single_stupid_cursor, lsp_symbol, tree_sitter_symbol) {
+        (_, _, _, _, Some(_), _) => {
+            results.push(ContextBarItem::REFORMAT_FILE);
+        }
+        _ => {}
+    }
+
 
     debug!("get_context_options: [{:?}]", &results);
 

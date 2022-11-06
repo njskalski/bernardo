@@ -52,10 +52,11 @@ unicode-segmentation = "1.6.0"
 unicode-width = "0.1.8"
 url = "2.2.2"
 which = "4.2.5"
+coredump = "0.1.1"
 
 [profile.dev]
 opt-level = 0
-debug = 2
+debug = true
 lto = false
 #features = ["test"]
 

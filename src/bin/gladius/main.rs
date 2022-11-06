@@ -26,6 +26,11 @@ fn main() {
     let args = bernardo::gladius::args::Args::parse();
     logger_setup(args.verbosity.log_level_filter());
 
+    #[cfg(debug_assertions)]
+    {
+        coredump::register_panic_handler();
+    }
+
     // Initializing subsystems
     let config_ref = load_config(args.reconfigure);
     let theme = Theme::load_or_create_default(&config_ref.config_dir).unwrap();

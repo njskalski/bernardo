@@ -3,6 +3,7 @@ use std::convert::Into;
 use std::fmt::{Debug, Formatter};
 use std::string::ToString;
 
+use crate::widget::any_msg::AnyMsg;
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 
 // I think I want the "context bar" to be "cascading", enabling a "conversational like" interface.
@@ -55,7 +56,10 @@ pub struct ContextBarItem {
 
 impl ContextBarItem {
     pub const GO_TO_DEFINITION: ContextBarItem = ContextBarItem { title: Cow::Borrowed("go to definition") };
+    pub const REFORMAT_FILE: ContextBarItem = ContextBarItem { title: Cow::Borrowed("reformat file") };
+    // TODO add reformat selection
 }
+
 
 impl ListWidgetItem for ContextBarItem {
     fn get_column_name(idx: usize) -> &'static str {
