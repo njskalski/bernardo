@@ -381,16 +381,6 @@ impl EditorWidget {
         }
     }
 
-    fn todo_reformat(&mut self) {
-        /*
-        there's multiple things to keep in mind for this:
-        - cursors. We'd prefer to keep a cursor within the same tree-sitter node (if possible),
-          second best, maybe at the same place in terms of number of consecutive whitespaces (later).
-        - in case of multicursor - we could do the same as above, or just igore it and handle cases
-          where cursors become invalid (pointing beyond buffer)
-         */
-    }
-
     fn todo_get_hover_settings_anchored_at_trigger(&self) -> Option<HoverSettings> {
         let path = match self.buffer().get_path() {
             None => {
@@ -984,6 +974,7 @@ impl Widget for EditorWidget {
                         }
                     }
 
+                    // TODO I might want to add directions upper left (for substraction) and lower right (for addition)
                     match cme_to_direction(cem) {
                         None => {}
                         Some(direction) => self.update_anchor(direction)

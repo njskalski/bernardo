@@ -106,6 +106,10 @@ impl Widget for ContextBarWidget {
                     CommonEditMsg::Paste => true,
                     CommonEditMsg::Undo => true,
                     CommonEditMsg::Redo => true,
+                    CommonEditMsg::DeleteBlock { .. } => true,
+                    CommonEditMsg::InsertBlock { .. } => true,
+                    CommonEditMsg::Tab => true,
+                    CommonEditMsg::ShiftTab => true,
                 };
 
                 if !ignore {

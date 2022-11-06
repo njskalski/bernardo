@@ -47,6 +47,8 @@ pub trait TextBuffer: ToString {
     fn can_redo(&self) -> bool { false }
     fn undo(&mut self) -> bool { false }
     fn redo(&mut self) -> bool { false }
+
+    fn tab_width(&self) -> usize { 4 }
 }
 
 pub struct LinesIter<'a> {

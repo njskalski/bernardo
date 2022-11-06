@@ -35,6 +35,7 @@
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::ops::Range;
 use std::slice::{Iter, IterMut};
 
 use log::{error, warn};
@@ -459,6 +460,37 @@ impl Cursor {
 
     pub fn get_end(&self) -> usize {
         self.s.map(|s| s.e).unwrap_or(self.a)
+    }
+
+    // TODO tests
+    pub fn intersects(&self, char_range: &Range<usize>) -> bool {
+        if self.is_simple() {
+            return char_range.start <= self.a && self.a < char_range.end;
+        }
+
+        // I will use simple "bracket" evaluation: true opens bracket, false closes bracket
+        //  (because in case of idx collision we want to first close and then open)
+        let mut brackets: Vec<(usize, bool)> = Vec::new();
+
+        brackets.push((char_range.start, true));
+        brackets.push((char_range.end, false));
+        brackets.push((self.get_begin(), true));
+        brackets.push((self.get_end(), false));
+
+        brackets.sort();
+
+        let mut how_many_open_brackets: u8 = 0;
+        for b in brackets {
+            if b.1 {
+                how_many_open_brackets += 1;
+            } else {
+                how_many_open_brackets -= 1;
+            }
+            if how_many_open_brackets > 1 {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
