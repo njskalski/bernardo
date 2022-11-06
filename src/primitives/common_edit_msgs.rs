@@ -271,8 +271,13 @@ fn insert_to_rope_at_random_place(cs: &mut CursorSet,
         let stride = what.graphemes(true).count();
 
         for c in cs.iter_mut() {
-            if c.get_begin() >= char_pos {
+            if char_pos <= c.get_begin() {
                 c.shift_by(stride as isize); // TODO overflow
+            } else {
+                // "dupa[kot)" + { char_pos: 5, what: "nic" } -> "dupa[knicot)"
+                if !c.is_simple() && char_pos < c.get_end() {
+                    c.s.as_mut().map(|sel| sel.e += stride); // TODO overflow
+                }
             }
         }
 

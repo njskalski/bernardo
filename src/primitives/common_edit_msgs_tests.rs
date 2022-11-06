@@ -91,4 +91,16 @@ mod tests {
         assert_eq!(text_to_text("(ab]ba\n(ab]ba\n(ab]ba\n(ab]ba\n", CommonEditMsg::LineEnd { selecting: false }, c), "abba#\nabba#\nabba#\nabba#\n");
         assert_eq!(text_to_text("abba#\nabba#\nabba#\nabba#\n", CommonEditMsg::Paste, c), "abbaab#\nabbaab#\nabbaab#\nabbaab#\n");
     }
+
+    #[test]
+    fn delete_block() {
+        assert_eq!(text_to_text("#alamakota#kot#", CommonEditMsg::DeleteBlock { char_range: 1..4 }, None), "#aakota#kot#");
+        assert_eq!(text_to_text("alamakota[kot)", CommonEditMsg::DeleteBlock { char_range: 1..4 }, None), "aakota[kot)");
+    }
+
+    #[test]
+    fn insert_block() {
+        assert_eq!(text_to_text("#alamakota#kot#", CommonEditMsg::InsertBlock { char_pos: 0, what: "dupa".to_string() }, None), "dupa#alamakota#kot#");
+        assert_eq!(text_to_text("dupa[kot)", CommonEditMsg::InsertBlock { char_pos: 5, what: "nic".to_string() }, None), "dupa[knicot)");
+    }
 }
