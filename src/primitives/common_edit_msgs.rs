@@ -664,7 +664,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
                             continue;
                         }
                     };
-                    debug!("line {} char {} : [{}]", *line_idx, char_begin_idx, charat);
+                    // debug!("line {} char {} : [{}]", *line_idx, char_begin_idx, charat);
 
                     if charat == '\t' {
                         how_many_chars_to_eat = 1;
@@ -679,7 +679,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
                                     continue;
                                 }
                             };
-                            debug!("line {} char2 {} : [{}]", *line_idx, char_begin_idx, new_charat);
+                            // debug!("line {} char2 {} : [{}]", *line_idx, char_begin_idx, new_charat);
                             if new_charat == ' ' {
                                 how_many_chars_to_eat += 1;
                             } else {
@@ -692,7 +692,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
                         continue;
                     }
 
-                    debug!("ordering to remove from line {} [{}] chars", line_idx, how_many_chars_to_eat);
+                    // debug!("ordering to remove from line {} [{}] chars", line_idx, how_many_chars_to_eat);
                     let partial_res = remove_from_rope_at_random_place(cs, rope, char_begin_idx..char_begin_idx + how_many_chars_to_eat);
 
                     chars_removed += partial_res.0;
