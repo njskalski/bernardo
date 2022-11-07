@@ -208,6 +208,12 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
     pub fn get_query(&self) -> Option<&CommonQuery> {
         self.query.as_ref()
     }
+
+    pub fn get_highlighted_item(&self) -> Option<&Item> {
+        self.highlighted.map(|idx| {
+            self.provider.items().nth(idx)
+        }).flatten()
+    }
 }
 
 

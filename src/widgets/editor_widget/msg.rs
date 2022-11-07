@@ -26,6 +26,7 @@ pub enum EditorWidgetMsg {
     RequestContextBar,
 
     Reformat,
+    GoToDefinition,
 }
 
 

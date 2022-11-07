@@ -1,4 +1,4 @@
-use log::warn;
+use log::{error, warn};
 
 use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
@@ -45,6 +45,9 @@ impl ContextBarWidget {
                 .with_provider(Box::new(items))
                 .with_show_column_names(false)
                 .with_fill_policy(FillPolicy::FILL_WIDTH)
+                .with_on_hit(|_| {
+                    ContextBarWidgetMsg::Hit.someboxed()
+                })
             ,
             display_state: None,
             query: BufferState::simplified_single_line(),
@@ -118,7 +121,10 @@ impl Widget for ContextBarWidget {
                     None
                 }
             }
-            _ => None
+            _ => {
+                error!("unhandled msg {:?}", input_event);
+                None
+            }
         };
     }
 
@@ -137,6 +143,9 @@ impl Widget for ContextBarWidget {
                         self.on_query_change();
                     }
                     None
+                }
+                ContextBarWidgetMsg::Hit => {
+                    self.list.get_highlighted_item().map(|item| item.msg())
                 }
                 _ => {
                     warn!("ignoring message {:?}", msg);

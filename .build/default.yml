@@ -1,0 +1,12 @@
+image: debian
+packages:
+  - git
+sources:
+  - https://git.sr.ht/~njskalski/bernardo
+tasks:
+  - setup: |
+      cd bernardo
+      git submodule update
+  - build: |
+      cd bernardo
+      cargo build

@@ -5,6 +5,7 @@ use crate::widget::any_msg::AnyMsg;
 pub enum ContextBarWidgetMsg {
     Close,
     Edit(CommonEditMsg),
+    Hit,
 }
 
 impl AnyMsg for ContextBarWidgetMsg {}

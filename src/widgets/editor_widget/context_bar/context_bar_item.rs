@@ -3,7 +3,8 @@ use std::convert::Into;
 use std::fmt::{Debug, Formatter};
 use std::string::ToString;
 
-use crate::widget::any_msg::AnyMsg;
+use crate::widget::any_msg::{AnyMsg, AsAny};
+use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 
 // I think I want the "context bar" to be "cascading", enabling a "conversational like" interface.
@@ -44,6 +45,8 @@ use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 
  */
 
+pub type Action = fn() -> Box<dyn AnyMsg>;
+
 /*
 TODO
  I am not sure how this struct should look like inside, I just know how I want it to look in UI.
@@ -52,12 +55,23 @@ TODO
 #[derive(Debug, Clone)]
 pub struct ContextBarItem {
     title: Cow<'static, str>,
+    msg: Action,
 }
 
 impl ContextBarItem {
-    pub const GO_TO_DEFINITION: ContextBarItem = ContextBarItem { title: Cow::Borrowed("go to definition") };
-    pub const REFORMAT_FILE: ContextBarItem = ContextBarItem { title: Cow::Borrowed("reformat file") };
+    pub const GO_TO_DEFINITION: ContextBarItem = ContextBarItem {
+        title: Cow::Borrowed("go to definition"),
+        msg: || EditorWidgetMsg::GoToDefinition.boxed(),
+    };
+    pub const REFORMAT_FILE: ContextBarItem = ContextBarItem {
+        title: Cow::Borrowed("reformat file"),
+        msg: || EditorWidgetMsg::Reformat.boxed(),
+    };
     // TODO add reformat selection
+
+    pub fn msg(&self) -> Box<dyn AnyMsg> {
+        self.msg()
+    }
 }
 
 
