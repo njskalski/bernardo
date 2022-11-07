@@ -11,4 +11,6 @@ tasks:
       cd bernardo
       cargo build
   - test: |
+      source "$HOME/.cargo/env"
+      cd bernardo
       cargo test
