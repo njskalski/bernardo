@@ -6,8 +6,6 @@ sources:
 tasks:
   - setup: |
       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-      cd bernardo
-      git submodule update
   - build: |
       cd bernardo
       cargo build
