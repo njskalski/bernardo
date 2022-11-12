@@ -56,7 +56,6 @@ impl RustHandler {
         }
 
         let workspace_root = ff.absolute_path();
-        let lsp_path = config.global.get_rust_lsp_path().ok_or(HandlerLoadError::LspNotFound)?;
 
         let cargo_file = ff
             .descendant_checked("Cargo.toml")
@@ -73,6 +72,7 @@ impl RustHandler {
 
         #[cfg(not(test))]
         {
+            let lsp_path = config.global.get_rust_lsp_path().ok_or(HandlerLoadError::LspNotFound)?;
             if let Some(navcomp_lsp) = NavCompProviderLsp::new(lsp_path, workspace_root, tick_sender) {
                 navcomp_op = Some(Arc::new(Box::new(navcomp_lsp)));
             } else {
