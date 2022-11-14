@@ -317,9 +317,7 @@ impl FilesystemFront for MockFS {
         debug!("writing to [{:?}]", path);
         let mut bytes = Vec::<u8>::new();
         while let Some(chunk) = stream.next() {
-            for i in chunk.into_iter() {
-                bytes.push(*i);
-            }
+            bytes.append(&mut Vec::from(chunk));
         };
 
         self.blocking_overwrite_with_bytes(path, &bytes, must_exist)
@@ -339,6 +337,8 @@ impl FilesystemFront for MockFS {
 mod tests {
     use std::collections::HashMap;
     use std::path::{Path, PathBuf};
+
+    use serde::__private::from_utf8_lossy;
 
     use crate::de;
     use crate::fs::filesystem_front::FilesystemFront;
@@ -380,5 +380,22 @@ mod tests {
         assert_eq!(mockfs.blocking_read_entire_file(&Path::new("folder2")), Err(ReadError::NotAFilePath));
         assert_eq!(mockfs.blocking_read_entire_file(&Path::new("folder1/file1.txt")), Ok("some text".as_bytes().to_vec()));
         assert_eq!(mockfs.blocking_read_entire_file(&Path::new("folder1/file3.txt")), Err(ReadError::FileNotFound));
+    }
+
+    #[test]
+    fn mock_save_load() {
+        let mockfs = MockFS::new("/tmp")
+            .with_file("folder1/file1.txt", "some text")
+            .with_file("folder2/file2.txt", "some text2")
+            .to_fsf();
+
+        let new_content = "replaced text 1";
+        let spath = mockfs.descendant_checked("folder1/file1.txt").unwrap();
+        assert!(mockfs.overwrite_with_str(&spath, new_content, true).is_ok());
+
+        let binding = mockfs.blocking_read_entire_file(&spath).unwrap();
+        let read_content = std::str::from_utf8(binding.as_slice()).unwrap();
+
+        assert_eq!(read_content, new_content)
     }
 }

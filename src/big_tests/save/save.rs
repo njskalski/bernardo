@@ -7,6 +7,8 @@ fn common_start() -> FullSetup {
         .with_files(["src/main.rs"])
         .build();
 
+    assert!(full_setup.wait_frame());
+
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
     full_setup
@@ -27,7 +29,7 @@ fn save_saves() {
     assert!(file.is_some());
     let file = file.unwrap();
 
-    // no screen present in file
+    // no string present in file
     assert!(!file.read_entire_file_to_string().unwrap().contains(test_string));
 
     // we type it in
@@ -43,8 +45,11 @@ fn save_saves() {
     // we hit ctrl-s
     assert!(full_setup.send_key(full_setup.config().keyboard_config.editor.save));
 
+    full_setup.screenshot();
+
     // and now the filesystem DOES contain the string in question
-    assert!(file.read_entire_file_to_string().unwrap().contains(test_string));
+    let read_back = file.read_entire_file_to_string().unwrap();
+    assert!(read_back.contains(test_string));
 
     full_setup.finish();
 }
