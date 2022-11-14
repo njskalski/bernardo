@@ -43,6 +43,7 @@ pub struct ListWidget<Item: ListWidgetItem> {
     last_size: Option<XY>,
 }
 
+// TODO reduce with ScrollEnum
 #[derive(Clone, Copy, Debug)]
 pub enum ListWidgetMsg {
     Arrow(Arrow),
@@ -51,7 +52,6 @@ pub enum ListWidgetMsg {
     End,
     PageUp,
     PageDown,
-    Noop,
 }
 
 impl AnyMsg for ListWidgetMsg {}
@@ -356,7 +356,6 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
             ListWidgetMsg::End => { None }
             ListWidgetMsg::PageUp => { None }
             ListWidgetMsg::PageDown => { None }
-            ListWidgetMsg::Noop => { None }
         };
     }
 

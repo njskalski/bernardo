@@ -27,6 +27,4 @@ pub mod common_query;
 pub mod stupid_cursor;
 
 pub mod cursor_set_fuzz;
-
-
-
+pub mod scroll_enum;
