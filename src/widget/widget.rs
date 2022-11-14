@@ -73,10 +73,6 @@ pub trait Widget: 'static {
     fn as_any_mut(&mut self) -> &mut dyn Widget where Self: Sized {
         self as &mut dyn Widget
     }
-
-    fn get_actions(&self) -> Box<dyn Iterator<Item=ActionTrigger<Self>> + '_> where Self: Sized {
-        Box::new(std::iter::empty())
-    }
 }
 
 impl<'a> Debug for dyn Widget + 'a {
