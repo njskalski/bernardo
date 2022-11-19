@@ -171,11 +171,11 @@ impl EditorView {
         if let Some(ff) = buffer.get_path() {
             ff.overwrite_with_stream(&mut buffer.streaming_iterator(), false);
         } else {
-            self.open_save_as_dialog()
+            self.open_save_as_dialog_and_focus()
         }
     }
 
-    fn open_save_as_dialog(&mut self) {
+    fn open_save_as_dialog_and_focus(&mut self) {
         match self.state {
             EditorViewState::Simple => {}
             _ => {
@@ -192,6 +192,7 @@ impl EditorView {
         }).with_path(self.get_save_file_dialog_path());
 
         self.hover_dialog = Some(save_file_dialog);
+        self.set_focused(self.get_hover_subwidget());
     }
 
     fn positively_save_raw(&mut self, path: &SPath) {
@@ -357,8 +358,7 @@ impl Widget for EditorView {
                     None
                 }
                 EditorViewMsg::SaveAs => {
-                    self.open_save_as_dialog();
-                    self.set_focused(self.get_hover_subwidget());
+                    self.open_save_as_dialog_and_focus();
                     None
                 }
                 EditorViewMsg::OnSaveAsCancel => {

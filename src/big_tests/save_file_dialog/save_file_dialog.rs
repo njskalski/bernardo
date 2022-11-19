@@ -16,6 +16,8 @@ fn common_start() -> FullSetup {
     assert!(full_setup.send_key(full_setup.config().keyboard_config.editor.save_as));
     assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().save_file_dialog().is_some()));
 
+    assert!(full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().is_focused());
+
     full_setup
 }
 
@@ -237,4 +239,18 @@ fn cancel_cancels() {
     }));
 
     full_setup.finish();
+}
+
+#[test]
+fn save_empty_file_doesnt_leak_focus() {
+    let mut full_setup: FullSetup = FullSetup::new("./test_envs/save_file_dialog_test_1")
+        .build();
+
+    assert!(full_setup.send_key(full_setup.config().keyboard_config.global.new_buffer));
+    assert!(full_setup.wait_for(|full_setup| full_setup.get_first_editor().is_some()));
+    assert!(full_setup.get_first_editor().unwrap().is_view_focused());
+    assert!(full_setup.send_key(full_setup.config().keyboard_config.editor.save));
+    assert!(full_setup.wait_for(|full_setup| full_setup.get_first_editor().unwrap().save_file_dialog().is_some()));
+
+    assert!(full_setup.wait_for(|full_setup| full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().is_focused()));
 }

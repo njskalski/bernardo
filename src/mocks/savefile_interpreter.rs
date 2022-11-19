@@ -84,6 +84,10 @@ impl<'a> SaveFileInterpreter<'a> {
 
     pub fn cancel_button(&self) -> &ButtonWidgetInterpreter<'a> { &self.cancel_button }
 
+    pub fn is_focused(&self) -> bool {
+        self.meta.focused
+    }
+
     pub fn meta(&self) -> &Metadata {
         self.meta
     }
