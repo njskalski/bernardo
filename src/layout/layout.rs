@@ -1,6 +1,7 @@
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::widget::{WID, Widget};
 
@@ -21,10 +22,7 @@ pub type WidgetGetterMut<T> = Box<dyn Fn(&'_ mut T) -> &'_ mut dyn Widget>;
 pub trait Layout<W: Widget> {
     fn min_size(&self, root: &W) -> XY;
 
-    // We do not support layouting on infinite spaces, I am too tired to implement it
-    fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>>;
-
-    // fn focus_graph(&self) -> FocusGraph<SubwidgetPointer<W>>;
+    fn layout(&self, root: &mut W, sc: SizeConstraint) -> Vec<WidgetWithRect<W>>;
 
     fn boxed(self) -> Box<dyn Layout<W>> where Self: Sized, Self: 'static {
         Box::new(self)

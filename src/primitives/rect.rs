@@ -13,6 +13,7 @@ pub struct Rect {
 }
 
 impl Rect {
+    // TODO this is a degenerated case, I should use Options instead of magic symbols
     pub const ZERO: Rect = Rect::new(XY::ZERO, XY::ZERO);
 
     pub const fn new(pos: XY, size: XY) -> Self {

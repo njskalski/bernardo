@@ -1,4 +1,7 @@
+use std::cmp::min;
 use std::fmt::{Debug, Display, Formatter};
+
+use log::{debug, error, warn};
 
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
@@ -74,6 +77,7 @@ impl SizeConstraint {
     // This corresponds to VISIBLE PART of output. It is used for two things:
     // - drawing optimisation
     // - layouting views that want to "fill" the visible part.
+    // - layouting anything that wants to be "centered" while x axis is unlimited.
     pub fn visible_hint(&self) -> &Rect {
         &self.visible
     }
@@ -104,26 +108,89 @@ impl SizeConstraint {
     }
 
     /*
-    This function removes (substracts) top rows / left columns, limiting "visible hint" when
-    necessary. It's used in big_list widget for layouting
+    Returns intersection of Rect with self, if nonempty, along with proper visibility hint.
      */
-    // pub fn substract(&self, xy: XY) -> Option<SizeConstraint> {
-    //     let new_x = if let Some(x) = self.x {
-    //         if x <= xy.x {
-    //             return None;
-    //         };
-    //         Some(x - xy.x)
-    //     } else {
-    //         None
-    //     };
-    //
-    //     if let Some(y) = self.y {
-    //         if y <= xy.y {
-    //             return None;
-    //         };
-    //         Some(y - xy.y)
-    //     } else {
-    //         None
-    //     };
-    // }
+    //TODO tests
+    pub fn cut_out_rect(&self, rect: Rect) -> Option<SizeConstraint> {
+        // no overlap, rect is too far out x
+        if self.x.as_ref().map(|max_x| max_x < rect.lower_right().x) {
+            return None;
+        }
+        // no overlap, rect is too far out y
+        if self.y.as_ref().map(|max_y| max_y < rect.lower_right().y) {
+            return None;
+        }
+
+        let new_upper_left = rect.upper_left();
+        let mut new_lower_right = rect.lower_right();
+        if let Some(max_x) = self.x {
+            if new_lower_right.x > max_x {
+                new_lower_right.x = max_x;
+            }
+        }
+        if let Some(max_y) = self.y {
+            if new_lower_right.y > max_y {
+                new_lower_right.y = max_y;
+            }
+        }
+
+        if let Some(new_visible_rect) = self.visible.intersect(&rect) {
+            if new_lower_right > new_upper_left {
+                let mut new_size = new_lower_right - new_upper_left;
+                Some(
+                    SizeConstraint::new(Some(new_size.x), Some(new_size.y), new_visible_rect)
+                )
+            } else {
+                debug!("empty intersection of rect {:?} and sc {:?}", &rect, self);
+                None
+            }
+        } else {
+            warn!("not returning a cut_out_rect that would have been invisible (rect {:?}, sc {:?})", &rect, self);
+            None
+        }
+    }
+
+    /*
+    Returns SizeConstraint that comes from this one by applying symmetrical margins, if nonempty, along with proper visibility hint.
+     */
+    //TODO tests
+    pub fn cut_out_margin(&self, margin: XY) -> Option<SizeConstraint> {
+        if self.x.as_ref().map(|max_x| max_x < 1 + margin.x * 2) {
+            debug!("not enough x");
+            return None;
+        }
+        if self.y.as_ref().map(|max_y| max_y < 1 + margin.y * 2) {
+            debug!("not enough y");
+            return None;
+        }
+
+        let mut new_rect_upper_left = self.visible.upper_left();
+        if new_rect_upper_left.x < margin.x {
+            new_rect_upper_left.x = margin.x;
+        }
+        if new_rect_upper_left.y < margin.y {
+            new_rect_upper_left.y = margin.y;
+        }
+
+        let mut new_rect_lower_right = self.visible.lower_right();
+        if let Some(max_x) = self.x {
+            new_rect_lower_right.x = min(new_rect_lower_right.x, max_x - margin.x);
+        }
+        if let Some(max_y) = self.y {
+            new_rect_lower_right.y = min(new_rect_lower_right.y, max_y - margin.y);
+        }
+
+        let new_visible_rect = if new_rect_lower_right > new_rect_upper_left {
+            Rect::new(new_rect_upper_left, new_rect_lower_right - new_rect_upper_left)
+        } else {
+            debug!("visible part would be empty/deformed");
+            return None;
+        };
+
+        Some(SizeConstraint::new(
+            self.x.map(|old_x| old_x - (margin.x * 2)),
+            self.y.map(|old_y| old_y - (margin.y * 2)),
+            new_visible_rect,
+        ))
+    }
 }

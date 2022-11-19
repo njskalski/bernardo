@@ -10,19 +10,11 @@ use crate::widget::widget::Widget;
 
 pub struct LeafLayout<W: Widget> {
     widget: SubwidgetPointer<W>,
-    with_border: bool,
 }
 
 impl<W: Widget> LeafLayout<W> {
     pub fn new(widget: SubwidgetPointer<W>) -> Self {
-        LeafLayout { widget, with_border: false }
-    }
-
-    pub fn with_border(self) -> Self {
-        LeafLayout {
-            with_border: true,
-            ..self
-        }
+        LeafLayout { widget }
     }
 
     fn rect(&self, output_size: XY) -> Option<Rect> {
@@ -43,27 +35,20 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
         self.widget.get(root).min_size()
     }
 
-    fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>> {
-        match self.rect(output_size) {
-            None => {
-                warn!("too small LeafLayout to draw the view.");
-                vec![]
-            }
-            Some(rect) => {
-                let root_id = root.id();
-                let widget = self.widget.get_mut(root);
-                let skip = root_id == widget.id();
+    fn layout(&self, root: &mut W, sc: SizeConstraint) -> Vec<WidgetWithRect<W>> {
+        let root_id = root.id();
+        let widget = self.widget.get_mut(root);
+        let skip = root_id == widget.id();
 
-                if !skip {
-                    widget.update_and_layout(SizeConstraint::simple(rect.size));
-                }
-
-                vec![WidgetWithRect::new(
-                    self.widget.clone(),
-                    rect,
-                    true,
-                )]
-            }
+        if !skip {
+            let xy = widget.update_and_layout(sc);
+            vec![WidgetWithRect::new(
+                self.widget.clone(),
+                Rect::new(XY::ZERO, xy),
+                true,
+            )]
+        } else {
+            vec![]
         }
     }
 }

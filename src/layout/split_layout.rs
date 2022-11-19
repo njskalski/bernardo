@@ -5,6 +5,7 @@ use log::{error, warn};
 use crate::layout::layout::Layout;
 use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 
@@ -16,8 +17,14 @@ pub enum SplitDirection {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum SplitRule {
-    Fixed(usize),
+    // Uses exactly usize space on free axis
+    Fixed(u16),
+    // Uses exactly min_size of sublayout
     MinSize,
+
+    // In case where free axis is constrained, splits the free space proportionally to given numbers.
+    // In case where free axis in unconstrained, allows sublayouts unconstrained expansion, but
+    //  does not expand them further to meet the proportion (argument ignored).
     Proportional(f32),
 }
 
@@ -49,6 +56,42 @@ impl<W: Widget> SplitLayout<W> {
         children.push(child);
 
         SplitLayout { children, ..self }
+    }
+
+    fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>> {
+        let rects_op = self.get_just_rects(output_size, root);
+        if rects_op.is_none() {
+            warn!(
+                "not enough space to get_rects split_layout: {:?}",
+                output_size
+            );
+            return Vec::default();
+        };
+
+        let rects = rects_op.unwrap();
+        let mut res: Vec<WidgetWithRect<W>> = vec![];
+
+        debug_assert!(rects.len() == self.children.len());
+
+        for (idx, child_layout) in self.children.iter().enumerate() {
+            let rect = &rects[idx];
+            let wirs = child_layout.layout.layout(root, rect.size);
+
+            // debug!("A{} output_size {} parent {} children {:?}", wirs.len(), output_size, rect, wirs);
+            //TODO add intersection checks
+
+            for wir in wirs.into_iter() {
+                let new_wir = wir.shifted(rect.pos);
+
+                // debug!("output_size {} parent {} child {} res {}", output_size, rect, wir.rect, new_rect);
+                debug_assert!(output_size.x >= new_wir.rect().lower_right().x);
+                debug_assert!(output_size.y >= new_wir.rect().lower_right().y);
+
+                res.push(new_wir);
+            }
+        }
+
+        res
     }
 
     fn get_just_rects(&self, size: XY, root: &W) -> Option<Vec<Rect>> {
@@ -195,41 +238,7 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
         res
     }
 
-    fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>> {
-        let rects_op = self.get_just_rects(output_size, root);
-        if rects_op.is_none() {
-            warn!(
-                "not enough space to get_rects split_layout: {:?}",
-                output_size
-            );
-            return Vec::default();
-        };
-
-        let rects = rects_op.unwrap();
-        let mut res: Vec<WidgetWithRect<W>> = vec![];
-
-        debug_assert!(rects.len() == self.children.len());
-
-        for (idx, child_layout) in self.children.iter().enumerate() {
-            let rect = &rects[idx];
-            let wirs = child_layout.layout.layout(root, rect.size);
-
-            // debug!("A{} output_size {} parent {} children {:?}", wirs.len(), output_size, rect, wirs);
-            //TODO add intersection checks
-
-            for wir in wirs.into_iter() {
-                let new_wir = wir.shifted(rect.pos);
-
-                // debug!("output_size {} parent {} child {} res {}", output_size, rect, wir.rect, new_rect);
-                debug_assert!(output_size.x >= new_wir.rect().lower_right().x);
-                debug_assert!(output_size.y >= new_wir.rect().lower_right().y);
-
-                res.push(new_wir);
-            }
-        }
-
-        res
-    }
+    fn layout(&self, root: &mut W, sc: SizeConstraint) -> Vec<WidgetWithRect<W>> {}
 }
 
 #[cfg(test)]

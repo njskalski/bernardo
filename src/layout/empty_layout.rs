@@ -1,5 +1,6 @@
 use crate::layout::layout::Layout;
 use crate::layout::widget_with_rect::WidgetWithRect;
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 
@@ -29,7 +30,7 @@ impl<W: Widget> Layout<W> for EmptyLayout {
         self.size.unwrap_or(XY::ZERO)
     }
 
-    fn layout(&self, _root: &mut W, _output_size: XY) -> Vec<WidgetWithRect<W>> {
+    fn layout(&self, _root: &mut W, _sc: SizeConstraint) -> Vec<WidgetWithRect<W>> {
         Vec::default()
     }
 }
