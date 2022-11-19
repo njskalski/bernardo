@@ -1,4 +1,5 @@
-use crate::layout::layout::{Layout, WidgetWithRect};
+use crate::layout::layout::Layout;
+use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 

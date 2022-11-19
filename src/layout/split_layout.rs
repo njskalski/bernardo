@@ -2,7 +2,8 @@ use std::cmp::max;
 
 use log::{error, warn};
 
-use crate::layout::layout::{Layout, WidgetWithRect};
+use crate::layout::layout::Layout;
+use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
