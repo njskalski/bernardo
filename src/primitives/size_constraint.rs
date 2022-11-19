@@ -102,4 +102,28 @@ impl SizeConstraint {
             _ => None
         }
     }
+
+    /*
+    This function removes (substracts) top rows / left columns, limiting "visible hint" when
+    necessary. It's used in big_list widget for layouting
+     */
+    // pub fn substract(&self, xy: XY) -> Option<SizeConstraint> {
+    //     let new_x = if let Some(x) = self.x {
+    //         if x <= xy.x {
+    //             return None;
+    //         };
+    //         Some(x - xy.x)
+    //     } else {
+    //         None
+    //     };
+    //
+    //     if let Some(y) = self.y {
+    //         if y <= xy.y {
+    //             return None;
+    //         };
+    //         Some(y - xy.y)
+    //     } else {
+    //         None
+    //     };
+    // }
 }
