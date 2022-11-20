@@ -2,7 +2,7 @@ use std::cmp::{min, Ordering};
 use std::fmt;
 use std::fmt::Formatter;
 use std::hash::Hash;
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Sub};
 
 use log::error;
 use serde::{Deserialize, Serialize};
@@ -48,6 +48,13 @@ impl XY {
 
     pub fn neighbours(&self) -> NeighboursIterator {
         NeighboursIterator::new(*self)
+    }
+
+    pub fn max_both_axis(&self, other: XY) -> XY {
+        XY::new(
+            u16::max(self.x, other.x),
+            u16::max(self.y, other.y),
+        )
     }
 }
 
@@ -206,6 +213,13 @@ impl Sub for XY {
                 self.y - other.y
             } else { 0 },
         )
+    }
+}
+
+impl AddAssign for XY {
+    fn add_assign(&mut self, rhs: XY) {
+        self.x += rhs.x;
+        self.y += rhs.y;
     }
 }
 

@@ -193,4 +193,43 @@ impl SizeConstraint {
             new_visible_rect,
         ))
     }
+
+    /*
+    This function removes (substracts) top rows / left columns, limiting "visible hint" when
+    necessary. It's used  for layouting */
+    pub fn substract(&self, xy: XY) -> Option<SizeConstraint> {
+        let new_x = if let Some(x) = self.x {
+            if x <= xy.x {
+                return None;
+            };
+            Some(x - xy.x)
+        } else {
+            None
+        };
+
+        let new_y = if let Some(y) = self.y {
+            if y <= xy.y {
+                return None;
+            };
+            Some(y - xy.y)
+        } else {
+            None
+        };
+
+        let mut new_rect_upper_left = self.visible.upper_left();
+        new_rect_upper_left.x = min(new_rect_upper_left.x, xy.x);
+        new_rect_upper_left.y = min(new_rect_upper_left.y, xy.y);
+
+        let mut new_rect_lower_right = self.visible.lower_right();
+        new_rect_lower_right.x = min(new_rect_lower_right.x, xy.x);
+        new_rect_lower_right.y = min(new_rect_lower_right.y, xy.y);
+
+        if new_rect_lower_right > new_rect_upper_left {
+            let new_visible_rect = Rect::new(new_rect_upper_left, new_rect_lower_right - new_rect_upper_left);
+            Some(SizeConstraint::new(new_x, new_y, new_visible_rect))
+        } else {
+            debug!("not returning new sc, visible rect is none");
+            None
+        }
+    }
 }

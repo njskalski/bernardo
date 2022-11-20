@@ -1,4 +1,4 @@
-use log::warn;
+use log::{error, warn};
 
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::Layout;
@@ -18,15 +18,7 @@ impl<W: Widget> LeafLayout<W> {
     }
 
     fn rect(&self, output_size: XY) -> Option<Rect> {
-        if self.with_border {
-            if output_size > (3, 3).into() {
-                Some(Rect::new(XY::new(1, 1), XY::new(output_size.x - 2, output_size.y - 2)))
-            } else {
-                None
-            }
-        } else {
-            Some(Rect::new(XY::ZERO, output_size))
-        }
+        Some(Rect::new(XY::ZERO, output_size))
     }
 }
 
@@ -40,13 +32,20 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
         let widget = self.widget.get_mut(root);
         let skip = root_id == widget.id();
 
+        let properly_sized = sc.bigger_equal_than(widget.min_size());
+
         if !skip {
-            let xy = widget.update_and_layout(sc);
-            vec![WidgetWithRect::new(
-                self.widget.clone(),
-                Rect::new(XY::ZERO, xy),
-                true,
-            )]
+            if properly_sized {
+                let xy = widget.update_and_layout(sc);
+                vec![WidgetWithRect::new(
+                    self.widget.clone(),
+                    Rect::new(XY::ZERO, xy),
+                    true,
+                )]
+            } else {
+                error!("got layout too small to draw widget [{:?}]", widget);
+                vec![]
+            }
         } else {
             vec![]
         }

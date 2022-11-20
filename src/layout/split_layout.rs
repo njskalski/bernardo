@@ -1,6 +1,6 @@
 use std::cmp::max;
 
-use log::{error, warn};
+use log::{debug, error, warn};
 
 use crate::layout::layout::Layout;
 use crate::layout::widget_with_rect::WidgetWithRect;
@@ -9,9 +9,37 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 
+/* TODO
+One of many issues this file have is it's readability, starting with the fact that it seems that
+SplitDirection type is non-intuitive. I added some drawings (that I had to reverse engineer from
+code myself), then I'll add some tests, and then I can refactor.
+ */
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SplitDirection {
+    /*
+    ┌───┬───┬───┐
+    │ l │ l │ l │
+    │ a │ a │ a │
+    │ y │ y │ y │
+    │ o │ o │ o │
+    │ u │ u │ u │
+    │ t │ t │ t │
+    │   │   │   │
+    │ 1 │ 2 │ 3 │
+    └───┴───┴───┘
+     */
     Horizontal,
+
+    /*
+    ┌────────────────────┐
+    │ layout 1           │
+    ├────────────────────┤
+    │ layout 2           │
+    ├────────────────────┤
+    │ layout 3           │
+    └────────────────────┘
+     */
     Vertical,
 }
 
@@ -58,7 +86,7 @@ impl<W: Widget> SplitLayout<W> {
         SplitLayout { children, ..self }
     }
 
-    fn layout(&self, root: &mut W, output_size: XY) -> Vec<WidgetWithRect<W>> {
+    fn simple_layout(&self, root: &mut W, output_size: XY, sc: SizeConstraint) -> Vec<WidgetWithRect<W>> {
         let rects_op = self.get_just_rects(output_size, root);
         if rects_op.is_none() {
             warn!(
@@ -75,7 +103,14 @@ impl<W: Widget> SplitLayout<W> {
 
         for (idx, child_layout) in self.children.iter().enumerate() {
             let rect = &rects[idx];
-            let wirs = child_layout.layout.layout(root, rect.size);
+            let new_sc = match sc.cut_out_rect(*rect) {
+                Some(new_sc) => new_sc,
+                None => {
+                    debug!("skipping invisible layout #{}", idx);
+                    continue;
+                }
+            };
+            let wirs = child_layout.layout.layout(root, new_sc);
 
             // debug!("A{} output_size {} parent {} children {:?}", wirs.len(), output_size, rect, wirs);
             //TODO add intersection checks
@@ -92,6 +127,126 @@ impl<W: Widget> SplitLayout<W> {
         }
 
         res
+    }
+
+    /*
+    Surprisingly, implementation of this variant is simpler, mostly because there is no "proportionality".
+     */
+    fn complicated_layout(&self, root: &mut W, output_size: XY, sc: SizeConstraint) -> Vec<WidgetWithRect<W>> {
+        let mut result: Vec<WidgetWithRect<W>> = Vec::new();
+        let mut offset = XY::ZERO;
+
+        // TODO here's another issue: right now I don't get SCs for invisible children.
+        //   But I need them to offset for things *above* visible screen, so anything becomes visible
+
+        let non_free_axis = if self.split_direction == SplitDirection::Vertical {
+            sc.y().unwrap_or_else(|| {
+                error!("fake unwrap, returning safe default");
+                sc.visible_hint().size.y
+            })
+        } else {
+            sc.x().unwrap_or_else(|| {
+                error!("fake unwrap, returning safe default");
+                sc.visible_hint().size.x
+            })
+        };
+
+        for (child_idx, child) in self.children.iter().enumerate() {
+            let min_child_size = child.layout.min_size(root);
+            match child.split_rule {
+                SplitRule::Fixed(fixed) => {
+                    let local_size = if self.split_direction == SplitDirection::Vertical {
+                        XY::new(non_free_axis, fixed)
+                    } else {
+                        XY::new(fixed, non_free_axis)
+                    };
+
+                    let rect = Rect::new(offset, local_size);
+
+                    if min_child_size <= rect.size {
+                        match sc.cut_out_rect(rect) {
+                            Some(new_sc) => {
+                                let child_wwrs = child.layout.layout(root, new_sc);
+                                for wwrsc in child_wwrs.iter() {
+                                    result.push(wwrsc.shifted(rect.pos))
+                                };
+                            }
+                            None => {
+                                debug!("skipping child #{} because rect is invisible", child_idx);
+                                continue;
+                            }
+                        };
+                    } else {
+                        debug!("skipping child #{} because rect is too small", child_idx);
+                    }
+
+                    if self.split_direction == SplitDirection::Vertical {
+                        offset += XY::new(0, fixed);
+                    } else {
+                        offset += XY::new(fixed, 0);
+                    }
+                }
+                SplitRule::MinSize => {
+                    let local_size = if self.split_direction == SplitDirection::Vertical {
+                        XY::new(non_free_axis, min_child_size.y)
+                    } else {
+                        XY::new(min_child_size.x, non_free_axis)
+                    };
+
+                    let rect = Rect::new(offset, local_size);
+
+                    if min_child_size <= rect.size {
+                        match sc.cut_out_rect(rect) {
+                            Some(new_sc) => {
+                                let child_wwrs = child.layout.layout(root, new_sc);
+                                for wwrsc in child_wwrs.iter() {
+                                    result.push(wwrsc.shifted(rect.pos))
+                                };
+                            }
+                            None => {
+                                debug!("skipping child #{} because rect is invisible", child_idx);
+                                continue;
+                            }
+                        };
+                    } else {
+                        debug!("skipping child #{} because rect is too small", child_idx);
+                    }
+
+                    if self.split_direction == SplitDirection::Vertical {
+                        offset += XY::new(0, min_child_size.y);
+                    } else {
+                        offset += XY::new(min_child_size.x, 0);
+                    }
+                }
+                SplitRule::Proportional(_) => {
+                    let new_sc = match sc.cut_out_margin(offset) {
+                        Some(sc) => sc,
+                        None => {
+                            debug!("not layouting child #{}, cut_out_margin => None", child_idx);
+                            continue;
+                        }
+                    };
+
+                    // TODO we need actuall xy from widget.layout here
+                    let mut fake_xy = XY::ZERO;
+
+                    let child_wwrs = child.layout.layout(root, new_sc);
+                    for wwrsc in child_wwrs.iter() {
+                        let item = wwrsc.shifted(offset);
+                        fake_xy = fake_xy.max_both_axis(item.rect.lower_right());
+                        result.push(item);
+                    };
+
+                    if self.split_direction == SplitDirection::Vertical {
+                        offset += XY::new(0, fake_xy.y);
+                    } else {
+                        offset += XY::new(fake_xy.x, 0);
+                    }
+                }
+            };
+        }
+
+        result
     }
 
     fn get_just_rects(&self, size: XY, root: &W) -> Option<Vec<Rect>> {
@@ -128,7 +283,7 @@ impl<W: Widget> SplitLayout<W> {
         for (idx, child) in self.children.iter().enumerate() {
             match child.split_rule {
                 SplitRule::Fixed(f) => {
-                    amounts[idx] = f;
+                    amounts[idx] = f as usize;
                 }
                 SplitRule::MinSize => {
                     let ms = child.layout.min_size(root);
@@ -238,7 +393,17 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
         res
     }
 
-    fn layout(&self, root: &mut W, sc: SizeConstraint) -> Vec<WidgetWithRect<W>> {}
+    fn layout(&self, root: &mut W, sc: SizeConstraint) -> Vec<WidgetWithRect<W>> {
+        if let Some(simple_size) = sc.as_finite() {
+            self.simple_layout(root, simple_size)
+        } else {
+            if self.split_direction == SplitDirection::Vertical && sc.x().is_none() {
+                error!("messed up case, where we have a split direction on non-free axis. Returning empty result so programmer realizes something is wrong");
+                return vec![];
+            }
+            self.complicated_layout(root, sc)
+        }
+    }
 }
 
 #[cfg(test)]
