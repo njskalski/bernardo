@@ -11,6 +11,19 @@ pub type WidgetGetterMut<T> = Box<dyn Fn(&'_ mut T) -> &'_ mut dyn Widget>;
 // TODO I want to get to the point where all layout is generated from macros, and then
 // depending on whether root is mut or not, we get mut layout or not-mut layout.
 
+pub struct LayoutResult<W: Widget> {
+    pub wwrs: Vec<WidgetWithRect<W>>,
+    pub total_size: XY,
+}
+
+impl<W: Widget> LayoutResult<W> {
+    pub fn new(wwrs: Vec<WidgetWithRect<W>>, total_size: XY) -> LayoutResult<W> {
+        LayoutResult {
+            wwrs,
+            total_size,
+        }
+    }
+}
 
 /*
  Layouts do not work on infinite planes (scrolling of layouted view will fail).
@@ -22,7 +35,11 @@ pub type WidgetGetterMut<T> = Box<dyn Fn(&'_ mut T) -> &'_ mut dyn Widget>;
 pub trait Layout<W: Widget> {
     fn min_size(&self, root: &W) -> XY;
 
-    fn layout(&self, root: &mut W, sc: SizeConstraint) -> Vec<WidgetWithRect<W>>;
+    /*
+    Current semantics: returns wwrs that intersect with "SizeConstraint" and have non empty visible
+     intersection. So it does culling and layouting.
+     */
+    fn layout(&self, root: &mut W, sc: SizeConstraint) -> LayoutResult<W>;
 
     fn boxed(self) -> Box<dyn Layout<W>> where Self: Sized, Self: 'static {
         Box::new(self)

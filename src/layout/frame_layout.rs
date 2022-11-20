@@ -1,6 +1,6 @@
 use log::error;
 
-use crate::layout::layout::Layout;
+use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
@@ -34,15 +34,23 @@ impl<W: Widget> Layout<W> for FrameLayout<W> {
         self.layout.min_size(root) + self.margins * 2
     }
 
-    fn layout(&self, root: &mut W, sc: SizeConstraint) -> Vec<WidgetWithRect<W>> {
+    fn layout(&self, root: &mut W, sc: SizeConstraint) -> LayoutResult<W> {
         if let Some(new_sc) = sc.cut_out_margin(self.margins) {
-            let subs = self.layout.layout(root, new_sc);
-            subs.into_iter().map(|wir| {
+            let subresp = self.layout.layout(root, new_sc);
+            let wwrs: Vec<WidgetWithRect<W>> = subresp.wwrs.into_iter().map(|wir| {
                 wir.shifted(self.margins)
-            }).collect()
+            }).collect();
+
+            LayoutResult::new(wwrs, subresp.total_size)
         } else {
             error!("too small output to render with margins");
-            vec![]
+
+            if let Some(size) = sc.as_finite() {
+                LayoutResult::new(Vec::default(), size)
+            } else {
+                error!("and we don't have a good size estimation. Returning (1,1).");
+                LayoutResult::new(Vec::default(), XY::new(1, 1))
+            }
         }
     }
 }

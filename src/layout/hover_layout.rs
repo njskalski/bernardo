@@ -4,7 +4,7 @@
 
 use log::error;
 
-use crate::layout::layout::Layout;
+use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
@@ -37,11 +37,11 @@ impl<W: Widget> Layout<W> for HoverLayout<W> {
         self.parent.min_size(root)
     }
 
-    fn layout(&self, root: &mut W, sc: SizeConstraint) -> Vec<WidgetWithRect<W>> {
+    fn layout(&self, root: &mut W, sc: SizeConstraint) -> LayoutResult<W> {
         let mut result = self.parent.layout(root, sc);
 
         if self.blocking_background {
-            for wwr in result.iter_mut() {
+            for wwr in result.wwrs.iter_mut() {
                 wwr.set_focusable(false);
             }
         }
@@ -50,11 +50,11 @@ impl<W: Widget> Layout<W> for HoverLayout<W> {
             error!("not enough space to draw child {} at {}", self.child_rect, sc);
         } else {
             if let Some(new_sc) = sc.cut_out_rect(self.child_rect) {
-                let mut partial: Vec<WidgetWithRect<W>> = self.child.layout(root, new_sc).into_iter().map(
+                let mut partial: Vec<WidgetWithRect<W>> = self.child.layout(root, new_sc).wwrs.into_iter().map(
                     |wir| wir.shifted(self.child_rect.pos)
                 ).collect();
 
-                result.append(&mut partial);
+                result.wwrs.append(&mut partial);
             }
         }
 

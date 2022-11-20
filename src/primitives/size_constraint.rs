@@ -113,11 +113,11 @@ impl SizeConstraint {
     //TODO tests
     pub fn cut_out_rect(&self, rect: Rect) -> Option<SizeConstraint> {
         // no overlap, rect is too far out x
-        if self.x.as_ref().map(|max_x| max_x < rect.lower_right().x) {
+        if self.x.map(|max_x| max_x < rect.lower_right().x).unwrap_or(false) {
             return None;
         }
         // no overlap, rect is too far out y
-        if self.y.as_ref().map(|max_y| max_y < rect.lower_right().y) {
+        if self.y.map(|max_y| max_y < rect.lower_right().y).unwrap_or(false) {
             return None;
         }
 
@@ -155,11 +155,11 @@ impl SizeConstraint {
      */
     //TODO tests
     pub fn cut_out_margin(&self, margin: XY) -> Option<SizeConstraint> {
-        if self.x.as_ref().map(|max_x| max_x < 1 + margin.x * 2) {
+        if self.x.map(|max_x| max_x < 1 + margin.x * 2).unwrap_or(false) {
             debug!("not enough x");
             return None;
         }
-        if self.y.as_ref().map(|max_y| max_y < 1 + margin.y * 2) {
+        if self.y.map(|max_y| max_y < 1 + margin.y * 2).unwrap_or(false) {
             debug!("not enough y");
             return None;
         }
