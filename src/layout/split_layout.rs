@@ -115,7 +115,7 @@ impl<W: Widget> SplitLayout<W> {
             // debug!("A{} output_size {} parent {} children {:?}", wirs.len(), output_size, rect, wirs);
             //TODO add intersection checks
 
-            for wir in resp.wwrs.iter() {
+            for wir in resp.wwrs.into_iter() {
                 let new_wir = wir.shifted(rect.pos);
 
                 // debug!("output_size {} parent {} child {} res {}", output_size, rect, wir.rect, new_rect);

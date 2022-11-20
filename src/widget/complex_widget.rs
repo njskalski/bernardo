@@ -46,6 +46,7 @@ pub trait ComplexWidget: Widget + Sized {
     /*
     produces cloneable layout func tree
      */
+    // TODO max_size -> sc
     fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>>;
 
     /*
@@ -101,9 +102,9 @@ pub trait ComplexWidget: Widget + Sized {
         });
 
         let layout = self.get_layout(xy);
-        let wwrs = layout.layout(self, xy);
+        let layout_res = layout.layout(self, sc);
 
-        let widgets_and_positions: Vec<(WID, SubwidgetPointer<Self>, Rect)> = wwrs.iter().filter(
+        let widgets_and_positions: Vec<(WID, SubwidgetPointer<Self>, Rect)> = layout_res.wwrs.iter().filter(
             |wwr| wwr.focusable()
         ).map(|w| {
             let rect = w.rect().clone();
@@ -122,7 +123,7 @@ pub trait ComplexWidget: Widget + Sized {
 
         let new_state = DisplayState {
             focused,
-            wwrs,
+            wwrs: layout_res.wwrs,
             focus_group,
         };
 
