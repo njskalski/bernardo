@@ -216,3 +216,46 @@ impl fmt::Display for Rect {
         write!(f, "r[{},{} ({})]", self.pos, self.size, self.lower_right())
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+    use crate::primitives::rect::Rect;
+    use crate::primitives::xy::XY;
+
+    #[test]
+    fn rect_intersect_test() {
+        assert_eq!(Rect::new(XY::new(48, 36), XY::new(25, 1)).intersect(
+            &Rect::new(XY::ZERO, XY::new(49, 1))
+        ), None);
+
+        assert_eq!(
+            Rect::new(XY::ZERO, XY::new(10, 10),
+            ).intersect(
+                &Rect::new(XY::ZERO, XY::new(4, 4))
+            ),
+            Some(Rect::new(XY::ZERO, XY::new(4, 4)))
+        );
+
+        assert_eq!(
+            Rect::new(XY::ZERO, XY::new(10, 10),
+            ).intersect(
+                &Rect::new(XY::new(10, 10), XY::new(4, 4))
+            ),
+            None,
+        );
+
+        assert_eq!(
+            Rect::new(XY::ZERO, XY::new(10, 10),
+            ).intersect(
+                &Rect::new(XY::new(9, 9), XY::new(4, 4))
+            ),
+            Some(Rect::new(XY::new(9, 9), XY::new(1, 1))),
+        );
+
+        assert_eq!(
+            Rect::new(XY::new(9, 9), XY::new(4, 4)).intersect(
+                &Rect::new(XY::ZERO, XY::new(10, 10))),
+            Some(Rect::new(XY::new(9, 9), XY::new(1, 1))),
+        );
+    }
+}

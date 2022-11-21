@@ -406,6 +406,3 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
         }
     }
 }
-
-#[cfg(test)]
-pub mod tests {}
