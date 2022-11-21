@@ -18,7 +18,7 @@ pub mod tests {
     struct MockLayout {
         wid: WID,
         min_size: XY,
-        preferred_size: XY,
+        preferred_size: Option<XY>,
     }
 
     impl MockLayout {
@@ -26,13 +26,13 @@ pub mod tests {
             MockLayout {
                 wid: get_new_widget_id(),
                 min_size,
-                preferred_size: min_size,
+                preferred_size: None,
             }
         }
 
         pub fn with_preferred_size(self, preferred_size: XY) -> MockLayout {
             MockLayout {
-                preferred_size,
+                preferred_size: Some(preferred_size),
                 ..self
             }
         }
@@ -64,7 +64,8 @@ pub mod tests {
         fn layout(&self, root: &mut MockWidget, sc: SizeConstraint) -> LayoutResult<MockWidget> {
             assert!(sc.bigger_equal_than(self.min_size));
 
-            let mut result = self.preferred_size;
+            //in my design, widget MUST know how much space it wants to take.
+            let mut result = self.preferred_size.unwrap_or(self.min_size);
             sc.x().map(|max_x| result.x = min(result.x, max_x));
             sc.y().map(|max_y| result.y = min(result.y, max_y));
 
@@ -97,10 +98,9 @@ pub mod tests {
 
         let mut result: Vec<u16> = Vec::new();
         for wwr in layout_result.wwrs {
-            result.push(wwr.rect().size.x);
-
             let x_offset = result.iter().fold(0 as u16, |acc, item| acc + item);
             assert_eq!(wwr.rect().pos.x, x_offset, "wwr.pos.x = {}, x_offset = {}", wwr.rect().pos, x_offset);
+            result.push(wwr.rect().size.x);
         }
 
         (layout_result.total_size, result)
@@ -108,14 +108,33 @@ pub mod tests {
 
     #[test]
     fn test_split_1() {
+        let wchuj = XY::new(100, 100);
         let items: Vec<(SplitRule, XY, Option<XY>)> = vec![
-            (SplitRule::Fixed(2), XY::new(1, 1), None),
-            (SplitRule::Proportional(1.0), XY::new(1, 1), None),
-            (SplitRule::Proportional(1.0), XY::new(1, 1), None),
+            (SplitRule::Fixed(2), XY::new(1, 1), Some(wchuj)),
+            (SplitRule::Proportional(1.0), XY::new(1, 1), Some(wchuj)),
+            (SplitRule::Proportional(1.0), XY::new(1, 1), Some(wchuj)),
         ];
 
         assert_eq!(get_results(&items, SizeConstraint::simple(XY::new(10, 10))),
                    (XY::new(10, 10), vec![2, 4, 4])
+        );
+
+        assert_eq!(get_results(&items, SizeConstraint::simple(XY::new(6, 6))),
+                   (XY::new(6, 6), vec![2, 2, 2])
+        );
+    }
+
+    #[test]
+    fn test_split_2() {
+        let wchuj = XY::new(100, 100);
+        let items: Vec<(SplitRule, XY, Option<XY>)> = vec![
+            (SplitRule::Fixed(2), XY::new(1, 1), Some(wchuj)),
+            (SplitRule::Proportional(1.0), XY::new(1, 1), Some(wchuj)),
+            (SplitRule::Proportional(2.0), XY::new(1, 1), Some(wchuj)),
+        ];
+
+        assert_eq!(get_results(&items, SizeConstraint::simple(XY::new(11, 11))),
+                   (XY::new(11, 11), vec![2, 3, 6])
         );
     }
 }
