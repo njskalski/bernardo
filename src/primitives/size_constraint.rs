@@ -134,18 +134,16 @@ impl SizeConstraint {
             }
         }
 
-        if let Some(new_visible_rect) = self.visible.intersect(&rect) {
-            if new_lower_right > new_upper_left {
-                let mut new_size = new_lower_right - new_upper_left;
-                Some(
-                    SizeConstraint::new(Some(new_size.x), Some(new_size.y), new_visible_rect)
-                )
-            } else {
-                debug!("empty intersection of rect {:?} and sc {:?}", &rect, self);
-                None
-            }
+        // if let Some(new_visible_rect) = self.visible.intersect(&rect) {
+        if new_lower_right > new_upper_left {
+            let mut new_size = new_lower_right - new_upper_left;
+            let new_rect = Rect::new(new_upper_left, new_lower_right - new_upper_left);
+            Some(
+                // SizeConstraint::new(Some(new_size.x), Some(new_size.y), new_visible_rect)
+                SizeConstraint::new(Some(new_size.x), Some(new_size.y), new_rect)
+            )
         } else {
-            warn!("not returning a cut_out_rect that would have been invisible (rect {:?}, sc {:?})", &rect, self);
+            debug!("empty intersection of rect {:?} and sc {:?}", &rect, self);
             None
         }
     }

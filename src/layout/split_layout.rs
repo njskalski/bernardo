@@ -97,6 +97,8 @@ impl<W: Widget> SplitLayout<W> {
         };
 
         let rects = rects_op.unwrap();
+        // debug!("rects : {:?}", &rects);
+
         let mut res: Vec<WidgetWithRect<W>> = vec![];
 
         debug_assert!(rects.len() == self.children.len());
@@ -106,7 +108,7 @@ impl<W: Widget> SplitLayout<W> {
             let new_sc = match sc.cut_out_rect(*rect) {
                 Some(new_sc) => new_sc,
                 None => {
-                    debug!("skipping invisible layout #{}", idx);
+                    debug!("skipping invisible layout #{} rect {} sc {}", idx, rect, sc);
                     continue;
                 }
             };
@@ -402,7 +404,16 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
             if self.split_direction == SplitDirection::Vertical && sc.x().is_none() {
                 error!("messed up case, where we have a split direction on non-free axis.");
             }
+            debug!("entered complicated layout");
             self.complicated_layout(root, sc)
         }
     }
 }
+
+/*
+not returning a cut_out_rect that would have been invisible (rect
+Rect { pos: XY { x: 0, y: 0 }, size: XY { x: 49, y: 1 } },
+
+SizeConstraint { x: Some(73), y: Some(1), visible: Rect { pos: XY { x: 48, y: 36 }, size: XY { x: 25, y: 1 } } })
+
+ */
