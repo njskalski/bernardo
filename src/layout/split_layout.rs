@@ -228,7 +228,7 @@ impl<W: Widget> SplitLayout<W> {
                     }
                 }
                 SplitRule::Proportional(_) => {
-                    let new_sc = match sc.cut_out_margin(offset) {
+                    let new_sc = match sc.substract(offset) {
                         Some(sc) => sc,
                         None => {
                             debug!("not layouting child #{}, cut_out_margin => None", child_idx);
