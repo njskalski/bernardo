@@ -411,9 +411,9 @@ impl ComplexWidget for SaveFileDialogWidget {
         let cancel_box = LeafLayout::new(subwidget!(Self.cancel_button)).boxed();
 
         let button_bar = SplitLayout::new(SplitDirection::Horizontal)
-            .with(SplitRule::Proportional(1.0), EmptyLayout::new().boxed())
-            .with(SplitRule::Fixed(12), cancel_box)
-            .with(SplitRule::Fixed(12), ok_box)
+            // .with(SplitRule::Proportional(1.0), EmptyLayout::new().boxed())
+            .with(SplitRule::Fixed(10), cancel_box)
+            .with(SplitRule::Fixed(10), ok_box)
             .boxed();
 
         let list = LeafLayout::new(subwidget!(Self.list_widget)).boxed();

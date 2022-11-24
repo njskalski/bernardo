@@ -114,13 +114,9 @@ impl<W: Widget> SplitLayout<W> {
             };
             let resp = child_layout.layout.layout(root, new_sc);
 
-            // debug!("A{} output_size {} parent {} children {:?}", wirs.len(), output_size, rect, wirs);
-            //TODO add intersection checks
-
             for wir in resp.wwrs.into_iter() {
                 let new_wir = wir.shifted(rect.pos);
 
-                // debug!("output_size {} parent {} child {} res {}", output_size, rect, wir.rect, new_rect);
                 debug_assert!(output_size.x >= new_wir.rect().lower_right().x);
                 debug_assert!(output_size.y >= new_wir.rect().lower_right().y);
 
@@ -350,7 +346,7 @@ impl<W: Widget> SplitLayout<W> {
             };
         }
 
-        // debug!("split {:?} size {} rects {:?}", self.split_direction, size, res);
+        debug!("split {:?} size {} rects {:?}", self.split_direction, size, res);
 
         debug_assert!(res.len() == self.children.len());
 

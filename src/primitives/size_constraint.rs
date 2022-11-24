@@ -109,45 +109,70 @@ impl SizeConstraint {
 
     /*
     Returns intersection of Rect with self, if nonempty, along with proper visibility hint.
+    As in all cases, returns new SizeConstraing in IT's OWN SPACE, not in self's space.
+    TODO actually now it does something else because otherwise shitload of tests fail adn I don't know hwy
      */
     pub fn cut_out_rect(&self, rect: Rect) -> Option<SizeConstraint> {
         // no overlap, rect is too far out x
-        if self.x.map(|max_x| max_x < rect.lower_right().x).unwrap_or(false) {
+        if self.x.map(|max_x| max_x < rect.upper_left().x).unwrap_or(false) {
             return None;
         }
         // no overlap, rect is too far out y
-        if self.y.map(|max_y| max_y < rect.lower_right().y).unwrap_or(false) {
+        if self.y.map(|max_y| max_y < rect.upper_left().y).unwrap_or(false) {
             return None;
         }
 
         let new_upper_left = rect.upper_left();
         let mut new_lower_right = rect.lower_right();
         if let Some(max_x) = self.x {
-            if new_lower_right.x > max_x {
-                new_lower_right.x = max_x;
-            }
+            new_lower_right.x = min(new_lower_right.x, max_x);
         }
         if let Some(max_y) = self.y {
-            if new_lower_right.y > max_y {
-                new_lower_right.y = max_y;
-            }
+            new_lower_right.y = min(new_lower_right.y, max_y);
         }
 
-        // if let Some(new_visible_rect) = self.visible.intersect(&rect) {
         if new_lower_right > new_upper_left {
-            let mut new_size = new_lower_right - new_upper_left;
-            let new_rect = Rect::new(new_upper_left, new_lower_right - new_upper_left);
+            // this is in new space
+            let new_size = new_lower_right - new_upper_left;
+            let new_rect = Rect::new(XY::ZERO, new_size);
 
-            if self.visible.intersect(&new_rect).is_none() {
-                warn!("returning an sc for invisible view? new_rect = {}, sc.visible = {}", &new_rect, &self.visible);
+            // ok, now I will be shifting visible rect to new space, so moving it by -rect.pos
+            let mut new_visible_rect_lower_right = self.visible.lower_right();
+            if new_visible_rect_lower_right.x >= rect.pos.x {
+                new_visible_rect_lower_right.x -= rect.pos.x;
+            } else {
+                new_visible_rect_lower_right.x = 0;
+            }
+            if new_visible_rect_lower_right.y >= rect.pos.y {
+                new_visible_rect_lower_right.y -= rect.pos.y;
+            } else {
+                new_visible_rect_lower_right.y = 0;
+            }
+            let mut new_visible_rect_upper_left = new_visible_rect_lower_right;
+            if new_visible_rect_upper_left.x >= rect.size.x {
+                new_visible_rect_upper_left.x -= rect.size.x;
+            } else {
+                new_visible_rect_upper_left.x = 0;
+            }
+            if new_visible_rect_upper_left.y >= rect.size.y {
+                new_visible_rect_upper_left.y -= rect.size.y;
+            } else {
+                new_visible_rect_upper_left.y = 0;
             }
 
-            Some(
-                // SizeConstraint::new(Some(new_size.x), Some(new_size.y), new_visible_rect)
-                SizeConstraint::new(Some(new_size.x), Some(new_size.y), new_rect)
-            )
+            if new_visible_rect_upper_left < new_visible_rect_lower_right {
+                Some(
+                    SizeConstraint::new(Some(new_size.x), Some(new_size.y),
+                                        Rect::new(new_visible_rect_upper_left,
+                                                  new_visible_rect_lower_right - new_visible_rect_upper_left,
+                                        ))
+                )
+            } else {
+                error!("new visible rect empty");
+                None
+            }
         } else {
-            debug!("empty intersection of rect {:?} and sc {:?}", &rect, self);
+            error!("empty intersection of rect {:?} and sc {:?}", &rect, self);
             None
         }
     }
@@ -281,8 +306,9 @@ pub mod tests {
     #[test]
     fn test_cut_out_rect() {
         assert_eq!(
-            SizeConstraint::new(None, None, Rect::new(XY::ZERO, XY::new(10, 6))).substract(XY::new(1, 1)),
-            Some(SizeConstraint::new(None, None, Rect::new(XY::ZERO, XY::new(9, 5)))),
+            SizeConstraint::new(None, None, Rect::new(XY::ZERO, XY::new(10, 6)))
+                .cut_out_rect(Rect::new(XY::new(0, 3), XY::new(6, 5))),
+            Some(SizeConstraint::new(Some(6), Some(5), Rect::new(XY::ZERO, XY::new(6, 3)))),
         );
     }
 }
