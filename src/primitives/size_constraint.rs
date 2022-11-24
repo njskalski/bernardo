@@ -110,7 +110,6 @@ impl SizeConstraint {
     /*
     Returns intersection of Rect with self, if nonempty, along with proper visibility hint.
     As in all cases, returns new SizeConstraing in IT's OWN SPACE, not in self's space.
-    TODO actually now it does something else because otherwise shitload of tests fail adn I don't know hwy
      */
     pub fn cut_out_rect(&self, rect: Rect) -> Option<SizeConstraint> {
         // no overlap, rect is too far out x
