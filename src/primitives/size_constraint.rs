@@ -136,36 +136,16 @@ impl SizeConstraint {
             let new_rect = Rect::new(XY::ZERO, new_size);
 
             // ok, now I will be shifting visible rect to new space, so moving it by -rect.pos
-            let mut new_visible_rect_lower_right = self.visible.lower_right();
-            if new_visible_rect_lower_right.x >= rect.pos.x {
-                new_visible_rect_lower_right.x -= rect.pos.x;
-            } else {
-                new_visible_rect_lower_right.x = 0;
-            }
-            if new_visible_rect_lower_right.y >= rect.pos.y {
-                new_visible_rect_lower_right.y -= rect.pos.y;
-            } else {
-                new_visible_rect_lower_right.y = 0;
-            }
-            let mut new_visible_rect_upper_left = new_visible_rect_lower_right;
-            if new_visible_rect_upper_left.x >= rect.size.x {
-                new_visible_rect_upper_left.x -= rect.size.x;
-            } else {
-                new_visible_rect_upper_left.x = 0;
-            }
-            if new_visible_rect_upper_left.y >= rect.size.y {
-                new_visible_rect_upper_left.y -= rect.size.y;
-            } else {
-                new_visible_rect_upper_left.y = 0;
-            }
-
-            if new_visible_rect_upper_left < new_visible_rect_lower_right {
-                Some(
-                    SizeConstraint::new(Some(new_size.x), Some(new_size.y),
-                                        Rect::new(new_visible_rect_upper_left,
-                                                  new_visible_rect_lower_right - new_visible_rect_upper_left,
-                                        ))
-                )
+            if let Some(new_vis_rect) = self.visible.minus_shift(rect.pos) {
+                // and we have to cut it too, because it could be bigger than the view.
+                if let Some(new_vis_rect) = new_vis_rect.cap_at(new_size) {
+                    Some(
+                        SizeConstraint::new(Some(new_size.x), Some(new_size.y), new_vis_rect)
+                    )
+                } else {
+                    error!("new visible rect 2 empty");
+                    None
+                }
             } else {
                 error!("new visible rect empty");
                 None
@@ -305,6 +285,20 @@ pub mod tests {
     #[test]
     fn test_cut_out_rect() {
         assert_eq!(
+            /*
+               0 1 2 3 4 5 6 7 8 9 0 1 2 3
+             0                     |
+             1                     |
+             2                     |
+             3 .............       |
+             4             |       |
+             5             |       |
+             6 ------------+-------.
+             7             |
+             8 ............|
+             9
+             */
+
             SizeConstraint::new(None, None, Rect::new(XY::ZERO, XY::new(10, 6)))
                 .cut_out_rect(Rect::new(XY::new(0, 3), XY::new(6, 5))),
             Some(SizeConstraint::new(Some(6), Some(5), Rect::new(XY::ZERO, XY::new(6, 3)))),

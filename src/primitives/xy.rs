@@ -56,6 +56,13 @@ impl XY {
             u16::max(self.y, other.y),
         )
     }
+
+    pub fn min_both_axis(&self, other: XY) -> XY {
+        XY::new(
+            u16::min(self.x, other.x),
+            u16::min(self.y, other.y),
+        )
+    }
 }
 
 impl Div<u16> for XY {

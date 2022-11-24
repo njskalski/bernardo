@@ -105,6 +105,61 @@ impl Rect {
         }
     }
 
+    pub fn minus_shift(&self, vec: XY) -> Option<Rect> {
+        let mut lower_right = self.lower_right();
+
+        if lower_right.x >= vec.x {
+            lower_right.x -= vec.x;
+        } else {
+            lower_right.x = 0;
+        }
+
+        if lower_right.y >= vec.y {
+            lower_right.y -= vec.y;
+        } else {
+            lower_right.y = 0;
+        }
+
+        let mut new_upper_left = lower_right;
+        if new_upper_left.x >= self.size.x {
+            new_upper_left.x -= self.size.x;
+        } else {
+            new_upper_left.x = 0;
+        }
+
+        if new_upper_left.y >= self.size.y {
+            new_upper_left.y -= self.size.y;
+        } else {
+            new_upper_left.y = 0;
+        }
+
+        if new_upper_left < lower_right {
+            Some(Rect::new(new_upper_left, lower_right - new_upper_left))
+        } else {
+            None
+        }
+    }
+
+    pub fn cap_at(&self, xy: XY) -> Option<Rect> {
+        let upper_left = self.upper_left();
+
+        if upper_left.x >= xy.x {
+            return None;
+        }
+        if upper_left.y >= xy.y {
+            return None;
+        }
+
+
+        let new_lower_right = self.lower_right().min_both_axis(xy);
+
+        if self.upper_left() < new_lower_right {
+            Some(Rect::new(self.pos, new_lower_right - self.pos))
+        } else {
+            None
+        }
+    }
+
     pub fn corners(&self) -> CornersIterator {
         CornersIterator::new(*self)
     }
@@ -257,5 +312,40 @@ pub mod tests {
                 &Rect::new(XY::ZERO, XY::new(10, 10))),
             Some(Rect::new(XY::new(9, 9), XY::new(1, 1))),
         );
+
+        /*
+           0 1 2 3 4 5 6 7 8 9 0 1 2 3
+         0                     |
+         1                     |
+         2                     |
+         3 .............       |
+         4             |       |
+         5             |       |
+         6 ------------+-------.
+         7             |
+         8 ............|
+         9
+         */
+
+        assert_eq!(
+            Rect::new(XY::ZERO, XY::new(10, 6)).intersect(
+                &Rect::new(XY::new(0, 3), XY::new(6, 5))),
+            Some(Rect::new(XY::new(0, 3), XY::new(6, 3))),
+        );
+    }
+
+    #[test]
+    fn minus_shift_test() {
+        assert_eq!(Rect::new(XY::new(3, 3), XY::new(3, 3)).minus_shift(
+            XY::new(7, 7)
+        ), None);
+
+        assert_eq!(Rect::new(XY::new(3, 4), XY::new(3, 4)).minus_shift(
+            XY::new(7, 7)
+        ), None);
+
+        assert_eq!(Rect::new(XY::new(3, 4), XY::new(3, 4)).minus_shift(
+            XY::new(5, 5)
+        ), Some(Rect::new(XY::new(0, 0), XY::new(1, 3))));
     }
 }
