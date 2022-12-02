@@ -131,10 +131,7 @@ impl<W: Widget> SplitLayout<W> {
     In this variant, we give all "Proportional" children "as much space as they want" - every
     proportion of infinity is infinite.
 
-    There is a catch however. By default
-
     Surprisingly, implementation of this variant is simpler, mostly because there is no "proportionality".
-    There is a catch here
      */
     fn complicated_layout(&self, root: &mut W, sc: SizeConstraint) -> LayoutResult<W> {
         let mut result: Vec<WidgetWithRect<W>> = Vec::new();
