@@ -26,10 +26,6 @@ impl<W: Widget> LayoutResult<W> {
 }
 
 /*
- Layouts do not work on infinite planes (scrolling of layouted view will fail).
- I might one day extend the definition, but it would require additional type to filter out layouts
- like "split".
-
  Layout will SKIP a widget, if it's widget.id() == root.id()!
  */
 pub trait Layout<W: Widget> {
@@ -38,6 +34,9 @@ pub trait Layout<W: Widget> {
     /*
     Current semantics: returns wwrs that intersect with "SizeConstraint" and have non empty visible
      intersection. So it does culling and layouting.
+
+     Why culling? Because I need "visible rect" calculation for centering anyways, so it was free.
+     Why not caching? Because contents of widget may change without "update" method call.
      */
     fn layout(&self, root: &mut W, sc: SizeConstraint) -> LayoutResult<W>;
 

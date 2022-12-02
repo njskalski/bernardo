@@ -86,6 +86,7 @@ pub mod tests {
             match item.2 {
                 None => {}
                 Some(preferred_size) => {
+                    debug_assert!(preferred_size >= item.1);
                     mock_layout = mock_layout.with_preferred_size(preferred_size);
                 }
             }
@@ -134,6 +135,28 @@ pub mod tests {
         ];
 
         assert_eq!(get_results(&items, SizeConstraint::simple(XY::new(11, 11))),
+                   (XY::new(11, 11), vec![2, 3, 6])
+        );
+    }
+
+    /*
+    This one does not cover "invisible children" above viewport.
+     */
+    #[test]
+    fn test_split_complex_1() {
+        let mut items: Vec<(SplitRule, XY, Option<XY>)> = vec![
+            (SplitRule::Fixed(2), XY::new(1, 1), Some(XY::new(10, 2))),
+        ];
+
+        for idx in 0..10 {
+            items.push((SplitRule::Proportional(idx as f32), XY::new(1, 1), Some(XY::new(10, 2))));
+        }
+
+        assert_eq!(get_results(&items,
+                               SizeConstraint::new(Some(10),
+                                                   None,
+                                                   Rect::new(XY::ZERO, XY::new(10, 10)),
+                               )),
                    (XY::new(11, 11), vec![2, 3, 6])
         );
     }

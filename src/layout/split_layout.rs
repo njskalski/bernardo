@@ -155,6 +155,16 @@ impl<W: Widget> SplitLayout<W> {
 
         for (child_idx, child) in self.children.iter().enumerate() {
             let min_child_size = child.layout.min_size(root);
+
+            /*
+            Ok, here things get complex. I can skip layouting *below* viewport. I cannot skip
+            layouting *above* it, because I woudln't know the offset.
+
+            Now calculating offset is possible without layout in cases of Fixed and MinSize rules.
+            In case of Proportional *I have to delegate* layouting down the tree, hoping for early
+            exits from subsequent layouts.
+             */
+
             match child.split_rule {
                 SplitRule::Fixed(fixed) => {
                     let local_size = if self.split_direction == SplitDirection::Vertical {
@@ -174,6 +184,17 @@ impl<W: Widget> SplitLayout<W> {
                                 };
                             }
                             None => {
+                                /* As much as I can skip layouting invisible views, I can't skip
+                                    calculating their total size. I can fail-to-get size constraint
+                                    due to underflow as well, and I need the offset of invisible
+                                    to properly position visible (lower) widgets.
+
+                                    So I skip layout, and go straight to "let's assume child got
+                                    all it wanted".
+
+                                    But I *can't* do that neither, because layouts don't have
+                                    max_size in trait.
+                                 */
                                 debug!("skipping child #{} because rect is invisible", child_idx);
                                 continue;
                             }
@@ -229,20 +250,16 @@ impl<W: Widget> SplitLayout<W> {
                         }
                     };
 
-                    // TODO we need actuall xy from widget.layout here
-                    let mut fake_xy = XY::ZERO;
-
                     let resp = child.layout.layout(root, new_sc);
                     for wwrsc in resp.wwrs.into_iter() {
                         let item = wwrsc.shifted(offset);
-                        fake_xy = fake_xy.max_both_axis(item.rect().lower_right());
                         result.push(item);
                     };
 
                     if self.split_direction == SplitDirection::Vertical {
-                        offset += XY::new(0, fake_xy.y);
+                        offset += XY::new(0, resp.total_size.y);
                     } else {
-                        offset += XY::new(fake_xy.x, 0);
+                        offset += XY::new(resp.total_size.x, 0);
                     }
                 }
             };
