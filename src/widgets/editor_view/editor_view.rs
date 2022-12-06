@@ -61,7 +61,7 @@ pub struct EditorView {
     /*
     resist the urge to remove fsf from editor. It's used to facilitate "save as dialog".
     You CAN be working on two different filesystems at the same time, and save as dialog is specific to it.
-
+    get_final_position
     One thing to address is: "what if I have file from filesystem A, and I want to "save as" to B?". But that's beyond MVP, so I don't think about it now.
      */
     fsf: FsfRef,

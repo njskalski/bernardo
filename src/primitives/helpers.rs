@@ -10,6 +10,7 @@ use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::color::Color;
 use crate::primitives::xy::XY;
+use crate::unpack_or;
 
 pub fn get_next_filename(dir: &Path, prefix: &str, suffix: &str) -> Option<PathBuf> {
     return match fs::read_dir(&dir) {
@@ -47,7 +48,7 @@ pub fn fill_output(color: Color, output: &mut dyn Output) {
         Effect::None,
     );
 
-    let rect = output.size_constraint().visible_hint().clone();
+    let rect = unpack_or!(output.size_constraint().visible_hint(), ()).clone();
 
     for x in rect.upper_left().x..rect.lower_right().x {
         for y in rect.upper_left().y..rect.lower_right().y {

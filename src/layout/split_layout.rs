@@ -137,19 +137,15 @@ impl<W: Widget> SplitLayout<W> {
         let mut result: Vec<WidgetWithRect<W>> = Vec::new();
         let mut offset = XY::ZERO;
 
-        // TODO here's another issue: right now I don't get SCs for invisible children.
-        //   But I need them to offset for things *above* visible screen, otherwise everythin will
-        //   collapse there and nothing reaches the visible screen.
-
         let non_free_axis = if self.split_direction == SplitDirection::Vertical {
             sc.y().unwrap_or_else(|| {
                 error!("fake unwrap, returning safe default");
-                sc.visible_hint().size.y
+                10 // TODO
             })
         } else {
             sc.x().unwrap_or_else(|| {
                 error!("fake unwrap, returning safe default");
-                sc.visible_hint().size.x
+                10 //TODO
             })
         };
 
@@ -184,19 +180,8 @@ impl<W: Widget> SplitLayout<W> {
                                 };
                             }
                             None => {
-                                /* As much as I can skip layouting invisible views, I can't skip
-                                    calculating their total size. I can fail-to-get size constraint
-                                    due to underflow as well, and I need the offset of invisible
-                                    to properly position visible (lower) widgets.
-
-                                    So I skip layout, and go straight to "let's assume child got
-                                    all it wanted".
-
-                                    But I *can't* do that neither, because layouts don't have
-                                    max_size in trait.
-                                 */
-                                debug!("skipping child #{} because rect is invisible", child_idx);
-                                continue;
+                                debug!("skipping layouting FixedSize child #{} because rect is invisible", child_idx);
+                                // no continue, just let it go to offset calculation below.
                             }
                         };
                     } else {
@@ -227,8 +212,8 @@ impl<W: Widget> SplitLayout<W> {
                                 };
                             }
                             None => {
-                                debug!("skipping child #{} because rect is invisible", child_idx);
-                                continue;
+                                debug!("skipping layouting MinSize child #{} because rect is invisible", child_idx);
+                                // no continue, let it flow to offset calculation below
                             }
                         };
                     } else {
@@ -246,6 +231,16 @@ impl<W: Widget> SplitLayout<W> {
                         Some(sc) => sc,
                         None => {
                             debug!("not layouting child #{}, cut_out_margin => None", child_idx);
+                            /*
+                            So I can't skip layouting here, because I would loose offset above viewport.
+                            Now I have following options:
+                            1) create a degenerated SC, with empty viewport. No invariants violated.
+                            2) make viewport optional (allow no-viewport sc's), but that's a change in 200 places.
+                            3) [impossible] add "max_size" to layout trait. But where would this information come from?
+                            yeah, options 1 and 2 are the only valid ones, second being typesafe too.
+
+                             */
+
                             continue;
                         }
                     };

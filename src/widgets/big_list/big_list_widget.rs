@@ -8,7 +8,7 @@ use crate::io::keys::Key;
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::scroll_enum::ScrollEnum;
-use crate::primitives::size_constraint::{AlignEnum, SizeConstraint};
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::{AnyMsg, AsAny};

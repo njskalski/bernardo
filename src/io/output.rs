@@ -23,14 +23,6 @@ pub trait Output: Debug {
     fn clear(&mut self) -> Result<(), std::io::Error>;
     fn size_constraint(&self) -> SizeConstraint;
 
-    /*
-    Returns final screen position of given local pos, assuming that there is only one "FinalOutput".
-    It will work with points up to .size() (so including first *not drawn* line and column) for ease
-    of operation.
-     */
-    #[cfg(test)]
-    fn get_final_position(&self, local_pos: XY) -> Option<XY>;
-
     #[cfg(test)]
     fn emit_metadata(&mut self, meta: Metadata);
 }

@@ -155,7 +155,7 @@ pub mod tests {
         assert_eq!(get_results(&items,
                                SizeConstraint::new(Some(10),
                                                    None,
-                                                   Rect::new(XY::ZERO, XY::new(10, 10)),
+                                                   Some(Rect::new(XY::ZERO, XY::new(10, 10))),
                                )),
                    (XY::new(11, 11), vec![2, 3, 6])
         );

@@ -95,15 +95,7 @@ impl Output for MockOutput {
         self.buffer_0.size_constraint()
     }
 
-    #[cfg(test)]
-    fn get_final_position(&self, local_pos: XY) -> Option<XY> {
-        if local_pos <= self.buffer_0.size() {
-            Some(local_pos)
-        } else {
-            None
-        }
-    }
-
+    
     #[cfg(test)]
     fn emit_metadata(&mut self, meta: Metadata) {
         self.metadata.push(meta)

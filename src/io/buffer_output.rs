@@ -79,11 +79,7 @@ impl Output for BufferOutput {
         SizeConstraint::simple(self.size())
     }
 
-    #[cfg(test)]
-    fn get_final_position(&self, local_pos: XY) -> Option<XY> {
-        Some(local_pos)
-    }
-
+    
     #[cfg(test)]
     fn emit_metadata(&mut self, _meta: Metadata) {}
 }
