@@ -388,7 +388,7 @@ impl Widget for SaveFileDialogWidget {
             Metadata {
                 id: self.id(),
                 typename: self.typename().to_string(),
-                rect: output.size_constraint().visible_hint().clone(),
+                rect: Rect::new(XY::ZERO, self.display_state.unwrap().total_size),
                 focused,
             }
         );

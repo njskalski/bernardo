@@ -29,6 +29,7 @@ pub struct DisplayState<S: Widget> {
     pub focused: SubwidgetPointer<S>,
     pub wwrs: Vec<WidgetWithRect<S>>,
     pub focus_group: FocusGraph<SubwidgetPointer<S>>,
+    pub total_size: XY,
 }
 
 impl<S: Widget> DisplayState<S> {
@@ -95,12 +96,7 @@ pub trait ComplexWidget: Widget + Sized {
     If you want something else, override it. But remember to set display_cache or render will fail.
      */
     fn complex_layout(&mut self, sc: SizeConstraint) -> XY {
-        let xy = sc.as_finite().unwrap_or_else(|| {
-            // warn!("using complex_layout on infinite SizeConstraint is not supported, will limit itself to visible hint");
-            sc.visible_hint().size
-        });
-
-        let layout = self.get_layout(xy);
+        let layout = self.get_layout(sc);
         let layout_res = layout.layout(self, sc);
 
         let widgets_and_positions: Vec<(WID, SubwidgetPointer<Self>, Rect)> = layout_res.wwrs.iter().filter(
@@ -118,17 +114,18 @@ pub trait ComplexWidget: Widget + Sized {
 
         let selected = focused.get(self).id();
 
-        let focus_group = from_geometry::<>(&widgets_and_positions, selected, xy);
+        let focus_group = from_geometry::<>(&widgets_and_positions, selected, layout_res.total_size);
 
         let new_state = DisplayState {
             focused,
             wwrs: layout_res.wwrs,
             focus_group,
+            total_size: layout_res.total_size,
         };
 
         self.set_display_state(new_state);
 
-        xy
+        layout_res.total_size
     }
 
     fn complex_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
