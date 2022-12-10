@@ -182,7 +182,7 @@ impl Widget for ContextBarWidget {
 }
 
 impl ComplexWidget for ContextBarWidget {
-    fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, _sc: SizeConstraint) -> Box<dyn Layout<Self>> {
         Box::new(LeafLayout::new(subwidget!(Self.list)))
     }
 

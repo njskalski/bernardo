@@ -200,7 +200,7 @@ impl Widget for GenericDialog {
 }
 
 impl ComplexWidget for GenericDialog {
-    fn get_layout(&self, _size: XY) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
         let text_layout = LeafLayout::new(subwidget!(Self.text_widget)).boxed();
 
         // let mut button_layout = SplitLayout::new(SplitDirection::Vertical);

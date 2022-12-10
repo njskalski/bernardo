@@ -398,7 +398,7 @@ impl Widget for SaveFileDialogWidget {
 }
 
 impl ComplexWidget for SaveFileDialogWidget {
-    fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
         let tree_layout = LeafLayout::new(subwidget!(Self.tree_widget));
         // let mut empty_layout = EmptyLayout::new().with_size(XY::new(1, 1));
 
@@ -440,7 +440,15 @@ impl ComplexWidget for SaveFileDialogWidget {
         if self.hover_dialog.is_none() {
             FrameLayout::new(layout, frame).boxed()
         } else {
-            let margins = max_size / 20;
+            let max_size = sc.as_finite().unwrap_or(self.min_size());
+            let child_rect = {
+                let margins = max_size / 20;
+                Rect::new(
+                    margins,
+                    max_size - margins * 2,
+                )
+            };
+
             //TODO(subwidgetpointermap)
             let dialog_layout = LeafLayout::new(SubwidgetPointer::new(
                 Box::new(|x: &Self| { x.hover_dialog.as_ref().unwrap() }),
@@ -449,10 +457,7 @@ impl ComplexWidget for SaveFileDialogWidget {
 
             FrameLayout::new(HoverLayout::new(layout,
                                               dialog_layout,
-                                              Rect::new(
-                                                  margins, // TODO
-                                                  max_size - margins * 2,
-                                              ),
+                                              child_rect,
                                               true,
             ).boxed(), frame).boxed()
         }

@@ -46,8 +46,7 @@ pub trait ComplexWidget: Widget + Sized {
     /*
     produces cloneable layout func tree
      */
-    // TODO max_size -> sc
-    fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>>;
+    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>>;
 
     /*
     because using ComplexWidget helper requires routing calling complex_render from widget's render,
