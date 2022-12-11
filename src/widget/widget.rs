@@ -31,7 +31,7 @@ pub trait Widget: 'static {
     // afterwards, or if even at all. A widget can decide to remove child widget and *not* layout it
     // for whatever reason.
     //
-    // Widget is given size constraint and returns "how much space would it take to render fully".
+    // Widget is given size constraint and returns "how much space I will use under given constraints".
     // Whether widget "fills" the space or just uses as little as it can depends on Widget, not on
     // layout. No css bs here.
     //
@@ -42,8 +42,10 @@ pub trait Widget: 'static {
     // Without it, it would be impossible to decide "which widget gets how much space" before
     // rendering them.
     //
-    // A lot of widgets decide based on sc.visible_hint() how much space to use, so their size is
-    // dependent not on constraint, but on size of display.
+    // A lot of widgets decide based on sc.visible_rect() how much space to use, so their size is
+    // dependent not on constraint, but on size of display. In case such widget is not drawn,
+    // we emit error and use min_size instead. Such widgets should not be part of split layouts under
+    // infinite size constraints, as they size may change drastically dependent on whether they are drawn or not.
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY;
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.

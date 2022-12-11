@@ -12,9 +12,12 @@ use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
+use crate::widget::fill_policy::FillPolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::tree_view::tree_it::TreeIt;
 use crate::widgets::tree_view::tree_view_node::{TreeItFilter, TreeViewNode};
@@ -33,6 +36,9 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key
     // TODO rethink that
     // at this point, highlighted can move (nodes can disappear if the filter throws them away with delay)
     highlighted: usize,
+
+    fill_policy: FillPolicy,
+    last_size: Option<XY>,
 
     //events
     on_miss: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
@@ -74,6 +80,8 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
             root_node,
             expanded: HashSet::new(),
             highlighted: 0,
+            fill_policy: FillPolicy::FILL_BOTH,
+            last_size: None,
             on_miss: None,
             on_highlighted_changed: None,
             on_flip_expand: None,
@@ -135,11 +143,14 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
         false
     }
 
+    /*
+    Returns preferred size under given constraints.
+     */
     fn size_from_items(&self, sc: SizeConstraint) -> XY {
         let mut size = XY::ZERO;
 
         for item in self.items() {
-            if size.y == sc.visible_hint().lower_right().y {
+            if sc.y().map(|max_x| max_x >= size.y).unwrap_or(false) {
                 break;
             }
 
@@ -152,8 +163,10 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
             );
         }
 
-        if size.x > sc.visible_hint().size.x {
-            size.x = sc.visible_hint().size.x;
+        if let Some(max_x) = sc.x() {
+            if size.x > max_x {
+                size.x = max_x
+            }
         }
 
         size
@@ -230,20 +243,27 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
     }
 
     fn min_size(&self) -> XY {
-        XY::new(5, 1) //completely arbitrary
+        XY::new(5, 8) //completely arbitrary
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
-        let from_items = self.size_from_items(sc);
-        let mut res = sc.visible_hint().size;
+        let mut res = self.size_from_items(sc);
 
-        if from_items.x > res.x && sc.x().is_none() {
-            res.x = from_items.x;
+        if let Some(max_x) = sc.x() {
+            if self.fill_policy.fill_x {
+                debug_assert!(res.x <= max_x);
+                res.x = max_x;
+            }
         }
 
-        if from_items.y > res.y && sc.y().is_none() {
-            res.y = from_items.y;
+        if let Some(max_y) = sc.y() {
+            if self.fill_policy.fill_y {
+                debug_assert!(res.y <= max_y);
+                res.y = max_y;
+            }
         }
+
+        self.last_size = Some(res);
 
         res
     }
@@ -318,15 +338,25 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let size = match self.last_size {
+            Some(xy) => xy,
+            None => {
+                error!("render before layout, skipping");
+                return;
+            }
+        };
+
         #[cfg(test)]
         output.emit_metadata(
             Metadata {
                 id: self.id(),
                 typename: self.typename().to_string(),
-                rect: output.size_constraint().visible_hint().clone(),
+                rect: Rect::from_zero(size),
                 focused,
             }
         );
+
+        let visible_rect = unpack_or!(output.size_constraint().visible_hint(), ());
 
         let primary_style = theme.default_text(focused);
         helpers::fill_output(primary_style.background, output);
@@ -334,10 +364,10 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
 
         for (item_idx, (depth, node)) in self.items().enumerate()
             // skipping lines that cannot be visible, because they are before hint()
-            .skip(output.size_constraint().visible_hint().upper_left().y as usize) {
+            .skip(visible_rect.upper_left().y as usize) {
 
             // skipping lines that cannot be visible, because larger than the hint()
-            if item_idx >= output.size_constraint().visible_hint().lower_right().y as usize {
+            if item_idx >= visible_rect.lower_right().y as usize {
                 break;
             }
 
@@ -381,7 +411,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
                 }
 
                 let x = desired_pos_x as u16;
-                if x >= output.size_constraint().visible_hint().lower_right().x {
+                if x >= visible_rect.lower_right().x {
                     break;
                 }
 

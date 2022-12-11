@@ -20,6 +20,10 @@ impl Rect {
         Rect { pos, size }
     }
 
+    pub const fn from_zero(size: XY) -> Self {
+        Rect { pos: XY::ZERO, size }
+    }
+
     pub fn xxyy(x1: u16, x2: u16, y1: u16, y2: u16) -> Self {
         let minx = std::cmp::min(x1, x2);
         let maxx = std::cmp::max(x1, x2);
