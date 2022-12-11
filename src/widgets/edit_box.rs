@@ -12,10 +12,12 @@ use crate::io::output::{Metadata, Output};
 use crate::primitives::common_edit_msgs::{CommonEditMsg, key_to_edit_msg};
 use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::helpers;
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
+use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
@@ -23,11 +25,6 @@ const MIN_WIDTH: u16 = 12;
 const MAX_WIDTH: u16 = 80; //completely arbitrary
 
 //TODO filter out the newlines on paste
-
-
-struct EditBoxDisplayState {
-    width: u16,
-}
 
 pub struct EditBoxWidget {
     id: WID,
@@ -41,10 +38,10 @@ pub struct EditBoxWidget {
 
     max_width_op: Option<u16>,
 
-    //display state
-    display_state: EditBoxDisplayState,
-
     clipboard_op: Option<ClipboardRef>,
+
+    fill_x: bool,
+    last_size_x: Option<u16>,
 }
 
 
@@ -60,10 +57,9 @@ impl EditBoxWidget {
             on_change: None,
             on_miss: None,
             max_width_op: None,
-            display_state: EditBoxDisplayState {
-                width: MIN_WIDTH
-            },
             clipboard_op: None,
+            fill_x: false,
+            last_size_x: None,
         }
     }
 
@@ -109,6 +105,13 @@ impl EditBoxWidget {
     pub fn with_text<'a, T: AsRef<str>>(self, text: T) -> Self {
         EditBoxWidget {
             buffer: BufferState::simplified_single_line().with_text(text),
+            ..self
+        }
+    }
+
+    pub fn with_fill_x(self) -> Self {
+        Self {
+            fill_x: true,
             ..self
         }
     }
@@ -181,8 +184,12 @@ impl Widget for EditBoxWidget {
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
         debug_assert!(sc.bigger_equal_than(self.min_size()));
 
-        let x = sc.visible_hint().size.x;
-        self.display_state.width = x;
+        let mut x = self.min_size().x;
+        if let Some(max_x) = sc.x() {
+            if self.fill_x {
+                x = max_x;
+            }
+        }
 
         XY::new(x, 1)
     }
@@ -240,12 +247,13 @@ impl Widget for EditBoxWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let size = XY::new(unpack_or!(self.last_size_x, (), "render before layout"), 1);
         #[cfg(test)]
         output.emit_metadata(
             Metadata {
                 id: self.id(),
                 typename: self.typename().to_string(),
-                rect: output.size_constraint().visible_hint().clone(),
+                rect: Rect::from_zero(size),
                 focused,
             }
         );
@@ -290,8 +298,8 @@ impl Widget for EditBoxWidget {
         let end_of_text = cursor_offset.max(text_width);
 
         // background after the text
-        if self.display_state.width > end_of_text {
-            let background_length = self.display_state.width - end_of_text;
+        if size.x > end_of_text {
+            let background_length = size.x - end_of_text;
             for i in 0..background_length {
                 let pos = XY::new(end_of_text + i as u16, 0);
 
