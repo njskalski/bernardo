@@ -20,7 +20,7 @@ use crate::io::sub_output::SubOutput;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
 use crate::primitives::common_edit_msgs::{_apply_cem, cme_to_direction, CommonEditMsg, key_to_edit_msg};
-use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus, Selection};
+use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
 use crate::primitives::helpers;
 use crate::primitives::rect::Rect;
@@ -262,28 +262,24 @@ impl EditorWidget {
             Some(x) => x,
         };
 
-        let local_pos = match self.last_size {
-            None => {
-                error!("single_cursor_screen_pos called before first layout!");
-                return None;
-            }
-            Some(sc) => {
-                if !sc.visible_hint().contains(lsp_cursor_xy) {
-                    warn!("cursor seems to be outside visible hint.");
-                    return Some(CursorPosition {
-                        cursor: *cursor,
-                        screen_space: None,
-                        absolute: lsp_cursor_xy,
-                    });
-                }
+        let sc = unpack_or!(self.last_size, None, "single_cursor_screen_pos called before first layout");
+        let visible_rect = unpack_or!(sc.visible_hint(), None, "no visible rect - no screen cursor pos");
 
-                lsp_cursor_xy - sc.visible_hint().upper_left()
-            }
-        };
+        if !visible_rect.contains(lsp_cursor_xy) {
+            warn!("cursor seems to be outside visible hint {:?}", sc.visible_hint());
+            return Some(CursorPosition {
+                cursor: *cursor,
+                screen_space: None,
+                // TODO I don't remember where this comes from and I am not sure it's right.
+                absolute: lsp_cursor_xy,
+            });
+        }
+
+        let local_pos = lsp_cursor_xy - visible_rect.upper_left();
 
         debug!("cursor {:?} converted to {:?} positioned at {:?}", cursor, lsp_cursor, local_pos);
         debug_assert!(local_pos >= XY::ZERO);
-        debug_assert!(local_pos < self.last_size.unwrap().visible_hint().size);
+        debug_assert!(local_pos < visible_rect.size);
 
         Some(CursorPosition {
             cursor: *cursor,
