@@ -1,4 +1,4 @@
-use log::error;
+use log::{error, warn};
 
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
@@ -19,6 +19,8 @@ pub struct WithScroll<W: Widget> {
     widget: W,
     scroll: Scroll,
     line_no: bool,
+
+    last_size: Option<XY>,
 }
 
 impl<W: Widget> WithScroll<W> {
@@ -27,10 +29,11 @@ impl<W: Widget> WithScroll<W> {
     pub fn new(widget: W, scroll_direction: ScrollDirection) -> Self {
         let id = get_new_widget_id();
         Self {
-            id,
+            id,None
             widget,
             scroll: Scroll::new(scroll_direction),
             line_no: false,
+            last_size: None,
         }
     }
 
@@ -53,17 +56,17 @@ impl<W: Widget> WithScroll<W> {
         if sc.x().is_none() || sc.y().is_none() {
             error!("nesting scrolling is not supported - that's beyond TUI")
             // in case of nesting I probably need to add "sc.hint().pos" to offset in Rect
-            // constructor below . Or substract it. I don't want to waste mental energy on it now.
+            // constructor below . Or substract it. I don't want to waste mana on it now.
         }
 
         let margin_width = self.line_count_margin_width(sc);
         let with_margin = self.line_no && sc.strictly_bigger_than(XY::new(margin_width, 0));
 
-        let visible_part_size = if with_margin {
-            XY::new(sc.visible_hint().size.x - margin_width, sc.visible_hint().size.y)
+        let visible_part_size = sc.visible_hint().map(|visible_hint| if with_margin {
+            XY::new(visible_hint.size.x - margin_width, visible_hint.size.y)
         } else {
-            sc.visible_hint().size
-        };
+            visible_hint.size
+        });
 
         let new_sc = SizeConstraint::new(
             if self.scroll.direction.free_x() { None } else {
@@ -73,7 +76,7 @@ impl<W: Widget> WithScroll<W> {
                     } else { x })
             },
             if self.scroll.direction.free_y() { None } else { sc.y() },
-            Rect::new(self.scroll.offset, visible_part_size),
+            visible_part_size.map(|size| Rect::new(self.scroll.offset, size)),
         );
 
         (if with_margin { margin_width } else { 0 }, new_sc)
@@ -95,6 +98,7 @@ impl<W: Widget> WithScroll<W> {
     }
 
     fn line_count_margin_width_for_lower_right(&self, lower_right: XY) -> u16 {
+        // logarithm? Never heard of it.
         let width = format!("{}", lower_right.y).len() as u16 + 2;
         width
     }
@@ -110,7 +114,12 @@ impl<W: Widget> WithScroll<W> {
         I *could* use the previous size, but I want "layout" to NOT use previous state.
          */
 
-        let lower_right = self.scroll.offset + sc.visible_hint().lower_right();
+        let lower_right = self.scroll.offset +
+            sc.visible_hint().map(|vh| vh.lower_right())
+                .unwrap_or_else(|| {
+                    warn!("layouting scroll without visibility information. Expect bugs.");
+                    XY::ZERO
+                });
         self.line_count_margin_width_for_lower_right(lower_right)
     }
 
