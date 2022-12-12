@@ -296,45 +296,17 @@ impl EditorWidget {
         I will use 1/2 height and all space right from cursor, capped by MAX_HOVER_SIZE.
      */
     pub fn get_cursor_related_hover_max(&self, triggers: Option<&Vec<String>>) -> Option<HoverSettings> {
-        let last_size = match self.last_size {
-            None => {
-                error!("requested hover before layout");
-                return None;
-            }
-            Some(ls) => {
-                ls
-            }
-        };
-
-        let cursor = match self.cursors().as_single() {
-            None => {
-                error!("multiple cursors or none, not doing hover");
-                return None;
-            }
-            Some(c) => c,
-        };
-
-        let cursor_pos = match self.get_single_cursor_screen_pos(cursor) {
-            Some(cp) => cp,
-            None => {
-                error!("can't position hover, no cursor local pos");
-                return None;
-            }
-        };
-
-        let cursor_screen_pos = match cursor_pos.screen_space {
-            None => {
-                error!("no cursor position in screen space");
-                return None;
-            }
-            Some(local) => local,
-        };
+        let last_size = unpack_or!(self.last_size, None, "requested hover before layout");
+        let cursor = unpack_or!(self.cursors().as_single(), None, "multiple cursors or none, not doing hover");
+        let cursor_pos = unpack_or!(self.get_single_cursor_screen_pos(cursor), None, "can't position hover, no cursor local pos");
+        let cursor_screen_pos = unpack_or!(cursor_pos.screen_space, None, "no cursor position in screen space");
+        let visible_rect = unpack_or!(last_size.visible_hint(), None, "no visible rect - no hover");
 
         // if cursor is in upper part, we draw below cursor, otherwise above it
-        let above = cursor_screen_pos.y > (last_size.visible_hint().size.y / 2);
+        let above = cursor_screen_pos.y > (visible_rect.size.y / 2);
         // TODO underflows
-        let width = min(MAX_HOVER_SIZE.x, last_size.visible_hint().size.x - cursor_screen_pos.x);
-        let height = min(MAX_HOVER_SIZE.y, (last_size.visible_hint().size.y / 2) - 1);
+        let width = min(MAX_HOVER_SIZE.x, visible_rect.size.x - cursor_screen_pos.x);
+        let height = min(MAX_HOVER_SIZE.y, (visible_rect.size.y / 2) - 1);
 
         let trigger_and_substring: Option<(&String, String)> = triggers.map(|triggers| find_trigger_and_substring(
             triggers, &self.buffer, &cursor_pos)).flatten();
@@ -365,7 +337,7 @@ impl EditorWidget {
                 trigger: trigger_and_substring.as_ref().map(|tas| tas.0.clone()),
             })
         } else {
-            debug_assert!(cursor_screen_pos.y + height < last_size.visible_hint().size.y);
+            debug_assert!(cursor_screen_pos.y + height < visible_rect.size.y);
             Some(HoverSettings {
                 rect: Rect::new(anchor + XY::new(0, 1), XY::new(width, height)),
                 anchor,
@@ -556,7 +528,17 @@ impl EditorWidget {
 
     pub fn page_height(&self) -> u16 {
         match self.last_size {
-            Some(xy) => xy.visible_hint().size.y,
+            Some(sc) => {
+                match sc.visible_hint() {
+                    None => {
+                        error!("requested page_height without screen space, using {} as page_height instead", MIN_EDITOR_SIZE.y);
+                        MIN_EDITOR_SIZE.y
+                    }
+                    Some(xy) => {
+                        xy.size.y
+                    }
+                }
+            }
             None => {
                 error!("requested height before layout, using {} as page_height instead", MIN_EDITOR_SIZE.y);
                 MIN_EDITOR_SIZE.y
@@ -617,12 +599,14 @@ impl EditorWidget {
 
         helpers::fill_output(default.background, output);
 
+        let visible_rect = unpack_or!(output.size_constraint().visible_hint(), (), "not visible - not rendering");
+
         let char_range_op = self.buffer.char_range(output);
         let highlights = self.buffer.highlight(char_range_op.clone());
 
         let mut highlight_iter = highlights.iter().peekable();
 
-        let lines_to_skip = output.size_constraint().visible_hint().upper_left().y as usize;
+        let lines_to_skip = visible_rect.upper_left().y as usize;
 
         let mut lines_it = self.buffer.lines().skip(lines_to_skip);
         // skipping lines that cannot be visible, because they are before hint()
@@ -633,7 +617,7 @@ impl EditorWidget {
         //     .skip(output.size_constraint().visible_hint().upper_left().y as usize)
         while let Some(line) = lines_it.next() {
             // skipping lines that cannot be visible, because the are after the hint()
-            if line_idx >= output.size_constraint().visible_hint().lower_right().y as usize {
+            if line_idx >= visible_rect.lower_right().y as usize {
                 // debug!("early exit 7");
                 break;
             }
@@ -687,7 +671,7 @@ impl EditorWidget {
                 output.print_at(pos, style, tr);
 
                 x_offset += tr.width();
-                if x_offset as u16 >= output.size_constraint().visible_hint().lower_right().x {
+                if x_offset as u16 >= visible_rect.lower_right().x {
                     // debug!("early exit 6");
                     break;
                 }
@@ -695,7 +679,7 @@ impl EditorWidget {
 
             line_idx += 1;
             // TODO u16 overflow
-            if line_idx as u16 >= output.size_constraint().visible_hint().lower_right().y {
+            if line_idx as u16 >= visible_rect.lower_right().y {
                 // debug!("early exit 5 : osc : {:?}, output : {:?}", output.size_constraint(), output);
                 break;
             }
@@ -707,7 +691,7 @@ impl EditorWidget {
 
         let one_beyond_last_pos = XY::new(x_beyond_last as u16, last_line as u16);
 
-        if one_beyond_last_pos < output.size_constraint().visible_hint().lower_right() {
+        if one_beyond_last_pos < visible_rect.lower_right() {
             let mut style = default;
 
             self.pos_to_cursor(theme, one_beyond_limit).map(|mut bg| {
@@ -863,6 +847,7 @@ impl Widget for EditorWidget {
         }
 
         self.last_size = Some(sc);
+        let visible_rect = unpack_or!(sc.visible_hint(), self.min_size(), "can't layout greedy widget - no visible part");
 
         let should_remove_hover = match self.requested_hover.as_mut() {
             None => {
@@ -904,7 +889,7 @@ impl Widget for EditorWidget {
             self.requested_hover = None;
         }
 
-        sc.visible_hint().size
+        visible_rect.size
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -1067,14 +1052,18 @@ impl Widget for EditorWidget {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         #[cfg(test)]
-        output.emit_metadata(
-            Metadata {
-                id: self.wid,
-                typename: self.typename().to_string(),
-                rect: output.size_constraint().visible_hint().clone(),
-                focused,
-            }
-        );
+        {
+            let size = unpack_or!(output.size_constraint().visible_hint()).size;
+            output.emit_metadata(
+                Metadata {
+                    id: self.wid,
+                    typename: self.typename().to_string(),
+                    // TODO I am not sure of that
+                    rect: Rect::from_zero(size),
+                    focused,
+                }
+            );
+        }
 
         self.internal_render(theme, focused, output);
         self.render_hover(theme, focused, output);

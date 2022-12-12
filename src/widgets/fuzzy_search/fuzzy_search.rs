@@ -198,7 +198,7 @@ impl Widget for FuzzySearchWidget {
         // This is a reasonable assumption: I never want to display more elements in fuzzy search that
         // can be displayed on a "physical" screen. Even if fuzzy is inside a scroll, the latest position
         // I might be interested in is "lower_right().y".
-        self.last_height_limit = Some(sc.visible_hint().lower_right().y);
+        self.last_height_limit = sc.visible_hint().map(|vh| vh.lower_right().y);
 
         self.edit.update_and_layout(sc);
         self.width = sc.visible_hint().size.x;
