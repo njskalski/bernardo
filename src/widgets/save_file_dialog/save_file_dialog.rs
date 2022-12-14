@@ -442,14 +442,17 @@ impl ComplexWidget for SaveFileDialogWidget {
         if self.hover_dialog.is_none() {
             FrameLayout::new(layout, frame).boxed()
         } else {
-            let max_size = sc.as_finite().unwrap_or(self.min_size());
+            //TODO underflow
+            let max_size = sc.as_finite().unwrap_or(self.min_size()) - frame * 2;
             let child_rect = {
-                let margins = max_size / 20;
+                let margins = max_size / 10;
                 Rect::new(
                     margins,
-                    max_size - margins * 2,
+                    max_size - (margins * 2),
                 )
             };
+
+            debug_assert!(sc.bigger_equal_than(child_rect.lower_right()));
 
             //TODO(subwidgetpointermap)
             let dialog_layout = LeafLayout::new(SubwidgetPointer::new(
