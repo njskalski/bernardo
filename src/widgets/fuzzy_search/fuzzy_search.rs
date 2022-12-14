@@ -4,6 +4,7 @@ use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use crate::{unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::io::input_event::InputEvent;
@@ -20,6 +21,9 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};
+
+/* TODO I am not sure if I want to keep this widget, or do I integrate it with context menu widget now brewing \
+ slowly somewhere in editor */
 
 const DEFAULT_WIDTH: u16 = 16;
 
@@ -48,7 +52,9 @@ pub struct FuzzySearchWidget {
     on_miss: Option<WidgetAction<Self>>,
     // on_hit is a part of PROVIDER.
 
-    width: u16,
+    // always greedy on X
+    // TODO add greedy on Y flip
+    last_size: Option<XY>,
 }
 
 impl FuzzySearchWidget {
@@ -72,7 +78,7 @@ impl FuzzySearchWidget {
             highlighted: 0,
             on_close,
             on_miss: None,
-            width: DEFAULT_WIDTH,
+            last_size: None,
         }
     }
 
@@ -115,10 +121,6 @@ impl FuzzySearchWidget {
 
     pub fn shortened_contexts(&self) -> &Vec<String> {
         &self.context_shortcuts
-    }
-
-    fn width(&self) -> u16 {
-        self.width
     }
 
     fn items(&self) -> ItemIter {
@@ -194,6 +196,7 @@ impl Widget for FuzzySearchWidget {
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+        let width = unpack_or_e!(sc.x(), self.min_size(), "fuzzy search needs a fixed width");
 
         // This is a reasonable assumption: I never want to display more elements in fuzzy search that
         // can be displayed on a "physical" screen. Even if fuzzy is inside a scroll, the latest position
@@ -201,16 +204,28 @@ impl Widget for FuzzySearchWidget {
         self.last_height_limit = sc.visible_hint().map(|vh| vh.lower_right().y);
 
         self.edit.update_and_layout(sc);
-        self.width = sc.visible_hint().size.x;
 
-        let items_len = match self.draw_comment {
-            DrawComment::None => self.items().count() + 1,
-            DrawComment::Highlighted => self.items().count() + 2,
-            DrawComment::All => self.items().count() * 2 + 1,
+        //TODO overflow
+        let items_len: u16 = match self.draw_comment {
+            DrawComment::None => self.items().count() as u16 + 1,
+            DrawComment::Highlighted => self.items().count() as u16 + 2,
+            DrawComment::All => self.items().count() as u16 * 2 + 1,
         };
 
-        //TODO
-        XY::new(self.width, min(items_len as u16, sc.visible_hint().lower_right().y))
+        let height: u16 = if let Some(max_y) = sc.y() {
+            if max_y < items_len {
+                warn!("not enough y to display all options - add scroll?");
+                max_y
+            } else {
+                items_len
+            }
+        } else {
+            items_len
+        };
+
+        let size = XY::new(width, height);
+        self.last_size = Some(size);
+        size
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -288,8 +303,10 @@ impl Widget for FuzzySearchWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let size = unpack_or_e!(self.last_size, (), "render before layout");
+
         let mut suboutput = SubOutput::new(output,
-                                           Rect::new(XY::ZERO, XY::new(self.width(), 1)));
+                                           Rect::new(XY::ZERO, XY::new(size.x, 1)));
 
         self.edit.render(theme, focused, &mut suboutput);
         let query = self.edit.get_buffer().to_string();
@@ -333,7 +350,7 @@ impl Widget for FuzzySearchWidget {
             }
 
             //TODO cast overflow
-            for x in (item.display_name().as_ref().width() as u16)..self.width() {
+            for x in (item.display_name().as_ref().width() as u16)..size.x {
                 output.print_at(XY::new(x as u16, y),
                                 style,
                                 " ");
@@ -349,7 +366,7 @@ impl Widget for FuzzySearchWidget {
                         x += g.width() as u16; //TODO overflow
                     }
                     //TODO cast overflow
-                    for x in (comment.as_ref().width() as u16)..self.width() {
+                    for x in (comment.as_ref().width() as u16)..size.x {
                         output.print_at(XY::new(x as u16, y + 1),
                                         style,
                                         " ");
@@ -363,7 +380,7 @@ impl Widget for FuzzySearchWidget {
                 DrawComment::All => if item.comment().is_some() { 2 } else { 1 },
             };
 
-            if y >= output.size_constraint().visible_hint().lower_right().y {
+            if y >= size.y {
                 break;
             }
         }

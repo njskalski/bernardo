@@ -45,6 +45,53 @@ macro_rules! unpack_or {
     };
 }
 
+#[macro_export]
+macro_rules! unpack_or_e {
+    ($ee: expr) => {
+        match $ee {
+            Some(item) => item,
+            None => {
+                return;
+            }
+        }
+    };
+    ($ee: expr, $ret_val: expr) => {
+        match $ee {
+            Some(item) => item,
+            None => {
+                return $ret_val;
+            }
+        }
+    };
+    ($ee: expr, $ret_val: expr, $msg:literal) => {
+        match $ee {
+            Some(item) => item,
+            None => {
+                log::log!(log::Level::Error, $msg);
+                return $ret_val;
+            }
+        }
+    };
+    ($ee: expr, $ret_val: expr, $msg:literal, $($arg:tt)*) => {
+        match $ee {
+            Some(item) => item,
+            None => {
+                log::log!(log::Level::Error, $msg, $($arg)*);
+                return $ret_val;
+            }
+        }
+    };
+    ($ee: expr, $msg:literal, $($arg:tt)*) => {
+        match $ee {
+            Some(item) => item,
+            None => {
+                log::log!(log::Level::Error, $msg, $($arg)*);
+                return;
+            }
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
