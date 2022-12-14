@@ -2,6 +2,7 @@ use core::option::Option;
 use std::fmt::Debug;
 
 use log::{debug, error, warn};
+use tree_sitter::TextProvider;
 
 use crate::config::theme::Theme;
 use crate::experiments::deref_str::DerefStr;
@@ -236,7 +237,15 @@ impl ComplexWidget for GenericDialog {
     }
 
     fn get_default_focused(&self) -> SubwidgetPointer<GenericDialog> {
-        todo!()
+        if self.buttons.is_empty() {
+            error!("no buttons in generic dialog!");
+            subwidget!(Self.text_widget)
+        } else {
+            SubwidgetPointer::new(
+                Box::new(|x: &Self| { x.buttons.get(0).unwrap() }),
+                Box::new(|x: &mut Self| { x.buttons.get_mut(0).unwrap() }),
+            )
+        }
     }
 
     fn set_display_state(&mut self, display_state: DisplayState<GenericDialog>) {
