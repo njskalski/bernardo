@@ -54,7 +54,7 @@ impl Widget for ReaderMainWidget {
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
-        sc.visible_hint().size
+        self.main_display.update_and_layout(sc)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
