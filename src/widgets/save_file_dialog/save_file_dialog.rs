@@ -98,9 +98,11 @@ impl SaveFileDialogWidget {
                     Some(SaveFileDialogMsg::FileListHit(item.clone()).boxed())
                 }).flatten()
             });
-        let edit_box = EditBoxWidget::new().with_enabled(true).with_on_hit(
-            |_| SaveFileDialogMsg::EditBoxHit.someboxed()
-        );
+        let edit_box = EditBoxWidget::new()
+            .with_enabled(true)
+            .with_on_hit(
+                |_| SaveFileDialogMsg::EditBoxHit.someboxed()
+            ).with_fill_x();
         let ok_button = ButtonWidget::new(Box::new(Self::OK_LABEL)).with_on_hit(
             |_| SaveFileDialogMsg::Save.someboxed()
         );
@@ -401,11 +403,10 @@ impl Widget for SaveFileDialogWidget {
 impl ComplexWidget for SaveFileDialogWidget {
     fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
         let tree_layout = LeafLayout::new(subwidget!(Self.tree_widget));
-        // let mut empty_layout = EmptyLayout::new().with_size(XY::new(1, 1));
 
         let left_column = SplitLayout::new(SplitDirection::Vertical)
             .with(SplitRule::Proportional(1.0), tree_layout.boxed())
-            // .with(SplitRule::Fixed(1), &mut empty_layout)
+            // .with(SplitRule::Fixed(1), EmptyLayout::new().with_size(XY::new(1, 1)).boxed())
             .boxed();
 
         let ok_box = LeafLayout::new(subwidget!(Self.ok_button)).boxed();

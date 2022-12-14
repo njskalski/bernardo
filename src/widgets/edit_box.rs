@@ -3,6 +3,7 @@ use ropey::Rope;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use crate::{unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::io::input_event::InputEvent;
@@ -17,7 +18,6 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
-use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
@@ -191,6 +191,7 @@ impl Widget for EditBoxWidget {
             }
         }
 
+        self.last_size_x = Some(x);
         XY::new(x, 1)
     }
 
@@ -247,7 +248,7 @@ impl Widget for EditBoxWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let size = XY::new(unpack_or!(self.last_size_x, (), "render before layout"), 1);
+        let size = XY::new(unpack_or_e!(self.last_size_x, (), "render before layout"), 1);
         #[cfg(test)]
         output.emit_metadata(
             Metadata {
@@ -263,6 +264,11 @@ impl Widget for EditBoxWidget {
 
         let mut x: usize = 0;
         for (char_idx, g) in self.buffer.to_string().graphemes(true).enumerate() {
+            if x + g.width() > size.x as usize {
+                // not drawing beyond x
+                break;
+            }
+
             let style = match theme.cursor_background(self.buffer.text().cursor_set.get_cursor_status_for_char(char_idx)) {
                 Some(bg) => {
                     primary_style.with_background(if focused { bg } else { bg.half() })
@@ -276,8 +282,8 @@ impl Widget for EditBoxWidget {
             );
             x += g.width();
         }
-        // one character after
-        {
+        // one character after, but only if it fits.
+        if x < size.x as usize {
             let style = match theme.cursor_background(self.buffer.text().cursor_set.get_cursor_status_for_char(self.buffer.len_chars())) {
                 Some(bg) => {
                     primary_style.with_background(if focused { bg } else { bg.half() })
