@@ -12,6 +12,7 @@ I hope I will discover most of functional constraints while implementing it.
 
 use log::{debug, error, warn};
 
+use crate::{subwidget, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
@@ -29,7 +30,6 @@ use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::subwidget;
 use crate::text::text_buffer::TextBuffer;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
@@ -383,12 +383,13 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let size = unpack_or_e!(self.display_state.as_ref(), (), "render before layout").total_size;
         #[cfg(test)]
         output.emit_metadata(
             Metadata {
                 id: self.id(),
                 typename: self.typename().to_string(),
-                rect: Rect::new(XY::ZERO, self.display_state.unwrap().total_size),
+                rect: Rect::from_zero(size),
                 focused,
             }
         );

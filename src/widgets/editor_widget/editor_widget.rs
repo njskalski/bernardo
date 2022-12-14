@@ -599,7 +599,8 @@ impl EditorWidget {
 
         helpers::fill_output(default.background, output);
 
-        let visible_rect = unpack_or!(output.size_constraint().visible_hint(), (), "not visible - not rendering");
+        let sc = output.size_constraint();
+        let visible_rect = unpack_or!(sc.visible_hint(), (), "not visible - not rendering");
 
         let char_range_op = self.buffer.char_range(output);
         let highlights = self.buffer.highlight(char_range_op.clone());

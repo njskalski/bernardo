@@ -259,7 +259,8 @@ impl BufferState {
     pub fn char_range(&self, output: &mut dyn Output) -> Option<Range<usize>> {
         let rope = &self.text().rope;
 
-        let visible_rect = unpack_or!(output.size_constraint().visible_hint(), None);
+        let sc = output.size_constraint();
+        let visible_rect = unpack_or!(sc.visible_hint(), None);
 
         let first_line = visible_rect.upper_left().y as usize;
         let beyond_last_lane = visible_rect.lower_right().y as usize + 1;

@@ -6,6 +6,7 @@ use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use crate::{unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
@@ -15,7 +16,6 @@ use crate::primitives::helpers;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::FillPolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
@@ -338,13 +338,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let size = match self.last_size {
-            Some(xy) => xy,
-            None => {
-                error!("render before layout, skipping");
-                return;
-            }
-        };
+        let size = unpack_or_e!(self.last_size, (), "render before layout");
 
         #[cfg(test)]
         output.emit_metadata(
@@ -356,7 +350,8 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
             }
         );
 
-        let visible_rect = unpack_or!(output.size_constraint().visible_hint(), ());
+        let sc = output.size_constraint();
+        let visible_rect = unpack_or!(sc.visible_hint(), ());
 
         let primary_style = theme.default_text(focused);
         helpers::fill_output(primary_style.background, output);
