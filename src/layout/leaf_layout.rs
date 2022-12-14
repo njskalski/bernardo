@@ -34,10 +34,15 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
 
         let widget_min_size = widget.min_size();
         let properly_sized = sc.bigger_equal_than(widget_min_size);
+        let widget_name = widget.typename();
 
         if !skip {
             if properly_sized {
                 let xy = widget.update_and_layout(sc);
+
+                debug_assert!(sc.bigger_equal_than(xy),
+                              "widget {} #{} violated invariant",
+                              widget.typename(), widget.id());
 
                 LayoutResult::new(
                     vec![WidgetWithRect::new(

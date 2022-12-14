@@ -18,6 +18,10 @@ pub struct LayoutResult<W: Widget> {
 
 impl<W: Widget> LayoutResult<W> {
     pub fn new(wwrs: Vec<WidgetWithRect<W>>, total_size: XY) -> LayoutResult<W> {
+        for w in wwrs.iter() {
+            debug_assert!(total_size >= w.rect().lower_right());
+        }
+
         LayoutResult {
             wwrs,
             total_size,

@@ -99,6 +99,11 @@ pub trait ComplexWidget: Widget + Sized {
         let layout = self.get_layout(sc);
         let layout_res = layout.layout(self, sc);
 
+        for wwr in layout_res.wwrs.iter() {
+            debug_assert!(sc.bigger_equal_than(wwr.rect().lower_right()));
+            debug_assert!(layout_res.total_size >= wwr.rect().lower_right(), "total_size = {}, rect = {}", layout_res.total_size, wwr.rect());
+        }
+
         let widgets_and_positions: Vec<(WID, SubwidgetPointer<Self>, Rect)> = layout_res.wwrs.iter().filter(
             |wwr| wwr.focusable()
         ).map(|w| {

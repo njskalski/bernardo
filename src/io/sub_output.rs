@@ -19,8 +19,8 @@ impl<'a> SubOutput<'a> {
         // TODO add tests if frame is fully contained in Output and write errors to logs if its not.
 
         debug_assert!(output.size_constraint().bigger_equal_than(frame.lower_right()),
-                      "frame = {}, output.size_constraint() = {}",
-                      frame, output.size_constraint());
+                      "frame = {}, output.size_constraint() = {}\n, output : {:?}",
+                      frame, output.size_constraint(), output);
 
         SubOutput { output, frame }
     }

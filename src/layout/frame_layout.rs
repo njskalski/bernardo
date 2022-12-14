@@ -41,7 +41,7 @@ impl<W: Widget> Layout<W> for FrameLayout<W> {
                 wir.shifted(self.margins)
             }).collect();
 
-            LayoutResult::new(wwrs, subresp.total_size)
+            LayoutResult::new(wwrs, subresp.total_size + self.margins * 2)
         } else {
             error!("too small output to render with margins");
 

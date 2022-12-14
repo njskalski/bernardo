@@ -26,7 +26,7 @@ pub struct WithScroll<W: Widget> {
 }
 
 impl<W: Widget> WithScroll<W> {
-    pub const TYPENAME: &'static str = "scroll";
+    pub const TYPENAME: &'static str = "with_scroll";
 
     pub fn new(widget: W, scroll_direction: ScrollDirection) -> Self {
         let id = get_new_widget_id();
