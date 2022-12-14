@@ -3,6 +3,7 @@ use std::rc::Rc;
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
+use crate::{subwidget, unpack_or_e};
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
@@ -21,7 +22,6 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::search_pattern::SearchPattern;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::subwidget;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::navcomp_group::NavCompGroupRef;
@@ -425,12 +425,17 @@ impl Widget for EditorView {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let total_size = unpack_or_e!(
+            self.display_state.as_ref().map(|ds| ds.total_size),
+            (), "render before layout"
+        );
+
         #[cfg(test)]
         output.emit_metadata(
             Metadata {
                 id: self.wid,
                 typename: self.typename().to_string(),
-                rect: output.size_constraint().visible_hint().clone(),
+                rect: Rect::from_zero(total_size),
                 focused,
             }
         );
