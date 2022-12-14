@@ -207,7 +207,7 @@ impl<W: Widget> Widget for WithScroll<W> {
         let (margin_width, internal_sc) = self.nested_sc(sc);
         let child_size = self.widget.update_and_layout(internal_sc);
 
-        debug_assert!(margin_width >= output_size.x);
+        debug_assert!(margin_width <= output_size.x);
 
         self.scroll.follow_anchor(output_size - XY::new(margin_width, 0),
                                   self.widget.anchor());
