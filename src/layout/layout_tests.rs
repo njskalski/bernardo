@@ -62,6 +62,8 @@ pub mod tests {
         }
 
         fn layout(&self, root: &mut MockWidget, sc: SizeConstraint) -> LayoutResult<MockWidget> {
+            assert!(self.preferred_size.map(|ps| ps >= self.min_size).unwrap_or(true));
+
             assert!(sc.bigger_equal_than(self.min_size));
 
             //in my design, widget MUST know how much space it wants to take.
@@ -80,7 +82,7 @@ pub mod tests {
     }
 
     fn get_results(items: &Vec<(SplitRule, XY, Option<XY>)>, sc: SizeConstraint) -> (XY, Vec<u16>) {
-        let mut layout = SplitLayout::new(SplitDirection::Horizontal);
+        let mut layout = SplitLayout::new(SplitDirection::Vertical);
         for item in items.into_iter() {
             let mut mock_layout = MockLayout::new(item.1);
             match item.2 {
@@ -98,9 +100,9 @@ pub mod tests {
 
         let mut result: Vec<u16> = Vec::new();
         for wwr in layout_result.wwrs {
-            let x_offset = result.iter().fold(0 as u16, |acc, item| acc + item);
-            assert_eq!(wwr.rect().pos.x, x_offset, "wwr.pos.x = {}, x_offset = {}", wwr.rect().pos, x_offset);
-            result.push(wwr.rect().size.x);
+            let y_offset = result.iter().fold(0 as u16, |acc, item| acc + item);
+            assert_eq!(wwr.rect().pos.y, y_offset, "wwr.pos.y = {}, y_offset = {}", wwr.rect().pos, y_offset);
+            result.push(wwr.rect().size.y);
         }
 
         (layout_result.total_size, result)
@@ -134,6 +136,22 @@ pub mod tests {
         ];
 
         assert_eq!(get_results(&items, SizeConstraint::simple(XY::new(11, 11))),
+                   (XY::new(11, 11), vec![2, 3, 6])
+        );
+    }
+
+    #[test]
+    fn test_split_3() {
+        let wchuj = XY::new(100, 100);
+        let mut items: Vec<(SplitRule, XY, Option<XY>)> = vec![
+            (SplitRule::Fixed(2), XY::new(1, 1), None),
+        ];
+
+        for i in 0..20 {
+            items.push((SplitRule::Proportional(1.0f32), XY::new(10, 1), Some(XY::new(10, 2))));
+        }
+
+        assert_eq!(get_results(&items, SizeConstraint::simple(XY::new(10, 30))),
                    (XY::new(11, 11), vec![2, 3, 6])
         );
     }
