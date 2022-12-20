@@ -21,10 +21,8 @@ use crate::text::text_buffer::TextBuffer;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
-const MIN_WIDTH: u16 = 12;
-const MAX_WIDTH: u16 = 80; //completely arbitrary
-
 //TODO filter out the newlines on paste
+//TODO add layout tests (min size, max size etc)
 
 pub struct EditBoxWidget {
     id: WID,
@@ -36,6 +34,7 @@ pub struct EditBoxWidget {
     on_miss: Option<WidgetAction<EditBoxWidget>>,
     buffer: BufferState,
 
+    min_width_op: Option<u16>,
     max_width_op: Option<u16>,
 
     clipboard_op: Option<ClipboardRef>,
@@ -46,6 +45,8 @@ pub struct EditBoxWidget {
 
 
 impl EditBoxWidget {
+    const MIN_WIDTH: u16 = 2;
+
     pub const TYPENAME: &'static str = "edit_box";
 
     pub fn new() -> Self {
@@ -60,6 +61,7 @@ impl EditBoxWidget {
             clipboard_op: None,
             fill_x: false,
             last_size_x: None,
+            min_width_op: None,
         }
     }
 
@@ -73,6 +75,13 @@ impl EditBoxWidget {
     pub fn with_max_width(self, max_width: u16) -> Self {
         EditBoxWidget {
             max_width_op: Some(max_width),
+            ..self
+        }
+    }
+
+    pub fn with_min_width(self, min_width: u16) -> Self {
+        EditBoxWidget {
+            min_width_op: Some(min_width),
             ..self
         }
     }
@@ -178,7 +187,7 @@ impl Widget for EditBoxWidget {
     }
 
     fn min_size(&self) -> XY {
-        XY::new(MIN_WIDTH, 1)
+        XY::new(self.min_width_op.unwrap_or(Self::MIN_WIDTH), 1)
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {

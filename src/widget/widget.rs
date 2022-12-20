@@ -23,19 +23,13 @@ pub trait Widget: 'static {
     // Minimal size of the view. If the output cannot satisfy it, a replacement is drawn instead,
     // and the view cannot be focused.
     //
-    // TODO here I have some underdefined behaviour: in some widget, min_size is independent of
-    //  data visualized by the widget, on other it relies on it. Difference is in answer to following
-    //  question: do I render a widget, when there's not enough space to show all the data, OR in such
-    //  case replacement is rendered, and I expect a Scroll to be introduced always instead?
-    // arguments for "independent of data":
-    //  - reduced complexity O(1)
-    // arguments for "dependent on data":
-    //  - slow data source can slow down layouting (bad argument, layouting is O(n) anyway)
-    //  - I can miss a spot where "it works well without scroll in my situation, it does not in yours"
-
+    // min_size can be data dependent. Widgets *should not* implement their own scrolling.
+    // So it's perfectly reasonable for widget to require O(n) time to answer question "how big I
+    // need to be" (if it's slow, we'll be caching *after* profiling).
     fn min_size(&self) -> XY;
 
-    // This is guaranteed to be called before each render.
+    // This is guaranteed to be called before each render. It is guaranteed to be called with
+    // SizeConstraint >= self.min_size().
     //
     // This is an opportunity for widget to "update itself" and decide how it's going to be drawn.
     // There is no enforced contract on whether widget should layout it's subwidgets first or
@@ -53,18 +47,10 @@ pub trait Widget: 'static {
     // Without it, it would be impossible to decide "which widget gets how much space" before
     // rendering them.
     //
-    // A lot of widgets decide based on sc.visible_rect() how much space to use, so their size is
-    // dependent not on constraint, but on size of display. In case such widget is not drawn,
-    // we emit error and use min_size instead. Such widgets should not be part of split layouts under
-    // infinite size constraints, as they size may change drastically dependent on whether they are drawn or not.
+    // If widget size is VisibleRect dependent (everything that fills buffers in greedy way) and
+    // SizeConstraint.visible_rect() == None, a self.min_size() is used instead.
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY;
 
-    /*
-    TODO a wonderful new invariant just brew in my mind: for a moment consider following contract:
-        - min_size is data dependent, O(n), replacement drawn if not enough space is provided
-        - layout is visible_rect independent, so scrolling of split views works well.
-        - to speed up things, min_size is cached where necessary (only after profiling)
-     */
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>>;
