@@ -143,17 +143,10 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
         false
     }
 
-    /*
-    Returns preferred size under given constraints.
-     */
-    fn size_from_items(&self, sc: SizeConstraint) -> XY {
-        let mut size = XY::ZERO;
+    fn size_from_items(&self) -> XY {
+        let mut size = XY::ONE;
 
         for item in self.items() {
-            if sc.y().map(|max_x| max_x >= size.y).unwrap_or(false) {
-                break;
-            }
-
             size = XY::new(
                 // depth * 2 + 1 + label_length
                 size
@@ -163,10 +156,8 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
             );
         }
 
-        if let Some(max_x) = sc.x() {
-            if size.x > max_x {
-                size.x = max_x
-            }
+        if size == XY::ONE {
+            warn!("size == ONE. Empty item provider?");
         }
 
         size
@@ -243,29 +234,30 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
     }
 
     fn min_size(&self) -> XY {
-        XY::new(5, 8) //completely arbitrary
+        self.size_from_items()
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
-        let mut res = self.size_from_items(sc);
+        let mut size = self.size_from_items();
+        debug_assert!(sc.bigger_equal_than(size));
 
         if let Some(max_x) = sc.x() {
             if self.fill_policy.fill_x {
-                debug_assert!(res.x <= max_x);
-                res.x = max_x;
+                debug_assert!(size.x <= max_x);
+                size.x = max_x;
             }
         }
 
         if let Some(max_y) = sc.y() {
             if self.fill_policy.fill_y {
-                debug_assert!(res.y <= max_y);
-                res.y = max_y;
+                debug_assert!(size.y <= max_y);
+                size.y = max_y;
             }
         }
 
-        self.last_size = Some(res);
+        self.last_size = Some(size);
 
-        res
+        size
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

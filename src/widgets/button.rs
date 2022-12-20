@@ -15,6 +15,8 @@ use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::FillPolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
+// TODO add fixed size and tests
+
 pub struct ButtonWidget {
     id: usize,
     enabled: bool,
