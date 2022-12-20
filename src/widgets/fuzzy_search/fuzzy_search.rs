@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::cmp::{max, min};
 
 use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
@@ -52,8 +52,9 @@ pub struct FuzzySearchWidget {
     on_miss: Option<WidgetAction<Self>>,
     // on_hit is a part of PROVIDER.
 
+    fill_y: bool,
+
     // always greedy on X
-    // TODO add greedy on Y flip
     last_size: Option<XY>,
 }
 
@@ -78,6 +79,7 @@ impl FuzzySearchWidget {
             highlighted: 0,
             on_close,
             on_miss: None,
+            fill_policy_y: false,
             last_size: None,
         }
     }
@@ -106,6 +108,17 @@ impl FuzzySearchWidget {
             draw_comment: draw_context_setting,
             ..self
         }
+    }
+
+    pub fn with_fill_y(self) -> Self {
+        Self {
+            fill_y: true,
+            ..self
+        }
+    }
+
+    pub fn set_fill_y(&mut self, greedy_y: bool) {
+        self.fill_y = greedy_y;
     }
 
     pub fn set_draw_comment_setting(&mut self, draw_context_setting: DrawComment) {
@@ -137,6 +150,34 @@ impl FuzzySearchWidget {
             provider_idx: 0,
             cur_iter: None,
         }
+    }
+
+    fn size_from_items(&self) -> XY {
+        let mut res = XY::ONE;
+
+        for (idx, item) in self.items().enumerate() {
+            // TODO overflow
+
+            let y = match self.draw_comment {
+                DrawComment::None => 1,
+                DrawComment::Highlighted => if self.highlighted == idx { 2 } else { 1 },
+                DrawComment::All => 2,
+            };
+            let mut local_xy = XY::new(item.display_name().width() as u16, y);
+
+            if idx == self.highlighted {
+                local_xy.x = max(item.comment().map(|c| c.width() as u16).unwrap_or(0), local_xy.x);
+            }
+
+            res.x = max(res.x, local_xy.x);
+            res.y += local_xy.y;
+        }
+
+        let edit_min = self.edit.min_size();
+        res.x = max(res.x, edit_min.x);
+        res.y += edit_min.y;
+
+        res
     }
 }
 
@@ -191,36 +232,34 @@ impl Widget for FuzzySearchWidget {
     }
 
     fn min_size(&self) -> XY {
-        // Completely arbitrary
-        XY::new(16, 5)
+        self.size_from_items()
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
-        let width = unpack_or_e!(sc.x(), self.min_size(), "fuzzy search needs a fixed width");
+        let min_size = self.min_size();
+        debug_assert!(sc.bigger_equal_than(self.min_size()),
+                      "sc: {} self.min_size(): {}",
+                      sc, min_size);
 
-        // This is a reasonable assumption: I never want to display more elements in fuzzy search that
-        // can be displayed on a "physical" screen. Even if fuzzy is inside a scroll, the latest position
-        // I might be interested in is "lower_right().y".
-        self.last_height_limit = sc.visible_hint().map(|vh| vh.lower_right().y);
+        let width = sc.x().unwrap_or_else(|| {
+            warn!("fuzzy_search is greedy on width, but no x constraint was provided");
+            min_size.x
+        });
 
-        self.edit.update_and_layout(sc);
-
-        //TODO overflow
-        let items_len: u16 = match self.draw_comment {
-            DrawComment::None => self.items().count() as u16 + 1,
-            DrawComment::Highlighted => self.items().count() as u16 + 2,
-            DrawComment::All => self.items().count() as u16 * 2 + 1,
-        };
+        if let Some(edit_sc) = sc.cut_out_rect(Rect::from_zero(XY::new(width, 0))) {
+            self.edit.update_and_layout(edit_sc);
+        } else {
+            error!("not layouting edit - emtpy cut_out_rect empty!")
+        }
 
         let height: u16 = if let Some(max_y) = sc.y() {
-            if max_y < items_len {
-                warn!("not enough y to display all options - add scroll?");
+            if self.fill_y {
                 max_y
             } else {
-                items_len
+                min_size.y
             }
         } else {
-            items_len
+            min_size.y
         };
 
         let size = XY::new(width, height);
@@ -384,5 +423,10 @@ impl Widget for FuzzySearchWidget {
                 break;
             }
         }
+    }
+
+    fn anchor(&self) -> XY {
+        //TODO overflow
+        XY::new(self.highlighted as u16, 0)
     }
 }

@@ -34,8 +34,6 @@ use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 use crate::widgets::with_scroll::WithScroll;
 
-const MIN_VIEW_SIZE: XY = XY::new(32, 10);
-
 pub enum HoverItem {
     FuzzySearch(FuzzySearchWidget),
 }
@@ -65,6 +63,8 @@ pub struct MainView {
 }
 
 impl MainView {
+    pub const MIN_SIZE: XY = XY::new(32, 10);
+
     pub fn new(config: ConfigRef,
                tree_sitter: Rc<TreeSitterWrapper>,
                fsf: FsfRef,
@@ -225,7 +225,8 @@ impl Widget for MainView {
     }
 
     fn min_size(&self) -> XY {
-        MIN_VIEW_SIZE
+        // TODO delegate to complex_layout?
+        Self::MIN_SIZE
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {

@@ -8,8 +8,8 @@ use crate::widget::widget::{WID, Widget};
 pub type WidgetGetter<T> = Box<dyn Fn(&'_ T) -> &'_ dyn Widget>;
 pub type WidgetGetterMut<T> = Box<dyn Fn(&'_ mut T) -> &'_ mut dyn Widget>;
 
-// TODO I want to get to the point where all layout is generated from macros, and then
-// depending on whether root is mut or not, we get mut layout or not-mut layout.
+/* TODO I want to get to the point where all layout is generated from macros, and then
+    depending on whether root is mut or not, we get mut layout or not-mut layout. */
 
 pub struct LayoutResult<W: Widget> {
     pub wwrs: Vec<WidgetWithRect<W>>,

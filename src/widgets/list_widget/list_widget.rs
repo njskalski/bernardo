@@ -240,8 +240,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     }
 
     fn min_size(&self) -> XY {
-        // completely arbitrary
-        XY::new(10, 3)
+        self.full_size_from_items()
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {

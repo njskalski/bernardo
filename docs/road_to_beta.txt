@@ -11,7 +11,9 @@ Here is what I want to be present in Gladius Beta:
 8) Code "collapsing"
 
 prequisites:
-1) fix definition and documentation of min_size (there's a TODO there and new invariant proposed)
+1) enforce new min_size/layout invariant to all widgets. Skipped so far:
+- complex_widget
+
 
 Nice to haves (only if they turn out to be low hanging fruits):
 1) guessing programming language from code
