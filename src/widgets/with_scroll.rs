@@ -183,7 +183,7 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn typename(&self) -> &'static str {
-        "scroll"
+        Self::TYPENAME
     }
 
     fn min_size(&self) -> XY {
