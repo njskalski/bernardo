@@ -252,6 +252,11 @@ impl SaveFileDialogWidget {
             let filename = self.edit_box.get_buffer().to_string();
 
             self.hover_dialog = Some(override_dialog(filename));
+            self.get_hover_pointer().map(|ptr| {
+                self.set_focused(ptr);
+            }).unwrap_or_else(|| {
+                error!("failed to set focus to hover dialog!");
+            });
             return None;
         } else {
             self.save_positively()
@@ -274,6 +279,21 @@ impl SaveFileDialogWidget {
             error!("attempted to save, but on_save not set");
             None
         })
+    }
+
+    fn get_hover_pointer(&mut self) -> Option<SubwidgetPointer<Self>> {
+        if self.hover_dialog.is_some() {
+            Some(SubwidgetPointer::new(
+                Box::new(|s: &Self| {
+                    s.hover_dialog.as_ref().unwrap()
+                }),
+                Box::new(|s: &mut Self| {
+                    s.hover_dialog.as_mut().unwrap()
+                })),
+            )
+        } else {
+            None
+        }
     }
 }
 
@@ -368,6 +388,12 @@ impl Widget for SaveFileDialogWidget {
             SaveFileDialogMsg::FocusUpdateMsg(fu_msg) => {
                 self.update_focus(*fu_msg);
                 None
+            }
+            SaveFileDialogMsg::ConfirmOverride => {
+                debug_assert!(self.hover_dialog.is_some());
+                self.hover_dialog = None;
+                self.set_focused(self.get_default_focused());
+                self.save_positively()
             }
             unknown_msg => {
                 warn!("SaveFileDialog.update : unknown message {:?}", unknown_msg);
