@@ -219,4 +219,8 @@ pub trait ComplexWidget: Widget + Sized {
     fn todo_all_focused(&self) -> bool {
         false
     }
+
+    // fn complex_min_size(&self) -> XY {
+    //
+    // }
 }

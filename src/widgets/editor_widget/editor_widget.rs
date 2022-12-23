@@ -7,6 +7,7 @@ use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use crate::{unpack_or, unpack_or_e, unpack_or_w};
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
@@ -31,7 +32,6 @@ use crate::promise::promise::{Promise, PromiseState};
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
-use crate::unpack_or;
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_provider::{CompletionAction, NavCompSymbol};
 use crate::widget::any_msg::{AnyMsg, AsAny};
@@ -93,6 +93,7 @@ pub enum EditorState {
 These settings are now generated in todo_ something and then *updated* in update_and_layout (after layouting the widget).
 So modified in two places. Absolutely barbaric. To be changed.
  */
+#[derive(Debug)]
 pub struct HoverSettings {
     pub rect: Rect,
     /*
@@ -350,21 +351,8 @@ impl EditorWidget {
     }
 
     fn todo_get_hover_settings_anchored_at_trigger(&self) -> Option<HoverSettings> {
-        let path = match self.buffer().get_path() {
-            None => {
-                warn!("unimplemented autocompletion for non-saved files");
-                return None;
-            }
-            Some(s) => s.clone(),
-        };
-
-        let navcomp = match self.navcomp.as_ref() {
-            None => {
-                error!("no navcomp available");
-                return None;
-            }
-            Some(nc) => nc,
-        };
+        let path = unpack_or_w!(self.buffer().get_path(), None, "unimplemented autocompletion for non-saved files");
+        let navcomp = unpack_or_w!(self.navcomp.as_ref(), None, "no navcomp available");
 
         let trigger_op = {
             let nt = navcomp.completion_triggers(&path);
@@ -375,13 +363,7 @@ impl EditorWidget {
             }
         };
 
-        let hover_settings = match self.get_cursor_related_hover_max(trigger_op) {
-            None => {
-                error!("no place to draw completions!");
-                return None;
-            }
-            Some(r) => r,
-        };
+        let hover_settings = unpack_or_e!(self.get_cursor_related_hover_max(trigger_op), None, "no place to draw completions!");
 
         Some(hover_settings)
     }
@@ -412,8 +394,8 @@ impl EditorWidget {
                 match (promise_op, hover_settings) {
                     (Some(promise), Some(hover_settings)) => {
                         let comp = CompletionWidget::new(promise).with_fuzzy(true);
+                        debug!("created completion: settings [{:?}]", &hover_settings);
                         self.requested_hover = Some((hover_settings, EditorHover::Completion(comp)));
-                        debug!("created completion");
                     }
                     _ => {
                         debug!("something missing - promise or hover settings");

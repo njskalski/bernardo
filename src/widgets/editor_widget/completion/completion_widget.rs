@@ -2,6 +2,8 @@
 I guess I should reuse FuzzySearch Widget, this is a placeholder now.
  */
 
+use std::cmp::max;
+
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
@@ -152,10 +154,15 @@ impl Widget for CompletionWidget {
         Self::TYPENAME
     }
 
+    /*
+    Currently completion promise cannot be "updated" without mut (TODO?)
+     */
     fn min_size(&self) -> XY {
-        XY::new(Self::LOADING.width() as u16, 1)
+        let list_min = self.list_widget.min_size();
+        XY::new(max(Self::LOADING.width() as u16, list_min.x), list_min.y + 1)
     }
 
+    // TODO this method doesn't seem to be done
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
         self.completions_promise.as_mut().map(|cp| {
             if cp.update().has_changed {}

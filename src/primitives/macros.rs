@@ -1,3 +1,5 @@
+// TODO call Fizyk and golf this code
+
 #[macro_export]
 macro_rules! unpack_or {
     ($ee: expr) => {
@@ -86,6 +88,53 @@ macro_rules! unpack_or_e {
             Some(item) => item,
             None => {
                 log::log!(log::Level::Error, $msg, $($arg)*);
+                return;
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! unpack_or_w {
+    ($ee: expr) => {
+        match $ee {
+            Some(item) => item,
+            None => {
+                return;
+            }
+        }
+    };
+    ($ee: expr, $ret_val: expr) => {
+        match $ee {
+            Some(item) => item,
+            None => {
+                return $ret_val;
+            }
+        }
+    };
+    ($ee: expr, $ret_val: expr, $msg:literal) => {
+        match $ee {
+            Some(item) => item,
+            None => {
+                log::log!(log::Level::Warn, $msg);
+                return $ret_val;
+            }
+        }
+    };
+    ($ee: expr, $ret_val: expr, $msg:literal, $($arg:tt)*) => {
+        match $ee {
+            Some(item) => item,
+            None => {
+                log::log!(log::Level::Warn, $msg, $($arg)*);
+                return $ret_val;
+            }
+        }
+    };
+    ($ee: expr, $msg:literal, $($arg:tt)*) => {
+        match $ee {
+            Some(item) => item,
+            None => {
+                log::log!(log::Level::Warn, $msg, $($arg)*);
                 return;
             }
         }
