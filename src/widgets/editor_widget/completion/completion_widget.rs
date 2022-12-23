@@ -15,6 +15,7 @@ use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::common_query::CommonQuery;
 use crate::primitives::rect::Rect;
+use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::promise::promise::PromiseState;
@@ -26,6 +27,7 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::editor_widget::completion::msg::CompletionWidgetMsg;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::list_widget::list_widget::ListWidget;
+use crate::widgets::with_scroll::WithScroll;
 
 pub struct CompletionWidget {
     wid: WID,
@@ -36,7 +38,7 @@ pub struct CompletionWidget {
      */
     completions_promise: Option<CompletionsPromise>,
 
-    list_widget: ListWidget<Completion>,
+    list_widget: WithScroll<ListWidget<Completion>>,
     display_state: Option<DisplayState<Self>>,
 
     fuzzy: bool,
@@ -49,15 +51,15 @@ impl CompletionWidget {
     pub fn new(completions_promise: CompletionsPromise) -> Self {
         CompletionWidget {
             wid: get_new_widget_id(),
-            list_widget: ListWidget::new()
-                .with_selection()
-                .with_show_column_names(false)
-                .with_fill_policy(FillPolicy::FILL_WIDTH)
-                .with_on_hit(|w| {
-                    w.get_highlighted().map(|c| {
-                        CompletionWidgetMsg::Selected(c.action.clone()).boxed()
-                    })
-                })
+            list_widget: WithScroll::new(ListWidget::new()
+                                             .with_selection()
+                                             .with_show_column_names(false)
+                                             .with_fill_policy(FillPolicy::FILL_WIDTH)
+                                             .with_on_hit(|w| {
+                                                 w.get_highlighted().map(|c| {
+                                                     CompletionWidgetMsg::Selected(c.action.clone()).boxed()
+                                                 })
+                                             }), ScrollDirection::Vertical)
             ,
             completions_promise: Some(completions_promise),
             display_state: None,
@@ -81,14 +83,16 @@ impl CompletionWidget {
     }
 
     pub fn set_query_substring(&mut self, query: Option<String>) {
-        self.list_widget.set_query(query.map(|q|
-            if !self.fuzzy {
-                CommonQuery::String(q)
-            } else {
-                CommonQuery::Fuzzy(q)
-            }
-        ));
-        debug!("updated query: {:?}", self.list_widget.get_query());
+        self.list_widget
+            .internal_mut()
+            .set_query(query.map(|q|
+                if !self.fuzzy {
+                    CommonQuery::String(q)
+                } else {
+                    CommonQuery::Fuzzy(q)
+                }
+            ));
+        debug!("updated query: {:?}", self.list_widget.internal().get_query());
     }
 
     fn has_completions(&self) -> bool {
@@ -120,7 +124,7 @@ impl CompletionWidget {
                             // mem::swap(&mut self.completions_promise, &mut promise);
                             // let provider: Vec<Completion> = promise.unwrap().take().unwrap();
                             let provider = self.completions_promise.take().unwrap();
-                            self.list_widget.set_provider(Box::new(provider));
+                            self.list_widget.internal_mut().set_provider(Box::new(provider));
 
                             self.set_focused(subwidget!(Self.list_widget));
                             true
