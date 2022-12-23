@@ -27,8 +27,6 @@ use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};
 
 const DEFAULT_WIDTH: u16 = 16;
 
-// TODO fix width calculation - I think it was done BEFORE introduced SizeConstraint
-
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum DrawComment {
     None,
@@ -79,7 +77,7 @@ impl FuzzySearchWidget {
             highlighted: 0,
             on_close,
             on_miss: None,
-            fill_policy_y: false,
+            fill_y: false,
             last_size: None,
         }
     }

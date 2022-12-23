@@ -27,6 +27,7 @@ pub struct WithScroll<W: Widget> {
 
 impl<W: Widget> WithScroll<W> {
     pub const TYPENAME: &'static str = "with_scroll";
+    pub const MIN_SIZE: XY = XY::new(3, 4);
 
     pub fn new(widget: W, scroll_direction: ScrollDirection) -> Self {
         let id = get_new_widget_id();
@@ -187,12 +188,21 @@ impl<W: Widget> Widget for WithScroll<W> {
 
     fn min_size(&self) -> XY {
         let child = self.widget.min_size();
-        if self.line_no {
-            let margin = self.line_count_margin_width_for_lower_right(child);
-            child + XY::new(margin, 0)
-        } else {
-            child
-        }
+        let margin = if self.line_no { self.line_count_margin_width_for_lower_right(child) } else { 0 };
+
+        let res = match self.scroll.direction {
+            ScrollDirection::Horizontal => {
+                XY::new(Self::MIN_SIZE.x + margin, child.y)
+            }
+            ScrollDirection::Vertical => {
+                XY::new(child.x + margin, Self::MIN_SIZE.y)
+            }
+            ScrollDirection::Both => {
+                Self::MIN_SIZE + XY::new(margin, 0)
+            }
+        };
+
+        res
     }
 
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
