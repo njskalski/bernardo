@@ -165,7 +165,9 @@ impl Widget for CompletionWidget {
     // TODO this method doesn't seem to be done
     fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
         self.completions_promise.as_mut().map(|cp| {
-            if cp.update().has_changed {}
+            if cp.update().has_changed {
+                debug!("completions arrived");
+            }
         });
 
         self.complex_layout(sc)

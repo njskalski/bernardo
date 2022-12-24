@@ -369,43 +369,24 @@ impl EditorWidget {
     }
 
     pub fn todo_request_completion(&mut self) {
-        if let Some(cursor) = self.cursors().as_single() {
-            if let Some(navcomp) = self.navcomp.clone() {
-                let stupid_cursor = match StupidCursor::from_real_cursor(self.buffer(), cursor) {
-                    Ok(sc) => sc,
-                    Err(e) => {
-                        error!("failed converting cursor to lsp_cursor: {:?}", e);
-                        return;
-                    }
-                };
+        let cursor = unpack_or!(self.cursors().as_single(), (), "not opening completions - cursor not single.");
+        let navcomp = unpack_or!(self.navcomp.clone(), (), "not opening completions - navcomp not available.");
+        let stupid_cursor = unpack_or_e!(StupidCursor::from_real_cursor(self.buffer(), cursor).ok(), (), "failed converting cursor to lsp_cursor");
+        let path = unpack_or_e!(self.buffer.get_path(), (), "path not available");
 
-                let path = match self.buffer.get_path() {
-                    None => {
-                        error!("path not available");
-                        return;
-                    }
-                    Some(p) => p,
-                };
+        let hover_settings = self.todo_get_hover_settings_anchored_at_trigger();
+        // let tick_sender = navcomp.todo_navcomp_sender().clone();
+        let promise_op = navcomp.completions(path.clone(), stupid_cursor, hover_settings.as_ref().map(|c| c.trigger.clone()).flatten());
 
-                let hover_settings = self.todo_get_hover_settings_anchored_at_trigger();
-                // let tick_sender = navcomp.todo_navcomp_sender().clone();
-                let promise_op = navcomp.completions(path.clone(), stupid_cursor, hover_settings.as_ref().map(|c| c.trigger.clone()).flatten());
-
-                match (promise_op, hover_settings) {
-                    (Some(promise), Some(hover_settings)) => {
-                        let comp = CompletionWidget::new(promise).with_fuzzy(true);
-                        debug!("created completion: settings [{:?}]", &hover_settings);
-                        self.requested_hover = Some((hover_settings, EditorHover::Completion(comp)));
-                    }
-                    _ => {
-                        debug!("something missing - promise or hover settings");
-                    }
-                }
-            } else {
-                debug!("not opening completions - navcomp not available.")
+        match (promise_op, hover_settings) {
+            (Some(promise), Some(hover_settings)) => {
+                let comp = CompletionWidget::new(promise).with_fuzzy(true);
+                debug!("created completion: settings [{:?}]", &hover_settings);
+                self.requested_hover = Some((hover_settings, EditorHover::Completion(comp)));
             }
-        } else {
-            debug!("not opening completions - cursor not single.")
+            _ => {
+                debug!("something missing - promise or hover settings");
+            }
         }
     }
 
