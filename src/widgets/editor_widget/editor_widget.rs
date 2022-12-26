@@ -39,7 +39,7 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
 use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::context_options_matrix::get_context_options;
-use crate::widgets::editor_widget::helpers::{CursorPosition, find_trigger_and_substring};
+use crate::widgets::editor_widget::helpers::{CursorScreenPosition, find_trigger_and_substring};
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
@@ -97,12 +97,13 @@ So modified in two places. Absolutely barbaric. To be changed.
 pub struct HoverSettings {
     pub rect: Rect,
     /*
-     anchor is the character *in the line* (so it's never included in the rect). And it's
+     anchor is the character *in the line* (so it's never included in the rect of hover).
+     And it is:
      - position of last character of trigger (if available)
      - just position of cursor
      */
     pub anchor: XY,
-    pub cursor_position: CursorPosition,
+    pub cursor_screen_position: CursorScreenPosition,
     pub above_cursor: bool,
     pub substring: Option<String>,
     pub trigger: Option<String>,
@@ -250,7 +251,7 @@ impl EditorWidget {
         self.state = EditorState::Editing;
     }
 
-    pub fn get_single_cursor_screen_pos(&self, cursor: &Cursor) -> Option<CursorPosition> {
+    pub fn get_single_cursor_screen_pos(&self, cursor: &Cursor) -> Option<CursorScreenPosition> {
         let lsp_cursor = StupidCursor::from_real_cursor(self.buffer(), &cursor).map_err(
             |_| {
                 error!("failed mapping cursor to lsp-cursor")
@@ -268,7 +269,7 @@ impl EditorWidget {
 
         if !visible_rect.contains(lsp_cursor_xy) {
             warn!("cursor seems to be outside visible hint {:?}", sc.visible_hint());
-            return Some(CursorPosition {
+            return Some(CursorScreenPosition {
                 cursor: *cursor,
                 screen_space: None,
                 // TODO I don't remember where this comes from and I am not sure it's right.
@@ -282,7 +283,7 @@ impl EditorWidget {
         debug_assert!(local_pos >= XY::ZERO);
         debug_assert!(local_pos < visible_rect.size);
 
-        Some(CursorPosition {
+        Some(CursorScreenPosition {
             cursor: *cursor,
             screen_space: Some(local_pos),
             absolute: lsp_cursor_xy,
@@ -332,7 +333,7 @@ impl EditorWidget {
             Some(HoverSettings {
                 rect: Rect::new(anchor - XY::new(0, height), XY::new(width, height)),
                 anchor,
-                cursor_position: cursor_pos,
+                cursor_screen_position: cursor_pos,
                 above_cursor: true,
                 substring: trigger_and_substring.as_ref().map(|tas| tas.1.clone()),
                 trigger: trigger_and_substring.as_ref().map(|tas| tas.0.clone()),
@@ -342,7 +343,7 @@ impl EditorWidget {
             Some(HoverSettings {
                 rect: Rect::new(anchor + XY::new(0, 1), XY::new(width, height)),
                 anchor,
-                cursor_position: cursor_pos,
+                cursor_screen_position: cursor_pos,
                 above_cursor: false,
                 substring: trigger_and_substring.as_ref().map(|tas| tas.1.clone()),
                 trigger: trigger_and_substring.as_ref().map(|tas| tas.0.clone()),
@@ -743,8 +744,8 @@ impl EditorWidget {
             if let Some(substring) = hover.substring.as_ref() {
                 if !substring.is_empty() {
                     let len = substring.len();
-                    debug!("removing [{}..{})",hover.cursor_position.cursor.a, hover.cursor_position.cursor.a + len);
-                    self.buffer.remove(hover.cursor_position.cursor.a, hover.cursor_position.cursor.a + len);
+                    debug!("removing [{}..{})",hover.cursor_screen_position.cursor.a, hover.cursor_screen_position.cursor.a + len);
+                    self.buffer.remove(hover.cursor_screen_position.cursor.a, hover.cursor_screen_position.cursor.a + len);
                 }
             }
 

@@ -12,14 +12,14 @@ use crate::unpack_or;
 use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct CursorPosition {
+pub struct CursorScreenPosition {
     pub cursor: Cursor,
     pub screen_space: Option<XY>,
     pub absolute: XY,
 }
 
 //TODO tests
-pub fn find_trigger_and_substring<'a>(triggers: &'a Vec<String>, buffer: &'a dyn TextBuffer, cursor_pos: &'a CursorPosition) -> Option<(&'a String, String)> {
+pub fn find_trigger_and_substring<'a>(triggers: &'a Vec<String>, buffer: &'a dyn TextBuffer, cursor_pos: &'a CursorScreenPosition) -> Option<(&'a String, String)> {
     let cursor_screen_pos = match cursor_pos.screen_space {
         None => {
             debug!("cursor not visible");
