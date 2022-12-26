@@ -243,7 +243,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
         self.full_size_from_items()
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         debug_assert!(sc.bigger_equal_than(self.min_size()),
                       "sc: {} self.min_size(): {}",
                       sc, self.min_size());

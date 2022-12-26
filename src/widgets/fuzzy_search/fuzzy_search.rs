@@ -233,7 +233,7 @@ impl Widget for FuzzySearchWidget {
         self.size_from_items()
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         let min_size = self.min_size();
         debug_assert!(sc.bigger_equal_than(self.min_size()),
                       "sc: {} self.min_size(): {}",
@@ -245,7 +245,7 @@ impl Widget for FuzzySearchWidget {
         });
 
         if let Some(edit_sc) = sc.cut_out_rect(Rect::from_zero(XY::new(width, 0))) {
-            self.edit.update_and_layout(edit_sc);
+            self.edit.layout(edit_sc);
         } else {
             error!("not layouting edit - emtpy cut_out_rect empty!")
         }

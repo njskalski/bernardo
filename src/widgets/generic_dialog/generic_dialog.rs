@@ -145,7 +145,7 @@ impl Widget for GenericDialog {
         total_size + if self.with_border.is_some() { XY::new(2, 2) } else { XY::ZERO }
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         self.complex_layout(sc)
     }
 

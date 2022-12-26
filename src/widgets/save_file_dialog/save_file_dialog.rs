@@ -310,7 +310,7 @@ impl Widget for SaveFileDialogWidget {
         XY::new(4, 4)
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         self.complex_layout(sc)
     }
 

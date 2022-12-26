@@ -79,7 +79,7 @@ impl<T: Widget> Widget for BigList<T> {
         XY::new(10, 4) // TODO completely arbitrary
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         let xy = self.min_size();
         self.last_size = Some(xy);
         xy

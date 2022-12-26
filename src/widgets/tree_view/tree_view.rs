@@ -237,7 +237,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
         self.size_from_items()
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         let mut size = self.size_from_items();
         debug_assert!(sc.bigger_equal_than(size));
 

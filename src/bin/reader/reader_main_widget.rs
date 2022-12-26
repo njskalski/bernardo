@@ -53,8 +53,8 @@ impl Widget for ReaderMainWidget {
         XY::new(10, 10)
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
-        self.main_display.update_and_layout(sc)
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
+        self.main_display.layout(sc)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

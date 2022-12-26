@@ -40,7 +40,7 @@ impl Widget for ButtonWidget {
         XY::new((self.text.as_ref_str().width() + 2) as u16, 1)
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         debug_assert!(sc.bigger_equal_than(self.min_size()), "min_size {}, got {}", self.min_size(), sc);
 
         let mut size = self.min_size();

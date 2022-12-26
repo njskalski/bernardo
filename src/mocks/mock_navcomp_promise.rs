@@ -56,36 +56,8 @@ impl<T: Send + 'static> MockNavCompPromise<T> {
             join_handle,
         }
     }
-}
 
-impl<T: Send + 'static> Promise<T> for MockNavCompPromise<T> {
-    fn state(&self) -> PromiseState {
-        if self.done {
-            if self.item.is_some() {
-                PromiseState::Ready
-            } else {
-                PromiseState::Broken
-            }
-        } else {
-            PromiseState::Unresolved
-        }
-    }
-
-    fn wait(&mut self) -> PromiseState {
-        match self.receiver.recv() {
-            Ok(value) => {
-                self.item = Some(value);
-                self.done = true;
-                PromiseState::Ready
-            }
-            Err(_) => {
-                self.done = true;
-                PromiseState::Broken
-            }
-        }
-    }
-
-    fn update(&mut self) -> UpdateResult {
+    fn internal_update(&mut self) -> UpdateResult {
         if self.done {
             return if self.item.is_some() {
                 UpdateResult {
@@ -127,6 +99,47 @@ impl<T: Send + 'static> Promise<T> for MockNavCompPromise<T> {
                 }
             }
         };
+    }
+}
+
+impl<T: Send + 'static> Promise<T> for MockNavCompPromise<T> {
+    fn state(&self) -> PromiseState {
+        let res = if self.done {
+            if self.item.is_some() {
+                PromiseState::Ready
+            } else {
+                PromiseState::Broken
+            }
+        } else {
+            PromiseState::Unresolved
+        };
+
+        debug!("mock_navcomp_promise state: {:?}", res);
+
+        res
+    }
+
+    fn wait(&mut self) -> PromiseState {
+        let res = match self.receiver.recv() {
+            Ok(value) => {
+                self.item = Some(value);
+                self.done = true;
+                PromiseState::Ready
+            }
+            Err(_) => {
+                self.done = true;
+                PromiseState::Broken
+            }
+        };
+
+        debug!("mock_navcomp_promise wait: {:?}", res);
+        res
+    }
+
+    fn update(&mut self) -> UpdateResult {
+        let res = self.internal_update();
+        debug!("mock_navcomp_promise update: {:?}", res);
+        res
     }
 
     fn read(&self) -> Option<&T> {

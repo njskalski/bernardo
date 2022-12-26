@@ -123,11 +123,13 @@ impl NavCompProvider for MockNavCompProvider {
                     .map(|c| {
                         match c.answer.as_ref() {
                             None => {
+                                debug!("returning broken completion promise");
                                 Box::new(
                                     MockNavCompPromise::<Vec<Completion>>::new_broken(self.navcomp_tick_server.clone())
                                 ) as Box<dyn Promise<Vec<Completion>> + 'static>
                             }
                             Some(value) => {
+                                debug!("returning successful completion promise");
                                 Box::new(
                                     MockNavCompPromise::new_succ(self.navcomp_tick_server.clone(), value.clone())
                                 ) as Box<dyn Promise<Vec<Completion>> + 'static>

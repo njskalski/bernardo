@@ -49,7 +49,7 @@ pub trait Widget: 'static {
     //
     // If widget size is VisibleRect dependent (everything that fills buffers in greedy way) and
     // SizeConstraint.visible_rect() == None, a self.min_size() is used instead.
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY;
+    fn layout(&mut self, sc: SizeConstraint) -> XY;
 
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.

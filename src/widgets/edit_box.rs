@@ -190,7 +190,7 @@ impl Widget for EditBoxWidget {
         XY::new(self.min_width_op.unwrap_or(Self::MIN_WIDTH), 1)
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         debug_assert!(sc.bigger_equal_than(self.min_size()));
 
         let mut x = self.min_size().x;

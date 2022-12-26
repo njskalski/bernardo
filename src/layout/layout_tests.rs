@@ -50,7 +50,7 @@ pub mod tests {
         fn id(&self) -> WID { todo!() }
         fn typename(&self) -> &'static str { todo!() }
         fn min_size(&self) -> XY { todo!() }
-        fn update_and_layout(&mut self, sc: SizeConstraint) -> XY { todo!() }
+        fn layout(&mut self, sc: SizeConstraint) -> XY { todo!() }
         fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> { todo!() }
         fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> { todo!() }
         fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) { todo!() }

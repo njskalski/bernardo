@@ -176,7 +176,7 @@ mod tests {
                 unimplemented!()
             }
 
-            fn update_and_layout(&mut self, _sc: SizeConstraint) -> XY {
+            fn layout(&mut self, _sc: SizeConstraint) -> XY {
                 unimplemented!()
             }
 
@@ -212,7 +212,7 @@ mod tests {
                 unimplemented!()
             }
 
-            fn update_and_layout(&mut self, _sc: SizeConstraint) -> XY {
+            fn layout(&mut self, _sc: SizeConstraint) -> XY {
                 unimplemented!()
             }
 

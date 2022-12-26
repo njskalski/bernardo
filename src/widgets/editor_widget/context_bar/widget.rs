@@ -78,7 +78,7 @@ impl Widget for ContextBarWidget {
         XY::new(1, 12) // TODO completely arbitrary
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         self.complex_layout(sc)
     }
 

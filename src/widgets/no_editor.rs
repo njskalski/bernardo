@@ -42,7 +42,7 @@ impl Widget for NoEditorWidget {
         XY::new(Self::NO_EDIT_TEXT.len() as u16, 3)
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         let size = sc.as_finite().unwrap_or_else(|| {
             error!("non-simple size constratint on expanding widget, using min size");
             self.min_size()

@@ -205,7 +205,7 @@ impl<W: Widget> Widget for WithScroll<W> {
         res
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         debug_assert!(sc.is_finite(), "nesting scrolls not supported");
         let output_size = if let Some(size) = sc.as_finite() {
             size
@@ -215,7 +215,7 @@ impl<W: Widget> Widget for WithScroll<W> {
         };
 
         let (margin_width, internal_sc) = self.nested_sc(sc);
-        let child_size = self.widget.update_and_layout(internal_sc);
+        let child_size = self.widget.layout(internal_sc);
 
         debug_assert!(margin_width <= output_size.x);
 

@@ -368,7 +368,7 @@ impl EditorWidget {
         Some(hover_settings)
     }
 
-    pub fn todo_request_completion(&mut self) {
+    pub fn request_completion(&mut self) {
         let cursor = unpack_or!(self.cursors().as_single(), (), "not opening completions - cursor not single.");
         let navcomp = unpack_or!(self.navcomp.clone(), (), "not opening completions - navcomp not available.");
         let stupid_cursor = unpack_or_e!(StupidCursor::from_real_cursor(self.buffer(), cursor).ok(), (), "failed converting cursor to lsp_cursor");
@@ -800,7 +800,8 @@ impl Widget for EditorWidget {
         MIN_EDITOR_SIZE
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
+        debug!("layout");
         if self.last_size != Some(sc) {
             debug!("changed size");
 
@@ -819,10 +820,18 @@ impl Widget for EditorWidget {
             }
             Some((rect, hover)) => match hover {
                 EditorHover::Completion(comp) => {
-                    if !comp.should_draw() {
+                    if !comp.poll_results_should_draw() {
                         true
                     } else {
-                        let xy = comp.update_and_layout(SizeConstraint::simple(rect.rect.size));
+                        let xy = comp.layout(SizeConstraint::simple(rect.rect.size));
+                        /*
+                        TODO Ok, here's the issue: at this point, I *override* the HoverSettings.rect with a much smaller one
+                         in the lines below, making it impossible to fully draw the completion list once CompletionPromise resolves.
+                         There are two ways I can fix it:
+                         1) regenerate hover settings every layout (preferrable)
+                         2) make completion widget greedy, so it does not "release" space, and lines below do not shrink the view.
+                          Option no 1 seems more resilient in the future.
+                         */
                         if rect.above_cursor == false {
                             rect.rect.size = xy;
                             rect.rect.pos = rect.anchor + XY::new(0, 1);
@@ -836,7 +845,7 @@ impl Widget for EditorWidget {
                     }
                 }
                 EditorHover::Context(context_bar) => {
-                    let xy = context_bar.update_and_layout(SizeConstraint::simple(rect.rect.size));
+                    let xy = context_bar.layout(SizeConstraint::simple(rect.rect.size));
                     // TODO Copy-pasted from above, reduce.
                     if rect.above_cursor == false {
                         rect.rect.size = xy;
@@ -896,6 +905,7 @@ impl Widget for EditorWidget {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+        debug!("update");
         return match msg.as_msg::<EditorWidgetMsg>() {
             None => {
                 warn!("expecetd EditorViewMsg, got {:?}", msg);
@@ -979,7 +989,7 @@ impl Widget for EditorWidget {
                     None
                 }
                 (&EditorState::Editing, EditorWidgetMsg::RequestCompletions) => {
-                    self.todo_request_completion();
+                    self.request_completion();
                     None
                 }
                 (&EditorState::Editing, EditorWidgetMsg::HoverClose) => {
