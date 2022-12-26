@@ -423,7 +423,7 @@ impl Widget for FuzzySearchWidget {
         }
     }
 
-    fn anchor(&self) -> XY {
+    fn kite(&self) -> XY {
         //TODO overflow
         XY::new(self.highlighted as u16, 0)
     }

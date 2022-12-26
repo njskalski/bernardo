@@ -115,7 +115,7 @@ impl Widget for ButtonWidget {
         output.print_at((0, 0).into(), style, full_text.as_str());
     }
 
-    fn anchor(&self) -> XY {
+    fn kite(&self) -> XY {
         XY::ZERO
     }
 }

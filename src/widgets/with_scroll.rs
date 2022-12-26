@@ -220,7 +220,7 @@ impl<W: Widget> Widget for WithScroll<W> {
         debug_assert!(margin_width <= output_size.x);
 
         self.scroll.follow_anchor(output_size - XY::new(margin_width, 0),
-                                  self.widget.anchor());
+                                  self.widget.kite());
 
         self.last_size = Some(output_size);
 
@@ -272,7 +272,7 @@ impl<W: Widget> Widget for WithScroll<W> {
         self.widget.render(theme, focused, &mut over_output);
     }
 
-    fn anchor(&self) -> XY {
+    fn kite(&self) -> XY {
         // scroll nesting would probably affect that
         XY::ZERO
     }

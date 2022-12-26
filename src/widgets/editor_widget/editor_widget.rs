@@ -95,7 +95,6 @@ So modified in two places. Absolutely barbaric. To be changed.
  */
 #[derive(Debug)]
 pub struct HoverSettings {
-    pub rect: Rect,
     /*
      anchor is the character *in the line* (so it's never included in the rect of hover).
      And it is:
@@ -291,9 +290,9 @@ impl EditorWidget {
     }
 
     /*
-    triggers - if none, current cursor will become "anchor" +-1 line. But if it is provided,
+    triggers - if none, current cursor will become an "anchor". But if it is provided,
         this function will stride left and aggregate substring between the cursor and ONE OF
-        TRIGGERS (in order of apperance, only within visible space)
+        TRIGGERS (in order of appearance, only within visible space)
 
         I will use 1/2 height and all space right from cursor, capped by MAX_HOVER_SIZE.
      */
@@ -303,12 +302,6 @@ impl EditorWidget {
         let cursor_pos = unpack_or!(self.get_single_cursor_screen_pos(cursor), None, "can't position hover, no cursor local pos");
         let cursor_screen_pos = unpack_or!(cursor_pos.screen_space, None, "no cursor position in screen space");
         let visible_rect = unpack_or!(last_size.visible_hint(), None, "no visible rect - no hover");
-
-        // if cursor is in upper part, we draw below cursor, otherwise above it
-        let above = cursor_screen_pos.y > (visible_rect.size.y / 2);
-        // TODO underflows
-        let width = min(MAX_HOVER_SIZE.x, visible_rect.size.x - cursor_screen_pos.x);
-        let height = min(MAX_HOVER_SIZE.y, (visible_rect.size.y / 2) - 1);
 
         let trigger_and_substring: Option<(&String, String)> = triggers.map(|triggers| find_trigger_and_substring(
             triggers, &self.buffer, &cursor_pos)).flatten();
@@ -323,15 +316,9 @@ impl EditorWidget {
             }
         }).unwrap_or(cursor_screen_pos);
 
-        /*
-         TODO the RECTs here are set twice, I never checked if they match. Maybe we should throw
-              them away, or at least not set them here. Anyway, just so you know, fix it one day.
-         */
-
         if above {
             debug_assert!(cursor_screen_pos.y > height);
             Some(HoverSettings {
-                rect: Rect::new(anchor - XY::new(0, height), XY::new(width, height)),
                 anchor,
                 cursor_screen_position: cursor_pos,
                 above_cursor: true,
@@ -341,7 +328,6 @@ impl EditorWidget {
         } else {
             debug_assert!(cursor_screen_pos.y + height < visible_rect.size.y);
             Some(HoverSettings {
-                rect: Rect::new(anchor + XY::new(0, 1), XY::new(width, height)),
                 anchor,
                 cursor_screen_position: cursor_pos,
                 above_cursor: false,
@@ -1044,7 +1030,7 @@ impl Widget for EditorWidget {
         self.render_hover(theme, focused, output);
     }
 
-    fn anchor(&self) -> XY {
+    fn kite(&self) -> XY {
         self.anchor
     }
 }

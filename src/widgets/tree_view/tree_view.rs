@@ -424,7 +424,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
         }
     }
 
-    fn anchor(&self) -> XY {
+    fn kite(&self) -> XY {
         //TODO add x corresponding to depth
         XY::new(0, self.highlighted as u16) //TODO unsafe cast
     }

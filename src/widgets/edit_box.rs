@@ -327,7 +327,7 @@ impl Widget for EditBoxWidget {
         }
     }
 
-    fn anchor(&self) -> XY {
+    fn kite(&self) -> XY {
         XY::ZERO
     }
 }

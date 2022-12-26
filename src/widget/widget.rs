@@ -68,7 +68,12 @@ pub trait Widget: 'static {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output);
 
-    fn anchor(&self) -> XY {
+
+    // Kite is the part of view that is supposed to be followed by the scroll. Scroll always makes
+    // the least amount of movement so the display contain a kite.
+    //
+    // Why the name? Well, I was looking for something "opposite to an anchor".
+    fn kite(&self) -> XY {
         XY::ZERO
     }
 

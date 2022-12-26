@@ -443,7 +443,7 @@ impl Widget for EditorView {
         self.complex_render(theme, focused, output)
     }
 
-    fn anchor(&self) -> XY {
+    fn kite(&self) -> XY {
         XY::ZERO
     }
 
