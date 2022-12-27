@@ -108,6 +108,7 @@ impl CompletionWidget {
     Updates the state of CompletionPromise, and returns whether we should proceed to draw or discard the widget.
      */
     pub fn poll_results_should_draw(&mut self) -> bool {
+        debug!("poll_results_should_draw");
         let res = match self.completions_promise.as_mut() {
             None => {
                 /*
@@ -182,7 +183,7 @@ impl Widget for CompletionWidget {
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
         let res = self.complex_layout(sc);
-        debug!("layout {}", res);
+        debug!("has_completions {}, layout {}", self.has_completions(), res);
         res
     }
 

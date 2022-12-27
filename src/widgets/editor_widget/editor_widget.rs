@@ -53,6 +53,9 @@ This is heart and soul of Gladius Editor.
 
 One important thing is that unless I come up with a great idea about scrolling, the "OverOutput"
 has to be last output passed to render function, otherwise scrolling will fail to work.
+
+I quite often use "screen position" or "screen space", but I actually mean "widget space", because
+each widget is given their own "output" to render at.
  */
 
 /*
@@ -99,6 +102,8 @@ pub struct HoverSettings {
      And it is:
      - position of last character of trigger (if available)
      - just position of cursor
+
+     Anchor is given in widget space.
      */
     pub anchor: XY,
     pub cursor_screen_position: CursorScreenPosition,
@@ -109,6 +114,22 @@ pub struct HoverSettings {
 enum EditorHover {
     Completion(CompletionWidget),
     Context(ContextBarWidget),
+}
+
+impl EditorHover {
+    fn get_widget(&self) -> &dyn Widget {
+        match self {
+            EditorHover::Completion(cw) => cw,
+            EditorHover::Context(cw) => cw,
+        }
+    }
+
+    fn get_widget_mut(&mut self) -> &mut dyn Widget {
+        match self {
+            EditorHover::Completion(cw) => cw,
+            EditorHover::Context(cw) => cw,
+        }
+    }
 }
 
 pub struct EditorWidget {
@@ -147,6 +168,9 @@ pub struct EditorWidget {
 
 impl EditorWidget {
     pub const TYPENAME: &'static str = "editor_widget";
+
+    const MAX_HOVER_WIDTH: u16 = 45;
+    const MIN_HOVER_WIDTH: u16 = 15;
 
     pub fn new(config: ConfigRef,
                tree_sitter: Rc<TreeSitterWrapper>,
@@ -250,7 +274,7 @@ impl EditorWidget {
             warn!("cursor seems to be outside visible hint {:?}", sc.visible_hint());
             return Some(CursorScreenPosition {
                 cursor: *cursor,
-                screen_space: None,
+                widget_space: None,
                 text_space: lsp_cursor_xy,
             });
         }
@@ -263,23 +287,25 @@ impl EditorWidget {
 
         Some(CursorScreenPosition {
             cursor: *cursor,
-            screen_space: Some(local_pos),
+            widget_space: Some(local_pos),
             text_space: lsp_cursor_xy,
         })
     }
 
     /*
-    triggers - if none, current cursor will become an "anchor". But if it is provided,
-        this function will stride left and aggregate substring between the cursor and ONE OF
-        TRIGGERS (in order of appearance, only within visible space)
+    This method composes hover_settings that are later used in layout pass.
 
-        TODO cleanup or document.
+    triggers - if none, current cursor will become an "anchor".
+               if some, function will stride left and aggregate substring between the cursor and ONE OF
+                TRIGGERS (in order of appearance, only within visible space)
+
+    TODO what if the trigger happen outside visible space? Do I draw or not?
      */
-    pub fn get_cursor_related_hover_max(&self, triggers: Option<&Vec<String>>) -> Option<HoverSettings> {
+    pub fn get_cursor_related_hover_settings(&self, triggers: Option<&Vec<String>>) -> Option<HoverSettings> {
         let last_size = unpack_or!(self.last_size, None, "requested hover before layout");
         let cursor = unpack_or!(self.cursors().as_single(), None, "multiple cursors or none, not doing hover");
         let cursor_pos = unpack_or!(self.get_single_cursor_screen_pos(cursor), None, "can't position hover, no cursor local pos");
-        let cursor_screen_pos = unpack_or!(cursor_pos.screen_space, None, "no cursor position in screen space");
+        let cursor_screen_pos = unpack_or!(cursor_pos.widget_space, None, "no cursor position in screen space");
         let visible_rect = unpack_or!(last_size.visible_hint(), None, "no visible rect - no hover");
 
         let trigger_and_substring: Option<(&String, String)> = triggers.map(|triggers| find_trigger_and_substring(
@@ -303,45 +329,6 @@ impl EditorWidget {
         })
     }
 
-    fn todo_get_hover_settings_anchored_at_trigger(&self) -> Option<HoverSettings> {
-        let path = unpack_or_w!(self.buffer().get_path(), None, "unimplemented autocompletion for non-saved files");
-        let navcomp = unpack_or_w!(self.navcomp.as_ref(), None, "no navcomp available");
-
-        let trigger_op = {
-            let nt = navcomp.completion_triggers(&path);
-            if nt.is_empty() {
-                None
-            } else {
-                Some(nt)
-            }
-        };
-
-        let hover_settings = unpack_or_e!(self.get_cursor_related_hover_max(trigger_op), None, "no place to draw completions!");
-
-        Some(hover_settings)
-    }
-
-    pub fn request_completion(&mut self) {
-        let cursor = unpack_or!(self.cursors().as_single(), (), "not opening completions - cursor not single.");
-        let navcomp = unpack_or!(self.navcomp.clone(), (), "not opening completions - navcomp not available.");
-        let stupid_cursor = unpack_or_e!(StupidCursor::from_real_cursor(self.buffer(), cursor).ok(), (), "failed converting cursor to lsp_cursor");
-        let path = unpack_or_e!(self.buffer.get_path(), (), "path not available");
-
-        let hover_settings = self.todo_get_hover_settings_anchored_at_trigger();
-        // let tick_sender = navcomp.todo_navcomp_sender().clone();
-        let promise_op = navcomp.completions(path.clone(), stupid_cursor, hover_settings.as_ref().map(|c| c.trigger.clone()).flatten());
-
-        match (promise_op, hover_settings) {
-            (Some(promise), Some(hover_settings)) => {
-                let comp = CompletionWidget::new(promise).with_fuzzy(true);
-                debug!("created completion: settings [{:?}]", &hover_settings);
-                self.requested_hover = Some((hover_settings, EditorHover::Completion(comp)));
-            }
-            _ => {
-                debug!("something missing - promise or hover settings");
-            }
-        }
-    }
 
     pub fn todo_request_context_bar(&mut self) {
         debug!("request_context_bar");
@@ -388,7 +375,7 @@ impl EditorWidget {
             warn!("ignoring everything bar, no items");
             self.requested_hover = None;
         } else {
-            let hover_settings_op = self.get_cursor_related_hover_max(None);
+            let hover_settings_op = self.get_cursor_related_hover_settings(None);
 
             self.requested_hover = hover_settings_op.map(|hs| {
                 let hover = EditorHover::Context(ContextBarWidget::new(items));
@@ -650,31 +637,105 @@ impl EditorWidget {
     }
 
     pub fn has_completions(&self) -> bool {
-        self.requested_hover.is_some()
+        if let Some((_, hover)) = self.requested_hover.as_ref() {
+            match hover {
+                EditorHover::Completion(_) => true,
+                _ => false,
+            }
+        } else {
+            false
+        }
     }
 
-    /*
-    If
-     */
+    pub fn close_completions(&mut self) -> bool {
+        if self.has_completions() == false {
+            error!("not closing completions - they are not open");
+            return false;
+        }
+
+        self.requested_hover = None;
+        true
+    }
+
+    pub fn request_completions(&mut self) {
+        let cursor = unpack_or!(self.cursors().as_single(), (), "not opening completions - cursor not single.");
+        let navcomp = unpack_or!(self.navcomp.clone(), (), "not opening completions - navcomp not available.");
+        let stupid_cursor = unpack_or_e!(StupidCursor::from_real_cursor(self.buffer(), cursor).ok(), (), "failed converting cursor to lsp_cursor");
+        let path = unpack_or_e!(self.buffer.get_path(), (), "path not available");
+
+        let trigger_op = {
+            let nt = navcomp.completion_triggers(&path);
+            if nt.is_empty() {
+                None
+            } else {
+                Some(nt)
+            }
+        };
+
+        let hover_settings = self.get_cursor_related_hover_settings(trigger_op);
+        // let tick_sender = navcomp.todo_navcomp_sender().clone();
+        let promise_op = navcomp.completions(path.clone(), stupid_cursor, hover_settings.as_ref().map(|c| c.trigger.clone()).flatten());
+
+        match (promise_op, hover_settings) {
+            (Some(promise), Some(hover_settings)) => {
+                let comp = CompletionWidget::new(promise).with_fuzzy(true);
+                debug!("created completion: settings [{:?}]", &hover_settings);
+                self.requested_hover = Some((hover_settings, EditorHover::Completion(comp)));
+            }
+            _ => {
+                debug!("something missing - promise or hover settings");
+            }
+        }
+    }
+
+    // TODO merge with function above
     pub fn update_completions(&mut self) {
         let cursor_pos = match self.cursors().as_single().map(|c| self.get_single_cursor_screen_pos(c)).flatten().clone() {
             Some(c) => c,
             None => {
-                debug!("not found single cursor on screen");
+                debug!("cursor not single or not on screen");
+                self.close_completions();
                 return;
             }
         };
-        let new_settings = match self.todo_get_hover_settings_anchored_at_trigger() {
+        let navcomp = match self.navcomp.as_ref() {
+            Some(nc) => nc,
+            None => {
+                error!("failed to update completions - navcomp not found");
+                self.close_completions();
+                return;
+            }
+        };
+
+        let path = match self.buffer.get_path() {
+            Some(p) => p,
+            None => {
+                error!("failed to update completions - path not found");
+                self.close_completions();
+                return;
+            }
+        };
+
+        let trigger_op = {
+            let nt = navcomp.completion_triggers(&path);
+            if nt.is_empty() {
+                None
+            } else {
+                Some(nt)
+            }
+        };
+
+        let new_settings = match self.get_cursor_related_hover_settings(trigger_op) {
             Some(s) => s,
             None => {
                 debug!("no good settings to update hover");
-                self.close_hover();
+                self.close_completions();
                 return;
             }
         };
 
         let close: bool = if let Some((settings, EditorHover::Completion(completion_widget))) = self.requested_hover.as_mut() {
-            if Some(settings.anchor.y) != cursor_pos.screen_space.map(|xy| xy.y) {
+            if Some(settings.anchor.y) != cursor_pos.widget_space.map(|xy| xy.y) {
                 debug!("closing hover because cursor moved");
                 true
             } else {
@@ -688,7 +749,7 @@ impl EditorWidget {
         };
 
         if close {
-            self.close_hover();
+            self.close_completions();
         }
     }
 
@@ -739,6 +800,72 @@ impl EditorWidget {
             _ => {}
         }
     }
+
+    fn layout_hover(&mut self, visible_rect: &Rect, sc: SizeConstraint) {
+        let (hover_settings, hover) = unpack_or!(self.requested_hover.as_mut(), ());
+
+        let mid_line = (visible_rect.pos.y + visible_rect.size.y) / 2;
+        debug_assert!(hover_settings.anchor.y >= visible_rect.pos.y, "anchored above visible space");
+        debug_assert!(hover_settings.anchor.y < visible_rect.lower_right().y, "anchored below visible space");
+        let above = hover_settings.anchor.y > mid_line;
+
+        match hover {
+            EditorHover::Completion(cw) => {
+                if cw.poll_results_should_draw() == false {
+                    debug!("withdrawing completion widget");
+                    self.requested_hover = None;
+                    return;
+                }
+            }
+            _ => {}
+        }
+
+        if visible_rect.size.x < Self::MIN_HOVER_WIDTH {
+            warn!("not enough space to draw hover");
+            self.requested_hover = None;
+            return;
+        }
+
+        let hover_rect: Option<Rect> = {
+            let hover_sc = if above {
+                SizeConstraint::simple(
+                    XY::new(min(visible_rect.size.x, Self::MAX_HOVER_WIDTH),
+                            hover_settings.anchor.y - visible_rect.pos.y)
+                )
+            } else {
+                SizeConstraint::simple(
+                    XY::new(min(visible_rect.size.x, Self::MAX_HOVER_WIDTH),
+                            visible_rect.lower_right().y - hover_settings.anchor.y)
+                )
+            };
+
+            let hover_size = hover.get_widget_mut().layout(hover_sc);
+
+            // this says "to the right, but not if that would mean going out of visible rect"
+            let pos_x = if hover_size.x + hover_settings.anchor.x > visible_rect.lower_right().x {
+                visible_rect.lower_right().x - (hover_size.x + hover_settings.anchor.x)
+            } else {
+                hover_settings.anchor.x
+            };
+
+            if above {
+                // since it's *above* and higher bound is *exclusive*, no +-1 is needed here.
+                let rect_pos = XY::new(pos_x, hover_settings.anchor.y - hover_size.y);
+                let rect = Rect::new(rect_pos, hover_size);
+                Some(rect)
+            } else /*below*/ {
+                let rect_pos = XY::new(pos_x, hover_settings.anchor.y + 1);
+                let rect = Rect::new(rect_pos, hover_size);
+                Some(rect)
+            }
+        };
+
+        if hover_rect.is_none() {
+            self.requested_hover = None;
+        } else {
+            self.last_hover_rect = hover_rect;
+        }
+    }
 }
 
 impl Widget for EditorWidget {
@@ -765,64 +892,12 @@ impl Widget for EditorWidget {
             }
         }
 
+        self.last_hover_rect = None;
+
         self.last_size = Some(sc);
         let visible_rect = unpack_or!(sc.visible_hint(), self.min_size(), "can't layout greedy widget - no visible part");
 
-        let hover_rect: Option<Rect> = match self.requested_hover.as_mut() {
-            None => {
-                false
-            }
-            Some((hover_settings, hover)) => {
-                let mid_line = (visible_rect.pos.y + visible_rect.size.y) / 2;
-                let above = hover_settings.anchor.y > mid_line;
-
-                match hover {
-                    EditorHover::Completion(comp) => {
-                        if !comp.poll_results_should_draw() {
-                            None
-                        } else {
-                            let hover_sc = if above {
-                                SizeConstraint::simple(
-                                    visible_rect.size.x,
-                                )
-                            };
-
-
-                            let xy = comp.layout(SizeConstraint::simple(hover_settings.rect.size));
-
-                            if hover_settings.above_cursor == false {
-                                hover_settings.rect.size = xy;
-                                hover_settings.rect.pos = hover_settings.anchor + XY::new(0, 1);
-                            } else {
-                                hover_settings.rect.size = xy;
-                                // that's why we kept the anchor
-                                // why no +-1? Because higher bounds are *exclusive*, like *everywhere* on the planet
-                                hover_settings.rect.pos = hover_settings.anchor - XY::new(0, xy.y);
-                            }
-                            false
-                        }
-                    }
-                    EditorHover::Context(context_bar) => {
-                        let xy = context_bar.layout(SizeConstraint::simple(hover_settings.rect.size));
-                        // TODO Copy-pasted from above, reduce.
-                        if hover_settings.above_cursor == false {
-                            hover_settings.rect.size = xy;
-                            hover_settings.rect.pos = hover_settings.anchor + XY::new(0, 1);
-                        } else {
-                            hover_settings.rect.size = xy;
-                            hover_settings.rect.pos = hover_settings.anchor - XY::new(0, xy.y);
-                        }
-                        None
-                    }
-                }
-            }
-        };
-
-        if hover_rect.is_none() {
-            self.requested_hover = None;
-        } else {
-            self.last_hover_rect = hover_rect;
-        }
+        self.layout_hover(visible_rect, sc);
 
         visible_rect.size
     }
@@ -870,7 +945,7 @@ impl Widget for EditorWidget {
         debug!("update");
         return match msg.as_msg::<EditorWidgetMsg>() {
             None => {
-                warn!("expecetd EditorViewMsg, got {:?}", msg);
+                warn!("expected EditorViewMsg, got {:?}", msg);
                 None
             }
             Some(msg) => match (&self.state, msg) {
@@ -951,7 +1026,7 @@ impl Widget for EditorWidget {
                     None
                 }
                 (&EditorState::Editing, EditorWidgetMsg::RequestCompletions) => {
-                    self.request_completion();
+                    self.request_completions();
                     None
                 }
                 (&EditorState::Editing, EditorWidgetMsg::HoverClose) => {
@@ -1000,6 +1075,8 @@ impl Widget for EditorWidget {
                 }
             );
         }
+
+        debug_assert!(self.last_hover_rect.is_some() == self.requested_hover.is_some());
 
         self.internal_render(theme, focused, output);
         self.render_hover(theme, focused, output);

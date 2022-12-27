@@ -14,15 +14,16 @@ use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct CursorScreenPosition {
     pub cursor: Cursor,
-    // this is position in screen space. Can be none, because cursor can be outside of screen.
-    pub screen_space: Option<XY>,
-    // this is position in space of text rendered from (0, 0)
+    // This is position in screen space of the widget (so not absolute). Can be none, because cursor
+    //  can be outside of visible part of widget.
+    pub widget_space: Option<XY>,
+    // This is position in space of text rendered from (0, 0)
     pub text_space: XY,
 }
 
 //TODO tests
 pub fn find_trigger_and_substring<'a>(triggers: &'a Vec<String>, buffer: &'a dyn TextBuffer, cursor_pos: &'a CursorScreenPosition) -> Option<(&'a String, String)> {
-    let cursor_screen_pos = match cursor_pos.screen_space {
+    let cursor_screen_pos = match cursor_pos.widget_space {
         None => {
             debug!("cursor not visible");
             return None;
