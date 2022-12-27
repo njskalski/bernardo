@@ -229,11 +229,10 @@ impl Widget for CompletionWidget {
         #[cfg(test)]
         {
             if let Some(ds) = self.get_display_state_op() {
-                let size = ds.todo_size();
                 output.emit_metadata(Metadata {
                     id: self.wid,
                     typename: self.typename().to_string(),
-                    rect: Rect::new(XY::ZERO, size),
+                    rect: Rect::new(XY::ZERO, ds.total_size),
                     focused,
                 });
             }

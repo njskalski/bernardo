@@ -827,17 +827,14 @@ impl EditorWidget {
         }
 
         let hover_rect: Option<Rect> = {
-            let hover_sc = if above {
-                SizeConstraint::simple(
-                    XY::new(min(visible_rect.size.x, Self::MAX_HOVER_WIDTH),
-                            hover_settings.anchor.y - visible_rect.pos.y)
-                )
+            let maxx = min(visible_rect.size.x, Self::MAX_HOVER_WIDTH);
+            let maxy = if above {
+                hover_settings.anchor.y - visible_rect.pos.y
             } else {
-                SizeConstraint::simple(
-                    XY::new(min(visible_rect.size.x, Self::MAX_HOVER_WIDTH),
-                            visible_rect.lower_right().y - hover_settings.anchor.y)
-                )
+                visible_rect.lower_right().y - hover_settings.anchor.y - 1 // there was a drawing, it should be OK.
             };
+
+            let hover_sc = SizeConstraint::simple(XY::new(maxx, maxy));
 
             let hover_size = hover.get_widget_mut().layout(hover_sc);
 
@@ -852,10 +849,12 @@ impl EditorWidget {
                 // since it's *above* and higher bound is *exclusive*, no +-1 is needed here.
                 let rect_pos = XY::new(pos_x, hover_settings.anchor.y - hover_size.y);
                 let rect = Rect::new(rect_pos, hover_size);
+                debug_assert!(rect.lower_right() <= visible_rect.lower_right(), "not drawing beyond visible rect");
                 Some(rect)
             } else /*below*/ {
                 let rect_pos = XY::new(pos_x, hover_settings.anchor.y + 1);
                 let rect = Rect::new(rect_pos, hover_size);
+                debug_assert!(rect.lower_right() <= visible_rect.lower_right(), "not drawing beyond visible rect");
                 Some(rect)
             }
         };

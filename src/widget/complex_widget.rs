@@ -32,17 +32,6 @@ pub struct DisplayState<S: Widget> {
     pub total_size: XY,
 }
 
-impl<S: Widget> DisplayState<S> {
-    pub fn todo_size(&self) -> XY {
-        let mut res = XY::ZERO;
-        for w in self.wwrs.iter() {
-            res.x = max(res.x, w.rect().lower_right().x);
-            res.y = max(res.y, w.rect().lower_right().y);
-        }
-        res
-    }
-}
-
 pub trait ComplexWidget: Widget + Sized {
     /*
     produces cloneable layout func tree
