@@ -321,6 +321,7 @@ impl<W: Widget> SplitLayout<W> {
             if let SplitRule::Proportional(p) = child.split_rule {
                 amounts[idx] = (unit * p) as usize;
 
+                // TODO this can potentially lead to extending a fixed-sized #0 slot
                 if idx > 0 {
                     if amounts[idx] > amounts[biggest_idx] {
                         biggest_idx = idx;

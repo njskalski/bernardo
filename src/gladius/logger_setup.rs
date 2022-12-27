@@ -8,6 +8,7 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     // this is for "recursive_treat_views", which is the heart and backbone of Bernardo.
     ("recursive_treat_views", log::LevelFilter::Warn),
     ("bernardo::fs::local_filesystem_front", log::LevelFilter::Error),
+    ("bernardo::gladius::run_gladius", log::LevelFilter::Info),
     ("bernardo::text::buffer_state", log::LevelFilter::Warn),
     ("bernardo::tsw::tree_sitter_wrapper", log::LevelFilter::Error),
     ("bernardo", log::LevelFilter::Debug),

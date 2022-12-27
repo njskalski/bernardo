@@ -106,11 +106,13 @@ impl EditorView {
             .with_on_hit(|_| {
                 EditorViewMsg::FindHit.someboxed()
             })
+            .with_fill_x()
             .with_clipboard(clipboard.clone());
         let replace_box = EditBoxWidget::new()
             .with_on_hit(|_| {
                 EditorViewMsg::ReplaceHit.someboxed()
             })
+            .with_fill_x()
             .with_clipboard(clipboard.clone());
 
         EditorView {

@@ -65,6 +65,8 @@ TODO:
 - I should probably remember "milestones" every several mb of file for big files.
 - we have a lot of places where we check for Some on path, single cursor, navcomp and cast from cursor to stupid cursor.
     they need unification.
+- backspace beyond trigger should close completions
+- completions should be anchored to trigger, not to cursor
  */
 
 /*
