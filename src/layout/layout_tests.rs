@@ -157,7 +157,7 @@ pub mod tests {
                                                    None,
                                                    Some(Rect::new(XY::ZERO, XY::new(10, 10))),
                                )),
-                   (XY::new(11, 11), vec![2, 3, 6])
+                   (XY::new(10, 12), vec![2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
         );
     }
 }

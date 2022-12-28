@@ -52,7 +52,9 @@ pub enum SplitRule {
 
     // In case where free axis is constrained, splits the free space proportionally to given numbers.
     // In case where free axis in unconstrained, allows sublayouts unconstrained expansion, but
-    //  does not expand them further to meet the proportion (argument ignored).
+    //  does not expand them further to meet the proportion (argument ignored). Since the new
+    //  invariant that MinSize corresponds to "full size without fill-ins", it's equivalent to
+    //  MinSize in unconstrained case.
     Proportional(f32),
 }
 
@@ -149,6 +151,8 @@ impl<W: Widget> SplitLayout<W> {
             })
         };
 
+        let mut total_size = XY::ZERO;
+
         for (child_idx, child) in self.children.iter().enumerate() {
             let min_child_size = child.layout.min_size(root);
 
@@ -177,10 +181,17 @@ impl<W: Widget> SplitLayout<W> {
                                 let resp = child.layout.layout(root, new_sc);
                                 for wwrsc in resp.wwrs.into_iter() {
                                     result.push(wwrsc.shifted(rect.pos))
-                                };
+                                }
+                                total_size = total_size.max_both_axis(offset + resp.total_size);
+
+                                if self.split_direction == SplitDirection::Vertical {
+                                    debug_assert!(resp.total_size.y == fixed);
+                                } else {
+                                    debug_assert!(resp.total_size.x == fixed);
+                                }
                             }
                             None => {
-                                debug!("skipping layouting FixedSize child #{} because rect is invisible", child_idx);
+                                debug!("skipping layouting FixedSize child #{} because of empty result of cut_out_rect", child_idx);
                                 // no continue, just let it go to offset calculation below.
                             }
                         };
@@ -194,7 +205,7 @@ impl<W: Widget> SplitLayout<W> {
                         offset += XY::new(fixed, 0);
                     }
                 }
-                SplitRule::MinSize => {
+                SplitRule::MinSize | SplitRule::Proportional(_) => {
                     let local_size = if self.split_direction == SplitDirection::Vertical {
                         XY::new(non_free_axis, min_child_size.y)
                     } else {
@@ -209,10 +220,17 @@ impl<W: Widget> SplitLayout<W> {
                                 let resp = child.layout.layout(root, new_sc);
                                 for wwrsc in resp.wwrs.into_iter() {
                                     result.push(wwrsc.shifted(rect.pos))
-                                };
+                                }
+                                total_size = total_size.max_both_axis(offset + resp.total_size);
+
+                                if self.split_direction == SplitDirection::Vertical {
+                                    debug_assert!(resp.total_size.y == min_child_size.y);
+                                } else {
+                                    debug_assert!(resp.total_size.x == min_child_size.x);
+                                }
                             }
                             None => {
-                                debug!("skipping layouting MinSize child #{} because rect is invisible", child_idx);
+                                debug!("skipping layouting MinSize child #{} because cut_out_rect is empty", child_idx);
                                 // no continue, let it flow to offset calculation below
                             }
                         };
@@ -226,41 +244,10 @@ impl<W: Widget> SplitLayout<W> {
                         offset += XY::new(min_child_size.x, 0);
                     }
                 }
-                SplitRule::Proportional(_) => {
-                    let new_sc = match sc.substract(offset) {
-                        Some(sc) => sc,
-                        None => {
-                            debug!("not layouting child #{}, cut_out_margin => None", child_idx);
-                            /*
-                            So I can't skip layouting here, because I would loose offset above viewport.
-                            Now I have following options:
-                            1) create a degenerated SC, with empty viewport. No invariants violated.
-                            2) make viewport optional (allow no-viewport sc's), but that's a change in 200 places.
-                            3) [impossible] add "max_size" to layout trait. But where would this information come from?
-                            yeah, options 1 and 2 are the only valid ones, second being typesafe too.
-
-                             */
-
-                            continue;
-                        }
-                    };
-
-                    let resp = child.layout.layout(root, new_sc);
-                    for wwrsc in resp.wwrs.into_iter() {
-                        let item = wwrsc.shifted(offset);
-                        result.push(item);
-                    };
-
-                    if self.split_direction == SplitDirection::Vertical {
-                        offset += XY::new(0, resp.total_size.y);
-                    } else {
-                        offset += XY::new(resp.total_size.x, 0);
-                    }
-                }
             };
         }
 
-        LayoutResult::new(result, offset)
+        LayoutResult::new(result, total_size)
     }
 
     fn get_just_rects(&self, size: XY, root: &W) -> Option<Vec<Rect>> {
