@@ -9,12 +9,15 @@ use crate::io::output::Output;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
+use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
 pub struct DumpVisualizerWidget {
     wid: WID,
     dump_op: Option<BufferOutput>,
+
+    last_size: Option<XY>,
 }
 
 impl DumpVisualizerWidget {
@@ -22,6 +25,7 @@ impl DumpVisualizerWidget {
         Self {
             wid: get_new_widget_id(),
             dump_op: None,
+            last_size: None,
         }
     }
 
@@ -48,11 +52,13 @@ impl Widget for DumpVisualizerWidget {
     }
 
     fn min_size(&self) -> XY {
-        XY::new(10, 10)
+        self.dump_op.as_ref().map(|oo| oo.size()).unwrap_or(XY::new(10, 10))
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
-        sc.visible_hint().size
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
+        let size = sc.as_finite().unwrap_or(self.min_size());
+        self.last_size = Some(size);
+        size
     }
 
     fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -64,9 +70,11 @@ impl Widget for DumpVisualizerWidget {
     }
 
     fn render(&self, _theme: &Theme, _focused: bool, output: &mut dyn Output) {
+        let size = unpack_or!(self.last_size, (), "render before layout");
+
         if let Some(dump) = self.dump_op.as_ref() {
-            let max_x = min(dump.size().x, output.size_constraint().visible_hint().size.x);
-            let max_y = min(dump.size().y, output.size_constraint().visible_hint().size.y);
+            let max_x = min(dump.size().x, size.x);
+            let max_y = min(dump.size().y, size.y);
 
             for x in 0..max_x {
                 for y in 0..max_y {

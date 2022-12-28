@@ -78,7 +78,7 @@ impl Widget for ContextBarWidget {
         XY::new(1, 12) // TODO completely arbitrary
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         self.complex_layout(sc)
     }
 
@@ -159,11 +159,10 @@ impl Widget for ContextBarWidget {
         #[cfg(test)]
         {
             if let Some(ds) = self.get_display_state_op() {
-                let size = ds.todo_size();
                 output.emit_metadata(Metadata {
                     id: self.id,
                     typename: self.typename().to_string(),
-                    rect: Rect::new(XY::ZERO, size),
+                    rect: Rect::new(XY::ZERO, ds.total_size),
                     focused,
                 });
             }
@@ -182,7 +181,7 @@ impl Widget for ContextBarWidget {
 }
 
 impl ComplexWidget for ContextBarWidget {
-    fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, _sc: SizeConstraint) -> Box<dyn Layout<Self>> {
         Box::new(LeafLayout::new(subwidget!(Self.list)))
     }
 

@@ -11,6 +11,7 @@ use crate::w7e::navcomp_provider::CompletionAction::Insert;
 fn completion_test_1() {
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/completion_test_1")
         .with_files(["src/main.rs"])
+        // .with_frame_based_wait()
         .build();
 
     let file = spath!(full_setup.fsf(), "src", "main.rs").unwrap();
@@ -47,6 +48,8 @@ fn completion_test_1() {
     );
 
     assert!(full_setup.send_key(Keycode::Space.to_key().with_ctrl()));
+
+    // full_setup.navcomp_pilot().todo_navcomp_sender().
 
     assert!(full_setup.wait_for(|full_setup| {
         full_setup

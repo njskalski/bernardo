@@ -34,8 +34,6 @@ use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 use crate::widgets::with_scroll::WithScroll;
 
-const MIN_VIEW_SIZE: XY = XY::new(32, 10);
-
 pub enum HoverItem {
     FuzzySearch(FuzzySearchWidget),
 }
@@ -65,6 +63,8 @@ pub struct MainView {
 }
 
 impl MainView {
+    pub const MIN_SIZE: XY = XY::new(32, 10);
+
     pub fn new(config: ConfigRef,
                tree_sitter: Rc<TreeSitterWrapper>,
                fsf: FsfRef,
@@ -225,10 +225,11 @@ impl Widget for MainView {
     }
 
     fn min_size(&self) -> XY {
-        MIN_VIEW_SIZE
+        // TODO delegate to complex_layout?
+        Self::MIN_SIZE
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         self.complex_layout(sc)
     }
 
@@ -359,7 +360,7 @@ impl Widget for MainView {
 }
 
 impl ComplexWidget for MainView {
-    fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
         let left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
         let right_column = LeafLayout::new(self.get_curr_editor_ptr()).boxed();
 
@@ -372,6 +373,7 @@ impl ComplexWidget for MainView {
 
 
         //TODO(subwidgetpointermap)
+        let max_size = sc.as_finite().unwrap_or(self.min_size());
 
         let res = if let Some(hover) = &self.hover {
             match hover {

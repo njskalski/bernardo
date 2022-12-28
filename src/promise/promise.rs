@@ -45,7 +45,13 @@ pub trait Promise<T> {
     // Returns true iff value became available, false if promise is broken.
     fn wait(&mut self) -> PromiseState;
 
-    // Non-blocking wait. Returns whether value is available, false if promise is broken OR unresolved.
+    /*
+    TODO I am not sure I want to have read/update separated. If a list displays a promise result,
+     right now it can't get the size in min_size, because update is mut and can happen earliest on
+     layout. This is a violation of invariant in min_size.
+     */
+
+    // Non-blocking wait. Returns promise state and information, whether this call caused update or not.
     fn update(&mut self) -> UpdateResult;
 
     /*

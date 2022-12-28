@@ -6,7 +6,8 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 use crossbeam_channel::{Receiver, select, Sender};
-use log::{debug, error, LevelFilter};
+use log::{debug, error, LevelFilter, warn};
+use regex::internal::Input;
 
 use crate::config::config::{Config, ConfigRef};
 use crate::config::theme::Theme;
@@ -38,7 +39,7 @@ pub struct FullSetupBuilder {
     size: XY,
     recording: bool,
     step_frame: bool,
-
+    frame_based_wait: bool,
 }
 
 impl FullSetupBuilder {
@@ -80,6 +81,14 @@ impl FullSetupBuilder {
             ..self
         }
     }
+
+    // Turn this on if you are debugging, and you don't want the default timeout to kick in.
+    pub fn with_frame_based_wait(self) -> Self {
+        FullSetupBuilder {
+            frame_based_wait: true,
+            ..self
+        }
+    }
 }
 
 pub struct FullSetup {
@@ -92,6 +101,7 @@ pub struct FullSetup {
     gladius_thread_handle: JoinHandle<()>,
     last_frame: Option<MetaOutputFrame>,
     sidechannel: SideChannel,
+    frame_based_wait: bool,
 }
 
 impl FullSetupBuilder {
@@ -141,12 +151,14 @@ impl FullSetupBuilder {
             gladius_thread_handle: handle,
             last_frame: None,
             sidechannel,
+            frame_based_wait: self.frame_based_wait,
         }
     }
 }
 
 impl FullSetup {
     const DEFAULT_TIMEOUT: Duration = Duration::from_secs(3);
+    const DEFAULT_TIMEOUT_IN_FRAMES: usize = 180; //60fps :D
 
     pub fn config(&self) -> &ConfigRef {
         &self.config
@@ -160,10 +172,11 @@ impl FullSetup {
             size: FullSetupBuilder::DEFAULT_MOCK_OUTPUT_SIZE,
             recording: false,
             step_frame: false,
-
+            frame_based_wait: false,
         }
     }
 
+    // TODO remove
     pub fn wait_frame(&mut self) -> bool {
         let mut res = false;
         select! {
@@ -199,9 +212,6 @@ impl FullSetup {
         self.last_frame.as_ref()
     }
 
-    /*
-    Looks for default "no editor opened" text of NoEditorWidget.
-     */
     pub fn is_editor_opened(&self) -> bool {
         self.last_frame.as_ref().unwrap().get_editors().next().is_some()
     }
@@ -272,26 +282,62 @@ impl FullSetup {
             }
         }
 
-        loop {
-            select! {
-                recv(self.output_receiver) -> frame_res => {
-                    match frame_res {
-                        Ok(frame) => {
-                            self.last_frame = Some(frame);
-                            if condition(&self) {
-                                return true;
+        let mut waited_frames: usize = 0;
+
+        /*
+        When self.frame_based_wait == false, we wait at most DEFAULT_TIMEOUT for matching frame.
+        Otherwise, we wait up to DEFAULT_TIMEOUT_IN_FRAMES frames, before returning false.
+        The latter setting is designed for debugging, in continous integration it should be off.
+         */
+
+        if !self.frame_based_wait {
+            loop {
+                select! {
+                    recv(self.output_receiver) -> frame_res => {
+                        match frame_res {
+                            Ok(frame) => {
+                                self.last_frame = Some(frame);
+                                if condition(&self) {
+                                    return true;
+                                }
+                                debug!("no hit on condition");
                             }
-                            debug!("no hit on condition");
+                            Err(e) => {
+                                error!("error receiving frame: {:?}", e);
+                                return false;
+                            }
                         }
-                        Err(e) => {
-                            error!("error receiving frame: {:?}", e);
-                            return false;
+                    },
+                    default(Self::DEFAULT_TIMEOUT) => {
+                        error!("timeout, making screenshot.");
+                        self.screenshot();
+                        return false;
+                    }
+                }
+            }
+        } else {
+            warn!("TEST WAIT-TIMEOUT IS DISABLED");
+            loop {
+                select! {
+                    recv(self.output_receiver) -> frame_res => {
+                        match frame_res {
+                            Ok(frame) => {
+                                self.last_frame = Some(frame);
+                                if condition(&self) {
+                                    return true;
+                                }
+                                debug!("no hit on condition");
+                            }
+                            Err(e) => {
+                                error!("error receiving frame: {:?}", e);
+                                return false;
+                            }
                         }
                     }
-                },
-                default(Self::DEFAULT_TIMEOUT) => {
-                    error!("timeout, making screenshot.");
-                    self.screenshot();
+                }
+                waited_frames += 1;
+                if waited_frames >= Self::DEFAULT_TIMEOUT_IN_FRAMES {
+                    error!("waited {} frames to no avail", waited_frames);
                     return false;
                 }
             }

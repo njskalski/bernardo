@@ -5,7 +5,7 @@ Only some widgets will accept it, some will accept only one of the dimensions.
 Also, if there is no limit on dimension (scrolling) widget will fall back to "constrained" setup.
  */
 
-use log::warn;
+use log::{debug, warn};
 
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
@@ -48,27 +48,35 @@ impl Default for FillPolicy {
 }
 
 impl FillPolicy {
-    pub fn get_size_from_constraints(&self, sc: &SizeConstraint, min_size: XY) -> XY {
-        let x = if self.fill_x {
-            if let Some(max_x) = sc.x() {
+    pub fn get_size_from_constraints(&self, sc: &SizeConstraint, max_size: XY) -> XY {
+        let x = if let Some(max_x) = sc.x() {
+            if max_size.x > max_x {
+                debug!("not enough space on x");
                 max_x
             } else {
-                warn!("requested to fill an infinite x axis - most probably design bug, falling back to constrained");
-                min_size.x
+                if self.fill_x {
+                    max_x
+                } else {
+                    max_size.x
+                }
             }
         } else {
-            min_size.x
+            max_size.x
         };
 
-        let y = if self.fill_y {
-            if let Some(max_y) = sc.y() {
+        let y = if let Some(max_y) = sc.y() {
+            if max_size.y > max_y {
+                debug!("not enough space on y");
                 max_y
             } else {
-                warn!("requested to fill an infinite x axis - most probably design bug, falling back to constrained");
-                min_size.y
+                if self.fill_y {
+                    max_y
+                } else {
+                    max_size.y
+                }
             }
         } else {
-            min_size.y
+            max_size.y
         };
 
         XY::new(x, y)

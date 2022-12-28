@@ -12,15 +12,18 @@ use crate::unpack_or;
 use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct CursorPosition {
+pub struct CursorScreenPosition {
     pub cursor: Cursor,
-    pub screen_space: Option<XY>,
-    pub absolute: XY,
+    // This is position in screen space of the widget (so not absolute). Can be none, because cursor
+    //  can be outside of visible part of widget.
+    pub widget_space: Option<XY>,
+    // This is position in space of text rendered from (0, 0)
+    pub text_space: XY,
 }
 
 //TODO tests
-pub fn find_trigger_and_substring<'a>(triggers: &'a Vec<String>, buffer: &'a dyn TextBuffer, cursor_pos: &'a CursorPosition) -> Option<(&'a String, String)> {
-    let cursor_screen_pos = match cursor_pos.screen_space {
+pub fn find_trigger_and_substring<'a>(triggers: &'a Vec<String>, buffer: &'a dyn TextBuffer, cursor_pos: &'a CursorScreenPosition) -> Option<(&'a String, String)> {
+    let cursor_screen_pos = match cursor_pos.widget_space {
         None => {
             debug!("cursor not visible");
             return None;
@@ -29,7 +32,7 @@ pub fn find_trigger_and_substring<'a>(triggers: &'a Vec<String>, buffer: &'a dyn
     };
 
     let how_many_columns_visible = cursor_screen_pos.x;
-    let how_many_columns_total = cursor_pos.absolute.x;
+    let how_many_columns_total = cursor_pos.text_space.x;
 
     debug_assert!(how_many_columns_visible <= how_many_columns_total);
     if how_many_columns_visible == 0 {
@@ -37,15 +40,15 @@ pub fn find_trigger_and_substring<'a>(triggers: &'a Vec<String>, buffer: &'a dyn
         return None;
     }
 
-    let entire_line = match buffer.lines().skip(cursor_pos.absolute.y as usize).next() {
+    let entire_line = match buffer.lines().skip(cursor_pos.text_space.y as usize).next() {
         None => {
-            error!("couldn't find line {} (drawn as +1) to harvest substring", cursor_pos.absolute.y);
+            error!("couldn't find line {} (drawn as +1) to harvest substring", cursor_pos.text_space.y);
             return None;
         }
         Some(line_contents) => line_contents.trim().to_string(),
     };
 
-    debug!("read [{}] from begin of {} (drawn as +1) line", entire_line, cursor_pos.absolute.y);
+    debug!("read [{}] from begin of {} (drawn as +1) line", entire_line, cursor_pos.text_space.y);
 
     let cut_line = match copy_last_n_columns(&entire_line, how_many_columns_visible as usize, true) {
         None => {

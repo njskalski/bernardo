@@ -2,6 +2,8 @@
 I guess I should reuse FuzzySearch Widget, this is a placeholder now.
  */
 
+use std::cmp::max;
+
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
@@ -15,6 +17,7 @@ use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::common_query::CommonQuery;
 use crate::primitives::rect::Rect;
+use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::promise::promise::PromiseState;
@@ -26,6 +29,8 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::editor_widget::completion::msg::CompletionWidgetMsg;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::list_widget::list_widget::ListWidget;
+use crate::widgets::text_widget::TextWidget;
+use crate::widgets::with_scroll::WithScroll;
 
 pub struct CompletionWidget {
     wid: WID,
@@ -36,7 +41,8 @@ pub struct CompletionWidget {
      */
     completions_promise: Option<CompletionsPromise>,
 
-    list_widget: ListWidget<Completion>,
+    list_widget: WithScroll<ListWidget<Completion>>,
+    label_widget: TextWidget,
     display_state: Option<DisplayState<Self>>,
 
     fuzzy: bool,
@@ -49,19 +55,20 @@ impl CompletionWidget {
     pub fn new(completions_promise: CompletionsPromise) -> Self {
         CompletionWidget {
             wid: get_new_widget_id(),
-            list_widget: ListWidget::new()
-                .with_selection()
-                .with_show_column_names(false)
-                .with_fill_policy(FillPolicy::FILL_WIDTH)
-                .with_on_hit(|w| {
-                    w.get_highlighted().map(|c| {
-                        CompletionWidgetMsg::Selected(c.action.clone()).boxed()
-                    })
-                })
-            ,
+            list_widget: WithScroll::new(ListWidget::new()
+                                             .with_selection()
+                                             .with_show_column_names(false)
+                                             .with_fill_policy(FillPolicy::FILL_WIDTH)
+                                             .with_on_hit(|w| {
+                                                 w.get_highlighted().map(|c| {
+                                                     CompletionWidgetMsg::Selected(c.action.clone()).boxed()
+                                                 })
+                                             }),
+                                         ScrollDirection::Vertical),
             completions_promise: Some(completions_promise),
             display_state: None,
             fuzzy: false,
+            label_widget: TextWidget::new(Box::new(Self::LOADING)),
         }
     }
 
@@ -81,14 +88,16 @@ impl CompletionWidget {
     }
 
     pub fn set_query_substring(&mut self, query: Option<String>) {
-        self.list_widget.set_query(query.map(|q|
-            if !self.fuzzy {
-                CommonQuery::String(q)
-            } else {
-                CommonQuery::Fuzzy(q)
-            }
-        ));
-        debug!("updated query: {:?}", self.list_widget.get_query());
+        self.list_widget
+            .internal_mut()
+            .set_query(query.map(|q|
+                if !self.fuzzy {
+                    CommonQuery::String(q)
+                } else {
+                    CommonQuery::Fuzzy(q)
+                }
+            ));
+        debug!("updated query: {:?}", self.list_widget.internal().get_query());
     }
 
     fn has_completions(&self) -> bool {
@@ -96,10 +105,11 @@ impl CompletionWidget {
     }
 
     /*
-    Returns whether it should be drawn (true) or can be discarded (false)
+    Updates the state of CompletionPromise, and returns whether we should proceed to draw or discard the widget.
      */
-    pub fn should_draw(&mut self) -> bool {
-        match self.completions_promise.as_mut() {
+    pub fn poll_results_should_draw(&mut self) -> bool {
+        debug!("poll_results_should_draw");
+        let res = match self.completions_promise.as_mut() {
             None => {
                 /*
                  This indicates, that completions are executed correctly and have been moved away
@@ -120,9 +130,10 @@ impl CompletionWidget {
                             // mem::swap(&mut self.completions_promise, &mut promise);
                             // let provider: Vec<Completion> = promise.unwrap().take().unwrap();
                             let provider = self.completions_promise.take().unwrap();
-                            self.list_widget.set_provider(Box::new(provider));
+                            self.list_widget.internal_mut().set_provider(Box::new(provider));
 
                             self.set_focused(subwidget!(Self.list_widget));
+                            debug!("resolved promise");
                             true
                         }
                         PromiseState::Broken => {
@@ -135,7 +146,10 @@ impl CompletionWidget {
                     true
                 }
             }
-        }
+        };
+
+        debug!("should draw: {}", res);
+        res
     }
 }
 
@@ -148,16 +162,29 @@ impl Widget for CompletionWidget {
         Self::TYPENAME
     }
 
+    /*
+    TODO At this point, it seems like the issue is that this widget has a problem that min_size
+     relies on outdated information and cannot query the CompletionPromise for most up-to-date data.
+     Even if it could, that would still just defer the issue: layout can operate on different data
+     than min_size.
+
+     Workaround would be to trigger update from EditorWidget, and then DO NOT update it afterwards.
+     */
+
     fn min_size(&self) -> XY {
-        XY::new(Self::LOADING.width() as u16, 1)
+        let res = if self.has_completions() {
+            self.list_widget.min_size()
+        } else {
+            self.label_widget.min_size()
+        };
+        debug!("min_size: {}", res);
+        res
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
-        self.completions_promise.as_mut().map(|cp| {
-            if cp.update().has_changed {}
-        });
-
-        self.complex_layout(sc)
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
+        let res = self.complex_layout(sc);
+        debug!("has_completions {}, layout {}", self.has_completions(), res);
+        res
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -202,11 +229,10 @@ impl Widget for CompletionWidget {
         #[cfg(test)]
         {
             if let Some(ds) = self.get_display_state_op() {
-                let size = ds.todo_size();
                 output.emit_metadata(Metadata {
                     id: self.wid,
                     typename: self.typename().to_string(),
-                    rect: Rect::new(XY::ZERO, size),
+                    rect: Rect::new(XY::ZERO, ds.total_size),
                     focused,
                 });
             }
@@ -217,11 +243,11 @@ impl Widget for CompletionWidget {
 }
 
 impl ComplexWidget for CompletionWidget {
-    fn get_layout(&self, _max_size: XY) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, _sc: SizeConstraint) -> Box<dyn Layout<Self>> {
         if self.has_completions() {
             Box::new(LeafLayout::new(subwidget!(Self.list_widget)))
         } else {
-            Box::new(LeafLayout::new(selfwidget!(Self)))
+            Box::new(LeafLayout::new(subwidget!(Self.label_widget)))
         }
     }
 
@@ -229,7 +255,7 @@ impl ComplexWidget for CompletionWidget {
         if self.has_completions() {
             subwidget!(Self.list_widget)
         } else {
-            selfwidget!(Self)
+            subwidget!(Self.label_widget)
         }
     }
 
@@ -243,9 +269,5 @@ impl ComplexWidget for CompletionWidget {
 
     fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
         self.display_state.as_mut()
-    }
-
-    fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        output.print_at(XY::ZERO, theme.highlighted(focused), Self::LOADING);
     }
 }

@@ -1,4 +1,4 @@
-use log::warn;
+use log::{error, warn};
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
@@ -7,16 +7,24 @@ use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
+use crate::widget::fill_policy::FillPolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+
+// TODO add fixed size and tests
 
 pub struct ButtonWidget {
     id: usize,
     enabled: bool,
     text: Box<dyn DerefStr>,
     on_hit: Option<WidgetAction<Self>>,
+
+    fill_x: bool,
+    last_size_x: Option<u16>,
 }
 
 impl Widget for ButtonWidget {
@@ -32,9 +40,19 @@ impl Widget for ButtonWidget {
         XY::new((self.text.as_ref_str().width() + 2) as u16, 1)
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         debug_assert!(sc.bigger_equal_than(self.min_size()), "min_size {}, got {}", self.min_size(), sc);
-        self.min_size()
+
+        let mut size = self.min_size();
+
+        if let Some(max_x) = sc.x() {
+            if self.fill_x {
+                size.x = max_x;
+            }
+        }
+
+        self.last_size_x = Some(size.x);
+        size
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -70,12 +88,13 @@ impl Widget for ButtonWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let size = XY::new(unpack_or!(self.last_size_x, (), "render before layout"), 1);
         #[cfg(test)]
         output.emit_metadata(
             Metadata {
                 id: self.id(),
                 typename: self.typename().to_string(),
-                rect: output.size_constraint().visible_hint().clone(),
+                rect: Rect::from_zero(size),
                 focused,
             }
         );
@@ -96,7 +115,7 @@ impl Widget for ButtonWidget {
         output.print_at((0, 0).into(), style, full_text.as_str());
     }
 
-    fn anchor(&self) -> XY {
+    fn kite(&self) -> XY {
         XY::ZERO
     }
 }
@@ -110,6 +129,8 @@ impl ButtonWidget {
             enabled: true,
             text,
             on_hit: None,
+            fill_x: false,
+            last_size_x: None,
         }
     }
 
@@ -122,15 +143,24 @@ impl ButtonWidget {
 
     pub fn with_enabled(self, enabled: bool) -> Self {
         ButtonWidget {
-            id: self.id,
             enabled,
-            on_hit: self.on_hit,
-            text: self.text,
+            ..self
         }
     }
 
     pub fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled
+    }
+
+    pub fn set_fill_x(&mut self, new_fill_x: bool) {
+        self.fill_x = new_fill_x;
+    }
+
+    pub fn with_fill_x(self) -> Self {
+        Self {
+            fill_x: true,
+            ..self
+        }
     }
 }
 

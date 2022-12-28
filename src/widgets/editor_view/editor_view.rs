@@ -3,6 +3,7 @@ use std::rc::Rc;
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
+use crate::{subwidget, unpack_or_e};
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
@@ -21,7 +22,6 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::search_pattern::SearchPattern;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::subwidget;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::navcomp_group::NavCompGroupRef;
@@ -61,7 +61,7 @@ pub struct EditorView {
     /*
     resist the urge to remove fsf from editor. It's used to facilitate "save as dialog".
     You CAN be working on two different filesystems at the same time, and save as dialog is specific to it.
-
+    get_final_position
     One thing to address is: "what if I have file from filesystem A, and I want to "save as" to B?". But that's beyond MVP, so I don't think about it now.
      */
     fsf: FsfRef,
@@ -106,11 +106,13 @@ impl EditorView {
             .with_on_hit(|_| {
                 EditorViewMsg::FindHit.someboxed()
             })
+            .with_fill_x()
             .with_clipboard(clipboard.clone());
         let replace_box = EditBoxWidget::new()
             .with_on_hit(|_| {
                 EditorViewMsg::ReplaceHit.someboxed()
             })
+            .with_fill_x()
             .with_clipboard(clipboard.clone());
 
         EditorView {
@@ -310,7 +312,7 @@ impl Widget for EditorView {
         XY::new(20, 8) // TODO completely arbitrary
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         self.complex_layout(sc)
     }
 
@@ -425,12 +427,17 @@ impl Widget for EditorView {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let total_size = unpack_or_e!(
+            self.display_state.as_ref().map(|ds| ds.total_size),
+            (), "render before layout"
+        );
+
         #[cfg(test)]
         output.emit_metadata(
             Metadata {
                 id: self.wid,
                 typename: self.typename().to_string(),
-                rect: output.size_constraint().visible_hint().clone(),
+                rect: Rect::from_zero(total_size),
                 focused,
             }
         );
@@ -438,7 +445,7 @@ impl Widget for EditorView {
         self.complex_render(theme, focused, output)
     }
 
-    fn anchor(&self) -> XY {
+    fn kite(&self) -> XY {
         XY::ZERO
     }
 
@@ -452,7 +459,7 @@ impl Widget for EditorView {
 }
 
 impl ComplexWidget for EditorView {
-    fn get_layout(&self, size: XY) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
         let editor_layout = LeafLayout::new(subwidget!(Self.editor)).boxed();
         let find_text_layout = LeafLayout::new(subwidget!(Self.find_label)).boxed();
         let find_box_layout = LeafLayout::new(subwidget!(Self.find_box)).boxed();
@@ -492,6 +499,7 @@ impl ComplexWidget for EditorView {
         if self.hover_dialog.is_none() {
             background
         } else {
+            let size = sc.as_finite().unwrap_or(self.min_size());
             let rect = Self::get_hover_rect(size);
             let hover = LeafLayout::new(SubwidgetPointer::new(
                 Box::new(|s: &Self| {

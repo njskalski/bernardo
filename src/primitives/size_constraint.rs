@@ -15,12 +15,6 @@ y >= hint.lower_right.y || y == None,
 None means "no limit"
  */
 
-pub enum AlignEnum {
-    // uses as little space as possible
-    Constrained,
-    // fills entire dimension
-    Greedy,
-}
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct SizeConstraint {
@@ -30,31 +24,36 @@ pub struct SizeConstraint {
     y: Option<u16>,
 
     // this corresponds to actual screen pos and size (visible part).
-    visible: Rect,
+    // Invariant: non-degenerated.
+    visible_rect_op: Option<Rect>,
 }
 
 impl Display for SizeConstraint {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let x = match self.x {
-            Some(x) => format!("{} (hint {})", x, self.visible.size.x),
-            None => format!("unlimited (hint {})", self.visible.size.x),
+            Some(x) => format!("{}", x),
+            None => format!("unlimited"),
         };
 
         let y = match self.y {
-            Some(y) => format!("{} (hint {})", y, self.visible.size.y),
-            None => format!("unlimited (hint {})", self.visible.size.y)
+            Some(y) => format!("{} ", y),
+            None => format!("unlimited"),
         };
 
-        write!(f, "sc:[{}, {}][off {}]", x, y, self.visible.pos)
+        write!(f, "sc:[{}, {}][visible {:?}]", x, y, self.visible_rect_op)
     }
 }
 
 impl SizeConstraint {
-    pub fn new(x: Option<u16>, y: Option<u16>, rect: Rect) -> Self {
+    pub fn new(x: Option<u16>, y: Option<u16>, visible_rect_op: Option<Rect>) -> Self {
+        if let Some(rect) = visible_rect_op.as_ref() {
+            debug_assert!(!rect.is_deformed());
+        }
+
         SizeConstraint {
             x,
             y,
-            visible: rect,
+            visible_rect_op: visible_rect_op,
         }
     }
 
@@ -62,7 +61,7 @@ impl SizeConstraint {
         SizeConstraint {
             x: Some(xy.x),
             y: Some(xy.y),
-            visible: Rect::new(XY::ZERO, xy),
+            visible_rect_op: Some(Rect::new(XY::ZERO, xy)),
         }
     }
 
@@ -78,8 +77,8 @@ impl SizeConstraint {
     // - drawing optimisation
     // - layouting views that want to "fill" the visible part.
     // - layouting anything that wants to be "centered" while x axis is unlimited.
-    pub fn visible_hint(&self) -> &Rect {
-        &self.visible
+    pub fn visible_hint(&self) -> Option<&Rect> {
+        self.visible_rect_op.as_ref()
     }
 
     pub fn bigger_equal_than(&self, xy: XY) -> bool {
@@ -108,7 +107,8 @@ impl SizeConstraint {
     }
 
     /*
-    Returns intersection of Rect with self, if nonempty, along with proper visibility hint.
+    If Rect has nonempty intersection with self, return it with proper visibility hint.
+    Otherwise, None.
     As in all cases, returns new SizeConstraing in IT's OWN SPACE, not in self's space.
      */
     pub fn cut_out_rect(&self, rect: Rect) -> Option<SizeConstraint> {
@@ -136,19 +136,23 @@ impl SizeConstraint {
             let new_rect = Rect::new(XY::ZERO, new_size);
 
             // ok, now I will be shifting visible rect to new space, so moving it by -rect.pos
-            if let Some(new_vis_rect) = self.visible.minus_shift(rect.pos) {
+            if let Some(new_vis_rect) = self.visible_rect_op.as_ref().map(|r| r.minus_shift(rect.pos)).flatten() {
                 // and we have to cut it too, because it could be bigger than the view.
-                if let Some(new_vis_rect) = new_vis_rect.cap_at(new_size) {
+                if let Some(new_vis_rect_2) = new_vis_rect.cap_at(new_size) {
                     Some(
-                        SizeConstraint::new(Some(new_size.x), Some(new_size.y), new_vis_rect)
+                        SizeConstraint::new(Some(new_size.x), Some(new_size.y), Some(new_vis_rect_2))
                     )
                 } else {
-                    error!("new visible rect 2 empty");
-                    None
+                    warn!("new visible rect 2 empty");
+                    Some(
+                        SizeConstraint::new(Some(new_size.x), Some(new_size.y), None)
+                    )
                 }
             } else {
-                error!("new visible rect empty");
-                None
+                warn!("new visible rect empty");
+                Some(
+                    SizeConstraint::new(Some(new_size.x), Some(new_size.y), None)
+                )
             }
         } else {
             error!("empty intersection of rect {:?} and sc {:?}", &rect, self);
@@ -171,41 +175,46 @@ impl SizeConstraint {
         }
 
         // in "self" space
-        let mut new_rect_upper_left = self.visible.upper_left();
-        if new_rect_upper_left.x < margin.x {
-            new_rect_upper_left.x = margin.x;
-        }
-        if new_rect_upper_left.y < margin.y {
-            new_rect_upper_left.y = margin.y;
-        }
-        let mut new_rect_lower_right = self.visible.lower_right();
-        // I should test for max_x/y > margin.x/y, but condition on top is sufficient.
-        if let Some(max_x) = self.x {
-            debug_assert!(max_x > margin.x);
-            new_rect_lower_right.x = min(new_rect_lower_right.x, max_x - margin.x);
-        }
-        if let Some(max_y) = self.y {
-            debug_assert!(max_y > margin.y);
-            new_rect_lower_right.y = min(new_rect_lower_right.y, max_y - margin.y);
-        }
+        let new_visible_rect_op = if let Some(self_vis_rect) = self.visible_rect_op.as_ref() {
+            let mut new_rect_upper_left = self_vis_rect.upper_left();
+            if new_rect_upper_left.x < margin.x {
+                new_rect_upper_left.x = margin.x;
+            }
+            if new_rect_upper_left.y < margin.y {
+                new_rect_upper_left.y = margin.y;
+            }
+            let mut new_rect_lower_right = self_vis_rect.lower_right();
+            // I should test for max_x/y > margin.x/y, but condition on top is sufficient.
+            if let Some(max_x) = self.x {
+                debug_assert!(max_x > margin.x);
+                new_rect_lower_right.x = min(new_rect_lower_right.x, max_x - margin.x);
+            }
+            if let Some(max_y) = self.y {
+                debug_assert!(max_y > margin.y);
+                new_rect_lower_right.y = min(new_rect_lower_right.y, max_y - margin.y);
+            }
 
-        let new_visible_rect = if new_rect_lower_right > new_rect_upper_left {
-            Rect::new(new_rect_upper_left - margin, new_rect_lower_right - new_rect_upper_left)
+            if new_rect_lower_right > new_rect_upper_left {
+                Some(Rect::new(new_rect_upper_left - margin, new_rect_lower_right - new_rect_upper_left))
+            } else {
+                None
+            }
         } else {
-            debug!("visible part would be empty/deformed");
-            return None;
+            None
         };
 
         Some(SizeConstraint::new(
             self.x.map(|old_x| old_x - (margin.x * 2)),
             self.y.map(|old_y| old_y - (margin.y * 2)),
-            new_visible_rect,
+            new_visible_rect_op,
         ))
     }
 
     /*
     This function removes (substracts) top rows / left columns, limiting "visible hint" when
-    necessary. It's used  for layouting. The new SC is translated by given xy. */
+    necessary. It's used for layouting. The new SC is translated by given xy.
+    Returns empty only, if there if resulting viewport would be empty.
+     */
     pub fn substract(&self, xy: XY) -> Option<SizeConstraint> {
         let new_x = if let Some(x) = self.x {
             if x <= xy.x {
@@ -225,23 +234,26 @@ impl SizeConstraint {
             None
         };
 
-        // first, let's construct new visibility rect in space of self
-        let mut new_rect_upper_left = self.visible.upper_left();
-        new_rect_upper_left.x = max(new_rect_upper_left.x, xy.x);
-        new_rect_upper_left.y = max(new_rect_upper_left.y, xy.y);
-        // this does not move
-        let new_rect_lower_right = self.visible.lower_right();
+        let new_visibility_rect_op: Option<Rect> = if let Some(visible_rect) = self.visible_rect_op.as_ref() {
+            // first, let's construct new visibility rect in space of self
+            let mut new_rect_upper_left = visible_rect.upper_left();
+            new_rect_upper_left.x = max(new_rect_upper_left.x, xy.x);
+            new_rect_upper_left.y = max(new_rect_upper_left.y, xy.y);
+            // this does not move
+            let new_rect_lower_right = visible_rect.lower_right();
 
-        if new_rect_lower_right > new_rect_upper_left {
-            let mut new_visibility_rect = Rect::new(new_rect_upper_left, new_rect_lower_right - new_rect_upper_left);
-            // now let's translate it to the new space
-            debug_assert!(new_visibility_rect.pos >= xy);
-            new_visibility_rect.pos = new_visibility_rect.pos - xy;
-            Some(SizeConstraint::new(new_x, new_y, new_visibility_rect))
-        } else {
-            debug!("not returning new sc, visible rect is none");
-            None
-        }
+            if new_rect_lower_right > new_rect_upper_left {
+                let mut new_visibility_rect = Rect::new(new_rect_upper_left, new_rect_lower_right - new_rect_upper_left);
+                // now let's translate it to the new space
+                debug_assert!(new_visibility_rect.pos >= xy);
+                new_visibility_rect.pos = new_visibility_rect.pos - xy;
+                Some(new_visibility_rect)
+            } else {
+                None
+            }
+        } else { None };
+
+        Some(SizeConstraint::new(new_x, new_y, new_visibility_rect_op))
     }
 }
 
@@ -254,30 +266,30 @@ pub mod tests {
     #[test]
     fn test_cut_out_margin() {
         assert_eq!(
-            SizeConstraint::new(None, None, Rect::new(XY::ZERO, XY::new(10, 6))).cut_out_margin(XY::new(2, 1)),
-            Some(SizeConstraint::new(None, None, Rect::new(XY::ZERO, XY::new(8, 5)))),
+            SizeConstraint::new(None, None, Some(Rect::new(XY::ZERO, XY::new(10, 6)))).cut_out_margin(XY::new(2, 1)),
+            Some(SizeConstraint::new(None, None, Some(Rect::new(XY::ZERO, XY::new(8, 5))))),
         );
 
         assert_eq!(
-            SizeConstraint::new(Some(10), Some(10), Rect::new(XY::ZERO, XY::new(10, 6))).cut_out_margin(XY::new(2, 1)),
-            Some(SizeConstraint::new(Some(6), Some(8), Rect::new(XY::ZERO, XY::new(6, 5)))),
+            SizeConstraint::new(Some(10), Some(10), Some(Rect::new(XY::ZERO, XY::new(10, 6)))).cut_out_margin(XY::new(2, 1)),
+            Some(SizeConstraint::new(Some(6), Some(8), Some(Rect::new(XY::ZERO, XY::new(6, 5))))),
         );
     }
 
     #[test]
     fn test_substract() {
         assert_eq!(
-            SizeConstraint::new(None, None, Rect::new(XY::ZERO, XY::new(10, 6))).substract(XY::new(1, 1)),
-            Some(SizeConstraint::new(None, None, Rect::new(XY::ZERO, XY::new(9, 5)))),
+            SizeConstraint::new(None, None, Some(Rect::new(XY::ZERO, XY::new(10, 6)))).substract(XY::new(1, 1)),
+            Some(SizeConstraint::new(None, None, Some(Rect::new(XY::ZERO, XY::new(9, 5))))),
         );
 
         assert_eq!(
-            SizeConstraint::new(Some(10), None, Rect::new(XY::ZERO, XY::new(10, 6))).substract(XY::new(2, 1)),
-            Some(SizeConstraint::new(Some(8), None, Rect::new(XY::ZERO, XY::new(8, 5)))),
+            SizeConstraint::new(Some(10), None, Some(Rect::new(XY::ZERO, XY::new(10, 6)))).substract(XY::new(2, 1)),
+            Some(SizeConstraint::new(Some(8), None, Some(Rect::new(XY::ZERO, XY::new(8, 5))))),
         );
 
         assert_eq!(
-            SizeConstraint::new(Some(10), None, Rect::new(XY::ZERO, XY::new(10, 6))).substract(XY::new(10, 10)),
+            SizeConstraint::new(Some(10), None, Some(Rect::new(XY::ZERO, XY::new(10, 6)))).substract(XY::new(10, 10)),
             None,
         );
     }
@@ -299,9 +311,9 @@ pub mod tests {
              9
              */
 
-            SizeConstraint::new(None, None, Rect::new(XY::ZERO, XY::new(10, 6)))
+            SizeConstraint::new(None, None, Some(Rect::new(XY::ZERO, XY::new(10, 6))))
                 .cut_out_rect(Rect::new(XY::new(0, 3), XY::new(6, 5))),
-            Some(SizeConstraint::new(Some(6), Some(5), Rect::new(XY::ZERO, XY::new(6, 3)))),
+            Some(SizeConstraint::new(Some(6), Some(5), Some(Rect::new(XY::ZERO, XY::new(6, 3))))),
         );
     }
 }

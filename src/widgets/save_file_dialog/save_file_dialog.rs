@@ -12,6 +12,7 @@ I hope I will discover most of functional constraints while implementing it.
 
 use log::{debug, error, warn};
 
+use crate::{subwidget, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
@@ -29,7 +30,6 @@ use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::subwidget;
 use crate::text::text_buffer::TextBuffer;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
@@ -98,9 +98,11 @@ impl SaveFileDialogWidget {
                     Some(SaveFileDialogMsg::FileListHit(item.clone()).boxed())
                 }).flatten()
             });
-        let edit_box = EditBoxWidget::new().with_enabled(true).with_on_hit(
-            |_| SaveFileDialogMsg::EditBoxHit.someboxed()
-        );
+        let edit_box = EditBoxWidget::new()
+            .with_enabled(true)
+            .with_on_hit(
+                |_| SaveFileDialogMsg::EditBoxHit.someboxed()
+            ).with_fill_x();
         let ok_button = ButtonWidget::new(Box::new(Self::OK_LABEL)).with_on_hit(
             |_| SaveFileDialogMsg::Save.someboxed()
         );
@@ -250,6 +252,11 @@ impl SaveFileDialogWidget {
             let filename = self.edit_box.get_buffer().to_string();
 
             self.hover_dialog = Some(override_dialog(filename));
+            self.get_hover_pointer().map(|ptr| {
+                self.set_focused(ptr);
+            }).unwrap_or_else(|| {
+                error!("failed to set focus to hover dialog!");
+            });
             return None;
         } else {
             self.save_positively()
@@ -273,6 +280,21 @@ impl SaveFileDialogWidget {
             None
         })
     }
+
+    fn get_hover_pointer(&mut self) -> Option<SubwidgetPointer<Self>> {
+        if self.hover_dialog.is_some() {
+            Some(SubwidgetPointer::new(
+                Box::new(|s: &Self| {
+                    s.hover_dialog.as_ref().unwrap()
+                }),
+                Box::new(|s: &mut Self| {
+                    s.hover_dialog.as_mut().unwrap()
+                })),
+            )
+        } else {
+            None
+        }
+    }
 }
 
 impl Widget for SaveFileDialogWidget {
@@ -288,7 +310,7 @@ impl Widget for SaveFileDialogWidget {
         XY::new(4, 4)
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         self.complex_layout(sc)
     }
 
@@ -367,6 +389,12 @@ impl Widget for SaveFileDialogWidget {
                 self.update_focus(*fu_msg);
                 None
             }
+            SaveFileDialogMsg::ConfirmOverride => {
+                debug_assert!(self.hover_dialog.is_some());
+                self.hover_dialog = None;
+                self.set_focused(self.get_default_focused());
+                self.save_positively()
+            }
             unknown_msg => {
                 warn!("SaveFileDialog.update : unknown message {:?}", unknown_msg);
                 None
@@ -383,12 +411,13 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let size = unpack_or_e!(self.display_state.as_ref(), (), "render before layout").total_size;
         #[cfg(test)]
         output.emit_metadata(
             Metadata {
                 id: self.id(),
                 typename: self.typename().to_string(),
-                rect: output.size_constraint().visible_hint().clone(),
+                rect: Rect::from_zero(size),
                 focused,
             }
         );
@@ -398,13 +427,12 @@ impl Widget for SaveFileDialogWidget {
 }
 
 impl ComplexWidget for SaveFileDialogWidget {
-    fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
         let tree_layout = LeafLayout::new(subwidget!(Self.tree_widget));
-        // let mut empty_layout = EmptyLayout::new().with_size(XY::new(1, 1));
 
         let left_column = SplitLayout::new(SplitDirection::Vertical)
             .with(SplitRule::Proportional(1.0), tree_layout.boxed())
-            // .with(SplitRule::Fixed(1), &mut empty_layout)
+            // .with(SplitRule::Fixed(1), EmptyLayout::new().with_size(XY::new(1, 1)).boxed())
             .boxed();
 
         let ok_box = LeafLayout::new(subwidget!(Self.ok_button)).boxed();
@@ -440,7 +468,18 @@ impl ComplexWidget for SaveFileDialogWidget {
         if self.hover_dialog.is_none() {
             FrameLayout::new(layout, frame).boxed()
         } else {
-            let margins = max_size / 20;
+            //TODO underflow
+            let max_size = sc.as_finite().unwrap_or(self.min_size()) - frame * 2;
+            let child_rect = {
+                let margins = max_size / 10;
+                Rect::new(
+                    margins,
+                    max_size - (margins * 2),
+                )
+            };
+
+            debug_assert!(sc.bigger_equal_than(child_rect.lower_right()));
+
             //TODO(subwidgetpointermap)
             let dialog_layout = LeafLayout::new(SubwidgetPointer::new(
                 Box::new(|x: &Self| { x.hover_dialog.as_ref().unwrap() }),
@@ -449,10 +488,7 @@ impl ComplexWidget for SaveFileDialogWidget {
 
             FrameLayout::new(HoverLayout::new(layout,
                                               dialog_layout,
-                                              Rect::new(
-                                                  margins, // TODO
-                                                  max_size - margins * 2,
-                                              ),
+                                              child_rect,
                                               true,
             ).boxed(), frame).boxed()
         }

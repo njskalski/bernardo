@@ -52,7 +52,9 @@ pub enum SplitRule {
 
     // In case where free axis is constrained, splits the free space proportionally to given numbers.
     // In case where free axis in unconstrained, allows sublayouts unconstrained expansion, but
-    //  does not expand them further to meet the proportion (argument ignored).
+    //  does not expand them further to meet the proportion (argument ignored). Since the new
+    //  invariant that MinSize corresponds to "full size without fill-ins", it's equivalent to
+    //  MinSize in unconstrained case.
     Proportional(f32),
 }
 
@@ -137,24 +139,32 @@ impl<W: Widget> SplitLayout<W> {
         let mut result: Vec<WidgetWithRect<W>> = Vec::new();
         let mut offset = XY::ZERO;
 
-        // TODO here's another issue: right now I don't get SCs for invisible children.
-        //   But I need them to offset for things *above* visible screen, otherwise everythin will
-        //   collapse there and nothing reaches the visible screen.
-
         let non_free_axis = if self.split_direction == SplitDirection::Vertical {
             sc.y().unwrap_or_else(|| {
                 error!("fake unwrap, returning safe default");
-                sc.visible_hint().size.y
+                10 // TODO
             })
         } else {
             sc.x().unwrap_or_else(|| {
                 error!("fake unwrap, returning safe default");
-                sc.visible_hint().size.x
+                10 //TODO
             })
         };
 
+        let mut total_size = XY::ZERO;
+
         for (child_idx, child) in self.children.iter().enumerate() {
             let min_child_size = child.layout.min_size(root);
+
+            /*
+            Ok, here things get complex. I can skip layouting *below* viewport. I cannot skip
+            layouting *above* it, because I woudln't know the offset.
+
+            Now calculating offset is possible without layout in cases of Fixed and MinSize rules.
+            In case of Proportional *I have to delegate* layouting down the tree, hoping for early
+            exits from subsequent layouts.
+             */
+
             match child.split_rule {
                 SplitRule::Fixed(fixed) => {
                     let local_size = if self.split_direction == SplitDirection::Vertical {
@@ -171,11 +181,18 @@ impl<W: Widget> SplitLayout<W> {
                                 let resp = child.layout.layout(root, new_sc);
                                 for wwrsc in resp.wwrs.into_iter() {
                                     result.push(wwrsc.shifted(rect.pos))
-                                };
+                                }
+                                total_size = total_size.max_both_axis(offset + resp.total_size);
+
+                                if self.split_direction == SplitDirection::Vertical {
+                                    debug_assert!(resp.total_size.y == fixed);
+                                } else {
+                                    debug_assert!(resp.total_size.x == fixed);
+                                }
                             }
                             None => {
-                                debug!("skipping child #{} because rect is invisible", child_idx);
-                                continue;
+                                debug!("skipping layouting FixedSize child #{} because of empty result of cut_out_rect", child_idx);
+                                // no continue, just let it go to offset calculation below.
                             }
                         };
                     } else {
@@ -188,7 +205,7 @@ impl<W: Widget> SplitLayout<W> {
                         offset += XY::new(fixed, 0);
                     }
                 }
-                SplitRule::MinSize => {
+                SplitRule::MinSize | SplitRule::Proportional(_) => {
                     let local_size = if self.split_direction == SplitDirection::Vertical {
                         XY::new(non_free_axis, min_child_size.y)
                     } else {
@@ -203,11 +220,18 @@ impl<W: Widget> SplitLayout<W> {
                                 let resp = child.layout.layout(root, new_sc);
                                 for wwrsc in resp.wwrs.into_iter() {
                                     result.push(wwrsc.shifted(rect.pos))
-                                };
+                                }
+                                total_size = total_size.max_both_axis(offset + resp.total_size);
+
+                                if self.split_direction == SplitDirection::Vertical {
+                                    debug_assert!(resp.total_size.y == min_child_size.y);
+                                } else {
+                                    debug_assert!(resp.total_size.x == min_child_size.x);
+                                }
                             }
                             None => {
-                                debug!("skipping child #{} because rect is invisible", child_idx);
-                                continue;
+                                debug!("skipping layouting MinSize child #{} because cut_out_rect is empty", child_idx);
+                                // no continue, let it flow to offset calculation below
                             }
                         };
                     } else {
@@ -220,35 +244,10 @@ impl<W: Widget> SplitLayout<W> {
                         offset += XY::new(min_child_size.x, 0);
                     }
                 }
-                SplitRule::Proportional(_) => {
-                    let new_sc = match sc.substract(offset) {
-                        Some(sc) => sc,
-                        None => {
-                            debug!("not layouting child #{}, cut_out_margin => None", child_idx);
-                            continue;
-                        }
-                    };
-
-                    // TODO we need actuall xy from widget.layout here
-                    let mut fake_xy = XY::ZERO;
-
-                    let resp = child.layout.layout(root, new_sc);
-                    for wwrsc in resp.wwrs.into_iter() {
-                        let item = wwrsc.shifted(offset);
-                        fake_xy = fake_xy.max_both_axis(item.rect().lower_right());
-                        result.push(item);
-                    };
-
-                    if self.split_direction == SplitDirection::Vertical {
-                        offset += XY::new(0, fake_xy.y);
-                    } else {
-                        offset += XY::new(fake_xy.x, 0);
-                    }
-                }
             };
         }
 
-        LayoutResult::new(result, offset)
+        LayoutResult::new(result, total_size)
     }
 
     fn get_just_rects(&self, size: XY, root: &W) -> Option<Vec<Rect>> {
@@ -309,6 +308,7 @@ impl<W: Widget> SplitLayout<W> {
             if let SplitRule::Proportional(p) = child.split_rule {
                 amounts[idx] = (unit * p) as usize;
 
+                // TODO this can potentially lead to extending a fixed-sized #0 slot
                 if idx > 0 {
                     if amounts[idx] > amounts[biggest_idx] {
                         biggest_idx = idx;

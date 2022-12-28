@@ -123,6 +123,7 @@ pub fn run_gladius<
     // Genesis
     'main:
     loop {
+        debug!("new frame");
         match output.clear() {
             Ok(_) => {}
             Err(e) => {
@@ -130,7 +131,7 @@ pub fn run_gladius<
                 break;
             }
         }
-        main_view.update_and_layout(output.size_constraint());
+        main_view.layout(output.size_constraint());
         main_view.render(&theme, true, &mut output);
         match output.end_frame() {
             Ok(_) => {}

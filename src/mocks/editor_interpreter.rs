@@ -1,4 +1,4 @@
-use log::debug;
+use log::{debug, error};
 use streaming_iterator::StreamingIterator;
 
 use crate::io::buffer_output_iter::VerticalIterItem;
@@ -54,6 +54,7 @@ impl<'a> EditorInterpreter<'a> {
 
         debug_assert!(scrolls.len() < 2);
         let scroll: ScrollInterpreter = if scrolls.is_empty() {
+            error!("failed to find scroll, not returning EditorInterpreter!");
             return None;
         } else {
             ScrollInterpreter::new(scrolls[0].rect, mock_output)

@@ -1,4 +1,4 @@
-use log::error;
+use log::{error, warn};
 
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
@@ -9,6 +9,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::scroll::{Scroll, ScrollDirection};
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
@@ -19,10 +20,14 @@ pub struct WithScroll<W: Widget> {
     widget: W,
     scroll: Scroll,
     line_no: bool,
+
+    fill_non_free_axis: bool,
+    last_size: Option<XY>,
 }
 
 impl<W: Widget> WithScroll<W> {
-    pub const TYPENAME: &'static str = "scroll";
+    pub const TYPENAME: &'static str = "with_scroll";
+    pub const MIN_SIZE: XY = XY::new(3, 4);
 
     pub fn new(widget: W, scroll_direction: ScrollDirection) -> Self {
         let id = get_new_widget_id();
@@ -31,6 +36,8 @@ impl<W: Widget> WithScroll<W> {
             widget,
             scroll: Scroll::new(scroll_direction),
             line_no: false,
+            fill_non_free_axis: true,
+            last_size: None,
         }
     }
 
@@ -53,17 +60,17 @@ impl<W: Widget> WithScroll<W> {
         if sc.x().is_none() || sc.y().is_none() {
             error!("nesting scrolling is not supported - that's beyond TUI")
             // in case of nesting I probably need to add "sc.hint().pos" to offset in Rect
-            // constructor below . Or substract it. I don't want to waste mental energy on it now.
+            // constructor below . Or substract it. I don't want to waste mana on it now.
         }
 
         let margin_width = self.line_count_margin_width(sc);
         let with_margin = self.line_no && sc.strictly_bigger_than(XY::new(margin_width, 0));
 
-        let visible_part_size = if with_margin {
-            XY::new(sc.visible_hint().size.x - margin_width, sc.visible_hint().size.y)
+        let visible_part_size = sc.visible_hint().map(|visible_hint| if with_margin {
+            XY::new(visible_hint.size.x - margin_width, visible_hint.size.y)
         } else {
-            sc.visible_hint().size
-        };
+            visible_hint.size
+        });
 
         let new_sc = SizeConstraint::new(
             if self.scroll.direction.free_x() { None } else {
@@ -73,7 +80,7 @@ impl<W: Widget> WithScroll<W> {
                     } else { x })
             },
             if self.scroll.direction.free_y() { None } else { sc.y() },
-            Rect::new(self.scroll.offset, visible_part_size),
+            visible_part_size.map(|size| Rect::new(self.scroll.offset, size)),
         );
 
         (if with_margin { margin_width } else { 0 }, new_sc)
@@ -95,6 +102,7 @@ impl<W: Widget> WithScroll<W> {
     }
 
     fn line_count_margin_width_for_lower_right(&self, lower_right: XY) -> u16 {
+        // logarithm? Never heard of it.
         let width = format!("{}", lower_right.y).len() as u16 + 2;
         width
     }
@@ -110,18 +118,26 @@ impl<W: Widget> WithScroll<W> {
         I *could* use the previous size, but I want "layout" to NOT use previous state.
          */
 
-        let lower_right = self.scroll.offset + sc.visible_hint().lower_right();
+        let lower_right = self.scroll.offset +
+            sc.visible_hint().map(|vh| vh.lower_right())
+                .unwrap_or_else(|| {
+                    warn!("layouting scroll without visibility information. Expect bugs.");
+                    XY::ZERO
+                });
         self.line_count_margin_width_for_lower_right(lower_right)
     }
 
     fn render_line_no(&self, margin_width: u16, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let size = unpack_or!(self.last_size, (), "render before layout");
         #[cfg(test)]
-        output.emit_metadata(Metadata {
-            id: self.id(),
-            typename: self.typename().to_string(),
-            rect: Rect::new(XY::ZERO, XY::new(margin_width, output.size_constraint().visible_hint().size.y)),
-            focused,
-        });
+        {
+            output.emit_metadata(Metadata {
+                id: self.id(),
+                typename: self.typename().to_string(),
+                rect: Rect::from_zero(XY::new(margin_width, size.y)),
+                focused,
+            });
+        }
 
         debug_assert!(self.line_no);
         let start_idx = self.scroll.offset.y;
@@ -134,7 +150,7 @@ impl<W: Widget> WithScroll<W> {
 
         // let anchor_row = self.widget.anchor().y;
 
-        for idx in 0..output.size_constraint().visible_hint().size.y {
+        for idx in 0..size.y {
             let line_no_base_0 = start_idx + idx;
             let item = format!("{} ", line_no_base_0 + 1);
             let num_digits = item.len() as u16;
@@ -167,30 +183,48 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn typename(&self) -> &'static str {
-        "scroll"
+        Self::TYPENAME
     }
 
     fn min_size(&self) -> XY {
         let child = self.widget.min_size();
-        if self.line_no {
-            let margin = self.line_count_margin_width_for_lower_right(child);
-            child + XY::new(margin, 0)
-        } else {
-            child
-        }
+        let margin = if self.line_no { self.line_count_margin_width_for_lower_right(child) } else { 0 };
+
+        let res = match self.scroll.direction {
+            ScrollDirection::Horizontal => {
+                XY::new(Self::MIN_SIZE.x + margin, child.y)
+            }
+            ScrollDirection::Vertical => {
+                XY::new(child.x + margin, Self::MIN_SIZE.y)
+            }
+            ScrollDirection::Both => {
+                Self::MIN_SIZE + XY::new(margin, 0)
+            }
+        };
+
+        res
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
-        let (_margin_width, internal_sc) = self.nested_sc(sc);
-        let _full_size = self.widget.update_and_layout(internal_sc);
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
+        debug_assert!(sc.is_finite(), "nesting scrolls not supported");
+        let output_size = if let Some(size) = sc.as_finite() {
+            size
+        } else {
+            error!("nesting scrolls not supported");
+            self.widget.min_size()
+        };
 
-        // again, in case of nesting I could not just use hint.size
-        self.scroll.follow_anchor(internal_sc.visible_hint().size,
-                                  self.widget.anchor());
+        let (margin_width, internal_sc) = self.nested_sc(sc);
+        let child_size = self.widget.layout(internal_sc);
 
-        // full_size + XY::new(margin_width, 0)
-        // why like this? Well, I have
-        sc.visible_hint().size
+        debug_assert!(margin_width <= output_size.x);
+
+        self.scroll.follow_anchor(output_size - XY::new(margin_width, 0),
+                                  self.widget.kite());
+
+        self.last_size = Some(output_size);
+
+        output_size
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -210,6 +244,7 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let parent_size = unpack_or!(self.last_size, (), "render before layout");
         let (margin_width, new_sc) = self.nested_sc(output.size_constraint());
 
         if margin_width > 0 {
@@ -219,8 +254,6 @@ impl<W: Widget> Widget for WithScroll<W> {
         // This is narrowing the scope to make margin for line_no
         let mut sub_output: Option<SubOutput> = if self.line_no {
             let shift = XY::new(margin_width, 0);
-            // as I wrote in numerous places in this file, nesting scrolls is not supported, therefore I can assume output.size_constraint() has real data in "visible_hint".
-            let parent_size = output.size_constraint().visible_hint().size;
             // TODO this should be safe after layout, but I might want to add a no-panic default.
             let frame = Rect::new(shift, parent_size - shift);
             let suboutput = SubOutput::new(output, frame);
@@ -239,7 +272,7 @@ impl<W: Widget> Widget for WithScroll<W> {
         self.widget.render(theme, focused, &mut over_output);
     }
 
-    fn anchor(&self) -> XY {
+    fn kite(&self) -> XY {
         // scroll nesting would probably affect that
         XY::ZERO
     }

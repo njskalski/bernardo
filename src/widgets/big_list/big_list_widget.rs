@@ -8,7 +8,7 @@ use crate::io::keys::Key;
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::scroll_enum::ScrollEnum;
-use crate::primitives::size_constraint::{AlignEnum, SizeConstraint};
+use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::{AnyMsg, AsAny};
@@ -76,19 +76,13 @@ impl<T: Widget> Widget for BigList<T> {
     }
 
     fn min_size(&self) -> XY {
-        let mut xy = XY::new(10, 4); // TODO completely arbitrary
-
-        for i in self.items.iter() {
-            let c = i.min_size();
-            xy.x = max(xy.x, c.x);
-            xy.y = max(xy.y, c.y);
-        }
-
-        xy
+        XY::new(10, 4) // TODO completely arbitrary
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
-        self.last_size = Some(sc.visible_hint().size);
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
+        let xy = self.min_size();
+        self.last_size = Some(xy);
+        xy
 
         // let mut pos_y: u16 = 0;
         // for item in self.items.iter_mut() {
@@ -98,7 +92,6 @@ impl<T: Widget> Widget for BigList<T> {
         //         item.update_and_layout()
         //     }
         // }
-        todo!()
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -202,7 +195,7 @@ impl<T: Widget> Widget for BigList<T> {
         todo!()
     }
 
-    fn anchor(&self) -> XY {
+    fn kite(&self) -> XY {
         todo!()
     }
 }

@@ -29,25 +29,14 @@ pub struct DisplayState<S: Widget> {
     pub focused: SubwidgetPointer<S>,
     pub wwrs: Vec<WidgetWithRect<S>>,
     pub focus_group: FocusGraph<SubwidgetPointer<S>>,
-}
-
-impl<S: Widget> DisplayState<S> {
-    pub fn todo_size(&self) -> XY {
-        let mut res = XY::ZERO;
-        for w in self.wwrs.iter() {
-            res.x = max(res.x, w.rect().lower_right().x);
-            res.y = max(res.y, w.rect().lower_right().y);
-        }
-        res
-    }
+    pub total_size: XY,
 }
 
 pub trait ComplexWidget: Widget + Sized {
     /*
     produces cloneable layout func tree
      */
-    // TODO max_size -> sc
-    fn get_layout(&self, max_size: XY) -> Box<dyn Layout<Self>>;
+    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>>;
 
     /*
     because using ComplexWidget helper requires routing calling complex_render from widget's render,
@@ -96,13 +85,13 @@ pub trait ComplexWidget: Widget + Sized {
     If you want something else, override it. But remember to set display_cache or render will fail.
      */
     fn complex_layout(&mut self, sc: SizeConstraint) -> XY {
-        let xy = sc.as_finite().unwrap_or_else(|| {
-            // warn!("using complex_layout on infinite SizeConstraint is not supported, will limit itself to visible hint");
-            sc.visible_hint().size
-        });
-
-        let layout = self.get_layout(xy);
+        let layout = self.get_layout(sc);
         let layout_res = layout.layout(self, sc);
+
+        for wwr in layout_res.wwrs.iter() {
+            debug_assert!(sc.bigger_equal_than(wwr.rect().lower_right()));
+            debug_assert!(layout_res.total_size >= wwr.rect().lower_right(), "total_size = {}, rect = {}", layout_res.total_size, wwr.rect());
+        }
 
         let widgets_and_positions: Vec<(WID, SubwidgetPointer<Self>, Rect)> = layout_res.wwrs.iter().filter(
             |wwr| wwr.focusable()
@@ -119,17 +108,18 @@ pub trait ComplexWidget: Widget + Sized {
 
         let selected = focused.get(self).id();
 
-        let focus_group = from_geometry::<>(&widgets_and_positions, selected, xy);
+        let focus_group = from_geometry::<>(&widgets_and_positions, selected, layout_res.total_size);
 
         let new_state = DisplayState {
             focused,
             wwrs: layout_res.wwrs,
             focus_group,
+            total_size: layout_res.total_size,
         };
 
         self.set_display_state(new_state);
 
-        xy
+        layout_res.total_size
     }
 
     fn complex_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
@@ -218,4 +208,8 @@ pub trait ComplexWidget: Widget + Sized {
     fn todo_all_focused(&self) -> bool {
         false
     }
+
+    // fn complex_min_size(&self) -> XY {
+    //
+    // }
 }

@@ -1,4 +1,4 @@
-use log::{error, warn};
+use log::{debug, error, warn};
 
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::{Layout, LayoutResult};
@@ -34,10 +34,17 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
 
         let widget_min_size = widget.min_size();
         let properly_sized = sc.bigger_equal_than(widget_min_size);
+        let widget_name = widget.typename();
 
         if !skip {
             if properly_sized {
-                let xy = widget.update_and_layout(sc);
+                let xy = widget.layout(sc);
+
+                debug_assert!(sc.bigger_equal_than(xy),
+                              "widget {} #{} violated invariant",
+                              widget.typename(), widget.id());
+
+                debug!("leaf layout for {:?}, returning {}", widget.typename(), xy);
 
                 LayoutResult::new(
                     vec![WidgetWithRect::new(
@@ -47,7 +54,7 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
                     )],
                     xy)
             } else {
-                error!("got layout too small to draw widget [{:?}], returning min_size instead, but this will lead to incorrect layouting", widget);
+                error!("got layout too small (sc: {:?}) to draw widget [{:?}] min_size {}, returning min_size instead, but this will lead to incorrect layouting", sc, widget, widget_min_size);
                 LayoutResult::new(
                     vec![],
                     widget_min_size)

@@ -100,15 +100,7 @@ impl<W: Write> Output for CrosstermOutput<W> {
         SizeConstraint::simple(self.size)
     }
 
-    #[cfg(test)]
-    fn get_final_position(&self, local_pos: XY) -> Option<XY> {
-        if local_pos <= self.size {
-            Some(local_pos)
-        } else {
-            None
-        }
-    }
-
+    
     #[cfg(test)]
     fn emit_metadata(&mut self, _meta: Metadata) {
         debug_assert!(false, "you should not be emmiting metadata to an actual output");

@@ -22,16 +22,21 @@ pub trait Widget: 'static {
 
     // Minimal size of the view. If the output cannot satisfy it, a replacement is drawn instead,
     // and the view cannot be focused.
+    //
+    // min_size can be data dependent. Widgets *should not* implement their own scrolling.
+    // So it's perfectly reasonable for widget to require O(n) time to answer question "how big I
+    // need to be" (if it's slow, we'll be caching *after* profiling).
     fn min_size(&self) -> XY;
 
-    // This is guaranteed to be called before each render.
+    // This is guaranteed to be called before each render. It is guaranteed to be called with
+    // SizeConstraint >= self.min_size().
     //
     // This is an opportunity for widget to "update itself" and decide how it's going to be drawn.
     // There is no enforced contract on whether widget should layout it's subwidgets first or
     // afterwards, or if even at all. A widget can decide to remove child widget and *not* layout it
     // for whatever reason.
     //
-    // Widget is given size constraint and returns "how much space would it take to render fully".
+    // Widget is given size constraint and returns "how much space I will use under given constraints".
     // Whether widget "fills" the space or just uses as little as it can depends on Widget, not on
     // layout. No css bs here.
     //
@@ -42,9 +47,10 @@ pub trait Widget: 'static {
     // Without it, it would be impossible to decide "which widget gets how much space" before
     // rendering them.
     //
-    // A lot of widgets decide based on sc.visible_hint() how much space to use, so their size is
-    // dependent not on constraint, but on size of display.
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY;
+    // If widget size is VisibleRect dependent (everything that fills buffers in greedy way) and
+    // SizeConstraint.visible_rect() == None, a self.min_size() is used instead.
+    fn layout(&mut self, sc: SizeConstraint) -> XY;
+
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>>;
@@ -62,7 +68,12 @@ pub trait Widget: 'static {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output);
 
-    fn anchor(&self) -> XY {
+
+    // Kite is the part of view that is supposed to be followed by the scroll. Scroll always makes
+    // the least amount of movement so the display contain a kite.
+    //
+    // Why the name? Well, I was looking for something "opposite to an anchor".
+    fn kite(&self) -> XY {
         XY::ZERO
     }
 

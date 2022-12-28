@@ -47,7 +47,7 @@ fn main() {
     let stdout = stdout();
     let output = CrosstermOutput::new(stdout);
 
-    if output.size_constraint().visible_hint().size == XY::ZERO {
+    if !output.size_constraint().visible_hint().map(|vr| vr.size > XY::ZERO).unwrap_or(false) {
         error!("it seems like the screen has zero size.");
         return;
     }

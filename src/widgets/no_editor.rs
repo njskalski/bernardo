@@ -1,3 +1,5 @@
+use log::error;
+
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
@@ -9,6 +11,8 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget};
 pub struct NoEditorWidget {
     wid: WID,
     text_pos: XY,
+
+    last_size: Option<XY>,
 }
 
 impl NoEditorWidget {
@@ -20,6 +24,7 @@ impl Default for NoEditorWidget {
         NoEditorWidget {
             wid: get_new_widget_id(),
             text_pos: XY::ZERO,
+            last_size: None,
         }
     }
 }
@@ -37,17 +42,22 @@ impl Widget for NoEditorWidget {
         XY::new(Self::NO_EDIT_TEXT.len() as u16, 3)
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
+        let size = sc.as_finite().unwrap_or_else(|| {
+            error!("non-simple size constratint on expanding widget, using min size");
+            self.min_size()
+        });
+
         let mut x = 0;
-        if sc.visible_hint().size.x >= Self::NO_EDIT_TEXT.len() as u16 {
-            x = (sc.visible_hint().size.x - Self::NO_EDIT_TEXT.len() as u16) / 2;
+        if size.x >= Self::NO_EDIT_TEXT.len() as u16 {
+            x = (size.x - Self::NO_EDIT_TEXT.len() as u16) / 2;
         };
 
-        let y = sc.visible_hint().size.y / 2;
+        let y = size.y / 2;
 
         self.text_pos = XY::new(x, y);
-
-        sc.visible_hint().size
+        self.last_size = Some(size);
+        size
     }
 
     fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> { None }

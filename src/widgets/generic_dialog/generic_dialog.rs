@@ -2,6 +2,7 @@ use core::option::Option;
 use std::fmt::Debug;
 
 use log::{debug, error, warn};
+use tree_sitter::TextProvider;
 
 use crate::config::theme::Theme;
 use crate::experiments::deref_str::DerefStr;
@@ -144,7 +145,7 @@ impl Widget for GenericDialog {
         total_size + if self.with_border.is_some() { XY::new(2, 2) } else { XY::ZERO }
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         self.complex_layout(sc)
     }
 
@@ -200,7 +201,7 @@ impl Widget for GenericDialog {
 }
 
 impl ComplexWidget for GenericDialog {
-    fn get_layout(&self, _size: XY) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
         let text_layout = LeafLayout::new(subwidget!(Self.text_widget)).boxed();
 
         // let mut button_layout = SplitLayout::new(SplitDirection::Vertical);
@@ -236,7 +237,15 @@ impl ComplexWidget for GenericDialog {
     }
 
     fn get_default_focused(&self) -> SubwidgetPointer<GenericDialog> {
-        todo!()
+        if self.buttons.is_empty() {
+            error!("no buttons in generic dialog!");
+            subwidget!(Self.text_widget)
+        } else {
+            SubwidgetPointer::new(
+                Box::new(|x: &Self| { x.buttons.get(0).unwrap() }),
+                Box::new(|x: &mut Self| { x.buttons.get_mut(0).unwrap() }),
+            )
+        }
     }
 
     fn set_display_state(&mut self, display_state: DisplayState<GenericDialog>) {

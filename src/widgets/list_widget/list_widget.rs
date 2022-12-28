@@ -14,8 +14,10 @@ use crate::primitives::arrow::Arrow;
 use crate::primitives::common_query::CommonQuery;
 use crate::primitives::helpers;
 use crate::primitives::helpers::copy_first_n_columns;
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::FillPolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
@@ -214,6 +216,17 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
             self.provider.items().nth(idx)
         }).flatten()
     }
+
+    pub fn full_size_from_items(&self) -> XY {
+        let rows = 2 + if self.show_column_names { 1 } else { 0 } as u16;
+        let mut cols = 0;
+
+        for i in 0..Item::len_columns() {
+            cols += Item::get_min_column_width(i);
+        }
+
+        XY::new(cols, rows)
+    }
 }
 
 
@@ -227,35 +240,15 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     }
 
     fn min_size(&self) -> XY {
-        // completely arbitrary
-
-        let rows = 2 + if self.show_column_names { 1 } else { 0 } as u16;
-        let mut cols = 0;
-
-        for i in 0..Item::len_columns() {
-            cols += Item::get_min_column_width(i);
-        }
-
-        XY::new(cols, rows)
+        self.full_size_from_items()
     }
 
-    fn update_and_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn layout(&mut self, sc: SizeConstraint) -> XY {
         debug_assert!(sc.bigger_equal_than(self.min_size()),
                       "sc: {} self.min_size(): {}",
                       sc, self.min_size());
 
-        let from_items = self.min_size();
-        let mut res = sc.visible_hint().size;
-
-        if from_items.x > res.x && sc.x().is_none() {
-            res.x = from_items.x;
-        }
-
-        if from_items.y > res.y && sc.y().is_none() {
-            res.y = from_items.y;
-        }
-
-        let res = self.fill_policy.get_size_from_constraints(&sc, res);
+        let res = self.fill_policy.get_size_from_constraints(&sc, self.full_size_from_items());
         self.last_size = Some(res);
 
         res
@@ -360,12 +353,13 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let size = unpack_or_e!(self.last_size, (), "render before layout");
         #[cfg(test)]
         output.emit_metadata(
             Metadata {
                 id: self.id(),
                 typename: self.typename().to_string(),
-                rect: output.size_constraint().visible_hint().clone(),
+                rect: Rect::from_zero(size),
                 focused,
             }
         );

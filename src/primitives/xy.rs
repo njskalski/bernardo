@@ -17,6 +17,7 @@ pub struct XY {
 
 impl XY {
     pub const ZERO: XY = XY::new(0, 0);
+    pub const ONE: XY = XY::new(1, 1);
 
     pub const fn new(x: u16, y: u16) -> Self {
         XY { x, y }

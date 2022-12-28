@@ -50,7 +50,7 @@ pub mod tests {
         fn id(&self) -> WID { todo!() }
         fn typename(&self) -> &'static str { todo!() }
         fn min_size(&self) -> XY { todo!() }
-        fn update_and_layout(&mut self, sc: SizeConstraint) -> XY { todo!() }
+        fn layout(&mut self, sc: SizeConstraint) -> XY { todo!() }
         fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> { todo!() }
         fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> { todo!() }
         fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) { todo!() }
@@ -62,8 +62,6 @@ pub mod tests {
         }
 
         fn layout(&self, root: &mut MockWidget, sc: SizeConstraint) -> LayoutResult<MockWidget> {
-            assert!(self.preferred_size.map(|ps| ps >= self.min_size).unwrap_or(true));
-
             assert!(sc.bigger_equal_than(self.min_size));
 
             //in my design, widget MUST know how much space it wants to take.
@@ -88,6 +86,7 @@ pub mod tests {
             match item.2 {
                 None => {}
                 Some(preferred_size) => {
+                    debug_assert!(preferred_size >= item.1);
                     mock_layout = mock_layout.with_preferred_size(preferred_size);
                 }
             }
@@ -140,19 +139,25 @@ pub mod tests {
         );
     }
 
+    /*
+    This one does not cover "invisible children" above viewport.
+     */
     #[test]
-    fn test_split_3() {
-        let wchuj = XY::new(100, 100);
+    fn test_split_complex_1() {
         let mut items: Vec<(SplitRule, XY, Option<XY>)> = vec![
-            (SplitRule::Fixed(2), XY::new(1, 1), None),
+            (SplitRule::Fixed(2), XY::new(1, 1), Some(XY::new(10, 2))),
         ];
 
-        for i in 0..20 {
-            items.push((SplitRule::Proportional(1.0f32), XY::new(10, 1), Some(XY::new(10, 2))));
+        for idx in 0..10 {
+            items.push((SplitRule::Proportional(idx as f32), XY::new(1, 1), Some(XY::new(10, 2))));
         }
 
-        assert_eq!(get_results(&items, SizeConstraint::simple(XY::new(10, 30))),
-                   (XY::new(11, 11), vec![2, 3, 6])
+        assert_eq!(get_results(&items,
+                               SizeConstraint::new(Some(10),
+                                                   None,
+                                                   Some(Rect::new(XY::ZERO, XY::new(10, 10))),
+                               )),
+                   (XY::new(10, 12), vec![2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
         );
     }
 }
