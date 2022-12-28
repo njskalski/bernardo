@@ -62,6 +62,8 @@ pub mod tests {
         }
 
         fn layout(&self, root: &mut MockWidget, sc: SizeConstraint) -> LayoutResult<MockWidget> {
+            assert!(self.preferred_size.map(|ps| ps >= self.min_size).unwrap_or(true));
+
             assert!(sc.bigger_equal_than(self.min_size));
 
             //in my design, widget MUST know how much space it wants to take.
@@ -134,6 +136,22 @@ pub mod tests {
         ];
 
         assert_eq!(get_results(&items, SizeConstraint::simple(XY::new(11, 11))),
+                   (XY::new(11, 11), vec![2, 3, 6])
+        );
+    }
+
+    #[test]
+    fn test_split_3() {
+        let wchuj = XY::new(100, 100);
+        let mut items: Vec<(SplitRule, XY, Option<XY>)> = vec![
+            (SplitRule::Fixed(2), XY::new(1, 1), None),
+        ];
+
+        for i in 0..20 {
+            items.push((SplitRule::Proportional(1.0f32), XY::new(10, 1), Some(XY::new(10, 2))));
+        }
+
+        assert_eq!(get_results(&items, SizeConstraint::simple(XY::new(10, 30))),
                    (XY::new(11, 11), vec![2, 3, 6])
         );
     }
