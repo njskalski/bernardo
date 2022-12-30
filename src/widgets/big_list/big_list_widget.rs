@@ -17,10 +17,10 @@ use crate::widgets::big_list::msg::BigListWidgetMsg;
 use crate::widgets::list_widget::list_widget::ListWidgetMsg;
 
 /*
-This is list of bigger items, to be paired witch scroll.
+This is list of bigger items, to be paired with scroll.
  */
 
-struct BigList<T: Widget> {
+pub struct BigList<T: Widget> {
     //TODO I did not add the direction
     wid: WID,
     items: Vec<T>,
@@ -63,6 +63,10 @@ impl<T: Widget> BigList<T> {
 
     fn last_page_height(&self) -> Option<u16> {
         self.last_size.map(|xy| xy.y)
+    }
+
+    pub fn add_item(&mut self, item: T) {
+        self.items.push(item);
     }
 }
 

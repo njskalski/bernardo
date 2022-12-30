@@ -137,6 +137,8 @@ impl EditorHover {
 pub struct EditorWidget {
     wid: WID,
 
+    readonly: bool,
+
     last_size: Option<SizeConstraint>,
     // to be constructed in layout step based on HoverSettings
     last_hover_rect: Option<Rect>,
@@ -182,6 +184,7 @@ impl EditorWidget {
     ) -> EditorWidget {
         EditorWidget {
             wid: get_new_widget_id(),
+            readonly: false,
             last_size: None,
             last_hover_rect: None,
             buffer: BufferState::full(Some(tree_sitter.clone())),
@@ -195,6 +198,13 @@ impl EditorWidget {
             requested_hover: None,
 
             nacomp_symbol: None,
+        }
+    }
+
+    pub fn with_readonly(self) -> Self {
+        Self {
+            readonly: true,
+            ..self
         }
     }
 
@@ -917,10 +927,10 @@ impl Widget for EditorWidget {
 
                 EditorWidgetMsg::DropCursorFlip { cursor: special_cursor }.someboxed()
             }
-            (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.request_completions => {
+            (&EditorState::Editing, InputEvent::KeyInput(key)) if self.readonly == false && key == c.request_completions => {
                 EditorWidgetMsg::RequestCompletions.someboxed()
             }
-            (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.reformat => {
+            (&EditorState::Editing, InputEvent::KeyInput(key)) if self.readonly == false && key == c.reformat => {
                 EditorWidgetMsg::Reformat.someboxed()
             }
             // TODO change to if let Some() when it's stabilized
@@ -936,7 +946,12 @@ impl Widget for EditorWidget {
                 EditorWidgetMsg::RequestContextBar.someboxed()
             }
             (&EditorState::Editing, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
-                EditorWidgetMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
+                let cem = key_to_edit_msg(key).unwrap();
+                if cem.is_editing() && self.readonly {
+                    None
+                } else {
+                    EditorWidgetMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
+                }
             }
             _ => None,
         };
