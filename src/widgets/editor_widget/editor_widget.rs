@@ -893,7 +893,6 @@ impl Widget for EditorWidget {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        debug!("layout");
         if self.last_size != Some(sc) {
             debug!("changed size");
 
@@ -958,7 +957,6 @@ impl Widget for EditorWidget {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        debug!("update");
         return match msg.as_msg::<EditorWidgetMsg>() {
             None => {
                 warn!("expected EditorViewMsg, got {:?}", msg);

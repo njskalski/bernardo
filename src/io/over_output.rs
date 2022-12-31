@@ -59,7 +59,7 @@ impl Output for OverOutput<'_> {
         }
         // no analogue exit on x, as something starting left from frame might still overlap with it.
 
-        if pos >= visible_rect.lower_right() {
+        if pos.y >= visible_rect.lower_right().y {
             // debug!("early exit 2");
             debug!("drawing beyond output, early exit. pos: {} sc: {}", pos, self.size_constraint());
             return;
