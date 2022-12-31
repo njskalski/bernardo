@@ -24,10 +24,10 @@ impl ReaderMainWidget {
         Self {
             wid: get_new_widget_id(),
             main_display: WithScroll::new(
+                ScrollDirection::Both,
                 DumpVisualizerWidget::new()
                     .with_dump(dump)
                 ,
-                ScrollDirection::Both,
             ),
         }
     }

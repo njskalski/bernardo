@@ -90,7 +90,7 @@ impl SaveFileDialogWidget {
                 SaveFileDialogMsg::TreeHit(item.spath().clone()).someboxed()
             });
 
-        let scroll_tree_widget = WithScroll::new(tree_widget, ScrollDirection::Vertical);
+        let scroll_tree_widget = WithScroll::new(ScrollDirection::Vertical, tree_widget);
 
         let list_widget: ListWidget<SPath> = ListWidget::new().with_selection()
             .with_on_hit(|w| {

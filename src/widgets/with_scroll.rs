@@ -29,7 +29,7 @@ impl<W: Widget> WithScroll<W> {
     pub const TYPENAME: &'static str = "with_scroll";
     pub const MIN_SIZE: XY = XY::new(3, 4);
 
-    pub fn new(widget: W, scroll_direction: ScrollDirection) -> Self {
+    pub fn new(scroll_direction: ScrollDirection, widget: W) -> Self {
         let id = get_new_widget_id();
         Self {
             id,

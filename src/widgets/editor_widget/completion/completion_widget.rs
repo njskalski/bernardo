@@ -55,7 +55,8 @@ impl CompletionWidget {
     pub fn new(completions_promise: CompletionsPromise) -> Self {
         CompletionWidget {
             wid: get_new_widget_id(),
-            list_widget: WithScroll::new(ListWidget::new()
+            list_widget: WithScroll::new(ScrollDirection::Vertical,
+                                         ListWidget::new()
                                              .with_selection()
                                              .with_show_column_names(false)
                                              .with_fill_policy(FillPolicy::FILL_WIDTH)
@@ -64,7 +65,7 @@ impl CompletionWidget {
                                                      CompletionWidgetMsg::Selected(c.action.clone()).boxed()
                                                  })
                                              }),
-                                         ScrollDirection::Vertical),
+            ),
             completions_promise: Some(completions_promise),
             display_state: None,
             fuzzy: false,

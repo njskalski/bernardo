@@ -35,7 +35,7 @@ use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 use crate::widgets::with_scroll::WithScroll;
 
 pub enum HoverItem {
-    FuzzySearch(FuzzySearchWidget),
+    FuzzySearch(WithScroll<FuzzySearchWidget>),
 }
 
 pub struct MainView {
@@ -91,7 +91,7 @@ impl MainView {
         MainView {
             wid: get_new_widget_id(),
             display_state: None,
-            tree_widget: WithScroll::new(tree, ScrollDirection::Vertical),
+            tree_widget: WithScroll::new(ScrollDirection::Vertical, tree),
             editors: EditorGroup::new(
                 config.clone(),
                 nav_comp_group.clone(),
@@ -149,24 +149,33 @@ impl MainView {
 
     fn open_fuzzy_search_in_files_and_focus(&mut self) {
         self.hover = Some(
-            HoverItem::FuzzySearch(FuzzySearchWidget::new(
-                |_| Some(Box::new(MainViewMsg::ClozeHover)),
-                Some(self.clipboard.clone()),
-            ).with_provider(
-                Box::new(FsfProvider::new(self.fsf.clone()).with_ignores_filter())
-            ).with_draw_comment_setting(DrawComment::Highlighted))
+            HoverItem::FuzzySearch(
+                WithScroll::new(
+                    ScrollDirection::Vertical,
+                    FuzzySearchWidget::new(
+                        |_| Some(Box::new(MainViewMsg::ClozeHover)),
+                        Some(self.clipboard.clone()),
+                    ).with_provider(
+                        Box::new(FsfProvider::new(self.fsf.clone()).with_ignores_filter())
+                    ).with_draw_comment_setting(DrawComment::Highlighted),
+                ),
+            )
         );
         self.set_focused_to_hover();
     }
 
     fn open_fuzzy_buffer_list_and_focus(&mut self) {
         self.hover = Some(
-            HoverItem::FuzzySearch(FuzzySearchWidget::new(
-                |_| Some(Box::new(MainViewMsg::ClozeHover)),
-                Some(self.clipboard.clone()),
-            ).with_provider(
-                self.editors.get_buffer_list_provider()
-            ).with_draw_comment_setting(DrawComment::Highlighted))
+            HoverItem::FuzzySearch(
+                WithScroll::new(
+                    ScrollDirection::Vertical,
+                    FuzzySearchWidget::new(
+                        |_| Some(Box::new(MainViewMsg::ClozeHover)),
+                        Some(self.clipboard.clone()),
+                    ).with_provider(
+                        self.editors.get_buffer_list_provider()
+                    ).with_draw_comment_setting(DrawComment::Highlighted))
+            )
         );
         self.set_focused_to_hover();
     }

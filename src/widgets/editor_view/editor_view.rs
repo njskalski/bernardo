@@ -118,7 +118,7 @@ impl EditorView {
         EditorView {
             wid: get_new_widget_id(),
             display_state: None,
-            editor: WithScroll::new(editor, ScrollDirection::Both).with_line_no(),
+            editor: WithScroll::new(ScrollDirection::Both, editor).with_line_no(),
             find_box,
             find_label,
             replace_box,
