@@ -1,16 +1,17 @@
 use std::cmp::max;
 
-use log::warn;
+use log::{error, warn};
 
 use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
-use crate::io::output::Output;
+use crate::io::output::{Metadata, Output};
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::arrow::Arrow;
+use crate::primitives::rect::Rect;
 use crate::primitives::scroll_enum::ScrollEnum;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
@@ -27,6 +28,8 @@ use crate::widgets::text_widget::TextWidget;
 This is list of bigger items, to be paired with scroll.
  */
 
+//TODO implement pg-up pg-down
+
 pub struct BigList<T: Widget> {
     //TODO I did not add the direction
     wid: WID,
@@ -36,6 +39,9 @@ pub struct BigList<T: Widget> {
     last_size: Option<XY>,
 
     no_items_text: TextWidget,
+
+    display_state: Option<DisplayState<Self>>,
+    kite: XY,
 }
 
 impl<T: Widget> BigList<T> {
@@ -47,7 +53,9 @@ impl<T: Widget> BigList<T> {
             items,
             item_idx: 0,
             last_size: None,
-            no_items_text: TextWidget::new(Box::new("Empty")),
+            no_items_text: TextWidget::new(Box::new("empty")),
+            display_state: None,
+            kite: XY::ZERO,
         }
     }
 
@@ -75,7 +83,7 @@ impl<T: Widget> BigList<T> {
         self.last_size.map(|xy| xy.y)
     }
 
-    fn item_widget_ptr(&self, idx: usize) -> SubwidgetPointer<Self> {
+    fn get_item_widget_ptr(&self, idx: usize) -> SubwidgetPointer<Self> {
         let idx2 = idx;
         SubwidgetPointer::new(
             Box::new(move |s: &Self| {
@@ -89,6 +97,30 @@ impl<T: Widget> BigList<T> {
 
     pub fn add_item(&mut self, split_rule: SplitRule, item: T) {
         self.items.push((split_rule, item));
+    }
+
+    fn set_kite(&mut self, going_up: bool) {
+        if let Some(ds) = &self.display_state {
+            let mut rect_op: Option<Rect> = None;
+            let selected_id = self.items[self.item_idx].1.id();
+
+            for wwr in &ds.wwrs {
+                if wwr.widget().get(self).id() == selected_id {
+                    rect_op = Some(wwr.rect().clone());
+                    break;
+                }
+            }
+
+            if let Some(rect) = rect_op {
+                if going_up {
+                    self.kite = rect.upper_left();
+                } else {
+                    self.kite = XY::new(rect.upper_left().x, rect.lower_right().y);
+                }
+            } else {
+                error!("failed to set kite - id {} not found", selected_id);
+            }
+        }
     }
 }
 
@@ -106,18 +138,7 @@ impl<T: Widget> Widget for BigList<T> {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let xy = self.min_size();
-        self.last_size = Some(xy);
-        xy
-
-        // let mut pos_y: u16 = 0;
-        // for item in self.items.iter_mut() {
-        //     if let Some(max_y) = sc.y() {
-        //         SizeConstraint(max_y)
-        //     } else {
-        //         item.update_and_layout()
-        //     }
-        // }
+        self.complex_layout(sc)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -152,6 +173,7 @@ impl<T: Widget> Widget for BigList<T> {
                             Arrow::Up => {
                                 if self.item_idx > 0 {
                                     self.item_idx -= 1;
+                                    self.set_kite(true);
                                 } else {
                                     warn!("arrow up widget can't handle");
                                 }
@@ -159,7 +181,8 @@ impl<T: Widget> Widget for BigList<T> {
                             }
                             Arrow::Down => {
                                 if self.item_idx + 1 < self.items.len() {
-                                    self.item_idx += 1
+                                    self.item_idx += 1;
+                                    self.set_kite(false);
                                 } else {
                                     warn!("arrow down widget can't handle");
                                 }
@@ -171,6 +194,7 @@ impl<T: Widget> Widget for BigList<T> {
                     ScrollEnum::Home => {
                         if self.item_idx > 0 {
                             self.item_idx = 0;
+                            self.set_kite(true);
                         } else {
                             warn!("home widget can't handle");
                         }
@@ -179,6 +203,7 @@ impl<T: Widget> Widget for BigList<T> {
                     ScrollEnum::End => {
                         if self.item_idx + 1 < self.items.len() {
                             self.item_idx = self.items.len() - 1;
+                            self.set_kite(false);
                         } else {
                             warn!("end widget can't handle");
                         }
@@ -189,6 +214,8 @@ impl<T: Widget> Widget for BigList<T> {
                             if self.item_idx > 0 {
                                 // if self.pos < height {
                                 //     self.pos = 0
+                                // } else {
+                                //
                                 // }
                             } else {
                                 warn!("page_up widget can't handle")
@@ -210,19 +237,32 @@ impl<T: Widget> Widget for BigList<T> {
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
-        todo!()
+        self.complex_get_focused()
     }
 
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        todo!()
+        self.complex_get_focused_mut()
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        todo!()
+        #[cfg(test)]
+        {
+            let total_size = self.display_state.as_ref().unwrap().total_size;
+            output.emit_metadata(
+                Metadata {
+                    id: self.wid,
+                    typename: self.typename().to_string(),
+                    rect: Rect::from_zero(total_size),
+                    focused,
+                }
+            );
+        }
+
+        self.complex_render(theme, focused, output)
     }
 
     fn kite(&self) -> XY {
-        todo!()
+        self.kite
     }
 }
 
@@ -235,7 +275,7 @@ impl<T: Widget> ComplexWidget for BigList<T> {
 
             for idx in 0..self.items.len() {
                 let rule = self.items[idx].0;
-                spl = spl.with(rule, LeafLayout::new(self.item_widget_ptr(idx)).boxed());
+                spl = spl.with(rule, LeafLayout::new(self.get_item_widget_ptr(idx)).boxed());
             }
 
             spl.boxed()
@@ -243,18 +283,22 @@ impl<T: Widget> ComplexWidget for BigList<T> {
     }
 
     fn get_default_focused(&self) -> SubwidgetPointer<Self> {
-        todo!()
+        if self.items.is_empty() {
+            subwidget!(Self.no_items_text)
+        } else {
+            self.get_item_widget_ptr(0)
+        }
     }
 
     fn set_display_state(&mut self, display_state: DisplayState<Self>) {
-        todo!()
+        self.display_state = Some(display_state);
     }
 
     fn get_display_state_op(&self) -> Option<&DisplayState<Self>> {
-        todo!()
+        self.display_state.as_ref()
     }
 
     fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
-        todo!()
+        self.display_state.as_mut()
     }
 }

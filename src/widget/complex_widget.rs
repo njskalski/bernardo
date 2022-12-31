@@ -200,16 +200,4 @@ pub trait ComplexWidget: Widget + Sized {
             }
         }).flatten()
     }
-
-    /*
-    this should probably evolve into some Settings, with sensible defaults and options to override it
-    by users of this trait. Right now I just needed it to NOT grey out editor when LSP suggestions pop up.
-     */
-    fn todo_all_focused(&self) -> bool {
-        false
-    }
-
-    // fn complex_min_size(&self) -> XY {
-    //
-    // }
 }

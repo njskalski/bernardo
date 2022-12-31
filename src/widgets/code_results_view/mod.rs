@@ -5,4 +5,4 @@ This widget will be full-page (or editor-size) search results, that can either p
     - references to a method
  */
 
-mod widget;
+mod code_results_widget;
