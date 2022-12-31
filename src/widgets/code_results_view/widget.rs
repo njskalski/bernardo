@@ -4,6 +4,7 @@ use crate::config::config::ConfigRef;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
+use crate::layout::split_layout::SplitRule;
 use crate::primitives::scroll::ScrollDirection;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::widget::{get_new_widget_id, WID};
@@ -58,6 +59,6 @@ impl CodeResultsView {
             None,
         );
 
-        self.items.internal_mut().add_item(eb);
+        self.items.internal_mut().add_item(SplitRule::Fixed(5), eb);
     }
 }

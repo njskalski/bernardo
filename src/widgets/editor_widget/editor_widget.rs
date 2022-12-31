@@ -1102,20 +1102,20 @@ impl Widget for EditorWidget {
         self.kite
     }
 }
-
-impl Drop for EditorWidget {
-    fn drop(&mut self) {
-        debug!("dropping editor widget for buffer : [{:?}]", self.buffer.get_path());
-
-        match (&self.navcomp, self.buffer.get_path()) {
-            (Some(_navcomp), Some(_spath)) => {
-                debug!("shutting down navcomp.");
-                // navcomp.file_closed(spath);
-            }
-            _ => {
-                debug!("not stoping navigation, because navcomp is some: {}, ff is some: {}",
-                    self.navcomp.is_some(), self.buffer.get_path().is_some() )
-            }
-        }
-    }
-}
+//
+// impl Drop for EditorWidget {
+//     fn drop(&mut self) {
+//         debug!("dropping editor widget for buffer : [{:?}]", self.buffer.get_path());
+//
+//         match (&self.navcomp, self.buffer.get_path()) {
+//             (Some(_navcomp), Some(_spath)) => {
+//                 debug!("shutting down navcomp.");
+//                 // navcomp.file_closed(spath);
+//             }
+//             _ => {
+//                 debug!("not stoping navigation, because navcomp is some: {}, ff is some: {}",
+//                     self.navcomp.is_some(), self.buffer.get_path().is_some() )
+//             }
+//         }
+//     }
+// }

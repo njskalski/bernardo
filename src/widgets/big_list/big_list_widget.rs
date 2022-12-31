@@ -3,18 +3,25 @@ use std::cmp::max;
 use log::warn;
 
 use crate::config::theme::Theme;
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
 use crate::io::output::Output;
+use crate::layout::layout::Layout;
+use crate::layout::leaf_layout::LeafLayout;
+use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::arrow::Arrow;
 use crate::primitives::scroll_enum::ScrollEnum;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::subwidget;
 use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::{AnyMsg, AsAny};
+use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::big_list::msg::BigListWidgetMsg;
 use crate::widgets::list_widget::list_widget::ListWidgetMsg;
+use crate::widgets::text_widget::TextWidget;
 
 /*
 This is list of bigger items, to be paired with scroll.
@@ -23,21 +30,24 @@ This is list of bigger items, to be paired with scroll.
 pub struct BigList<T: Widget> {
     //TODO I did not add the direction
     wid: WID,
-    items: Vec<T>,
+    items: Vec<(SplitRule, T)>,
     item_idx: usize,
 
     last_size: Option<XY>,
+
+    no_items_text: TextWidget,
 }
 
 impl<T: Widget> BigList<T> {
     pub const TYPENAME: &'static str = "big_list";
 
-    pub fn new(items: Vec<T>) -> Self {
+    pub fn new(items: Vec<(SplitRule, T)>) -> Self {
         BigList {
             wid: get_new_widget_id(),
             items,
             item_idx: 0,
             last_size: None,
+            no_items_text: TextWidget::new(Box::new("Empty")),
         }
     }
 
@@ -65,8 +75,20 @@ impl<T: Widget> BigList<T> {
         self.last_size.map(|xy| xy.y)
     }
 
-    pub fn add_item(&mut self, item: T) {
-        self.items.push(item);
+    fn item_widget_ptr(&self, idx: usize) -> SubwidgetPointer<Self> {
+        let idx2 = idx;
+        SubwidgetPointer::new(
+            Box::new(move |s: &Self| {
+                &s.items[idx].1
+            }),
+            Box::new(move |s: &mut Self| {
+                &mut s.items[idx2].1
+            }),
+        )
+    }
+
+    pub fn add_item(&mut self, split_rule: SplitRule, item: T) {
+        self.items.push((split_rule, item));
     }
 }
 
@@ -200,6 +222,39 @@ impl<T: Widget> Widget for BigList<T> {
     }
 
     fn kite(&self) -> XY {
+        todo!()
+    }
+}
+
+impl<T: Widget> ComplexWidget for BigList<T> {
+    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
+        if self.items.is_empty() {
+            LeafLayout::new(subwidget!(Self.no_items_text)).boxed()
+        } else {
+            let mut spl = SplitLayout::new(SplitDirection::Vertical);
+
+            for idx in 0..self.items.len() {
+                let rule = self.items[idx].0;
+                spl = spl.with(rule, LeafLayout::new(self.item_widget_ptr(idx)).boxed());
+            }
+
+            spl.boxed()
+        }
+    }
+
+    fn get_default_focused(&self) -> SubwidgetPointer<Self> {
+        todo!()
+    }
+
+    fn set_display_state(&mut self, display_state: DisplayState<Self>) {
+        todo!()
+    }
+
+    fn get_display_state_op(&self) -> Option<&DisplayState<Self>> {
+        todo!()
+    }
+
+    fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
         todo!()
     }
 }
