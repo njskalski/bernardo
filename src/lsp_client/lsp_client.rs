@@ -10,8 +10,8 @@ use std::thread::JoinHandle;
 
 use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error, warn};
-use lsp_types::{CompletionContext, CompletionTriggerKind, FormattingOptions, Position, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentPositionParams, Url, VersionedTextDocumentIdentifier};
-use lsp_types::request::{Completion, DocumentSymbolRequest, Formatting, References};
+use lsp_types;
+use url::Url;
 
 use crate::lsp_client::debug_helpers::lsp_debug_save;
 use crate::lsp_client::lsp_io_error::LspIOError;
@@ -323,10 +323,10 @@ impl LspWrapper {
         )
     }
 
-    pub fn text_document_formatting(&mut self, url: Url) -> Result<LSPPromise<Formatting>, LspWriteError> {
+    pub fn text_document_formatting(&mut self, url: Url) -> Result<LSPPromise<lsp_types::request::Formatting>, LspWriteError> {
         self.send_message::<lsp_types::request::Formatting>(
             lsp_types::DocumentFormattingParams {
-                text_document: TextDocumentIdentifier {
+                text_document: lsp_types::TextDocumentIdentifier {
                     uri: url
                 },
                 options: self.get_formatting_options(),
@@ -335,16 +335,13 @@ impl LspWrapper {
         )
     }
 
-    pub fn todo_text_document_refrences(&mut self, url: Url) -> Result<LSPPromise<References>, LspWriteError> {
+    pub fn text_document_references(&mut self, url: Url, cursor: StupidCursor) -> Result<LSPPromise<lsp_types::request::References>, LspWriteError> {
         self.send_message::<lsp_types::request::References>(
             lsp_types::ReferenceParams {
-                text_document_position: TextDocumentPositionParams {
-                    text_document: TextDocumentIdentifier {},
-                    position: Default::default(),
-                },
+                text_document_position: Self::get_position_params(url, cursor),
                 work_done_progress_params: Default::default(),
                 partial_result_params: Default::default(),
-                context: ReferenceContext {},
+                context: lsp_types::ReferenceContext { include_declaration: true },
             }
         )
     }
@@ -368,9 +365,9 @@ impl LspWrapper {
 
         self.send_notification::<lsp_types::notification::DidChangeTextDocument>(
             lsp_types::DidChangeTextDocumentParams {
-                text_document: VersionedTextDocumentIdentifier { uri: url, version },
+                text_document: lsp_types::VersionedTextDocumentIdentifier { uri: url, version },
                 content_changes: vec![
-                    TextDocumentContentChangeEvent {
+                    lsp_types::TextDocumentContentChangeEvent {
                         range: None,
                         range_length: None,
                         text: full_text,
@@ -383,7 +380,7 @@ impl LspWrapper {
     pub fn text_document_did_close(&mut self, url: Url) -> Result<(), LspWriteError> {
         self.send_notification::<lsp_types::notification::DidCloseTextDocument>(
             lsp_types::DidCloseTextDocumentParams {
-                text_document: TextDocumentIdentifier {
+                text_document: lsp_types::TextDocumentIdentifier {
                     uri: url
                 }
             }
@@ -404,20 +401,14 @@ impl LspWrapper {
     ) -> Result<LSPPromise<lsp_types::request::Completion>, LspWriteError> {
         self.send_message::<lsp_types::request::Completion>(
             lsp_types::CompletionParams {
-                text_document_position: TextDocumentPositionParams {
-                    text_document: TextDocumentIdentifier { uri: url },
-                    position: Position {
-                        line: cursor.line,
-                        character: cursor.char_idx,
-                    },
-                },
+                text_document_position: Self::get_position_params(url, cursor),
                 work_done_progress_params: Default::default(),
                 partial_result_params: Default::default(),
-                context: Some(CompletionContext {
+                context: Some(lsp_types::CompletionContext {
                     trigger_kind: if automatic {
-                        CompletionTriggerKind::TRIGGER_CHARACTER
+                        lsp_types::CompletionTriggerKind::TRIGGER_CHARACTER
                     } else {
-                        CompletionTriggerKind::INVOKED
+                        lsp_types::CompletionTriggerKind::INVOKED
                     },
                     trigger_character,
                 }),
@@ -428,10 +419,10 @@ impl LspWrapper {
     pub fn text_document_document_symbol(&mut self,
                                          url: Url,
                                          cursor: StupidCursor,
-    ) -> Result<LSPPromise<DocumentSymbolRequest>, LspWriteError> {
-        self.send_message::<DocumentSymbolRequest>(
+    ) -> Result<LSPPromise<lsp_types::request::DocumentSymbolRequest>, LspWriteError> {
+        self.send_message::<lsp_types::request::DocumentSymbolRequest>(
             lsp_types::DocumentSymbolParams {
-                text_document: TextDocumentIdentifier { uri: url },
+                text_document: lsp_types::TextDocumentIdentifier { uri: url },
                 work_done_progress_params: Default::default(),
                 partial_result_params: Default::default(),
             }
