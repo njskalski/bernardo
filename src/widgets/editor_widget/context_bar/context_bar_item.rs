@@ -55,26 +55,26 @@ TODO
 #[derive(Debug, Clone)]
 pub struct ContextBarItem {
     title: Cow<'static, str>,
-    msg: Action,
+    action: Action,
 }
 
 impl ContextBarItem {
     pub const GO_TO_DEFINITION: ContextBarItem = ContextBarItem {
         title: Cow::Borrowed("go to definition"),
-        msg: || EditorWidgetMsg::GoToDefinition.boxed(),
+        action: || EditorWidgetMsg::GoToDefinition.boxed(),
     };
     pub const REFORMAT_FILE: ContextBarItem = ContextBarItem {
         title: Cow::Borrowed("reformat file"),
-        msg: || EditorWidgetMsg::Reformat.boxed(),
+        action: || EditorWidgetMsg::Reformat.boxed(),
     };
     pub const SHOW_USAGES: ContextBarItem = ContextBarItem {
         title: Cow::Borrowed("show usages"),
-        msg: || EditorWidgetMsg::ShowUsages.boxed(),
+        action: || EditorWidgetMsg::ShowUsages.boxed(),
     };
     // TODO add reformat selection
 
     pub fn msg(&self) -> Box<dyn AnyMsg> {
-        self.msg()
+        (self.action)()
     }
 }
 

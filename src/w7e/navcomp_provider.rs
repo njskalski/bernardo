@@ -85,6 +85,8 @@ pub struct StupidSubstituteMessage {
     pub stupid_range: (StupidCursor, StupidCursor),
 }
 
+#[derive(Debug, Clone)]
+pub struct SymbolUsages {}
 /*
 This is super work in progress, I added some top of the head options to "smoke out" what they imply.
  */
@@ -98,6 +100,7 @@ pub enum NavCompSymbolContextActions {
 
 pub type SymbolContextActionsPromise = Box<dyn Promise<Vec<Completion>> + 'static>;
 pub type SymbolPromise = Box<dyn Promise<Option<NavCompSymbol>> + 'static>;
+pub type SymbolUsagesPromise = Box<dyn Promise<Option<SymbolUsages>> + 'static>;
 
 // this is a wrapper around LSP and "similar services".
 pub trait NavCompProvider: Debug {
@@ -119,6 +122,8 @@ pub trait NavCompProvider: Debug {
     fn todo_get_context_options(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolContextActionsPromise>;
 
     fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise>;
+
+    fn todo_get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise>;
 
     /*
     missing items:

@@ -877,6 +877,12 @@ impl EditorWidget {
             self.last_hover_rect = hover_rect;
         }
     }
+
+    pub fn todo_show_usages(&mut self) {
+        let navcomp = unpack_or_e!(&self.navcomp, (), "can't show usages without navcomp");
+    }
+
+    pub fn todo_go_to_definition(&mut self) {}
 }
 
 impl Widget for EditorWidget {
@@ -1057,6 +1063,16 @@ impl Widget for EditorWidget {
                 }
                 (&EditorState::Editing, EditorWidgetMsg::Reformat) => {
                     self.reformat();
+                    None
+                }
+                (&EditorState::Editing, EditorWidgetMsg::ShowUsages) => {
+                    self.requested_hover = None;
+                    self.todo_show_usages();
+                    None
+                }
+                (&EditorState::Editing, EditorWidgetMsg::GoToDefinition) => {
+                    self.requested_hover = None;
+                    self.todo_go_to_definition();
                     None
                 }
                 (editor_state, msg) => {
