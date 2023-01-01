@@ -57,6 +57,8 @@ pub struct FuzzySearchWidget {
 }
 
 impl FuzzySearchWidget {
+    pub const TYPENAME: &'static str = "fuzzy_search";
+
     pub fn new(on_close: WidgetAction<Self>, clipboard_op: Option<ClipboardRef>) -> Self {
         let mut edit = EditBoxWidget::new();
 
@@ -226,7 +228,7 @@ impl Widget for FuzzySearchWidget {
     }
 
     fn typename(&self) -> &'static str {
-        "fuzzy_search"
+        Self::TYPENAME
     }
 
     fn min_size(&self) -> XY {

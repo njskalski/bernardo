@@ -23,6 +23,7 @@ use crate::gladius::sidechannel::x::SideChannelInternal;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::{Key, Keycode};
 use crate::mocks::editor_interpreter::EditorInterpreter;
+use crate::mocks::fuzzy_search_interpreter::FuzzySearchInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
@@ -216,6 +217,10 @@ impl FullSetup {
         self.last_frame.as_ref().unwrap().get_editors().next().is_some()
     }
 
+    pub fn is_no_editor_opened(&self) -> bool {
+        self.last_frame.as_ref().unwrap().get_no_editor().is_some()
+    }
+
     pub fn fsf(&self) -> &FsfRef {
         &self.fsf
     }
@@ -249,6 +254,10 @@ impl FullSetup {
                 .next()
                 .map(|meta| TreeViewInterpreter::new(meta, frame))
         }).flatten()
+    }
+
+    pub fn get_fuzzy_search(&self) -> Option<FuzzySearchInterpreter> {
+        self.last_frame.as_ref().map(|frame| frame.get_fuzzy_search()).flatten()
     }
 
     pub fn send_input(&self, ie: InputEvent) -> bool {

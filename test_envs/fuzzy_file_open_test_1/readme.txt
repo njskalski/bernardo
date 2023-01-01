@@ -1,0 +1,1 @@
+This test env is a base for test "fuzzy open file still works".

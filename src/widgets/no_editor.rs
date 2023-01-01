@@ -2,9 +2,11 @@ use log::error;
 
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
-use crate::io::output::Output;
+use crate::io::output::{Metadata, Output};
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
@@ -16,6 +18,7 @@ pub struct NoEditorWidget {
 }
 
 impl NoEditorWidget {
+    pub const TYPENAME: &'static str = "no_editor_widget";
     pub const NO_EDIT_TEXT: &'static str = "no editor loaded.";
 }
 
@@ -35,7 +38,7 @@ impl Widget for NoEditorWidget {
     }
 
     fn typename(&self) -> &'static str {
-        "no_editor_widget"
+        Self::TYPENAME
     }
 
     fn min_size(&self) -> XY {
@@ -67,6 +70,19 @@ impl Widget for NoEditorWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(test)]
+        {
+            let size = unpack_or!(self.last_size, (), "render before layout");
+            output.emit_metadata(
+                Metadata {
+                    id: self.wid,
+                    typename: self.typename().to_string(),
+                    rect: Rect::from_zero(size),
+                    focused,
+                }
+            );
+        }
+
         // fill_background(theme.default_background(focused), output);
 
         output.print_at(self.text_pos,

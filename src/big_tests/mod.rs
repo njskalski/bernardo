@@ -1,5 +1,6 @@
 mod completion;
-mod save_file_dialog;
-mod find_replace;
 mod dropping_cursor;
+mod find_replace;
+mod fuzzy_file_open;
 mod save;
+mod save_file_dialog;

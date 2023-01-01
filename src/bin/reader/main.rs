@@ -1,4 +1,6 @@
+use std::fs;
 use std::path::PathBuf;
+use std::time::SystemTime;
 
 use clap::Parser;
 use crossbeam_channel::select;
@@ -26,7 +28,7 @@ mod reader_main_widget;
 #[clap(author, version, about, long_about = None)]
 struct Args {
     #[clap(short, long)]
-    pub file: String,
+    pub file: Option<PathBuf>,
 }
 
 fn main() {
@@ -34,7 +36,35 @@ fn main() {
 
     let args = Args::parse();
 
-    let dump = match BufferOutput::from_file(&args.file) {
+    let filename = match args.file {
+        Some(s) => s,
+        None => {
+            let mut last_time: Option<SystemTime> = None;
+            let mut filename: Option<PathBuf> = None;
+
+            for x in fs::read_dir("./screenshots").unwrap() {
+                match x {
+                    Ok(dir_entry) => {
+                        let p = dir_entry.path();
+                        if p.extension().map(|c| c.to_str()).flatten() != Some("ron") {
+                            continue;
+                        };
+
+                        let new_t = dir_entry.metadata().unwrap().modified().unwrap();
+                        if last_time.map(|old_t| old_t < new_t).unwrap_or(true) {
+                            last_time = Some(new_t);
+                            filename = Some(dir_entry.path());
+                        }
+                    }
+                    Err(e) => {}
+                }
+            }
+
+            filename.unwrap()
+        }
+    };
+
+    let dump = match BufferOutput::from_file(filename.to_str().unwrap()) {
         Ok(d) => d,
         Err(_) => {
             std::process::exit(1);
