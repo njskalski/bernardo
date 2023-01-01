@@ -6,7 +6,6 @@ use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::AnyMsg;
 
 // this corresponds to message to Parent.

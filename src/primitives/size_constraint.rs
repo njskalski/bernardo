@@ -133,7 +133,7 @@ impl SizeConstraint {
         if new_lower_right > new_upper_left {
             // this is in new space
             let new_size = new_lower_right - new_upper_left;
-            let new_rect = Rect::new(XY::ZERO, new_size);
+            // let new_rect = Rect::new(XY::ZERO, new_size);
 
             // ok, now I will be shifting visible rect to new space, so moving it by -rect.pos
             if let Some(new_vis_rect) = self.visible_rect_op.as_ref().map(|r| r.minus_shift(rect.pos)).flatten() {

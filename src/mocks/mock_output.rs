@@ -9,7 +9,6 @@ use crate::io::output::{FinalOutput, Metadata, Output};
 use crate::io::style::TextStyle;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::primitives::size_constraint::SizeConstraint;
-use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 
 pub struct MockOutput {
@@ -95,7 +94,7 @@ impl Output for MockOutput {
         self.buffer_0.size_constraint()
     }
 
-    
+
     #[cfg(test)]
     fn emit_metadata(&mut self, meta: Metadata) {
         self.metadata.push(meta)

@@ -50,10 +50,10 @@ pub mod tests {
         fn id(&self) -> WID { todo!() }
         fn typename(&self) -> &'static str { todo!() }
         fn min_size(&self) -> XY { todo!() }
-        fn layout(&mut self, sc: SizeConstraint) -> XY { todo!() }
-        fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> { todo!() }
-        fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> { todo!() }
-        fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) { todo!() }
+        fn layout(&mut self, _sc: SizeConstraint) -> XY { todo!() }
+        fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> { todo!() }
+        fn update(&mut self, _msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> { todo!() }
+        fn render(&self, _theme: &Theme, _focused: bool, _output: &mut dyn Output) { todo!() }
     }
 
     impl Layout<MockWidget> for MockLayout {
@@ -61,7 +61,7 @@ pub mod tests {
             self.min_size
         }
 
-        fn layout(&self, root: &mut MockWidget, sc: SizeConstraint) -> LayoutResult<MockWidget> {
+        fn layout(&self, _root: &mut MockWidget, sc: SizeConstraint) -> LayoutResult<MockWidget> {
             assert!(sc.bigger_equal_than(self.min_size));
 
             //in my design, widget MUST know how much space it wants to take.

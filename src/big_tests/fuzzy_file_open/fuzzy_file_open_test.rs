@@ -1,11 +1,4 @@
-use log::debug;
-
-use crate::experiments::focus_group::FocusUpdate;
-use crate::io::input_event::InputEvent;
-use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
-use crate::mocks::treeview_interpreter::TreeViewInterpreterItem;
-use crate::spath;
 
 fn common_start() -> FullSetup {
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/fuzzy_file_open_test_1")

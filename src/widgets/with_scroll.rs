@@ -13,7 +13,7 @@ use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
-const DEFAULT_MARGIN_WIDTH: u16 = 4;
+// const DEFAULT_MARGIN_WIDTH: u16 = 4;
 
 pub struct WithScroll<W: Widget> {
     id: WID,
@@ -214,8 +214,8 @@ impl<W: Widget> Widget for WithScroll<W> {
             self.widget.min_size()
         };
 
-        let (margin_width, internal_sc) = self.nested_sc(sc);
-        let child_size = self.widget.layout(internal_sc);
+        let (margin_width, _) = self.nested_sc(sc);
+        // let child_size = self.widget.layout(internal_sc);
 
         debug_assert!(margin_width <= output_size.x);
 

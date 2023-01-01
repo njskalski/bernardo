@@ -8,7 +8,6 @@ use ropey::Rope;
 use streaming_iterator::StreamingIterator;
 use tree_sitter::Point;
 use unicode_segmentation::UnicodeSegmentation;
-use unicode_width::UnicodeWidthStr;
 
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::regex_search::{FindError, regex_find};

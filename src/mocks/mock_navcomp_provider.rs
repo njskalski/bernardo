@@ -11,7 +11,7 @@ use crate::mocks::mock_navcomp_provider::MockNavCompEvent::FileOpened;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
-use crate::w7e::navcomp_provider::{Completion, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, StupidSubstituteMessage, SymbolContextActionsPromise, SymbolPromise, SymbolUsagesPromise};
+use crate::w7e::navcomp_provider::{Completion, CompletionsPromise, FormattingPromise, NavCompProvider, SymbolContextActionsPromise, SymbolPromise, SymbolUsagesPromise};
 
 pub struct MockCompletionMatcher {
     // None matches all
@@ -144,19 +144,19 @@ impl NavCompProvider for MockNavCompProvider {
         &self.triggers
     }
 
-    fn todo_get_context_options(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolContextActionsPromise> {
+    fn todo_get_context_options(&self, _path: &SPath, _cursor: StupidCursor) -> Option<SymbolContextActionsPromise> {
         None
     }
 
-    fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
+    fn todo_get_symbol_at(&self, _path: &SPath, _cursor: StupidCursor) -> Option<SymbolPromise> {
         None
     }
 
-    fn todo_get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
+    fn todo_get_symbol_usages(&self, _path: &SPath, _cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
         None
     }
 
-    fn todo_reformat(&self, path: &SPath) -> Option<FormattingPromise> {
+    fn todo_reformat(&self, _path: &SPath) -> Option<FormattingPromise> {
         todo!()
     }
 

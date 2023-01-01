@@ -2,7 +2,6 @@ use log::debug;
 
 use crate::primitives::cursor_set::{Cursor, CursorSet};
 use crate::primitives::stupid_cursor::StupidCursor;
-use crate::tsw::tree_sitter_wrapper::HighlightItem;
 use crate::w7e::navcomp_provider::NavCompSymbol;
 use crate::widgets::editor_widget::context_bar::context_bar_item::ContextBarItem;
 use crate::widgets::editor_widget::editor_widget::EditorState;
@@ -24,7 +23,7 @@ pub fn get_context_options(state: &EditorState,
 
     // WARNING matches are exclusive, with no passthrough, so don't forget about it
     match (state, single_cursor, multiple_cursors, single_stupid_cursor, lsp_symbol, tree_sitter_symbol) {
-        (_, Some(single_cursor), _, _, _, Some("function")) => {
+        (_, Some(_), _, _, _, Some("function")) => {
             results.push(ContextBarItem::GO_TO_DEFINITION);
             results.push(ContextBarItem::SHOW_USAGES);
         }

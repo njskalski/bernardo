@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-use std::ops::Range;
 
 use crate::fs::path::SPath;
 use crate::primitives::stupid_cursor::StupidCursor;

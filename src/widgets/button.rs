@@ -1,4 +1,4 @@
-use log::{error, warn};
+use log::warn;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
@@ -12,7 +12,6 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::fill_policy::FillPolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
 // TODO add fixed size and tests

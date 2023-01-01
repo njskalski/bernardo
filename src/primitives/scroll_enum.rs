@@ -17,7 +17,7 @@ impl ScrollEnum {
         }
 
         match key {
-            Key { keycode, modifiers } => {
+            Key { keycode, modifiers: _ } => {
                 match keycode {
                     Keycode::ArrowUp => Some(ScrollEnum::Arrow(Arrow::Up)),
                     Keycode::ArrowDown => Some(ScrollEnum::Arrow(Arrow::Down)),

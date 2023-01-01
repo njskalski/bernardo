@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::ops::Range;
 
-use log::{debug, error, warn};
+use log::{error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::experiments::clipboard::ClipboardRef;
@@ -616,12 +616,10 @@ pub fn _apply_cem(cem: CommonEditMsg,
         }
         CommonEditMsg::Tab => {
             let mut tab: String = String::new();
-            for i in 0..rope.tab_width() {
+            for _ in 0..rope.tab_width() {
                 tab.push(' ');
             }
             let tab = tab;
-
-            let mut inserted: usize = 0;
 
             // if they are simple, we just add spaces
             if cs.are_simple() {

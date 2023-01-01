@@ -2,7 +2,6 @@ use core::option::Option;
 use std::fmt::Debug;
 
 use log::{debug, error, warn};
-use tree_sitter::TextProvider;
 
 use crate::config::theme::Theme;
 use crate::experiments::deref_str::DerefStr;
@@ -201,7 +200,7 @@ impl Widget for GenericDialog {
 }
 
 impl ComplexWidget for GenericDialog {
-    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, _sc: SizeConstraint) -> Box<dyn Layout<Self>> {
         let text_layout = LeafLayout::new(subwidget!(Self.text_widget)).boxed();
 
         // let mut button_layout = SplitLayout::new(SplitDirection::Vertical);

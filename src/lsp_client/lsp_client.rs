@@ -416,7 +416,7 @@ impl LspWrapper {
 
     pub fn text_document_document_symbol(&mut self,
                                          url: Url,
-                                         cursor: StupidCursor,
+                                         _cursor: StupidCursor,
     ) -> Result<LSPPromise<lsp_types::request::DocumentSymbolRequest>, LspWriteError> {
         self.send_message::<lsp_types::request::DocumentSymbolRequest>(
             lsp_types::DocumentSymbolParams {

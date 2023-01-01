@@ -1,11 +1,8 @@
-use std::cmp::max;
-
 use log::{error, warn};
 
 use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Key;
 use crate::io::output::{Metadata, Output};
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
@@ -16,12 +13,10 @@ use crate::primitives::scroll_enum::ScrollEnum;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::subwidget;
-use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::big_list::msg::BigListWidgetMsg;
-use crate::widgets::list_widget::list_widget::ListWidgetMsg;
 use crate::widgets::text_widget::TextWidget;
 
 /*
@@ -210,7 +205,7 @@ impl<T: Widget> Widget for BigList<T> {
                         None
                     }
                     ScrollEnum::PageUp => {
-                        if let Some(height) = self.last_page_height() {
+                        if let Some(_height) = self.last_page_height() {
                             if self.item_idx > 0 {
                                 // if self.pos < height {
                                 //     self.pos = 0
@@ -226,7 +221,7 @@ impl<T: Widget> Widget for BigList<T> {
                         None
                     }
                     ScrollEnum::PageDown => {
-                        if let Some(height) = self.last_page_height() {} else {
+                        if let Some(_height) = self.last_page_height() {} else {
                             warn!("page_down prior layout")
                         }
                         None
@@ -267,7 +262,7 @@ impl<T: Widget> Widget for BigList<T> {
 }
 
 impl<T: Widget> ComplexWidget for BigList<T> {
-    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self, _sc: SizeConstraint) -> Box<dyn Layout<Self>> {
         if self.items.is_empty() {
             LeafLayout::new(subwidget!(Self.no_items_text)).boxed()
         } else {

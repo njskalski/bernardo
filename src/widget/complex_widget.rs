@@ -1,5 +1,3 @@
-use std::cmp::max;
-
 use log::error;
 
 use crate::config::theme::Theme;

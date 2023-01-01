@@ -1,5 +1,3 @@
-use crate::io::keys::Key;
-use crate::primitives::arrow::Arrow;
 use crate::primitives::scroll_enum::ScrollEnum;
 use crate::widget::any_msg::AnyMsg;
 

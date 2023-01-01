@@ -1,16 +1,13 @@
-use log::{debug, error};
-use streaming_iterator::StreamingIterator;
+use log::error;
 
 use crate::io::buffer_output_iter::VerticalIterItem;
 use crate::io::cell::Cell;
 use crate::io::output::Metadata;
-use crate::io::style::TextStyle;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
 use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::savefile_interpreter::SaveFileInterpreter;
 use crate::mocks::scroll_interpreter::ScrollInterpreter;
-use crate::primitives::color::Color;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
@@ -119,7 +116,7 @@ impl<'a> EditorInterpreter<'a> {
 
     // returns cursors in SCREEN SPACE
     pub fn get_visible_cursor_cells(&self) -> impl Iterator<Item=(XY, &Cell)> + '_ {
-        self.mock_output.buffer.cells_iter().filter(|(pos, cell)|
+        self.mock_output.buffer.cells_iter().filter(|(_pos, cell)|
             match cell {
                 Cell::Begin { style, grapheme: _ } => {
                     let mut cursor_background = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
@@ -202,7 +199,7 @@ impl<'a> EditorInterpreter<'a> {
         if !self.is_editor_focused() {
             within_selection = within_selection.half();
         }
-        let mut default = self.mock_output.theme.default_text(self.is_editor_focused()).background;
+        // let mut default = self.mock_output.theme.default_text(self.is_editor_focused()).background;
 
 
         // This does not support multi-column chars now
@@ -244,7 +241,7 @@ impl<'a> EditorInterpreter<'a> {
                 let pos = XY::new(x, line_idx.y);
                 let cell = &self.mock_output.buffer[pos];
                 match cell {
-                    Cell::Begin { style, grapheme } => {
+                    Cell::Begin { style: _, grapheme } => {
                         if Some(x) == first {
                             if first == last {
                                 result += "#";

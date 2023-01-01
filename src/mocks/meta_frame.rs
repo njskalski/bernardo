@@ -1,5 +1,3 @@
-use streaming_iterator::StreamingIterator;
-
 use crate::config::theme::Theme;
 use crate::io::buffer_output::BufferOutput;
 use crate::io::output::Metadata;
@@ -8,7 +6,6 @@ use crate::mocks::fuzzy_search_interpreter::FuzzySearchInterpreter;
 use crate::mocks::no_editor_interpreter::NoEditorInterpreter;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
-use crate::widgets::main_view::main_view::HoverItem::FuzzySearch;
 use crate::widgets::no_editor::NoEditorWidget;
 
 /*

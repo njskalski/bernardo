@@ -7,7 +7,7 @@ use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{unpack_or, unpack_or_e, unpack_or_w};
+use crate::{unpack_or, unpack_or_e};
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
@@ -43,7 +43,7 @@ use crate::widgets::editor_widget::helpers::{CursorScreenPosition, find_trigger_
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
-const MAX_HOVER_SIZE: XY = XY::new(64, 20);
+// const MAX_HOVER_SIZE: XY = XY::new(64, 20);
 
 const NEWLINE: &'static str = "⏎";
 const BEYOND: &'static str = "⇱";
@@ -314,11 +314,11 @@ impl EditorWidget {
     TODO what if the trigger happen outside visible space? Do I draw or not?
      */
     pub fn get_cursor_related_hover_settings(&self, triggers: Option<&Vec<String>>) -> Option<HoverSettings> {
-        let last_size = unpack_or!(self.last_size, None, "requested hover before layout");
+        // let last_size = unpack_or!(self.last_size, None, "requested hover before layout");
         let cursor = unpack_or!(self.cursors().as_single(), None, "multiple cursors or none, not doing hover");
         let cursor_pos = unpack_or!(self.get_single_cursor_screen_pos(cursor), None, "can't position hover, no cursor local pos");
         let cursor_screen_pos = unpack_or!(cursor_pos.widget_space, None, "no cursor position in screen space");
-        let visible_rect = unpack_or!(last_size.visible_hint(), None, "no visible rect - no hover");
+        // let visible_rect = unpack_or!(last_size.visible_hint(), None, "no visible rect - no hover");
 
         let trigger_and_substring: Option<(&String, String)> = triggers.map(|triggers| find_trigger_and_substring(
             triggers, &self.buffer, &cursor_pos)).flatten();
@@ -820,7 +820,7 @@ impl EditorWidget {
         }
     }
 
-    fn layout_hover(&mut self, visible_rect: &Rect, sc: SizeConstraint) {
+    fn layout_hover(&mut self, visible_rect: &Rect, _sc: SizeConstraint) {
         let (hover_settings, hover) = unpack_or!(self.requested_hover.as_mut(), ());
 
         let mid_line = (visible_rect.pos.y + visible_rect.size.y) / 2;

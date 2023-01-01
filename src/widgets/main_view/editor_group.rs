@@ -148,16 +148,16 @@ enum BufferDesc {
 impl Item for BufferDesc {
     fn display_name(&self) -> Cow<str> {
         match self {
-            BufferDesc::File { pos, ff } => {
+            BufferDesc::File { pos: _, ff } => {
                 ff.file_name_str().unwrap_or("error getting filename").into()
             }
-            BufferDesc::Unnamed { pos, id } => format!("Unnamed #{}", id).into(),
+            BufferDesc::Unnamed { pos: _, id } => format!("Unnamed #{}", id).into(),
         }
     }
 
     fn comment(&self) -> Option<Cow<str>> {
         match self {
-            BufferDesc::File { pos, ff } => {
+            BufferDesc::File { pos: _, ff } => {
                 // TODO this is shit
                 Some(ff.display_name())
             }
@@ -167,8 +167,8 @@ impl Item for BufferDesc {
 
     fn on_hit(&self) -> Box<dyn AnyMsg> {
         match self {
-            BufferDesc::File { pos, ff } => Box::new(MainViewMsg::FuzzyBuffersHit { pos: *pos }),
-            BufferDesc::Unnamed { pos, id } => Box::new(MainViewMsg::FuzzyBuffersHit { pos: *pos }),
+            BufferDesc::File { pos, ff: _ } => Box::new(MainViewMsg::FuzzyBuffersHit { pos: *pos }),
+            BufferDesc::Unnamed { pos, id: _ } => Box::new(MainViewMsg::FuzzyBuffersHit { pos: *pos }),
         }
     }
 }

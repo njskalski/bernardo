@@ -1,10 +1,9 @@
-use std::cmp::{max, min};
+use std::cmp::max;
 
 use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::io::input_event::InputEvent;
@@ -16,6 +15,7 @@ use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
@@ -25,7 +25,7 @@ use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};
 /* TODO I am not sure if I want to keep this widget, or do I integrate it with context menu widget now brewing \
  slowly somewhere in editor */
 
-const DEFAULT_WIDTH: u16 = 16;
+// const DEFAULT_WIDTH: u16 = 16;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum DrawComment {

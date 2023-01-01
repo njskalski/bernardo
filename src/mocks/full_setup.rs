@@ -7,7 +7,6 @@ use std::time::Duration;
 
 use crossbeam_channel::{Receiver, select, Sender};
 use log::{debug, error, LevelFilter, warn};
-use regex::internal::Input;
 
 use crate::config::config::{Config, ConfigRef};
 use crate::config::theme::Theme;

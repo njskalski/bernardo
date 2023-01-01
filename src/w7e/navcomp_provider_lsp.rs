@@ -1,22 +1,18 @@
-use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
+use std::cell::Cell;
 use std::fmt::{Debug, Formatter};
-use std::ops::Range;
 use std::path::PathBuf;
-use std::sync::{RwLock, RwLockWriteGuard};
+use std::sync::RwLock;
 
 use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error};
-use lsp_types::{CompletionResponse, CompletionTextEdit, DocumentSymbolResponse, Location, Position, SymbolKind, TextEdit};
-use lsp_types::request::{DocumentSymbolRequest, References, Request};
+use lsp_types::{CompletionResponse, CompletionTextEdit, DocumentSymbolResponse, Position, SymbolKind};
 
-use crate::{unpack_or, unpack_or_e};
+use crate::unpack_or_e;
 use crate::fs::path::SPath;
 use crate::lsp_client::lsp_client::LspWrapper;
 use crate::lsp_client::lsp_io_error::LspIOError;
 use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::lsp_client::lsp_write_error::LspWriteError;
-use crate::lsp_client::promise::LSPPromise;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
@@ -141,7 +137,7 @@ impl NavCompProvider for NavCompProviderLsp {
         &self.triggers
     }
 
-    fn todo_get_context_options(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolContextActionsPromise> {
+    fn todo_get_context_options(&self, _path: &SPath, _cursor: StupidCursor) -> Option<SymbolContextActionsPromise> {
         todo!()
     }
 

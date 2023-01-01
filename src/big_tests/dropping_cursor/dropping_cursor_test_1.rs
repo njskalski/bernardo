@@ -1,20 +1,11 @@
-use log::debug;
-use streaming_iterator::StreamingIterator;
-
-use crate::io::keys::{Key, Keycode};
+use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
-use crate::mocks::mock_navcomp_provider::MockCompletionMatcher;
-use crate::spath;
-use crate::w7e::navcomp_provider::Completion;
-use crate::w7e::navcomp_provider::CompletionAction::Insert;
 
 #[test]
 fn dropping_cursor_test_1() {
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/dropping_cursor_test_1")
         .with_files(["file_to_edit.txt"])
         .build();
-
-    let file = spath!(full_setup.fsf(), "file_to_edit.txt").unwrap();
 
     assert!(full_setup.wait_for(|full_setup| full_setup.is_editor_opened()));
     assert_eq!(full_setup.get_first_editor().unwrap().get_visible_cursor_line_indices().map(|c| c.visible_idx).collect::<Vec<usize>>(), vec![1]);

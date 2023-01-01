@@ -192,7 +192,7 @@ impl Theme {
             let theme = Self::default();
             theme.save_to_file(&full_path).map_err(|e| {
                 error!("failed saving theme to {:?}: {}", &full_path, e);
-            });
+            }).unwrap();
             Ok(theme)
         }
     }

@@ -1,7 +1,5 @@
 use std::borrow::Cow;
-use std::convert::Into;
-use std::fmt::{Debug, Formatter};
-use std::string::ToString;
+use std::fmt::Debug;
 
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
@@ -80,7 +78,7 @@ impl ContextBarItem {
 
 
 impl ListWidgetItem for ContextBarItem {
-    fn get_column_name(idx: usize) -> &'static str {
+    fn get_column_name(_idx: usize) -> &'static str {
         "name"
     }
 

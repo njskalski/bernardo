@@ -2,12 +2,11 @@
 I guess I should reuse FuzzySearch Widget, this is a placeholder now.
  */
 
-use std::cmp::max;
+
 
 use log::{debug, error, warn};
-use unicode_width::UnicodeWidthStr;
 
-use crate::{selfwidget, subwidget};
+use crate::subwidget;
 use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
