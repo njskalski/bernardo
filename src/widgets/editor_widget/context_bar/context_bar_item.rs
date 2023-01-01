@@ -67,6 +67,10 @@ impl ContextBarItem {
         title: Cow::Borrowed("reformat file"),
         msg: || EditorWidgetMsg::Reformat.boxed(),
     };
+    pub const SHOW_USAGES: ContextBarItem = ContextBarItem {
+        title: Cow::Borrowed("show usages"),
+        msg: || EditorWidgetMsg::ShowUsages.boxed(),
+    };
     // TODO add reformat selection
 
     pub fn msg(&self) -> Box<dyn AnyMsg> {
