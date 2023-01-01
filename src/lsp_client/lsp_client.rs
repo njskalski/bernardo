@@ -11,7 +11,7 @@ use std::thread::JoinHandle;
 use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error, warn};
 use lsp_types::{CompletionContext, CompletionTriggerKind, FormattingOptions, Position, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentPositionParams, Url, VersionedTextDocumentIdentifier};
-use lsp_types::request::{Completion, DocumentSymbolRequest, Formatting};
+use lsp_types::request::{Completion, DocumentSymbolRequest, Formatting, References};
 
 use crate::lsp_client::debug_helpers::lsp_debug_save;
 use crate::lsp_client::lsp_io_error::LspIOError;
@@ -151,13 +151,23 @@ impl LspWrapper {
     }
 
     fn get_formatting_options(&self) -> lsp_types::FormattingOptions {
-        FormattingOptions {
+        lsp_types::FormattingOptions {
             tab_size: 4,
             insert_spaces: true,
             properties: Default::default(),
             trim_trailing_whitespace: Some(true),
             insert_final_newline: Some(true),
             trim_final_newlines: Some(true),
+        }
+    }
+
+    fn get_position_params(url: Url, cursor: StupidCursor) -> lsp_types::TextDocumentPositionParams {
+        lsp_types::TextDocumentPositionParams {
+            text_document: lsp_types::TextDocumentIdentifier { uri: url },
+            position: lsp_types::Position {
+                line: cursor.line,
+                character: cursor.char_idx,
+            },
         }
     }
 
@@ -321,6 +331,20 @@ impl LspWrapper {
                 },
                 options: self.get_formatting_options(),
                 work_done_progress_params: Default::default(),
+            }
+        )
+    }
+
+    pub fn todo_text_document_refrences(&mut self, url: Url) -> Result<LSPPromise<References>, LspWriteError> {
+        self.send_message::<lsp_types::request::References>(
+            lsp_types::ReferenceParams {
+                text_document_position: TextDocumentPositionParams {
+                    text_document: TextDocumentIdentifier {},
+                    position: Default::default(),
+                },
+                work_done_progress_params: Default::default(),
+                partial_result_params: Default::default(),
+                context: ReferenceContext {},
             }
         )
     }

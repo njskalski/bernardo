@@ -187,7 +187,8 @@ impl NavCompProvider for NavCompProviderLsp {
     }
 
     fn todo_get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
-        todo!()
+        let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url", path);
+        let mut lock = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring lock");
     }
 
     fn todo_reformat(&self, path: &SPath) -> Option<FormattingPromise> {
