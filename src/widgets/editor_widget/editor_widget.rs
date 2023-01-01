@@ -344,6 +344,12 @@ impl EditorWidget {
 
     pub fn todo_request_context_bar(&mut self) {
         debug!("request_context_bar");
+
+        // need to resolve first
+        if let Some(navcomp_symbol) = self.nacomp_symbol.as_mut() {
+            navcomp_symbol.update();
+        };
+
         let single_cursor = self.cursors().as_single();
         let stupid_cursor_op = single_cursor.map(
             |c| StupidCursor::from_real_cursor(self.buffer(), c).ok()
@@ -881,6 +887,11 @@ impl EditorWidget {
 
     pub fn todo_show_usages(&mut self) {
         let navcomp = unpack_or_e!(&self.navcomp, (), "can't show usages without navcomp");
+        let cursor = unpack_or!(self.cursors().as_single(), (), "cursor not single");
+        let path = unpack_or!(self.buffer().get_path(), (), "no path set");
+        let stupid_cursor = unpack_or!(StupidCursor::from_real_cursor(self.buffer(), cursor).ok(), (), "failed conversion to stupid cursor");
+
+        let promise = navcomp.todo_get_symbol_usages(path, stupid_cursor);
     }
 
     pub fn todo_go_to_definition(&mut self) {}

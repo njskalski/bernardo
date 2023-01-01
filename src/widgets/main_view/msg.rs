@@ -1,8 +1,9 @@
 use crate::experiments::focus_group::FocusUpdate;
 use crate::fs::path::SPath;
+use crate::w7e::navcomp_provider::SymbolUsagesPromise;
 use crate::widget::any_msg::AnyMsg;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum MainViewMsg {
     FocusUpdateMsg(FocusUpdate),
 
@@ -18,11 +19,13 @@ pub enum MainViewMsg {
     // Open fuzzy files
     OpenFuzzyFiles,
     // Used by OpenOpenBuffers too
-    ClozeHover,
+    CloseHover,
 
     // Open "open buffers"
     OpenFuzzyBuffers,
     FuzzyBuffersHit { pos: usize },
+
+    FindReferences { promise: SymbolUsagesPromise },
 }
 
 impl AnyMsg for MainViewMsg {}

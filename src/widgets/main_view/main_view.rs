@@ -153,7 +153,7 @@ impl MainView {
                 WithScroll::new(
                     ScrollDirection::Vertical,
                     FuzzySearchWidget::new(
-                        |_| Some(Box::new(MainViewMsg::ClozeHover)),
+                        |_| Some(Box::new(MainViewMsg::CloseHover)),
                         Some(self.clipboard.clone()),
                     ).with_provider(
                         Box::new(FsfProvider::new(self.fsf.clone()).with_ignores_filter())
@@ -170,7 +170,7 @@ impl MainView {
                 WithScroll::new(
                     ScrollDirection::Vertical,
                     FuzzySearchWidget::new(
-                        |_| Some(Box::new(MainViewMsg::ClozeHover)),
+                        |_| Some(Box::new(MainViewMsg::CloseHover)),
                         Some(self.clipboard.clone()),
                     ).with_provider(
                         self.editors.get_buffer_list_provider()
@@ -296,7 +296,7 @@ impl Widget for MainView {
                     self.open_fuzzy_search_in_files_and_focus();
                     None
                 }
-                MainViewMsg::ClozeHover => {
+                MainViewMsg::CloseHover => {
                     if self.hover.is_none() {
                         error!("expected self.hover to be not None.");
                     }
