@@ -1,9 +1,7 @@
-use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::widget_with_rect::WidgetWithRect;
-use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::widget::widget::{WID, Widget};
+use crate::widget::widget::Widget;
 
 pub type WidgetGetter<T> = Box<dyn Fn(&'_ T) -> &'_ dyn Widget>;
 pub type WidgetGetterMut<T> = Box<dyn Fn(&'_ mut T) -> &'_ mut dyn Widget>;

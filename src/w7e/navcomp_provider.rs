@@ -37,9 +37,6 @@ pub struct Completion {
     pub action: CompletionAction,
 }
 
-pub type CompletionsPromise = Box<dyn Promise<Vec<Completion>> + 'static>;
-pub type FormattingPromise = Box<dyn Promise<Option<Vec<StupidSubstituteMessage>>> + 'static>;
-
 // Currently these map LSP types 1:1, but this might change. Most importantly I have a feeling I
 //  might prefer to use tree-sitter symbols instead.
 #[derive(Debug, Clone)]
@@ -86,7 +83,10 @@ pub struct StupidSubstituteMessage {
 }
 
 #[derive(Debug, Clone)]
-pub struct SymbolUsages {}
+pub struct SymbolUsage {
+    pub path: String,
+    pub stupid_range: (StupidCursor, StupidCursor),
+}
 /*
 This is super work in progress, I added some top of the head options to "smoke out" what they imply.
  */
@@ -98,9 +98,11 @@ pub enum NavCompSymbolContextActions {
     PrevUsage,
 }
 
+pub type CompletionsPromise = Box<dyn Promise<Vec<Completion>> + 'static>;
+pub type FormattingPromise = Box<dyn Promise<Option<Vec<StupidSubstituteMessage>>> + 'static>;
 pub type SymbolContextActionsPromise = Box<dyn Promise<Vec<Completion>> + 'static>;
 pub type SymbolPromise = Box<dyn Promise<Option<NavCompSymbol>> + 'static>;
-pub type SymbolUsagesPromise = Box<dyn Promise<Option<SymbolUsages>> + 'static>;
+pub type SymbolUsagesPromise = Box<dyn Promise<Vec<SymbolUsage>> + 'static>;
 
 // this is a wrapper around LSP and "similar services".
 pub trait NavCompProvider: Debug {

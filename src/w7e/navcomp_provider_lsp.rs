@@ -8,7 +8,7 @@ use std::sync::{RwLock, RwLockWriteGuard};
 use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error};
 use lsp_types::{CompletionResponse, CompletionTextEdit, DocumentSymbolResponse, Location, Position, SymbolKind, TextEdit};
-use lsp_types::request::{DocumentSymbolRequest, Request};
+use lsp_types::request::{DocumentSymbolRequest, References, Request};
 
 use crate::{unpack_or, unpack_or_e};
 use crate::fs::path::SPath;
@@ -20,7 +20,7 @@ use crate::lsp_client::promise::LSPPromise;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
-use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, StupidSubstituteMessage, SymbolContextActionsPromise, SymbolPromise, SymbolType, SymbolUsagesPromise};
+use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, StupidSubstituteMessage, SymbolContextActionsPromise, SymbolPromise, SymbolType, SymbolUsage, SymbolUsagesPromise};
 
 /*
 TODO I am silently ignoring errors here. I guess that if NavComp fails it should get re-started.
@@ -189,6 +189,36 @@ impl NavCompProvider for NavCompProviderLsp {
     fn todo_get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
         let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url", path);
         let mut lock = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring lock");
+
+        match lock.text_document_references(url, cursor) {
+            Ok(resp) => {
+                let new_promise = resp.map(|response| {
+                    match response {
+                        None => Vec::new(),
+                        Some(items) => {
+                            items.into_iter().map(|loc| {
+                                SymbolUsage {
+                                    path: loc.uri.to_string(),
+                                    stupid_range: (StupidCursor {
+                                        char_idx: loc.range.start.character,
+                                        line: loc.range.start.line,
+                                    }, StupidCursor {
+                                        char_idx: loc.range.end.character,
+                                        line: loc.range.end.line,
+                                    }),
+                                }
+                            }).collect()
+                        }
+                    }
+                });
+
+                Some(Box::new(new_promise))
+            }
+            Err(e) => {
+                self.eat_write_error(e);
+                None
+            }
+        }
     }
 
     fn todo_reformat(&self, path: &SPath) -> Option<FormattingPromise> {

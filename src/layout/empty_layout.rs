@@ -1,7 +1,6 @@
 use log::error;
 
 use crate::layout::layout::{Layout, LayoutResult};
-use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;

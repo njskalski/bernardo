@@ -25,8 +25,6 @@ use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::{Promise, PromiseState};
 use crate::tsw::lang_id::LangId;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
-use crate::w7e::navcomp_provider::NavCompSymbol;
-use crate::w7e::navcomp_provider_lsp::LspError;
 
 // I use ID == String, because i32 might be small, and i64 is safe, so I send i64 as string and so I store it.
 // LSP defines id integer as i32, while jsonrpc_core as u64.

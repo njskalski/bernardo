@@ -7,7 +7,6 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::io::output::{Metadata, Output};
 use crate::io::style::TextStyle;
-use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::unpack_or;

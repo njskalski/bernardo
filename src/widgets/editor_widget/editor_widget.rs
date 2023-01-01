@@ -793,14 +793,15 @@ impl EditorWidget {
 
     // This is supposed to be called each time cursor is moved
     fn todo_after_cursor_moved(&mut self) {
+        let cursor = unpack_or!(self.cursors().as_single(), (), "cursor not single");
+        let path = unpack_or!(self.buffer().get_path(), (), "no path set");
+        let stupid_cursor = unpack_or!(StupidCursor::from_real_cursor(self.buffer(), cursor).ok(), (), "failed conversion to stupid cursor");
+
         // TODO add support for scrachpad (path == None)
-        if let (Some(cursor), Some(path)) = (self.cursors().as_single(), self.buffer().get_path()) {
-            if let Some(stupid_cursor) = StupidCursor::from_real_cursor(self.buffer(), cursor).ok() {
-                self.nacomp_symbol = self.navcomp.as_ref().map(|navcomp|
-                    navcomp.todo_get_symbol_at(path, stupid_cursor)
-                ).flatten()
-            }
-        }
+
+        self.nacomp_symbol = self.navcomp.as_ref().map(|navcomp|
+            navcomp.todo_get_symbol_at(path, stupid_cursor)
+        ).flatten();
     }
 
     fn after_content_changed(&self) {

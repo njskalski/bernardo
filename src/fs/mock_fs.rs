@@ -216,7 +216,7 @@ impl MockFS {
         let len_bytes = bytes.len();
 
         let mut binding = self.root_dir.try_write().unwrap();
-        let mut record = binding.get_mut(&comp, true).unwrap();
+        let record = binding.get_mut(&comp, true).unwrap();
 
         *record = Record::File(bytes.to_vec());
         Ok(len_bytes)
@@ -337,8 +337,6 @@ impl FilesystemFront for MockFS {
 mod tests {
     use std::collections::HashMap;
     use std::path::{Path, PathBuf};
-
-    use serde::__private::from_utf8_lossy;
 
     use crate::de;
     use crate::fs::filesystem_front::FilesystemFront;

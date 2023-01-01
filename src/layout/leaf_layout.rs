@@ -1,4 +1,4 @@
-use log::{debug, error, warn};
+use log::{debug, error};
 
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::{Layout, LayoutResult};
@@ -16,10 +16,6 @@ impl<W: Widget> LeafLayout<W> {
     pub fn new(widget: SubwidgetPointer<W>) -> Self {
         LeafLayout { widget }
     }
-
-    fn rect(&self, output_size: XY) -> Option<Rect> {
-        Some(Rect::new(XY::ZERO, output_size))
-    }
 }
 
 impl<W: Widget> Layout<W> for LeafLayout<W> {
@@ -34,7 +30,7 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
 
         let widget_min_size = widget.min_size();
         let properly_sized = sc.bigger_equal_than(widget_min_size);
-        let widget_name = widget.typename();
+        let _widget_name = widget.typename();
 
         if !skip {
             if properly_sized {
