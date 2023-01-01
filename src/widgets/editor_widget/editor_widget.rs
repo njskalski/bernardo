@@ -41,6 +41,7 @@ use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::context_options_matrix::get_context_options;
 use crate::widgets::editor_widget::helpers::{CursorScreenPosition, find_trigger_and_substring};
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
+use crate::widgets::main_view::msg::MainViewMsg;
 
 const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
 // const MAX_HOVER_SIZE: XY = XY::new(64, 20);
@@ -885,13 +886,15 @@ impl EditorWidget {
         }
     }
 
-    pub fn todo_show_usages(&mut self) {
-        let navcomp = unpack_or_e!(&self.navcomp, (), "can't show usages without navcomp");
-        let cursor = unpack_or!(self.cursors().as_single(), (), "cursor not single");
-        let path = unpack_or!(self.buffer().get_path(), (), "no path set");
-        let stupid_cursor = unpack_or!(StupidCursor::from_real_cursor(self.buffer(), cursor).ok(), (), "failed conversion to stupid cursor");
+    pub fn show_usages(&mut self) -> Option<Box<dyn AnyMsg>> {
+        let navcomp = unpack_or_e!(&self.navcomp, None, "can't show usages without navcomp");
+        let cursor = unpack_or!(self.cursors().as_single(), None, "cursor not single");
+        let path = unpack_or!(self.buffer().get_path(), None, "no path set");
+        let stupid_cursor = unpack_or!(StupidCursor::from_real_cursor(self.buffer(), cursor).ok(), None, "failed conversion to stupid cursor");
 
         let promise = navcomp.todo_get_symbol_usages(path, stupid_cursor);
+
+        promise.map(|promise| MainViewMsg::FindReferences { promise }.someboxed()).flatten()
     }
 
     pub fn todo_go_to_definition(&mut self) {}
@@ -1079,8 +1082,7 @@ impl Widget for EditorWidget {
                 }
                 (&EditorState::Editing, EditorWidgetMsg::ShowUsages) => {
                     self.requested_hover = None;
-                    self.todo_show_usages();
-                    None
+                    self.show_usages()
                 }
                 (&EditorState::Editing, EditorWidgetMsg::GoToDefinition) => {
                     self.requested_hover = None;

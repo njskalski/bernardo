@@ -120,8 +120,6 @@ bbbb#
 
     #[test]
     fn shift_tab_2() {
-        env_logger::builder().is_test(true).try_init().unwrap();
-
         let text_1 = "
 somebs
 [
