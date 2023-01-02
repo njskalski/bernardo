@@ -24,6 +24,7 @@ use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
 use crate::widgets::fuzzy_search::fsf_provider::{FsfProvider, SPathMsg};
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
 use crate::widgets::main_view::editor_group::EditorGroup;
@@ -50,6 +51,10 @@ pub struct MainView {
     tree_widget: WithScroll<TreeViewWidget<SPath, FileTreeNode>>,
 
     editors: EditorGroup,
+
+    //TODO
+    crv_op: Option<CodeResultsView>,
+
     no_editor: NoEditorWidget,
     curr_editor_idx: usize,
 
@@ -96,6 +101,7 @@ impl MainView {
                 config.clone(),
                 nav_comp_group.clone(),
             ),
+            crv_op: None,
             no_editor: NoEditorWidget::default(),
             curr_editor_idx: 0,
             tree_sitter,
@@ -221,6 +227,10 @@ impl MainView {
         );
 
         self.set_focused(ptr_to_hover);
+    }
+
+    pub fn set_search_result(&mut self, crv_op: Option<CodeResultsView>) {
+        self.crv_op = crv_op;
     }
 }
 
