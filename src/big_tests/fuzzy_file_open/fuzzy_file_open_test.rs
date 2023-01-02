@@ -1,3 +1,4 @@
+use crate::io::keys::{Key, Keycode};
 use crate::mocks::full_setup::FullSetup;
 
 fn common_start() -> FullSetup {
@@ -14,8 +15,13 @@ fn fuzzy_file_opens() {
     let mut full_setup = common_start();
 
     assert!(full_setup.send_key(full_setup.config().keyboard_config.global.fuzzy_file));
-
     assert!(full_setup.wait_for(|f| f.get_fuzzy_search().is_some()));
+    assert!(full_setup.get_fuzzy_search().unwrap().is_focused());
+
+    full_setup.type_in("ain");
+    full_setup.send_key(Keycode::Enter.to_key());
+
+    assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
     full_setup.finish();
 }

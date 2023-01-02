@@ -5,4 +5,6 @@ This widget will be full-page (or editor-size) search results, that can either p
     - references to a method
  */
 
-mod code_results_widget;
+pub mod code_results_widget;
+pub mod code_results_provider;
+pub mod promise_provider;

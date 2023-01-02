@@ -9,6 +9,7 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::widget::{get_new_widget_id, WID};
 use crate::widgets::big_list::big_list_widget::BigList;
+use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::WithScroll;
@@ -18,9 +19,10 @@ pub struct CodeResultsView {
 
     finished_loading: bool,
     label: TextWidget,
-    items: WithScroll<BigList<EditorWidget>>,
+    item_list: WithScroll<BigList<EditorWidget>>,
 
     //providers
+    data_provider: Box<dyn CodeResultsProvider>,
     config: ConfigRef,
     tree_sitter: Rc<TreeSitterWrapper>,
     fsf: FsfRef,
@@ -34,30 +36,20 @@ impl CodeResultsView {
         fsf: FsfRef,
         clipboard: ClipboardRef,
         label: String,
+        data_provider: Box<dyn CodeResultsProvider>,
     ) -> Self {
         Self {
             wid: get_new_widget_id(),
             finished_loading: false,
             label: TextWidget::new(Box::new(label)),
-            items: WithScroll::new(ScrollDirection::Vertical,
-                                   BigList::new(vec![]),
+            item_list: WithScroll::new(ScrollDirection::Vertical,
+                                       BigList::new(vec![]),
             ),
+            data_provider,
             config,
             tree_sitter,
             fsf,
             clipboard,
         }
-    }
-
-    pub fn add_item(&mut self, filepath: SPath, line_no: usize) {
-        let eb = EditorWidget::new(
-            self.config.clone(),
-            self.tree_sitter.clone(),
-            self.fsf.clone(),
-            self.clipboard.clone(),
-            None,
-        );
-
-        self.items.internal_mut().add_item(SplitRule::Fixed(5), eb);
     }
 }
