@@ -352,7 +352,7 @@ impl Widget for EditorView {
         return match msg.as_msg::<EditorViewMsg>() {
             None => {
                 warn!("expecetd EditorViewMsg, got {:?}", msg);
-                None
+                Some(msg) //passthrough
             }
             Some(msg) => match msg {
                 EditorViewMsg::Save => {

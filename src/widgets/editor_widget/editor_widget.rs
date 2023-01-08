@@ -894,7 +894,7 @@ impl EditorWidget {
 
         let promise = navcomp.todo_get_symbol_usages(path, stupid_cursor);
 
-        promise.map(|promise| MainViewMsg::FindReferences { promise }.someboxed()).flatten()
+        promise.map(|promise| MainViewMsg::FindReferences { promise_op: Some(promise) }.someboxed()).flatten()
     }
 
     pub fn todo_go_to_definition(&mut self) {}

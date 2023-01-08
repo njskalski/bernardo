@@ -18,6 +18,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::promise::promise::PromiseState;
 use crate::subwidget;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::navcomp_group::NavCompGroupRef;
@@ -280,10 +281,10 @@ impl Widget for MainView {
         };
     }
 
-    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+    fn update(&mut self, mut msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         // debug!("main_view.update {:?}", msg);
 
-        if let Some(main_view_msg) = msg.as_msg::<MainViewMsg>() {
+        if let Some(main_view_msg) = msg.as_msg_mut::<MainViewMsg>() {
             return match main_view_msg {
                 MainViewMsg::FocusUpdateMsg(focus_update) => {
                     if !self.update_focus(*focus_update) {
@@ -331,6 +332,25 @@ impl Widget for MainView {
                     // removing the dialog
                     self.hover = None;
 
+                    None
+                }
+                MainViewMsg::FindReferences { ref mut promise_op } => {
+                    if let Some(mut promise) = promise_op.take() {
+                        promise.update();
+                        if promise.state() != PromiseState::Broken {
+                            self.crv_op = Some(CodeResultsView::new(self.config.clone(),
+                                                                    self.tree_sitter.clone(),
+                                                                    self.fsf.clone(),
+                                                                    self.clipboard.clone(),
+                                                                    "TODO bla bla bla".to_string(),
+                                                                    //TODO
+                                                                    Box::new(promise)));
+                        } else {
+                            warn!("promise broken, throwing away.");
+                        }
+                    } else {
+                        warn!("find reference with empty promise")
+                    }
                     None
                 }
                 _ => {

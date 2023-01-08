@@ -1,4 +1,6 @@
 extern crate core;
+#[macro_use]
+extern crate downcast_rs;
 
 pub mod config;
 pub mod experiments;

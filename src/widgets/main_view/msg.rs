@@ -25,7 +25,7 @@ pub enum MainViewMsg {
     OpenFuzzyBuffers,
     FuzzyBuffersHit { pos: usize },
 
-    FindReferences { promise: SymbolUsagesPromise },
+    FindReferences { promise_op: Option<SymbolUsagesPromise> },
 }
 
 impl AnyMsg for MainViewMsg {}
