@@ -351,7 +351,7 @@ impl Widget for EditorView {
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         return match msg.as_msg::<EditorViewMsg>() {
             None => {
-                warn!("expecetd EditorViewMsg, got {:?}", msg);
+                debug!("expected EditorViewMsg, got {:?}", msg);
                 Some(msg) //passthrough
             }
             Some(msg) => match msg {

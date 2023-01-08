@@ -980,8 +980,8 @@ impl Widget for EditorWidget {
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         return match msg.as_msg::<EditorWidgetMsg>() {
             None => {
-                warn!("expected EditorViewMsg, got {:?}", msg);
-                None
+                debug!("expected EditorWidgetMsg, got {:?}, passing through", msg);
+                Some(msg)
             }
             Some(msg) => match (&self.state, msg) {
                 (&EditorState::Editing, EditorWidgetMsg::EditMsg(cem)) => {
