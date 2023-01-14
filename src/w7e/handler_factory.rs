@@ -21,7 +21,6 @@ pub fn load_handler(config: &ConfigRef,
     debug!("attempting to load handler {} for {:?}", handler_id, ff.absolute_path());
     match handler_id {
         "rust" => {
-            // RustHandler::load(ff).map(|handler| Ok(Box::new(handler) as Box<dyn Handler>))
             match RustHandler::load(config,
                                     ff,
                                     navcomp_tick_sender,

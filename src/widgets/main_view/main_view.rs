@@ -401,12 +401,19 @@ impl Widget for MainView {
 impl ComplexWidget for MainView {
     fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
         let left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
-        let right_column = LeafLayout::new(self.get_curr_editor_ptr()).boxed();
+        let right_column = if self.crv_op.is_none() {
+            LeafLayout::new(self.get_curr_editor_ptr()).boxed()
+        } else {
+            LeafLayout::new(SubwidgetPointer::new(
+                Box::new(|s: &Self| s.crv_op.as_ref().unwrap()),
+                Box::new(|s: &mut Self| s.crv_op.as_mut().unwrap()),
+            )).boxed()
+        };
 
         let bg_layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0),
                   left_column)
-            .with(SplitRule::Proportional(4.0),
+            .with(SplitRule::Proportional(5.0),
                   right_column,
             );
 
