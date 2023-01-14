@@ -106,7 +106,7 @@ impl Output for OverOutput<'_> {
             // this will give us intersection size
             meta.rect = intersect_rect;
             // but we also need to take account for the offset
-            meta.rect.pos = upper_left;
+            meta.rect.pos += upper_left;
 
             self.output.emit_metadata(meta);
         } else {
