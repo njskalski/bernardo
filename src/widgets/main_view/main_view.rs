@@ -97,7 +97,7 @@ impl MainView {
         MainView {
             wid: get_new_widget_id(),
             display_state: None,
-            tree_widget: WithScroll::new(ScrollDirection::Vertical, tree),
+            tree_widget: WithScroll::new(ScrollDirection::Both, tree),
             editors: EditorGroup::new(
                 config.clone(),
                 nav_comp_group.clone(),

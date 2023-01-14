@@ -102,15 +102,15 @@ impl Output for OverOutput<'_> {
         let visible_rect = unpack_or!(self.size_constraint.visible_hint(), (), "not emiting, no visible part");
         let upper_left = visible_rect.upper_left();
 
-        if meta.rect.pos.x >= upper_left.x && meta.rect.pos.y >= upper_left.y {
-            meta.rect.pos = meta.rect.pos - upper_left;
-            if meta.rect.lower_right() <= visible_rect.lower_right() {
-                self.output.emit_metadata(meta);
-            } else {
-                debug!("discarding metadata, because it's below the view: {:?} vs {:?}", meta, visible_rect);
-            }
+        if let Some(intersect_rect) = meta.rect.intersect(visible_rect) {
+            // this will give us intersection size
+            meta.rect = intersect_rect;
+            // but we also need to take account for the offset
+            meta.rect.pos = upper_left;
+
+            self.output.emit_metadata(meta);
         } else {
-            debug!("discarding metadata, because it's above the view: {:?} vs {:?}", meta, visible_rect);
+            debug!("discarding metadata, because i is no intersection: meta.typename {} meta.rect {}, visible_rect {}", meta.typename, meta.rect, visible_rect);
         }
     }
 }

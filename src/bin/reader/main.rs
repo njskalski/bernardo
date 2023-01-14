@@ -42,7 +42,7 @@ fn main() {
             let mut last_time: Option<SystemTime> = None;
             let mut filename: Option<PathBuf> = None;
 
-            for x in fs::read_dir("./screenshots").unwrap() {
+            for x in fs::read_dir("./screenshots").expect("screenshot dir absent") {
                 match x {
                     Ok(dir_entry) => {
                         let p = dir_entry.path();
