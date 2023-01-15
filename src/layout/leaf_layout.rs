@@ -1,6 +1,6 @@
 use log::{debug, error};
 
-use crate::experiments::subwidget_pointer::SubwidgetPointer;
+use crate::experiments::subwidget_pointer::SubwidgetPointerOp;
 use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
@@ -9,11 +9,11 @@ use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 
 pub struct LeafLayout<W: Widget> {
-    widget: SubwidgetPointer<W>,
+    widget: SubwidgetPointerOp<W>,
 }
 
 impl<W: Widget> LeafLayout<W> {
-    pub fn new(widget: SubwidgetPointer<W>) -> Self {
+    pub fn new(widget: SubwidgetPointerOp<W>) -> Self {
         LeafLayout { widget }
     }
 }

@@ -10,6 +10,8 @@ impl<W, T: Fn(&W) -> &(dyn Widget) + Clone + 'static> Getter<W> for T {
     }
 }
 
+type Condition<W> = Box<dyn Fn(&W) -> bool + 'static>;
+
 impl<W: 'static> Clone for Box<dyn Getter<W>> {
     fn clone(&self) -> Self { (**self).clone_box() }
 }
@@ -91,6 +93,8 @@ impl<W: Widget> SubwidgetPointer<W> {
 pub struct SubwidgetPointerOp<W: Widget> {
     getter_op: Box<dyn GetterOp<W>>,
     getter_op_mut: Box<dyn GetterOpMut<W>>,
+
+    precondition: Option<Condition<W>>,
 }
 
 impl<W: Widget> Clone for SubwidgetPointerOp<W> {
@@ -98,6 +102,7 @@ impl<W: Widget> Clone for SubwidgetPointerOp<W> {
         SubwidgetPointerOp {
             getter_op: self.getter_op.clone_box(),
             getter_op_mut: self.getter_op_mut.clone_box(),
+            precondition: None,
         }
     }
 }
@@ -107,14 +112,30 @@ impl<W: Widget> SubwidgetPointerOp<W> {
         SubwidgetPointerOp {
             getter_op,
             getter_op_mut,
+            precondition: None,
+        }
+    }
+
+    pub fn with_condition(self, precondition: Condition<W>) -> Self {
+        SubwidgetPointerOp {
+            precondition: Some(precondition),
+            ..self
         }
     }
 
     pub fn get<'a>(&self, parent: &'a W) -> Option<&'a dyn Widget> {
+        if self.precondition.as_ref().map(|f| !f(parent)).unwrap_or(false) {
+            return None;
+        }
+
         (self.getter_op)(parent)
     }
 
     pub fn get_mut<'a>(&self, parent: &'a mut W) -> Option<&'a mut dyn Widget> {
+        if self.precondition.as_ref().map(|f| !f(parent)).unwrap_or(false) {
+            return None;
+        }
+
         (self.getter_op_mut)(parent)
     }
 }

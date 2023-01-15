@@ -1,10 +1,10 @@
-use crate::experiments::subwidget_pointer::SubwidgetPointer;
+use crate::experiments::subwidget_pointer::SubwidgetPointerOp;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 
 pub struct WidgetWithRect<W: Widget> {
-    widget: SubwidgetPointer<W>,
+    widget: SubwidgetPointerOp<W>,
     rect: Rect,
     focusable: bool,
 }
@@ -20,7 +20,7 @@ impl<W: Widget> Clone for WidgetWithRect<W> {
 }
 
 impl<W: Widget> WidgetWithRect<W> {
-    pub fn new(widget: SubwidgetPointer<W>, rect: Rect, focusable: bool) -> Self {
+    pub fn new(widget: SubwidgetPointerOp<W>, rect: Rect, focusable: bool) -> Self {
         Self {
             widget,
             rect,
@@ -32,7 +32,7 @@ impl<W: Widget> WidgetWithRect<W> {
         &self.rect
     }
 
-    pub fn widget(&self) -> &SubwidgetPointer<W> {
+    pub fn widget(&self) -> &SubwidgetPointerOp<W> {
         &self.widget
     }
 
@@ -41,10 +41,6 @@ impl<W: Widget> WidgetWithRect<W> {
             rect: self.rect.shifted(offset),
             ..self
         }
-    }
-
-    pub fn unpack(self) -> (SubwidgetPointer<W>, Rect) {
-        (self.widget, self.rect)
     }
 
     pub fn set_focusable(&mut self, focusable: bool) {
