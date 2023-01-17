@@ -6,10 +6,11 @@ use serde::{Deserialize, Serialize};
 use crate::config::config::ConfigRef;
 use crate::experiments::pretty_ron::ToPrettyRonString;
 use crate::fs::path::SPath;
+use crate::gladius::navcomp_loader::NavCompLoader;
 use crate::gladius::sidechannel::x::SideChannel;
 use crate::tsw::lang_id::LangId;
 use crate::w7e::handler::Handler;
-use crate::w7e::handler_factory::load_handler;
+use crate::w7e::handler_factory::handler_factory;
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::navcomp_group::NavCompTickSender;
 
@@ -61,33 +62,5 @@ impl ProjectScope {
             handler_id: sps.handler_id_op,
             handler: None,
         })
-    }
-
-    /*
-    Config is required to "know" where the LSP servers are. We will provide reasonable defaults,
-    but option to override is essential.
-     */
-    pub fn load_handler(&mut self,
-                        config: &ConfigRef,
-                        navcomp_tick_sender: NavCompTickSender,
-                        sidechannel: SideChannel,
-    ) -> Result<(), HandlerLoadError> {
-        let handler = match &self.handler_id {
-            None => {
-                warn!("project scope [{:?}] with no handler - what the point?", self.path.relative_path());
-                return Ok(());
-            }
-            Some(handler_id) => {
-                load_handler(config,
-                             &handler_id,
-                             self.path.clone(),
-                             navcomp_tick_sender.clone(),
-                             sidechannel,
-                )?
-            }
-        };
-
-        self.handler = Some(handler);
-        Ok(())
     }
 }

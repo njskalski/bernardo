@@ -1,5 +1,6 @@
 use std::cmp::max;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::{subwidget, unpack_or_e};
 use crate::config::config::ConfigRef;
@@ -36,7 +37,7 @@ pub struct CodeResultsView {
     //providers
     data_provider: Box<dyn CodeResultsProvider>,
     config: ConfigRef,
-    tree_sitter: Rc<TreeSitterWrapper>,
+    tree_sitter: Arc<TreeSitterWrapper>,
     fsf: FsfRef,
     clipboard: ClipboardRef,
 
@@ -50,7 +51,7 @@ impl CodeResultsView {
 
     pub fn new(
         config: ConfigRef,
-        tree_sitter: Rc<TreeSitterWrapper>,
+        tree_sitter: Arc<TreeSitterWrapper>,
         fsf: FsfRef,
         clipboard: ClipboardRef,
         label: String,

@@ -1,6 +1,7 @@
 use std::ffi::OsStr;
 use std::option::Option;
 use std::path::PathBuf;
+use std::rc::Rc;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -15,7 +16,9 @@ use crate::experiments::screen_shot::screenshot;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::mock_fs::MockFS;
+use crate::gladius::globals::{Globals, GlobalsRef};
 use crate::gladius::logger_setup::logger_setup;
+use crate::gladius::navcomp_loader::NavCompLoader;
 use crate::gladius::run_gladius::run_gladius;
 use crate::gladius::sidechannel::x::SideChannel;
 use crate::gladius::sidechannel::x::SideChannelInternal;
@@ -26,10 +29,13 @@ use crate::mocks::fuzzy_search_interpreter::FuzzySearchInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
+use crate::mocks::mock_navcomp_loader::MockNavcompLoader;
 use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
 use crate::mocks::mock_output::MockOutput;
 use crate::mocks::treeview_interpreter::TreeViewInterpreter;
 use crate::primitives::xy::XY;
+use crate::tsw::language_set::LanguageSet;
+use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widgets::tree_view;
 
 pub struct FullSetupBuilder {
@@ -100,7 +106,6 @@ pub struct FullSetup {
     theme: Theme,
     gladius_thread_handle: JoinHandle<()>,
     last_frame: Option<MetaOutputFrame>,
-    sidechannel: SideChannel,
     frame_based_wait: bool,
 }
 
@@ -123,22 +128,29 @@ impl FullSetupBuilder {
         let local_theme = theme.clone();
         let files = self.files;
 
-        let mut sidechannelint = SideChannelInternal::default();
-        if self.recording {
-            sidechannelint = sidechannelint.with_recording();
-        }
-        let sidechannel: SideChannel = Arc::new(sidechannelint);
-        let sidechannel_clone = sidechannel.clone();
+        let tree_sitter = Arc::new(TreeSitterWrapper::new(LanguageSet::full()));
+        let mock_navcomp_loader = Arc::new(Box::new(
+            MockNavcompLoader::new()
+        ) as Box<dyn NavCompLoader>
+        );
+
+        let globals: GlobalsRef = Arc::new(Globals::new(
+            local_config,
+            local_fsf,
+            local_clipboard,
+            local_theme,
+            tree_sitter,
+            mock_navcomp_loader,
+        ));
+
+        let globals_clone = globals.clone();
 
         let handle = std::thread::spawn(move || {
-            run_gladius(local_fsf,
-                        local_config,
-                        local_clipboard,
+            run_gladius(globals_clone,
                         input,
                         output,
                         files,
-                        &local_theme,
-                        sidechannel_clone)
+            )
         });
 
         FullSetup {
@@ -150,7 +162,6 @@ impl FullSetupBuilder {
             theme,
             gladius_thread_handle: handle,
             last_frame: None,
-            sidechannel,
             frame_based_wait: self.frame_based_wait,
         }
     }

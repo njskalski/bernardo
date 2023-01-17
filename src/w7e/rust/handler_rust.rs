@@ -48,7 +48,6 @@ impl RustHandler {
     pub fn load(config: &ConfigRef,
                 ff: SPath,
                 tick_sender: NavCompTickSender,
-                sidechannel: SideChannel,
     ) -> Result<RustHandler, HandlerLoadError> {
         if !ff.is_dir() {
             return Err(HandlerLoadError::NotAProject);
@@ -69,32 +68,32 @@ impl RustHandler {
 
         let mut navcomp_op: Option<NavCompRef> = None;
 
-        #[cfg(not(test))]
-        {
-            let lsp_path = config.global.get_rust_lsp_path().ok_or(HandlerLoadError::LspNotFound)?;
-            if let Some(navcomp_lsp) = NavCompProviderLsp::new(lsp_path, workspace_root, tick_sender) {
-                navcomp_op = Some(Arc::new(Box::new(navcomp_lsp)));
-            } else {
-                error!("LspWrapper construction failed.")
-            }
+        // #[cfg(not(test))]
+        // {
+        let lsp_path = config.global.get_rust_lsp_path().ok_or(HandlerLoadError::LspNotFound)?;
+        if let Some(navcomp_lsp) = NavCompProviderLsp::new(lsp_path, workspace_root, tick_sender) {
+            navcomp_op = Some(Arc::new(Box::new(navcomp_lsp)));
+        } else {
+            error!("LspWrapper construction failed.")
         }
+        // }
 
-        #[cfg(test)]
-        {
-            debug!("initializing MockNavCompProvider");
-            let args = sidechannel.get_navcomp_prov_args();
-
-            navcomp_op = Some(
-                Arc::new(
-                    Box::new(
-                        crate::mocks::mock_navcomp_provider::MockNavCompProvider::new(
-                            tick_sender.clone(),
-                            args.0,
-                            args.1,
-                        )
-                    ) as Box<dyn NavCompProvider>)
-            )
-        }
+        // #[cfg(test)]
+        // {
+        //     debug!("initializing MockNavCompProvider");
+        //     let args = sidechannel.get_navcomp_prov_args();
+        //
+        //     navcomp_op = Some(
+        //         Arc::new(
+        //             Box::new(
+        //                 crate::mocks::mock_navcomp_provider::MockNavCompProvider::new(
+        //                     tick_sender.clone(),
+        //                     args.0,
+        //                     args.1,
+        //                 )
+        //             ) as Box<dyn NavCompProvider>)
+        //     )
+        // }
 
         Ok(RustHandler {
             root: ff,

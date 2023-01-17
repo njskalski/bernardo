@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use log::error;
 
@@ -51,7 +52,7 @@ impl EditorGroup {
         self.editors.get_mut(idx)
     }
 
-    pub fn open_empty(&mut self, tree_sitter: Rc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> usize {
+    pub fn open_empty(&mut self, tree_sitter: Arc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> usize {
         self.editors.push(
             EditorView::new(self.config.clone(),
                             tree_sitter,
@@ -66,7 +67,7 @@ impl EditorGroup {
     }
 
     // TODO is it on error escalation path after failed read?
-    pub fn open_file(&mut self, tree_sitter: Rc<TreeSitterWrapper>, ff: SPath, clipboard: ClipboardRef) -> Result<usize, ReadError> {
+    pub fn open_file(&mut self, tree_sitter: Arc<TreeSitterWrapper>, ff: SPath, clipboard: ClipboardRef) -> Result<usize, ReadError> {
         let file_contents = ff.read_entire_file_to_rope()?;
         let lang_id_op = filename_to_language(&ff);
 

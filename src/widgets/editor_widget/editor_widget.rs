@@ -1,5 +1,6 @@
 use std::cmp::min;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use log::{debug, error, warn};
 use matches::debug_assert_matches;
@@ -147,7 +148,7 @@ pub struct EditorWidget {
     buffer: BufferState,
 
     kite: XY,
-    tree_sitter: Rc<TreeSitterWrapper>,
+    tree_sitter: Arc<TreeSitterWrapper>,
 
     /*
     resist the urge to remove fsf from editor. It's used to facilitate "save as dialog".
@@ -178,7 +179,7 @@ impl EditorWidget {
     const MIN_HOVER_WIDTH: u16 = 15;
 
     pub fn new(config: ConfigRef,
-               tree_sitter: Rc<TreeSitterWrapper>,
+               tree_sitter: Arc<TreeSitterWrapper>,
                fsf: FsfRef,
                clipboard: ClipboardRef,
                navcomp: Option<NavCompRef>,

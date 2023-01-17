@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::sync::Arc;
 
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
@@ -86,7 +87,7 @@ impl EditorView {
 
     pub fn new(
         config: ConfigRef,
-        tree_sitter: Rc<TreeSitterWrapper>,
+        tree_sitter: Arc<TreeSitterWrapper>,
         fsf: FsfRef,
         clipboard: ClipboardRef,
         // TODO(#17) now navcomp is language specific, and editor can be "recycled" from say yaml to rs, requiring change of navcomp.

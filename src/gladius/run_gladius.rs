@@ -10,6 +10,7 @@ use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::screen_shot::screenshot;
 use crate::fs::fsf_ref::FsfRef;
+use crate::gladius::globals::{Globals, GlobalsRef};
 use crate::gladius::paradigm::recursive_treat_views;
 use crate::gladius::sidechannel::x::SideChannel;
 use crate::io::input::Input;
@@ -29,19 +30,13 @@ pub fn run_gladius<
     I: Input,
     O: FinalOutput,
 >(
-    fsf: FsfRef,
-    config: ConfigRef,
-    clipboard: ClipboardRef,
+    globals: GlobalsRef,
     input: I,
     mut output: O,
     files: Vec<PathBuf>,
-    theme: &Theme,
-    sidechannel: SideChannel,
 ) {
-    let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
-
     // Loading / Building workspace file
-    let workspace_dir = fsf.root();
+    let workspace_dir = globals.fsf().root();
     let (workspace_op, _scope_errors): (Option<Workspace>, ScopeLoadErrors) = match Workspace::try_load(workspace_dir.clone()) {
         Ok(res) => (Some(res.0), res.1),
         Err(e) => {
@@ -51,7 +46,7 @@ pub fn run_gladius<
                 }
                 LoadError::ReadError(e) => {
                     error!("failed reading workspace file at {}, because:\n{}\nterminating. To continue, rename/remove {} in that folder.",
-                        fsf.root(), e, WORKSPACE_FILE_NAME);
+                        workspace_dir, e, WORKSPACE_FILE_NAME);
 
                     return;
                 }
@@ -100,20 +95,17 @@ pub fn run_gladius<
     // At this point it is guaranteed that we have a Workspace present, though it might be not saved!
 
     // Initializing handlers
-    let (nav_comp_group_ref, scope_errors) = workspace.initialize_handlers(&config, sidechannel.clone());
+    let (nav_comp_group_ref, scope_errors) = workspace.initialize_handlers(&globals);
     if !scope_errors.is_empty() {
         debug!("{} handlers failed to load, details : {:?}", scope_errors.len(), scope_errors);
     }
 
     let mut main_view = MainView::new(
-        config.clone(),
-        tree_sitter,
-        fsf.clone(),
-        clipboard,
+        globals.clone(),
         nav_comp_group_ref.clone(),
     );
     for f in files.iter() {
-        if !fsf.descendant_checked(f).map(|ff| main_view.open_file(ff)).unwrap_or(false) {
+        if !globals.fsf().descendant_checked(f).map(|ff| main_view.open_file(ff)).unwrap_or(false) {
             error!("failed opening file {:?}", f);
         }
     }
@@ -132,7 +124,7 @@ pub fn run_gladius<
             }
         }
         main_view.layout(output.size_constraint());
-        main_view.render(&theme, true, &mut output);
+        main_view.render(globals.theme(), true, &mut output);
         match output.end_frame() {
             Ok(_) => {}
             Err(e) => {
@@ -147,7 +139,7 @@ pub fn run_gladius<
                 match msg {
                     Ok(mut ie) => {
                         // debug!("msg ie {:?}", ie);
-                        if sidechannel.is_recording() {
+                        if globals.is_recording() {
                             recorded_input.push(ie.clone());
                         }
 
@@ -155,7 +147,7 @@ pub fn run_gladius<
                             InputEvent::KeyInput(key) if key.as_focus_update().is_some() && key.modifiers.alt => {
                                 ie = InputEvent::FocusUpdate(key.as_focus_update().unwrap());
                             },
-                            InputEvent::KeyInput(key) if key == config.keyboard_config.global.everything_bar => {
+                            InputEvent::KeyInput(key) if key == globals.config().keyboard_config.global.everything_bar => {
                                 ie = InputEvent::EverythingBarTrigger;
                             }
                             InputEvent::KeyInput(key) if key.keycode == Keycode::Char('u') && key.modifiers.ctrl => {
@@ -163,7 +155,7 @@ pub fn run_gladius<
                                 screenshot(&buffer);
                             }
                             // TODO move to message, to handle signals in the same way?
-                            InputEvent::KeyInput(key) if key == config.keyboard_config.global.close => {
+                            InputEvent::KeyInput(key) if key == globals.config().keyboard_config.global.close => {
                                 break 'main;
                             }
                             _ => {}
@@ -179,7 +171,7 @@ pub fn run_gladius<
 
             recv(nav_comp_group_ref.recvr()) -> tick => {
 
-                if sidechannel.is_recording() {
+                if globals.is_recording() {
                     recorded_input.push(InputEvent::Tick);
                 }
 
@@ -192,7 +184,7 @@ pub fn run_gladius<
         }
     }
 
-    if sidechannel.is_recording() {
+    if globals.is_recording() {
         let bytes = match ron::to_string(&recorded_input) {
             Ok(b) => b,
             Err(e) => {

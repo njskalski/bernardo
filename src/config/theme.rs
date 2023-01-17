@@ -12,6 +12,7 @@ use crate::primitives::color::Color;
 use crate::primitives::cursor_set::CursorStatus;
 use crate::primitives::tmtheme::TmTheme;
 
+// TODO get rid of clone (in mock output we need Rc/Arc)
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Theme {
     #[serde(default)]

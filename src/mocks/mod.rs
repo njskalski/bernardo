@@ -20,3 +20,4 @@ pub mod editbox_interpreter;
 pub mod button_interpreter;
 pub mod no_editor_interpreter;
 pub mod fuzzy_search_interpreter;
+pub mod mock_navcomp_loader;

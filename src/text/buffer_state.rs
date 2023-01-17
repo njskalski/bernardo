@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::ops::Range;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use log::{debug, error, warn};
 use ropey::iter::{Chars, Chunks};
@@ -47,7 +48,7 @@ impl Text {
         }
     }
 
-    pub fn parse(&mut self, tree_sitter: Rc<TreeSitterWrapper>, lang_id: LangId) -> bool {
+    pub fn parse(&mut self, tree_sitter: Arc<TreeSitterWrapper>, lang_id: LangId) -> bool {
         if let Some(parsing_tuple) = tree_sitter.new_parse(lang_id) {
             self.parsing = Some(parsing_tuple);
 
@@ -160,7 +161,7 @@ pub enum BufferType {
 pub struct BufferState {
     subtype: BufferType,
 
-    tree_sitter_op: Option<Rc<TreeSitterWrapper>>,
+    tree_sitter_op: Option<Arc<TreeSitterWrapper>>,
 
     history: Vec<Text>,
     history_pos: usize,
@@ -172,7 +173,7 @@ pub struct BufferState {
 }
 
 impl BufferState {
-    pub fn full(tree_sitter_op: Option<Rc<TreeSitterWrapper>>) -> BufferState {
+    pub fn full(tree_sitter_op: Option<Arc<TreeSitterWrapper>>) -> BufferState {
         BufferState {
             subtype: BufferType::Full,
             tree_sitter_op,

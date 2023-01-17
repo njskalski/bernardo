@@ -2,6 +2,8 @@
 #![allow(unreachable_patterns)]
 
 use std::io::stdout;
+use std::rc::Rc;
+use std::sync::Arc;
 
 use clap::Parser;
 use crossterm::terminal;
@@ -11,6 +13,7 @@ use bernardo::config::theme::Theme;
 use bernardo::experiments::clipboard::get_me_some_clipboard;
 use bernardo::fs::filesystem_front::FilesystemFront;
 use bernardo::fs::real_fs::RealFS;
+use bernardo::gladius::globals::{Globals, GlobalsRef};
 use bernardo::gladius::load_config::load_config;
 use bernardo::gladius::logger_setup::logger_setup;
 use bernardo::gladius::run_gladius::run_gladius;
@@ -19,6 +22,8 @@ use bernardo::io::crossterm_input::CrosstermInput;
 use bernardo::io::crossterm_output::CrosstermOutput;
 use bernardo::io::output::Output;
 use bernardo::primitives::xy::XY;
+use bernardo::tsw::language_set::LanguageSet;
+use bernardo::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 
 // I need an option to record IO to "build" tests, not write them.
 
@@ -41,6 +46,7 @@ fn main() {
     let (start_dir, files) = args.paths();
     let fsf = RealFS::new(start_dir).to_fsf();
 
+
     // Initializing Bernardo TUI
     terminal::enable_raw_mode().expect("failed entering raw mode");
     let input = CrosstermInput::new();
@@ -52,16 +58,20 @@ fn main() {
         return;
     }
 
-    let sidechannel = SideChannel::default();
+    let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
+
+    let globals: GlobalsRef = Arc::new(Globals::new(
+        config_ref,
+        fsf,
+        clipboard,
+        theme,
+        tree_sitter,
+    ));
 
     run_gladius(
-        fsf,
-        config_ref,
-        clipboard,
+        globals,
         input,
         output,
         files,
-        &theme,
-        sidechannel,
     )
 }

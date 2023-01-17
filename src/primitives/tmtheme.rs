@@ -1,7 +1,10 @@
+use std::borrow::{Borrow, BorrowMut};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use std::sync::{RwLock, TryLockResult};
 
+use log::{debug, error};
 use syntect::highlighting::{Highlighter, ThemeSet};
 use syntect::parsing::Scope;
 
@@ -13,18 +16,24 @@ impl Into<Color> for syntect::highlighting::Color {
     }
 }
 
-#[derive(Clone)]
 pub struct TmTheme {
     theme: syntect::highlighting::Theme,
-
-    cache: RefCell<HashMap<String, Color>>,
+    cache: RwLock<HashMap<String, Color>>,
 }
-
 
 impl TmTheme {
     pub fn color_for_name(&self, name: &str) -> Option<Color> {
-        if let Some(color) = self.cache.borrow().get(&*name) {
-            return Some(*color);
+        match self.cache.try_read() {
+            Ok(cache) => {
+                if let Some(color) = cache.get(&*name) {
+                    return Some(*color);
+                } else {
+                    debug!("cache miss for {}", name);
+                }
+            }
+            Err(_) => {
+                error!("failed to acquire cache lock");
+            }
         }
 
         // this is slow, so I cache
@@ -35,8 +44,15 @@ impl TmTheme {
             Err(_) => highlighter.get_default().foreground,
         };
 
+        match self.cache.try_write() {
+            Ok(mut cache) => {
+                cache.insert(name.to_string(), color.into());
+            }
+            Err(_) => {
+                error!("failed to cache color_for_name");
+            }
+        }
 
-        self.cache.borrow_mut().insert(name.to_string(), color.into());
         Some(color.into())
     }
 }
@@ -61,7 +77,16 @@ impl Default for TmTheme {
 
         TmTheme {
             theme: tm,
-            cache: RefCell::new(HashMap::new()),
+            cache: RwLock::new(HashMap::new()),
+        }
+    }
+}
+
+impl Clone for TmTheme {
+    fn clone(&self) -> Self {
+        TmTheme {
+            theme: self.theme.clone(),
+            cache: Default::default(),
         }
     }
 }
