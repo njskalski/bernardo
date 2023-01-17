@@ -20,7 +20,7 @@ impl<W: Widget> LeafLayout<W> {
 
 impl<W: Widget> Layout<W> for LeafLayout<W> {
     fn min_size(&self, root: &W) -> XY {
-        self.widget.get(root).min_size()
+        self.widget.get(root).size()
     }
 
     fn layout(&self, root: &mut W, sc: SizeConstraint) -> LayoutResult<W> {
@@ -28,7 +28,7 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
         let widget = self.widget.get_mut(root);
         let skip = root_id == widget.id();
 
-        let widget_min_size = widget.min_size();
+        let widget_min_size = widget.size();
         let properly_sized = sc.bigger_equal_than(widget_min_size);
         let _widget_name = widget.typename();
 

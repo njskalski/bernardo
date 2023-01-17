@@ -49,7 +49,7 @@ impl Widget for ReaderMainWidget {
         "ReaderMainWidget"
     }
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         XY::new(10, 10)
     }
 

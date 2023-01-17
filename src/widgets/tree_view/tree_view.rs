@@ -233,7 +233,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
         TYPENAME
     }
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         self.size_from_items()
     }
 

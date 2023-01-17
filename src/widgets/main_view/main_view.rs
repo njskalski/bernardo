@@ -244,7 +244,7 @@ impl Widget for MainView {
         "main_view"
     }
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         // TODO delegate to complex_layout?
         Self::MIN_SIZE
     }
@@ -419,7 +419,7 @@ impl ComplexWidget for MainView {
 
 
         //TODO(subwidgetpointermap)
-        let max_size = sc.as_finite().unwrap_or(self.min_size());
+        let max_size = sc.as_finite().unwrap_or(self.size());
 
         let res = if let Some(hover) = &self.hover {
             match hover {

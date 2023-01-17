@@ -51,12 +51,12 @@ impl Widget for DumpVisualizerWidget {
         "DumpVisualizerWidget"
     }
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         self.dump_op.as_ref().map(|oo| oo.size()).unwrap_or(XY::new(10, 10))
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let size = sc.as_finite().unwrap_or(self.min_size());
+        let size = sc.as_finite().unwrap_or(self.size());
         self.last_size = Some(size);
         size
     }

@@ -308,7 +308,7 @@ impl Widget for EditorView {
         Self::TYPENAME
     }
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         XY::new(20, 8) // TODO completely arbitrary
     }
 
@@ -499,7 +499,7 @@ impl ComplexWidget for EditorView {
         if self.hover_dialog.is_none() {
             background
         } else {
-            let size = sc.as_finite().unwrap_or(self.min_size());
+            let size = sc.as_finite().unwrap_or(self.size());
             let rect = Self::get_hover_rect(size);
             let hover = LeafLayout::new(SubwidgetPointer::new(
                 Box::new(|s: &Self| {

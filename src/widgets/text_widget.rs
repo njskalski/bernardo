@@ -42,7 +42,7 @@ impl Widget for TextWidget {
         "TextWidget"
     }
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         self.text_size()
     }
 

@@ -35,14 +35,14 @@ impl Widget for ButtonWidget {
         Self::TYPENAME
     }
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         XY::new((self.text.as_ref_str().width() + 2) as u16, 1)
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        debug_assert!(sc.bigger_equal_than(self.min_size()), "min_size {}, got {}", self.min_size(), sc);
+        debug_assert!(sc.bigger_equal_than(self.size()), "min_size {}, got {}", self.size(), sc);
 
-        let mut size = self.min_size();
+        let mut size = self.size();
 
         if let Some(max_x) = sc.x() {
             if self.fill_x {

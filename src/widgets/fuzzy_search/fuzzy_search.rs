@@ -173,7 +173,7 @@ impl FuzzySearchWidget {
             res.y += local_xy.y;
         }
 
-        let edit_min = self.edit.min_size();
+        let edit_min = self.edit.size();
         res.x = max(res.x, edit_min.x);
         res.y += edit_min.y;
 
@@ -231,13 +231,13 @@ impl Widget for FuzzySearchWidget {
         Self::TYPENAME
     }
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         self.size_from_items()
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let min_size = self.min_size();
-        debug_assert!(sc.bigger_equal_than(self.min_size()),
+        let min_size = self.size();
+        debug_assert!(sc.bigger_equal_than(self.size()),
                       "sc: {} self.min_size(): {}",
                       sc, min_size);
 

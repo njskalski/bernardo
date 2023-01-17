@@ -73,7 +73,7 @@ impl Widget for ContextBarWidget {
         Self::TYPENAME
     }
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         XY::new(1, 12) // TODO completely arbitrary
     }
 

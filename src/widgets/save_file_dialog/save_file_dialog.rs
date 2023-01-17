@@ -306,7 +306,7 @@ impl Widget for SaveFileDialogWidget {
         Self::TYPENAME
     }
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         XY::new(4, 4)
     }
 
@@ -469,7 +469,7 @@ impl ComplexWidget for SaveFileDialogWidget {
             FrameLayout::new(layout, frame).boxed()
         } else {
             //TODO underflow
-            let max_size = sc.as_finite().unwrap_or(self.min_size()) - frame * 2;
+            let max_size = sc.as_finite().unwrap_or(self.size()) - frame * 2;
             let child_rect = {
                 let margins = max_size / 10;
                 Rect::new(

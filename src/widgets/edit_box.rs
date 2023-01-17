@@ -2,7 +2,6 @@ use log::{debug, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::unpack_or_e;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::io::input_event::InputEvent;
@@ -17,6 +16,7 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
+use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
@@ -185,14 +185,14 @@ impl Widget for EditBoxWidget {
         Self::TYPENAME
     }
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         XY::new(self.min_width_op.unwrap_or(Self::MIN_WIDTH), 1)
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        debug_assert!(sc.bigger_equal_than(self.min_size()));
+        debug_assert!(sc.bigger_equal_than(self.size()));
 
-        let mut x = self.min_size().x;
+        let mut x = self.size().x;
         if let Some(max_x) = sc.x() {
             if self.fill_x {
                 x = max_x;

@@ -6,7 +6,6 @@ I guess I should reuse FuzzySearch Widget, this is a placeholder now.
 
 use log::{debug, error, warn};
 
-use crate::subwidget;
 use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
@@ -20,6 +19,7 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::promise::promise::PromiseState;
+use crate::subwidget;
 use crate::w7e::navcomp_provider::{Completion, CompletionsPromise};
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
@@ -171,11 +171,11 @@ impl Widget for CompletionWidget {
      Workaround would be to trigger update from EditorWidget, and then DO NOT update it afterwards.
      */
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         let res = if self.has_completions() {
-            self.list_widget.min_size()
+            self.list_widget.size()
         } else {
-            self.label_widget.min_size()
+            self.label_widget.size()
         };
         debug!("min_size: {}", res);
         res

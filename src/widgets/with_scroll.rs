@@ -186,8 +186,8 @@ impl<W: Widget> Widget for WithScroll<W> {
         Self::TYPENAME
     }
 
-    fn min_size(&self) -> XY {
-        let child = self.widget.min_size();
+    fn size(&self) -> XY {
+        let child = self.widget.size();
         let margin = if self.line_no { self.line_count_margin_width_for_lower_right(child) } else { 0 };
 
         let res = match self.scroll.direction {
@@ -211,7 +211,7 @@ impl<W: Widget> Widget for WithScroll<W> {
             size
         } else {
             error!("nesting scrolls not supported");
-            self.widget.min_size()
+            self.widget.size()
         };
 
         let (margin_width, internal_sc) = self.nested_sc(sc);

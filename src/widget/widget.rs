@@ -19,16 +19,16 @@ pub trait Widget: 'static {
 
     fn typename(&self) -> &'static str;
 
-    // Minimal size of the view. If the output cannot satisfy it, a replacement is drawn instead,
-    // and the view cannot be focused.
+    // Size of the view. If the output cannot satisfy it, a replacement is drawn instead, and the
+    // view cannot be focused.
     //
-    // min_size can be data dependent. Widgets *should not* implement their own scrolling.
+    // size can be data dependent. Widgets *should not* implement their own scrolling.
     // So it's perfectly reasonable for widget to require O(n) time to answer question "how big I
     // need to be" (if it's slow, we'll be caching *after* profiling).
-    fn min_size(&self) -> XY;
+    fn size(&self) -> XY;
 
     // This is guaranteed to be called before each render. It is guaranteed to be called with
-    // SizeConstraint >= self.min_size().
+    // SizeConstraint >= self.size().
     //
     // This is an opportunity for widget to "update itself" and decide how it's going to be drawn.
     // There is no enforced contract on whether widget should layout it's subwidgets first or

@@ -43,14 +43,14 @@ Bernardo will assert it.
 
 But how this allocation is decided? Well, before render is called, few other things happen.
 
-## Layouting: min_size and update_and_layout
+## Layouting: size() and layout()
 
 ### TL;DR
 
 **Widgets** tell how big they are.  
 In a two-step negotiaion process:
 
-- first they say "below that I can't be drawn"
+- first they say "this is how much space I need to be fully drawn"
 - in second step "ok, then within this budget, that's how much I want"
 
 Decision of "how to use budget" is made by **Widget**  
@@ -61,27 +61,62 @@ That's it. Things can be simple. In your face W3C!
 ### Proper description
 
 ```rust 
-fn min_size(&self) -> XY
+fn size(&self) -> XY;
 ```
 
-is simple: it's a non-mut call that's supposed to tell parent widget "what's the smallest amount of
-screen, where drawing this **Widget** makes sense". If there's less space available, widget will not be drawn.
+Tells the full size of the widget, based on all available information at the time of call. Widgets **should not** return
+a portion of their full size and implement scrolling themselves. Widgets **should** return full size, and refuse to
+render in case there's not enough space, to force programmer to use proper scrolling wherever necessary.
+
+Guarantees:
+
+- called each frame before layout()
 
 ```rust 
-fn update_and_layout(&mut self, sc: SizeConstraint) -> XY;
+fn layout(&mut self, sc: SizeConstraint) -> XY;
 ```
 
-is more complicated. First, it is **guaranteed** to be called with **SizeConstraint** that is greater or equal
-than ```self.min_size()```.
-Whenever you implement a custom layout, you must not break this rule.
-
 This method allows **Widget** to prepare for drawing (hence the ```&mut```) and returns information "how much space
-the **Widget** will use in this draw, under given constraint". Again, returning size greater than constraints allows is
-an error.
+the **Widget** will use in this draw, under given constraint".
+
+Widgets cannot be infinite, hence XY as return type. Reason: scrolling.
 
 Widgets themselves choose the way they use the space - some will decide to use "as much as possible", while other will
 constrain themselves. Some will offer user a choice of policy via ```FillPolicy``` typed parameter.
 
-Also, as you might have noticed, result of ```update_and_layout``` is XY, meaning that Widgets cannot be infinite. The
-reason for it is simple: I couldn't find a valid reason to enable such **Widgets**, and supporting that case would break
-my idea for scrolling (and probably some other things). 
+Guarantees:
+
+- SizeConstraint >= self.size()
+- called each frame before render()
+
+Requirements:
+
+- return value <= SizeConstraint
+
+## Scrolling
+
+Widget's expose a method
+
+```rust
+fn kite(&self) -> XY;
+```
+
+How to think about it: imagine you are kite surfing. Kite is the opposite of anchor - it's in the air and you follow it.
+
+Widget can tell "of all the things rendered, this one pixel is the most important". A scroll is supposed to make "least
+effort move to accomodate for that".
+
+A ```WithScroll<W: Widget>``` renders ```W``` in *infinite* output, and then shows a finite window of it. A window
+moves as little as possible from it's previous position to a new one in such the direction, that ```W.kite()``` is
+included in that window.
+
+What is kite? Usually some cursor. If you want to scroll around the file, you have to move the cursor. But "that's
+destructive". Don't worry, attention tree got your back.
+
+Requirements:
+
+- self.kite() <= self.layout(...)
+
+## TODO
+
+- implement contract validation

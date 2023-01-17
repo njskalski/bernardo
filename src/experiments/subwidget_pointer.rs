@@ -172,7 +172,7 @@ mod tests {
                 unimplemented!()
             }
 
-            fn min_size(&self) -> XY {
+            fn size(&self) -> XY {
                 unimplemented!()
             }
 
@@ -208,7 +208,7 @@ mod tests {
                 unimplemented!()
             }
 
-            fn min_size(&self) -> XY {
+            fn size(&self) -> XY {
                 unimplemented!()
             }
 

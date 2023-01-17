@@ -239,14 +239,14 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
         TYPENAME
     }
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         self.full_size_from_items()
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
-        debug_assert!(sc.bigger_equal_than(self.min_size()),
+        debug_assert!(sc.bigger_equal_than(self.size()),
                       "sc: {} self.min_size(): {}",
-                      sc, self.min_size());
+                      sc, self.size());
 
         let res = self.fill_policy.get_size_from_constraints(&sc, self.full_size_from_items());
         self.last_size = Some(res);

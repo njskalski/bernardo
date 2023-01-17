@@ -128,7 +128,7 @@ impl<T: Widget> Widget for BigList<T> {
         Self::TYPENAME
     }
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         XY::new(10, 4) // TODO completely arbitrary
     }
 

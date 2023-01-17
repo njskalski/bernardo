@@ -909,7 +909,7 @@ impl Widget for EditorWidget {
         Self::TYPENAME
     }
 
-    fn min_size(&self) -> XY {
+    fn size(&self) -> XY {
         MIN_EDITOR_SIZE
     }
 
@@ -926,7 +926,7 @@ impl Widget for EditorWidget {
         self.last_hover_rect = None;
 
         self.last_size = Some(sc);
-        let visible_rect = unpack_or!(sc.visible_hint(), self.min_size(), "can't layout greedy widget - no visible part");
+        let visible_rect = unpack_or!(sc.visible_hint(), self.size(), "can't layout greedy widget - no visible part");
 
         self.layout_hover(visible_rect, sc);
 
