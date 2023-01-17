@@ -20,8 +20,6 @@ use crate::gladius::globals::{Globals, GlobalsRef};
 use crate::gladius::logger_setup::logger_setup;
 use crate::gladius::navcomp_loader::NavCompLoader;
 use crate::gladius::run_gladius::run_gladius;
-use crate::gladius::sidechannel::x::SideChannel;
-use crate::gladius::sidechannel::x::SideChannelInternal;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::{Key, Keycode};
 use crate::mocks::editor_interpreter::EditorInterpreter;

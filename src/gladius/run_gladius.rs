@@ -12,7 +12,6 @@ use crate::experiments::screen_shot::screenshot;
 use crate::fs::fsf_ref::FsfRef;
 use crate::gladius::globals::{Globals, GlobalsRef};
 use crate::gladius::paradigm::recursive_treat_views;
-use crate::gladius::sidechannel::x::SideChannel;
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;

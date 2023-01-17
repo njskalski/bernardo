@@ -11,7 +11,6 @@ use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::fs::fsf_ref::FsfRef;
 use crate::gladius::navcomp_loader::NavCompLoader;
-use crate::gladius::sidechannel::x::SideChannel;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 
 pub struct Globals {
@@ -45,17 +44,10 @@ impl Globals {
             clipboard,
             theme,
             tree_sitter,
-            // side_channel: None,
             navcomp_loader,
         }
     }
 
-    // pub fn with_side_channel(self, side_channel: SideChannel) -> Self {
-    //     Self {
-    //         side_channel: Some(side_channel),
-    //         ..self
-    //     }
-    // }
 
     pub fn fsf(&self) -> &FsfRef {
         &self.fsf

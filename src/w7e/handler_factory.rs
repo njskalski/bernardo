@@ -4,7 +4,6 @@ use log::{debug, error};
 
 use crate::config::config::ConfigRef;
 use crate::fs::path::SPath;
-use crate::gladius::sidechannel::x::SideChannel;
 use crate::w7e::handler::{Handler, NavCompRef};
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::navcomp_group::NavCompTickSender;
