@@ -136,11 +136,14 @@ impl FullSetupBuilder {
 
         let mock_navcomp_pilot = MockNavCompProviderPilot::new(
             mock_navcomp_event_recvr,
-            comp_matcher,
+            comp_matcher.clone(),
         );
 
         let mock_navcomp_loader = Arc::new(Box::new(
-            MockNavcompLoader::new()
+            MockNavcompLoader::new(
+                mock_navcomp_event_sender,
+                comp_matcher,
+            )
         ) as Box<dyn NavCompLoader>
         );
 
