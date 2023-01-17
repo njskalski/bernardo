@@ -4,6 +4,6 @@ pub mod args;
 pub mod logger_setup;
 pub mod run_gladius;
 pub mod paradigm;
-pub mod globals;
+pub mod providers;
 pub mod navcomp_loader;
 pub mod real_navcomp_loader;

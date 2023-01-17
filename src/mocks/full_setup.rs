@@ -16,9 +16,9 @@ use crate::experiments::screen_shot::screenshot;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::mock_fs::MockFS;
-use crate::gladius::globals::{Globals, GlobalsRef};
 use crate::gladius::logger_setup::logger_setup;
 use crate::gladius::navcomp_loader::NavCompLoader;
+use crate::gladius::providers::Providers;
 use crate::gladius::run_gladius::run_gladius;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::{Key, Keycode};
@@ -145,19 +145,19 @@ impl FullSetupBuilder {
         ) as Box<dyn NavCompLoader>
         );
 
-        let globals: GlobalsRef = Arc::new(Globals::new(
+        let providers = Providers::new(
             local_config,
             local_fsf,
             local_clipboard,
             local_theme,
             tree_sitter,
             mock_navcomp_loader,
-        ));
+        );
 
-        let globals_clone = globals.clone();
+        let providers_clone = providers.clone();
 
         let handle = std::thread::spawn(move || {
-            run_gladius(globals_clone,
+            run_gladius(providers_clone,
                         input,
                         output,
                         files,

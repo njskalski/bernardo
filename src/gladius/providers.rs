@@ -13,7 +13,9 @@ use crate::fs::fsf_ref::FsfRef;
 use crate::gladius::navcomp_loader::NavCompLoader;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 
-pub struct Globals {
+// do not share via Arc, we want to be able to "overload" providers in tests or exotic cases
+#[derive(Clone)]
+pub struct Providers {
     config: ConfigRef,
     fsf: FsfRef,
     clipboard: ClipboardRef,
@@ -24,9 +26,7 @@ pub struct Globals {
     navcomp_loader: Arc<Box<dyn NavCompLoader>>,
 }
 
-pub type GlobalsRef = Arc<Globals>;
-
-impl Globals {
+impl Providers {
     pub fn new(config: ConfigRef,
                fsf: FsfRef,
                clipboard: ClipboardRef,
@@ -38,7 +38,7 @@ impl Globals {
                 */
                navcomp_loader: Arc<Box<dyn NavCompLoader>>,
     ) -> Self {
-        Globals {
+        Providers {
             config,
             fsf,
             clipboard,

@@ -9,7 +9,7 @@ use crate::experiments::pretty_ron::ToPrettyRonString;
 use crate::fs;
 use crate::fs::path::SPath;
 use crate::fs::write_error::WriteOrSerError;
-use crate::gladius::globals::GlobalsRef;
+use crate::gladius::providers::Providers;
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::navcomp_group::{NavCompGroup, NavCompGroupRef};
 use crate::w7e::project_scope;
@@ -99,13 +99,13 @@ impl Workspace {
         }
     }
 
-    pub fn initialize_handlers(&mut self, globals: &GlobalsRef) -> (NavCompGroupRef, Vec<HandlerLoadError>) {
+    pub fn initialize_handlers(&mut self, providers: Providers) -> (NavCompGroupRef, Vec<HandlerLoadError>) {
         let mut errors: Vec<HandlerLoadError> = Vec::default();
         let mut nav_comp_group = NavCompGroup::new();
 
         for scope in self.scopes.iter_mut() {
-            match globals.navcomp_loader().load_handler(
-                globals.config(),
+            match providers.navcomp_loader().load_handler(
+                providers.config(),
                 &scope,
                 nav_comp_group.todo_sender().clone(),
             ) {

@@ -8,7 +8,7 @@ use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
-use crate::gladius::globals::GlobalsRef;
+use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::layout::hover_layout::HoverLayout;
@@ -43,7 +43,7 @@ pub enum HoverItem {
 
 pub struct MainView {
     wid: WID,
-    globals: GlobalsRef,
+    providers: Providers,
     /*
     I use a simplified "display state" model, not the GenericFocusGroup approach, to see how much effort the Generic one saves.
     caveat: whenever focusing on editor, make sure to set curr_editor_index as well. It's a temporary solution, so I don't wrap it.
@@ -67,10 +67,10 @@ pub struct MainView {
 impl MainView {
     pub const MIN_SIZE: XY = XY::new(32, 10);
 
-    pub fn new(globals: GlobalsRef,
+    pub fn new(providers: Providers,
                nav_comp_group: NavCompGroupRef,
     ) -> MainView {
-        let root = globals.fsf().root();
+        let root = providers.fsf().root();
         let tree = TreeViewWidget::new(FileTreeNode::new(root.clone()))
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
@@ -89,11 +89,11 @@ impl MainView {
 
         MainView {
             wid: get_new_widget_id(),
-            globals: globals.clone(),
+            providers: providers.clone(),
             display_state: None,
             tree_widget: WithScroll::new(ScrollDirection::Both, tree),
             editors: EditorGroup::new(
-                globals.config().clone(),
+                providers.config().clone(),
                 nav_comp_group.clone(),
             ),
             crv_op: None,
@@ -110,9 +110,9 @@ impl MainView {
 
     fn open_empty_editor_and_focus(&mut self) {
         let idx = self.editors.open_empty(
-            self.globals.tree_sitter().clone(),
-            self.globals.fsf().clone(),
-            self.globals.clipboard().clone());
+            self.providers.tree_sitter().clone(),
+            self.providers.fsf().clone(),
+            self.providers.clipboard().clone());
         self.curr_editor_idx = idx;
         self.set_focused(self.get_default_focused())
     }
@@ -140,9 +140,9 @@ impl MainView {
             self.set_focused(self.get_default_focused());
             true
         } else {
-            self.editors.open_file(self.globals.tree_sitter().clone(),
+            self.editors.open_file(self.providers.tree_sitter().clone(),
                                    ff,
-                                   self.globals.clipboard().clone()).map(|idx| {
+                                   self.providers.clipboard().clone()).map(|idx| {
                 self.curr_editor_idx = idx;
                 self.set_focused(self.get_default_focused());
             }).is_ok()
@@ -156,9 +156,9 @@ impl MainView {
                     ScrollDirection::Vertical,
                     FuzzySearchWidget::new(
                         |_| Some(Box::new(MainViewMsg::CloseHover)),
-                        Some(self.globals.clipboard().clone()),
+                        Some(self.providers.clipboard().clone()),
                     ).with_provider(
-                        Box::new(FsfProvider::new(self.globals.fsf().clone()).with_ignores_filter())
+                        Box::new(FsfProvider::new(self.providers.fsf().clone()).with_ignores_filter())
                     ).with_draw_comment_setting(DrawComment::Highlighted),
                 ),
             )
@@ -173,7 +173,7 @@ impl MainView {
                     ScrollDirection::Vertical,
                     FuzzySearchWidget::new(
                         |_| Some(Box::new(MainViewMsg::CloseHover)),
-                        Some(self.globals.clipboard().clone()),
+                        Some(self.providers.clipboard().clone()),
                     ).with_provider(
                         self.editors.get_buffer_list_provider()
                     ).with_draw_comment_setting(DrawComment::Highlighted))
@@ -251,7 +251,7 @@ impl Widget for MainView {
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         debug!("main_view.on_input {:?}", input_event);
 
-        let config = self.globals.config();
+        let config = self.providers.config();
 
         return match input_event {
             InputEvent::FocusUpdate(focus_update) if self.will_accept_focus_update(focus_update) => {
@@ -335,10 +335,10 @@ impl Widget for MainView {
                     if let Some(mut promise) = promise_op.take() {
                         promise.update();
                         if promise.state() != PromiseState::Broken {
-                            self.crv_op = Some(CodeResultsView::new(self.globals.config().clone(),
-                                                                    self.globals.tree_sitter().clone(),
-                                                                    self.globals.fsf().clone(),
-                                                                    self.globals.clipboard().clone(),
+                            self.crv_op = Some(CodeResultsView::new(self.providers.config().clone(),
+                                                                    self.providers.tree_sitter().clone(),
+                                                                    self.providers.fsf().clone(),
+                                                                    self.providers.clipboard().clone(),
                                                                     "TODO bla bla bla".to_string(),
                                                                     //TODO
                                                                     Box::new(promise)));
