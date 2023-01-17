@@ -10,7 +10,11 @@ use crate::w7e::project_scope::ProjectScope;
 
 pub struct RealNavCompLoader {}
 
-impl RealNavCompLoader {}
+impl RealNavCompLoader {
+    pub fn new() -> Self {
+        RealNavCompLoader {}
+    }
+}
 
 impl NavCompLoader for RealNavCompLoader {
     /*

@@ -89,7 +89,7 @@ impl MainView {
 
         MainView {
             wid: get_new_widget_id(),
-            globals,
+            globals: globals.clone(),
             display_state: None,
             tree_widget: WithScroll::new(ScrollDirection::Both, tree),
             editors: EditorGroup::new(

@@ -2,7 +2,7 @@ use std::ffi::OsStr;
 use std::option::Option;
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::thread::JoinHandle;
 use std::time::Duration;
 
@@ -30,7 +30,7 @@ use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
 use crate::mocks::mock_navcomp_loader::MockNavcompLoader;
-use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
+use crate::mocks::mock_navcomp_provider::{MockCompletionMatcher, MockNavCompEvent, MockNavCompProviderPilot};
 use crate::mocks::mock_output::MockOutput;
 use crate::mocks::treeview_interpreter::TreeViewInterpreter;
 use crate::primitives::xy::XY;
@@ -107,6 +107,7 @@ pub struct FullSetup {
     gladius_thread_handle: JoinHandle<()>,
     last_frame: Option<MetaOutputFrame>,
     frame_based_wait: bool,
+    mock_navcomp_pilot: MockNavCompProviderPilot,
 }
 
 impl FullSetupBuilder {
@@ -129,6 +130,15 @@ impl FullSetupBuilder {
         let files = self.files;
 
         let tree_sitter = Arc::new(TreeSitterWrapper::new(LanguageSet::full()));
+
+        let (mock_navcomp_event_sender, mock_navcomp_event_recvr) = crossbeam_channel::unbounded::<MockNavCompEvent>();
+        let comp_matcher: Arc<RwLock<Vec<MockCompletionMatcher>>> = Arc::new(RwLock::new(Vec::new()));
+
+        let mock_navcomp_pilot = MockNavCompProviderPilot::new(
+            mock_navcomp_event_recvr,
+            comp_matcher,
+        );
+
         let mock_navcomp_loader = Arc::new(Box::new(
             MockNavcompLoader::new()
         ) as Box<dyn NavCompLoader>
@@ -163,6 +173,7 @@ impl FullSetupBuilder {
             gladius_thread_handle: handle,
             last_frame: None,
             frame_based_wait: self.frame_based_wait,
+            mock_navcomp_pilot,
         }
     }
 }
@@ -216,7 +227,7 @@ impl FullSetup {
     }
 
     pub fn navcomp_pilot(&self) -> &MockNavCompProviderPilot {
-        &self.sidechannel.get_navcomp_pilot()
+        &self.mock_navcomp_pilot
     }
 
     pub fn get_frame(&self) -> Option<&MetaOutputFrame> {

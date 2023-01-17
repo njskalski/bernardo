@@ -16,6 +16,8 @@ use bernardo::fs::real_fs::RealFS;
 use bernardo::gladius::globals::{Globals, GlobalsRef};
 use bernardo::gladius::load_config::load_config;
 use bernardo::gladius::logger_setup::logger_setup;
+use bernardo::gladius::navcomp_loader::NavCompLoader;
+use bernardo::gladius::real_navcomp_loader::RealNavCompLoader;
 use bernardo::gladius::run_gladius::run_gladius;
 use bernardo::gladius::sidechannel::x::SideChannel;
 use bernardo::io::crossterm_input::CrosstermInput;
@@ -58,7 +60,9 @@ fn main() {
         return;
     }
 
-    let tree_sitter = Rc::new(TreeSitterWrapper::new(LanguageSet::full()));
+    let tree_sitter = Arc::new(TreeSitterWrapper::new(LanguageSet::full()));
+    let navcomp_loader = Arc::new(Box::new(
+        RealNavCompLoader::new()) as Box<dyn NavCompLoader>);
 
     let globals: GlobalsRef = Arc::new(Globals::new(
         config_ref,
@@ -66,6 +70,7 @@ fn main() {
         clipboard,
         theme,
         tree_sitter,
+        navcomp_loader,
     ));
 
     run_gladius(
