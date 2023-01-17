@@ -11,6 +11,7 @@ use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
+use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::output::{Metadata, Output};
 use crate::layout::hover_layout::HoverLayout;
@@ -50,6 +51,7 @@ enum EditorViewState {
 
 pub struct EditorView {
     wid: WID,
+    providers: Providers,
 
     display_state: Option<DisplayState<EditorView>>,
 
@@ -59,16 +61,6 @@ pub struct EditorView {
     replace_box: EditBoxWidget,
     replace_label: TextWidget,
 
-    /*
-    resist the urge to remove fsf from editor. It's used to facilitate "save as dialog".
-    You CAN be working on two different filesystems at the same time, and save as dialog is specific to it.
-    get_final_position
-    One thing to address is: "what if I have file from filesystem A, and I want to "save as" to B?". But that's beyond MVP, so I don't think about it now.
-     */
-    fsf: FsfRef,
-    config: ConfigRef,
-    // this is necessary since there are multiple clipboard receivers within this object.
-    clipboard: ClipboardRef,
     nav_comp_group: NavCompGroupRef,
 
     state: EditorViewState,
@@ -86,17 +78,10 @@ impl EditorView {
     pub const TYPENAME: &'static str = "editor_view";
 
     pub fn new(
-        config: ConfigRef,
-        tree_sitter: Arc<TreeSitterWrapper>,
-        fsf: FsfRef,
-        clipboard: ClipboardRef,
-        // TODO(#17) now navcomp is language specific, and editor can be "recycled" from say yaml to rs, requiring change of navcomp.
+        providers: Providers,// TODO(#17) now navcomp is language specific, and editor can be "recycled" from say yaml to rs, requiring change of navcomp.
         nav_comp_group: NavCompGroupRef,
     ) -> Self {
-        let editor = EditorWidget::new(config.clone(),
-                                       tree_sitter,
-                                       fsf.clone(),
-                                       clipboard.clone(),
+        let editor = EditorWidget::new(providers.clone(),
                                        None,
         );
 
@@ -108,25 +93,23 @@ impl EditorView {
                 EditorViewMsg::FindHit.someboxed()
             })
             .with_fill_x()
-            .with_clipboard(clipboard.clone());
+            .with_clipboard(providers.clipboard().clone());
         let replace_box = EditBoxWidget::new()
             .with_on_hit(|_| {
                 EditorViewMsg::ReplaceHit.someboxed()
             })
             .with_fill_x()
-            .with_clipboard(clipboard.clone());
+            .with_clipboard(providers.clipboard().clone());
 
         EditorView {
             wid: get_new_widget_id(),
+            providers,
             display_state: None,
             editor: WithScroll::new(ScrollDirection::Both, editor).with_line_no(),
             find_box,
             find_label,
             replace_box,
             replace_label,
-            fsf,
-            config,
-            clipboard,
             nav_comp_group,
             state: EditorViewState::Simple,
             hover_dialog: None,
@@ -187,7 +170,7 @@ impl EditorView {
         }
 
         let save_file_dialog = SaveFileDialogWidget::new(
-            self.fsf.clone(),
+            self.providers.fsf().clone(),
         ).with_on_cancel(|_| {
             EditorViewMsg::OnSaveAsCancel.someboxed()
         }).with_on_save(|_, ff| {
@@ -224,7 +207,7 @@ impl EditorView {
             return sp.clone();
         }
 
-        self.fsf.root()
+        self.providers.fsf().root()
     }
 
     fn get_hover_subwidget(&self) -> SubwidgetPointer<Self> {
@@ -274,7 +257,7 @@ impl EditorView {
             bf.apply_cem(
                 CommonEditMsg::Block(with_what),
                 page_height,
-                Some(&self.clipboard), //not really needed but why not
+                Some(self.providers.clipboard()), //not really needed but why not
             );
 
             self.hit_find_once();
@@ -318,7 +301,7 @@ impl Widget for EditorView {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        let c = &self.config.keyboard_config.editor;
+        let c = &self.providers.config().keyboard_config.editor;
         return match input_event {
             InputEvent::FocusUpdate(focus_update) => {
                 if self.will_accept_focus_update(focus_update) {

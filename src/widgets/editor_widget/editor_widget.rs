@@ -15,6 +15,7 @@ use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::regex_search::FindError;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
+use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
@@ -138,6 +139,7 @@ impl EditorHover {
 
 pub struct EditorWidget {
     wid: WID,
+    providers: Providers,
 
     readonly: bool,
 
@@ -148,17 +150,6 @@ pub struct EditorWidget {
     buffer: BufferState,
 
     kite: XY,
-    tree_sitter: Arc<TreeSitterWrapper>,
-
-    /*
-    resist the urge to remove fsf from editor. It's used to facilitate "save as dialog".
-    You CAN be working on two different filesystems at the same time, and save as dialog is specific to it.
-
-    One thing to address is: "what if I have file from filesystem A, and I want to "save as" to B?". But that's beyond MVP, so I don't think about it now.
-     */
-    fsf: FsfRef,
-    clipboard: ClipboardRef,
-    config: ConfigRef,
 
     // navcomp is to submit edit messages, suggestion display will probably be somewhere else
     navcomp: Option<NavCompRef>,
@@ -178,28 +169,23 @@ impl EditorWidget {
     const MAX_HOVER_WIDTH: u16 = 45;
     const MIN_HOVER_WIDTH: u16 = 15;
 
-    pub fn new(config: ConfigRef,
-               tree_sitter: Arc<TreeSitterWrapper>,
-               fsf: FsfRef,
-               clipboard: ClipboardRef,
+    pub fn new(providers: Providers,
                navcomp: Option<NavCompRef>,
     ) -> EditorWidget {
+        let tree_sitter_clone = providers.tree_sitter().clone();
         EditorWidget {
             wid: get_new_widget_id(),
+            providers,
             readonly: false,
             last_size: None,
             last_hover_rect: None,
-            buffer: BufferState::full(Some(tree_sitter.clone())),
+            buffer: BufferState::full(Some(tree_sitter_clone)),
             kite: XY::ZERO,
-            tree_sitter,
-            fsf,
-            config,
-            clipboard,
             state: EditorState::Editing,
             navcomp,
             requested_hover: None,
-
             nacomp_symbol: None,
+
         }
     }
 
@@ -788,7 +774,7 @@ impl EditorWidget {
             };
             self.buffer.apply_cem(CommonEditMsg::Block(to_insert.clone()),
                                   self.page_height() as usize,
-                                  Some(&self.clipboard),
+                                  Some(self.providers.clipboard()),
             ); // TODO unnecessary clone
             self.close_hover();
 
@@ -935,7 +921,8 @@ impl Widget for EditorWidget {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        let c = &self.config.keyboard_config.editor;
+        let c = &self.providers.config().keyboard_config.editor;
+
         return match (&self.state, input_event) {
             (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.enter_cursor_drop_mode => {
                 EditorWidgetMsg::ToCursorDropMode.someboxed()
@@ -991,7 +978,7 @@ impl Widget for EditorWidget {
                     let changed = self.buffer.apply_cem(
                         cem.clone(),
                         page_height as usize,
-                        Some(&self.clipboard),
+                        Some(self.providers.clipboard()),
                     );
 
                     // TODO this needs to happen only if CONTENTS changed, not if cursor positions changed
@@ -1057,7 +1044,7 @@ impl Widget for EditorWidget {
                     let mut set = CursorSet::singleton(special_cursor);
                     // TODO make sure this had no changing effect?
                     let height = self.page_height();
-                    _apply_cem(cem.clone(), &mut set, &mut self.buffer, height as usize, Some(&self.clipboard));
+                    _apply_cem(cem.clone(), &mut set, &mut self.buffer, height as usize, Some(self.providers.clipboard()));
                     self.state = EditorState::DroppingCursor { special_cursor: *set.as_single().unwrap() };
                     None
                 }

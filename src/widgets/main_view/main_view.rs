@@ -109,10 +109,7 @@ impl MainView {
     }
 
     fn open_empty_editor_and_focus(&mut self) {
-        let idx = self.editors.open_empty(
-            self.providers.tree_sitter().clone(),
-            self.providers.fsf().clone(),
-            self.providers.clipboard().clone());
+        let idx = self.editors.open_empty(self.providers.clone());
         self.curr_editor_idx = idx;
         self.set_focused(self.get_default_focused())
     }
@@ -140,9 +137,9 @@ impl MainView {
             self.set_focused(self.get_default_focused());
             true
         } else {
-            self.editors.open_file(self.providers.tree_sitter().clone(),
+            self.editors.open_file(self.providers.clone(),
                                    ff,
-                                   self.providers.clipboard().clone()).map(|idx| {
+            ).map(|idx| {
                 self.curr_editor_idx = idx;
                 self.set_focused(self.get_default_focused());
             }).is_ok()

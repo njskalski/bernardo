@@ -10,6 +10,7 @@ use crate::experiments::filename_to_language::filename_to_language;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::fs::read_error::ReadError;
+use crate::gladius::providers::Providers;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::navcomp_group::NavCompGroupRef;
@@ -52,12 +53,9 @@ impl EditorGroup {
         self.editors.get_mut(idx)
     }
 
-    pub fn open_empty(&mut self, tree_sitter: Arc<TreeSitterWrapper>, fsf: FsfRef, clipboard: ClipboardRef) -> usize {
+    pub fn open_empty(&mut self, providers: Providers) -> usize {
         self.editors.push(
-            EditorView::new(self.config.clone(),
-                            tree_sitter,
-                            fsf,
-                            clipboard,
+            EditorView::new(providers,
                             self.nav_comp_group.clone()),
         );
 
@@ -67,17 +65,14 @@ impl EditorGroup {
     }
 
     // TODO is it on error escalation path after failed read?
-    pub fn open_file(&mut self, tree_sitter: Arc<TreeSitterWrapper>, ff: SPath, clipboard: ClipboardRef) -> Result<usize, ReadError> {
+    pub fn open_file(&mut self, providers: Providers, ff: SPath) -> Result<usize, ReadError> {
         let file_contents = ff.read_entire_file_to_rope()?;
         let lang_id_op = filename_to_language(&ff);
 
+        let tree_sitter = providers.tree_sitter().clone();
         self.editors.push(
-            EditorView::new(
-                self.config.clone(),
-                tree_sitter.clone(),
-                ff.fsf().clone(),
-                clipboard,
-                self.nav_comp_group.clone(),
+            EditorView::new(providers,
+                            self.nav_comp_group.clone(),
             ).with_buffer(
                 BufferState::full(Some(tree_sitter))
                     .with_text_from_rope(file_contents, lang_id_op)
