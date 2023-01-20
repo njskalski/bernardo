@@ -222,6 +222,36 @@ impl MainView {
         self.set_focused(ptr_to_hover);
     }
 
+    fn set_focus_to_code_result_view(&mut self) {
+        if self.crv_op.is_none() {
+            error!("failed setting focus to code results view - no results");
+            return;
+        }
+
+        let ptr_to_crv_op = SubwidgetPointer::<Self>::new(
+            Box::new(|s: &MainView| {
+                let crv_present = s.crv_op.is_some();
+                if crv_present {
+                    s.crv_op.as_ref().unwrap() as &dyn Widget
+                } else {
+                    error!("failed to unwrap crv widget!");
+                    s.get_default_focused().get(s)
+                }
+            }),
+            Box::new(|s: &mut MainView| {
+                let crv_present = s.crv_op.is_some();
+                if crv_present {
+                    s.crv_op.as_mut().unwrap() as &mut dyn Widget
+                } else {
+                    error!("failed to unwrap crv widget!");
+                    s.get_default_focused().get_mut(s)
+                }
+            }),
+        );
+
+        self.set_focused(ptr_to_crv_op);
+    }
+
     pub fn set_search_result(&mut self, crv_op: Option<CodeResultsView>) {
         self.crv_op = crv_op;
     }
@@ -339,6 +369,8 @@ impl Widget for MainView {
                                                                     "TODO bla bla bla".to_string(),
                                                                     //TODO
                                                                     Box::new(promise)));
+
+                            self.set_focus_to_code_result_view();
                         } else {
                             warn!("promise broken, throwing away.");
                         }
