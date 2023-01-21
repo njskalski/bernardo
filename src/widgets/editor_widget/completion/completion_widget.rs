@@ -243,7 +243,7 @@ impl Widget for CompletionWidget {
 }
 
 impl ComplexWidget for CompletionWidget {
-    fn get_layout(&self, _sc: SizeConstraint) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self) -> Box<dyn Layout<Self>> {
         if self.has_completions() {
             Box::new(LeafLayout::new(subwidget!(Self.list_widget)))
         } else {

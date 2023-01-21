@@ -114,7 +114,7 @@ impl Widget for CodeResultsView {
 }
 
 impl ComplexWidget for CodeResultsView {
-    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self) -> Box<dyn Layout<Self>> {
         SplitLayout::new(SplitDirection::Vertical)
             .with(
                 SplitRule::Fixed(1),

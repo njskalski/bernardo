@@ -442,7 +442,7 @@ impl Widget for SaveFileDialogWidget {
 }
 
 impl ComplexWidget for SaveFileDialogWidget {
-    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self) -> Box<dyn Layout<Self>> {
         let tree_layout = LeafLayout::new(subwidget!(Self.tree_widget));
 
         let left_column = SplitLayout::new(SplitDirection::Vertical)

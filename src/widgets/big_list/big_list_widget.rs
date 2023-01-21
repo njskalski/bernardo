@@ -262,7 +262,7 @@ impl<T: Widget> Widget for BigList<T> {
 }
 
 impl<T: Widget> ComplexWidget for BigList<T> {
-    fn get_layout(&self, _sc: SizeConstraint) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self) -> Box<dyn Layout<Self>> {
         if self.items.is_empty() {
             LeafLayout::new(subwidget!(Self.no_items_text)).boxed()
         } else {

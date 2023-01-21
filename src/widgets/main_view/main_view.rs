@@ -425,7 +425,7 @@ impl Widget for MainView {
 }
 
 impl ComplexWidget for MainView {
-    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self) -> Box<dyn Layout<Self>> {
         let left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
         let right_column = if self.crv_op.is_none() {
             LeafLayout::new(self.get_curr_editor_ptr()).boxed()
@@ -442,10 +442,6 @@ impl ComplexWidget for MainView {
             .with(SplitRule::Proportional(5.0),
                   right_column,
             );
-
-
-        //TODO(subwidgetpointermap)
-        let max_size = sc.as_finite().unwrap_or(self.size());
 
         let res = if let Some(hover) = &self.hover {
             match hover {

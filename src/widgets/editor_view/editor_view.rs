@@ -450,7 +450,7 @@ impl Widget for EditorView {
 }
 
 impl ComplexWidget for EditorView {
-    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>> {
+    fn get_layout(&self) -> Box<dyn Layout<Self>> {
         let editor_layout = LeafLayout::new(subwidget!(Self.editor)).boxed();
         let find_text_layout = LeafLayout::new(subwidget!(Self.find_label)).boxed();
         let find_box_layout = LeafLayout::new(subwidget!(Self.find_box)).boxed();

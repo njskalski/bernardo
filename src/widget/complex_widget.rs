@@ -38,7 +38,7 @@ pub trait ComplexWidget: Widget + Sized {
     /*
     produces cloneable layout func tree
      */
-    fn get_layout(&self, sc: SizeConstraint) -> Box<dyn Layout<Self>>;
+    fn get_layout(&self) -> Box<dyn Layout<Self>>;
 
     /*
     because using ComplexWidget helper requires routing calling complex_render from widget's render,
@@ -87,7 +87,7 @@ pub trait ComplexWidget: Widget + Sized {
     If you want something else, override it. But remember to set display_cache or render will fail.
      */
     fn complex_layout(&mut self, sc: SizeConstraint) -> XY {
-        let layout = self.get_layout(sc);
+        let layout = self.get_layout();
         let layout_res = layout.layout(self, sc);
 
         for wwr in layout_res.wwrs.iter() {
