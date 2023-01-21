@@ -162,14 +162,13 @@ impl Widget for CompletionWidget {
         Self::TYPENAME
     }
 
-    /*
-    TODO At this point, it seems like the issue is that this widget has a problem that min_size
-     relies on outdated information and cannot query the CompletionPromise for most up-to-date data.
-     Even if it could, that would still just defer the issue: layout can operate on different data
-     than min_size.
+    fn prelayout(&mut self) {
+        self.completions_promise.as_mut().map(|cp| {
+            cp.update();
+        });
 
-     Workaround would be to trigger update from EditorWidget, and then DO NOT update it afterwards.
-     */
+        self.complex_prelayout();
+    }
 
     fn size(&self) -> XY {
         let res = if self.has_completions() {

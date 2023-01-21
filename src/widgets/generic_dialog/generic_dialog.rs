@@ -129,6 +129,10 @@ impl Widget for GenericDialog {
         "GenericDialog"
     }
 
+    fn prelayout(&mut self) {
+        self.complex_prelayout();
+    }
+
     fn size(&self) -> XY {
         let mut total_size = self.text_widget.text_size();
 

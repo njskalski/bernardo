@@ -321,6 +321,10 @@ impl Widget for SaveFileDialogWidget {
         Self::TYPENAME
     }
 
+    fn prelayout(&mut self) {
+        self.complex_prelayout();
+    }
+
     fn size(&self) -> XY {
         XY::new(4, 4)
     }

@@ -73,6 +73,10 @@ impl Widget for ContextBarWidget {
         Self::TYPENAME
     }
 
+    fn prelayout(&mut self) {
+        self.complex_prelayout();
+    }
+
     fn size(&self) -> XY {
         XY::new(1, 12) // TODO completely arbitrary
     }

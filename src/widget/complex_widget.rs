@@ -31,9 +31,10 @@ pub struct DisplayState<S: Widget> {
 }
 
 pub trait ComplexWidget: Widget + Sized {
-    // fn complex_prelayout(&mut self) {
-    //     let layout = self.get_layout()
-    // }
+    fn complex_prelayout(&mut self) {
+        let layout = self.get_layout();
+        layout.prelayout(self);
+    }
 
     /*
     produces cloneable layout func tree

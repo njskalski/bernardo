@@ -299,6 +299,10 @@ impl Widget for EditorView {
         Self::TYPENAME
     }
 
+    fn prelayout(&mut self) {
+        self.complex_prelayout();
+    }
+
     fn size(&self) -> XY {
         XY::new(20, 8) // TODO completely arbitrary
     }

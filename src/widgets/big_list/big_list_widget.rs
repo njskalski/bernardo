@@ -128,6 +128,10 @@ impl<T: Widget> Widget for BigList<T> {
         Self::TYPENAME
     }
 
+    fn prelayout(&mut self) {
+        self.complex_prelayout();
+    }
+
     fn size(&self) -> XY {
         XY::new(10, 4) // TODO completely arbitrary
     }

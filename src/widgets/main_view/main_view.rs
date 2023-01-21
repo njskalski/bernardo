@@ -266,6 +266,10 @@ impl Widget for MainView {
         "main_view"
     }
 
+    fn prelayout(&mut self) {
+        self.complex_prelayout();
+    }
+
     fn size(&self) -> XY {
         // TODO delegate to complex_layout?
         Self::MIN_SIZE

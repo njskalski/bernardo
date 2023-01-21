@@ -83,6 +83,10 @@ impl Widget for CodeResultsView {
         Self::TYPENAME
     }
 
+    fn prelayout(&mut self) {
+        self.complex_prelayout();
+    }
+
     fn size(&self) -> XY {
         let item_min_size = self.item_list.size();
         XY::new(max(Self::MIN_WIDTH, item_min_size.x), 1 + item_min_size.y)
