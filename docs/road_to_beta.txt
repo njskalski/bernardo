@@ -1,3 +1,6 @@
+What I am working on right now:
+- I am removing sc from layout::layout, so I can prelayout without sc.
+
 Here is what I want to be present in Gladius Beta:
 
 1) code navigation (go to definition, see usages)

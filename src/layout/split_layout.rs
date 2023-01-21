@@ -352,6 +352,12 @@ impl<W: Widget> SplitLayout<W> {
 }
 
 impl<W: Widget> Layout<W> for SplitLayout<W> {
+    fn prelayout(&self, root: &mut W) {
+        for child in self.children.iter() {
+            child.layout.prelayout(root);
+        }
+    }
+
     fn min_size(&self, root: &W) -> XY {
         let mut res = XY::new(0, 0);
 

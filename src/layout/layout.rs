@@ -31,6 +31,8 @@ impl<W: Widget> LayoutResult<W> {
  Layout will SKIP a widget, if it's widget.id() == root.id()!
  */
 pub trait Layout<W: Widget> {
+    fn prelayout(&self, root: &mut W);
+
     fn min_size(&self, root: &W) -> XY;
 
     /*

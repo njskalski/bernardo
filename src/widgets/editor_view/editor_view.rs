@@ -141,11 +141,18 @@ impl EditorView {
         }
     }
 
-    fn get_hover_rect(max_size: XY) -> Rect {
-        let margin = max_size / 10;
-        Rect::new(margin,
-                  max_size - margin * 2,
-        )
+    fn get_hover_rect(sc: SizeConstraint) -> Option<Rect> {
+        sc.as_finite().map(|finite_sc| {
+            if finite_sc >= XY::new(10, 8) {
+                let margin = finite_sc / 10;
+                let res = Rect::new(margin,
+                                    finite_sc - margin * 2,
+                );
+                Some(res)
+            } else {
+                None
+            }
+        }).flatten()
     }
 
     /*
@@ -483,8 +490,6 @@ impl ComplexWidget for EditorView {
         if self.hover_dialog.is_none() {
             background
         } else {
-            let size = sc.as_finite().unwrap_or(self.size());
-            let rect = Self::get_hover_rect(size);
             let hover = LeafLayout::new(SubwidgetPointer::new(
                 Box::new(|s: &Self| {
                     s.hover_dialog.as_ref().unwrap()
@@ -496,7 +501,7 @@ impl ComplexWidget for EditorView {
 
             HoverLayout::new(background,
                              hover,
-                             rect,
+                             Box::new(Self::get_hover_rect),
                              true,
             ).boxed()
         }

@@ -114,18 +114,18 @@ impl MainView {
         self.set_focused(self.get_default_focused())
     }
 
-    fn get_hover_rect(max_size: XY) -> Rect {
-        let margin = max_size / 10;
-        let res = Rect::new(margin,
-                            max_size - margin * 2,
-        );
-
-        //edge case when... wtf
-        if !(res.lower_right() >= max_size) {
-            res.size.cut(SizeConstraint::simple(max_size));
-        }
-
-        res
+    fn get_hover_rect(sc: SizeConstraint) -> Option<Rect> {
+        sc.as_finite().map(|finite_sc| {
+            if finite_sc >= XY::new(10, 8) {
+                let margin = finite_sc / 10;
+                let res = Rect::new(margin,
+                                    finite_sc - margin * 2,
+                );
+                Some(res)
+            } else {
+                None
+            }
+        }).flatten()
     }
 
 
@@ -450,8 +450,6 @@ impl ComplexWidget for MainView {
         let res = if let Some(hover) = &self.hover {
             match hover {
                 HoverItem::FuzzySearch(_fuzzy) => {
-                    let rect = MainView::get_hover_rect(max_size);
-
                     let hover = LeafLayout::new(SubwidgetPointer::new(
                         Box::new(|s: &Self| {
                             match s.hover.as_ref().unwrap() {
@@ -468,7 +466,7 @@ impl ComplexWidget for MainView {
                     HoverLayout::new(
                         bg_layout.boxed(),
                         hover,
-                        rect,
+                        Box::new(Self::get_hover_rect),
                         true,
                     ).boxed()
                 }

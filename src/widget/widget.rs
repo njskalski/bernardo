@@ -1,6 +1,8 @@
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use log::debug;
+
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
@@ -18,6 +20,11 @@ pub trait Widget: 'static {
     fn id(&self) -> WID;
 
     fn typename(&self) -> &'static str;
+
+    // This call is created to pull widget-independent data before size() call.
+    fn prelayout(&mut self) {
+        debug!("prelayouting {}", self.typename());
+    }
 
     // Size of the view. If the output cannot satisfy it, a replacement is drawn instead, and the
     // view cannot be focused.

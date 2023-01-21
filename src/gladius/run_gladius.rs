@@ -122,6 +122,7 @@ pub fn run_gladius<
                 break;
             }
         }
+        main_view.prelayout();
         main_view.layout(output.size_constraint());
         main_view.render(providers.theme(), true, &mut output);
         match output.end_frame() {

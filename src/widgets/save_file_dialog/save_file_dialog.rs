@@ -295,6 +295,21 @@ impl SaveFileDialogWidget {
             None
         }
     }
+
+    fn get_child_hover_rect(sc: SizeConstraint) -> Option<Rect> {
+        sc.as_finite().map(|finite_sc| {
+            if finite_sc >= XY::new(10, 8) {
+                let max_size = finite_sc - XY::new(2, 2);
+                let margins = max_size / 10;
+                Some(Rect::new(
+                    margins,
+                    max_size - (margins * 2),
+                ))
+            } else {
+                None
+            }
+        }).flatten()
+    }
 }
 
 impl Widget for SaveFileDialogWidget {
@@ -468,18 +483,6 @@ impl ComplexWidget for SaveFileDialogWidget {
         if self.hover_dialog.is_none() {
             FrameLayout::new(layout, frame).boxed()
         } else {
-            //TODO underflow
-            let max_size = sc.as_finite().unwrap_or(self.size()) - frame * 2;
-            let child_rect = {
-                let margins = max_size / 10;
-                Rect::new(
-                    margins,
-                    max_size - (margins * 2),
-                )
-            };
-
-            debug_assert!(sc.bigger_equal_than(child_rect.lower_right()));
-
             //TODO(subwidgetpointermap)
             let dialog_layout = LeafLayout::new(SubwidgetPointer::new(
                 Box::new(|x: &Self| { x.hover_dialog.as_ref().unwrap() }),
@@ -488,7 +491,7 @@ impl ComplexWidget for SaveFileDialogWidget {
 
             FrameLayout::new(HoverLayout::new(layout,
                                               dialog_layout,
-                                              child_rect,
+                                              Box::new(Self::get_child_hover_rect),
                                               true,
             ).boxed(), frame).boxed()
         }

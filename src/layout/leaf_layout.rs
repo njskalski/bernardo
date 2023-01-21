@@ -19,6 +19,11 @@ impl<W: Widget> LeafLayout<W> {
 }
 
 impl<W: Widget> Layout<W> for LeafLayout<W> {
+    fn prelayout(&self, root: &mut W) {
+        let widget = self.widget.get_mut(root);
+        widget.prelayout();
+    }
+
     fn min_size(&self, root: &W) -> XY {
         self.widget.get(root).size()
     }

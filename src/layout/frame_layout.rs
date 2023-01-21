@@ -30,6 +30,10 @@ impl<W: Widget> FrameLayout<W> {
 }
 
 impl<W: Widget> Layout<W> for FrameLayout<W> {
+    fn prelayout(&self, root: &mut W) {
+        self.layout.prelayout(root);
+    }
+
     fn min_size(&self, root: &W) -> XY {
         self.layout.min_size(root) + self.margins * 2
     }
