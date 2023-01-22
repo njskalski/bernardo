@@ -1,11 +1,14 @@
 What I am working on right now:
-- I am removing sc from layout::layout, so I can prelayout without sc.
+- I am trying to get the "code results widget" to display anything
 
 Here is what I want to be present in Gladius Beta:
 
 1) code navigation (go to definition, see usages)
 2) full text search (aka ctrl-shift-f)
   these two almost beg for "results view"
+2.5) make the buffer states globally tracked, not two different buffer states for same file.
+2... furthermore, navcomp op is pretty much always the same. If old navcomp
+2.75) add a Trait to do "check_invariant";
 3) the context menu
 4) git filtering in file search
 5) fuzzy file search covered with tests

@@ -366,10 +366,7 @@ impl Widget for MainView {
                     if let Some(mut promise) = promise_op.take() {
                         promise.update();
                         if promise.state() != PromiseState::Broken {
-                            self.crv_op = Some(CodeResultsView::new(self.providers.config().clone(),
-                                                                    self.providers.tree_sitter().clone(),
-                                                                    self.providers.fsf().clone(),
-                                                                    self.providers.clipboard().clone(),
+                            self.crv_op = Some(CodeResultsView::new(self.providers.clone(),
                                                                     "TODO bla bla bla".to_string(),
                                                                     //TODO
                                                                     Box::new(promise)));

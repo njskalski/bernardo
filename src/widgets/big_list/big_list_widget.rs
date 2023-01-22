@@ -1,4 +1,5 @@
 use log::{error, warn};
+use lsp_types::lsif::Item;
 
 use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
@@ -116,6 +117,10 @@ impl<T: Widget> BigList<T> {
                 error!("failed to set kite - id {} not found", selected_id);
             }
         }
+    }
+
+    pub fn items(&self) -> impl Iterator<Item=&T> {
+        self.items.iter().map(|(splitRule, widget)| widget)
     }
 }
 

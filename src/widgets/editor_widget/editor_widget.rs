@@ -1,8 +1,8 @@
-use std::cmp::min;
+use std::cmp::{max, min};
 use std::rc::Rc;
 use std::sync::Arc;
 
-use log::{debug, error, warn};
+use log::{debug, error, log, warn};
 use matches::debug_assert_matches;
 use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
@@ -457,6 +457,31 @@ impl EditorWidget {
 
     pub fn cursors(&self) -> &CursorSet {
         &self.buffer.text().cursor_set
+    }
+
+    pub fn set_cursors(&mut self, cursor_set: CursorSet) -> bool {
+        if cursor_set.len() == 0 {
+            error!("empty cursor set!");
+            return false;
+        }
+
+        let mut max_idx: usize = 0;
+        for c in cursor_set.iter() {
+            max_idx = max(max_idx, c.a);
+            if let Some(s) = c.s {
+                max_idx = max(max_idx, s.e);
+            }
+        }
+
+        if max_idx > self.buffer().len_chars() + 1 {
+            warn!("can't set cursor at {} for buffer len {}", max_idx, self.buffer().len_chars());
+            return false;
+        }
+
+        self.buffer.text_mut().cursor_set = cursor_set;
+        self.update_kite(Arrow::Down);
+
+        true
     }
 
     pub fn buffer(&self) -> &BufferState {

@@ -169,7 +169,6 @@ pub struct BufferState {
     lang_id: Option<LangId>,
 
     file: Option<SPath>,
-
 }
 
 impl BufferState {

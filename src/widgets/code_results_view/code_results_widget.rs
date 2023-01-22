@@ -1,6 +1,10 @@
 use std::cmp::max;
+use std::collections::HashSet;
 use std::rc::Rc;
+use std::str::{from_utf8, Utf8Error};
 use std::sync::Arc;
+
+use log::error;
 
 use crate::{subwidget, unpack_or_e};
 use crate::config::config::ConfigRef;
@@ -9,14 +13,19 @@ use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
+use crate::fs::read_error::ReadError;
+use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
+use crate::io::loading_state::LoadingState;
 use crate::io::output::Output;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::cursor_set::{Cursor, CursorSet};
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
@@ -30,16 +39,14 @@ use crate::widgets::with_scroll::WithScroll;
 pub struct CodeResultsView {
     wid: WID,
 
-    finished_loading: bool,
     label: TextWidget,
     item_list: WithScroll<BigList<EditorWidget>>,
 
     //providers
     data_provider: Box<dyn CodeResultsProvider>,
-    config: ConfigRef,
-    tree_sitter: Arc<TreeSitterWrapper>,
-    fsf: FsfRef,
-    clipboard: ClipboardRef,
+    failed_ids: HashSet<usize>,
+
+    providers: Providers,
 
     //
     display_state: Option<DisplayState<CodeResultsView>>,
@@ -50,25 +57,19 @@ impl CodeResultsView {
     pub const MIN_WIDTH: u16 = 20;
 
     pub fn new(
-        config: ConfigRef,
-        tree_sitter: Arc<TreeSitterWrapper>,
-        fsf: FsfRef,
-        clipboard: ClipboardRef,
+        providers: Providers,
         label: String,
         data_provider: Box<dyn CodeResultsProvider>,
     ) -> Self {
         Self {
             wid: get_new_widget_id(),
-            finished_loading: false,
             label: TextWidget::new(Box::new(label)),
             item_list: WithScroll::new(ScrollDirection::Vertical,
                                        BigList::new(vec![]),
             ),
             data_provider,
-            config,
-            tree_sitter,
-            fsf,
-            clipboard,
+            failed_ids: HashSet::new(),
+            providers,
             display_state: None,
         }
     }
@@ -84,6 +85,75 @@ impl Widget for CodeResultsView {
     }
 
     fn prelayout(&mut self) {
+        for (idx, symbol) in self.data_provider.items().enumerate().skip(self.item_list.internal().items().count()) {
+            // TODO URGENT loading files should be moved out from here to some common place between this and Editor
+
+            if self.failed_ids.contains(&idx) {
+                continue;
+            }
+
+            let spath = match self.providers.fsf().descendant_checked(&symbol.path) {
+                None => {
+                    error!("failed to get spath from {}", &symbol.path);
+                    self.failed_ids.insert(idx);
+                    continue;
+                }
+                Some(s) => s,
+            };
+
+            let buffer_bytes = match self.providers.fsf().blocking_read_entire_file(&spath) {
+                Ok(buf) => buf,
+                Err(e) => {
+                    error!("failed loading file {}, because {}", &spath, e);
+                    self.failed_ids.insert(idx);
+                    continue;
+                }
+            };
+
+            let buffer_str = match from_utf8(&buffer_bytes) {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed loading file {}, because utf8 error {}", &spath, e);
+                    self.failed_ids.insert(idx);
+                    continue;
+                }
+            };
+
+            let buffer_state = BufferState::full(
+                Some(self.providers.tree_sitter().clone()),
+            ).with_text(buffer_str);
+
+            let first_cursor = match symbol.stupid_range.0.to_real_cursor(&buffer_state) {
+                None => {
+                    error!("failed to cast StupidCursor to a real one");
+                    self.failed_ids.insert(idx);
+                    continue;
+                }
+                Some(c) => c,
+            };
+
+            // TODO second_cursor?
+
+            let cursor_set = CursorSet::singleton(first_cursor);
+
+            let mut edit_widget = EditorWidget::new(
+                self.providers.clone(),
+                None, // TODO add navcomp
+            ).with_buffer(buffer_state, None)
+                .with_readonly();
+
+            if edit_widget.set_cursors(cursor_set) == false {
+                error!("failed to set the cursor");
+                self.failed_ids.insert(idx);
+                continue;
+            }
+
+            self.item_list.internal_mut().add_item(
+                SplitRule::Fixed(5),
+                edit_widget,
+            );
+        }
+
         self.complex_prelayout();
     }
 
