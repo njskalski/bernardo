@@ -85,6 +85,8 @@ impl Widget for CodeResultsView {
     }
 
     fn prelayout(&mut self) {
+        self.data_provider.todo_tick();
+
         for (idx, symbol) in self.data_provider.items().enumerate().skip(self.item_list.internal().items().count()) {
             // TODO URGENT loading files should be moved out from here to some common place between this and Editor
 
@@ -92,7 +94,28 @@ impl Widget for CodeResultsView {
                 continue;
             }
 
-            let spath = match self.providers.fsf().descendant_checked(&symbol.path) {
+            let no_prefix = match symbol.path.strip_prefix("file://") {
+                None => {
+                    error!("failed stripping prefix from {}", &symbol.path);
+                    self.failed_ids.insert(idx);
+                    continue;
+                }
+                Some(np) => np,
+            };
+
+            // TODO two unwraps
+            // let root = self.providers.fsf().root().0.as_path().unwrap().to_str().unwrap().to_string();
+
+            let in_workspace = match no_prefix.strip_prefix(&root) {
+                None => {
+                    error!("failed stripping prefix from {}", &no_prefix);
+                    self.failed_ids.insert(idx);
+                    continue;
+                }
+                Some(np) => np,
+            };
+
+            let spath = match self.providers.fsf().descendant_checked(&in_workspace) {
                 None => {
                     error!("failed to get spath from {}", &symbol.path);
                     self.failed_ids.insert(idx);

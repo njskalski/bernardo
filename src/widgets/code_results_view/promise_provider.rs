@@ -8,6 +8,10 @@ use crate::w7e::navcomp_provider::{SymbolUsage, SymbolUsagesPromise};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 
 impl CodeResultsProvider for SymbolUsagesPromise {
+    fn todo_tick(&mut self) {
+        debug!("TODO ticking proise: {:?}", self.update());
+    }
+
     fn loading_state(&self) -> LoadingState {
         match self.state() {
             PromiseState::Unresolved => LoadingState::InProgress,

@@ -1,4 +1,4 @@
-use log::{error, warn};
+use log::{debug, error, warn};
 
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
@@ -184,6 +184,11 @@ impl<W: Widget> Widget for WithScroll<W> {
 
     fn typename(&self) -> &'static str {
         Self::TYPENAME
+    }
+
+    fn prelayout(&mut self) {
+        debug!("prelayout {}", self.typename());
+        self.widget.prelayout();
     }
 
     fn size(&self) -> XY {

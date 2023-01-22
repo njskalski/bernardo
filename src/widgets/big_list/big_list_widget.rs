@@ -1,4 +1,4 @@
-use log::{error, warn};
+use log::{debug, error, warn};
 use lsp_types::lsif::Item;
 
 use crate::config::theme::Theme;
@@ -134,6 +134,7 @@ impl<T: Widget> Widget for BigList<T> {
     }
 
     fn prelayout(&mut self) {
+        debug!("prelayout {}", self.typename());
         self.complex_prelayout();
     }
 
