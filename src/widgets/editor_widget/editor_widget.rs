@@ -45,7 +45,7 @@ use crate::widgets::editor_widget::helpers::{CursorScreenPosition, find_trigger_
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::main_view::msg::MainViewMsg;
 
-const MIN_EDITOR_SIZE: XY = XY::new(32, 10);
+const MIN_EDITOR_SIZE: XY = XY::new(10, 3);
 // const MAX_HOVER_SIZE: XY = XY::new(64, 20);
 
 const NEWLINE: &'static str = "⏎";

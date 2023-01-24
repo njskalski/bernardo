@@ -139,7 +139,7 @@ impl<W: Widget> SplitLayout<W> {
         let mut result: Vec<WidgetWithRect<W>> = Vec::new();
         let mut offset = XY::ZERO;
 
-        let non_free_axis = if self.split_direction == SplitDirection::Vertical {
+        let non_free_axis = if self.split_direction == SplitDirection::Horizontal {
             sc.y().unwrap_or_else(|| {
                 error!("fake unwrap, returning safe default");
                 10 // TODO
@@ -167,6 +167,18 @@ impl<W: Widget> SplitLayout<W> {
 
             match child.split_rule {
                 SplitRule::Fixed(fixed) => {
+                    if self.split_direction == SplitDirection::Vertical {
+                        if fixed < min_child_size.y {
+                            error!("fixed size {} < {} min_size.y!", fixed, min_child_size.y);
+                            continue;
+                        }
+                    } else {
+                        if fixed < min_child_size.x {
+                            error!("fixed size {} < {} min_size.x!", fixed, min_child_size.x);
+                            continue;
+                        }
+                    }
+
                     let local_size = if self.split_direction == SplitDirection::Vertical {
                         XY::new(non_free_axis, fixed)
                     } else {

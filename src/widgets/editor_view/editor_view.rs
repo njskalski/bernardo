@@ -304,7 +304,7 @@ impl Widget for EditorView {
     }
 
     fn size(&self) -> XY {
-        XY::new(20, 8) // TODO completely arbitrary
+        XY::new(10, 3) // TODO completely arbitrary
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {

@@ -105,8 +105,9 @@ impl Widget for CodeResultsView {
 
             // TODO two unwraps
             // let root = self.providers.fsf().root().0.as_path().unwrap().to_str().unwrap().to_string();
+            let root_path_buf = self.providers.fsf().root_path_buf().to_string_lossy().to_string() + "/";
 
-            let in_workspace = match no_prefix.strip_prefix(&root) {
+            let in_workspace = match no_prefix.strip_prefix(&root_path_buf) {
                 None => {
                     error!("failed stripping prefix from {}", &no_prefix);
                     self.failed_ids.insert(idx);
@@ -117,7 +118,7 @@ impl Widget for CodeResultsView {
 
             let spath = match self.providers.fsf().descendant_checked(&in_workspace) {
                 None => {
-                    error!("failed to get spath from {}", &symbol.path);
+                    error!("failed to get spath from {}", &in_workspace);
                     self.failed_ids.insert(idx);
                     continue;
                 }
