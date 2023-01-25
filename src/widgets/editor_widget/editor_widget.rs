@@ -142,6 +142,8 @@ pub struct EditorWidget {
     providers: Providers,
 
     readonly: bool,
+    // I'd prefer to have "constrain cursors to visible part", but since it's non-trivial, I don't do it now.
+    ignore_input_altogether: bool,
 
     last_size: Option<SizeConstraint>,
     // to be constructed in layout step based on HoverSettings
@@ -177,6 +179,7 @@ impl EditorWidget {
             wid: get_new_widget_id(),
             providers,
             readonly: false,
+            ignore_input_altogether: false,
             last_size: None,
             last_hover_rect: None,
             buffer: BufferState::full(Some(tree_sitter_clone)),
@@ -192,6 +195,13 @@ impl EditorWidget {
     pub fn with_readonly(self) -> Self {
         Self {
             readonly: true,
+            ..self
+        }
+    }
+
+    pub fn with_ignore_input_altogether(self) -> Self {
+        Self {
+            ignore_input_altogether: true,
             ..self
         }
     }
@@ -949,6 +959,10 @@ impl Widget for EditorWidget {
         let c = &self.providers.config().keyboard_config.editor;
 
         return match (&self.state, input_event) {
+            (_, _) if self.ignore_input_altogether => {
+                debug!("ignoring input because ignore_input_altogether = true");
+                None
+            }
             (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.enter_cursor_drop_mode => {
                 EditorWidgetMsg::ToCursorDropMode.someboxed()
             }

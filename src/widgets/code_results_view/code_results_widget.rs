@@ -164,7 +164,8 @@ impl Widget for CodeResultsView {
                 self.providers.clone(),
                 None, // TODO add navcomp
             ).with_buffer(buffer_state, None)
-                .with_readonly();
+                .with_readonly()
+                .with_ignore_input_altogether();
 
             if edit_widget.set_cursors(cursor_set) == false {
                 error!("failed to set the cursor");

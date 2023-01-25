@@ -122,6 +122,15 @@ impl<T: Widget> BigList<T> {
     pub fn items(&self) -> impl Iterator<Item=&T> {
         self.items.iter().map(|(splitRule, widget)| widget)
     }
+
+    fn update_focus_path(&mut self) {
+        let widget_ptr = self.get_item_widget_ptr(self.item_idx);
+        if let Some(ds) = self.display_state.as_mut() {
+            ds.focused = widget_ptr;
+        } else {
+            warn!("no display_state");
+        }
+    }
 }
 
 impl<T: Widget> Widget for BigList<T> {
@@ -178,6 +187,7 @@ impl<T: Widget> Widget for BigList<T> {
                             Arrow::Up => {
                                 if self.item_idx > 0 {
                                     self.item_idx -= 1;
+                                    self.update_focus_path();
                                     self.set_kite(true);
                                 } else {
                                     warn!("arrow up widget can't handle");
@@ -187,6 +197,7 @@ impl<T: Widget> Widget for BigList<T> {
                             Arrow::Down => {
                                 if self.item_idx + 1 < self.items.len() {
                                     self.item_idx += 1;
+                                    self.update_focus_path();
                                     self.set_kite(false);
                                 } else {
                                     warn!("arrow down widget can't handle");
@@ -199,6 +210,7 @@ impl<T: Widget> Widget for BigList<T> {
                     ScrollEnum::Home => {
                         if self.item_idx > 0 {
                             self.item_idx = 0;
+                            self.update_focus_path();
                             self.set_kite(true);
                         } else {
                             warn!("home widget can't handle");
@@ -208,6 +220,7 @@ impl<T: Widget> Widget for BigList<T> {
                     ScrollEnum::End => {
                         if self.item_idx + 1 < self.items.len() {
                             self.item_idx = self.items.len() - 1;
+                            self.update_focus_path();
                             self.set_kite(false);
                         } else {
                             warn!("end widget can't handle");
