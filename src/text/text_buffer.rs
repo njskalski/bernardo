@@ -37,8 +37,6 @@ pub trait TextBuffer: ToString {
     fn chars(&self) -> Chars;
     fn chunks(&self) -> Chunks;
 
-    fn char_to_kind(&self, _char_idx: usize) -> Option<&str> { None }
-
     fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, tree_sitter::Point) -> &'a [u8] + 'a>;
 
     fn try_parse(&mut self, _lang_id: LangId) -> bool { false }

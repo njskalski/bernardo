@@ -599,6 +599,25 @@ pub mod tests {
     }
 
     #[test]
+    fn single_cursor_word_end_2() {
+        let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
+            c.word_end_default(bs, false);
+        };
+
+        let progress = vec![
+            "#   alama kota",
+            "   #alama kota",
+            "   alama# kota",
+            "   alama #kota",
+            "   alama kota#",
+        ];
+
+        for i in 0..progress.len() - 1 {
+            assert_eq!(apply(progress[i], f), progress[i + 1], "i: {}", i);
+        }
+    }
+
+    #[test]
     fn multiple_cursors_word_end() {
         let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
             c.word_end_default(bs, false);

@@ -187,7 +187,7 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn prelayout(&mut self) {
-        debug!("prelayout {}", self.typename());
+        // debug!("prelayout {}", self.typename());
         self.widget.prelayout();
     }
 

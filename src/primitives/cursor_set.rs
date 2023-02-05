@@ -105,6 +105,10 @@ impl Ord for Selection {
     }
 }
 
+// both signatures are buffer, idx 
+pub type ForwardWordDeterminant = Fn(&dyn TextBuffer, usize, usize) -> bool;
+pub type ReverseWordDeterminant = Fn(&dyn TextBuffer, usize, usize) -> bool;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Cursor {
@@ -386,7 +390,7 @@ impl Cursor {
         old_pos != self.a
     }
 
-    fn word_end<F: Fn(usize) -> bool>(&mut self, buffer: &dyn TextBuffer, selecting: bool, word_determinant: F) -> bool {
+    fn word_end<F: FnMut(char, char) -> bool>(&mut self, buffer: &dyn TextBuffer, selecting: bool, word_determinant: F) -> bool {
         if self.a == buffer.len_chars() {
             return false;
         }
@@ -394,10 +398,14 @@ impl Cursor {
         let old_pos = self.a;
 
         if self.a < buffer.len_chars() {
-            if word_determinant(self.a) {
+            if word_determinant(buffer.char_at(self.a).unwrap()) {
                 // variant within the word
-                while self.a < buffer.len_chars() && word_determinant(self.a) {
-                    self.a += 1;
+                while self.a < buffer.len_chars() {
+                    if word_determinant(buffer.char_at(self.a).unwrap()) {
+                        self.a += 1;
+                    } else {
+                        break;
+                    }
                 }
             } else {
                 self.a += 1;
@@ -1117,11 +1125,11 @@ impl CursorSet {
         res
     }
 
-    pub fn word_end<F: Fn(usize) -> bool>(&mut self, buffer: &dyn TextBuffer, selecting: bool, word_determinant: &F) -> bool {
+    pub fn word_end<F: FnMut(char) -> bool + Clone>(&mut self, buffer: &dyn TextBuffer, selecting: bool, word_determinant: &F) -> bool {
         let mut res = false;
 
         for c in self.set.iter_mut() {
-            res |= c.word_end(buffer, selecting, word_determinant);
+            res |= c.word_end(buffer, selecting, word_determinant.clone());
         }
 
         self.reduce_right();
@@ -1145,7 +1153,9 @@ impl CursorSet {
         self.word_end(
             buffer,
             selecting,
-            &|idx: usize| -> bool {
+            &|c : char| -> bool {
+                match self.
+
                 match buffer.char_at(idx) {
                     None => false,
                     Some(ch) => !ch.is_whitespace()
