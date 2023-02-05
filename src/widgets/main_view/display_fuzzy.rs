@@ -21,8 +21,8 @@ impl DisplayItem {
 }
 
 impl Item for &DisplayItem {
-    fn display_name(&self) -> Cow<str> {
-        Cow::Borrowed(self.display.as_str())
+    fn display_name(&self) -> Rc<String> {
+        self.display.clone()
     }
 
     fn on_hit(&self) -> Box<dyn AnyMsg> {
@@ -31,8 +31,8 @@ impl Item for &DisplayItem {
 }
 
 impl ItemsProvider for Vec<DisplayItem> {
-    fn context_name(&self) -> &str {
-        "displays"
+    fn context_name(&self) -> Rc<String> {
+        Rc::new("displays".to_string())
     }
 
     fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {

@@ -1,7 +1,8 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
-// TODO(cleanup) remove DerefStr in favour of Cow<>?
+//TODO use more generic type?
+
 pub trait DerefStr {
     fn as_ref_str(&self) -> &str;
 }

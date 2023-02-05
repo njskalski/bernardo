@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::fmt::Debug;
+use std::rc::Rc;
 
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
@@ -40,11 +41,11 @@ pub enum SPathMsg {
 impl AnyMsg for SPathMsg {}
 
 impl Item for SPath {
-    fn display_name(&self) -> Cow<str> {
-        self.file_name_str().unwrap_or("<error>").into()
+    fn display_name(&self) -> Rc<String> {
+        Rc::new(self.file_name_str().unwrap_or("<error>").to_string())
     }
 
-    fn comment(&self) -> Option<Cow<str>> {
+    fn comment(&self) -> Option<Rc<String>> {
         self.parent_ref().map(|p| p.relative_path().to_string_lossy().to_string().into())
     }
 
@@ -55,8 +56,8 @@ impl Item for SPath {
 
 // TODO reintroduce ignoring of gitignores
 impl ItemsProvider for FsfProvider {
-    fn context_name(&self) -> &str {
-        "fs"
+    fn context_name(&self) -> Rc<String> {
+        Rc::new("fs".to_string())
     }
 
     fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {

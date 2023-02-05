@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::widget::action_trigger::ActionTrigger;
 use crate::widget::widget::Widget;
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
@@ -15,7 +17,7 @@ impl<W: Widget> Actions<W> {
 }
 
 impl<W: Widget> ItemsProvider for Actions<W> {
-    fn context_name(&self) -> &str {
+    fn context_name(&self) -> Rc<String> {
         todo!()
     }
 

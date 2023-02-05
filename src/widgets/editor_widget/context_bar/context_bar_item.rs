@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::fmt::Debug;
+use std::rc::Rc;
 
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
@@ -93,9 +94,9 @@ impl ListWidgetItem for ContextBarItem {
         1
     }
 
-    fn get(&self, idx: usize) -> Option<Cow<'_, str>> {
+    fn get(&self, idx: usize) -> Option<Rc<String>> {
         match idx {
-            0 => Some(Cow::Borrowed(&self.title)),
+            0 => Some(Rc::new(self.title.to_string())),
             _ => None,
         }
     }

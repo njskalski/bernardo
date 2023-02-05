@@ -1,5 +1,6 @@
 pub mod mock {
     use std::borrow::Cow;
+    use std::rc::Rc;
 
     use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 
@@ -42,10 +43,10 @@ pub mod mock {
             }
         }
 
-        fn get(&self, idx: usize) -> Option<Cow<'_, str>> {
+        fn get(&self, idx: usize) -> Option<Rc<String>> {
             match idx {
-                0 => { Some(Cow::Borrowed(&self.name)) }
-                1 => { Some(Cow::Owned(format!("{}", self.size))) }
+                0 => { Some(Rc::new(self.name.clone())) }
+                1 => { Some(Rc::new(format!("{}", self.size))) }
                 _ => None
             }
         }

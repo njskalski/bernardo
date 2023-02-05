@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::rc::Rc;
 
 use log::warn;
 
@@ -27,11 +28,11 @@ impl ListWidgetItem for SPath {
         3
     }
 
-    fn get(&self, idx: usize) -> Option<Cow<'_, str>> {
+    fn get(&self, idx: usize) -> Option<Rc<String>> {
         match idx {
             0 => Some(self.display_name()), // TODO,
-            1 => Some(Cow::Borrowed("N/A")),
-            2 => Some(Cow::Borrowed("N/A")),
+            1 => Some(Rc::new("N/A".to_string())),
+            2 => Some(Rc::new("N/A".to_string())),
             _ => None
         }
     }

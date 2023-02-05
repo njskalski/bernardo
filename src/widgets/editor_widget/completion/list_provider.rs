@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::iter::empty;
+use std::rc::Rc;
 
 use log::error;
 
@@ -27,9 +28,9 @@ impl ListWidgetItem for Completion {
         1
     }
 
-    fn get(&self, idx: usize) -> Option<Cow<'_, str>> {
+    fn get(&self, idx: usize) -> Option<Rc<String>> {
         if idx == 0 {
-            Some(Cow::Borrowed(&self.key))
+            Some(Rc::new(self.key.clone()))
         } else {
             error!("requested size of non-existent column");
             None

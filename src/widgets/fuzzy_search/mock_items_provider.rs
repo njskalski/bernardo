@@ -1,5 +1,6 @@
 pub mod mock {
     use std::borrow::Cow;
+    use std::rc::Rc;
 
     use crate::primitives::alphabet::mock::ALPHABET;
     use crate::widget::any_msg::AnyMsg;
@@ -43,8 +44,8 @@ pub mod mock {
     }
 
     impl Item for String {
-        fn display_name(&self) -> Cow<str> {
-            self.into()
+        fn display_name(&self) -> Rc<String> {
+            Rc::new(self.to_string())
         }
 
         fn on_hit(&self) -> Box<dyn AnyMsg> {
@@ -53,8 +54,8 @@ pub mod mock {
     }
 
     impl ItemsProvider for MockItemProvider {
-        fn context_name(&self) -> &str {
-            "mock"
+        fn context_name(&self) -> Rc<String> {
+            Rc::new("mock".to_string())
         }
 
         fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {

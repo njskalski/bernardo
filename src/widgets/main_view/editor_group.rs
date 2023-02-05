@@ -142,20 +142,20 @@ enum BufferDesc {
 }
 
 impl Item for BufferDesc {
-    fn display_name(&self) -> Cow<str> {
+    fn display_name(&self) -> Rc<String> {
         match self {
             BufferDesc::File { pos: _, ff } => {
-                ff.file_name_str().unwrap_or("error getting filename").into()
+                Rc::new(ff.file_name_str().unwrap_or("error getting filename").to_string())
             }
-            BufferDesc::Unnamed { pos: _, id } => format!("Unnamed #{}", id).into(),
+            BufferDesc::Unnamed { pos: _, id } => Rc::new(format!("Unnamed #{}", id)),
         }
     }
 
-    fn comment(&self) -> Option<Cow<str>> {
+    fn comment(&self) -> Option<Rc<String>> {
         match self {
             BufferDesc::File { pos: _, ff } => {
                 // TODO this is shit
-                Some(ff.display_name())
+                Some(Rc::new(ff.display_name().to_string()))
             }
             _ => None,
         }
@@ -174,8 +174,8 @@ pub struct BufferNamesProvider {
 }
 
 impl ItemsProvider for BufferNamesProvider {
-    fn context_name(&self) -> &str {
-        "buffers"
+    fn context_name(&self) -> Rc<String> {
+        Rc::new("buffer".to_string())
     }
 
     fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
