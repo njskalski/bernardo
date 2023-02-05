@@ -42,7 +42,7 @@ pub struct CodeResultsView {
 
     // TODO reduce
     label: TextWidget,
-    label_text: String,
+    label_text: Rc<String>,
     item_list: WithScroll<BigList<EditorWidget>>,
 
     //providers
@@ -64,10 +64,11 @@ impl CodeResultsView {
         label: String,
         data_provider: Box<dyn CodeResultsProvider>,
     ) -> Self {
+        let rc = Rc::new(label);
         Self {
             wid: get_new_widget_id(),
-            label: TextWidget::new(Box::new(label.clone())),
-            label_text: label,
+            label: TextWidget::new(Box::new(rc.clone())),
+            label_text: rc,
             item_list: WithScroll::new(ScrollDirection::Vertical,
                                        BigList::new(vec![]),
             ),
@@ -78,8 +79,8 @@ impl CodeResultsView {
         }
     }
 
-    pub fn get_text(&self) -> Cow<str> {
-        Cow::Borrowed(&self.label_text)
+    pub fn get_text(&self) -> &Rc<String> {
+        &self.label_text
     }
 }
 

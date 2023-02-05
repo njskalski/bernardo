@@ -37,6 +37,7 @@ use crate::widgets::fuzzy_search::fsf_provider::{FsfProvider, SPathMsg};
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
 use crate::widgets::fuzzy_search::item_provider::ItemsProvider;
 use crate::widgets::main_view::display::MainViewDisplay;
+use crate::widgets::main_view::display_fuzzy::DisplayItem;
 use crate::widgets::main_view::editor_group::EditorGroup;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::no_editor::NoEditorWidget;
@@ -248,7 +249,29 @@ impl MainView {
     }
 
     pub fn get_display_list_provider(&self) -> Box<dyn ItemsProvider> {
-        Box::new(&self.displays)
+        Box::new(self.displays.iter().enumerate().map(|(idx, display)| {
+            match display {
+                MainViewDisplay::Editor(editor) => {
+                    let text = match editor.buffer_state().get_path() {
+                        None => {
+                            format!("unnamed file #{}", idx)
+                        }
+                        Some(path) => {
+                            path.label().to_string()
+                        }
+                    };
+
+                    // TODO unnecessary Rc over new
+                    DisplayItem::new(idx, Rc::new(text))
+                }
+                MainViewDisplay::ResultsView(result) => {
+                    let text = result.get_text().clone();
+
+                    DisplayItem::new(idx, text)
+                }
+            }
+        }).collect::<Vec<_>>()
+        )
     }
 
     fn get_curr_display_ptr(&self) -> SubwidgetPointer<Self> {
@@ -498,14 +521,7 @@ impl Widget for MainView {
 impl ComplexWidget for MainView {
     fn get_layout(&self) -> Box<dyn Layout<Self>> {
         let left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
-        let right_column = if self.crv_op.is_none() {
-            LeafLayout::new(self.get_curr_display_ptr()).boxed()
-        } else {
-            LeafLayout::new(SubwidgetPointer::new(
-                Box::new(|s: &Self| s.crv_op.as_ref().unwrap()),
-                Box::new(|s: &mut Self| s.crv_op.as_mut().unwrap()),
-            )).boxed()
-        };
+        let right_column = LeafLayout::new(self.get_curr_display_ptr()).boxed();
 
         let bg_layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0),
