@@ -1,3 +1,4 @@
+use std::path::Display;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
@@ -5,9 +6,11 @@ use log::{debug, error, warn};
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
+use crate::experiments::filename_to_language::filename_to_language;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
+use crate::fs::read_error::ReadError;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
@@ -21,14 +24,19 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::promise::promise::PromiseState;
 use crate::subwidget;
+use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
+use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::fuzzy_search::fsf_provider::{FsfProvider, SPathMsg};
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
+use crate::widgets::fuzzy_search::item_provider::ItemsProvider;
+use crate::widgets::main_view::display::MainViewDisplay;
 use crate::widgets::main_view::editor_group::EditorGroup;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::no_editor::NoEditorWidget;
@@ -40,6 +48,7 @@ use crate::widgets::with_scroll::WithScroll;
 pub enum HoverItem {
     FuzzySearch(WithScroll<FuzzySearchWidget>),
 }
+
 
 pub struct MainView {
     wid: WID,
@@ -53,13 +62,12 @@ pub struct MainView {
     // TODO PathBuf -> WrappedRcPath? See profiler.
     tree_widget: WithScroll<TreeViewWidget<SPath, FileTreeNode>>,
 
-    editors: EditorGroup,
-
-    //TODO
-    crv_op: Option<CodeResultsView>,
+    // TODO move to providers?
+    nav_comp_group: NavCompGroupRef,
 
     no_editor: NoEditorWidget,
-    curr_editor_idx: usize,
+    displays: Vec<MainViewDisplay>,
+    display_idx: usize,
 
     hover: Option<HoverItem>,
 }
@@ -92,13 +100,10 @@ impl MainView {
             providers: providers.clone(),
             display_state: None,
             tree_widget: WithScroll::new(ScrollDirection::Both, tree),
-            editors: EditorGroup::new(
-                providers.config().clone(),
-                nav_comp_group.clone(),
-            ),
-            crv_op: None,
+            displays: Vec::new(),
+            nav_comp_group,
             no_editor: NoEditorWidget::default(),
-            curr_editor_idx: 0,
+            display_idx: 0,
             hover: None,
         }
     }
@@ -109,8 +114,16 @@ impl MainView {
     }
 
     fn open_empty_editor_and_focus(&mut self) {
-        let idx = self.editors.open_empty(self.providers.clone());
-        self.curr_editor_idx = idx;
+        self.displays.push(
+            MainViewDisplay::Editor(
+                EditorView::new(
+                    self.providers.clone(),
+                    self.nav_comp_group.clone(),
+                )
+            )
+        );
+
+        self.display_idx = self.displays.len() - 1;
         self.set_focused(self.get_default_focused())
     }
 
@@ -128,21 +141,76 @@ impl MainView {
         }).flatten()
     }
 
+    fn get_editor_idx_for(&self, ff: &SPath) -> Option<usize> {
+        for (idx, display) in self.displays.iter().enumerate() {
+            match display {
+                MainViewDisplay::Editor(editor) => {
+                    if let Some(cff) = editor.buffer_state().get_path() {
+                        if cff == ff {
+                            return Some(idx);
+                        }
+                    }
+                }
+                MainViewDisplay::ResultsView(_) => {}
+            }
+        }
+
+        None
+    }
+
+    pub fn create_new_editor_for_file(&mut self, ff: SPath) -> Result<usize, ReadError> {
+        let file_contents = ff.read_entire_file_to_rope()?;
+        let lang_id_op = filename_to_language(&ff);
+
+        let tree_sitter = self.providers.tree_sitter().clone();
+        self.displays.push(
+            MainViewDisplay::Editor(
+                EditorView::new(self.providers.clone(),
+                                self.nav_comp_group.clone(),
+                ).with_buffer(
+                    BufferState::full(Some(tree_sitter))
+                        .with_text_from_rope(file_contents, lang_id_op)
+                        .with_file_front(ff.clone())
+                ).with_path_op(
+                    ff.parent()
+                ),
+            )
+        );
+
+        let res = self.displays.len() - 1;
+
+        Ok(res)
+    }
+
+    pub fn create_new_display_for_code_results(&mut self, data_provider: Box<dyn CodeResultsProvider>) -> Result<usize, ()> {
+        self.displays.push(
+            MainViewDisplay::ResultsView(
+                CodeResultsView::new(self.providers.clone(),
+                                     "blabla".into(),
+                                     data_provider,
+                )
+            )
+        );
+
+        let res = self.displays.len() - 1;
+
+        Ok(res)
+    }
+
 
     pub fn open_file(&mut self, ff: SPath) -> bool {
         debug!("opening file {:?}", ff);
 
-        if let Some(idx) = self.editors.get_if_open(&ff) {
-            self.curr_editor_idx = idx;
+        if let Some(idx) = self.get_editor_idx_for(&ff) {
+            self.display_idx = idx;
             self.set_focused(self.get_default_focused());
             true
         } else {
-            self.editors.open_file(self.providers.clone(),
-                                   ff,
-            ).map(|idx| {
-                self.curr_editor_idx = idx;
-                self.set_focused(self.get_default_focused());
-            }).is_ok()
+            self.create_new_editor_for_file(ff)
+                .map(|idx| {
+                    self.display_idx = idx;
+                    self.set_focused(self.get_default_focused());
+                }).is_ok()
         }
     }
 
@@ -172,27 +240,31 @@ impl MainView {
                         |_| Some(Box::new(MainViewMsg::CloseHover)),
                         Some(self.providers.clipboard().clone()),
                     ).with_provider(
-                        self.editors.get_buffer_list_provider()
+                        self.get_display_list_provider()
                     ).with_draw_comment_setting(DrawComment::Highlighted))
             )
         );
         self.set_focused_to_hover();
     }
 
-    fn get_curr_editor_ptr(&self) -> SubwidgetPointer<Self> {
-        if self.curr_editor_idx >= self.editors.len() {
-            if self.curr_editor_idx > 0 {
+    pub fn get_display_list_provider(&self) -> Box<dyn ItemsProvider> {
+        Box::new(&self.displays)
+    }
+
+    fn get_curr_display_ptr(&self) -> SubwidgetPointer<Self> {
+        if self.display_idx >= self.displays.len() {
+            if self.display_idx > 0 {
                 error!("current editor points further than number opened editors!");
                 return subwidget!(Self.tree_widget);
             }
 
             subwidget!(Self.no_editor)
         } else {
-            let idx1 = self.curr_editor_idx;
-            let idx2 = self.curr_editor_idx;
+            let idx1 = self.display_idx;
+            let idx2 = self.display_idx;
             SubwidgetPointer::new(
-                Box::new(move |s: &Self| { s.editors.get(idx1).map(|w| w.as_any()).unwrap_or(&s.no_editor) }),
-                Box::new(move |s: &mut Self| { s.editors.get_mut(idx2).map(|w| w as &mut dyn Widget).unwrap_or(&mut s.no_editor) }),
+                Box::new(move |s: &Self| { s.displays.get(idx1).map(|w| w.get_widget()).unwrap_or(&s.no_editor) }),
+                Box::new(move |s: &mut Self| { s.displays.get_mut(idx2).map(|w| w.get_widget_mut()).unwrap_or(&mut s.no_editor) }),
             )
         }
     }
@@ -222,39 +294,39 @@ impl MainView {
         self.set_focused(ptr_to_hover);
     }
 
-    fn set_focus_to_code_result_view(&mut self) {
-        if self.crv_op.is_none() {
-            error!("failed setting focus to code results view - no results");
-            return;
-        }
+    // fn set_focus_to_code_result_view(&mut self) {
+    //     if self.crv_op.is_none() {
+    //         error!("failed setting focus to code results view - no results");
+    //         return;
+    //     }
+    //
+    //     let ptr_to_crv_op = SubwidgetPointer::<Self>::new(
+    //         Box::new(|s: &MainView| {
+    //             let crv_present = s.crv_op.is_some();
+    //             if crv_present {
+    //                 s.crv_op.as_ref().unwrap() as &dyn Widget
+    //             } else {
+    //                 error!("failed to unwrap crv widget!");
+    //                 s.get_default_focused().get(s)
+    //             }
+    //         }),
+    //         Box::new(|s: &mut MainView| {
+    //             let crv_present = s.crv_op.is_some();
+    //             if crv_present {
+    //                 s.crv_op.as_mut().unwrap() as &mut dyn Widget
+    //             } else {
+    //                 error!("failed to unwrap crv widget!");
+    //                 s.get_default_focused().get_mut(s)
+    //             }
+    //         }),
+    //     );
+    //
+    //     self.set_focused(ptr_to_crv_op);
+    // }
 
-        let ptr_to_crv_op = SubwidgetPointer::<Self>::new(
-            Box::new(|s: &MainView| {
-                let crv_present = s.crv_op.is_some();
-                if crv_present {
-                    s.crv_op.as_ref().unwrap() as &dyn Widget
-                } else {
-                    error!("failed to unwrap crv widget!");
-                    s.get_default_focused().get(s)
-                }
-            }),
-            Box::new(|s: &mut MainView| {
-                let crv_present = s.crv_op.is_some();
-                if crv_present {
-                    s.crv_op.as_mut().unwrap() as &mut dyn Widget
-                } else {
-                    error!("failed to unwrap crv widget!");
-                    s.get_default_focused().get_mut(s)
-                }
-            }),
-        );
-
-        self.set_focused(ptr_to_crv_op);
-    }
-
-    pub fn set_search_result(&mut self, crv_op: Option<CodeResultsView>) {
-        self.crv_op = crv_op;
-    }
+    // pub fn set_search_result(&mut self, crv_op: Option<CodeResultsView>) {
+    //     // self.crv_op = crv_op;
+    // }
 }
 
 impl Widget for MainView {
@@ -295,8 +367,8 @@ impl Widget for MainView {
                 MainViewMsg::OpenFuzzyFiles.someboxed()
             }
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.browse_buffers => {
-                if self.editors.is_empty() {
-                    debug!("ignoring browse_buffers request - no editors open.");
+                if self.displays.is_empty() {
+                    debug!("ignoring browse_buffers request - no displays open.");
                     None
                 } else {
                     MainViewMsg::OpenFuzzyBuffers.someboxed()
@@ -352,10 +424,10 @@ impl Widget for MainView {
                     None
                 }
                 MainViewMsg::FuzzyBuffersHit { pos } => {
-                    if *pos >= self.editors.len() {
-                        error!("received FuzzyBufferHit for an index {} and len is {}, ignoring", pos, self.editors.len());
+                    if *pos >= self.displays.len() {
+                        error!("received FuzzyBufferHit for an index {} and len is {}, ignoring", pos, self.displays.len());
                     } else {
-                        self.curr_editor_idx = *pos;
+                        self.display_idx = *pos;
                     }
                     // removing the dialog
                     self.hover = None;
@@ -366,12 +438,10 @@ impl Widget for MainView {
                     if let Some(mut promise) = promise_op.take() {
                         promise.update();
                         if promise.state() != PromiseState::Broken {
-                            self.crv_op = Some(CodeResultsView::new(self.providers.clone(),
-                                                                    "TODO bla bla bla".to_string(),
-                                                                    //TODO
-                                                                    Box::new(promise)));
-
-                            self.set_focus_to_code_result_view();
+                            self.create_new_display_for_code_results(
+                                Box::new(promise)
+                            );
+                            //TODO update focus
                         } else {
                             warn!("promise broken, throwing away.");
                         }
@@ -429,7 +499,7 @@ impl ComplexWidget for MainView {
     fn get_layout(&self) -> Box<dyn Layout<Self>> {
         let left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
         let right_column = if self.crv_op.is_none() {
-            LeafLayout::new(self.get_curr_editor_ptr()).boxed()
+            LeafLayout::new(self.get_curr_display_ptr()).boxed()
         } else {
             LeafLayout::new(SubwidgetPointer::new(
                 Box::new(|s: &Self| s.crv_op.as_ref().unwrap()),
@@ -476,7 +546,7 @@ impl ComplexWidget for MainView {
     }
 
     fn get_default_focused(&self) -> SubwidgetPointer<MainView> {
-        self.get_curr_editor_ptr()
+        self.get_curr_display_ptr()
     }
 
     fn set_display_state(&mut self, display_state: DisplayState<MainView>) {

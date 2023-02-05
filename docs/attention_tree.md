@@ -76,7 +76,37 @@ making tough calls is lazy design.
 
 Anyway, I go with this thing, and see where that takes me.
 
+### What's what
+
+A focus within editor is:
+
+- scroll position
+- cursors positions
+- state of search/replace bar
+- file state
+
+One can see clearly that file state can change independently from items 1-3.
+This means I need to cover both "desynchronization" scenarios. In case the file changes
+outside the view, we need to signal to the user that buffer got into "detached state" in a
+non intrusive way (not a popup). A popup might be necessary on save.
+
+We can also think about it in another way: Editor can be in "following state" or "non-interruptive state".
+Follow state would be for "cooperative editing", immediately reflecting changes on hard drive etc.
+A non-interruptive state would be a normal one.
+
+A focus within search results view is:
+
+- contents
+- scroll position
+
 #### Lols and trivia
 
 I once heard that "if you have to use debugger, the code is already in bad shape". I would answer today that "a debugger
-is usually more valuable to the project than a programmer making such statements".  
+is usually more valuable to the project than a programmer making such statements".
+
+### Part two: Wishlist
+
+This is a place, where I dump my ideas before deciding which and in what order are getting to Beta:
+
+- "undo" operation should apply to:
+    

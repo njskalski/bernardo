@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::cmp::max;
 use std::collections::HashSet;
 use std::rc::Rc;
@@ -39,7 +40,9 @@ use crate::widgets::with_scroll::WithScroll;
 pub struct CodeResultsView {
     wid: WID,
 
+    // TODO reduce
     label: TextWidget,
+    label_text: String,
     item_list: WithScroll<BigList<EditorWidget>>,
 
     //providers
@@ -63,7 +66,8 @@ impl CodeResultsView {
     ) -> Self {
         Self {
             wid: get_new_widget_id(),
-            label: TextWidget::new(Box::new(label)),
+            label: TextWidget::new(Box::new(label.clone())),
+            label_text: label,
             item_list: WithScroll::new(ScrollDirection::Vertical,
                                        BigList::new(vec![]),
             ),
@@ -72,6 +76,10 @@ impl CodeResultsView {
             providers,
             display_state: None,
         }
+    }
+
+    pub fn get_text(&self) -> Cow<str> {
+        Cow::Borrowed(&self.label_text)
     }
 }
 

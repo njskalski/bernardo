@@ -1,15 +1,10 @@
 use std::fs;
 use std::path::PathBuf;
-use std::rc::Rc;
 
 use crossbeam_channel::select;
 use log::{debug, error};
 
-use crate::config::config::ConfigRef;
-use crate::config::theme::Theme;
-use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::screen_shot::screenshot;
-use crate::fs::fsf_ref::FsfRef;
 use crate::gladius::paradigm::recursive_treat_views;
 use crate::gladius::providers::Providers;
 use crate::io::input::Input;
@@ -17,8 +12,6 @@ use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::FinalOutput;
 use crate::primitives::helpers::get_next_filename;
-use crate::tsw::language_set::LanguageSet;
-use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::inspector::{inspect_workspace, InspectError};
 use crate::w7e::workspace::{LoadError, ScopeLoadErrors, Workspace};
 use crate::w7e::workspace::WORKSPACE_FILE_NAME;

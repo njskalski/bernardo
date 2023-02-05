@@ -17,6 +17,7 @@ use crate::io::output::Output;
 use crate::primitives::common_edit_msgs::{_apply_cem, CommonEditMsg};
 use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
 use crate::primitives::search_pattern::SearchPattern;
+use crate::text::contents_and_cursors::ContentsAndCursors;
 use crate::text::text_buffer::{LinesIter, TextBuffer};
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
@@ -26,129 +27,12 @@ use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 
 // TODO it would use a method "would_accept_cem" to be used in "on_input" but before "update"
 
-#[derive(Clone, Debug, Default)]
-pub struct Text {
-    pub rope: Rope,
-    pub parsing: Option<ParsingTuple>,
-    pub cursor_set: CursorSet,
-}
+/*
+So in general, I have a feeling I might need a separation of file from view
+I might want multiple views of the same file, each with it's own cursors and history.
 
-impl Text {
-    pub fn with_rope(self, rope: Rope) -> Self {
-        Self {
-            rope,
-            ..self
-        }
-    }
+ */
 
-    pub fn with_cursor_set(self, cursor_set: CursorSet) -> Self {
-        Self {
-            cursor_set,
-            ..self
-        }
-    }
-
-    pub fn parse(&mut self, tree_sitter: Arc<TreeSitterWrapper>, lang_id: LangId) -> bool {
-        if let Some(parsing_tuple) = tree_sitter.new_parse(lang_id) {
-            self.parsing = Some(parsing_tuple);
-
-            true
-        } else {
-            false
-        }
-    }
-
-    /*
-    This is an action destructive to cursor set - it uses only the supercursor.anchor as starting point for
-    search.
-
-    returns Ok(true) iff there was an occurrence
-     */
-    pub fn find_once(&mut self, pattern: &str) -> Result<bool, FindError> {
-        let start_pos = self.cursor_set.supercursor().a;
-        let mut matches = regex_find(
-            pattern,
-            &self.rope,
-            Some(start_pos),
-        )?;
-
-        if let Some(m) = matches.next() {
-            if m.0 == m.1 {
-                error!("empty find, this should not be possible");
-                return Ok(false);
-            }
-
-            let new_cursors = CursorSet::singleton(
-                Cursor::new(m.1).with_selection(Selection::new(m.0, m.1))
-            );
-
-            self.cursor_set = new_cursors;
-
-            Ok(true)
-        } else {
-            Ok(false)
-        }
-    }
-
-    /*
-    Returns true iff:
-        - all cursors have selections
-        - all selections match the pattern
-     */
-    pub fn do_cursors_match_regex(&self, pattern: &SearchPattern) -> bool {
-        for c in self.cursor_set.iter() {
-            if c.s.is_none() {
-                return false;
-            }
-            let sel = c.s.unwrap();
-            let selected: String = self.rope.chars().skip(sel.b).take(sel.e - sel.b).collect();
-
-            if !pattern.matches(&selected) {
-                return false;
-            }
-        }
-
-        true
-    }
-
-    pub fn ends_with_at(&self, char_offset: usize, what: &str) -> bool {
-        let what_char_len = what.graphemes(true).count();
-
-        if self.rope.len_chars() < char_offset {
-            debug!("ends_wit_at beyond end");
-            return false;
-        }
-        let sub_rope = self.rope.slice(0..char_offset);
-        let rope_len = sub_rope.len_chars();
-
-        if rope_len < what_char_len {
-            false
-        } else {
-            let mut tail = String::new();
-            for char_idx in 0..what_char_len {
-                match sub_rope.get_char(rope_len - what_char_len + char_idx) {
-                    Some(ch) => {
-                        tail.push(ch);
-                    }
-                    None => {
-                        error!("failed unwrapping expected character");
-                        return false;
-                    }
-                }
-            }
-
-            debug_assert!(tail.graphemes(true).count() == what_char_len);
-
-            what == &tail
-        }
-    }
-}
-
-impl ToString for Text {
-    fn to_string(&self) -> String {
-        self.rope.to_string()
-    }
-}
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -162,8 +46,7 @@ pub struct BufferState {
     subtype: BufferType,
 
     tree_sitter_op: Option<Arc<TreeSitterWrapper>>,
-
-    history: Vec<Text>,
+    history: Vec<ContentsAndCursors>,
     history_pos: usize,
 
     lang_id: Option<LangId>,
@@ -176,7 +59,7 @@ impl BufferState {
         BufferState {
             subtype: BufferType::Full,
             tree_sitter_op,
-            history: vec![Text::default()],
+            history: vec![ContentsAndCursors::default()],
             history_pos: 0,
             lang_id: None,
             file: None,
@@ -187,7 +70,7 @@ impl BufferState {
         BufferState {
             subtype: BufferType::SingleLine,
             tree_sitter_op: None,
-            history: vec![Text::default()],
+            history: vec![ContentsAndCursors::default()],
             history_pos: 0,
             lang_id: None,
             file: None,
@@ -219,7 +102,7 @@ impl BufferState {
     pub fn with_text<T: AsRef<str>>(self, text: T) -> Self {
         let rope = ropey::Rope::from_str(text.as_ref());
         Self {
-            history: vec![Text::default().with_rope(rope)],
+            history: vec![ContentsAndCursors::default().with_rope(rope)],
             history_pos: 0,
             ..self
         }
@@ -230,7 +113,7 @@ impl BufferState {
      */
     pub fn with_text_from_rope(self, rope: Rope, lang_id: Option<LangId>) -> Self {
         let copy_rope = rope.clone();
-        let mut text = Text::default().with_rope(rope);
+        let mut text = ContentsAndCursors::default().with_rope(rope);
 
         if let Some(lang_id) = lang_id {
             if let Some(tree_sitter) = self.tree_sitter_op.as_ref() {
@@ -279,6 +162,7 @@ impl BufferState {
     }
 
     pub fn set_file_front(&mut self, ff_op: Option<SPath>) {
+        // TODO on update, I should break the history
         self.file = ff_op;
     }
 
@@ -382,12 +266,12 @@ impl BufferState {
         self.history_pos -= 1;
     }
 
-    pub fn text(&self) -> &Text {
+    pub fn text(&self) -> &ContentsAndCursors {
         debug_assert!(self.history.len() >= self.history_pos);
         &self.history[self.history_pos]
     }
 
-    pub fn text_mut(&mut self) -> &mut Text {
+    pub fn text_mut(&mut self) -> &mut ContentsAndCursors {
         debug_assert!(self.history.len() >= self.history_pos);
         &mut self.history[self.history_pos]
     }
