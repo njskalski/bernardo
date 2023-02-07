@@ -120,7 +120,7 @@ impl<T: Widget> BigList<T> {
     }
 
     pub fn items(&self) -> impl Iterator<Item=&T> {
-        self.items.iter().map(|(splitRule, widget)| widget)
+        self.items.iter().map(|(_split_rule, widget)| widget)
     }
 
     fn update_focus_path(&mut self) {

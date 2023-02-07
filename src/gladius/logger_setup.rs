@@ -17,7 +17,7 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("bernardo::widgets::edit_box", log::LevelFilter::Warn),
     ("bernardo::widgets::fuzzy_search::fuzzy_search", log::LevelFilter::Warn),
     ("bernardo::widgets::list_widget::list_widget", log::LevelFilter::Warn),
-    ("bernardo::widgets::main_view::main_view", log::LevelFilter::Warn),
+    ("bernardo::widgets::main_view::main_view", log::LevelFilter::Debug),
     ("bernardo::widgets::save_file_dialog::save_file_dialog", log::LevelFilter::Warn),
     ("bernardo::layout", log::LevelFilter::Info),
     // ("bernardo::layout::leaf_layout", log::LevelFilter::Debug),
