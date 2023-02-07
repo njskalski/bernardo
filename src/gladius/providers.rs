@@ -3,7 +3,7 @@ This is a simplified "dependency injection" struct, because I just have too much
 of key components like EditorView or CodeResultsView
  */
 
-use std::rc::Rc;
+
 use std::sync::Arc;
 
 use crate::config::config::ConfigRef;

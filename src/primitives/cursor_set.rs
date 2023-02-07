@@ -38,7 +38,7 @@ use std::collections::HashMap;
 use std::ops::Range;
 use std::slice::{Iter, IterMut};
 
-use log::{debug, error, warn};
+use log::{error, warn};
 
 use crate::text::text_buffer::TextBuffer;
 

@@ -11,7 +11,6 @@
 pub mod tests {
     use std::borrow::Borrow;
 
-    use log::{log, warn};
     use ropey::Rope;
 
     // use serde::de::Unexpected::Str;
