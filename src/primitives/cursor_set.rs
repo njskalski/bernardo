@@ -111,22 +111,22 @@ TODO add what happens on any of indices being invalid. Right now I just return f
 pub type ForwardWordDeterminant = dyn Fn(&dyn TextBuffer, usize, usize) -> bool;
 pub type BackwardWordDeterminant = dyn Fn(&dyn TextBuffer, usize, usize) -> bool;
 
-pub fn default_forward_word_determinant(buffer: &dyn TextBuffer, first_idx: usize, current_idx: usize) -> bool {
-    let x = match (buffer.char_at(first_idx), buffer.char_at(current_idx)) {
+pub fn default_word_determinant(buffer: &dyn TextBuffer, first_idx: usize, current_idx: usize) -> bool {
+    let return_value = match (buffer.char_at(first_idx), buffer.char_at(current_idx)) {
         (Some(first_char), Some(current_char)) => {
             first_char.is_whitespace() == current_char.is_whitespace()
         }
         _ => false,
     };
 
-    warn!("word {} first char {:?} curr_char {:?} wd {:?}",
-                buffer.to_string(),
-                buffer.char_at(first_idx),
-                buffer.char_at(current_idx),
-                x,
-            );
+    // warn!("word {} first char {:?} curr_char {:?} wd {:?}",
+    //             buffer.to_string(),
+    //             buffer.char_at(first_idx),
+    //             buffer.char_at(current_idx),
+    //             return_value,
+    //         );
 
-    x
+    return_value
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1160,7 +1160,7 @@ impl CursorSet {
         self.word_begin(
             buffer,
             selecting,
-            &default_forward_word_determinant,
+            &default_word_determinant,
         )
     }
 
@@ -1168,7 +1168,7 @@ impl CursorSet {
         self.word_end(
             buffer,
             selecting,
-            &default_forward_word_determinant,
+            &default_word_determinant,
         )
     }
 

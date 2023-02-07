@@ -526,8 +526,6 @@ pub mod tests {
 
     #[test]
     fn single_cursor_word_begin() {
-        // env_logger::init();
-
         let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
             c.word_begin_default(bs, false);
         };
@@ -545,7 +543,6 @@ pub mod tests {
 
         for i in 0..progress.len() - 1 {
             assert_eq!(apply(progress[i], f), progress[i + 1], "i: {}", i);
-            warn!("\n");
         }
     }
 
