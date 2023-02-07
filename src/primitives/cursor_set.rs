@@ -38,7 +38,7 @@ use std::collections::HashMap;
 use std::ops::Range;
 use std::slice::{Iter, IterMut};
 
-use log::{error, warn};
+use log::{debug, error, warn};
 
 use crate::text::text_buffer::TextBuffer;
 
@@ -109,15 +109,24 @@ impl Ord for Selection {
 TODO add what happens on any of indices being invalid. Right now I just return false, meaning "stop progressing"
  */
 pub type ForwardWordDeterminant = dyn Fn(&dyn TextBuffer, usize, usize) -> bool;
-pub type ReverseWordDeterminant = dyn Fn(&dyn TextBuffer, usize, usize) -> bool;
+pub type BackwardWordDeterminant = dyn Fn(&dyn TextBuffer, usize, usize) -> bool;
 
-pub fn default_word_determinant(buf: &dyn TextBuffer, first_idx: usize, current_idx: usize) -> bool {
-    match (buf.char_at(first_idx), buf.char_at(current_idx)) {
+pub fn default_forward_word_determinant(buffer: &dyn TextBuffer, first_idx: usize, current_idx: usize) -> bool {
+    let x = match (buffer.char_at(first_idx), buffer.char_at(current_idx)) {
         (Some(first_char), Some(current_char)) => {
             first_char.is_whitespace() == current_char.is_whitespace()
         }
         _ => false,
-    }
+    };
+
+    warn!("word {} first char {:?} curr_char {:?} wd {:?}",
+                buffer.to_string(),
+                buffer.char_at(first_idx),
+                buffer.char_at(current_idx),
+                x,
+            );
+
+    x
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -370,7 +379,7 @@ impl Cursor {
 
     // Returns FALSE on noop.
     // word_determinant should return FALSE when word ends, and TRUE while it continues.
-    fn word_begin<F: Fn(usize) -> bool>(&mut self, selecting: bool, word_determinant: F) -> bool {
+    fn word_begin(&mut self, buffer: &dyn TextBuffer, selecting: bool, word_determinant: &BackwardWordDeterminant) -> bool {
         if self.a == 0 {
             return false;
         }
@@ -378,15 +387,18 @@ impl Cursor {
         let old_pos = self.a;
 
         if self.a > 0 {
-            if word_determinant(self.a - 1) {
-                // case when cursor is within a word
-                while self.a > 0 && word_determinant(self.a - 1) {
-                    self.a -= 1;
-                }
-            } else {
-                // otherwise we do just one step.
-                self.a -= 1; //safe to do, we checked it's > 0.
+            self.a -= 1;
+
+            // this is different than in word_end, because we want "more of the same as the first
+            // character we jumped over", so we first move, then remember "what we jumped over"
+            let first_char_pos = self.a;
+
+            // if word_determinant(buffer, old_pos, self.a - 1) {
+            // case when cursor is within a word
+            while self.a > 0 && word_determinant(buffer, first_char_pos, self.a - 1) {
+                self.a -= 1;
             }
+            // }
         }
 
 
@@ -1120,11 +1132,11 @@ impl CursorSet {
         debug_assert!(!self.set.is_empty());
     }
 
-    pub fn word_begin<F: Fn(usize) -> bool>(&mut self, selecting: bool, word_determinant: &F) -> bool {
+    pub fn word_begin(&mut self, buffer: &dyn TextBuffer, selecting: bool, word_determinant: &BackwardWordDeterminant) -> bool {
         let mut res = false;
 
         for c in self.set.iter_mut() {
-            res |= c.word_begin(selecting, word_determinant);
+            res |= c.word_begin(buffer, selecting, word_determinant);
         }
 
         self.reduce_left();
@@ -1146,13 +1158,9 @@ impl CursorSet {
 
     pub fn word_begin_default(&mut self, buffer: &dyn TextBuffer, selecting: bool) -> bool {
         self.word_begin(
+            buffer,
             selecting,
-            &|idx: usize| -> bool {
-                match buffer.char_at(idx) {
-                    None => false,
-                    Some(ch) => !ch.is_whitespace()
-                }
-            },
+            &default_forward_word_determinant,
         )
     }
 
@@ -1160,7 +1168,7 @@ impl CursorSet {
         self.word_end(
             buffer,
             selecting,
-            &default_word_determinant,
+            &default_forward_word_determinant,
         )
     }
 
