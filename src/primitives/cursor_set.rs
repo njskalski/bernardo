@@ -105,9 +105,20 @@ impl Ord for Selection {
     }
 }
 
-// both signatures are buffer, idx 
-pub type ForwardWordDeterminant = Fn(&dyn TextBuffer, usize, usize) -> bool;
-pub type ReverseWordDeterminant = Fn(&dyn TextBuffer, usize, usize) -> bool;
+/* both signatures are buffer, first idx, current idx, returns whether to continue moving cursor or not
+TODO add what happens on any of indices being invalid. Right now I just return false, meaning "stop progressing"
+ */
+pub type ForwardWordDeterminant = dyn Fn(&dyn TextBuffer, usize, usize) -> bool;
+pub type ReverseWordDeterminant = dyn Fn(&dyn TextBuffer, usize, usize) -> bool;
+
+pub fn default_word_determinant(buf: &dyn TextBuffer, first_idx: usize, current_idx: usize) -> bool {
+    match (buf.char_at(first_idx), buf.char_at(current_idx)) {
+        (Some(first_char), Some(current_char)) => {
+            first_char.is_whitespace() == current_char.is_whitespace()
+        }
+        _ => false,
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -390,7 +401,7 @@ impl Cursor {
         old_pos != self.a
     }
 
-    fn word_end<F: FnMut(char, char) -> bool>(&mut self, buffer: &dyn TextBuffer, selecting: bool, word_determinant: F) -> bool {
+    fn word_end(&mut self, buffer: &dyn TextBuffer, selecting: bool, word_determinant: &ForwardWordDeterminant) -> bool {
         if self.a == buffer.len_chars() {
             return false;
         }
@@ -398,14 +409,10 @@ impl Cursor {
         let old_pos = self.a;
 
         if self.a < buffer.len_chars() {
-            if word_determinant(buffer.char_at(self.a).unwrap()) {
+            if word_determinant(buffer, old_pos, self.a) {
                 // variant within the word
-                while self.a < buffer.len_chars() {
-                    if word_determinant(buffer.char_at(self.a).unwrap()) {
-                        self.a += 1;
-                    } else {
-                        break;
-                    }
+                while self.a < buffer.len_chars() && word_determinant(buffer, old_pos, self.a) {
+                    self.a += 1;
                 }
             } else {
                 self.a += 1;
@@ -1125,7 +1132,7 @@ impl CursorSet {
         res
     }
 
-    pub fn word_end<F: FnMut(char) -> bool + Clone>(&mut self, buffer: &dyn TextBuffer, selecting: bool, word_determinant: &F) -> bool {
+    pub fn word_end(&mut self, buffer: &dyn TextBuffer, selecting: bool, word_determinant: &ForwardWordDeterminant) -> bool {
         let mut res = false;
 
         for c in self.set.iter_mut() {
@@ -1153,14 +1160,7 @@ impl CursorSet {
         self.word_end(
             buffer,
             selecting,
-            &|c : char| -> bool {
-                match self.
-
-                match buffer.char_at(idx) {
-                    None => false,
-                    Some(ch) => !ch.is_whitespace()
-                }
-            },
+            &default_word_determinant,
         )
     }
 
