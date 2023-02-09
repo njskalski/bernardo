@@ -131,6 +131,10 @@ impl<T: Widget> BigList<T> {
             warn!("no display_state");
         }
     }
+
+    pub fn get_selected_id(&self) -> usize {
+        self.item_idx
+    }
 }
 
 impl<T: Widget> Widget for BigList<T> {

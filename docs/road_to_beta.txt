@@ -3,7 +3,7 @@ What I am working on right now:
 
 Here is what I want to be present in Gladius Beta:
 
-1) code navigation (go to definition, see usages)
+1) code navigation ( go to definition)
 2) full text search (aka ctrl-shift-f)
   these two almost beg for "results view"
 2.5) make the buffer states globally tracked, not two different buffer states for same file. But cursors are not part of that state.
@@ -12,14 +12,8 @@ Here is what I want to be present in Gladius Beta:
 3) the context menu
 4) git filtering in file search
 5) fuzzy file search covered with tests
-6) [DONE] code formatting
-7) Editor "labels" (in-code overlay-"comments", clearly distingushible messages noting errors/warnings)
-8) Code "collapsing"
-
-prequisites:
-1) enforce new min_size/layout invariant to all widgets. Skipped so far:
-- complex_widget
-2) decide on whether to change semantics of Promise as advised in promise.rs, or not.
+6) Editor "labels" (in-code overlay-"comments", clearly distingushible messages noting errors/warnings)
+7) Code "collapsing"
 
 Nice to haves (only if they turn out to be low hanging fruits):
 1) guessing programming language from code
@@ -37,3 +31,8 @@ Docs:
 TODOs:
 - support resize event (start in crossterm_input.rs)
 - support paste event too?
+
+
+DONE:
+- see usages
+- code formatting

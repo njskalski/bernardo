@@ -1,5 +1,7 @@
+use std::collections::HashMap;
 use std::path::Display;
 use std::rc::Rc;
+use std::sync::{Arc, RwLock};
 
 use log::{debug, error, warn};
 
@@ -50,6 +52,12 @@ pub enum HoverItem {
     FuzzySearch(WithScroll<FuzzySearchWidget>),
 }
 
+#[derive(Debug, Clone, Hash)]
+pub enum DocumentIdentifier {
+    SPath(SPath)
+}
+
+pub type BufferSharedRef = Arc<RwLock<BufferState>>;
 
 pub struct MainView {
     wid: WID,
@@ -71,6 +79,8 @@ pub struct MainView {
     display_idx: usize,
 
     hover: Option<HoverItem>,
+
+    buffers: HashMap<DocumentIdentifier, BufferSharedRef>,
 }
 
 impl MainView {
@@ -106,6 +116,7 @@ impl MainView {
             no_editor: NoEditorWidget::default(),
             display_idx: 0,
             hover: None,
+            buffers: Default::default(),
         }
     }
 
