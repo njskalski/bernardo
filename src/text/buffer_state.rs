@@ -28,9 +28,17 @@ use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 // TODO it would use a method "would_accept_cem" to be used in "on_input" but before "update"
 
 /*
-So in general, I have a feeling I might need a separation of file from view
-I might want multiple views of the same file, each with it's own cursors and history.
+Ok, so I'd like to have multiple views of the same file. We can for a second even think that they
+each have separate set of cursors. They definitely should share history of edits, at least until
+"local edit history" is introduced ("undo and redo do not move the view"). Even when "local history"
+is introduced, that still only means we have common history of edits with the view acting as filter
+(or selector) of "which history elements are relevant". But this is far out, requires a lot of thinking.
 
+Anyway, separate cursors but common history. That means that if cursor A < B edits in ViewA, cursor
+B needs to be moved too. To avoid "communicating between views" it seams reasonable, to hold
+*all views cursors inside single common BufferState*, and then just use the relevant one via
+some kind of hash map. So I am NOT separating cursors from BufferState, even though they are view
+specific. This is a good place to keep them all.
  */
 
 

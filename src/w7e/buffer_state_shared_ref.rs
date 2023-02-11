@@ -27,6 +27,16 @@ impl BufferSharedRef {
             }
         }
     }
+
+    pub fn lock_rw(&self) -> Option<RwLockWriteGuard<BufferState>> {
+        match self.0.try_write() {
+            Ok(lock) => Some(lock),
+            Err(e) => {
+                error!("failed to lock buffer for write!");
+                None
+            }
+        }
+    }
 }
 
 pub type BufferR<'a> = RwLockReadGuard<'a, BufferState>;

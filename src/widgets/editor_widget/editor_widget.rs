@@ -282,7 +282,7 @@ impl EditorWidget {
         }
     }
 
-    pub fn enter_dropping_cursor_mode(&mut self) {
+    pub fn enter_dropping_cursor_mode(&mut self, buffer: &BufferState) {
         debug_assert_matches!(self.state, EditorState::Editing);
         self.state = EditorState::DroppingCursor {
             special_cursor: self.cursors().iter().next().map(|c| *c).unwrap_or_else(|| {
@@ -367,7 +367,7 @@ impl EditorWidget {
     }
 
 
-    pub fn todo_request_context_bar(&mut self) {
+    pub fn todo_request_context_bar(&mut self, buffer: &BufferState) {
         debug!("request_context_bar");
 
         // need to resolve first
@@ -377,7 +377,7 @@ impl EditorWidget {
 
         let single_cursor = self.cursors().as_single();
         let stupid_cursor_op = single_cursor.map(
-            |c| StupidCursor::from_real_cursor(self.buffer(), c).ok()
+            |c| StupidCursor::from_real_cursor(buffer, c).ok()
         ).flatten();
 
         let lsp_symbol_op = self.nacomp_symbol.as_ref().map(|ncsp| {
@@ -397,7 +397,7 @@ impl EditorWidget {
 
         // The reason I unpack and pack char_range_op, because I'm not interested in "all highlights"
         let tree_sitter_highlight = char_range_op.map(|range| {
-            self.buffer.highlight(Some(range))
+            buffer.highlight(Some(range))
         }).map(|highlight_items| {
             // TODO I assume here that "first" is the smallest, it probably is not true
             // debug!("highlight items: [{:?}]", &highlight_items);
@@ -427,12 +427,12 @@ impl EditorWidget {
         }
     }
 
-    pub fn reformat(&mut self) -> bool {
+    pub fn reformat(&mut self, buffer: &mut BufferState) -> bool {
         let navcomp = unpack_or!(self.navcomp.as_ref(), false, "can't reformat: navcomp not available");
-        let path = unpack_or!(self.buffer.get_path(), false , "can't reformat: unsaved file");
+        let path = unpack_or!(buffer.get_path(), false , "can't reformat: unsaved file");
         let mut promise = unpack_or!(navcomp.todo_reformat(path), false, "can't reformat: no promise for reformat");
 
-        if !self.buffer.text().cursor_set.are_simple() {
+        if !buffer.text().cursor_set.are_simple() {
             warn!("can't format: unimplemented for non-simple cursors, sorry");
             return false;
         }
@@ -442,7 +442,7 @@ impl EditorWidget {
             let edits = unpack_or!(promise.read().unwrap(), false, "can't reformat: promise empty");
 
             let page_height = self.page_height();
-            let res = self.buffer_mut().apply_stupid_substitute_messages(edits, page_height as usize);
+            let res = buffer.apply_stupid_substitute_messages(edits, page_height as usize);
 
             // This theoretically could be optimised out, but maybe it's not worth it, it leads to
             // a new category of bugs if statement above turns out to be false, and it rarely is,
@@ -1037,115 +1037,121 @@ impl Widget for EditorWidget {
                 debug!("expected EditorWidgetMsg, got {:?}, passing through", msg);
                 Some(msg)
             }
-            Some(msg) => match (&self.state, msg) {
-                (&EditorState::Editing, EditorWidgetMsg::EditMsg(cem)) => {
-                    let page_height = self.page_height();
-                    // page_height as usize is safe, since page_height is u16 and usize is larger.
-                    let changed = self.buffer.apply_cem(
-                        cem.clone(),
-                        page_height as usize,
-                        Some(self.providers.clipboard()),
-                    );
+            Some(msg) => {
+                if let Some(buffer) = self.buffer.lock_rw() {
+                    match (&self.state, msg) {
+                        (&EditorState::Editing, EditorWidgetMsg::EditMsg(cem)) => {
+                            let page_height = self.page_height();
+                            // page_height as usize is safe, since page_height is u16 and usize is larger.
+                            let changed = self.buffer.apply_cem(
+                                cem.clone(),
+                                page_height as usize,
+                                Some(self.providers.clipboard()),
+                            );
 
-                    // TODO this needs to happen only if CONTENTS changed, not if cursor positions changed
-                    if changed {
-                        self.after_content_changed();
+                            // TODO this needs to happen only if CONTENTS changed, not if cursor positions changed
+                            if changed {
+                                self.after_content_changed();
 
-                        if self.has_completions() {
-                            self.update_completions();
-                        }
-                    }
-
-                    // TODO I might want to add directions upper left (for substraction) and lower right (for addition)
-                    match cme_to_direction(cem) {
-                        None => {}
-                        Some(direction) => self.update_kite(direction)
-                    };
-
-                    self.todo_after_cursor_moved();
-
-                    None
-                }
-                (&EditorState::Editing, EditorWidgetMsg::ToCursorDropMode) => {
-                    // self.cursors.simplify(); //TODO I removed it, but I don't know why it was here in the first place
-                    self.enter_dropping_cursor_mode();
-                    None
-                }
-                (&EditorState::DroppingCursor { .. }, EditorWidgetMsg::ToEditMode) => {
-                    self.enter_editing_mode();
-                    None
-                }
-                (&EditorState::DroppingCursor { special_cursor }, EditorWidgetMsg::DropCursorFlip { cursor }) => {
-                    debug_assert!(special_cursor.is_simple());
-
-                    if !self.buffer.text().cursor_set.are_simple() {
-                        warn!("Cursors were supposed to be simple at this point. Recovering, but there was error.");
-                        self.buffer.text_mut().cursor_set.simplify();
-                    }
-
-                    let has_cursor = self.buffer.text().cursor_set.get_cursor_status_for_char(special_cursor.a) == CursorStatus::UnderCursor;
-
-                    if has_cursor {
-                        let cs = &mut self.buffer.text_mut().cursor_set;
-
-                        // We don't remove a single cursor, to not invalidate invariant
-                        if cs.len() > 1 {
-                            if !cs.remove_by_anchor(special_cursor.a) {
-                                warn!("Failed to remove cursor by anchor {}, ignoring request", special_cursor.a);
+                                if self.has_completions() {
+                                    self.update_completions();
+                                }
                             }
-                        } else {
-                            debug!("Not removing a single cursor at {}", special_cursor.a);
+
+                            // TODO I might want to add directions upper left (for substraction) and lower right (for addition)
+                            match cme_to_direction(cem) {
+                                None => {}
+                                Some(direction) => self.update_kite(direction)
+                            };
+
+                            self.todo_after_cursor_moved();
+
+                            None
                         }
-                    } else {
-                        if !self.buffer.text_mut().cursor_set.add_cursor(*cursor) {
-                            warn!("Failed to add cursor {:?} to set", cursor);
+                        (&EditorState::Editing, EditorWidgetMsg::ToCursorDropMode) => {
+                            // self.cursors.simplify(); //TODO I removed it, but I don't know why it was here in the first place
+                            self.enter_dropping_cursor_mode();
+                            None
+                        }
+                        (&EditorState::DroppingCursor { .. }, EditorWidgetMsg::ToEditMode) => {
+                            self.enter_editing_mode();
+                            None
+                        }
+                        (&EditorState::DroppingCursor { special_cursor }, EditorWidgetMsg::DropCursorFlip { cursor }) => {
+                            debug_assert!(special_cursor.is_simple());
+
+                            if !self.buffer.text().cursor_set.are_simple() {
+                                warn!("Cursors were supposed to be simple at this point. Recovering, but there was error.");
+                                self.buffer.text_mut().cursor_set.simplify();
+                            }
+
+                            let has_cursor = self.buffer.text().cursor_set.get_cursor_status_for_char(special_cursor.a) == CursorStatus::UnderCursor;
+
+                            if has_cursor {
+                                let cs = &mut self.buffer.text_mut().cursor_set;
+
+                                // We don't remove a single cursor, to not invalidate invariant
+                                if cs.len() > 1 {
+                                    if !cs.remove_by_anchor(special_cursor.a) {
+                                        warn!("Failed to remove cursor by anchor {}, ignoring request", special_cursor.a);
+                                    }
+                                } else {
+                                    debug!("Not removing a single cursor at {}", special_cursor.a);
+                                }
+                            } else {
+                                if !self.buffer.text_mut().cursor_set.add_cursor(*cursor) {
+                                    warn!("Failed to add cursor {:?} to set", cursor);
+                                }
+                            }
+
+                            debug_assert!(self.buffer.text().cursor_set.check_invariants());
+
+                            None
+                        }
+                        (&EditorState::DroppingCursor { special_cursor }, EditorWidgetMsg::DropCursorMove { cem }) => {
+                            let mut set = CursorSet::singleton(special_cursor);
+                            // TODO make sure this had no changing effect?
+                            let height = self.page_height();
+                            _apply_cem(cem.clone(), &mut set, &mut self.buffer, height as usize, Some(self.providers.clipboard()));
+                            self.state = EditorState::DroppingCursor { special_cursor: *set.as_single().unwrap() };
+                            None
+                        }
+                        (&EditorState::Editing, EditorWidgetMsg::RequestCompletions) => {
+                            self.request_completions();
+                            None
+                        }
+                        (&EditorState::Editing, EditorWidgetMsg::HoverClose) => {
+                            self.requested_hover = None;
+                            None
+                        }
+                        (&EditorState::Editing, EditorWidgetMsg::CompletionWidgetSelected(completion)) => {
+                            self.apply_completion_action(completion);
+                            None
+                        }
+                        (&EditorState::Editing, EditorWidgetMsg::RequestContextBar) => {
+                            self.todo_request_context_bar();
+                            None
+                        }
+                        (&EditorState::Editing, EditorWidgetMsg::Reformat) => {
+                            self.reformat();
+                            None
+                        }
+                        (&EditorState::Editing, EditorWidgetMsg::ShowUsages) => {
+                            self.requested_hover = None;
+                            self.show_usages()
+                        }
+                        (&EditorState::Editing, EditorWidgetMsg::GoToDefinition) => {
+                            self.requested_hover = None;
+                            self.todo_go_to_definition();
+                            None
+                        }
+                        (editor_state, msg) => {
+                            error!("Unhandled combination of editor state {:?} and msg {:?}", editor_state, msg);
+                            None
                         }
                     }
-
-                    debug_assert!(self.buffer.text().cursor_set.check_invariants());
-
-                    None
-                }
-                (&EditorState::DroppingCursor { special_cursor }, EditorWidgetMsg::DropCursorMove { cem }) => {
-                    let mut set = CursorSet::singleton(special_cursor);
-                    // TODO make sure this had no changing effect?
-                    let height = self.page_height();
-                    _apply_cem(cem.clone(), &mut set, &mut self.buffer, height as usize, Some(self.providers.clipboard()));
-                    self.state = EditorState::DroppingCursor { special_cursor: *set.as_single().unwrap() };
-                    None
-                }
-                (&EditorState::Editing, EditorWidgetMsg::RequestCompletions) => {
-                    self.request_completions();
-                    None
-                }
-                (&EditorState::Editing, EditorWidgetMsg::HoverClose) => {
-                    self.requested_hover = None;
-                    None
-                }
-                (&EditorState::Editing, EditorWidgetMsg::CompletionWidgetSelected(completion)) => {
-                    self.apply_completion_action(completion);
-                    None
-                }
-                (&EditorState::Editing, EditorWidgetMsg::RequestContextBar) => {
-                    self.todo_request_context_bar();
-                    None
-                }
-                (&EditorState::Editing, EditorWidgetMsg::Reformat) => {
-                    self.reformat();
-                    None
-                }
-                (&EditorState::Editing, EditorWidgetMsg::ShowUsages) => {
-                    self.requested_hover = None;
-                    self.show_usages()
-                }
-                (&EditorState::Editing, EditorWidgetMsg::GoToDefinition) => {
-                    self.requested_hover = None;
-                    self.todo_go_to_definition();
-                    None
-                }
-                (editor_state, msg) => {
-                    error!("Unhandled combination of editor state {:?} and msg {:?}", editor_state, msg);
-                    None
+                } else {
+                    error!("can't update - failed to acquire rwlock");
                 }
             }
         };
