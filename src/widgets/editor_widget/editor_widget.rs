@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, RwLockReadGuard};
 
 use log::{debug, error, log, warn};
 use matches::debug_assert_matches;
@@ -34,7 +34,7 @@ use crate::promise::promise::{Promise, PromiseState};
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
-use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
+use crate::w7e::buffer_state_shared_ref::{BufferR, BufferSharedRef};
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_provider::{CompletionAction, NavCompSymbol};
 use crate::widget::any_msg::{AnyMsg, AsAny};
@@ -254,10 +254,10 @@ impl EditorWidget {
 
     // This updates the "anchor" of view to match the direction of editing. Remember, the scroll will
     // follow the "anchor" with least possible change.
-    fn update_kite(&mut self, last_move_direction: Arrow) {
+    fn update_kite(&mut self, buffer_r: BufferR, last_move_direction: Arrow) {
         // TODO test
         // TODO cleanup - now cursor_set is part of buffer, we can move cursor_set_to_rect method there
-        let cursor_rect = cursor_set_to_rect(&self.buffer.text().cursor_set, &self.buffer);
+        let cursor_rect = cursor_set_to_rect(&buffer_r.text().cursor_set, &*buffer_r);
         match last_move_direction {
             Arrow::Up => {
                 if self.kite.y > cursor_rect.upper_left().y {
@@ -340,10 +340,13 @@ impl EditorWidget {
         let cursor = unpack_or!(self.cursors().as_single(), None, "multiple cursors or none, not doing hover");
         let cursor_pos = unpack_or!(self.get_single_cursor_screen_pos(cursor), None, "can't position hover, no cursor local pos");
         let cursor_screen_pos = unpack_or!(cursor_pos.widget_space, None, "no cursor position in screen space");
+        let buffer_r: BufferR = unpack_or!(self.buffer.lock(), None, "failed to lock buffer");
         // let visible_rect = unpack_or!(last_size.visible_hint(), None, "no visible rect - no hover");
 
-        let trigger_and_substring: Option<(&String, String)> = triggers.map(|triggers| find_trigger_and_substring(
-            triggers, &self.buffer, &cursor_pos)).flatten();
+
+        let trigger_and_substring: Option<(&String, String)> = triggers
+            .map(|triggers| find_trigger_and_substring(
+                triggers, &*buffer_r, &cursor_pos)).flatten();
 
         let anchor = trigger_and_substring.as_ref().map(|tas| {
             let substr_width = tas.1.width() as u16; //TODO overflow
