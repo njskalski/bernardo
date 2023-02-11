@@ -11,6 +11,7 @@ pub enum FindError {
     RegexPatternFail,
     EmptyPattern,
     CharToByteFail,
+    FailedToLock,
 }
 
 /*

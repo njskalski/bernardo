@@ -297,9 +297,9 @@ impl EditorWidget {
         self.state = EditorState::Editing;
     }
 
-    pub fn get_single_cursor_screen_pos(&self, cursor: Cursor) -> Option<CursorScreenPosition> {
-        let lsp_cursor = unpack_or_e!(StupidCursor::from_real_cursor(self.buffer(), cursor).ok(), None, "failed mapping cursor to lsp-cursor");
-        let lsp_cursor_xy = unpack_or_e!(lsp_cursor.to_xy(&self.buffer().text().rope), None, "lsp cursor beyond XY max");
+    pub fn get_single_cursor_screen_pos(&self, buffer: &BufferState, cursor: Cursor) -> Option<CursorScreenPosition> {
+        let lsp_cursor = unpack_or_e!(StupidCursor::from_real_cursor(buffer, cursor).ok(), None, "failed mapping cursor to lsp-cursor");
+        let lsp_cursor_xy = unpack_or_e!(lsp_cursor.to_xy(&buffer.text().rope), None, "lsp cursor beyond XY max");
 
         let sc = unpack_or!(self.last_size, None, "single_cursor_screen_pos called before first layout");
         let visible_rect = unpack_or!(sc.visible_hint(), None, "no visible rect - no screen cursor pos");
@@ -338,7 +338,7 @@ impl EditorWidget {
     pub fn get_cursor_related_hover_settings(&self, buffer: &BufferState, triggers: Option<&Vec<String>>) -> Option<HoverSettings> {
         // let last_size = unpack_or!(self.last_size, None, "requested hover before layout");
         let cursor: Cursor = unpack_or!(buffer.cursors().as_single().map(|c| c.clone()), None, "multiple cursors or none, not doing hover");
-        let cursor_pos = unpack_or!(self.get_single_cursor_screen_pos(cursor), None, "can't position hover, no cursor local pos");
+        let cursor_pos = unpack_or!(self.get_single_cursor_screen_pos(buffer, cursor), None, "can't position hover, no cursor local pos");
         let cursor_screen_pos = unpack_or!(cursor_pos.widget_space, None, "no cursor position in screen space");
         // let buffer_r: BufferR = unpack_or!(self.buffer.lock(), None, "failed to lock buffer");
         // let visible_rect = unpack_or!(last_size.visible_hint(), None, "no visible rect - no hover");
@@ -447,7 +447,7 @@ impl EditorWidget {
             // This theoretically could be optimised out, but maybe it's not worth it, it leads to
             // a new category of bugs if statement above turns out to be false, and it rarely is,
             // so it's very very hard to test. So I keep this here for peace of mind.
-            self.after_content_changed();
+            self.after_content_changed(buffer);
 
             res
         } else {
@@ -521,15 +521,13 @@ impl EditorWidget {
         }
     }
 
-    pub fn buffer_mut(&mut self) -> &mut BufferState {
-        &mut self.buffer
-    }
-
     pub fn find_once(&mut self, phrase: &String) -> Result<bool, FindError> {
-        let res = self.buffer.find_once(phrase);
+        let mut buffer = unpack_or_e!(self.buffer.lock_rw(), Err(FindError::FailedToLock), "failed locking buffer for search");
+
+        let res = buffer.find_once(phrase);
         if res == Ok(true) {
             // TODO handle "restart from the top"
-            self.update_kite(Arrow::Down);
+            self.update_kite(&buffer, Arrow::Down);
         }
         res
     }
@@ -566,13 +564,13 @@ impl EditorWidget {
 
         helpers::fill_output(default.background, output);
 
-        let buffer = unpack_or!(self.buffer.lock(), "failed to lock buffer for rendering");
+        let buffer = unpack_or!(self.buffer.lock(), (), "failed to lock buffer for rendering");
 
         let sc = output.size_constraint();
         let visible_rect = unpack_or!(sc.visible_hint(), (), "not visible - not rendering");
 
-        let char_range_op = self.buffer.char_range(output);
-        let highlights = self.buffer.highlight(char_range_op.clone());
+        let char_range_op = buffer.char_range(output);
+        let highlights = buffer.highlight(char_range_op.clone());
 
         let mut highlight_iter = highlights.iter().peekable();
 
@@ -626,7 +624,7 @@ impl EditorWidget {
                     }
                 }
 
-                self.pos_to_cursor(theme, char_idx).map(|mut bg| {
+                self.pos_to_cursor(buffer.cursors(), theme, char_idx).map(|mut bg| {
                     if !focused {
                         bg = bg.half();
                     }
@@ -664,7 +662,7 @@ impl EditorWidget {
         if one_beyond_last_pos < visible_rect.lower_right() {
             let mut style = default;
 
-            self.pos_to_cursor(theme, one_beyond_limit).map(|mut bg| {
+            self.pos_to_cursor(buffer.cursors(), theme, one_beyond_limit).map(|mut bg| {
                 if !focused {
                     bg = bg.half();
                 }
@@ -723,11 +721,11 @@ impl EditorWidget {
         true
     }
 
-    pub fn request_completions(&mut self) {
-        let cursor = unpack_or!(self.cursors().as_single(), (), "not opening completions - cursor not single.");
+    pub fn request_completions(&mut self, buffer: &BufferState) {
+        let cursor = unpack_or!(buffer.cursors().as_single(), (), "not opening completions - cursor not single.");
         let navcomp = unpack_or!(self.navcomp.clone(), (), "not opening completions - navcomp not available.");
-        let stupid_cursor = unpack_or_e!(StupidCursor::from_real_cursor(self.buffer(), cursor).ok(), (), "failed converting cursor to lsp_cursor");
-        let path = unpack_or_e!(self.buffer.get_path(), (), "path not available");
+        let stupid_cursor = unpack_or_e!(StupidCursor::from_real_cursor(buffer, cursor).ok(), (), "failed converting cursor to lsp_cursor");
+        let path = unpack_or_e!(buffer.get_path(), (), "path not available");
 
         let trigger_op = {
             let nt = navcomp.completion_triggers(&path);
@@ -738,7 +736,7 @@ impl EditorWidget {
             }
         };
 
-        let hover_settings = self.get_cursor_related_hover_settings(trigger_op);
+        let hover_settings = self.get_cursor_related_hover_settings(buffer, trigger_op);
         // let tick_sender = navcomp.todo_navcomp_sender().clone();
         let promise_op = navcomp.completions(path.clone(), stupid_cursor, hover_settings.as_ref().map(|c| c.trigger.clone()).flatten());
 
@@ -755,8 +753,8 @@ impl EditorWidget {
     }
 
     // TODO merge with function above
-    pub fn update_completions(&mut self) {
-        let cursor_pos = match self.cursors().as_single().map(|c| self.get_single_cursor_screen_pos(c)).flatten().clone() {
+    pub fn update_completions(&mut self, buffer: &BufferState) {
+        let cursor_pos = match buffer.cursors().as_single().map(|c| self.get_single_cursor_screen_pos(buffer, c)).flatten().clone() {
             Some(c) => c,
             None => {
                 debug!("cursor not single or not on screen");
@@ -773,7 +771,7 @@ impl EditorWidget {
             }
         };
 
-        let path = match self.buffer.get_path() {
+        let path = match buffer.get_path() {
             Some(p) => p,
             None => {
                 error!("failed to update completions - path not found");
@@ -791,7 +789,7 @@ impl EditorWidget {
             }
         };
 
-        let new_settings = match self.get_cursor_related_hover_settings(trigger_op) {
+        let new_settings = match self.get_cursor_related_hover_settings(buffer, trigger_op) {
             Some(s) => s,
             None => {
                 debug!("no good settings to update hover");
@@ -819,22 +817,22 @@ impl EditorWidget {
         }
     }
 
-    pub fn apply_completion_action(&mut self, completion_action: &CompletionAction) -> bool {
+    pub fn apply_completion_action(&mut self, buffer: &mut BufferState, completion_action: &CompletionAction) -> bool {
         if let Some((hover, _)) = self.requested_hover.as_ref() {
             if let Some(substring) = hover.substring.as_ref() {
                 if !substring.is_empty() {
                     let len = substring.len();
                     debug!("removing [{}..{})",hover.cursor_screen_position.cursor.a, hover.cursor_screen_position.cursor.a + len);
-                    self.buffer.remove(hover.cursor_screen_position.cursor.a, hover.cursor_screen_position.cursor.a + len);
+                    buffer.remove(hover.cursor_screen_position.cursor.a, hover.cursor_screen_position.cursor.a + len);
                 }
             }
 
             let to_insert = match completion_action {
                 CompletionAction::Insert(what) => what,
             };
-            self.buffer.apply_cem(CommonEditMsg::Block(to_insert.clone()),
-                                  self.page_height() as usize,
-                                  Some(self.providers.clipboard()),
+            buffer.apply_cem(CommonEditMsg::Block(to_insert.clone()),
+                             self.page_height() as usize,
+                             Some(self.providers.clipboard()),
             ); // TODO unnecessary clone
             self.close_hover();
 
@@ -846,10 +844,10 @@ impl EditorWidget {
     }
 
     // This is supposed to be called each time cursor is moved
-    fn todo_after_cursor_moved(&mut self) {
-        let cursor = unpack_or!(self.cursors().as_single(), (), "cursor not single");
-        let path = unpack_or!(self.buffer().get_path(), (), "no path set");
-        let stupid_cursor = unpack_or!(StupidCursor::from_real_cursor(self.buffer(), cursor).ok(), (), "failed conversion to stupid cursor");
+    fn todo_after_cursor_moved(&mut self, buffer: &BufferState) {
+        let cursor = unpack_or!(buffer.cursors().as_single(), (), "cursor not single");
+        let path = unpack_or!(buffer.get_path(), (), "no path set");
+        let stupid_cursor = unpack_or!(StupidCursor::from_real_cursor(buffer, cursor).ok(), (), "failed conversion to stupid cursor");
 
         // TODO add support for scrachpad (path == None)
 
@@ -858,10 +856,10 @@ impl EditorWidget {
         ).flatten();
     }
 
-    fn after_content_changed(&self) {
-        match (&self.navcomp, self.buffer.get_path()) {
+    fn after_content_changed(&self, buffer: &BufferState) {
+        match (&self.navcomp, buffer.get_path()) {
             (Some(navcomp), Some(path)) => {
-                let contents = self.buffer.text().rope.clone();
+                let contents = buffer.text().rope.clone();
                 navcomp.submit_edit_event(path, contents);
             }
             _ => {}
@@ -933,11 +931,11 @@ impl EditorWidget {
         }
     }
 
-    pub fn show_usages(&mut self) -> Option<Box<dyn AnyMsg>> {
+    pub fn show_usages(&self, buffer: &BufferState) -> Option<Box<dyn AnyMsg>> {
         let navcomp = unpack_or_e!(&self.navcomp, None, "can't show usages without navcomp");
-        let cursor = unpack_or!(self.cursors().as_single(), None, "cursor not single");
-        let path = unpack_or!(self.buffer().get_path(), None, "no path set");
-        let stupid_cursor = unpack_or!(StupidCursor::from_real_cursor(self.buffer(), cursor).ok(), None, "failed conversion to stupid cursor");
+        let cursor = unpack_or!(buffer.cursors().as_single(), None, "cursor not single");
+        let path = unpack_or!(buffer.get_path(), None, "no path set");
+        let stupid_cursor = unpack_or!(StupidCursor::from_real_cursor(buffer, cursor).ok(), None, "failed conversion to stupid cursor");
 
         let promise = navcomp.todo_get_symbol_usages(path, stupid_cursor);
 
@@ -1036,12 +1034,12 @@ impl Widget for EditorWidget {
                 Some(msg)
             }
             Some(msg) => {
-                if let Some(buffer) = self.buffer.lock_rw() {
+                if let Some(mut buffer) = self.buffer.lock_rw() {
                     match (&self.state, msg) {
                         (&EditorState::Editing, EditorWidgetMsg::EditMsg(cem)) => {
                             let page_height = self.page_height();
                             // page_height as usize is safe, since page_height is u16 and usize is larger.
-                            let changed = self.buffer.apply_cem(
+                            let changed = buffer.apply_cem(
                                 cem.clone(),
                                 page_height as usize,
                                 Some(self.providers.clipboard()),
@@ -1049,26 +1047,26 @@ impl Widget for EditorWidget {
 
                             // TODO this needs to happen only if CONTENTS changed, not if cursor positions changed
                             if changed {
-                                self.after_content_changed();
+                                self.after_content_changed(&buffer);
 
                                 if self.has_completions() {
-                                    self.update_completions();
+                                    self.update_completions(&buffer);
                                 }
                             }
 
                             // TODO I might want to add directions upper left (for substraction) and lower right (for addition)
                             match cme_to_direction(cem) {
                                 None => {}
-                                Some(direction) => self.update_kite(direction)
+                                Some(direction) => self.update_kite(&buffer, direction)
                             };
 
-                            self.todo_after_cursor_moved();
+                            self.todo_after_cursor_moved(&buffer);
 
                             None
                         }
                         (&EditorState::Editing, EditorWidgetMsg::ToCursorDropMode) => {
                             // self.cursors.simplify(); //TODO I removed it, but I don't know why it was here in the first place
-                            self.enter_dropping_cursor_mode();
+                            self.enter_dropping_cursor_mode(&buffer);
                             None
                         }
                         (&EditorState::DroppingCursor { .. }, EditorWidgetMsg::ToEditMode) => {
@@ -1078,15 +1076,15 @@ impl Widget for EditorWidget {
                         (&EditorState::DroppingCursor { special_cursor }, EditorWidgetMsg::DropCursorFlip { cursor }) => {
                             debug_assert!(special_cursor.is_simple());
 
-                            if !self.buffer.text().cursor_set.are_simple() {
+                            if !buffer.text().cursor_set.are_simple() {
                                 warn!("Cursors were supposed to be simple at this point. Recovering, but there was error.");
-                                self.buffer.text_mut().cursor_set.simplify();
+                                buffer.text_mut().cursor_set.simplify();
                             }
 
-                            let has_cursor = self.buffer.text().cursor_set.get_cursor_status_for_char(special_cursor.a) == CursorStatus::UnderCursor;
+                            let has_cursor = buffer.text().cursor_set.get_cursor_status_for_char(special_cursor.a) == CursorStatus::UnderCursor;
 
                             if has_cursor {
-                                let cs = &mut self.buffer.text_mut().cursor_set;
+                                let cs = &mut buffer.text_mut().cursor_set;
 
                                 // We don't remove a single cursor, to not invalidate invariant
                                 if cs.len() > 1 {
@@ -1097,12 +1095,12 @@ impl Widget for EditorWidget {
                                     debug!("Not removing a single cursor at {}", special_cursor.a);
                                 }
                             } else {
-                                if !self.buffer.text_mut().cursor_set.add_cursor(*cursor) {
+                                if !buffer.text_mut().cursor_set.add_cursor(*cursor) {
                                     warn!("Failed to add cursor {:?} to set", cursor);
                                 }
                             }
 
-                            debug_assert!(self.buffer.text().cursor_set.check_invariants());
+                            debug_assert!(buffer.text().cursor_set.check_invariants());
 
                             None
                         }
@@ -1110,12 +1108,12 @@ impl Widget for EditorWidget {
                             let mut set = CursorSet::singleton(special_cursor);
                             // TODO make sure this had no changing effect?
                             let height = self.page_height();
-                            _apply_cem(cem.clone(), &mut set, &mut self.buffer, height as usize, Some(self.providers.clipboard()));
-                            self.state = EditorState::DroppingCursor { special_cursor: *set.as_single().unwrap() };
+                            _apply_cem(cem.clone(), &mut set, &mut *buffer, height as usize, Some(self.providers.clipboard()));
+                            self.state = EditorState::DroppingCursor { special_cursor: set.as_single().unwrap() };
                             None
                         }
                         (&EditorState::Editing, EditorWidgetMsg::RequestCompletions) => {
-                            self.request_completions();
+                            self.request_completions(&buffer);
                             None
                         }
                         (&EditorState::Editing, EditorWidgetMsg::HoverClose) => {
@@ -1123,20 +1121,20 @@ impl Widget for EditorWidget {
                             None
                         }
                         (&EditorState::Editing, EditorWidgetMsg::CompletionWidgetSelected(completion)) => {
-                            self.apply_completion_action(completion);
+                            self.apply_completion_action(&mut buffer, completion);
                             None
                         }
                         (&EditorState::Editing, EditorWidgetMsg::RequestContextBar) => {
-                            self.todo_request_context_bar();
+                            self.todo_request_context_bar(&buffer);
                             None
                         }
                         (&EditorState::Editing, EditorWidgetMsg::Reformat) => {
-                            self.reformat();
+                            self.reformat(&mut *buffer);
                             None
                         }
                         (&EditorState::Editing, EditorWidgetMsg::ShowUsages) => {
                             self.requested_hover = None;
-                            self.show_usages()
+                            self.show_usages(&buffer)
                         }
                         (&EditorState::Editing, EditorWidgetMsg::GoToDefinition) => {
                             self.requested_hover = None;
@@ -1150,6 +1148,7 @@ impl Widget for EditorWidget {
                     }
                 } else {
                     error!("can't update - failed to acquire rwlock");
+                    None
                 }
             }
         };
