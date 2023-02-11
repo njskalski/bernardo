@@ -186,6 +186,10 @@ impl BufferState {
         self.lang_id = lang_id;
     }
 
+    pub fn cursors(&self) -> &CursorSet {
+        &self.text().cursor_set
+    }
+
     pub fn apply_cem(&mut self,
                      mut cem: CommonEditMsg,
                      page_height: usize,

@@ -22,7 +22,7 @@ pub struct StupidCursor {
 // TODO fuzzy some test!
 
 impl StupidCursor {
-    pub fn from_real_cursor(buffer: &dyn TextBuffer, cursor: &Cursor) -> Result<StupidCursor, ()> {
+    pub fn from_real_cursor(buffer: &dyn TextBuffer, cursor: Cursor) -> Result<StupidCursor, ()> {
         // TODO I did not implement PositionEncodingKind, so I am not sure if "offset" is utf-8 or byte or soccer fields, or whatever unit of length Americans use now
         let line = match buffer.char_to_line(cursor.a) {
             None => {

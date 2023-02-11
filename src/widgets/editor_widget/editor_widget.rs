@@ -254,10 +254,10 @@ impl EditorWidget {
 
     // This updates the "anchor" of view to match the direction of editing. Remember, the scroll will
     // follow the "anchor" with least possible change.
-    fn update_kite(&mut self, buffer_r: BufferR, last_move_direction: Arrow) {
+    fn update_kite(&mut self, buffer: &BufferState, last_move_direction: Arrow) {
         // TODO test
         // TODO cleanup - now cursor_set is part of buffer, we can move cursor_set_to_rect method there
-        let cursor_rect = cursor_set_to_rect(&buffer_r.text().cursor_set, &*buffer_r);
+        let cursor_rect = cursor_set_to_rect(&buffer.text().cursor_set, &*buffer);
         match last_move_direction {
             Arrow::Up => {
                 if self.kite.y > cursor_rect.upper_left().y {
@@ -285,7 +285,7 @@ impl EditorWidget {
     pub fn enter_dropping_cursor_mode(&mut self, buffer: &BufferState) {
         debug_assert_matches!(self.state, EditorState::Editing);
         self.state = EditorState::DroppingCursor {
-            special_cursor: self.cursors().iter().next().map(|c| *c).unwrap_or_else(|| {
+            special_cursor: buffer.cursors().iter().next().map(|c| *c).unwrap_or_else(|| {
                 warn!("empty cursor set!");
                 Cursor::single()
             })
@@ -297,8 +297,8 @@ impl EditorWidget {
         self.state = EditorState::Editing;
     }
 
-    pub fn get_single_cursor_screen_pos(&self, cursor: &Cursor) -> Option<CursorScreenPosition> {
-        let lsp_cursor = unpack_or_e!(StupidCursor::from_real_cursor(self.buffer(), &cursor).ok(), None, "failed mapping cursor to lsp-cursor");
+    pub fn get_single_cursor_screen_pos(&self, cursor: Cursor) -> Option<CursorScreenPosition> {
+        let lsp_cursor = unpack_or_e!(StupidCursor::from_real_cursor(self.buffer(), cursor).ok(), None, "failed mapping cursor to lsp-cursor");
         let lsp_cursor_xy = unpack_or_e!(lsp_cursor.to_xy(&self.buffer().text().rope), None, "lsp cursor beyond XY max");
 
         let sc = unpack_or!(self.last_size, None, "single_cursor_screen_pos called before first layout");
@@ -307,7 +307,7 @@ impl EditorWidget {
         if !visible_rect.contains(lsp_cursor_xy) {
             warn!("cursor seems to be outside visible hint {:?}", sc.visible_hint());
             return Some(CursorScreenPosition {
-                cursor: *cursor,
+                cursor,
                 widget_space: None,
                 text_space: lsp_cursor_xy,
             });
@@ -320,7 +320,7 @@ impl EditorWidget {
         debug_assert!(local_pos < visible_rect.size);
 
         Some(CursorScreenPosition {
-            cursor: *cursor,
+            cursor,
             widget_space: Some(local_pos),
             text_space: lsp_cursor_xy,
         })
@@ -335,18 +335,18 @@ impl EditorWidget {
 
     TODO what if the trigger happen outside visible space? Do I draw or not?
      */
-    pub fn get_cursor_related_hover_settings(&self, triggers: Option<&Vec<String>>) -> Option<HoverSettings> {
+    pub fn get_cursor_related_hover_settings(&self, buffer: &BufferState, triggers: Option<&Vec<String>>) -> Option<HoverSettings> {
         // let last_size = unpack_or!(self.last_size, None, "requested hover before layout");
-        let cursor = unpack_or!(self.cursors().as_single(), None, "multiple cursors or none, not doing hover");
+        let cursor: Cursor = unpack_or!(buffer.cursors().as_single().map(|c| c.clone()), None, "multiple cursors or none, not doing hover");
         let cursor_pos = unpack_or!(self.get_single_cursor_screen_pos(cursor), None, "can't position hover, no cursor local pos");
         let cursor_screen_pos = unpack_or!(cursor_pos.widget_space, None, "no cursor position in screen space");
-        let buffer_r: BufferR = unpack_or!(self.buffer.lock(), None, "failed to lock buffer");
+        // let buffer_r: BufferR = unpack_or!(self.buffer.lock(), None, "failed to lock buffer");
         // let visible_rect = unpack_or!(last_size.visible_hint(), None, "no visible rect - no hover");
 
 
         let trigger_and_substring: Option<(&String, String)> = triggers
             .map(|triggers| find_trigger_and_substring(
-                triggers, &*buffer_r, &cursor_pos)).flatten();
+                triggers, &*buffer, &cursor_pos)).flatten();
 
         let anchor = trigger_and_substring.as_ref().map(|tas| {
             let substr_width = tas.1.width() as u16; //TODO overflow
@@ -375,7 +375,7 @@ impl EditorWidget {
             navcomp_symbol.update();
         };
 
-        let single_cursor = self.cursors().as_single();
+        let single_cursor = buffer.cursors().as_single();
         let stupid_cursor_op = single_cursor.map(
             |c| StupidCursor::from_real_cursor(buffer, c).ok()
         ).flatten();
@@ -409,7 +409,7 @@ impl EditorWidget {
         let items = get_context_options(
             &self.state,
             single_cursor,
-            self.cursors(),
+            buffer.cursors(),
             stupid_cursor_op,
             lsp_symbol_op,
             tree_sitter_highlight.as_ref().map(|c| c.as_str()));
@@ -418,7 +418,7 @@ impl EditorWidget {
             warn!("ignoring everything bar, no items");
             self.requested_hover = None;
         } else {
-            let hover_settings_op = self.get_cursor_related_hover_settings(None);
+            let hover_settings_op = self.get_cursor_related_hover_settings(buffer, None);
 
             self.requested_hover = hover_settings_op.map(|hs| {
                 let hover = EditorHover::Context(ContextBarWidget::new(items));
@@ -456,7 +456,7 @@ impl EditorWidget {
         }
     }
 
-    fn pos_to_cursor(&self, theme: &Theme, char_idx: usize) -> Option<Color> {
+    fn pos_to_cursor(&self, cursors: &CursorSet, theme: &Theme, char_idx: usize) -> Option<Color> {
         match &self.state {
             EditorState::DroppingCursor { special_cursor } => {
                 match special_cursor.get_cursor_status_for_char(char_idx) {
@@ -469,7 +469,7 @@ impl EditorWidget {
             _ => {}
         };
 
-        theme.cursor_background(self.cursors().get_cursor_status_for_char(char_idx))
+        theme.cursor_background(cursors.get_cursor_status_for_char(char_idx))
     }
 
     pub fn page_height(&self) -> u16 {
@@ -492,10 +492,6 @@ impl EditorWidget {
         }
     }
 
-    pub fn cursors(&self) -> &CursorSet {
-        &self.buffer.text().cursor_set
-    }
-
     pub fn set_cursors(&mut self, cursor_set: CursorSet) -> bool {
         if cursor_set.len() == 0 {
             error!("empty cursor set!");
@@ -510,19 +506,19 @@ impl EditorWidget {
             }
         }
 
-        if max_idx > self.buffer().len_chars() + 1 {
-            warn!("can't set cursor at {} for buffer len {}", max_idx, self.buffer().len_chars());
-            return false;
+        if let Some(mut buffer_mut) = self.buffer.lock_rw() {
+            if max_idx > buffer_mut.len_chars() + 1 {
+                warn!("can't set cursor at {} for buffer len {}", max_idx, buffer_mut.len_chars());
+                return false;
+            }
+
+            buffer_mut.text_mut().cursor_set = cursor_set;
+            self.update_kite(&buffer_mut, Arrow::Down);
+
+            true
+        } else {
+            false
         }
-
-        self.buffer.text_mut().cursor_set = cursor_set;
-        self.update_kite(Arrow::Down);
-
-        true
-    }
-
-    pub fn buffer(&self) -> &BufferState {
-        &self.buffer
     }
 
     pub fn buffer_mut(&mut self) -> &mut BufferState {
@@ -570,6 +566,8 @@ impl EditorWidget {
 
         helpers::fill_output(default.background, output);
 
+        let buffer = unpack_or!(self.buffer.lock(), "failed to lock buffer for rendering");
+
         let sc = output.size_constraint();
         let visible_rect = unpack_or!(sc.visible_hint(), (), "not visible - not rendering");
 
@@ -580,7 +578,7 @@ impl EditorWidget {
 
         let lines_to_skip = visible_rect.upper_left().y as usize;
 
-        let mut lines_it = self.buffer.lines().skip(lines_to_skip);
+        let mut lines_it = buffer.lines().skip(lines_to_skip);
         // skipping lines that cannot be visible, because they are before hint()
         let mut line_idx = lines_to_skip;
 
@@ -594,7 +592,7 @@ impl EditorWidget {
                 break;
             }
 
-            let line_begin = match self.buffer.line_to_char(line_idx) {
+            let line_begin = match buffer.line_to_char(line_idx) {
                 Some(begin) => begin,
                 None => continue,
             };
@@ -657,9 +655,9 @@ impl EditorWidget {
             }
         }
 
-        let one_beyond_limit = self.buffer.len_chars();
-        let last_line = self.buffer.char_to_line(one_beyond_limit).unwrap();//TODO
-        let x_beyond_last = one_beyond_limit - self.buffer.line_to_char(last_line).unwrap(); //TODO
+        let one_beyond_limit = buffer.len_chars();
+        let last_line = buffer.char_to_line(one_beyond_limit).unwrap();//TODO
+        let x_beyond_last = one_beyond_limit - buffer.line_to_char(last_line).unwrap(); //TODO
 
         let one_beyond_last_pos = XY::new(x_beyond_last as u16, last_line as u16);
 

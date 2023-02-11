@@ -604,11 +604,11 @@ impl CursorSet {
     }
 
     // Returns only element OR None if the set is NOT a singleton.
-    pub fn as_single(&self) -> Option<&Cursor> {
+    pub fn as_single(&self) -> Option<Cursor> {
         if self.set.len() != 1 {
             None
         } else {
-            self.set.first()
+            self.set.first().map(|c| c.clone())
         }
     }
 

@@ -11,7 +11,7 @@ I am preemptively moving this code away from EditorWidget, because I expect it t
 */
 
 pub fn get_context_options(state: &EditorState,
-                           single_cursor: Option<&Cursor>,
+                           single_cursor: Option<Cursor>,
                            multiple_cursors: &CursorSet,
                            single_stupid_cursor: Option<StupidCursor>,
                            lsp_symbol: Option<&NavCompSymbol>,
