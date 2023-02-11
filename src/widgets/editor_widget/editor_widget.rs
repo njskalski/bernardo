@@ -34,6 +34,7 @@ use crate::promise::promise::{Promise, PromiseState};
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_provider::{CompletionAction, NavCompSymbol};
 use crate::widget::any_msg::{AnyMsg, AsAny};
@@ -149,7 +150,7 @@ pub struct EditorWidget {
     // to be constructed in layout step based on HoverSettings
     last_hover_rect: Option<Rect>,
 
-    buffer: BufferState,
+    buffer: BufferSharedRef,
 
     kite: XY,
 
@@ -182,7 +183,7 @@ impl EditorWidget {
             ignore_input_altogether: false,
             last_size: None,
             last_hover_rect: None,
-            buffer: BufferState::full(Some(tree_sitter_clone)),
+            buffer: BufferSharedRef::new_empty(Some(tree_sitter_clone)),
             kite: XY::ZERO,
             state: EditorState::Editing,
             navcomp,
@@ -210,23 +211,46 @@ impl EditorWidget {
         self.navcomp = navcomp;
     }
 
-    pub fn with_buffer(mut self, buffer: BufferState, navcomp_op: Option<NavCompRef>) -> Self {
+    //TODO have a feeling that navcomp can be merged with buffer
+    pub fn set_buffer(&mut self, buffer: BufferSharedRef, navcomp_op: Option<NavCompRef>) {
         self.buffer = buffer;
         self.navcomp = navcomp_op;
-        let contents = self.buffer.text().rope.clone();
 
-        match (self.navcomp.clone(), self.buffer.get_path()) {
-            (Some(navcomp), Some(spath)) => {
-                navcomp.file_open_for_edition(spath, contents);
+        if let Some(buffer) = self.buffer.lock() {
+            match (self.navcomp.clone(),
+                   buffer.get_path().clone(),
+            ) {
+                (Some(navcomp), Some(spath)) => {
+                    navcomp.file_open_for_edition(spath, buffer.text().rope.clone());
+                }
+                _ => {
+                    debug!("not starting navigation, because navcomp is some: {}, ff is some: {}",
+                            self.navcomp.is_some(), buffer.get_path().is_some() )
+                }
             }
-            _ => {
-                debug!("not starting navigation, because navcomp is some: {}, ff is some: {}",
-                    self.navcomp.is_some(), self.buffer.get_path().is_some() )
-            }
+        } else {
+            error!("failed locking buffer");
         }
-
-        self
     }
+
+    // pub fn with_buffer(mut self, buffer: BufferSharedRef, navcomp_op: Option<NavCompRef>) -> Self {
+    //     self.buffer = buffer;
+    //     self.navcomp = navcomp_op;
+    //     let buffer = unpack_or!(self.buffer.lock());
+    //     let contents = buffer.text().rope.clone();
+    //
+    //     match (self.navcomp.clone(), self.buffer.get_path()) {
+    //         (Some(navcomp), Some(spath)) => {
+    //             navcomp.file_open_for_edition(spath, contents);
+    //         }
+    //         _ => {
+    //             debug!("not starting navigation, because navcomp is some: {}, ff is some: {}",
+    //                 self.navcomp.is_some(), self.buffer.get_path().is_some() )
+    //         }
+    //     }
+    //
+    //     self
+    // }
 
     // This updates the "anchor" of view to match the direction of editing. Remember, the scroll will
     // follow the "anchor" with least possible change.

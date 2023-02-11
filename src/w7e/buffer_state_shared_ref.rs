@@ -1,0 +1,29 @@
+use std::sync::{Arc, RwLock, RwLockReadGuard, TryLockResult};
+
+use log::error;
+
+use crate::gladius::providers::Providers;
+use crate::text::buffer_state::BufferState;
+use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+
+pub struct BufferSharedRef(Arc<RwLock<BufferState>>);
+
+impl BufferSharedRef {
+    pub fn new_empty(tree_sitter_op: Option<Arc<TreeSitterWrapper>>) -> BufferSharedRef {
+        let bf = BufferState::full(tree_sitter_op);
+
+        BufferSharedRef(Arc::new(RwLock::new(bf)))
+    }
+
+    pub fn lock(&self) -> Option<&RwLockReadGuard<BufferState>> {
+        match self.0.try_read().as_ref() {
+            Ok(lock) => {
+                Some(lock)
+            }
+            Err(e) => {
+                error!("failed to lock buffer for read!");
+                None
+            }
+        }
+    }
+}

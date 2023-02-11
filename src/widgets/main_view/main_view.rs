@@ -28,6 +28,7 @@ use crate::promise::promise::PromiseState;
 use crate::subwidget;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
@@ -57,7 +58,6 @@ pub enum DocumentIdentifier {
     SPath(SPath)
 }
 
-pub type BufferSharedRef = Arc<RwLock<BufferState>>;
 
 pub struct MainView {
     wid: WID,
