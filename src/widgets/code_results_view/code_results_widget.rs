@@ -101,6 +101,8 @@ impl Widget for CodeResultsView {
     }
 
     fn prelayout(&mut self) {
+        // TODO this method is stitched together from bullshit with ducttape. It's to be rewritten, after I figure out which items go well together.
+
         self.data_provider.todo_tick();
 
         for (idx, symbol) in self.data_provider.items().enumerate().skip(self.item_list.internal().items().count()) {
@@ -162,7 +164,6 @@ impl Widget for CodeResultsView {
             let buffer_state = BufferState::full(
                 Some(self.providers.tree_sitter().clone()),
             ).with_text(buffer_str);
-            let buffer_state_ref = BufferSharedRef::new_from_buffer(Some(self.providers.tree_sitter().clone()), buffer_state);
 
             let first_cursor = match symbol.stupid_range.0.to_real_cursor(&buffer_state) {
                 None => {
@@ -174,6 +175,9 @@ impl Widget for CodeResultsView {
             };
 
             // TODO second_cursor?
+
+            let buffer_state_ref = BufferSharedRef::new_from_buffer(Some(self.providers.tree_sitter().clone()), buffer_state);
+
 
             let cursor_set = CursorSet::singleton(first_cursor);
 

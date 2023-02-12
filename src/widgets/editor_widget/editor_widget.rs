@@ -527,13 +527,11 @@ impl EditorWidget {
         true
     }
 
-    pub fn find_once(&mut self, phrase: &String) -> Result<bool, FindError> {
-        let mut buffer = unpack_or_e!(self.buffer.lock_rw(), Err(FindError::FailedToLock), "failed locking buffer for search");
-
-        let res = buffer.find_once(phrase);
+    pub fn find_once(&mut self, buffer_mut: &mut BufferState, phrase: &String) -> Result<bool, FindError> {
+        let res = buffer_mut.find_once(phrase);
         if res == Ok(true) {
             // TODO handle "restart from the top"
-            self.update_kite(&buffer, Arrow::Down);
+            self.update_kite(&buffer_mut, Arrow::Down);
         }
         res
     }
@@ -1040,7 +1038,7 @@ impl Widget for EditorWidget {
                 Some(msg)
             }
             Some(msg) => {
-                if let Some(mut buffer) = self.buffer.lock_rw() {
+                let result = if let Some(mut buffer) = self.buffer.clone().lock_rw() {
                     match (&self.state, msg) {
                         (&EditorState::Editing, EditorWidgetMsg::EditMsg(cem)) => {
                             let page_height = self.page_height();
@@ -1155,7 +1153,9 @@ impl Widget for EditorWidget {
                 } else {
                     error!("can't update - failed to acquire rwlock");
                     None
-                }
+                };
+
+                result
             }
         };
     }

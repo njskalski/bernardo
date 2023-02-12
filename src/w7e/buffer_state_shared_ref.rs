@@ -32,8 +32,8 @@ impl BufferSharedRef {
         }
     }
 
-    pub fn lock_rw<'a>(&'a self) -> Option<RwLockWriteGuard<BufferState>> {
-        match self.0.clone().try_write() {
+    pub fn lock_rw(&self) -> Option<RwLockWriteGuard<BufferState>> {
+        match self.0.try_write() {
             Ok(lock) => Some(lock),
             Err(e) => {
                 error!("failed to lock buffer for write!");

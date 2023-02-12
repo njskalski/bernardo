@@ -240,9 +240,9 @@ impl EditorView {
         )
     }
 
-    fn hit_find_once(&mut self) -> bool {
+    fn hit_find_once(&mut self, buffer_mut: &mut BufferState) -> bool {
         let phrase = self.find_box.get_buffer().to_string();
-        match self.editor.internal_mut().find_once(&phrase) {
+        match self.editor.internal_mut().find_once(buffer_mut, &phrase) {
             Ok(changed) => changed,
             Err(_e) => {
                 // TODO handle?
@@ -275,10 +275,10 @@ impl EditorView {
                 Some(self.providers.clipboard()), //not really needed but why not
             );
 
-            self.hit_find_once();
+            self.hit_find_once(buffer_mut);
             true
         } else {
-            self.hit_find_once()
+            self.hit_find_once(buffer_mut)
         }
     }
 
@@ -363,7 +363,7 @@ impl Widget for EditorView {
                 Some(msg) //passthrough
             }
             Some(msg) => {
-                if let Some(mut buffer_lock) = self.editor.internal_mut().get_buffer().lock() {
+                if let Some(mut buffer_lock) = self.editor.internal_mut().get_buffer().clone().lock_rw() {
                     match msg {
                         EditorViewMsg::Save => {
                             self.save_or_save_as(&buffer_lock);
@@ -422,7 +422,7 @@ impl Widget for EditorView {
                         }
                         EditorViewMsg::FindHit => {
                             if !self.find_box.is_empty() {
-                                self.hit_find_once();
+                                self.hit_find_once(&mut buffer_lock);
                             }
                             None
                         }
