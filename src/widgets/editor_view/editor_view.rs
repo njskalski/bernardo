@@ -26,6 +26,8 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
+use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
@@ -131,9 +133,18 @@ impl EditorView {
         }
     }
 
-    pub fn with_buffer(self, buffer: BufferState) -> Self {
-        let navcomp_op = buffer.get_path().map(|path| self.nav_comp_group.get_navcomp_for(path)).flatten();
-        let editor = self.editor.mutate_internal(move |b| b.with_buffer(buffer, navcomp_op));
+    pub fn with_buffer(self, buffer: BufferSharedRef) -> Self {
+        if let Some(buffer_lock) = buffer.lock() {}
+
+        let navcomp_op: Option<NavCompRef> = if let Some(buffer_lock) = buffer.lock() {
+            buffer_lock.get_path().map(|path| self.nav_comp_group.get_navcomp_for(path)).flatten()
+        } else {
+            error!("can't set navcomp - buffer lock aquisition failed");
+            None
+        };
+
+        let mut editor = self.editor;
+        editor.internal_mut().set_buffer(buffer, navcomp_op);
 
         EditorView {
             editor,
@@ -159,7 +170,7 @@ impl EditorView {
     This attempts to save current file, but in case that's not possible (filename unknown) proceeds to open_save_as_dialog() below
      */
     fn save_or_save_as(&mut self) {
-        let buffer = self.editor.internal().buffer();
+        let buffer = self.editor.internal().get_buffer();
 
         if let Some(ff) = buffer.get_path() {
             ff.overwrite_with_stream(&mut buffer.streaming_iterator(), false);
@@ -349,72 +360,79 @@ impl Widget for EditorView {
                 debug!("expected EditorViewMsg, got {:?}, passing through", msg);
                 Some(msg) //passthrough
             }
-            Some(msg) => match msg {
-                EditorViewMsg::Save => {
-                    self.save_or_save_as();
-                    None
-                }
-                EditorViewMsg::SaveAs => {
-                    self.open_save_as_dialog_and_focus();
-                    None
-                }
-                EditorViewMsg::OnSaveAsCancel => {
-                    self.hover_dialog = None;
-                    self.set_focused(subwidget!(Self.editor));
-                    None
-                }
-                EditorViewMsg::OnSaveAsHit { ff } => {
-                    // TODO handle errors
-                    let editor = self.editor.internal_mut();
-                    if ff.overwrite_with_stream(&mut editor.buffer().streaming_iterator(), false).is_ok() {
-                        self.set_file_name(ff);
-                    }
+            Some(msg) => {
+                if let Some(buffer_lock) = self.editor.internal_mut().get_buffer().lock() {
+                    match msg {
+                        EditorViewMsg::Save => {
+                            self.save_or_save_as();
+                            None
+                        }
+                        EditorViewMsg::SaveAs => {
+                            self.open_save_as_dialog_and_focus();
+                            None
+                        }
+                        EditorViewMsg::OnSaveAsCancel => {
+                            self.hover_dialog = None;
+                            self.set_focused(subwidget!(Self.editor));
+                            None
+                        }
+                        EditorViewMsg::OnSaveAsHit { ff } => {
+                            // TODO handle errors
+                            let editor = self.editor.internal_mut();
+                            if ff.overwrite_with_stream(&mut editor.buffer().streaming_iterator(), false).is_ok() {
+                                self.set_file_name(ff);
+                            }
 
-                    self.hover_dialog = None;
-                    self.set_focused(subwidget!(Self.editor));
-                    None
-                }
-                EditorViewMsg::FocusUpdateMsg(focus_update) => {
-                    // warn!("updating focus");
-                    self.update_focus(*focus_update);
-                    None
-                }
-                EditorViewMsg::ToSimple => {
-                    self.state = EditorViewState::Simple;
-                    self.find_box.clear();
-                    self.replace_box.clear();
-                    self.hover_dialog = None;
-                    self.set_focused(subwidget!(Self.editor));
-                    None
-                }
-                EditorViewMsg::ToFind => {
-                    self.state = EditorViewState::Find;
-                    self.replace_box.clear();
-                    self.set_focused(subwidget!(Self.find_box));
-                    None
-                }
-                EditorViewMsg::ToFindReplace => {
-                    let old_state = self.state;
-                    self.state = EditorViewState::FindReplace;
+                            self.hover_dialog = None;
+                            self.set_focused(subwidget!(Self.editor));
+                            None
+                        }
+                        EditorViewMsg::FocusUpdateMsg(focus_update) => {
+                            // warn!("updating focus");
+                            self.update_focus(*focus_update);
+                            None
+                        }
+                        EditorViewMsg::ToSimple => {
+                            self.state = EditorViewState::Simple;
+                            self.find_box.clear();
+                            self.replace_box.clear();
+                            self.hover_dialog = None;
+                            self.set_focused(subwidget!(Self.editor));
+                            None
+                        }
+                        EditorViewMsg::ToFind => {
+                            self.state = EditorViewState::Find;
+                            self.replace_box.clear();
+                            self.set_focused(subwidget!(Self.find_box));
+                            None
+                        }
+                        EditorViewMsg::ToFindReplace => {
+                            let old_state = self.state;
+                            self.state = EditorViewState::FindReplace;
 
-                    if old_state == EditorViewState::Find {
-                        self.set_focused(subwidget!(Self.replace_box));
-                    } else {
-                        self.set_focused(subwidget!(Self.find_box));
-                    }
+                            if old_state == EditorViewState::Find {
+                                self.set_focused(subwidget!(Self.replace_box));
+                            } else {
+                                self.set_focused(subwidget!(Self.find_box));
+                            }
 
-                    None
-                }
-                EditorViewMsg::FindHit => {
-                    if !self.find_box.is_empty() {
-                        self.hit_find_once();
+                            None
+                        }
+                        EditorViewMsg::FindHit => {
+                            if !self.find_box.is_empty() {
+                                self.hit_find_once();
+                            }
+                            None
+                        }
+                        EditorViewMsg::ReplaceHit => {
+                            if !self.find_box.is_empty() {
+                                self.hit_replace_once();
+                            }
+                            None
+                        }
                     }
-                    None
-                }
-                EditorViewMsg::ReplaceHit => {
-                    if !self.find_box.is_empty() {
-                        self.hit_replace_once();
-                    }
+                } else {
+                    error!("failed to acquire buffer lock to update editor_view, swallowing msg {:?}", msg);
                     None
                 }
             }

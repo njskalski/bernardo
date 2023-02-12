@@ -41,7 +41,6 @@ use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget}
 use crate::widgets::fuzzy_search::item_provider::ItemsProvider;
 use crate::widgets::main_view::display::MainViewDisplay;
 use crate::widgets::main_view::display_fuzzy::DisplayItem;
-use crate::widgets::main_view::editor_group::EditorGroup;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
@@ -53,7 +52,7 @@ pub enum HoverItem {
     FuzzySearch(WithScroll<FuzzySearchWidget>),
 }
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub enum DocumentIdentifier {
     SPath(SPath)
 }
@@ -174,16 +173,20 @@ impl MainView {
         let file_contents = ff.read_entire_file_to_rope()?;
         let lang_id_op = filename_to_language(&ff);
 
+        let buffer_state = BufferState::full(Some(self.providers.tree_sitter().clone()))
+            .with_text_from_rope(file_contents, lang_id_op)
+            .with_file_front(ff.clone());
+
+        let buffer_state_ref = BufferSharedRef::new_from_buffer(Some(self.providers.tree_sitter().clone()), buffer_state);
+
+        self.buffers.insert(DocumentIdentifier::SPath(ff.clone()), buffer_state_ref.clone());
+
         let tree_sitter = self.providers.tree_sitter().clone();
         self.displays.push(
             MainViewDisplay::Editor(
                 EditorView::new(self.providers.clone(),
                                 self.nav_comp_group.clone(),
-                ).with_buffer(
-                    BufferState::full(Some(tree_sitter))
-                        .with_text_from_rope(file_contents, lang_id_op)
-                        .with_file_front(ff.clone())
-                ).with_path_op(
+                ).with_buffer(buffer_state_ref).with_path_op(
                     ff.parent()
                 ),
             )

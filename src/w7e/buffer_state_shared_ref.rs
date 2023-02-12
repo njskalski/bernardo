@@ -7,13 +7,17 @@ use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 
+#[derive(Clone, Debug)]
 pub struct BufferSharedRef(Arc<RwLock<BufferState>>);
 
 impl BufferSharedRef {
     pub fn new_empty(tree_sitter_op: Option<Arc<TreeSitterWrapper>>) -> BufferSharedRef {
-        let bf = BufferState::full(tree_sitter_op);
+        let buffer_state = BufferState::full(tree_sitter_op);
+        BufferSharedRef(Arc::new(RwLock::new(buffer_state)))
+    }
 
-        BufferSharedRef(Arc::new(RwLock::new(bf)))
+    pub fn new_from_buffer(tree_sitter_op: Option<Arc<TreeSitterWrapper>>, buffer_state: BufferState) -> BufferSharedRef {
+        BufferSharedRef(Arc::new(RwLock::new(buffer_state)))
     }
 
     pub fn lock(&self) -> Option<RwLockReadGuard<BufferState>> {

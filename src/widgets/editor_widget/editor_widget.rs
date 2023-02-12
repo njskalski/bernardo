@@ -211,6 +211,10 @@ impl EditorWidget {
         self.navcomp = navcomp;
     }
 
+    pub fn get_buffer(&self) -> &BufferSharedRef {
+        &self.buffer
+    }
+
     //TODO have a feeling that navcomp can be merged with buffer
     pub fn set_buffer(&mut self, buffer: BufferSharedRef, navcomp_op: Option<NavCompRef>) {
         self.buffer = buffer;
