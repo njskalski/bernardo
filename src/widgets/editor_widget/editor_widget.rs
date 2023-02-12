@@ -174,8 +174,11 @@ impl EditorWidget {
 
     pub fn new(providers: Providers,
                navcomp: Option<NavCompRef>,
+               buffer_op: Option<BufferSharedRef>,
     ) -> EditorWidget {
         let tree_sitter_clone = providers.tree_sitter().clone();
+        let buffer = buffer_op.unwrap_or(BufferSharedRef::new_empty(Some(tree_sitter_clone)));
+
         EditorWidget {
             wid: get_new_widget_id(),
             providers,
@@ -183,7 +186,7 @@ impl EditorWidget {
             ignore_input_altogether: false,
             last_size: None,
             last_hover_rect: None,
-            buffer: BufferSharedRef::new_empty(Some(tree_sitter_clone)),
+            buffer,
             kite: XY::ZERO,
             state: EditorState::Editing,
             navcomp,
@@ -510,19 +513,18 @@ impl EditorWidget {
             }
         }
 
-        if let Some(mut buffer_mut) = self.buffer.lock_rw() {
-            if max_idx > buffer_mut.len_chars() + 1 {
-                warn!("can't set cursor at {} for buffer len {}", max_idx, buffer_mut.len_chars());
-                return false;
-            }
+        let buffer_arc = self.buffer.clone();
+        let mut buffer_mut = unpack_or!(buffer_arc.lock_rw(), false, "failed acquiring lock");
 
-            buffer_mut.text_mut().cursor_set = cursor_set;
-            self.update_kite(&buffer_mut, Arrow::Down);
-
-            true
-        } else {
-            false
+        if max_idx > buffer_mut.len_chars() + 1 {
+            warn!("can't set cursor at {} for buffer len {}", max_idx, buffer_mut.len_chars());
+            return false;
         }
+
+        buffer_mut.text_mut().cursor_set = cursor_set;
+        self.update_kite(&buffer_mut, Arrow::Down);
+
+        true
     }
 
     pub fn find_once(&mut self, phrase: &String) -> Result<bool, FindError> {

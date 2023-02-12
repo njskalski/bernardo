@@ -31,6 +31,7 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::navcomp_provider::SymbolType::Key;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
@@ -161,6 +162,7 @@ impl Widget for CodeResultsView {
             let buffer_state = BufferState::full(
                 Some(self.providers.tree_sitter().clone()),
             ).with_text(buffer_str);
+            let buffer_state_ref = BufferSharedRef::new_from_buffer(Some(self.providers.tree_sitter().clone()), buffer_state);
 
             let first_cursor = match symbol.stupid_range.0.to_real_cursor(&buffer_state) {
                 None => {
@@ -178,8 +180,8 @@ impl Widget for CodeResultsView {
             let mut edit_widget = EditorWidget::new(
                 self.providers.clone(),
                 None, // TODO add navcomp
-            ).with_buffer(buffer_state, None)
-                .with_readonly()
+                Some(buffer_state_ref),
+            ).with_readonly()
                 .with_ignore_input_altogether();
 
             if edit_widget.set_cursors(cursor_set) == false {

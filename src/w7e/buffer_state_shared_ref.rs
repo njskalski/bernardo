@@ -32,8 +32,8 @@ impl BufferSharedRef {
         }
     }
 
-    pub fn lock_rw(&self) -> Option<RwLockWriteGuard<BufferState>> {
-        match self.0.try_write() {
+    pub fn lock_rw<'a>(&'a self) -> Option<RwLockWriteGuard<BufferState>> {
+        match self.0.clone().try_write() {
             Ok(lock) => Some(lock),
             Err(e) => {
                 error!("failed to lock buffer for write!");
@@ -42,6 +42,17 @@ impl BufferSharedRef {
         }
     }
 }
+
+impl PartialEq<Self> for BufferSharedRef {
+    fn eq(&self, other: &Self) -> bool {
+        let my_ptr = Arc::as_ptr(&self.0);
+        let other_ptr = Arc::as_ptr(&other.0);
+
+        my_ptr == other_ptr
+    }
+}
+
+impl Eq for BufferSharedRef {}
 
 pub type BufferR<'a> = RwLockReadGuard<'a, BufferState>;
 pub type BufferRW<'a> = RwLockWriteGuard<'a, BufferState>;

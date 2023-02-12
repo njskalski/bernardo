@@ -153,20 +153,22 @@ impl MainView {
     }
 
     fn get_editor_idx_for(&self, ff: &SPath) -> Option<usize> {
-        for (idx, display) in self.displays.iter().enumerate() {
-            match display {
-                MainViewDisplay::Editor(editor) => {
-                    if let Some(cff) = editor.buffer_state().get_path() {
-                        if cff == ff {
+        if let Some(buffer_shared_ref) = self.buffers.get(&DocumentIdentifier::SPath(ff.clone())) {
+            for (idx, display) in self.displays.iter().enumerate() {
+                match display {
+                    MainViewDisplay::Editor(editor) => {
+                        if editor.get_buffer_ref() == buffer_shared_ref {
                             return Some(idx);
                         }
                     }
+                    MainViewDisplay::ResultsView(_) => {}
                 }
-                MainViewDisplay::ResultsView(_) => {}
             }
+            None
+        } else {
+            debug!("no buffer opened for ff {}", ff);
+            None
         }
-
-        None
     }
 
     pub fn create_new_editor_for_file(&mut self, ff: SPath) -> Result<usize, ReadError> {
@@ -266,7 +268,7 @@ impl MainView {
         Box::new(self.displays.iter().enumerate().map(|(idx, display)| {
             match display {
                 MainViewDisplay::Editor(editor) => {
-                    let text = match editor.buffer_state().get_path() {
+                    let text = match editor.get_path() {
                         None => {
                             format!("unnamed file #{}", idx)
                         }

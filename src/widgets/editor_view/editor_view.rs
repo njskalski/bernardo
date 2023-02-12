@@ -85,6 +85,7 @@ impl EditorView {
     ) -> Self {
         let editor = EditorWidget::new(providers.clone(),
                                        None,
+                                       None,
         );
 
         let find_label = TextWidget::new(Box::new(PATTERN));
@@ -152,6 +153,10 @@ impl EditorView {
         }
     }
 
+    pub fn get_buffer_ref(&self) -> &BufferSharedRef {
+        self.editor.internal().get_buffer()
+    }
+
     fn get_hover_rect(sc: SizeConstraint) -> Option<Rect> {
         sc.as_finite().map(|finite_sc| {
             if finite_sc >= XY::new(10, 8) {
@@ -169,17 +174,15 @@ impl EditorView {
     /*
     This attempts to save current file, but in case that's not possible (filename unknown) proceeds to open_save_as_dialog() below
      */
-    fn save_or_save_as(&mut self) {
-        let buffer = self.editor.internal().get_buffer();
-
+    fn save_or_save_as(&mut self, buffer: &BufferState) {
         if let Some(ff) = buffer.get_path() {
             ff.overwrite_with_stream(&mut buffer.streaming_iterator(), false);
         } else {
-            self.open_save_as_dialog_and_focus()
+            self.open_save_as_dialog_and_focus(buffer)
         }
     }
 
-    fn open_save_as_dialog_and_focus(&mut self) {
+    fn open_save_as_dialog_and_focus(&mut self, buffer: &BufferState) {
         match self.state {
             EditorViewState::Simple => {}
             _ => {
@@ -193,15 +196,15 @@ impl EditorView {
             EditorViewMsg::OnSaveAsCancel.someboxed()
         }).with_on_save(|_, ff| {
             EditorViewMsg::OnSaveAsHit { ff }.someboxed()
-        }).with_path(self.get_save_file_dialog_path());
+        }).with_path(self.get_save_file_dialog_path(buffer));
 
         self.hover_dialog = Some(save_file_dialog);
         self.set_focused(self.get_hover_subwidget());
     }
 
-    fn positively_save_raw(&mut self, path: &SPath) {
+    fn positively_save_raw(&mut self, buffer_mut: &mut BufferState, path: &SPath) {
         // setting the file path
-        self.set_file_name(path);
+        self.set_file_name(buffer_mut, path);
 
         // updating the "save as dialog" starting position
         path.parent().map(|_| {
@@ -215,8 +218,7 @@ impl EditorView {
     This returns a (absolute) file path to be used with save_file_dialog. It can but does not have to
     contain filename part.
      */
-    fn get_save_file_dialog_path(&self) -> SPath {
-        let buffer = self.editor.internal().buffer();
+    fn get_save_file_dialog_path(&self, buffer: &BufferState) -> SPath {
         if let Some(ff) = buffer.get_path() {
             return ff.clone();
         };
@@ -238,10 +240,6 @@ impl EditorView {
         )
     }
 
-    pub fn buffer_state(&self) -> &BufferState {
-        self.editor.internal().buffer()
-    }
-
     fn hit_find_once(&mut self) -> bool {
         let phrase = self.find_box.get_buffer().to_string();
         match self.editor.internal_mut().find_once(&phrase) {
@@ -258,7 +256,7 @@ impl EditorView {
     If we have selected item that matches current phrase, we replace it and do another lookup.
     Just lookup otherwise.
      */
-    fn hit_replace_once(&mut self) -> bool {
+    fn hit_replace_once(&mut self, buffer_mut: &mut BufferState) -> bool {
         let phrase = match self.get_pattern() {
             Some(p) => p,
             None => {
@@ -267,12 +265,11 @@ impl EditorView {
             }
         };
 
-        let curr_text = self.editor.internal().buffer().text();
+        let curr_text = buffer_mut.text();
         if curr_text.cursor_set.is_single() && curr_text.do_cursors_match_regex(&phrase) {
             let with_what = self.replace_box.get_buffer().to_string();
             let page_height = self.editor.internal().page_height() as usize;
-            let bf = self.editor.internal_mut().buffer_mut();
-            bf.apply_cem(
+            buffer_mut.apply_cem(
                 CommonEditMsg::Block(with_what),
                 page_height,
                 Some(self.providers.clipboard()), //not really needed but why not
@@ -293,11 +290,16 @@ impl EditorView {
         }
     }
 
-    fn set_file_name(&mut self, path: &SPath) {
-        let editor = self.editor.internal_mut();
-        editor.buffer_mut().set_file_front(Some(path.clone()));
+    fn set_file_name(&mut self, buffer_mut: &mut BufferState, path: &SPath) {
+        buffer_mut.set_file_front(Some(path.clone()));
         let navcomp_op = self.nav_comp_group.get_navcomp_for(path);
-        editor.set_navcomp(navcomp_op);
+        self.editor.internal_mut().set_navcomp(navcomp_op);
+    }
+
+    pub fn get_path(&self) -> Option<SPath> {
+        self.editor.internal().get_buffer().lock().map(|buffer_lock|
+            buffer_lock.get_path().map(|c| c.clone())
+        ).flatten()
     }
 }
 
@@ -361,14 +363,14 @@ impl Widget for EditorView {
                 Some(msg) //passthrough
             }
             Some(msg) => {
-                if let Some(buffer_lock) = self.editor.internal_mut().get_buffer().lock() {
+                if let Some(mut buffer_lock) = self.editor.internal_mut().get_buffer().lock() {
                     match msg {
                         EditorViewMsg::Save => {
-                            self.save_or_save_as();
+                            self.save_or_save_as(&buffer_lock);
                             None
                         }
                         EditorViewMsg::SaveAs => {
-                            self.open_save_as_dialog_and_focus();
+                            self.open_save_as_dialog_and_focus(&buffer_lock);
                             None
                         }
                         EditorViewMsg::OnSaveAsCancel => {
@@ -379,8 +381,8 @@ impl Widget for EditorView {
                         EditorViewMsg::OnSaveAsHit { ff } => {
                             // TODO handle errors
                             let editor = self.editor.internal_mut();
-                            if ff.overwrite_with_stream(&mut editor.buffer().streaming_iterator(), false).is_ok() {
-                                self.set_file_name(ff);
+                            if ff.overwrite_with_stream(&mut buffer_lock.streaming_iterator(), false).is_ok() {
+                                self.set_file_name(&mut buffer_lock, ff);
                             }
 
                             self.hover_dialog = None;
@@ -426,7 +428,7 @@ impl Widget for EditorView {
                         }
                         EditorViewMsg::ReplaceHit => {
                             if !self.find_box.is_empty() {
-                                self.hit_replace_once();
+                                self.hit_replace_once(&mut buffer_lock);
                             }
                             None
                         }
