@@ -1,11 +1,25 @@
 use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 pub trait Printable {
     fn graphemes(&self) -> Box<dyn Iterator<Item=&str> + '_>;
+
+    fn screen_width(&self) -> u16 {
+        let mut res = 0 as u16;
+        for g in self.graphemes() {
+            if res as usize + g.width() > u16::MAX as usize {
+                return u16::MAX;
+            }
+
+            res += g.width() as u16;
+        }
+
+        res
+    }
 }
 
-impl Printable for str {
+impl Printable for &str {
     fn graphemes(&self) -> Box<dyn Iterator<Item=&str> + '_> {
-        Box::new(UnicodeSegmentation::graphemes(self, true))
+        Box::new(UnicodeSegmentation::graphemes(*self, true))
     }
 }

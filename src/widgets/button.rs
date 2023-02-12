@@ -7,6 +7,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
+use crate::primitives::printable::Printable;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
@@ -19,7 +20,7 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 pub struct ButtonWidget {
     id: usize,
     enabled: bool,
-    text: Box<dyn DerefStr>,
+    text: Box<dyn Printable>,
     on_hit: Option<WidgetAction<Self>>,
 
     fill_x: bool,
@@ -36,7 +37,7 @@ impl Widget for ButtonWidget {
     }
 
     fn size(&self) -> XY {
-        XY::new((self.text.as_ref_str().width() + 2) as u16, 1)
+        XY::new((self.text.screen_width() + 2) as u16, 1)
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
@@ -98,20 +99,24 @@ impl Widget for ButtonWidget {
             }
         );
 
-        let mut full_text = "[".to_string() + self.text.as_ref_str() + "]";
-
         let style = if focused {
             theme.highlighted(true)
         } else {
             theme.ui.non_focused
         };
 
-        if focused {
-            // style.effect = Effect::Underline;
-            full_text = ">".to_string() + self.text.as_ref_str() + "<"
+        let mut xy = XY::ZERO;
+
+
+        output.print_at(xy, style, if focused { ">" } else { "[" });
+        xy += XY::new(1, 0);
+
+        for grapheme in self.text.graphemes() {
+            output.print_at(xy, style, grapheme);
+            xy += XY::new(grapheme.width() as u16, 0);
         }
 
-        output.print_at((0, 0).into(), style, full_text.as_str());
+        output.print_at(xy, style, if focused { "<" } else { "]" });
     }
 
     fn kite(&self) -> XY {
@@ -122,7 +127,7 @@ impl Widget for ButtonWidget {
 impl ButtonWidget {
     pub const TYPENAME: &'static str = "button";
 
-    pub fn new(text: Box<dyn DerefStr>) -> Self {
+    pub fn new(text: Box<dyn Printable>) -> Self {
         ButtonWidget {
             id: get_new_widget_id(),
             enabled: true,
