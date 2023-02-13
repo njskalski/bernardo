@@ -36,7 +36,7 @@ impl Handler for RustHandler {
 /*
  */
 impl RustHandler {
-    pub fn load(config: &ConfigRef,
+    pub fn load(_config: &ConfigRef,
                 ff: SPath,
                 navcomp_op: Option<NavCompRef>,
     ) -> Result<RustHandler, HandlerLoadError> {
@@ -54,19 +54,6 @@ impl RustHandler {
         let contents = cargo_file.read_entire_file()?;
         let cargo = cargo_toml::Manifest::from_slice(&contents)
             .map_err(|e| HandlerLoadError::DeserializationError(e.to_string()))?;
-
-        // #[cfg(not(test))]
-        // {
-
-        // }
-
-        // #[cfg(test)]
-        // {
-        //     debug!("initializing MockNavCompProvider");
-        //     let args = sidechannel.get_navcomp_prov_args();
-        //
-        //
-        // }
 
         Ok(RustHandler {
             root: ff,

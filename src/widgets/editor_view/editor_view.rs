@@ -193,7 +193,7 @@ impl EditorView {
         self.set_focused(self.get_hover_subwidget());
     }
 
-    fn positively_save_raw(&mut self, buffer_mut: &mut BufferState, path: &SPath) {
+    fn after_positive_save(&mut self, buffer_mut: &mut BufferState, path: &SPath) {
         // setting the file path
         self.set_file_name(buffer_mut, path);
 
@@ -370,10 +370,10 @@ impl Widget for EditorView {
                             None
                         }
                         EditorViewMsg::OnSaveAsHit { ff } => {
-                            // TODO handle errors
-                            let editor = self.editor.internal_mut();
+                            // TODO handle errors and add test that
+                            // TODO add test that checks if effects of after_positive_save are achieved
                             if ff.overwrite_with_stream(&mut buffer_lock.streaming_iterator(), false).is_ok() {
-                                self.set_file_name(&mut buffer_lock, ff);
+                                self.after_positive_save(&mut buffer_lock, ff);
                             }
 
                             self.hover_dialog = None;

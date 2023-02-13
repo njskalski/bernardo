@@ -3,7 +3,6 @@ use log::debug;
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::mock_navcomp_provider::MockCompletionMatcher;
-use crate::spath;
 use crate::w7e::navcomp_provider::Completion;
 use crate::w7e::navcomp_provider::CompletionAction::Insert;
 
@@ -14,7 +13,7 @@ fn completion_test_1() {
         // .with_frame_based_wait()
         .build();
 
-    let file = spath!(full_setup.fsf(), "src", "main.rs").unwrap();
+    // let file = spath!(full_setup.fsf(), "src", "main.rs").unwrap();
 
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
@@ -62,7 +61,6 @@ fn completion_test_1() {
     assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
 
     full_setup.screenshot();
-    let x = full_setup.get_first_editor().unwrap().completions();
 
     assert!(full_setup.wait_for(|full_setup| {
         full_setup.get_first_editor().unwrap().completions().map(|comp| comp.highlighted(true).unwrap().1.trim()

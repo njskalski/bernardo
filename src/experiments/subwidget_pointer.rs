@@ -151,6 +151,8 @@ macro_rules! subwidget_op {
 
 #[cfg(test)]
 mod tests {
+    #![allow(dead_code)]
+
     use crate::config::theme::Theme;
     use crate::experiments::subwidget_pointer::{SubwidgetPointer, SubwidgetPointerOp};
     use crate::io::input_event::InputEvent;

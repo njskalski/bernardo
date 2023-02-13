@@ -93,20 +93,20 @@ impl Record {
         self.get_mut(&components, true).is_some()
     }
 
-    fn overwrite_file(&mut self, path: &Path, contents: Vec<u8>) -> bool {
-        let components: Vec<Component> = path.components().collect();
-
-        if let Some(rec) = self.get_mut(&components, false) {
-            if rec.is_file() {
-                *rec = Record::File(contents);
-                true
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    }
+    // fn overwrite_file(&mut self, path: &Path, contents: Vec<u8>) -> bool {
+    //     let components: Vec<Component> = path.components().collect();
+    //
+    //     if let Some(rec) = self.get_mut(&components, false) {
+    //         if rec.is_file() {
+    //             *rec = Record::File(contents);
+    //             true
+    //         } else {
+    //             false
+    //         }
+    //     } else {
+    //         false
+    //     }
+    // }
 
     fn create_file(&mut self, path: &Path, contents: Vec<u8>) -> bool {
         let components: Vec<Component> = path.components().collect();

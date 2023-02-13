@@ -21,7 +21,11 @@ Nice to haves (only if they turn out to be low hanging fruits):
 3) tumblerview
 4) errors/warnings in editor
 9) copy-cut-paste in filetree
-    
+
+Tests:
+save as:
+    - error handling in save (failed write, disappearing dir etc)
+    - changes the path to new in consecutive save as
 
 Docs:
 1) how views work

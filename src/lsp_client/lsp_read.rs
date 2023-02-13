@@ -12,8 +12,6 @@ use crate::lsp_client::lsp_client::IdToCallInfo;
 use crate::lsp_client::lsp_notification::{LspServerNotification, parse_notification};
 use crate::lsp_client::lsp_read_error::LspReadError;
 
-const FAKE_RESPONSE_PREFIX: &'static str = "HTTP/1.1 200 OK\r\n";
-
 // TODO one can reduce allocation here
 fn id_to_str(id: Id) -> String {
     match id {

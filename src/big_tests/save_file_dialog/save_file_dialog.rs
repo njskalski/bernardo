@@ -66,7 +66,7 @@ fn no_leak_focus() {
 
 #[test]
 fn expanded_and_highlighted_path() {
-    let mut full_setup = common_start();
+    let full_setup = common_start();
 
 
     assert_eq!(tree_items(&full_setup).iter()

@@ -9,6 +9,8 @@
 
 #[cfg(test)]
 pub mod tests {
+    #![allow(dead_code)]
+
     use std::borrow::Borrow;
 
     use ropey::Rope;
