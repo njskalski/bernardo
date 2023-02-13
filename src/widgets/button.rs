@@ -2,7 +2,6 @@ use log::warn;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
-use crate::experiments::deref_str::DerefStr;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;

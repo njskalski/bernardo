@@ -3,7 +3,6 @@ use std::fmt::{Debug, Formatter};
 use ropey::iter::{Chars, Chunks};
 use streaming_iterator::StreamingIterator;
 
-use crate::experiments::deref_str::DerefStr;
 use crate::tsw::lang_id::LangId;
 
 //TODO create tests for undo/redo/set milestone
@@ -98,7 +97,7 @@ impl Debug for dyn TextBuffer {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut chunks = self.chunks();
         if let Some(chunk) = chunks.next() {
-            f.write_str(chunk.as_ref_str())?;
+            f.write_str(chunk)?;
         }
 
         Ok(())

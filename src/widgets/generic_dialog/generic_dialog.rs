@@ -4,7 +4,6 @@ use std::fmt::Debug;
 use log::{debug, error, warn};
 
 use crate::config::theme::Theme;
-use crate::experiments::deref_str::DerefStr;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
@@ -15,6 +14,7 @@ use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::border::BorderStyle;
+use crate::primitives::printable::Printable;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::subwidget;
@@ -53,7 +53,7 @@ enum GenericDialogMsg {
 impl AnyMsg for GenericDialogMsg {}
 
 impl GenericDialog {
-    pub fn new(text: Box<dyn DerefStr>) -> Self {
+    pub fn new(text: Box<dyn Printable>) -> Self {
         Self {
             wid: get_new_widget_id(),
             display_state: None,

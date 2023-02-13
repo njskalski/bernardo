@@ -1,5 +1,6 @@
-use crate::experiments::deref_str::DerefStr;
+use crate::fs::path::SPath;
 use crate::primitives::border::SINGLE_BORDER_STYLE;
+use crate::primitives::printable::Printable;
 use crate::widget::any_msg::AsAny;
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::generic_dialog::generic_dialog::GenericDialog;
@@ -8,8 +9,13 @@ use crate::widgets::save_file_dialog::save_file_dialog_msg::SaveFileDialogMsg::{
 const CANCEL_STRING: &'static str = "Cancel";
 const OVERRIDE_STRING: &'static str = "Override";
 
-pub fn override_dialog<T: DerefStr>(filename: T) -> GenericDialog {
-    let text = format!("File \n\"{}\"\n already exists.\n Do you wish to override?", filename.as_ref_str());
+pub fn override_dialog<T: Printable>(filename: T) -> GenericDialog {
+    let mut text = "File \n\"".to_string();
+    for grapheme in filename.graphemes() {
+        text += grapheme;
+    }
+
+    text += "\"\n already exists.\n Do you wish to override?";
 
     GenericDialog::new(Box::new(text)).with_border(
         &SINGLE_BORDER_STYLE,

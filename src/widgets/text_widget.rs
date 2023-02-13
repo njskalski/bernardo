@@ -1,9 +1,10 @@
+use streaming_iterator::StreamingIterator;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
-use crate::experiments::deref_str::DerefStr;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
+use crate::primitives::printable::Printable;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
@@ -11,11 +12,11 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
 pub struct TextWidget {
     wid: WID,
-    text: Box<dyn DerefStr>,
+    text: Box<dyn Printable>,
 }
 
 impl TextWidget {
-    pub fn new(text: Box<dyn DerefStr>) -> Self {
+    pub fn new(text: Box<dyn Printable>) -> Self {
         Self {
             wid: get_new_widget_id(),
             text,
@@ -24,9 +25,12 @@ impl TextWidget {
 
     pub fn text_size(&self) -> XY {
         let mut size = XY::ZERO;
-        for (idx, line) in self.text.as_ref_str().lines().enumerate() {
-            size.x = size.x.max(line.width() as u16); // TODO
-            size.y = (idx + 1) as u16; //TODO
+
+        // TODO overflows
+        let mut line_it = self.text.lines();
+        while let Some(line) = line_it.next() {
+            size.x = size.x.max(line.width() as u16);
+            size.y += 1;
         }
 
         size
@@ -61,8 +65,12 @@ impl Widget for TextWidget {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let text = theme.default_text(focused);
 
-        for (idx, line) in self.text.as_ref_str().lines().enumerate() {
-            output.print_at(XY::new(0, idx as u16), text, line); //TODO
+        let mut line_idx = 0 as u16;
+        let mut line_it = self.text.lines();
+
+        while let Some(line) = line_it.next() {
+            output.print_at(XY::new(0, line_idx), text, line); //TODO leaks etc
+            line_idx += 1;
         }
     }
 }
