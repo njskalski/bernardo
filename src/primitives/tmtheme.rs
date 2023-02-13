@@ -1,8 +1,6 @@
-use std::borrow::{Borrow, BorrowMut};
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use std::sync::{RwLock, TryLockResult};
+use std::sync::RwLock;
 
 use log::{debug, error};
 use syntect::highlighting::{Highlighter, ThemeSet};

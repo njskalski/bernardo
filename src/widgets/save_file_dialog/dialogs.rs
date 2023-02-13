@@ -1,4 +1,3 @@
-use crate::fs::path::SPath;
 use crate::primitives::border::SINGLE_BORDER_STYLE;
 use crate::primitives::printable::Printable;
 use crate::widget::any_msg::AsAny;

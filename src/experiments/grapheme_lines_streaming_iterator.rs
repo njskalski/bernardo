@@ -1,11 +1,9 @@
-use lsp_types::lsif::Item;
 use streaming_iterator::StreamingIterator;
 
 pub struct GraphemeLinesStreamingIterator<'a> {
     grapheme_it: Box<dyn Iterator<Item=&'a str> + 'a>,
     s: String,
     done: bool,
-    line_no: usize,
 }
 
 impl<'a> GraphemeLinesStreamingIterator<'a> {
@@ -14,7 +12,6 @@ impl<'a> GraphemeLinesStreamingIterator<'a> {
             grapheme_it,
             s: "".to_string(),
             done: false,
-            line_no: 0,
         }
     }
 }

@@ -1,7 +1,11 @@
+#[allow(unused_imports)]
 use libfuzzer_sys::arbitrary::{Arbitrary, Result, Unstructured};
+#[allow(unused_imports)]
 use unicode_segmentation::UnicodeSegmentation;
 
+#[allow(unused_imports)]
 use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
+#[allow(unused_imports)]
 use crate::text::buffer_state::{BufferState, BufferType};
 
 #[cfg(feature = "arbitrary")]

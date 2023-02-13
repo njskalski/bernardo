@@ -1,16 +1,11 @@
 use std::collections::HashMap;
-use std::path::Display;
 use std::rc::Rc;
-use std::sync::{Arc, RwLock};
 
 use log::{debug, error, warn};
 
-use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
-use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
-use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::fs::read_error::ReadError;
 use crate::gladius::providers::Providers;
@@ -27,7 +22,6 @@ use crate::primitives::xy::XY;
 use crate::promise::promise::PromiseState;
 use crate::subwidget;
 use crate::text::buffer_state::BufferState;
-use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
@@ -179,11 +173,10 @@ impl MainView {
             .with_text_from_rope(file_contents, lang_id_op)
             .with_file_front(ff.clone());
 
-        let buffer_state_ref = BufferSharedRef::new_from_buffer(Some(self.providers.tree_sitter().clone()), buffer_state);
+        let buffer_state_ref = BufferSharedRef::new_from_buffer(buffer_state);
 
         self.buffers.insert(DocumentIdentifier::SPath(ff.clone()), buffer_state_ref.clone());
 
-        let tree_sitter = self.providers.tree_sitter().clone();
         self.displays.push(
             MainViewDisplay::Editor(
                 EditorView::new(self.providers.clone(),
@@ -460,7 +453,7 @@ impl Widget for MainView {
                                     self.display_idx = idx;
                                     self.set_focus_to_default();
                                 }
-                                Err(e) => {
+                                Err(_) => {
                                     error!("failed find references");
                                 }
                             }

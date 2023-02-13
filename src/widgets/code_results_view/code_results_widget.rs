@@ -176,7 +176,7 @@ impl Widget for CodeResultsView {
 
             // TODO second_cursor?
 
-            let buffer_state_ref = BufferSharedRef::new_from_buffer(Some(self.providers.tree_sitter().clone()), buffer_state);
+            let buffer_state_ref = BufferSharedRef::new_from_buffer(buffer_state);
 
 
             let cursor_set = CursorSet::singleton(first_cursor);

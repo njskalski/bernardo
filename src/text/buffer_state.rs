@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 use std::ops::Range;
-use std::rc::Rc;
 use std::sync::Arc;
 
 use log::{debug, error, warn};
@@ -11,16 +10,14 @@ use tree_sitter::Point;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::experiments::clipboard::ClipboardRef;
-use crate::experiments::regex_search::{FindError, regex_find};
+use crate::experiments::regex_search::FindError;
 use crate::fs::path::SPath;
 use crate::io::output::Output;
 use crate::primitives::common_edit_msgs::{_apply_cem, CommonEditMsg};
-use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
-use crate::primitives::search_pattern::SearchPattern;
+use crate::primitives::cursor_set::CursorSet;
 use crate::text::contents_and_cursors::ContentsAndCursors;
 use crate::text::text_buffer::{LinesIter, TextBuffer};
 use crate::tsw::lang_id::LangId;
-use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
 use crate::unpack_or;
 use crate::w7e::navcomp_provider::StupidSubstituteMessage;

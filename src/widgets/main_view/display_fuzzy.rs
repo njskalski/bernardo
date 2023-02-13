@@ -1,9 +1,7 @@
-use std::borrow::Cow;
 use std::rc::Rc;
 
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
-use crate::widgets::main_view::display::MainViewDisplay;
 use crate::widgets::main_view::msg::MainViewMsg;
 
 pub struct DisplayItem {
@@ -36,6 +34,9 @@ impl ItemsProvider for Vec<DisplayItem> {
     }
 
     fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
-        Box::new(self.iter().map(|item| Box::new(item) as Box<dyn Item>))
+        Box::new(
+            self.iter().filter(move |f| f.display.contains(&query))
+                .take(limit)
+                .map(|item| Box::new(item) as Box<dyn Item>))
     }
 }

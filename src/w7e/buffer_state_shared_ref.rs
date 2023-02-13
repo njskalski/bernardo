@@ -1,10 +1,8 @@
-use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard, TryLockResult};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use log::error;
 
-use crate::gladius::providers::Providers;
 use crate::text::buffer_state::BufferState;
-use crate::text::text_buffer::TextBuffer;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 
 #[derive(Clone, Debug)]
@@ -16,7 +14,7 @@ impl BufferSharedRef {
         BufferSharedRef(Arc::new(RwLock::new(buffer_state)))
     }
 
-    pub fn new_from_buffer(tree_sitter_op: Option<Arc<TreeSitterWrapper>>, buffer_state: BufferState) -> BufferSharedRef {
+    pub fn new_from_buffer(buffer_state: BufferState) -> BufferSharedRef {
         BufferSharedRef(Arc::new(RwLock::new(buffer_state)))
     }
 

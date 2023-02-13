@@ -1,5 +1,4 @@
 pub mod mock {
-    use std::borrow::Cow;
     use std::rc::Rc;
 
     use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
@@ -8,7 +7,7 @@ pub mod mock {
     pub struct MockFile {
         name: String,
         size: usize,
-        filetype: Option<String>,
+        _filetype: Option<String>,
         // there should be date but I'm in the plane and have no docs.
     }
 
@@ -17,13 +16,13 @@ pub mod mock {
             MockFile {
                 name,
                 size,
-                filetype: None,
+                _filetype: None,
             }
         }
 
         pub fn with_filetype(self, filetype: String) -> Self {
             MockFile {
-                filetype: Some(filetype),
+                _filetype: Some(filetype),
                 ..self
             }
         }

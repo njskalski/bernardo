@@ -1,4 +1,4 @@
-use log::{debug, error, warn};
+use log::{error, warn};
 
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
@@ -21,6 +21,7 @@ pub struct WithScroll<W: Widget> {
     scroll: Scroll,
     line_no: bool,
 
+    // TODO I guess that was for something but I forgot what was that
     fill_non_free_axis: bool,
     last_size: Option<XY>,
 }
