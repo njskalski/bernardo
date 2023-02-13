@@ -3,12 +3,14 @@ use std::collections::HashSet;
 use std::rc::Rc;
 use std::str::from_utf8;
 
+use either::Left;
 use log::{debug, error, warn};
 
 use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
+use crate::io::loading_state::LoadingState;
 use crate::io::output::Output;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
@@ -20,13 +22,14 @@ use crate::primitives::xy::XY;
 use crate::subwidget;
 use crate::text::buffer_state::BufferState;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
-use crate::widget::any_msg::AnyMsg;
+use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::big_list::big_list_widget::BigList;
 use crate::widgets::code_results_view::code_results_msg::CodeResultsMsg;
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
+use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::WithScroll;
 
@@ -89,7 +92,10 @@ impl Widget for CodeResultsView {
     fn prelayout(&mut self) {
         // TODO this method is stitched together from bullshit with ducttape. It's to be rewritten, after I figure out which items go well together.
 
-        self.data_provider.todo_tick();
+        if self.data_provider.loading_state() == LoadingState::InProgress {
+            self.data_provider.poll();
+        }
+
 
         for (idx, symbol) in self.data_provider.items().enumerate().skip(self.item_list.internal().items().count()) {
             // TODO URGENT loading files should be moved out from here to some common place between this and Editor
@@ -224,12 +230,16 @@ impl Widget for CodeResultsView {
                         error!("can't find item of #{}", idx);
                         None
                     }
-                    Some(_item) => {
+                    Some(item) => {
+                        // if let Some(path) = item.get_buffer().lock().map(|lock| lock.get_path()) {} else {
+                        //     error!("couldn't get item path")
+                        // }
+
                         // MainViewMsg::OpenFile {
-                        //     file: R(),
+                        //     file: Left(item.get_buffer()),
                         //     position_op: Cursor {},
                         // }.someboxed()
-                        //TODO
+
                         None
                     }
                 }

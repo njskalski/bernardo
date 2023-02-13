@@ -147,6 +147,7 @@ impl<T: Widget> Widget for BigList<T> {
 
     fn prelayout(&mut self) {
         debug!("prelayout {}", self.typename());
+        
         self.complex_prelayout();
     }
 

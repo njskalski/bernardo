@@ -8,8 +8,9 @@ use crate::w7e::navcomp_provider::{SymbolUsage, SymbolUsagesPromise};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 
 impl CodeResultsProvider for SymbolUsagesPromise {
-    fn todo_tick(&mut self) {
-        debug!("TODO ticking proise: {:?}", self.update());
+    fn poll(&mut self) {
+        let update_result = self.update();
+        debug!("ticking result: {:?}", update_result);
     }
 
     fn loading_state(&self) -> LoadingState {

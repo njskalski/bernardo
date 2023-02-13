@@ -3,6 +3,8 @@ use std::rc::Rc;
 
 use log::{debug, error, warn};
 
+use uuid::Uuid;
+
 use crate::config::theme::Theme;
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
@@ -48,7 +50,8 @@ pub enum HoverItem {
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub enum DocumentIdentifier {
-    SPath(SPath)
+    SPath(SPath),
+    UUID(Uuid),
 }
 
 
