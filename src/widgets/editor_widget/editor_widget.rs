@@ -1,20 +1,15 @@
 use std::cmp::{max, min};
-use std::rc::Rc;
-use std::sync::{Arc, RwLockReadGuard};
 
-use log::{debug, error, log, warn};
+use log::{debug, error, warn};
 use matches::debug_assert_matches;
 use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{unpack_or, unpack_or_e};
-use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
-use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::regex_search::FindError;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
-use crate::fs::fsf_ref::FsfRef;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
@@ -33,8 +28,7 @@ use crate::primitives::xy::XY;
 use crate::promise::promise::{Promise, PromiseState};
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
-use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
-use crate::w7e::buffer_state_shared_ref::{BufferR, BufferSharedRef};
+use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_provider::{CompletionAction, NavCompSymbol};
 use crate::widget::any_msg::{AnyMsg, AsAny};

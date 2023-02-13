@@ -210,7 +210,8 @@ impl LspWrapper {
             Err(LspWriteError::BrokenPipe.into())
         }
     }
-
+    
+    #[allow(deprecated)]
     pub fn initialize(&mut self) -> Result<lsp_types::InitializeResult, LspIOError> {
         let pid = std::process::id();
 
@@ -229,6 +230,7 @@ impl LspWrapper {
             uri: root_url,
             name: "".to_string(),
         };
+
 
         let mut result = self.send_message::<lsp_types::request::Initialize>(lsp_types::InitializeParams {
             process_id: Some(pid),

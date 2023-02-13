@@ -3,6 +3,8 @@ All these structures are design with test in mind *only*. Meaning they are allow
 be slow to a reasonable degree.
  */
 
+#![allow(dead_code)]
+
 pub mod mock_output;
 pub mod mock_input;
 pub mod mock_navcomp_provider;

@@ -1,7 +1,6 @@
 // this widget is work in progress.
 // Items will most likely contain certain messages.
 
-use std::borrow::Cow;
 use std::rc::Rc;
 
 use crate::widget::any_msg::AnyMsg;

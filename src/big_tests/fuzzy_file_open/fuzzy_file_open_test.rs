@@ -1,4 +1,4 @@
-use crate::io::keys::{Key, Keycode};
+use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 
 fn common_start() -> FullSetup {

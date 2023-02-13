@@ -196,6 +196,7 @@ impl Widget for CompletionWidget {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+        #[allow(unreachable_patterns)]
         return match msg.as_msg::<CompletionWidgetMsg>() {
             None => {
                 warn!("expected CompletionWidgetMsg, got {:?}", msg);

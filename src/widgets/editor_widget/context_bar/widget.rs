@@ -132,6 +132,7 @@ impl Widget for ContextBarWidget {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+        #[allow(unreachable_patterns)]
         return match msg.as_msg::<ContextBarWidgetMsg>() {
             None => {
                 warn!("expected ContextBarWidgetMsg, got {:?}", msg);

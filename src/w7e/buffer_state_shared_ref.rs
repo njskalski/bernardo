@@ -24,7 +24,7 @@ impl BufferSharedRef {
                 Some(lock)
             }
             Err(e) => {
-                error!("failed to lock buffer for read!");
+                error!("failed to lock buffer for read! : {}", e);
                 None
             }
         }
@@ -34,7 +34,7 @@ impl BufferSharedRef {
         match self.0.try_write() {
             Ok(lock) => Some(lock),
             Err(e) => {
-                error!("failed to lock buffer for write!");
+                error!("failed to lock buffer for write! : {}", e);
                 None
             }
         }

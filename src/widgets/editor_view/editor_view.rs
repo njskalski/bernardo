@@ -1,15 +1,9 @@
-use std::rc::Rc;
-use std::sync::Arc;
-
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{subwidget, unpack_or_e};
-use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
-use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
-use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
@@ -25,7 +19,6 @@ use crate::primitives::search_pattern::SearchPattern;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
-use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_group::NavCompGroupRef;
@@ -135,8 +128,6 @@ impl EditorView {
     }
 
     pub fn with_buffer(self, buffer: BufferSharedRef) -> Self {
-        if let Some(buffer_lock) = buffer.lock() {}
-
         let navcomp_op: Option<NavCompRef> = if let Some(buffer_lock) = buffer.lock() {
             buffer_lock.get_path().map(|path| self.nav_comp_group.get_navcomp_for(path)).flatten()
         } else {

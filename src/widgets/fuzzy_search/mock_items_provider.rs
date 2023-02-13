@@ -1,5 +1,6 @@
 pub mod mock {
-    use std::borrow::Cow;
+    #![allow(dead_code)]
+
     use std::rc::Rc;
 
     use crate::primitives::alphabet::mock::ALPHABET;
@@ -10,6 +11,7 @@ pub mod mock {
 
     pub struct MockItemProvider {
         num_items: usize,
+
         items: Vec<String>,
     }
 

@@ -51,6 +51,7 @@ pub fn run_gladius<
         Some(w) => w,
         None => {
             // Attempting to create a reasonable workspace
+            #[allow(unreachable_patterns)]
             match inspect_workspace(&workspace_dir) {
                 Err(e) => {
                     match &e {

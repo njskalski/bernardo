@@ -1,7 +1,6 @@
 use std::ffi::OsStr;
 use std::option::Option;
 use std::path::PathBuf;
-use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 use std::thread::JoinHandle;
 use std::time::Duration;

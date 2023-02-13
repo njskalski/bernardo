@@ -27,7 +27,7 @@ impl EmptyLayout {
 }
 
 impl<W: Widget> Layout<W> for EmptyLayout {
-    fn prelayout(&self, root: &mut W) {}
+    fn prelayout(&self, _root: &mut W) {}
 
     fn min_size(&self, _root: &W) -> XY {
         self.size.unwrap_or(XY::ZERO)

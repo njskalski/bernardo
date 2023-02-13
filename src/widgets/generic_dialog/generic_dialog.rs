@@ -177,7 +177,8 @@ impl Widget for GenericDialog {
             debug!("generic_dialog passes through message {:?} to parent", msg);
             return Some(msg);
         }
-
+        
+        #[allow(unreachable_patterns)]
         return match our_msg.unwrap() {
             GenericDialogMsg::FocusUpdate(focus_update) => {
                 self.update_focus(*focus_update);

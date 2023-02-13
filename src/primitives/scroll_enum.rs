@@ -16,6 +16,7 @@ impl ScrollEnum {
             return None;
         }
 
+        #[allow(unreachable_patterns)]
         match key {
             Key { keycode, modifiers: _ } => {
                 match keycode {

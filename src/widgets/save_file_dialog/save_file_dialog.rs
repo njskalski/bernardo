@@ -368,6 +368,7 @@ impl Widget for SaveFileDialogWidget {
             return None;
         }
 
+        #[allow(unreachable_patterns)]
         return match our_msg.unwrap() {
             SaveFileDialogMsg::TreeExpanded(..) => {
                 None

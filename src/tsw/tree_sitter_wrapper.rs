@@ -117,6 +117,7 @@ impl TreeSitterWrapper {
     }
 
     pub fn highlight_query(&self, lang_id: LangId) -> Option<&'static str> {
+        #[allow(unreachable_patterns)]
         match lang_id {
             LangId::C => Some(tree_sitter_c::HIGHLIGHT_QUERY),
             LangId::CPP => Some(tree_sitter_cpp::HIGHLIGHT_QUERY),

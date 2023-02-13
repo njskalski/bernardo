@@ -1,5 +1,7 @@
 #[cfg(test)]
 pub mod tests {
+    #![allow(dead_code)]
+
     use std::cmp::min;
 
     use crate::config::theme::Theme;
@@ -57,7 +59,7 @@ pub mod tests {
     }
 
     impl Layout<MockWidget> for MockLayout {
-        fn prelayout(&self, root: &mut MockWidget) {}
+        fn prelayout(&self, _root: &mut MockWidget) {}
 
         fn min_size(&self, _root: &MockWidget) -> XY {
             self.min_size

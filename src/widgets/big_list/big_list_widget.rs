@@ -1,5 +1,4 @@
 use log::{debug, error, warn};
-use lsp_types::lsif::Item;
 
 use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;

@@ -1,46 +1,32 @@
-use std::borrow::Cow;
 use std::cmp::max;
 use std::collections::HashSet;
 use std::rc::Rc;
-use std::str::{from_utf8, Utf8Error};
-use std::sync::Arc;
+use std::str::from_utf8;
 
-use either::Left;
 use log::{debug, error, warn};
-use streaming_iterator::StreamingIterator;
 
-use crate::{subwidget, unpack_or_e};
-use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
-use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
-use crate::fs::fsf_ref::FsfRef;
-use crate::fs::path::SPath;
-use crate::fs::read_error::ReadError;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Keycode;
-use crate::io::loading_state::LoadingState;
 use crate::io::output::Output;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
-use crate::primitives::cursor_set::{Cursor, CursorSet};
+use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::subwidget;
 use crate::text::buffer_state::BufferState;
-use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
-use crate::w7e::navcomp_provider::SymbolType::Key;
-use crate::widget::any_msg::{AnyMsg, AsAny};
+use crate::widget::any_msg::AnyMsg;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::big_list::big_list_widget::BigList;
 use crate::widgets::code_results_view::code_results_msg::CodeResultsMsg;
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
-use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::WithScroll;
 
@@ -230,6 +216,7 @@ impl Widget for CodeResultsView {
             return None;
         }
 
+        #[allow(unreachable_patterns)]
         return match our_msg.unwrap() {
             CodeResultsMsg::Hit { idx } => {
                 match self.item_list.internal().items().skip(*idx).next() {
@@ -237,7 +224,7 @@ impl Widget for CodeResultsView {
                         error!("can't find item of #{}", idx);
                         None
                     }
-                    Some(item) => {
+                    Some(_item) => {
                         // MainViewMsg::OpenFile {
                         //     file: R(),
                         //     position_op: Cursor {},
