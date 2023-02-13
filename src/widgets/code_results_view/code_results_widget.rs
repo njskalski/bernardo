@@ -29,6 +29,7 @@ use crate::widgets::big_list::big_list_widget::BigList;
 use crate::widgets::code_results_view::code_results_msg::CodeResultsMsg;
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
+use crate::widgets::main_view::main_view::DocumentIdentifier;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::WithScroll;
@@ -155,6 +156,7 @@ impl Widget for CodeResultsView {
 
             let buffer_state = BufferState::full(
                 Some(self.providers.tree_sitter().clone()),
+                DocumentIdentifier::new_unique(),
             ).with_text(buffer_str);
 
             let first_cursor = match symbol.stupid_range.0.to_real_cursor(&buffer_state) {

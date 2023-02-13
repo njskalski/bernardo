@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
-
 use uuid::Uuid;
 
+use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
@@ -22,7 +22,6 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::promise::promise::PromiseState;
-use crate::subwidget;
 use crate::text::buffer_state::BufferState;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::navcomp_group::NavCompGroupRef;
@@ -48,12 +47,29 @@ pub enum HoverItem {
     FuzzySearch(WithScroll<FuzzySearchWidget>),
 }
 
+// TODO start indexing documents with DocumentIdentifier as opposed to usize
+
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
-pub enum DocumentIdentifier {
-    SPath(SPath),
-    UUID(Uuid),
+pub struct DocumentIdentifier {
+    pub uuid: Uuid,
+    pub file_path: Option<SPath>,
 }
 
+impl DocumentIdentifier {
+    pub fn new_unique() -> DocumentIdentifier {
+        DocumentIdentifier {
+            uuid: Uuid::new_v4(),
+            file_path: None,
+        }
+    }
+
+    pub fn with_file_path(self, ff: SPath) -> Self {
+        Self {
+            file_path: Some(ff),
+            ..self
+        }
+    }
+}
 
 pub struct MainView {
     wid: WID,
@@ -149,36 +165,47 @@ impl MainView {
         }).flatten()
     }
 
-    fn get_editor_idx_for(&self, ff: &SPath) -> Option<usize> {
-        if let Some(buffer_shared_ref) = self.buffers.get(&DocumentIdentifier::SPath(ff.clone())) {
-            for (idx, display) in self.displays.iter().enumerate() {
-                match display {
-                    MainViewDisplay::Editor(editor) => {
-                        if editor.get_buffer_ref() == buffer_shared_ref {
-                            return Some(idx);
-                        }
-                    }
-                    MainViewDisplay::ResultsView(_) => {}
-                }
+    fn get_key_from_spath(&self, ff: &SPath) -> Option<DocumentIdentifier> {
+        for key in self.buffers.keys() {
+            if key.file_path.as_ref().map(|path| path == ff).unwrap_or(false) {
+                return Some(key.clone());
             }
-            None
-        } else {
-            debug!("no buffer opened for ff {}", ff);
-            None
         }
+        None
+    }
+
+    fn get_editor_idx_for(&self, ff: &SPath) -> Option<usize> {
+        let key = unpack_or!(self.get_key_from_spath(ff), None, "no key for spath");
+        let buffer_shared_ref = unpack_or_e!(self.buffers.get(&key), None, "missing buffer for key {:?}", &key);
+
+        for (idx, display) in self.displays.iter().enumerate() {
+            match display {
+                MainViewDisplay::Editor(editor) => {
+                    if editor.get_buffer_ref() == buffer_shared_ref {
+                        return Some(idx);
+                    }
+                }
+                MainViewDisplay::ResultsView(_) => {}
+            }
+        }
+        None
     }
 
     pub fn create_new_editor_for_file(&mut self, ff: SPath) -> Result<usize, ReadError> {
         let file_contents = ff.read_entire_file_to_rope()?;
         let lang_id_op = filename_to_language(&ff);
 
-        let buffer_state = BufferState::full(Some(self.providers.tree_sitter().clone()))
-            .with_text_from_rope(file_contents, lang_id_op)
-            .with_file_front(ff.clone());
+        let doc_identifier = DocumentIdentifier::new_unique().with_file_path(ff.clone());
+
+        let buffer_state = BufferState::full(
+            Some(self.providers.tree_sitter().clone()),
+            doc_identifier.clone(),
+        )
+            .with_text_from_rope(file_contents, lang_id_op);
 
         let buffer_state_ref = BufferSharedRef::new_from_buffer(buffer_state);
 
-        self.buffers.insert(DocumentIdentifier::SPath(ff.clone()), buffer_state_ref.clone());
+        self.buffers.insert(doc_identifier, buffer_state_ref.clone());
 
         self.displays.push(
             MainViewDisplay::Editor(

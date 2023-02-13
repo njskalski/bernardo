@@ -50,6 +50,12 @@ save as:
 Fuzzy file search
 Resize event (start in crossterm_input.rs)
 
+11)
+validate invariants
+
+12)
+I'd love to see SubwidgetPointer refactored to SubwidgetPointerOp and handling of "non found subwidget"
+
 Docs:
 1) how views work
 2) how main loop works

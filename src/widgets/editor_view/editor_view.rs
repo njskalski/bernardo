@@ -28,6 +28,8 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
+use crate::widgets::main_view::main_view::DocumentIdentifier;
+use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::WithScroll;
@@ -193,9 +195,9 @@ impl EditorView {
         self.set_focused(self.get_hover_subwidget());
     }
 
-    fn after_positive_save(&mut self, buffer_mut: &mut BufferState, path: &SPath) {
+    fn after_positive_save(&mut self, buffer_mut: &mut BufferState, path: &SPath) -> Option<MainViewMsg> {
         // setting the file path
-        self.set_file_name(buffer_mut, path);
+        let new_document_identifier = self.set_file_name(buffer_mut, path);
 
         // updating the "save as dialog" starting position
         path.parent().map(|_| {
@@ -203,6 +205,8 @@ impl EditorView {
         }).unwrap_or_else(|| {
             error!("failed setting save_file_dialog starting position - most likely parent is outside fsf root");
         });
+
+        Some(MainViewMsg::BufferChangedName { updated_identifier: new_document_identifier })
     }
 
     /*
@@ -281,10 +285,16 @@ impl EditorView {
         }
     }
 
-    fn set_file_name(&mut self, buffer_mut: &mut BufferState, path: &SPath) {
-        buffer_mut.set_file_front(Some(path.clone()));
+    /*
+    Returns updated document identifier
+     */
+    fn set_file_name(&mut self, buffer_mut: &mut BufferState, path: &SPath) -> DocumentIdentifier {
+        let new_document_identifier = buffer_mut.set_file_front(Some(path.clone()));
+
         let navcomp_op = self.nav_comp_group.get_navcomp_for(path);
         self.editor.internal_mut().set_navcomp(navcomp_op);
+
+        new_document_identifier
     }
 
     pub fn get_path(&self) -> Option<SPath> {

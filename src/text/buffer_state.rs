@@ -21,6 +21,7 @@ use crate::tsw::lang_id::LangId;
 use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
 use crate::unpack_or;
 use crate::w7e::navcomp_provider::StupidSubstituteMessage;
+use crate::widgets::main_view::main_view::DocumentIdentifier;
 
 // TODO it would use a method "would_accept_cem" to be used in "on_input" but before "update"
 
@@ -56,18 +57,18 @@ pub struct BufferState {
 
     lang_id: Option<LangId>,
 
-    file: Option<SPath>,
+    document_identifier: DocumentIdentifier,
 }
 
 impl BufferState {
-    pub fn full(tree_sitter_op: Option<Arc<TreeSitterWrapper>>) -> BufferState {
+    pub fn full(tree_sitter_op: Option<Arc<TreeSitterWrapper>>, document_identifier: DocumentIdentifier) -> BufferState {
         BufferState {
             subtype: BufferType::Full,
             tree_sitter_op,
             history: vec![ContentsAndCursors::default()],
             history_pos: 0,
             lang_id: None,
-            file: None,
+            document_identifier,
         }
     }
 
@@ -78,7 +79,7 @@ impl BufferState {
             history: vec![ContentsAndCursors::default()],
             history_pos: 0,
             lang_id: None,
-            file: None,
+            document_identifier: DocumentIdentifier::new_unique(),
         }
     }
 
@@ -97,12 +98,12 @@ impl BufferState {
         }
     }
 
-    pub fn with_file_front(self, ff: SPath) -> Self {
-        Self {
-            file: Some(ff),
-            ..self
-        }
-    }
+    // pub fn with_file_front(self, ff: SPath) -> Self {
+    //     Self {
+    //         document_identifier: Some(ff),
+    //         ..self
+    //     }
+    // }
 
     pub fn with_text<T: AsRef<str>>(self, text: T) -> Self {
         let rope = ropey::Rope::from_str(text.as_ref());
@@ -166,13 +167,26 @@ impl BufferState {
         }).flatten().unwrap_or(vec![])
     }
 
-    pub fn set_file_front(&mut self, ff_op: Option<SPath>) {
+    /*
+    Returns updated DocumentIdentifier
+     */
+    pub fn set_file_front(&mut self, ff_op: Option<SPath>) -> DocumentIdentifier {
         // TODO on update, I should break the history
-        self.file = ff_op;
+
+        if ff_op.is_none() {
+            warn!("I can't think about scenario where we change ff to None, but here it happened");
+        }
+
+        self.document_identifier.file_path = ff_op;
+        self.document_identifier.clone()
     }
 
     pub fn get_path(&self) -> Option<&SPath> {
-        self.file.as_ref()
+        self.document_identifier.file_path.as_ref()
+    }
+
+    pub fn get_document_identifier(&self) -> &DocumentIdentifier {
+        &self.document_identifier
     }
 
     pub fn set_lang(&mut self, lang_id: Option<LangId>) {
