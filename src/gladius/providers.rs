@@ -79,4 +79,6 @@ impl Providers {
     pub fn clipboard(&self) -> &ClipboardRef {
         &self.clipboard
     }
+
+    pub fn buffer_register(&self) -> &BufferRegisterRef { &self.buffer_register }
 }

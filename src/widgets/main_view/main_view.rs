@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
+use crate::experiments::buffer_register::OpenResult;
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::path::SPath;
@@ -91,8 +92,6 @@ pub struct MainView {
     display_idx: usize,
 
     hover: Option<HoverItem>,
-
-    buffers: HashMap<DocumentIdentifier, BufferSharedRef>,
 }
 
 impl MainView {
@@ -128,7 +127,6 @@ impl MainView {
             no_editor: NoEditorWidget::default(),
             display_idx: 0,
             hover: None,
-            buffers: Default::default(),
         }
     }
 
@@ -165,23 +163,14 @@ impl MainView {
         }).flatten()
     }
 
-    fn get_key_from_spath(&self, ff: &SPath) -> Option<DocumentIdentifier> {
-        for key in self.buffers.keys() {
-            if key.file_path.as_ref().map(|path| path == ff).unwrap_or(false) {
-                return Some(key.clone());
-            }
-        }
-        None
-    }
-
     fn get_editor_idx_for(&self, ff: &SPath) -> Option<usize> {
-        let key = unpack_or!(self.get_key_from_spath(ff), None, "no key for spath");
-        let buffer_shared_ref = unpack_or_e!(self.buffers.get(&key), None, "missing buffer for key {:?}", &key);
+        let register = unpack_or_e!(self.providers.buffer_register().try_read().ok(), None, "failed locking register");
+        let buffer_shared_ref = unpack_or_e!(register.get_buffer_ref_from_path(ff), None, "no buffer for path");
 
         for (idx, display) in self.displays.iter().enumerate() {
             match display {
                 MainViewDisplay::Editor(editor) => {
-                    if editor.get_buffer_ref() == buffer_shared_ref {
+                    if *editor.get_buffer_ref() == buffer_shared_ref {
                         return Some(idx);
                     }
                 }
@@ -191,27 +180,24 @@ impl MainView {
         None
     }
 
-    pub fn create_new_editor_for_file(&mut self, ff: SPath) -> Result<usize, ReadError> {
-        let file_contents = ff.read_entire_file_to_rope()?;
-        let lang_id_op = filename_to_language(&ff);
 
-        let doc_identifier = DocumentIdentifier::new_unique().with_file_path(ff.clone());
+    pub fn create_new_editor_for_file(&mut self, ff: &SPath) -> Result<usize, ReadError> {
+        // TODO this should return some other error, but they are swallowed anyway
+        let mut register_lock = unpack_or_e!(self.providers.buffer_register().try_write().ok(), Err(ReadError::FileNotFound), "failed to lock register");
+        let OpenResult {
+            buffer_shared_ref, opened
+        } = register_lock.open_file(&self.providers, ff);
+        let mut buffer_shared_ref = buffer_shared_ref?;
 
-        let buffer_state = BufferState::full(
-            Some(self.providers.tree_sitter().clone()),
-            doc_identifier.clone(),
-        )
-            .with_text_from_rope(file_contents, lang_id_op);
-
-        let buffer_state_ref = BufferSharedRef::new_from_buffer(buffer_state);
-
-        self.buffers.insert(doc_identifier, buffer_state_ref.clone());
+        if let Some(mut buffer_lock) = buffer_shared_ref.lock_rw() {
+            buffer_lock.set_lang(filename_to_language(&ff))
+        }
 
         self.displays.push(
             MainViewDisplay::Editor(
                 EditorView::new(self.providers.clone(),
                                 self.nav_comp_group.clone(),
-                ).with_buffer(buffer_state_ref).with_path_op(
+                ).with_buffer(buffer_shared_ref).with_path_op(
                     ff.parent()
                 ),
             )
@@ -246,7 +232,7 @@ impl MainView {
             self.set_focused(self.get_default_focused());
             true
         } else {
-            self.create_new_editor_for_file(ff)
+            self.create_new_editor_for_file(&ff)
                 .map(|idx| {
                     self.display_idx = idx;
                     self.set_focused(self.get_default_focused());

@@ -6,6 +6,7 @@ use log::error;
 
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
+use crate::fs::read_error::ReadError;
 use crate::gladius::providers::Providers;
 use crate::primitives::has_invariant::HasInvariant;
 use crate::text::buffer_state::BufferState;
@@ -23,8 +24,8 @@ pub struct BufferRegister {
 pub type BufferRegisterRef = Arc<RwLock<BufferRegister>>;
 
 pub struct OpenResult {
-    buffer: Option<BufferSharedRef>,
-    opened: bool,
+    pub buffer_shared_ref: Result<BufferSharedRef, ReadError>,
+    pub opened: bool,
 }
 
 impl BufferRegister {
@@ -38,12 +39,17 @@ impl BufferRegister {
         self.buffers.keys().find(|di| di.file_path.as_ref().map(|sp| sp == path).unwrap_or(false)).map(|c| c.clone())
     }
 
+    pub fn get_buffer_ref_from_path(&self, path: &SPath) -> Option<BufferSharedRef> {
+        self.get_id_from_path(path).map(|id| {
+            self.buffers.get(&id).map(|r| r.clone())
+        }).flatten()
+    }
+
     pub fn open_file(&mut self, providers: &Providers, path: &SPath) -> OpenResult {
         if let Some(id) = self.get_id_from_path(path) {
             let bsr = self.buffers.get(&id).unwrap();
-
             OpenResult {
-                buffer: Some(bsr.clone()),
+                buffer_shared_ref: Ok(bsr.clone()),
                 opened: false,
             }
         } else {
@@ -52,7 +58,7 @@ impl BufferRegister {
                 Err(e) => {
                     error!("failed to read {}, because {}", &path, e);
                     return OpenResult {
-                        buffer: None,
+                        buffer_shared_ref: Err(e),
                         opened: false,
                     };
                 }
@@ -63,7 +69,7 @@ impl BufferRegister {
                 Err(e) => {
                     error!("failed loading file {}, because utf8 error {}", &path, e);
                     return OpenResult {
-                        buffer: None,
+                        buffer_shared_ref: Err(ReadError::Utf8Error(e)),
                         opened: false,
                     };
                 }
@@ -83,7 +89,7 @@ impl BufferRegister {
             self.buffers.insert(doc_id, bsr.clone());
 
             OpenResult {
-                buffer: Some(bsr),
+                buffer_shared_ref: Ok(bsr),
                 opened: true,
             }
         }
