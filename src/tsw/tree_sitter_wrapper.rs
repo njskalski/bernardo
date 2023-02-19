@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::ops::Range;
 use std::rc::Rc;
+use std::sync::{Arc, RwLock};
 
 use log::{error, warn};
 use ropey::Rope;
@@ -13,6 +14,7 @@ use crate::tsw::lang_id::LangId;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::rope_wrappers::RopeWrapper;
+use crate::unpack_or_e;
 
 static EMPTY_SLICE: [u8; 0] = [0; 0];
 
@@ -152,18 +154,18 @@ impl TreeSitterWrapper {
             }
         };
 
-        let id_to_name: Vec<Rc<String>> = query.capture_names().iter().map(|cn| {
-            Rc::new(cn.to_owned())
+        let id_to_name: Vec<Arc<String>> = query.capture_names().iter().map(|cn| {
+            Arc::new(cn.to_owned())
         }).collect();
 
         Some(
             ParsingTuple {
                 tree: None,
                 lang_id,
-                parser: Rc::new(RefCell::new(parser)),
+                parser: Arc::new(RwLock::new(parser)),
                 language: language.clone(),
-                highlight_query: Rc::new(query),
-                id_to_name: Rc::new(id_to_name),
+                highlight_query: Arc::new(query),
+                id_to_name: Arc::new(id_to_name),
             }
         )
     }
@@ -173,7 +175,7 @@ impl TreeSitterWrapper {
 pub struct HighlightItem {
     pub char_begin: usize,
     pub char_end: usize,
-    pub identifier: Rc<String>,
+    pub identifier: Arc<String>,
 }
 
 impl ParsingTuple {
@@ -223,15 +225,8 @@ impl ParsingTuple {
 
     pub fn try_reparse(&mut self, rope: &ropey::Rope) -> bool {
         let mut callback = rope.callback_for_parser();
-        //TODO borrow_mut => try_borrow_mut
-        let tree = match self.parser.borrow_mut().parse_with(
-            &mut callback, self.tree.as_ref()) {
-            Some(t) => t,
-            None => {
-                error!("failed parse");
-                return false;
-            }
-        };
+        let mut parser = unpack_or_e!(self.parser.try_write().ok(), false, "failed to lock parser");
+        let tree = unpack_or_e!(parser.parse_with(&mut callback, self.tree.as_ref()), false , "failed parse");
 
         self.tree = Some(tree);
 

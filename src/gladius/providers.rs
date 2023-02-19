@@ -4,10 +4,11 @@ of key components like EditorView or CodeResultsView
  */
 
 
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
+use crate::experiments::buffer_register::{BufferRegister, BufferRegisterRef};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::fs::fsf_ref::FsfRef;
 use crate::gladius::navcomp_loader::NavCompLoader;
@@ -22,8 +23,9 @@ pub struct Providers {
     theme: Theme,
     tree_sitter: Arc<TreeSitterWrapper>,
 
-    // side_channel: Option<SideChannel>,
     navcomp_loader: Arc<Box<dyn NavCompLoader>>,
+
+    buffer_register: BufferRegisterRef,
 }
 
 impl Providers {
@@ -45,6 +47,7 @@ impl Providers {
             theme,
             tree_sitter,
             navcomp_loader,
+            buffer_register: Arc::new(RwLock::new(BufferRegister::new())),
         }
     }
 

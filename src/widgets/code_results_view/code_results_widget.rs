@@ -112,7 +112,6 @@ impl Widget for CodeResultsView {
             self.data_provider.poll();
         }
 
-
         for (idx, symbol) in self.data_provider.items().enumerate().skip(self.item_list.internal().items().count()) {
             // TODO URGENT loading files should be moved out from here to some common place between this and Editor
 
@@ -186,8 +185,7 @@ impl Widget for CodeResultsView {
             // TODO second_cursor?
 
             let buffer_state_ref = BufferSharedRef::new_from_buffer(buffer_state);
-
-
+            
             let cursor_set = CursorSet::singleton(first_cursor);
 
             let mut edit_widget = EditorWidget::new(

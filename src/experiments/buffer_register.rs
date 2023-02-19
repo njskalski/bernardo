@@ -1,0 +1,110 @@
+use std::collections::{HashMap, HashSet};
+use std::str::from_utf8;
+use std::sync::{Arc, RwLock};
+
+use log::error;
+
+use crate::fs::fsf_ref::FsfRef;
+use crate::fs::path::SPath;
+use crate::gladius::providers::Providers;
+use crate::primitives::has_invariant::HasInvariant;
+use crate::text::buffer_state::BufferState;
+use crate::unpack_or_e;
+use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
+use crate::widgets::main_view::main_view::DocumentIdentifier;
+
+/*
+This is a provider of mapping DocumentIdentifier to buffer.
+ */
+pub struct BufferRegister {
+    buffers: HashMap<DocumentIdentifier, BufferSharedRef>,
+}
+
+pub type BufferRegisterRef = Arc<RwLock<BufferRegister>>;
+
+pub struct OpenResult {
+    buffer: Option<BufferSharedRef>,
+    opened: bool,
+}
+
+impl BufferRegister {
+    pub fn new() -> BufferRegister {
+        BufferRegister {
+            buffers: HashMap::new(),
+        }
+    }
+
+    pub fn get_id_from_path(&self, path: &SPath) -> Option<DocumentIdentifier> {
+        self.buffers.keys().find(|di| di.file_path.as_ref().map(|sp| sp == path).unwrap_or(false)).map(|c| c.clone())
+    }
+
+    pub fn open_file(&mut self, providers: &Providers, path: &SPath) -> OpenResult {
+        if let Some(id) = self.get_id_from_path(path) {
+            let bsr = self.buffers.get(&id).unwrap();
+
+            OpenResult {
+                buffer: Some(bsr.clone()),
+                opened: false,
+            }
+        } else {
+            let buffer_bytes: Vec<u8> = match providers.fsf().blocking_read_entire_file(&path) {
+                Ok(bytes) => bytes,
+                Err(e) => {
+                    error!("failed to read {}, because {}", &path, e);
+                    return OpenResult {
+                        buffer: None,
+                        opened: false,
+                    };
+                }
+            };
+
+            let buffer_str = match from_utf8(&buffer_bytes) {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed loading file {}, because utf8 error {}", &path, e);
+                    return OpenResult {
+                        buffer: None,
+                        opened: false,
+                    };
+                }
+            };
+
+            let doc_id = DocumentIdentifier::new_unique().with_file_path(path.clone());
+
+            let buffer_state = BufferState::full(
+                Some(providers.tree_sitter().clone()),
+                doc_id.clone(),
+            ).with_text(buffer_str);
+
+            let bsr = BufferSharedRef::new_from_buffer(buffer_state);
+
+            // saving for later
+
+            self.buffers.insert(doc_id, bsr.clone());
+
+            OpenResult {
+                buffer: Some(bsr),
+                opened: true,
+            }
+        }
+    }
+}
+
+impl HasInvariant for BufferRegister {
+    fn check_invariant(&self) -> bool {
+        // no two references to the same file
+
+        let mut seen_refs: HashSet<SPath> = HashSet::new();
+
+        for document_identifier in self.buffers.keys() {
+            if let Some(path) = &document_identifier.file_path {
+                if seen_refs.get(path).is_some() {
+                    error!("path {} found twice!", path);
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+}

@@ -1,7 +1,10 @@
 use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
+use std::sync::{Arc, RwLock};
+
 use tree_sitter::{Language, Parser, Query, Tree};
+
 use crate::tsw::lang_id::LangId;
 
 #[derive(Clone)]
@@ -10,10 +13,10 @@ pub struct ParsingTuple {
     pub tree: Option<Tree>,
 
     pub lang_id: LangId,
-    pub parser: Rc<RefCell<Parser>>,
+    pub parser: Arc<RwLock<Parser>>,
     pub language: Language,
-    pub highlight_query: Rc<Query>,
-    pub id_to_name: Rc<Vec<Rc<String>>>,
+    pub highlight_query: Arc<Query>,
+    pub id_to_name: Arc<Vec<Arc<String>>>,
 }
 
 impl Debug for ParsingTuple {
