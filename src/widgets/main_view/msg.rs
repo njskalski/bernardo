@@ -30,6 +30,7 @@ pub enum MainViewMsg {
     OpenFuzzyBuffers,
     FuzzyBuffersHit { pos: usize },
 
+    // it's option, just that we can "take" it, not changing the msg, because that doesn't work well
     FindReferences { promise_op: Option<WrappedSymbolUsagesPromise> },
 
     /*
