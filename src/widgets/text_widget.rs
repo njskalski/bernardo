@@ -35,6 +35,10 @@ impl TextWidget {
 
         size
     }
+
+    pub fn get_text(&self) -> String {
+        self.text.to_string()
+    }
 }
 
 impl Widget for TextWidget {

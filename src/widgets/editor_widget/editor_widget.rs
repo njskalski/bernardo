@@ -942,11 +942,15 @@ impl EditorWidget {
         }).flatten().flatten();
 
         let symbol = unpack_or!(symbol_op, None, "no navcomp symbol (yet?)");
-        let cursor = unpack_or!(StupidCursor::to_real_cursor_range(symbol.stupid_range, buffer), None, "failed to cast stupid range");
+        let selection = unpack_or!(StupidCursor::to_real_cursor_range(symbol.stupid_range, buffer), None, "failed to cast stupid range");
+
+        let symbol = unpack_or!(buffer.get_selected_chars(selection).0, None, "failed to get text");
+
         let promise = unpack_or!(navcomp.todo_get_symbol_usages(path, stupid_cursor), None, "failed retrieving usage symbol");
 
+
         let wrapped_promise = WrappedSymbolUsagesPromise::new(
-            "blabla".to_string(),
+            symbol,
             promise,
         );
 

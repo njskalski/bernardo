@@ -213,7 +213,6 @@ impl MainView {
         self.displays.push(
             MainViewDisplay::ResultsView(
                 CodeResultsView::new(self.providers.clone(),
-                                     "blabla".into(),
                                      data_provider,
                 )
             )
@@ -293,7 +292,7 @@ impl MainView {
                 MainViewDisplay::ResultsView(result) => {
                     let text = result.get_text().clone();
 
-                    DisplayItem::new(idx, text)
+                    DisplayItem::new(idx, text.into())
                 }
             }
         }).collect::<Vec<_>>()

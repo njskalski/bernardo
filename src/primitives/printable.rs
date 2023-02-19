@@ -25,6 +25,16 @@ pub trait Printable {
     fn lines(&self) -> GraphemeLinesStreamingIterator {
         GraphemeLinesStreamingIterator::new(self.graphemes())
     }
+
+    fn to_string(&self) -> String {
+        let mut s = String::new();
+
+        for g in self.graphemes() {
+            s += g;
+        }
+
+        s
+    }
 }
 
 impl Printable for &str {

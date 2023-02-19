@@ -98,7 +98,7 @@ impl StupidCursor {
         }
     }
 
-    pub fn to_real_cursor_range(range: (StupidCursor, StupidCursor), buffer: &dyn TextBuffer) -> Option<Cursor> {
+    pub fn to_real_cursor_range(range: (StupidCursor, StupidCursor), buffer: &dyn TextBuffer) -> Option<Selection> {
         let first = range.0.to_real_cursor(buffer)?;
         let second = range.1.to_real_cursor(buffer)?;
         if first >= second {
@@ -106,6 +106,6 @@ impl StupidCursor {
             return None;
         }
 
-        Some(Cursor::new(second.a).with_selection(Selection::new(first.a, second.a)))
+        Some(Selection::new(first.a, second.a))
     }
 }

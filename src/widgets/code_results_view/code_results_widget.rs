@@ -39,9 +39,7 @@ use crate::widgets::with_scroll::WithScroll;
 pub struct CodeResultsView {
     wid: WID,
 
-    // TODO reduce
     label: TextWidget,
-    label_text: Rc<String>,
     item_list: WithScroll<BigList<EditorWidget>>,
 
     //providers
@@ -60,14 +58,11 @@ impl CodeResultsView {
 
     pub fn new(
         providers: Providers,
-        label: String,
         data_provider: Box<dyn CodeResultsProvider>,
     ) -> Self {
-        let rc = Rc::new(label);
         Self {
             wid: get_new_widget_id(),
-            label: TextWidget::new(Box::new(rc.clone())),
-            label_text: rc,
+            label: TextWidget::new(Box::new("no description")),
             item_list: WithScroll::new(ScrollDirection::Vertical,
                                        BigList::new(vec![]),
             ),
@@ -78,8 +73,8 @@ impl CodeResultsView {
         }
     }
 
-    pub fn get_text(&self) -> &Rc<String> {
-        &self.label_text
+    pub fn get_text(&self) -> String {
+        self.label.get_text()
     }
 
     pub fn get_selected_item(&self) -> &EditorWidget {
@@ -107,6 +102,8 @@ impl Widget for CodeResultsView {
 
     fn prelayout(&mut self) {
         // TODO this method is stitched together from bullshit with ducttape. It's to be rewritten, after I figure out which items go well together.
+
+
 
         if self.data_provider.loading_state() == LoadingState::InProgress {
             self.data_provider.poll();
@@ -185,7 +182,7 @@ impl Widget for CodeResultsView {
             // TODO second_cursor?
 
             let buffer_state_ref = BufferSharedRef::new_from_buffer(buffer_state);
-            
+
             let cursor_set = CursorSet::singleton(first_cursor);
 
             let mut edit_widget = EditorWidget::new(

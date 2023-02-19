@@ -3,6 +3,7 @@ use std::fmt::{Debug, Formatter};
 use ropey::iter::{Chars, Chunks};
 use streaming_iterator::StreamingIterator;
 
+use crate::primitives::cursor_set::Selection;
 use crate::tsw::lang_id::LangId;
 
 //TODO create tests for undo/redo/set milestone
@@ -46,6 +47,25 @@ pub trait TextBuffer: ToString {
     fn redo(&mut self) -> bool { false }
 
     fn tab_width(&self) -> usize { 4 }
+
+    // second parameter is whether all chars in selection were found
+    fn get_selected_chars(&self, selection: Selection) -> (Option<String>, bool) {
+        if selection.b >= self.len_chars() {
+            return (None, false);
+        }
+
+        let mut s: String = String::new();
+
+        for char_idx in selection.b..selection.e {
+            if let Some(c) = self.char_at(char_idx) {
+                s.push(c);
+            } else {
+                return (Some(s), false);
+            }
+        }
+
+        (Some(s), true)
+    }
 }
 
 pub struct LinesIter<'a> {
