@@ -8,6 +8,7 @@ use crate::experiments::clipboard::ClipboardRef;
 use crate::io::keys::{Key, Keycode};
 use crate::primitives::arrow::Arrow;
 use crate::primitives::cursor_set::{Cursor, CursorSet};
+use crate::primitives::has_invariant::HasInvariant;
 use crate::text::text_buffer::TextBuffer;
 
 /*
@@ -259,7 +260,7 @@ fn insert_to_rope(cs: &mut CursorSet,
         }
     };
     cs.reduce_right();
-    debug_assert!(cs.check_invariants());
+    debug_assert!(cs.check_invariant());
     (diff_len, res)
 }
 
@@ -290,7 +291,7 @@ fn insert_to_rope_at_random_place(cs: &mut CursorSet,
             }
         }
 
-        debug_assert!(cs.check_invariants());
+        debug_assert!(cs.check_invariant());
 
         (stride, true)
     }
@@ -468,7 +469,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
             };
 
             cs.reduce_left();
-            debug_assert!(cs.check_invariants());
+            debug_assert!(cs.check_invariant());
             (diff_len, res)
         }
         CommonEditMsg::LineBegin { selecting } => {
@@ -546,7 +547,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
             };
 
             cs.reduce_left();
-            debug_assert!(cs.check_invariants());
+            debug_assert!(cs.check_invariant());
             (diff_len, res)
         }
         CommonEditMsg::Copy => {
@@ -704,7 +705,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
         }
     };
 
-    debug_assert!(cs.check_invariants());
+    debug_assert!(cs.check_invariant());
 
     for c in cs.iter() {
         debug_assert!(c.get_end() <= rope.len_chars());

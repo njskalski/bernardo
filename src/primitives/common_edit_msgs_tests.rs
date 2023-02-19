@@ -3,12 +3,13 @@ mod tests {
     use crate::experiments::clipboard::{ClipboardRef, get_me_fake_clipboard};
     use crate::primitives::common_edit_msgs::{_apply_cem, CommonEditMsg};
     use crate::primitives::cursor_set_selection_tests::tests::{buffer_cursors_sel_to_text, text_to_buffer_cursors_with_selections};
+    use crate::primitives::has_invariant::HasInvariant;
 
     fn text_to_text(text: &str, cem: CommonEditMsg, clipboard: Option<&ClipboardRef>) -> String {
         let (mut buffer, mut cs) = text_to_buffer_cursors_with_selections(text);
-        debug_assert!(cs.check_invariants());
+        debug_assert!(cs.check_invariant());
         _apply_cem(cem, &mut cs, &mut buffer, 4, clipboard);
-        debug_assert!(cs.check_invariants());
+        debug_assert!(cs.check_invariant());
         buffer_cursors_sel_to_text(&buffer, &cs)
     }
 

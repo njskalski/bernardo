@@ -20,6 +20,7 @@ use crate::primitives::color::Color;
 use crate::primitives::common_edit_msgs::{_apply_cem, cme_to_direction, CommonEditMsg, key_to_edit_msg};
 use crate::primitives::cursor_set::{Cursor, CursorSet, CursorStatus};
 use crate::primitives::cursor_set_rect::cursor_set_to_rect;
+use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::helpers;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
@@ -1098,7 +1099,7 @@ impl Widget for EditorWidget {
                                 }
                             }
 
-                            debug_assert!(buffer.text().cursor_set.check_invariants());
+                            debug_assert!(buffer.text().cursor_set.check_invariant());
 
                             None
                         }

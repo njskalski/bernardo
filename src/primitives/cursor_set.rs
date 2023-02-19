@@ -40,6 +40,7 @@ use std::slice::{Iter, IterMut};
 
 use log::{error, warn};
 
+use crate::primitives::has_invariant::HasInvariant;
 use crate::text::text_buffer::TextBuffer;
 
 const NEWLINE_LENGTH: usize = 1; // TODO(njskalski): add support for multisymbol newlines?
@@ -467,14 +468,6 @@ impl Cursor {
         self.s.is_none()
     }
 
-    pub fn check_invariant(&self) -> bool {
-        if let Some(s) = self.s {
-            s.b != s.e && (s.b == self.a || s.e == self.a)
-        } else {
-            true
-        }
-    }
-
     pub fn anchor_left(&self) -> bool {
         self.s.map(|s| s.b == self.a).unwrap_or(false)
     }
@@ -520,6 +513,16 @@ impl Cursor {
             }
         }
         return false;
+    }
+}
+
+impl HasInvariant for Cursor {
+    fn check_invariant(&self) -> bool {
+        if let Some(s) = self.s {
+            s.b != s.e && (s.b == self.a || s.e == self.a)
+        } else {
+            true
+        }
     }
 }
 
@@ -1204,14 +1207,52 @@ impl CursorSet {
             self.set.push(cursor);
             self.set.sort();
 
-            debug_assert!(self.check_invariants());
+            debug_assert!(self.check_invariant());
             true
         } else {
             false
         }
     }
 
-    pub fn check_invariants(&self) -> bool {
+    pub fn len(&self) -> usize {
+        self.set.len()
+    }
+
+    pub fn remove_by_anchor(&mut self, anchor_char: usize) -> bool {
+        for i in 0..self.set.len() {
+            if self.set[i].a == anchor_char {
+                self.set.remove(i);
+                // disabled, we now allow "temporarily" empty sets in processing shift_tab
+                //debug_assert!(self.check_invariant());
+                return true;
+            }
+        }
+
+        false
+    }
+
+    pub fn supercursor(&self) -> &Cursor {
+        //TODO this should vary, depending on which direction cursors were moved last. Now it just points to first one.
+
+        // this succeeds, because of invariants
+        self.set.first().unwrap_or_else(|| {
+            error!("invariant broken, empty cursor_set.");
+            &ZERO_CURSOR
+        })
+    }
+
+    pub fn is_single(&self) -> bool {
+        self.set.len() == 1
+    }
+
+    pub fn first(&self) -> Cursor {
+        // TODO unwrap
+        self.set.first().unwrap().clone()
+    }
+}
+
+impl HasInvariant for CursorSet {
+    fn check_invariant(&self) -> bool {
         // at least one
         if self.set.is_empty() {
             error!("cursor_set empty");
@@ -1254,41 +1295,5 @@ impl CursorSet {
         }
 
         true
-    }
-
-    pub fn len(&self) -> usize {
-        self.set.len()
-    }
-
-    pub fn remove_by_anchor(&mut self, anchor_char: usize) -> bool {
-        for i in 0..self.set.len() {
-            if self.set[i].a == anchor_char {
-                self.set.remove(i);
-                // disabled, we now allow "temporarily" empty sets in processing shift_tab
-                //debug_assert!(self.check_invariants());
-                return true;
-            }
-        }
-
-        false
-    }
-
-    pub fn supercursor(&self) -> &Cursor {
-        //TODO this should vary, depending on which direction cursors were moved last. Now it just points to first one.
-
-        // this succeeds, because of invariants
-        self.set.first().unwrap_or_else(|| {
-            error!("invariant broken, empty cursor_set.");
-            &ZERO_CURSOR
-        })
-    }
-
-    pub fn is_single(&self) -> bool {
-        self.set.len() == 1
-    }
-
-    pub fn first(&self) -> Cursor {
-        // TODO unwrap
-        self.set.first().unwrap().clone()
     }
 }
