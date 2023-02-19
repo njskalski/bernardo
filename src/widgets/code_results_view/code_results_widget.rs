@@ -10,11 +10,13 @@ use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
+use crate::io::keys::Keycode;
 use crate::io::loading_state::LoadingState;
 use crate::io::output::Output;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::cursor_set::Cursor;
 use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
@@ -78,6 +80,19 @@ impl CodeResultsView {
 
     pub fn get_text(&self) -> &Rc<String> {
         &self.label_text
+    }
+
+    pub fn get_selected_item(&self) -> &EditorWidget {
+        self.item_list.internal().get_selected_item()
+    }
+
+    pub fn get_selected_item_mut(&mut self) -> &mut EditorWidget {
+        self.item_list.internal_mut().get_selected_item_mut()
+    }
+
+    pub fn get_selected_doc_id(&self) -> DocumentIdentifier {
+        // TODO unwrap
+        self.get_selected_item().get_buffer().lock().unwrap().get_document_identifier().clone()
     }
 }
 
@@ -210,9 +225,9 @@ impl Widget for CodeResultsView {
         debug!("{} input {:?}", self.typename(), input_event);
 
         match input_event {
-            // InputEvent::KeyInput(key) if key == Keycode::Enter.to_key() => {
-            //     CodeResultsMsg::Hit { id: self.item_list.internal().get_selected_id() }.someboxed()
-            // }
+            InputEvent::KeyInput(key) if key == Keycode::Enter.to_key() => {
+                CodeResultsMsg::Hit.someboxed()
+            }
             _ => None
         }
     }
@@ -226,29 +241,23 @@ impl Widget for CodeResultsView {
 
         #[allow(unreachable_patterns)]
         return match our_msg.unwrap() {
-            CodeResultsMsg::Hit { idx } => {
-                match self.item_list.internal().items().skip(*idx).next() {
-                    None => {
-                        error!("can't find item of #{}", idx);
-                        None
-                    }
-                    Some(item) => {
-                        // if let Some(path) = item.get_buffer().lock().map(|lock| lock.get_path()) {} else {
-                        //     error!("couldn't get item path")
-                        // }
+            CodeResultsMsg::Hit => {
+                // TODO using first instead of "single"
+                if let Some((doc_id, cursor)) = self.get_selected_item().get_buffer().lock().map(|lock| {
+                    let doc_id = lock.get_document_identifier().clone();
+                    let cursor = lock.cursors().first();
 
-                        // MainViewMsg::OpenFile {
-                        //     file: Left(item.get_buffer()),
-                        //     position_op: Cursor {},
-                        // }.someboxed()
+                    (doc_id, cursor)
+                }) {
+                    MainViewMsg::OpenFile {
+                        file: doc_id.clone(),
+                        position_op: cursor,
+                    }.someboxed()
+                } else {
+                    error!("couldn't get item path");
 
-                        None
-                    }
+                    None
                 }
-            }
-            msg => {
-                warn!("unhandled msg {:?}", msg);
-                None
             }
         };
     }

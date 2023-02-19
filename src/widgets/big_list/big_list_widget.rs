@@ -134,6 +134,16 @@ impl<T: Widget> BigList<T> {
     pub fn get_selected_id(&self) -> usize {
         self.item_idx
     }
+
+    pub fn get_selected_item(&self) -> &T {
+        //TODO unwrap
+        self.items.get(self.item_idx).map(|(_, item)| item).unwrap()
+    }
+
+    pub fn get_selected_item_mut(&mut self) -> &mut T {
+        //TODO unwrap
+        self.items.get_mut(self.item_idx).map(|(_, item)| item).unwrap()
+    }
 }
 
 impl<T: Widget> Widget for BigList<T> {
@@ -147,7 +157,7 @@ impl<T: Widget> Widget for BigList<T> {
 
     fn prelayout(&mut self) {
         debug!("prelayout {}", self.typename());
-        
+
         self.complex_prelayout();
     }
 

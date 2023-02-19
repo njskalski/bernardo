@@ -34,7 +34,7 @@ pub enum MainViewMsg {
     /*
     file, or identifier of scratchpad (to be filled)
      */
-    OpenFile { file: Either<SPath, ()>, position_op: Cursor },
+    OpenFile { file: DocumentIdentifier, position_op: Cursor },
 
     BufferChangedName { updated_identifier: DocumentIdentifier },
 }

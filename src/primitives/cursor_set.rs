@@ -1286,4 +1286,9 @@ impl CursorSet {
     pub fn is_single(&self) -> bool {
         self.set.len() == 1
     }
+
+    pub fn first(&self) -> Cursor {
+        // TODO unwrap
+        self.set.first().unwrap().clone()
+    }
 }
