@@ -13,6 +13,7 @@ use crate::fs::path::SPath;
 use crate::fs::read_error::ReadError;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
+use crate::io::loading_state::LoadingState;
 use crate::io::output::Output;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
@@ -459,22 +460,17 @@ impl Widget for MainView {
                     None
                 }
                 MainViewMsg::FindReferences { ref mut promise_op } => {
-                    if let Some(mut promise) = promise_op.take() {
-                        promise.update();
-                        if promise.state() != PromiseState::Broken {
-                            match self.create_new_display_for_code_results(
-                                Box::new(promise)
-                            ) {
-                                Ok(idx) => {
-                                    self.display_idx = idx;
-                                    self.set_focus_to_default();
-                                }
-                                Err(_) => {
-                                    error!("failed find references");
-                                }
+                    if let Some(promise) = promise_op.take() {
+                        match self.create_new_display_for_code_results(
+                            Box::new(promise)
+                        ) {
+                            Ok(idx) => {
+                                self.display_idx = idx;
+                                self.set_focus_to_default();
                             }
-                        } else {
-                            warn!("promise broken, throwing away.");
+                            Err(_) => {
+                                error!("failed find references");
+                            }
                         }
                     } else {
                         warn!("find reference with empty promise")

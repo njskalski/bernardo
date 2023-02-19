@@ -1,9 +1,11 @@
+use std::ops::Range;
+
 use log::debug;
 use log::error;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::primitives::cursor_set::Cursor;
+use crate::primitives::cursor_set::{Cursor, Selection};
 use crate::primitives::xy::XY;
 use crate::text::text_buffer::TextBuffer;
 use crate::unpack_or;
@@ -94,5 +96,16 @@ impl StupidCursor {
                 None
             }
         }
+    }
+
+    pub fn to_real_cursor_range(range: (StupidCursor, StupidCursor), buffer: &dyn TextBuffer) -> Option<Cursor> {
+        let first = range.0.to_real_cursor(buffer)?;
+        let second = range.1.to_real_cursor(buffer)?;
+        if first >= second {
+            error!("failed to convert stupid cursor range to real cursor - first = {:?} >= {:?} = second", first, second);
+            return None;
+        }
+
+        Some(Cursor::new(second.a).with_selection(Selection::new(first.a, second.a)))
     }
 }

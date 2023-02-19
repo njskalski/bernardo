@@ -34,6 +34,7 @@ use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_provider::{CompletionAction, NavCompSymbol};
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widgets::code_results_view::promise_provider::WrappedSymbolUsagesPromise;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
 use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::context_options_matrix::get_context_options;
@@ -152,7 +153,7 @@ pub struct EditorWidget {
     // navcomp is to submit edit messages, suggestion display will probably be somewhere else
     navcomp: Option<NavCompRef>,
 
-    nacomp_symbol: Option<Box<dyn Promise<Option<NavCompSymbol>>>>,
+    navcomp_symbol: Option<Box<dyn Promise<Option<NavCompSymbol>>>>,
 
     state: EditorState,
 
@@ -186,7 +187,7 @@ impl EditorWidget {
             state: EditorState::Editing,
             navcomp,
             requested_hover: None,
-            nacomp_symbol: None,
+            navcomp_symbol: None,
 
         }
     }
@@ -373,7 +374,7 @@ impl EditorWidget {
         debug!("request_context_bar");
 
         // need to resolve first
-        if let Some(navcomp_symbol) = self.nacomp_symbol.as_mut() {
+        if let Some(navcomp_symbol) = self.navcomp_symbol.as_mut() {
             navcomp_symbol.update();
         };
 
@@ -382,7 +383,7 @@ impl EditorWidget {
             |c| StupidCursor::from_real_cursor(buffer, c).ok()
         ).flatten();
 
-        let lsp_symbol_op = self.nacomp_symbol.as_ref().map(|ncsp| {
+        let lsp_symbol_op = self.navcomp_symbol.as_ref().map(|ncsp| {
             ncsp.read().map(|c| c.as_ref())
         }).flatten().flatten();
 
@@ -850,7 +851,7 @@ impl EditorWidget {
 
         // TODO add support for scrachpad (path == None)
 
-        self.nacomp_symbol = self.navcomp.as_ref().map(|navcomp|
+        self.navcomp_symbol = self.navcomp.as_ref().map(|navcomp|
             navcomp.todo_get_symbol_at(path, stupid_cursor)
         ).flatten();
     }
@@ -936,9 +937,20 @@ impl EditorWidget {
         let path = unpack_or!(buffer.get_path(), None, "no path set");
         let stupid_cursor = unpack_or!(StupidCursor::from_real_cursor(buffer, cursor).ok(), None, "failed conversion to stupid cursor");
 
-        let promise = navcomp.todo_get_symbol_usages(path, stupid_cursor);
+        let symbol_op = self.navcomp_symbol.as_ref().map(|promise| {
+            promise.read().map(|c| c.clone())
+        }).flatten().flatten();
 
-        promise.map(|promise| MainViewMsg::FindReferences { promise_op: Some(promise) }.someboxed()).flatten()
+        let symbol = unpack_or!(symbol_op, None, "no navcomp symbol (yet?)");
+        let cursor = unpack_or!(StupidCursor::to_real_cursor_range(symbol.stupid_range, buffer), None, "failed to cast stupid range");
+        let promise = unpack_or!(navcomp.todo_get_symbol_usages(path, stupid_cursor), None, "failed retrieving usage symbol");
+
+        let wrapped_promise = WrappedSymbolUsagesPromise::new(
+            "blabla".to_string(),
+            promise,
+        );
+
+        MainViewMsg::FindReferences { promise_op: Some(wrapped_promise) }.someboxed()
     }
 
     pub fn todo_go_to_definition(&mut self) {}

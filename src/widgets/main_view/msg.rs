@@ -5,6 +5,7 @@ use crate::fs::path::SPath;
 use crate::primitives::cursor_set::Cursor;
 use crate::w7e::navcomp_provider::SymbolUsagesPromise;
 use crate::widget::any_msg::AnyMsg;
+use crate::widgets::code_results_view::promise_provider::WrappedSymbolUsagesPromise;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
 
 #[derive(Debug)]
@@ -29,7 +30,7 @@ pub enum MainViewMsg {
     OpenFuzzyBuffers,
     FuzzyBuffersHit { pos: usize },
 
-    FindReferences { promise_op: Option<SymbolUsagesPromise> },
+    FindReferences { promise_op: Option<WrappedSymbolUsagesPromise> },
 
     /*
     file, or identifier of scratchpad (to be filled)
