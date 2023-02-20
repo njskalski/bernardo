@@ -77,10 +77,11 @@ impl EditorView {
     pub fn new(
         providers: Providers,// TODO(#17) now navcomp is language specific, and editor can be "recycled" from say yaml to rs, requiring change of navcomp.
         nav_comp_group: NavCompGroupRef,
+        buffer: BufferSharedRef,
     ) -> Self {
         let editor = EditorWidget::new(providers.clone(),
                                        None,
-                                       None,
+                                       buffer,
         );
 
         let find_label = TextWidget::new(Box::new(PATTERN));
@@ -115,36 +116,47 @@ impl EditorView {
         }
     }
 
-    pub fn with_path(self, path: SPath) -> Self {
+    pub fn with_path(mut self, path: SPath) -> Self {
+        let navcomp = self.nav_comp_group.get_navcomp_for(&path);
+        let mut editor = self.editor;
+        editor.internal_mut().set_navcomp(navcomp);
+
         Self {
             start_path: Some(path),
-            ..self
-        }
-    }
-
-    pub fn with_path_op(self, path_op: Option<SPath>) -> Self {
-        Self {
-            start_path: path_op,
-            ..self
-        }
-    }
-
-    pub fn with_buffer(self, buffer: BufferSharedRef) -> Self {
-        let navcomp_op: Option<NavCompRef> = if let Some(buffer_lock) = buffer.lock() {
-            buffer_lock.get_path().map(|path| self.nav_comp_group.get_navcomp_for(path)).flatten()
-        } else {
-            error!("can't set navcomp - buffer lock aquisition failed");
-            None
-        };
-
-        let mut editor = self.editor;
-        editor.internal_mut().set_buffer(buffer, navcomp_op);
-
-        EditorView {
             editor,
             ..self
         }
     }
+
+    pub fn with_path_op(mut self, path_op: Option<SPath>) -> Self {
+        let mut editor = self.editor;
+        if let Some(path) = path_op.as_ref() {
+            editor.internal_mut().set_navcomp(self.nav_comp_group.get_navcomp_for(path));
+        }
+
+        Self {
+            start_path: path_op,
+            editor,
+            ..self
+        }
+    }
+
+    // pub fn with_buffer(self, buffer: BufferSharedRef) -> Self {
+    //     let navcomp_op: Option<NavCompRef> = if let Some(buffer_lock) = buffer.lock() {
+    //         buffer_lock.get_path().map(|path| self.nav_comp_group.get_navcomp_for(path)).flatten()
+    //     } else {
+    //         error!("can't set navcomp - buffer lock aquisition failed");
+    //         None
+    //     };
+    //
+    //     let mut editor = self.editor;
+    //     editor.internal_mut().set_buffer(buffer, navcomp_op);
+    //
+    //     EditorView {
+    //         editor,
+    //         ..self
+    //     }
+    // }
 
     pub fn get_buffer_ref(&self) -> &BufferSharedRef {
         self.editor.internal().get_buffer()

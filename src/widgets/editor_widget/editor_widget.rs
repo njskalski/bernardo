@@ -170,12 +170,9 @@ impl EditorWidget {
 
     pub fn new(providers: Providers,
                navcomp: Option<NavCompRef>,
-               buffer_op: Option<BufferSharedRef>,
+               buffer: BufferSharedRef,
     ) -> EditorWidget {
-        let tree_sitter_clone = providers.tree_sitter().clone();
-        let buffer = buffer_op.unwrap_or(BufferSharedRef::new_empty(Some(tree_sitter_clone)));
-
-        EditorWidget {
+        let mut res = EditorWidget {
             wid: get_new_widget_id(),
             providers,
             readonly: false,
@@ -189,7 +186,11 @@ impl EditorWidget {
             requested_hover: None,
             navcomp_symbol: None,
 
-        }
+        };
+
+        res.update_navcomp();
+
+        res
     }
 
     pub fn with_readonly(self) -> Self {
@@ -215,10 +216,7 @@ impl EditorWidget {
     }
 
     //TODO have a feeling that navcomp can be merged with buffer
-    pub fn set_buffer(&mut self, buffer: BufferSharedRef, navcomp_op: Option<NavCompRef>) {
-        self.buffer = buffer;
-        self.navcomp = navcomp_op;
-
+    fn update_navcomp(&mut self) {
         if let Some(buffer) = self.buffer.lock() {
             match (self.navcomp.clone(),
                    buffer.get_path().clone(),

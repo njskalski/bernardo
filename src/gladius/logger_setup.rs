@@ -10,7 +10,7 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("bernardo::fs::local_filesystem_front", log::LevelFilter::Error),
     ("bernardo::gladius::run_gladius", log::LevelFilter::Info),
     ("bernardo::text::buffer_state", log::LevelFilter::Warn),
-    ("bernardo::tsw::tree_sitter_wrapper", log::LevelFilter::Error),
+    ("bernardo::tsw::tree_sitter_wrapper", log::LevelFilter::Debug),
     ("bernardo", log::LevelFilter::Debug),
     ("bernardo::widgets::completion_widget", log::LevelFilter::Debug),
     ("bernardo::widgets::dir_tree_view", log::LevelFilter::Warn),

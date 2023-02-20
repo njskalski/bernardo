@@ -10,6 +10,7 @@ use tree_sitter::Point;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::experiments::clipboard::ClipboardRef;
+use crate::experiments::filename_to_language::filename_to_language;
 use crate::experiments::regex_search::FindError;
 use crate::fs::path::SPath;
 use crate::io::output::Output;
@@ -98,19 +99,52 @@ impl BufferState {
         }
     }
 
-    // pub fn with_file_front(self, ff: SPath) -> Self {
-    //     Self {
-    //         document_identifier: Some(ff),
-    //         ..self
-    //     }
-    // }
-
     pub fn with_text<T: AsRef<str>>(self, text: T) -> Self {
         let rope = ropey::Rope::from_str(text.as_ref());
-        Self {
+        let mut result = Self {
             history: vec![ContentsAndCursors::default().with_rope(rope)],
             history_pos: 0,
             ..self
+        };
+
+        result.set_parsing_tuple();
+
+        result
+    }
+
+    fn set_parsing_tuple(&mut self) -> bool {
+        let lang_id = match self.lang_id {
+            Some(li) => li,
+            None => {
+                match self.get_path().map(filename_to_language).flatten() {
+                    None => {
+                        error!("couldn't determine language");
+                        return false;
+                    }
+                    Some(lang_id) => lang_id,
+                }
+            }
+        };
+
+        let copy_rope = self.text().rope.clone();
+
+        if let Some(tree_sitter_clone) = self.tree_sitter_op.as_ref().map(|r| r.clone()) {
+            let parse_success: bool = self.text_mut().parse(tree_sitter_clone, lang_id);
+
+            if parse_success {
+                self.text_mut().parsing.as_mut().map(|parsing| {
+                    if !parsing.try_reparse(&copy_rope) {
+                        error!("failed try_reparse");
+                    }
+                });
+                true
+            } else {
+                error!("creation of parse_tuple failed");
+                false
+            }
+        } else {
+            error!("will not parse, because TreeSitter not available - simplified buffer?");
+            false
         }
     }
 
@@ -118,28 +152,16 @@ impl BufferState {
     This is expected to be used only in construction, it clears the history.
      */
     pub fn with_text_from_rope(self, rope: Rope, lang_id: Option<LangId>) -> Self {
-        let copy_rope = rope.clone();
-        let mut text = ContentsAndCursors::default().with_rope(rope);
+        let text = ContentsAndCursors::default().with_rope(rope);
 
-        if let Some(lang_id) = lang_id {
-            if let Some(tree_sitter) = self.tree_sitter_op.as_ref() {
-                if text.parse(tree_sitter.clone(), lang_id) {
-                    text.parsing.as_mut().map(|parsing| {
-                        parsing.try_reparse(&copy_rope);
-                    });
-                } else {
-                    error!("creation of parse_tuple failed");
-                }
-            } else {
-                error!("will not parse, because TreeSitter not available - simplified buffer?");
-            }
-        }
-
-        let res = Self {
+        let mut res = Self {
             history: vec![text],
             history_pos: 0,
+            lang_id,
             ..self
         };
+
+        res.set_parsing_tuple();
 
         res
     }
@@ -195,6 +217,7 @@ impl BufferState {
         }
 
         self.lang_id = lang_id;
+        self.set_parsing_tuple();
     }
 
     pub fn cursors(&self) -> &CursorSet {

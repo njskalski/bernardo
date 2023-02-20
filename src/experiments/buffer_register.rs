@@ -45,6 +45,22 @@ impl BufferRegister {
         }).flatten()
     }
 
+    pub fn open_new_file(&mut self, providers: &Providers) -> BufferSharedRef {
+        let doc_id = DocumentIdentifier::new_unique();
+
+        let buffer_state = BufferState::full(
+            Some(providers.tree_sitter().clone()),
+            doc_id.clone(),
+        );
+
+        let bsr = BufferSharedRef::new_from_buffer(buffer_state);
+
+        // saving for later
+
+        self.buffers.insert(doc_id, bsr.clone());
+        bsr
+    }
+
     pub fn open_file(&mut self, providers: &Providers, path: &SPath) -> OpenResult {
         if let Some(id) = self.get_id_from_path(path) {
             let bsr = self.buffers.get(&id).unwrap();

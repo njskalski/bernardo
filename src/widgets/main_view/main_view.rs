@@ -137,11 +137,19 @@ impl MainView {
     }
 
     fn open_empty_editor_and_focus(&mut self) {
+        let buffer = if let Some(mut buffer_register) = self.providers.buffer_register().try_write().ok() {
+            buffer_register.open_new_file(&self.providers)
+        } else {
+            error!("failed to acquire register lock");
+            return;
+        };
+        
         self.displays.push(
             MainViewDisplay::Editor(
                 EditorView::new(
                     self.providers.clone(),
                     self.nav_comp_group.clone(),
+                    buffer,
                 )
             )
         );
@@ -166,7 +174,7 @@ impl MainView {
 
     fn get_editor_idx_for(&self, ff: &SPath) -> Option<usize> {
         let register = unpack_or_e!(self.providers.buffer_register().try_read().ok(), None, "failed locking register");
-        let buffer_shared_ref = unpack_or_e!(register.get_buffer_ref_from_path(ff), None, "no buffer for path");
+        let buffer_shared_ref = unpack_or!(register.get_buffer_ref_from_path(ff), None, "no buffer for path");
 
         for (idx, display) in self.displays.iter().enumerate() {
             match display {
@@ -191,14 +199,15 @@ impl MainView {
         let mut buffer_shared_ref = buffer_shared_ref?;
 
         if let Some(mut buffer_lock) = buffer_shared_ref.lock_rw() {
-            buffer_lock.set_lang(filename_to_language(&ff))
+            buffer_lock.set_lang(filename_to_language(&ff));
         }
 
         self.displays.push(
             MainViewDisplay::Editor(
                 EditorView::new(self.providers.clone(),
                                 self.nav_comp_group.clone(),
-                ).with_buffer(buffer_shared_ref).with_path_op(
+                                buffer_shared_ref,
+                ).with_path_op(
                     ff.parent()
                 ),
             )
