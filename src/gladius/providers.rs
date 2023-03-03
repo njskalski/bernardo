@@ -13,6 +13,7 @@ use crate::experiments::clipboard::ClipboardRef;
 use crate::fs::fsf_ref::FsfRef;
 use crate::gladius::navcomp_loader::NavCompLoader;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::w7e::navcomp_group::NavCompGroup;
 
 // do not share via Arc, we want to be able to "overload" providers in tests or exotic cases
 #[derive(Clone)]
@@ -24,6 +25,7 @@ pub struct Providers {
     tree_sitter: Arc<TreeSitterWrapper>,
 
     navcomp_loader: Arc<Box<dyn NavCompLoader>>,
+    navcomp_group: Arc<RwLock<NavCompGroup>>,
 
     buffer_register: BufferRegisterRef,
 }
@@ -47,10 +49,10 @@ impl Providers {
             theme,
             tree_sitter,
             navcomp_loader,
+            navcomp_group: Arc::new(RwLock::new(NavCompGroup::new())),
             buffer_register: Arc::new(RwLock::new(BufferRegister::new())),
         }
     }
-
 
     pub fn fsf(&self) -> &FsfRef {
         &self.fsf
@@ -81,4 +83,6 @@ impl Providers {
     }
 
     pub fn buffer_register(&self) -> &BufferRegisterRef { &self.buffer_register }
+
+    pub fn navcomp_group(&self) -> &Arc<RwLock<NavCompGroup>> { &self.navcomp_group }
 }

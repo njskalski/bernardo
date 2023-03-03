@@ -104,7 +104,7 @@ pub type SymbolPromise = Box<dyn Promise<Option<NavCompSymbol>> + 'static>;
 pub type SymbolUsagesPromise = Box<dyn Promise<Vec<SymbolUsage>> + 'static>;
 
 // this is a wrapper around LSP and "similar services".
-pub trait NavCompProvider: Debug {
+pub trait NavCompProvider: Debug + Send + Sync {
     /*
     file_contents are strictly LSP requirement
      */

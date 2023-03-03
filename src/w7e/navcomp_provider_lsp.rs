@@ -7,7 +7,6 @@ use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error};
 use lsp_types::{CompletionResponse, CompletionTextEdit, DocumentSymbolResponse, Position, SymbolKind};
 
-use crate::unpack_or_e;
 use crate::fs::path::SPath;
 use crate::lsp_client::lsp_client::LspWrapper;
 use crate::lsp_client::lsp_io_error::LspIOError;
@@ -15,6 +14,7 @@ use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::lsp_client::lsp_write_error::LspWriteError;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
+use crate::unpack_or_e;
 use crate::w7e::navcomp_group::NavCompTickSender;
 use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, StupidSubstituteMessage, SymbolContextActionsPromise, SymbolPromise, SymbolType, SymbolUsage, SymbolUsagesPromise};
 
@@ -45,7 +45,7 @@ pub struct NavCompProviderLsp {
     read_error_channel: (Sender<LspReadError>, Receiver<LspReadError>),
 
     //
-    crashed: Cell<bool>,
+    crashed: RwLock<bool>,
 }
 
 impl NavCompProviderLsp {
@@ -67,7 +67,7 @@ impl NavCompProviderLsp {
                         // TODO this will get lang specific
                         triggers: vec![".".to_string(), "::".to_string()],
                         read_error_channel: error_channel,
-                        crashed: Cell::new(false),
+                        crashed: RwLock::new(false),
                     }
                 )
             } else {
@@ -81,7 +81,9 @@ impl NavCompProviderLsp {
 
     pub fn eat_write_error(&self, error: LspWriteError) {
         error!("LSP: marking as crashed, failed write: {:?}", error);
-        self.crashed.set(true);
+        self.crashed.try_write().map(|mut lock| *lock = true).unwrap_or_else(|_| {
+            error!("failed to acquire lock for crashed field. This is super weird, it shouldn't be even shared.");
+        });
     }
 }
 
