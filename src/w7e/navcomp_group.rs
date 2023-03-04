@@ -20,6 +20,11 @@ pub type NavCompTickRecv = crossbeam_channel::Receiver<NavCompTick>;
 This class is supposed to group all available navcomp providers so editor can choose from them
 whenever they want.
 
+There are two ways of requesting a navcomp: first is with path, always preferred.
+Second is with "language".
+
+It is considered faulty usage to request with language, when path is available.
+
 TODO: navcomps probably should be scoped to a path/dirtree, or at least expose a "for file" method
  */
 pub struct NavCompGroup {

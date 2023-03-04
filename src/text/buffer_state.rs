@@ -231,6 +231,10 @@ impl BufferState {
         self.set_parsing_tuple();
     }
 
+    pub fn get_lang_id(&self) -> Option<LangId> {
+        self.lang_id.clone()
+    }
+
     pub fn cursors(&self) -> &CursorSet {
         &self.text().cursor_set
     }

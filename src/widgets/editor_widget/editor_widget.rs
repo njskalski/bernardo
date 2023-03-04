@@ -223,22 +223,38 @@ impl EditorWidget {
         &self.buffer
     }
 
-    //TODO have a feeling that navcomp can be merged with buffer
     fn update_navcomp(&mut self) {
-        if let Some(buffer) = self.buffer.lock() {
-            match (self.navcomp.clone(),
-                   buffer.get_path().clone(),
-            ) {
-                (Some(navcomp), Some(spath)) => {
-                    navcomp.file_open_for_edition(spath, buffer.text().rope.clone());
+        let buffer = unpack_or_e!(self.buffer.lock(), (), "failed locking buffer");
+
+        if self.navcomp.is_none() {
+            let navcomp_group = unpack_or_e!(self.providers.navcomp_group().try_read().ok(), (), "failed to lock navcompgroup");
+
+            let navcomp = if let Some(path) = buffer.get_path() {
+                navcomp_group.get_navcomp_for(path)
+            } else {
+                if let Some(lang) = buffer.get_lang_id() {
+                    navcomp_group.get_navcomp_for_lang(lang)
+                } else {
+                    None
                 }
-                _ => {
-                    debug!("not starting navigation, because navcomp is some: {}, ff is some: {}",
-                            self.navcomp.is_some(), buffer.get_path().is_some() )
-                }
+            };
+
+            self.navcomp = navcomp;
+        }
+
+        match (self.navcomp.as_ref(),
+               buffer.get_path(),
+        ) {
+            (Some(navcomp), Some(spath)) => {
+                navcomp.file_open_for_edition(spath, buffer.text().rope.clone());
             }
-        } else {
-            error!("failed locking buffer");
+            (Some(navcomp), None) => {
+                warn!("unimplemented variant - set navcomp but not path");
+            }
+            _ => {
+                debug!("not starting navigation, because navcomp is some: {}, ff is some: {}",
+                            self.navcomp.is_some(), buffer.get_path().is_some() )
+            }
         }
     }
 
