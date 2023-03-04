@@ -12,6 +12,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::FinalOutput;
 use crate::primitives::helpers::get_next_filename;
+use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::inspector::{inspect_workspace, InspectError};
 use crate::w7e::workspace::{LoadError, ScopeLoadErrors, Workspace};
 use crate::w7e::workspace::WORKSPACE_FILE_NAME;
@@ -88,14 +89,20 @@ pub fn run_gladius<
     // At this point it is guaranteed that we have a Workspace present, though it might be not saved!
 
     // Initializing handlers
-    let (nav_comp_group_ref, scope_errors) = workspace.initialize_handlers(providers.clone());
+    let scope_errors: Vec<HandlerLoadError> = match workspace.initialize_handlers(providers.clone()) {
+        Ok(maybe_errors) => maybe_errors,
+        Err(_) => {
+            error!("early, unrecoverable sync error");
+            return;
+        }
+    };
+
     if !scope_errors.is_empty() {
         debug!("{} handlers failed to load, details : {:?}", scope_errors.len(), scope_errors);
     }
 
     let mut main_view = MainView::new(
         providers.clone(),
-        nav_comp_group_ref.clone(),
     );
     for f in files.iter() {
         if !providers.fsf().descendant_checked(f).map(|ff| main_view.open_file(ff)).unwrap_or(false) {
@@ -104,6 +111,8 @@ pub fn run_gladius<
     }
 
     let mut recorded_input: Vec<InputEvent> = Vec::new();
+
+    let nav_comp_tick_receiver = providers.navcomp_group().try_read().map(|lock| lock.recvr().clone()).unwrap(); // TODO unwrap
 
     // Genesis
     'main:
@@ -163,7 +172,7 @@ pub fn run_gladius<
                 };
             }
 
-            recv(nav_comp_group_ref.recvr()) -> tick => {
+            recv(nav_comp_tick_receiver) -> tick => {
 
                 if providers.is_recording() {
                     recorded_input.push(InputEvent::Tick);

@@ -18,7 +18,7 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::search_pattern::SearchPattern;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::text::buffer_state::BufferState;
+use crate::text::buffer_state::{BufferState, SetFilePathResult};
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_group::NavCompGroupRef;
@@ -58,8 +58,6 @@ pub struct EditorView {
     replace_box: EditBoxWidget,
     replace_label: TextWidget,
 
-    nav_comp_group: NavCompGroupRef,
-
     state: EditorViewState,
     hover_dialog: Option<SaveFileDialogWidget>,
 
@@ -76,11 +74,9 @@ impl EditorView {
 
     pub fn new(
         providers: Providers,// TODO(#17) now navcomp is language specific, and editor can be "recycled" from say yaml to rs, requiring change of navcomp.
-        nav_comp_group: NavCompGroupRef,
         buffer: BufferSharedRef,
     ) -> Self {
         let editor = EditorWidget::new(providers.clone(),
-                                       None,
                                        buffer,
         );
 
@@ -109,7 +105,6 @@ impl EditorView {
             find_label,
             replace_box,
             replace_label,
-            nav_comp_group,
             state: EditorViewState::Simple,
             hover_dialog: None,
             start_path: None,
@@ -117,28 +112,22 @@ impl EditorView {
     }
 
     pub fn with_path(mut self, path: SPath) -> Self {
-        let navcomp = self.nav_comp_group.get_navcomp_for(&path);
-        let mut editor = self.editor;
-        editor.internal_mut().set_navcomp(navcomp);
-
-        Self {
+        let res = Self {
             start_path: Some(path),
-            editor,
+
             ..self
-        }
+        };
+
+        res
     }
 
     pub fn with_path_op(mut self, path_op: Option<SPath>) -> Self {
-        let mut editor = self.editor;
-        if let Some(path) = path_op.as_ref() {
-            editor.internal_mut().set_navcomp(self.nav_comp_group.get_navcomp_for(path));
-        }
-
-        Self {
+        let res = Self {
             start_path: path_op,
-            editor,
             ..self
-        }
+        };
+
+        res
     }
 
     // pub fn with_buffer(self, buffer: BufferSharedRef) -> Self {
@@ -209,16 +198,22 @@ impl EditorView {
 
     fn after_positive_save(&mut self, buffer_mut: &mut BufferState, path: &SPath) -> Option<MainViewMsg> {
         // setting the file path
-        let new_document_identifier = self.set_file_name(buffer_mut, path);
+        let set_path_result = self.set_file_name(buffer_mut, path);
 
-        // updating the "save as dialog" starting position
-        path.parent().map(|_| {
-            self.start_path = Some(path.clone())
-        }).unwrap_or_else(|| {
-            error!("failed setting save_file_dialog starting position - most likely parent is outside fsf root");
-        });
+        if set_path_result.path_changed {
 
-        Some(MainViewMsg::BufferChangedName { updated_identifier: new_document_identifier })
+            // updating the "save as dialog" starting position
+            path.parent().map(|_| {
+                self.start_path = Some(path.clone())
+            }).unwrap_or_else(|| {
+                error!("failed setting save_file_dialog starting position - most likely parent is outside fsf root");
+            });
+
+
+            Some(MainViewMsg::BufferChangedName { updated_identifier: set_path_result.document_id })
+        } else {
+            None
+        }
     }
 
     /*
@@ -297,16 +292,8 @@ impl EditorView {
         }
     }
 
-    /*
-    Returns updated document identifier
-     */
-    fn set_file_name(&mut self, buffer_mut: &mut BufferState, path: &SPath) -> DocumentIdentifier {
-        let new_document_identifier = buffer_mut.set_file_front(Some(path.clone()));
-
-        let navcomp_op = self.nav_comp_group.get_navcomp_for(path);
-        self.editor.internal_mut().set_navcomp(navcomp_op);
-
-        new_document_identifier
+    fn set_file_name(&mut self, buffer_mut: &mut BufferState, path: &SPath) -> SetFilePathResult {
+        buffer_mut.set_file_path(Some(path.clone()))
     }
 
     pub fn get_path(&self) -> Option<SPath> {

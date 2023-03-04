@@ -85,9 +85,6 @@ pub struct MainView {
     // TODO PathBuf -> WrappedRcPath? See profiler.
     tree_widget: WithScroll<TreeViewWidget<SPath, FileTreeNode>>,
 
-    // TODO move to providers?
-    nav_comp_group: NavCompGroupRef,
-
     no_editor: NoEditorWidget,
     displays: Vec<MainViewDisplay>,
     display_idx: usize,
@@ -98,8 +95,7 @@ pub struct MainView {
 impl MainView {
     pub const MIN_SIZE: XY = XY::new(32, 10);
 
-    pub fn new(providers: Providers,
-               nav_comp_group: NavCompGroupRef,
+    pub fn new(providers: Providers
     ) -> MainView {
         let root = providers.fsf().root();
         let tree = TreeViewWidget::new(FileTreeNode::new(root.clone()))
@@ -124,7 +120,6 @@ impl MainView {
             display_state: None,
             tree_widget: WithScroll::new(ScrollDirection::Both, tree),
             displays: Vec::new(),
-            nav_comp_group,
             no_editor: NoEditorWidget::default(),
             display_idx: 0,
             hover: None,
@@ -143,12 +138,11 @@ impl MainView {
             error!("failed to acquire register lock");
             return;
         };
-        
+
         self.displays.push(
             MainViewDisplay::Editor(
                 EditorView::new(
                     self.providers.clone(),
-                    self.nav_comp_group.clone(),
                     buffer,
                 )
             )
@@ -205,7 +199,6 @@ impl MainView {
         self.displays.push(
             MainViewDisplay::Editor(
                 EditorView::new(self.providers.clone(),
-                                self.nav_comp_group.clone(),
                                 buffer_shared_ref,
                 ).with_path_op(
                     ff.parent()

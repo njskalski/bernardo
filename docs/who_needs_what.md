@@ -4,30 +4,32 @@ This file is a simplified "map" of items Gladius uses to do it's things, and the
 to put them in terms of ownership.
 
 ```mermaid
-flowchart 
+flowchart
+    BufferState
+    subgraph BufferRegister
+        DocumentId -.-> DocIdSPath[SPath]
+    end
 
-BufferRegister 
-DocumentId
-BufferState
+    SPath <--> DocIdSPath
 
-DocumentIdIdentifies{DocumentId\n identifies BufferState,\n even if it's not saved}
+    subgraph BufferState
+        
+    end
 
-DocumentId --- DocumentIdIdentifies
-BufferState --- DocumentIdIdentifies
+    Workspace == creates ==> NavComp
 
-BufferRegisterMaps{BufferRegister maps\nDocumentIds\nwith\n BufferStates}
-DocumentId --- BufferRegisterMaps
-BufferState --- BufferRegisterMaps
-BufferRegister --- BufferRegisterMaps
+    DocumentId --> BufferState
+    BufferState -.-> SPath
 
-W7e --- ProducesNavComp
-Config --- ProducesNavComp
-
-NavComp
-
-ProducesNavComp{Produces\nNavComp} --> NavComp
-ProducesSPaths{Produces\nSPaths} --> SPath
-
-SPath
+    %%
+    %%W7e --- ProducesNavComp
+    %%Config --- ProducesNavComp
+    %%
+    %%NavComp
+    %%
+    %%ProducesNavComp{Produces\nNavComp } --> NavComp
+    %%ProducesSPaths{Produces\nSPaths} --> SPath
+    %%
+    %%SPath
 
 ```

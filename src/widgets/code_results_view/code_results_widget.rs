@@ -187,7 +187,6 @@ impl Widget for CodeResultsView {
 
             let mut edit_widget = EditorWidget::new(
                 self.providers.clone(),
-                None, // TODO add navcomp
                 buffer_state_ref,
             ).with_readonly()
                 .with_ignore_input_altogether();

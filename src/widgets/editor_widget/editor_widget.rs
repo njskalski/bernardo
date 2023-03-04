@@ -169,9 +169,15 @@ impl EditorWidget {
     const MIN_HOVER_WIDTH: u16 = 15;
 
     pub fn new(providers: Providers,
-               navcomp: Option<NavCompRef>,
                buffer: BufferSharedRef,
     ) -> EditorWidget {
+        let buffer_named: bool = buffer.lock().map(|lock| lock.get_path().is_some()).unwrap_or_else(
+            || {
+                error!("failed to lock buffer");
+                false
+            }
+        );
+
         let mut res = EditorWidget {
             wid: get_new_widget_id(),
             providers,
@@ -182,13 +188,15 @@ impl EditorWidget {
             buffer,
             kite: XY::ZERO,
             state: EditorState::Editing,
-            navcomp,
+            navcomp: None,
             requested_hover: None,
             navcomp_symbol: None,
 
         };
 
-        res.update_navcomp();
+        if buffer_named {
+            res.after_path_change();
+        }
 
         res
     }
@@ -207,8 +215,8 @@ impl EditorWidget {
         }
     }
 
-    pub fn set_navcomp(&mut self, navcomp: Option<NavCompRef>) {
-        self.navcomp = navcomp;
+    fn after_path_change(&mut self) {
+        self.update_navcomp();
     }
 
     pub fn get_buffer(&self) -> &BufferSharedRef {
@@ -233,25 +241,6 @@ impl EditorWidget {
             error!("failed locking buffer");
         }
     }
-
-    // pub fn with_buffer(mut self, buffer: BufferSharedRef, navcomp_op: Option<NavCompRef>) -> Self {
-    //     self.buffer = buffer;
-    //     self.navcomp = navcomp_op;
-    //     let buffer = unpack_or!(self.buffer.lock());
-    //     let contents = buffer.text().rope.clone();
-    //
-    //     match (self.navcomp.clone(), self.buffer.get_path()) {
-    //         (Some(navcomp), Some(spath)) => {
-    //             navcomp.file_open_for_edition(spath, contents);
-    //         }
-    //         _ => {
-    //             debug!("not starting navigation, because navcomp is some: {}, ff is some: {}",
-    //                 self.navcomp.is_some(), self.buffer.get_path().is_some() )
-    //         }
-    //     }
-    //
-    //     self
-    // }
 
     // This updates the "anchor" of view to match the direction of editing. Remember, the scroll will
     // follow the "anchor" with least possible change.

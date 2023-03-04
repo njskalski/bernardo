@@ -48,6 +48,11 @@ pub enum BufferType {
     SingleLine,
 }
 
+pub struct SetFilePathResult {
+    pub document_id: DocumentIdentifier,
+    pub path_changed: bool,
+}
+
 #[derive(Debug)]
 pub struct BufferState {
     subtype: BufferType,
@@ -192,15 +197,21 @@ impl BufferState {
     /*
     Returns updated DocumentIdentifier
      */
-    pub fn set_file_front(&mut self, ff_op: Option<SPath>) -> DocumentIdentifier {
+    pub fn set_file_path(&mut self, file_path_op: Option<SPath>) -> SetFilePathResult {
         // TODO on update, I should break the history
 
-        if ff_op.is_none() {
+        if file_path_op.is_none() {
             warn!("I can't think about scenario where we change ff to None, but here it happened");
         }
 
-        self.document_identifier.file_path = ff_op;
-        self.document_identifier.clone()
+        let changed = self.document_identifier.file_path != file_path_op;
+
+        self.document_identifier.file_path = file_path_op;
+
+        SetFilePathResult {
+            document_id: self.document_identifier.clone(),
+            path_changed: changed,
+        }
     }
 
     pub fn get_path(&self) -> Option<&SPath> {

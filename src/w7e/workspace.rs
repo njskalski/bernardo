@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock, TryLockResult};
 
 use log::debug;
 use serde::{Deserialize, Serialize};
@@ -98,9 +98,9 @@ impl Workspace {
         }
     }
 
-    pub fn initialize_handlers(&mut self, providers: Providers) -> (NavCompGroupRef, Vec<HandlerLoadError>) {
+    pub fn initialize_handlers(&mut self, providers: Providers) -> Result<Vec<HandlerLoadError>, ()> {
         let mut errors: Vec<HandlerLoadError> = Vec::default();
-        let mut nav_comp_group = NavCompGroup::new();
+        let mut nav_comp_group = providers.navcomp_group().try_write().map_err(|_| ())?;
 
         for scope in self.scopes.iter_mut() {
             match providers.navcomp_loader().load_handler(
@@ -129,7 +129,7 @@ impl Workspace {
 
         debug!("created navcomp group with {} items", nav_comp_group.len());
 
-        (Arc::new(nav_comp_group), errors)
+        Ok(errors)
     }
 
     pub fn scopes(&self) -> &Vec<ProjectScope> {
