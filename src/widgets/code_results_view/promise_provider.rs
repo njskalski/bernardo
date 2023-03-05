@@ -4,9 +4,9 @@ use log::debug;
 
 use crate::io::loading_state::LoadingState;
 use crate::primitives::printable::Printable;
-use crate::promise::promise::PromiseState;
+use crate::promise::promise::{PromiseState, UpdateResult};
 use crate::w7e::navcomp_provider::{SymbolUsage, SymbolUsagesPromise};
-use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
+use crate::widgets::code_results_view::code_results_provider::{CodeResultsProvider, PollResult};
 
 #[derive(Debug)]
 pub struct WrappedSymbolUsagesPromise {
@@ -28,9 +28,15 @@ impl CodeResultsProvider for WrappedSymbolUsagesPromise {
         Box::new(format!("Usages of symbol \"{}\"", &self.symbol))
     }
 
-    fn poll(&mut self) {
+    fn poll(&mut self) -> PollResult {
+        let old_state = self.loading_state();
         let update_result = self.promise.update();
         debug!("ticking result: {:?}", update_result);
+        let new_state = self.loading_state();
+        PollResult {
+            old_state,
+            new_state,
+        }
     }
 
     fn loading_state(&self) -> LoadingState {

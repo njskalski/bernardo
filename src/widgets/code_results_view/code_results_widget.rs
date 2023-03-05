@@ -6,6 +6,7 @@ use std::sync::RwLockWriteGuard;
 
 use either::Left;
 use log::{debug, error, warn};
+use regex::internal::Input;
 
 use crate::{subwidget, unpack_or_e};
 use crate::config::theme::Theme;
@@ -105,8 +106,13 @@ impl Widget for CodeResultsView {
     fn prelayout(&mut self) {
         // TODO this method is stitched together from bullshit with ducttape. It's to be rewritten, after I figure out which items go well together.
 
-        if self.data_provider.loading_state() == LoadingState::InProgress {
-            self.data_provider.poll();
+        let old_state = self.data_provider.loading_state();
+
+        if old_state == LoadingState::NotStarted || old_state == LoadingState::InProgress {
+            let poll_result = self.data_provider.poll();
+            if poll_result.has_first_result() {
+                self.set_focused(subwidget!(Self.item_list))
+            }
         }
 
         {
@@ -286,7 +292,11 @@ impl ComplexWidget for CodeResultsView {
     }
 
     fn get_default_focused(&self) -> SubwidgetPointer<Self> {
-        subwidget!(Self.item_list)
+        if self.item_list.internal().items().next().is_none() {
+            subwidget!(Self.label)
+        } else {
+            subwidget!(Self.item_list)
+        }
     }
 
     fn set_display_state(&mut self, display_state: DisplayState<Self>) {
