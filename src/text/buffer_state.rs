@@ -16,6 +16,7 @@ use crate::fs::path::SPath;
 use crate::io::output::Output;
 use crate::primitives::common_edit_msgs::{_apply_cem, CommonEditMsg};
 use crate::primitives::cursor_set::CursorSet;
+use crate::primitives::has_invariant::HasInvariant;
 use crate::text::contents_and_cursors::ContentsAndCursors;
 use crate::text::text_buffer::{LinesIter, TextBuffer};
 use crate::tsw::lang_id::LangId;
@@ -94,6 +95,7 @@ impl BufferState {
             self.history.swap(0, self.history_pos)
         }
         self.history.truncate(1);
+        self.history_pos = 0;
     }
 
     pub fn subtype(&self) -> &BufferType {
@@ -459,6 +461,16 @@ impl BufferState {
                 self.undo_milestone();
                 return false;
             }
+        }
+
+        true
+    }
+}
+
+impl HasInvariant for BufferState {
+    fn check_invariant(&self) -> bool {
+        if self.history_pos >= self.history.len() {
+            return false;
         }
 
         true
