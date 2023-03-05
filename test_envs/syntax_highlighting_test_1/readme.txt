@@ -1,0 +1,1 @@
+This test env is a base for test "whether syntax highlighting in Rust still works". 

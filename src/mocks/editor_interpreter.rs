@@ -163,7 +163,7 @@ impl<'a> EditorInterpreter<'a> {
         self.mock_output.buffer.lines_iter().with_rect(self.rect_without_scroll).skip(screen_pos_y as usize).next()
     }
 
-    pub fn get_all_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_all_visible_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
         self.mock_output.buffer.lines_iter().with_rect(self.rect_without_scroll).map(move |line| {
             LineIdxTuple {
@@ -189,7 +189,7 @@ impl<'a> EditorInterpreter<'a> {
     CURRENTLY DOES NOT SUPPORT MULTI LINE CURSORS
     also, this is not properly tested. It's Bullshit and Duct Tape™ quality.
      */
-    pub fn get_visible_coded_cursor_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_visible_cursor_lines_with_coded_cursors(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
         // Setting colors
         let mut under_cursor = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
         if !self.is_editor_focused() {

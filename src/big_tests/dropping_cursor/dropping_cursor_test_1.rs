@@ -15,7 +15,7 @@ fn dropping_cursor_test_1() {
     assert!(full_setup.wait_for(|full_setup| -> bool {
         let lines: Vec<String> = full_setup.get_first_editor()
             .unwrap()
-            .get_visible_coded_cursor_lines()
+            .get_visible_cursor_lines_with_coded_cursors()
             .map(|line| {
                 line.contents.text
             })
@@ -29,7 +29,7 @@ fn dropping_cursor_test_1() {
     assert!(full_setup.wait_for(|full_setup| -> bool {
         let lines: Vec<String> = full_setup.get_first_editor()
             .unwrap()
-            .get_visible_coded_cursor_lines()
+            .get_visible_cursor_lines_with_coded_cursors()
             .map(|line| {
                 line.contents.text
             })
@@ -50,7 +50,7 @@ fn dropping_cursor_test_1() {
     assert!(full_setup.wait_for(|full_setup| -> bool {
         let lines: Vec<String> = full_setup.get_first_editor()
             .unwrap()
-            .get_visible_coded_cursor_lines()
+            .get_visible_cursor_lines_with_coded_cursors()
             .map(|line| {
                 line.contents.text
             })
@@ -64,7 +64,7 @@ fn dropping_cursor_test_1() {
     assert!(full_setup.wait_for(|full_setup| -> bool {
         let lines: Vec<String> = full_setup.get_first_editor()
             .unwrap()
-            .get_visible_coded_cursor_lines()
+            .get_visible_cursor_lines_with_coded_cursors()
             .map(|line| {
                 line.contents.text
             })
@@ -81,7 +81,7 @@ fn dropping_cursor_test_1() {
     assert!(full_setup.wait_for(|full_setup| -> bool {
         let lines: Vec<String> = full_setup.get_first_editor()
             .unwrap()
-            .get_visible_coded_cursor_lines()
+            .get_visible_cursor_lines_with_coded_cursors()
             .map(|line| {
                 line.contents.text
             })

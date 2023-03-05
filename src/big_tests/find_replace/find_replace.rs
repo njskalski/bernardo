@@ -96,7 +96,7 @@ fn actual_find() {
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().get_visible_coded_cursor_lines().find(|line| {
+        full_setup.get_first_editor().unwrap().get_visible_cursor_lines_with_coded_cursors().find(|line| {
             debug!("line [{}]", line.contents.text);
             line.contents.text.contains("::(path]")
         }).is_some()
@@ -105,7 +105,7 @@ fn actual_find() {
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().get_visible_coded_cursor_lines().find(|line| {
+        full_setup.get_first_editor().unwrap().get_visible_cursor_lines_with_coded_cursors().find(|line| {
             debug!("line [{}]", line.contents.text);
             line.contents.text.contains("let (path] =")
         }).is_some()
@@ -144,13 +144,13 @@ fn actual_replace() {
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().get_all_lines().find(
+        full_setup.get_first_editor().unwrap().get_all_visible_lines().find(
             |line| line.contents.text.contains("use std::wrath::PathBuf;")
         ).is_some()
     }));
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().get_visible_coded_cursor_lines().find(|line| {
+        full_setup.get_first_editor().unwrap().get_visible_cursor_lines_with_coded_cursors().find(|line| {
             debug!("line [{}]", line.contents.text);
             line.contents.text.contains("let (path] =")
         }).is_some()
@@ -159,7 +159,7 @@ fn actual_replace() {
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().get_all_lines().find(
+        full_setup.get_first_editor().unwrap().get_all_visible_lines().find(
             |line| line.contents.text.contains("let wrath = PathBuf")
         ).is_some()
     }));

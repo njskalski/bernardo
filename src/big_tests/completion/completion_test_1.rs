@@ -71,7 +71,7 @@ fn completion_test_1() {
     assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().next().unwrap().contents.text.contains("path.into_boxed_path")));
     assert!(full_setup.wait_for(|f|
         f.get_first_editor().unwrap()
-            .get_visible_coded_cursor_lines().next()
+            .get_visible_cursor_lines_with_coded_cursors().next()
             .map(|c| {
                 debug!("c [{:?}]", c.contents.text);
                 c.contents.text == "path.into_boxed_path#⏎"

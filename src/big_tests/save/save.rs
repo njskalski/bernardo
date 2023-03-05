@@ -19,7 +19,7 @@ fn save_saves() {
     let test_string = "this_is_a_test_string";
 
     // no string on screen
-    assert!(!full_setup.get_first_editor().unwrap().get_all_lines().fold(false, |acc, line| {
+    assert!(!full_setup.get_first_editor().unwrap().get_all_visible_lines().fold(false, |acc, line| {
         acc | line.contents.text.contains(test_string)
     }));
 
@@ -36,7 +36,7 @@ fn save_saves() {
     // it appeared on screen
     assert!(
         full_setup.wait_for(
-            |full_setup| full_setup.get_first_editor().unwrap().get_all_lines().fold(false, |acc, line| {
+            |full_setup| full_setup.get_first_editor().unwrap().get_all_visible_lines().fold(false, |acc, line| {
                 acc | line.contents.text.contains(test_string)
             })));
 
