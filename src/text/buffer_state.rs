@@ -68,186 +68,6 @@ pub struct BufferState {
 }
 
 impl BufferState {
-    pub fn full(tree_sitter_op: Option<Arc<TreeSitterWrapper>>, document_identifier: DocumentIdentifier) -> BufferState {
-        BufferState {
-            subtype: BufferType::Full,
-            tree_sitter_op,
-            history: vec![ContentsAndCursors::default()],
-            history_pos: 0,
-            lang_id: None,
-            document_identifier,
-        }
-    }
-
-    pub fn simplified_single_line() -> BufferState {
-        BufferState {
-            subtype: BufferType::SingleLine,
-            tree_sitter_op: None,
-            history: vec![ContentsAndCursors::default()],
-            history_pos: 0,
-            lang_id: None,
-            document_identifier: DocumentIdentifier::new_unique(),
-        }
-    }
-
-    pub fn remove_history(&mut self) {
-        if self.history_pos != 0 {
-            self.history.swap(0, self.history_pos)
-        }
-        self.history.truncate(1);
-        self.history_pos = 0;
-    }
-
-    pub fn subtype(&self) -> &BufferType {
-        &self.subtype
-    }
-
-    pub fn with_lang(self, lang_id: LangId) -> Self {
-        if self.subtype != BufferType::Full {
-            error!("setting lang in non TextBuffer::Full!");
-        }
-
-        Self {
-            lang_id: Some(lang_id),
-            ..self
-        }
-    }
-
-    pub fn with_text<T: AsRef<str>>(self, text: T) -> Self {
-        let rope = ropey::Rope::from_str(text.as_ref());
-        let mut result = Self {
-            history: vec![ContentsAndCursors::default().with_rope(rope)],
-            history_pos: 0,
-            ..self
-        };
-
-        result.set_parsing_tuple();
-
-        result
-    }
-
-    fn set_parsing_tuple(&mut self) -> bool {
-        let lang_id = match self.lang_id {
-            Some(li) => li,
-            None => {
-                match self.get_path().map(filename_to_language).flatten() {
-                    None => {
-                        error!("couldn't determine language: path = {:?}", self.get_path());
-                        return false;
-                    }
-                    Some(lang_id) => lang_id,
-                }
-            }
-        };
-
-        let copy_rope = self.text().rope.clone();
-
-        if let Some(tree_sitter_clone) = self.tree_sitter_op.as_ref().map(|r| r.clone()) {
-            let parse_success: bool = self.text_mut().parse(tree_sitter_clone, lang_id);
-
-            if parse_success {
-                self.text_mut().parsing.as_mut().map(|parsing| {
-                    if !parsing.try_reparse(&copy_rope) {
-                        error!("failed try_reparse");
-                    }
-                });
-                true
-            } else {
-                error!("creation of parse_tuple failed");
-                false
-            }
-        } else {
-            error!("will not parse, because TreeSitter not available - simplified buffer?");
-            false
-        }
-    }
-
-    /*
-    This is expected to be used only in construction, it clears the history.
-     */
-    pub fn with_text_from_rope(self, rope: Rope, lang_id: Option<LangId>) -> Self {
-        let text = ContentsAndCursors::default().with_rope(rope);
-
-        let mut res = Self {
-            history: vec![text],
-            history_pos: 0,
-            lang_id,
-            ..self
-        };
-
-        res.set_parsing_tuple();
-
-        res
-    }
-
-    pub fn char_range(&self, output: &mut dyn Output) -> Option<Range<usize>> {
-        let rope = &self.text().rope;
-
-        let sc = output.size_constraint();
-        let visible_rect = unpack_or!(sc.visible_hint(), None);
-
-        let first_line = visible_rect.upper_left().y as usize;
-        let beyond_last_lane = visible_rect.lower_right().y as usize + 1;
-
-        let first_char_idx = rope.try_line_to_char(first_line).ok()?;
-        let beyond_last_char_idx = rope.try_line_to_char(beyond_last_lane).ok()?;
-
-        Some(first_char_idx..beyond_last_char_idx)
-    }
-
-    // TODO move to text?
-    pub fn highlight(&self, char_range_op: Option<Range<usize>>) -> Vec<HighlightItem> {
-        let text = self.text();
-        text.parsing.as_ref().map(|parsing| {
-            parsing.highlight_iter(&text.rope, char_range_op)
-        }).flatten().unwrap_or(vec![])
-    }
-
-    /*
-    Returns updated DocumentIdentifier
-     */
-    pub fn set_file_path(&mut self, file_path_op: Option<SPath>) -> SetFilePathResult {
-        // TODO on update, I should break the history
-
-        if file_path_op.is_none() {
-            warn!("I can't think about scenario where we change ff to None, but here it happened");
-        }
-
-        let changed = self.document_identifier.file_path != file_path_op;
-
-        self.document_identifier.file_path = file_path_op;
-
-        SetFilePathResult {
-            document_id: self.document_identifier.clone(),
-            path_changed: changed,
-        }
-    }
-
-    pub fn get_path(&self) -> Option<&SPath> {
-        self.document_identifier.file_path.as_ref()
-    }
-
-    pub fn get_document_identifier(&self) -> &DocumentIdentifier {
-        &self.document_identifier
-    }
-
-    pub fn set_lang(&mut self, lang_id: Option<LangId>) {
-        if self.subtype != BufferType::Full {
-            error!("setting lang in non TextBuffer::Full!");
-        }
-
-        self.lang_id = lang_id;
-        self.set_parsing_tuple();
-    }
-
-    pub fn get_lang_id(&self) -> Option<LangId> {
-        self.lang_id.clone()
-    }
-
-    pub fn cursors(&self) -> &CursorSet {
-        &self.text().cursor_set
-    }
-
     pub fn apply_cem(&mut self,
                      mut cem: CommonEditMsg,
                      page_height: usize,
@@ -303,80 +123,6 @@ impl BufferState {
         }
 
         any_change
-    }
-
-    /*
-    This creates new milestone to undo/redo. The reason for it is that potentially multiple edits inform a single milestone.
-    Returns false only if buffer have not changed since last milestone (TODO: that part is not implemented).
-
-    set_milestone drops "forward history".
-     */
-    fn set_milestone(&mut self) -> bool {
-        self.history.truncate(self.history_pos + 1);
-        self.history.push(self.history[self.history_pos].clone());
-        self.history_pos += 1;
-        true
-    }
-
-    // to be used only in apply_cem
-    fn undo_milestone(&mut self) {
-        debug_assert!(self.history_pos + 1 == self.history.len());
-        debug_assert!(self.history_pos > 0);
-        self.history_pos -= 1;
-        self.history.truncate(self.history_pos + 1);
-    }
-
-    // removes previous to last milestone, and moves last one to it's position.
-    // used to chain multiple operations into a single milestone
-    fn reduce_merge_milestone(&mut self) {
-        debug_assert!(self.history_pos + 1 == self.history.len());
-        debug_assert!(self.history_pos >= 1);
-
-        self.history.remove(self.history_pos - 1);
-        self.history_pos -= 1;
-    }
-
-    pub fn text(&self) -> &ContentsAndCursors {
-        debug_assert!(self.history.len() >= self.history_pos);
-        &self.history[self.history_pos]
-    }
-
-    pub fn text_mut(&mut self) -> &mut ContentsAndCursors {
-        debug_assert!(self.history.len() >= self.history_pos);
-        &mut self.history[self.history_pos]
-    }
-
-    /*
-    This is an action destructive to cursor set - it uses only the supercursor.anchor as starting point for
-    search.
-
-    returns Ok(true) iff there was an occurrence
-     */
-    pub fn find_once(&mut self, pattern: &str) -> Result<bool, FindError> {
-        self.set_milestone();
-
-        match self.text_mut().find_once(pattern) {
-            Err(e) => {
-                // not even started the search: strip milestone and propagate error.
-                self.undo_milestone();
-                Err(e)
-            }
-            Ok(false) => {
-                // there was no occurrences, so nothing changed - strip milestone.
-                self.undo_milestone();
-                Ok(false)
-            }
-            Ok(true) => {
-                Ok(true)
-            }
-        }
-    }
-
-    pub fn streaming_iterator(&self) -> BufferStateStreamingIterator {
-        BufferStateStreamingIterator {
-            chunks: self.chunks(),
-            curr_chunk: None,
-        }
     }
 
     // returns whether a change happened. Undoes changes on fail.
@@ -464,6 +210,262 @@ impl BufferState {
         }
 
         true
+    }
+
+    pub fn char_range(&self, output: &mut dyn Output) -> Option<Range<usize>> {
+        let rope = &self.text().rope;
+
+        let sc = output.size_constraint();
+        let visible_rect = unpack_or!(sc.visible_hint(), None);
+
+        let first_line = visible_rect.upper_left().y as usize;
+        let beyond_last_lane = visible_rect.lower_right().y as usize + 1;
+
+        let first_char_idx = rope.try_line_to_char(first_line).ok()?;
+        let beyond_last_char_idx = rope.try_line_to_char(beyond_last_lane).ok()?;
+
+        Some(first_char_idx..beyond_last_char_idx)
+    }
+
+    pub fn cursors(&self) -> &CursorSet {
+        &self.text().cursor_set
+    }
+
+    /*
+    This is an action destructive to cursor set - it uses only the supercursor.anchor as starting point for
+    search.
+
+    returns Ok(true) iff there was an occurrence
+     */
+    pub fn find_once(&mut self, pattern: &str) -> Result<bool, FindError> {
+        self.set_milestone();
+
+        match self.text_mut().find_once(pattern) {
+            Err(e) => {
+                // not even started the search: strip milestone and propagate error.
+                self.undo_milestone();
+                Err(e)
+            }
+            Ok(false) => {
+                // there was no occurrences, so nothing changed - strip milestone.
+                self.undo_milestone();
+                Ok(false)
+            }
+            Ok(true) => {
+                Ok(true)
+            }
+        }
+    }
+
+    pub fn full(tree_sitter_op: Option<Arc<TreeSitterWrapper>>, document_identifier: DocumentIdentifier) -> BufferState {
+        BufferState {
+            subtype: BufferType::Full,
+            tree_sitter_op,
+            history: vec![ContentsAndCursors::default()],
+            history_pos: 0,
+            lang_id: None,
+            document_identifier,
+        }
+    }
+
+    pub fn get_path(&self) -> Option<&SPath> {
+        self.document_identifier.file_path.as_ref()
+    }
+
+    pub fn get_document_identifier(&self) -> &DocumentIdentifier {
+        &self.document_identifier
+    }
+
+    pub fn get_lang_id(&self) -> Option<LangId> {
+        self.lang_id.clone()
+    }
+
+    // TODO move to text?
+    pub fn highlight(&self, char_range_op: Option<Range<usize>>) -> Vec<HighlightItem> {
+        let text = self.text();
+        text.parsing.as_ref().map(|parsing| {
+            parsing.highlight_iter(&text.rope, char_range_op)
+        }).flatten().unwrap_or(vec![])
+    }
+
+    pub fn remove_history(&mut self) {
+        if self.history_pos != 0 {
+            self.history.swap(0, self.history_pos)
+        }
+        self.history.truncate(1);
+        self.history_pos = 0;
+    }
+
+    /* removes previous to last milestone, and moves last one to it's position.
+       used to chain multiple operations into a single milestone
+     */
+    fn reduce_merge_milestone(&mut self) {
+        debug_assert!(self.history_pos + 1 == self.history.len());
+        debug_assert!(self.history_pos >= 1);
+
+        self.history.remove(self.history_pos - 1);
+        self.history_pos -= 1;
+    }
+
+    /*
+    Returns updated DocumentIdentifier
+     */
+    pub fn set_file_path(&mut self, file_path_op: Option<SPath>) -> SetFilePathResult {
+        // TODO on update, I should break the history
+
+        if file_path_op.is_none() {
+            warn!("I can't think about scenario where we change ff to None, but here it happened");
+        }
+
+        let changed = self.document_identifier.file_path != file_path_op;
+
+        self.document_identifier.file_path = file_path_op;
+
+        SetFilePathResult {
+            document_id: self.document_identifier.clone(),
+            path_changed: changed,
+        }
+    }
+
+    pub fn set_lang(&mut self, lang_id: Option<LangId>) {
+        if self.subtype != BufferType::Full {
+            error!("setting lang in non TextBuffer::Full!");
+        }
+
+        self.lang_id = lang_id;
+        self.set_parsing_tuple();
+    }
+
+    /*
+    This creates new milestone to undo/redo. The reason for it is that potentially multiple edits inform a single milestone.
+    Returns false only if buffer have not changed since last milestone (TODO: that part is not implemented).
+
+    set_milestone drops "forward history".
+     */
+    fn set_milestone(&mut self) -> bool {
+        self.history.truncate(self.history_pos + 1);
+        self.history.push(self.history[self.history_pos].clone());
+        self.history_pos += 1;
+        true
+    }
+
+    fn set_parsing_tuple(&mut self) -> bool {
+        let lang_id = match self.lang_id {
+            Some(li) => li,
+            None => {
+                match self.get_path().map(filename_to_language).flatten() {
+                    None => {
+                        error!("couldn't determine language: path = {:?}", self.get_path());
+                        return false;
+                    }
+                    Some(lang_id) => lang_id,
+                }
+            }
+        };
+
+        let copy_rope = self.text().rope.clone();
+
+        if let Some(tree_sitter_clone) = self.tree_sitter_op.as_ref().map(|r| r.clone()) {
+            let parse_success: bool = self.text_mut().parse(tree_sitter_clone, lang_id);
+
+            if parse_success {
+                self.text_mut().parsing.as_mut().map(|parsing| {
+                    if !parsing.try_reparse(&copy_rope) {
+                        error!("failed try_reparse");
+                    }
+                });
+                true
+            } else {
+                error!("creation of parse_tuple failed");
+                false
+            }
+        } else {
+            error!("will not parse, because TreeSitter not available - simplified buffer?");
+            false
+        }
+    }
+
+    pub fn simplified_single_line() -> BufferState {
+        BufferState {
+            subtype: BufferType::SingleLine,
+            tree_sitter_op: None,
+            history: vec![ContentsAndCursors::default()],
+            history_pos: 0,
+            lang_id: None,
+            document_identifier: DocumentIdentifier::new_unique(),
+        }
+    }
+
+    pub fn streaming_iterator(&self) -> BufferStateStreamingIterator {
+        BufferStateStreamingIterator {
+            chunks: self.chunks(),
+            curr_chunk: None,
+        }
+    }
+
+    pub fn subtype(&self) -> &BufferType {
+        &self.subtype
+    }
+    
+    pub fn text(&self) -> &ContentsAndCursors {
+        debug_assert!(self.history.len() >= self.history_pos);
+        &self.history[self.history_pos]
+    }
+
+    pub fn text_mut(&mut self) -> &mut ContentsAndCursors {
+        debug_assert!(self.history.len() >= self.history_pos);
+        &mut self.history[self.history_pos]
+    }
+
+    // to be used only in apply_cem
+    fn undo_milestone(&mut self) {
+        debug_assert!(self.history_pos + 1 == self.history.len());
+        debug_assert!(self.history_pos > 0);
+        self.history_pos -= 1;
+        self.history.truncate(self.history_pos + 1);
+    }
+
+    pub fn with_lang(self, lang_id: LangId) -> Self {
+        if self.subtype != BufferType::Full {
+            error!("setting lang in non TextBuffer::Full!");
+        }
+
+        Self {
+            lang_id: Some(lang_id),
+            ..self
+        }
+    }
+
+    pub fn with_text<T: AsRef<str>>(self, text: T) -> Self {
+        let rope = ropey::Rope::from_str(text.as_ref());
+        let mut result = Self {
+            history: vec![ContentsAndCursors::default().with_rope(rope)],
+            history_pos: 0,
+            ..self
+        };
+
+        result.set_parsing_tuple();
+
+        result
+    }
+
+
+    /*
+    This is expected to be used only in construction, it clears the history.
+     */
+    pub fn with_text_from_rope(self, rope: Rope, lang_id: Option<LangId>) -> Self {
+        let text = ContentsAndCursors::default().with_rope(rope);
+
+        let mut res = Self {
+            history: vec![text],
+            history_pos: 0,
+            lang_id,
+            ..self
+        };
+
+        res.set_parsing_tuple();
+
+        res
     }
 }
 
