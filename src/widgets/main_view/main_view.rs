@@ -95,6 +95,124 @@ pub struct MainView {
 impl MainView {
     pub const MIN_SIZE: XY = XY::new(32, 10);
 
+    pub fn create_new_display_for_code_results(&mut self, data_provider: Box<dyn CodeResultsProvider>) -> Result<usize, ()> {
+        self.displays.push(
+            MainViewDisplay::ResultsView(
+                CodeResultsView::new(self.providers.clone(),
+                                     data_provider,
+                )
+            )
+        );
+
+        let res = self.displays.len() - 1;
+
+        Ok(res)
+    }
+
+    pub fn create_new_editor_for_file(&mut self, ff: &SPath) -> Result<usize, ReadError> {
+        // TODO this should return some other error, but they are swallowed anyway
+        let mut register_lock = unpack_or_e!(self.providers.buffer_register().try_write().ok(), Err(ReadError::FileNotFound), "failed to lock register");
+        let OpenResult {
+            buffer_shared_ref, opened
+        } = register_lock.open_file(&self.providers, ff);
+        let mut buffer_shared_ref = buffer_shared_ref?;
+
+        if let Some(mut buffer_lock) = buffer_shared_ref.lock_rw() {
+            buffer_lock.set_lang(filename_to_language(&ff));
+        }
+
+        self.displays.push(
+            MainViewDisplay::Editor(
+                EditorView::new(self.providers.clone(),
+                                buffer_shared_ref,
+                ).with_path_op(
+                    ff.parent()
+                ),
+            )
+        );
+
+        let res = self.displays.len() - 1;
+
+        Ok(res)
+    }
+
+
+    fn get_curr_display_ptr(&self) -> SubwidgetPointer<Self> {
+        if self.display_idx >= self.displays.len() {
+            if self.display_idx > 0 {
+                error!("current editor points further than number opened editors!");
+                return subwidget!(Self.tree_widget);
+            }
+
+            subwidget!(Self.no_editor)
+        } else {
+            let idx1 = self.display_idx;
+            let idx2 = self.display_idx;
+            SubwidgetPointer::new(
+                Box::new(move |s: &Self| { s.displays.get(idx1).map(|w| w.get_widget()).unwrap_or(&s.no_editor) }),
+                Box::new(move |s: &mut Self| { s.displays.get_mut(idx2).map(|w| w.get_widget_mut()).unwrap_or(&mut s.no_editor) }),
+            )
+        }
+    }
+
+
+    pub fn get_display_list_provider(&self) -> Box<dyn ItemsProvider> {
+        Box::new(self.displays.iter().enumerate().map(|(idx, display)| {
+            match display {
+                MainViewDisplay::Editor(editor) => {
+                    let text = match editor.get_path() {
+                        None => {
+                            format!("unnamed file #{}", idx)
+                        }
+                        Some(path) => {
+                            path.label().to_string()
+                        }
+                    };
+
+                    // TODO unnecessary Rc over new
+                    DisplayItem::new(idx, Rc::new(text))
+                }
+                MainViewDisplay::ResultsView(result) => {
+                    let text = result.get_text().clone();
+
+                    DisplayItem::new(idx, text.into())
+                }
+            }
+        }).collect::<Vec<_>>()
+        )
+    }
+
+    fn get_editor_idx_for(&self, ff: &SPath) -> Option<usize> {
+        let register = unpack_or_e!(self.providers.buffer_register().try_read().ok(), None, "failed locking register");
+        let buffer_shared_ref = unpack_or!(register.get_buffer_ref_from_path(ff), None, "no buffer for path");
+
+        for (idx, display) in self.displays.iter().enumerate() {
+            match display {
+                MainViewDisplay::Editor(editor) => {
+                    if *editor.get_buffer_ref() == buffer_shared_ref {
+                        return Some(idx);
+                    }
+                }
+                MainViewDisplay::ResultsView(_) => {}
+            }
+        }
+        None
+    }
+
+    fn get_hover_rect(sc: SizeConstraint) -> Option<Rect> {
+        sc.as_finite().map(|finite_sc| {
+            if finite_sc >= XY::new(10, 8) {
+                let margin = finite_sc / 10;
+                let res = Rect::new(margin,
+                                    finite_sc - margin * 2,
+                );
+                Some(res)
+            } else {
+                None
+            }
+        }).flatten()
+    }
+
     pub fn new(providers: Providers
     ) -> MainView {
         let root = providers.fsf().root();
@@ -126,11 +244,6 @@ impl MainView {
         }
     }
 
-    pub fn with_empty_editor(mut self) -> Self {
-        self.open_empty_editor_and_focus();
-        self
-    }
-
     fn open_empty_editor_and_focus(&mut self) {
         let buffer = if let Some(mut buffer_register) = self.providers.buffer_register().try_write().ok() {
             buffer_register.open_new_file(&self.providers)
@@ -152,80 +265,6 @@ impl MainView {
         self.set_focus_to_default();
     }
 
-    fn get_hover_rect(sc: SizeConstraint) -> Option<Rect> {
-        sc.as_finite().map(|finite_sc| {
-            if finite_sc >= XY::new(10, 8) {
-                let margin = finite_sc / 10;
-                let res = Rect::new(margin,
-                                    finite_sc - margin * 2,
-                );
-                Some(res)
-            } else {
-                None
-            }
-        }).flatten()
-    }
-
-    fn get_editor_idx_for(&self, ff: &SPath) -> Option<usize> {
-        let register = unpack_or_e!(self.providers.buffer_register().try_read().ok(), None, "failed locking register");
-        let buffer_shared_ref = unpack_or!(register.get_buffer_ref_from_path(ff), None, "no buffer for path");
-
-        for (idx, display) in self.displays.iter().enumerate() {
-            match display {
-                MainViewDisplay::Editor(editor) => {
-                    if *editor.get_buffer_ref() == buffer_shared_ref {
-                        return Some(idx);
-                    }
-                }
-                MainViewDisplay::ResultsView(_) => {}
-            }
-        }
-        None
-    }
-
-
-    pub fn create_new_editor_for_file(&mut self, ff: &SPath) -> Result<usize, ReadError> {
-        // TODO this should return some other error, but they are swallowed anyway
-        let mut register_lock = unpack_or_e!(self.providers.buffer_register().try_write().ok(), Err(ReadError::FileNotFound), "failed to lock register");
-        let OpenResult {
-            buffer_shared_ref, opened
-        } = register_lock.open_file(&self.providers, ff);
-        let mut buffer_shared_ref = buffer_shared_ref?;
-
-        if let Some(mut buffer_lock) = buffer_shared_ref.lock_rw() {
-            buffer_lock.set_lang(filename_to_language(&ff));
-        }
-
-        self.displays.push(
-            MainViewDisplay::Editor(
-                EditorView::new(self.providers.clone(),
-                                buffer_shared_ref,
-                ).with_path_op(
-                    ff.parent()
-                ),
-            )
-        );
-
-        let res = self.displays.len() - 1;
-
-        Ok(res)
-    }
-
-    pub fn create_new_display_for_code_results(&mut self, data_provider: Box<dyn CodeResultsProvider>) -> Result<usize, ()> {
-        self.displays.push(
-            MainViewDisplay::ResultsView(
-                CodeResultsView::new(self.providers.clone(),
-                                     data_provider,
-                )
-            )
-        );
-
-        let res = self.displays.len() - 1;
-
-        Ok(res)
-    }
-
-
     pub fn open_file(&mut self, ff: SPath) -> bool {
         debug!("opening file {:?}", ff);
 
@@ -242,6 +281,22 @@ impl MainView {
         }
     }
 
+    fn open_fuzzy_buffer_list_and_focus(&mut self) {
+        self.hover = Some(
+            HoverItem::FuzzySearch(
+                WithScroll::new(
+                    ScrollDirection::Vertical,
+                    FuzzySearchWidget::new(
+                        |_| Some(Box::new(MainViewMsg::CloseHover)),
+                        Some(self.providers.clipboard().clone()),
+                    ).with_provider(
+                        self.get_display_list_provider()
+                    ).with_draw_comment_setting(DrawComment::Highlighted))
+            )
+        );
+        self.set_focus_to_hover();
+    }
+
     fn open_fuzzy_search_in_files_and_focus(&mut self) {
         self.hover = Some(
             HoverItem::FuzzySearch(
@@ -256,70 +311,15 @@ impl MainView {
                 ),
             )
         );
-        self.set_focused_to_hover();
+        self.set_focus_to_hover();
     }
 
-    fn open_fuzzy_buffer_list_and_focus(&mut self) {
-        self.hover = Some(
-            HoverItem::FuzzySearch(
-                WithScroll::new(
-                    ScrollDirection::Vertical,
-                    FuzzySearchWidget::new(
-                        |_| Some(Box::new(MainViewMsg::CloseHover)),
-                        Some(self.providers.clipboard().clone()),
-                    ).with_provider(
-                        self.get_display_list_provider()
-                    ).with_draw_comment_setting(DrawComment::Highlighted))
-            )
-        );
-        self.set_focused_to_hover();
+    fn set_focus_to_default(&mut self) {
+        let ptr = self.get_curr_display_ptr();
+        self.set_focused(ptr);
     }
 
-    pub fn get_display_list_provider(&self) -> Box<dyn ItemsProvider> {
-        Box::new(self.displays.iter().enumerate().map(|(idx, display)| {
-            match display {
-                MainViewDisplay::Editor(editor) => {
-                    let text = match editor.get_path() {
-                        None => {
-                            format!("unnamed file #{}", idx)
-                        }
-                        Some(path) => {
-                            path.label().to_string()
-                        }
-                    };
-
-                    // TODO unnecessary Rc over new
-                    DisplayItem::new(idx, Rc::new(text))
-                }
-                MainViewDisplay::ResultsView(result) => {
-                    let text = result.get_text().clone();
-
-                    DisplayItem::new(idx, text.into())
-                }
-            }
-        }).collect::<Vec<_>>()
-        )
-    }
-
-    fn get_curr_display_ptr(&self) -> SubwidgetPointer<Self> {
-        if self.display_idx >= self.displays.len() {
-            if self.display_idx > 0 {
-                error!("current editor points further than number opened editors!");
-                return subwidget!(Self.tree_widget);
-            }
-
-            subwidget!(Self.no_editor)
-        } else {
-            let idx1 = self.display_idx;
-            let idx2 = self.display_idx;
-            SubwidgetPointer::new(
-                Box::new(move |s: &Self| { s.displays.get(idx1).map(|w| w.get_widget()).unwrap_or(&s.no_editor) }),
-                Box::new(move |s: &mut Self| { s.displays.get_mut(idx2).map(|w| w.get_widget_mut()).unwrap_or(&mut s.no_editor) }),
-            )
-        }
-    }
-
-    fn set_focused_to_hover(&mut self) {
+    fn set_focus_to_hover(&mut self) {
         let ptr_to_hover = SubwidgetPointer::<Self>::new(
             Box::new(|s: &MainView| {
                 let hover_present = s.hover.is_some();
@@ -344,9 +344,9 @@ impl MainView {
         self.set_focused(ptr_to_hover);
     }
 
-    fn set_focus_to_default(&mut self) {
-        let ptr = self.get_curr_display_ptr();
-        self.set_focused(ptr);
+    pub fn with_empty_editor(mut self) -> Self {
+        self.open_empty_editor_and_focus();
+        self
     }
 
     // pub fn set_search_result(&mut self, crv_op: Option<CodeResultsView>) {

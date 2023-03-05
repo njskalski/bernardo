@@ -2,12 +2,15 @@ use std::cmp::max;
 use std::collections::HashSet;
 use std::rc::Rc;
 use std::str::from_utf8;
+use std::sync::RwLockWriteGuard;
 
 use either::Left;
 use log::{debug, error, warn};
 
+use crate::{subwidget, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
+use crate::fs::read_error::ReadError;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
@@ -21,7 +24,6 @@ use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::subwidget;
 use crate::text::buffer_state::BufferState;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
@@ -103,105 +105,105 @@ impl Widget for CodeResultsView {
     fn prelayout(&mut self) {
         // TODO this method is stitched together from bullshit with ducttape. It's to be rewritten, after I figure out which items go well together.
 
-
-
         if self.data_provider.loading_state() == LoadingState::InProgress {
             self.data_provider.poll();
         }
 
-        for (idx, symbol) in self.data_provider.items().enumerate().skip(self.item_list.internal().items().count()) {
-            // TODO URGENT loading files should be moved out from here to some common place between this and Editor
+        {
+            let mut buffer_register_lock = unpack_or_e!(self.providers.buffer_register().try_write().ok(), (), "failed to acquire buffer register");
 
-            if self.failed_ids.contains(&idx) {
-                continue;
+            for (idx, symbol) in self.data_provider.items().enumerate().skip(self.item_list.internal().items().count()) {
+                // TODO URGENT loading files should be moved out from here to some common place between this and Editor
+
+                // this just skips failed loads. TODO add a "load error widget?"
+                if self.failed_ids.contains(&idx) {
+                    continue;
+                }
+
+                let no_prefix = match symbol.path.strip_prefix("file://") {
+                    None => {
+                        error!("failed stripping prefix from {}", &symbol.path);
+                        self.failed_ids.insert(idx);
+                        continue;
+                    }
+                    Some(np) => np,
+                };
+
+                // TODO two unwraps
+                let root_path_buf = self.providers.fsf().root_path_buf().to_string_lossy().to_string() + "/";
+
+                let in_workspace = match no_prefix.strip_prefix(&root_path_buf) {
+                    None => {
+                        error!("failed stripping prefix from {}", &no_prefix);
+                        self.failed_ids.insert(idx);
+                        continue;
+                    }
+                    Some(np) => np,
+                };
+
+                let spath = match self.providers.fsf().descendant_checked(&in_workspace) {
+                    None => {
+                        error!("failed to get spath from {}", &in_workspace);
+                        self.failed_ids.insert(idx);
+                        continue;
+                    }
+                    Some(s) => s,
+                };
+
+                let open_result = buffer_register_lock.open_file(&self.providers, &spath);
+
+                if open_result.buffer_shared_ref.is_err() {
+                    error!("failed to load buffer {} because {}", spath, open_result.buffer_shared_ref.err().unwrap());
+                    self.failed_ids.insert(idx);
+                    continue;
+                }
+
+                let buffer_state_ref = open_result.buffer_shared_ref.unwrap();
+
+                let cursor_set: CursorSet = match buffer_state_ref.lock_rw() {
+                    None => {
+                        error!("failed to lock buffer {}", spath);
+                        self.failed_ids.insert(idx);
+                        continue;
+                    }
+                    Some(mut buffer) => {
+                        match symbol.stupid_range.0.to_real_cursor(&*buffer) {
+                            None => {
+                                error!("failed to cast StupidCursor to a real one");
+                                self.failed_ids.insert(idx);
+                                continue;
+                            }
+                            Some(first_cursor) => {
+                                if open_result.opened {
+                                    warn!("I will destroy cursor data, because issue #23 - we don't have multiple views properly implemented, sorry");
+                                }
+
+                                buffer.remove_history();
+
+                                CursorSet::singleton(first_cursor)
+                            }
+                        }
+                    }
+                };
+
+                let mut edit_widget = EditorWidget::new(
+                    self.providers.clone(),
+                    buffer_state_ref,
+                ).with_readonly()
+                    .with_ignore_input_altogether();
+
+                if edit_widget.set_cursors(cursor_set) == false {
+                    error!("failed setting cursor set, will not add this editor to list {}", spath);
+                    self.failed_ids.insert(idx);
+                    continue;
+                }
+
+                self.item_list.internal_mut().add_item(
+                    SplitRule::Fixed(5),
+                    edit_widget,
+                )
             }
-
-            let no_prefix = match symbol.path.strip_prefix("file://") {
-                None => {
-                    error!("failed stripping prefix from {}", &symbol.path);
-                    self.failed_ids.insert(idx);
-                    continue;
-                }
-                Some(np) => np,
-            };
-
-            // TODO two unwraps
-            // let root = self.providers.fsf().root().0.as_path().unwrap().to_str().unwrap().to_string();
-            let root_path_buf = self.providers.fsf().root_path_buf().to_string_lossy().to_string() + "/";
-
-            let in_workspace = match no_prefix.strip_prefix(&root_path_buf) {
-                None => {
-                    error!("failed stripping prefix from {}", &no_prefix);
-                    self.failed_ids.insert(idx);
-                    continue;
-                }
-                Some(np) => np,
-            };
-
-            let spath = match self.providers.fsf().descendant_checked(&in_workspace) {
-                None => {
-                    error!("failed to get spath from {}", &in_workspace);
-                    self.failed_ids.insert(idx);
-                    continue;
-                }
-                Some(s) => s,
-            };
-
-            let buffer_bytes = match self.providers.fsf().blocking_read_entire_file(&spath) {
-                Ok(buf) => buf,
-                Err(e) => {
-                    error!("failed loading file {}, because {}", &spath, e);
-                    self.failed_ids.insert(idx);
-                    continue;
-                }
-            };
-
-            let buffer_str = match from_utf8(&buffer_bytes) {
-                Ok(s) => s,
-                Err(e) => {
-                    error!("failed loading file {}, because utf8 error {}", &spath, e);
-                    self.failed_ids.insert(idx);
-                    continue;
-                }
-            };
-
-            let buffer_state = BufferState::full(
-                Some(self.providers.tree_sitter().clone()),
-                DocumentIdentifier::new_unique(),
-            ).with_text(buffer_str);
-
-            let first_cursor = match symbol.stupid_range.0.to_real_cursor(&buffer_state) {
-                None => {
-                    error!("failed to cast StupidCursor to a real one");
-                    self.failed_ids.insert(idx);
-                    continue;
-                }
-                Some(c) => c,
-            };
-
-            // TODO second_cursor?
-
-            let buffer_state_ref = BufferSharedRef::new_from_buffer(buffer_state);
-
-            let cursor_set = CursorSet::singleton(first_cursor);
-
-            let mut edit_widget = EditorWidget::new(
-                self.providers.clone(),
-                buffer_state_ref,
-            ).with_readonly()
-                .with_ignore_input_altogether();
-
-            if edit_widget.set_cursors(cursor_set) == false {
-                error!("failed to set the cursor");
-                self.failed_ids.insert(idx);
-                continue;
-            }
-
-            self.item_list.internal_mut().add_item(
-                SplitRule::Fixed(5),
-                edit_widget,
-            );
-        }
+        } // to drop buffer_register_lock
 
         self.complex_prelayout();
     }

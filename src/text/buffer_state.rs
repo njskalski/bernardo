@@ -89,6 +89,13 @@ impl BufferState {
         }
     }
 
+    pub fn remove_history(&mut self) {
+        if self.history_pos != 0 {
+            self.history.swap(0, self.history_pos)
+        }
+        self.history.truncate(1);
+    }
+
     pub fn subtype(&self) -> &BufferType {
         &self.subtype
     }
@@ -123,7 +130,7 @@ impl BufferState {
             None => {
                 match self.get_path().map(filename_to_language).flatten() {
                     None => {
-                        error!("couldn't determine language");
+                        error!("couldn't determine language: path = {:?}", self.get_path());
                         return false;
                     }
                     Some(lang_id) => lang_id,
