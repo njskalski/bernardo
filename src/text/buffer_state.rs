@@ -406,7 +406,7 @@ impl BufferState {
     pub fn subtype(&self) -> &BufferType {
         &self.subtype
     }
-    
+
     pub fn text(&self) -> &ContentsAndCursors {
         debug_assert!(self.history.len() >= self.history_pos);
         &self.history[self.history_pos]
@@ -493,24 +493,28 @@ impl ToString for BufferState {
 }
 
 impl TextBuffer for BufferState {
-    fn len_lines(&self) -> usize {
-        self.text().rope.len_lines()
+    fn byte_to_char(&self, byte_idx: usize) -> Option<usize> {
+        self.text().rope.try_byte_to_char(byte_idx).ok()
     }
 
-    fn lines(&self) -> LinesIter {
-        LinesIter::new(self.text().rope.chars())
+    fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {
+        self.text().rope.callback_for_parser()
     }
 
-    fn is_editable(&self) -> bool {
-        true
+    fn can_redo(&self) -> bool {
+        self.history_pos + 1 < self.history.len()
     }
 
-    fn len_chars(&self) -> usize {
-        self.text().rope.len_chars()
+    fn can_undo(&self) -> bool {
+        self.history_pos > 0
     }
 
-    fn len_bytes(&self) -> usize {
-        self.text().rope.len_bytes()
+    fn char_at(&self, char_idx: usize) -> Option<char> {
+        self.text().rope.char_at(char_idx)
+    }
+
+    fn char_to_byte(&self, char_idx: usize) -> Option<usize> {
+        self.text().rope.try_char_to_byte(char_idx).ok()
     }
 
     fn char_to_line(&self, char_idx: usize) -> Option<usize> {
@@ -520,43 +524,12 @@ impl TextBuffer for BufferState {
         }
     }
 
-    fn line_to_char(&self, line_idx: usize) -> Option<usize> {
-        match self.text().rope.try_line_to_char(line_idx) {
-            Ok(idx) => Some(idx),
-            Err(_) => None,
-        }
+    fn chars(&self) -> Chars {
+        self.text().rope.chars()
     }
 
-    fn byte_to_char(&self, byte_idx: usize) -> Option<usize> {
-        self.text().rope.try_byte_to_char(byte_idx).ok()
-    }
-
-    fn char_to_byte(&self, char_idx: usize) -> Option<usize> {
-        self.text().rope.try_char_to_byte(char_idx).ok()
-    }
-
-    fn insert_char(&mut self, char_idx: usize, ch: char) -> bool {
-        let text = self.text_mut();
-        match text.rope.try_insert_char(char_idx, ch) {
-            Ok(_) => {
-                // TODO maybe this method should be moved to text object.
-                let rope_clone = text.rope.clone();
-
-                text.parsing.as_mut().map_or_else(
-                    || {
-                        debug!("failed to acquire parse_tuple 1");
-                    },
-                    |r| {
-                        r.update_parse_on_insert(&rope_clone, char_idx, char_idx + 1);
-                    });
-
-                true
-            }
-            Err(e) => {
-                warn!("failed inserting char {} because {}", char_idx, e);
-                false
-            }
-        }
+    fn chunks(&self) -> Chunks {
+        self.text().rope.chunks()
     }
 
     fn insert_block(&mut self, char_idx: usize, block: &str) -> bool {
@@ -583,6 +556,65 @@ impl TextBuffer for BufferState {
                 false
             }
         }
+    }
+
+    fn insert_char(&mut self, char_idx: usize, ch: char) -> bool {
+        let text = self.text_mut();
+        match text.rope.try_insert_char(char_idx, ch) {
+            Ok(_) => {
+                // TODO maybe this method should be moved to text object.
+                let rope_clone = text.rope.clone();
+
+                text.parsing.as_mut().map_or_else(
+                    || {
+                        debug!("failed to acquire parse_tuple 1");
+                    },
+                    |r| {
+                        r.update_parse_on_insert(&rope_clone, char_idx, char_idx + 1);
+                    });
+
+                true
+            }
+            Err(e) => {
+                warn!("failed inserting char {} because {}", char_idx, e);
+                false
+            }
+        }
+    }
+
+    fn is_editable(&self) -> bool {
+        true
+    }
+
+    fn len_bytes(&self) -> usize {
+        self.text().rope.len_bytes()
+    }
+
+    fn len_chars(&self) -> usize {
+        self.text().rope.len_chars()
+    }
+
+    fn len_lines(&self) -> usize {
+        self.text().rope.len_lines()
+    }
+
+    fn lines(&self) -> LinesIter {
+        LinesIter::new(self.text().rope.chars())
+    }
+
+    fn line_to_char(&self, line_idx: usize) -> Option<usize> {
+        match self.text().rope.try_line_to_char(line_idx) {
+            Ok(idx) => Some(idx),
+            Err(_) => None,
+        }
+    }
+
+    fn redo(&mut self) -> bool {
+        debug!("REDO pos {} len {}", self.history_pos, self.history.len());
+        if self.history_pos + 1 < self.history.len() {
+            self.history_pos += 1;
+            true
+        } else { false }
     }
 
     fn remove(&mut self, char_idx_begin: usize, char_idx_end: usize) -> bool {
@@ -613,42 +645,10 @@ impl TextBuffer for BufferState {
         }
     }
 
-    fn char_at(&self, char_idx: usize) -> Option<char> {
-        self.text().rope.char_at(char_idx)
-    }
-
-    fn chars(&self) -> Chars {
-        self.text().rope.chars()
-    }
-
-    fn chunks(&self) -> Chunks {
-        self.text().rope.chunks()
-    }
-
-    fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {
-        self.text().rope.callback_for_parser()
-    }
-
-    fn can_undo(&self) -> bool {
-        self.history_pos > 0
-    }
-
-    fn can_redo(&self) -> bool {
-        self.history_pos + 1 < self.history.len()
-    }
-
     fn undo(&mut self) -> bool {
         debug!("UNDO pos {} len {}", self.history_pos, self.history.len());
         if self.history_pos > 0 {
             self.history_pos -= 1;
-            true
-        } else { false }
-    }
-
-    fn redo(&mut self) -> bool {
-        debug!("REDO pos {} len {}", self.history_pos, self.history.len());
-        if self.history_pos + 1 < self.history.len() {
-            self.history_pos += 1;
             true
         } else { false }
     }
