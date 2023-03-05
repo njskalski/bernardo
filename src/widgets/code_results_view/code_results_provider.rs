@@ -7,13 +7,6 @@ pub struct PollResult {
     pub new_state: LoadingState,
 }
 
-impl PollResult {
-    pub fn has_first_result(&self) -> bool {
-        self.old_state == LoadingState::NotStarted &&
-            (self.new_state == LoadingState::InProgress || self.new_state == LoadingState::Complete)
-    }
-}
-
 /*
 Invariant: if items becomes longer, the initial items DO NOT CHANGE.
  */

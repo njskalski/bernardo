@@ -106,15 +106,6 @@ impl Widget for CodeResultsView {
     fn prelayout(&mut self) {
         // TODO this method is stitched together from bullshit with ducttape. It's to be rewritten, after I figure out which items go well together.
 
-        let old_state = self.data_provider.loading_state();
-
-        if old_state == LoadingState::NotStarted || old_state == LoadingState::InProgress {
-            let poll_result = self.data_provider.poll();
-            if poll_result.has_first_result() {
-                self.set_focused(subwidget!(Self.item_list))
-            }
-        }
-
         {
             let mut buffer_register_lock = unpack_or_e!(self.providers.buffer_register().try_write().ok(), (), "failed to acquire buffer register");
 
