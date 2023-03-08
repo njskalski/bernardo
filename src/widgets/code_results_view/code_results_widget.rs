@@ -104,8 +104,6 @@ impl Widget for CodeResultsView {
     }
 
     fn prelayout(&mut self) {
-        // TODO this method is stitched together from bullshit with ducttape. It's to be rewritten, after I figure out which items go well together.
-
         let old_state = self.data_provider.loading_state();
         if old_state == LoadingState::NotStarted || old_state == LoadingState::InProgress {
             let poll_result = self.data_provider.poll();

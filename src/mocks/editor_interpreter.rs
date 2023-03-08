@@ -4,6 +4,7 @@ use crate::io::buffer_output_iter::VerticalIterItem;
 use crate::io::cell::Cell;
 use crate::io::output::Metadata;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
+use crate::mocks::context_bar_interpreter::ContextBarWidgetInterpreter;
 use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::savefile_interpreter::SaveFileInterpreter;
@@ -13,6 +14,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
+use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::with_scroll::WithScroll;
@@ -29,6 +31,8 @@ pub struct EditorInterpreter<'a> {
 
     find_op: Option<EditWidgetInterpreter<'a>>,
     replace_op: Option<EditWidgetInterpreter<'a>>,
+
+    contextbar_op: Option<ContextBarWidgetInterpreter<'a>>,
 }
 
 pub struct LineIdxPair {
@@ -78,6 +82,14 @@ impl<'a> EditorInterpreter<'a> {
             Some(SaveFileInterpreter::new(saveases[0], mock_output))
         };
 
+        let contextbars: Vec<&Metadata> = mock_output.get_meta_by_type(ContextBarWidget::TYPENAME)
+            .filter(|c| meta.rect.contains_rect(c.rect))
+            .collect();
+        debug_assert!(contextbars.len() < 2);
+        let contextbar_op: Option<ContextBarWidgetInterpreter> = contextbars.first().map(|c| {
+            ContextBarWidgetInterpreter::new(c, mock_output)
+        });
+
         let rect_without_scroll = mock_output
             .get_meta_by_type(EditorWidget::TYPENAME)
             .next().unwrap().rect;
@@ -111,6 +123,7 @@ impl<'a> EditorInterpreter<'a> {
             saveas_op,
             find_op,
             replace_op,
+            contextbar_op,
         })
     }
 
@@ -292,4 +305,6 @@ impl<'a> EditorInterpreter<'a> {
     pub fn replace_op(&self) -> Option<&EditWidgetInterpreter<'a>> {
         self.replace_op.as_ref()
     }
+
+    pub fn context_bar_op(&self) -> Option<&ContextBarWidgetInterpreter<'a>> { self.contextbar_op.as_ref() }
 }

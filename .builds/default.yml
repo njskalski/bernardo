@@ -6,6 +6,11 @@ sources:
 tasks:
   - setup: |
       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      mkdir -p ~/.local/bin
+      curl -L https://github.com/rust-lang/rust-analyzer/releases/latest/download/rust-analyzer-x86_64-unknown-linux-gnu.gz | gunzip -c - > ~/.local/bin/rust-analyzer
+      chmod +x ~/.local/bin/rust-analyzer
+      source "$HOME/.cargo/env"
+      rustup component add rust-src
   - build: |
       source "$HOME/.cargo/env"
       cd bernardo

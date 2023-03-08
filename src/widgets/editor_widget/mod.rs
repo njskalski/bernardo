@@ -2,5 +2,5 @@ pub mod editor_widget;
 pub mod msg;
 pub mod completion;
 mod helpers;
-mod context_bar;
+pub mod context_bar;
 mod context_options_matrix;
