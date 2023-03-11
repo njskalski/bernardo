@@ -8,7 +8,7 @@ use crate::w7e::navcomp_provider::Completion;
 use crate::w7e::navcomp_provider::CompletionAction::Insert;
 
 #[test]
-fn show_usages_test_1() {
+fn show_usages_integ_test_1() {
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/show_usages_test_1")
         .with_files(["src/main.rs"])
         // .with_frame_based_wait()

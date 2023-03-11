@@ -27,7 +27,7 @@ use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
 use crate::mocks::mock_navcomp_loader::MockNavcompLoader;
-use crate::mocks::mock_navcomp_provider::{MockCompletionMatcher, MockNavCompEvent, MockNavCompProviderPilot};
+use crate::mocks::mock_navcomp_provider::{MockCompletionMatcher, MockNavCompEvent, MockNavCompProviderPilot, MockSymbolMatcher};
 use crate::mocks::mock_output::MockOutput;
 use crate::mocks::treeview_interpreter::TreeViewInterpreter;
 use crate::primitives::xy::XY;
@@ -130,16 +130,19 @@ impl FullSetupBuilder {
 
         let (mock_navcomp_event_sender, mock_navcomp_event_recvr) = crossbeam_channel::unbounded::<MockNavCompEvent>();
         let comp_matcher: Arc<RwLock<Vec<MockCompletionMatcher>>> = Arc::new(RwLock::new(Vec::new()));
+        let symbol_matcher: Arc<RwLock<Vec<MockSymbolMatcher>>> = Arc::new(RwLock::new(Vec::new()));
 
         let mock_navcomp_pilot = MockNavCompProviderPilot::new(
             mock_navcomp_event_recvr,
             comp_matcher.clone(),
+            symbol_matcher.clone(),
         );
 
         let mock_navcomp_loader = Arc::new(Box::new(
             MockNavcompLoader::new(
                 mock_navcomp_event_sender,
                 comp_matcher,
+                symbol_matcher,
             )
         ) as Box<dyn NavCompLoader>
         );

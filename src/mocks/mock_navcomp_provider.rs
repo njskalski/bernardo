@@ -1,4 +1,5 @@
 use std::fmt::{Debug, Formatter};
+use std::ops::Range;
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use std::time::Duration;
 
@@ -11,12 +12,19 @@ use crate::mocks::mock_navcomp_provider::MockNavCompEvent::FileOpened;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
-use crate::w7e::navcomp_provider::{Completion, CompletionsPromise, FormattingPromise, NavCompProvider, SymbolContextActionsPromise, SymbolPromise, SymbolUsagesPromise};
+use crate::w7e::navcomp_provider::{Completion, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, SymbolContextActionsPromise, SymbolPromise, SymbolUsage, SymbolUsagesPromise};
 
 pub struct MockCompletionMatcher {
     // None matches all
     pub path: Option<SPath>,
     pub answer: Option<Vec<Completion>>,
+}
+
+pub struct MockSymbolMatcher {
+    pub path: Option<SPath>,
+    pub cursor_range: Range<StupidCursor>,
+    pub symbol: NavCompSymbol,
+    pub usages: Vec<SymbolUsage>,
 }
 
 #[derive(Clone, Debug)]
@@ -49,15 +57,20 @@ impl MockNavCompProvider {
 pub struct MockNavCompProviderPilot {
     recvr: Receiver<MockNavCompEvent>,
     completions: Arc<RwLock<Vec<MockCompletionMatcher>>>,
+    symbols: Arc<RwLock<Vec<MockSymbolMatcher>>>,
 }
 
 impl MockNavCompProviderPilot {
     const DEFAULT_TIMEOUT: Duration = Duration::from_secs(3);
 
-    pub fn new(recvr: Receiver<MockNavCompEvent>, completions: Arc<RwLock<Vec<MockCompletionMatcher>>>) -> Self {
+    pub fn new(recvr: Receiver<MockNavCompEvent>,
+               completions: Arc<RwLock<Vec<MockCompletionMatcher>>>,
+               symbols: Arc<RwLock<Vec<MockSymbolMatcher>>>,
+    ) -> Self {
         MockNavCompProviderPilot {
             recvr,
             completions,
+            symbols,
         }
     }
 
