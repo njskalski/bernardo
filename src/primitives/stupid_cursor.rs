@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::ops::Range;
 
 use log::debug;
@@ -24,6 +25,13 @@ pub struct StupidCursor {
 // TODO fuzzy some test!
 
 impl StupidCursor {
+    pub fn new(char_idx: u32, line: u32) -> StupidCursor {
+        StupidCursor {
+            char_idx,
+            line,
+        }
+    }
+
     pub fn from_real_cursor(buffer: &dyn TextBuffer, cursor: Cursor) -> Result<StupidCursor, ()> {
         // TODO I did not implement PositionEncodingKind, so I am not sure if "offset" is utf-8 or byte or soccer fields, or whatever unit of length Americans use now
         let line = match buffer.char_to_line(cursor.a) {
@@ -108,4 +116,31 @@ impl StupidCursor {
 
         Some(Selection::new(first.a, second.a))
     }
+
+    pub fn is_between(&self, left_inclusive: StupidCursor, right_exclusive: StupidCursor) -> bool {
+        if right_exclusive >= left_inclusive {
+            error!("stupid cursor {:?} can't be within deformed range {:?} {:?}", self, left_inclusive, right_exclusive);
+            return false;
+        }
+
+        left_inclusive <= *self && *self < right_exclusive
+    }
 }
+
+impl PartialOrd<Self> for StupidCursor {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for StupidCursor {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let cmp1 = self.line.cmp(&other.line);
+        if cmp1 != Ordering::Equal {
+            cmp1
+        } else {
+            self.char_idx.cmp(&other.char_idx)
+        }
+    }
+}
+

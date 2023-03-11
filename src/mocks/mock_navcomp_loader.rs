@@ -33,7 +33,10 @@ impl MockNavcompLoader {
 }
 
 impl NavCompLoader for MockNavcompLoader {
-    fn load_handler(&self, config: &ConfigRef, project_scope: &ProjectScope, navcomp_tick_sender: NavCompTickSender) -> Result<Box<dyn Handler>, HandlerLoadError> {
+    fn load_handler(&self, config: &ConfigRef,
+                    project_scope: &ProjectScope,
+                    navcomp_tick_sender: NavCompTickSender,
+    ) -> Result<Box<dyn Handler>, HandlerLoadError> {
         debug_assert!(project_scope.handler_id.as_ref() == Some(&"rust".to_string())); // yeah I know it's shit, I have 100 compile errors
 
         let navcomp_op = Some(
@@ -43,6 +46,7 @@ impl NavCompLoader for MockNavcompLoader {
                         navcomp_tick_sender,
                         self.event_sender.clone(),
                         self.completions.clone(),
+                        self.symbols.clone(),
                     )
                 ) as Box<dyn NavCompProvider>)
         );

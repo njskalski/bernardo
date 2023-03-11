@@ -1,19 +1,75 @@
+use std::ops::Range;
+
 use log::debug;
 
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
-use crate::mocks::mock_navcomp_provider::MockCompletionMatcher;
+use crate::mocks::mock_navcomp_provider::{MockCompletionMatcher, MockSymbolMatcher};
 use crate::primitives::printable::Printable;
-use crate::w7e::navcomp_provider::Completion;
+use crate::primitives::stupid_cursor::StupidCursor;
+use crate::spath;
+use crate::w7e::navcomp_provider::{Completion, NavCompSymbol, SymbolType, SymbolUsage};
 use crate::w7e::navcomp_provider::CompletionAction::Insert;
 
-#[test]
-fn show_usages_integ_test_1() {
+fn get_full_setup() -> FullSetup {
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/show_usages_test_1")
         .with_files(["src/main.rs"])
         // .with_frame_based_wait()
         .build();
 
+    {
+        let mut symbols = full_setup.navcomp_pilot().symbols().unwrap();
+
+        let first_occ = (StupidCursor::new(5, 8), StupidCursor::new(18, 5));
+        let second_occ = (StupidCursor::new(5, 12), StupidCursor::new(18, 12));
+
+        let mockfs = full_setup.fsf();
+
+        symbols.push(
+            MockSymbolMatcher {
+                path: spath!(mockfs, "src", "main.rs"),
+                symbol: NavCompSymbol {
+                    symbol_type: SymbolType::Function,
+                    stupid_range: first_occ,
+                },
+                usages: Some(vec![
+                    SymbolUsage {
+                        path: "src/main.rs".to_string(),
+                        stupid_range: first_occ,
+                    },
+                    SymbolUsage {
+                        path: "src/main.rs".to_string(),
+                        stupid_range: second_occ,
+                    },
+                ]),
+            }
+        );
+        symbols.push(
+            MockSymbolMatcher {
+                path: spath!(mockfs, "src", "main.rs"),
+                symbol: NavCompSymbol {
+                    symbol_type: SymbolType::Function,
+                    stupid_range: second_occ,
+                },
+                usages: Some(vec![
+                    SymbolUsage {
+                        path: "src/main.rs".to_string(),
+                        stupid_range: first_occ,
+                    },
+                    SymbolUsage {
+                        path: "src/main.rs".to_string(),
+                        stupid_range: second_occ,
+                    },
+                ]),
+            });
+    }
+
+    full_setup
+}
+
+#[test]
+fn show_usages_integ_test_1() {
+    let mut full_setup = get_full_setup();
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
     assert_eq!(full_setup.get_first_editor().unwrap().get_visible_cursor_line_indices().map(|c| c.visible_idx).collect::<Vec<usize>>(), vec![1]);

@@ -38,7 +38,7 @@ pub struct Completion {
 
 // Currently these map LSP types 1:1, but this might change. Most importantly I have a feeling I
 //  might prefer to use tree-sitter symbols instead.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum SymbolType {
     File,
     Module,

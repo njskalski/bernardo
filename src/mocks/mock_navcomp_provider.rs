@@ -6,25 +6,47 @@ use std::time::Duration;
 use crossbeam_channel::{Receiver, select, Sender};
 use log::{debug, error};
 
+use crate::{unpack_or, unpack_or_e};
 use crate::fs::path::SPath;
 use crate::mocks::mock_navcomp_promise::MockNavCompPromise;
 use crate::mocks::mock_navcomp_provider::MockNavCompEvent::FileOpened;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
-use crate::w7e::navcomp_provider::{Completion, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, SymbolContextActionsPromise, SymbolPromise, SymbolUsage, SymbolUsagesPromise};
+use crate::w7e::navcomp_provider::{Completion, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, SymbolContextActionsPromise, SymbolPromise, SymbolType, SymbolUsage, SymbolUsagesPromise};
 
 pub struct MockCompletionMatcher {
     // None matches all
     pub path: Option<SPath>,
+    // None means "return broken promise"
     pub answer: Option<Vec<Completion>>,
 }
 
 pub struct MockSymbolMatcher {
     pub path: Option<SPath>,
-    pub cursor_range: Range<StupidCursor>,
     pub symbol: NavCompSymbol,
-    pub usages: Vec<SymbolUsage>,
+    // None means "return broken promise"
+    pub usages: Option<Vec<SymbolUsage>>,
+}
+
+impl MockSymbolMatcher {
+    pub fn matches(&self, path: Option<&SPath>, stupid_cursor: StupidCursor) -> bool {
+        let path_matches = self.path.as_ref() == path;
+        let range_matches = stupid_cursor.is_between(
+            self.symbol.stupid_range.0,
+            self.symbol.stupid_range.1,
+        );
+
+        path_matches && range_matches
+    }
+
+    pub fn symbol_type(&self) -> &SymbolType {
+        &self.symbol.symbol_type
+    }
+
+    pub fn symbol(&self) -> &NavCompSymbol {
+        &self.symbol
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -38,18 +60,21 @@ pub struct MockNavCompProvider {
     event_sender: Sender<MockNavCompEvent>,
     navcomp_tick_server: Sender<NavCompTick>,
     completions: Arc<RwLock<Vec<MockCompletionMatcher>>>,
+    symbols: Arc<RwLock<Vec<MockSymbolMatcher>>>,
 }
 
 impl MockNavCompProvider {
     pub fn new(navcomp_tick_server: Sender<NavCompTick>,
                event_sender: Sender<MockNavCompEvent>,
                completions: Arc<RwLock<Vec<MockCompletionMatcher>>>,
+               symbols: Arc<RwLock<Vec<MockSymbolMatcher>>>,
     ) -> Self {
         MockNavCompProvider {
             event_sender,
             triggers: vec![".".to_string(), "::".to_string()],
             navcomp_tick_server,
             completions,
+            symbols,
         }
     }
 }
@@ -112,6 +137,16 @@ impl MockNavCompProviderPilot {
             }
         }
     }
+
+    pub fn symbols(&self) -> Option<RwLockWriteGuard<Vec<MockSymbolMatcher>>> {
+        match self.symbols.write() {
+            Ok(lock) => Some(lock),
+            Err(e) => {
+                error!("failed acquiring symbols lock: {:?}", e);
+                None
+            }
+        }
+    }
 }
 
 impl NavCompProvider for MockNavCompProvider {
@@ -124,33 +159,27 @@ impl NavCompProvider for MockNavCompProvider {
     }
 
     fn completions(&self, path: SPath, _cursor: StupidCursor, _trigger: Option<String>) -> Option<CompletionsPromise> {
-        match self.completions.read() {
-            Err(e) => {
-                error!("failed acquiring lock on completions: {:?}", e);
-                None
-            }
-            Ok(completions) => {
-                completions
-                    .iter()
-                    .find(|c| c.path.as_ref().map(|spath| *spath == path).unwrap_or(true))
-                    .map(|c| {
-                        match c.answer.as_ref() {
-                            None => {
-                                debug!("returning broken completion promise");
-                                Box::new(
-                                    MockNavCompPromise::<Vec<Completion>>::new_broken(self.navcomp_tick_server.clone())
-                                ) as Box<dyn Promise<Vec<Completion>> + 'static>
-                            }
-                            Some(value) => {
-                                debug!("returning successful completion promise");
-                                Box::new(
-                                    MockNavCompPromise::new_succ(self.navcomp_tick_server.clone(), value.clone())
-                                ) as Box<dyn Promise<Vec<Completion>> + 'static>
-                            }
-                        }
-                    })
-            }
-        }
+        let completions = unpack_or_e!(self.completions.read().ok(), None, "failed acquiring lock on completions");
+
+        completions
+            .iter()
+            .find(|c| c.path.as_ref().map(|spath| *spath == path).unwrap_or(true))
+            .map(|c| {
+                match c.answer.as_ref() {
+                    None => {
+                        debug!("returning broken completion promise");
+                        Box::new(
+                            MockNavCompPromise::<Vec<Completion>>::new_broken(self.navcomp_tick_server.clone())
+                        ) as Box<dyn Promise<Vec<Completion>> + 'static>
+                    }
+                    Some(value) => {
+                        debug!("returning successful completion promise");
+                        Box::new(
+                            MockNavCompPromise::new_succ(self.navcomp_tick_server.clone(), value.clone())
+                        ) as Box<dyn Promise<Vec<Completion>> + 'static>
+                    }
+                }
+            })
     }
 
     fn completion_triggers(&self, _path: &SPath) -> &Vec<String> {
@@ -161,8 +190,36 @@ impl NavCompProvider for MockNavCompProvider {
         None
     }
 
-    fn todo_get_symbol_at(&self, _path: &SPath, _cursor: StupidCursor) -> Option<SymbolPromise> {
-        None
+    fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
+        let symbols = unpack_or_e!(self.symbols.read().ok(), None, "failed acquiring lock on symbols");
+
+        symbols
+            .iter()
+            .find(|candidate| {
+                let path_matches = candidate.path.as_ref().map(|spath| spath == path).unwrap_or(true);
+                let range_matches = cursor.is_between(
+                    candidate.symbol.stupid_range.0,
+                    candidate.symbol.stupid_range.1,
+                );
+
+                path_matches && range_matches
+            })
+            .map(|c| {
+                match c.usages.as_ref() {
+                    None => {
+                        debug!("returning broken symbol promise");
+                        Box::new(
+                            MockNavCompPromise::<Option<NavCompSymbol>>::new_broken(self.navcomp_tick_server.clone())
+                        ) as Box<dyn Promise<Option<NavCompSymbol>> + 'static>
+                    }
+                    Some(_) => {
+                        debug!("returning successful symbol promise");
+                        Box::new(
+                            MockNavCompPromise::new_succ(self.navcomp_tick_server.clone(), Some(c.symbol.clone()))
+                        ) as Box<dyn Promise<Option<NavCompSymbol>> + 'static>
+                    }
+                }
+            })
     }
 
     fn todo_get_symbol_usages(&self, _path: &SPath, _cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
