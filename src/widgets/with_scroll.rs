@@ -1,4 +1,4 @@
-use log::{error, warn};
+use log::{debug, error, warn};
 
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
@@ -238,6 +238,7 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+        debug!(target: "recursive_treat_views", "in scroll, passing {:?} to {:?}", &msg, &self.widget as &dyn Widget);
         self.widget.update(msg)
     }
 

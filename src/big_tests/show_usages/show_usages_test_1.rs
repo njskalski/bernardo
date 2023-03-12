@@ -20,8 +20,8 @@ fn get_full_setup() -> FullSetup {
     {
         let mut symbols = full_setup.navcomp_pilot().symbols().unwrap();
 
-        let first_occ = (StupidCursor::new(5, 8), StupidCursor::new(18, 5));
-        let second_occ = (StupidCursor::new(5, 12), StupidCursor::new(18, 12));
+        let first_occ = (StupidCursor::new(4, 7), StupidCursor::new(17, 7));
+        let second_occ = (StupidCursor::new(4, 11), StupidCursor::new(17, 11));
 
         let mockfs = full_setup.fsf();
 
@@ -97,8 +97,8 @@ fn show_usages_integ_test_1() {
         f.get_first_editor().unwrap().context_bar_op().map(|c| c.selected_option().map(|c| c.trim().starts_with("show usages")).unwrap_or(false)).unwrap_or(false)
     }));
 
-    assert!(full_setup.send_key(Keycode::Enter.to_key()));
 
+    assert!(full_setup.send_key(Keycode::Enter.to_key()));
 
     full_setup.wait_frame();
     full_setup.screenshot();

@@ -161,7 +161,7 @@ impl NavCompProvider for MockNavCompProvider {
     fn completions(&self, path: SPath, _cursor: StupidCursor, _trigger: Option<String>) -> Option<CompletionsPromise> {
         let completions = unpack_or_e!(self.completions.read().ok(), None, "failed acquiring lock on completions");
 
-        completions
+        let res = completions
             .iter()
             .find(|c| c.path.as_ref().map(|spath| *spath == path).unwrap_or(true))
             .map(|c| {
@@ -179,7 +179,13 @@ impl NavCompProvider for MockNavCompProvider {
                         ) as Box<dyn Promise<Vec<Completion>> + 'static>
                     }
                 }
-            })
+            });
+
+        if res.is_none() {
+            debug!("no results for completion");
+        }
+
+        res
     }
 
     fn completion_triggers(&self, _path: &SPath) -> &Vec<String> {
@@ -193,37 +199,61 @@ impl NavCompProvider for MockNavCompProvider {
     fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
         let symbols = unpack_or_e!(self.symbols.read().ok(), None, "failed acquiring lock on symbols");
 
-        symbols
+        let res = symbols
             .iter()
-            .find(|candidate| {
-                let path_matches = candidate.path.as_ref().map(|spath| spath == path).unwrap_or(true);
-                let range_matches = cursor.is_between(
-                    candidate.symbol.stupid_range.0,
-                    candidate.symbol.stupid_range.1,
-                );
-
-                path_matches && range_matches
-            })
+            .find(|candidate| candidate.matches(Some(path), cursor))
             .map(|c| {
                 match c.usages.as_ref() {
                     None => {
                         debug!("returning broken symbol promise");
                         Box::new(
                             MockNavCompPromise::<Option<NavCompSymbol>>::new_broken(self.navcomp_tick_server.clone())
-                        ) as Box<dyn Promise<Option<NavCompSymbol>> + 'static>
+                        ) as SymbolPromise
                     }
                     Some(_) => {
                         debug!("returning successful symbol promise");
                         Box::new(
                             MockNavCompPromise::new_succ(self.navcomp_tick_server.clone(), Some(c.symbol.clone()))
-                        ) as Box<dyn Promise<Option<NavCompSymbol>> + 'static>
+                        ) as SymbolPromise
                     }
                 }
-            })
+            });
+
+        if res.is_none() {
+            debug!("no results for symbol");
+        }
+
+        res
     }
 
-    fn todo_get_symbol_usages(&self, _path: &SPath, _cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
-        None
+    fn todo_get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
+        let symbols = unpack_or_e!(self.symbols.read().ok(), None, "failed acquiring lock on symbols");
+
+        let res = symbols
+            .iter()
+            .find(|candidate| candidate.matches(Some(path), cursor))
+            .map(|c| {
+                match c.usages.as_ref() {
+                    None => {
+                        debug!("returning broken symbol usages promise");
+                        Box::new(
+                            MockNavCompPromise::<Vec<SymbolUsage>>::new_broken(self.navcomp_tick_server.clone())
+                        ) as SymbolUsagesPromise
+                    }
+                    Some(usages) => {
+                        debug!("returning successful symbol usages promise");
+                        Box::new(
+                            MockNavCompPromise::new_succ(self.navcomp_tick_server.clone(), usages.clone())
+                        ) as SymbolUsagesPromise
+                    }
+                }
+            });
+
+        if res.is_none() {
+            debug!("no results for symbol usages");
+        }
+
+        res
     }
 
     fn todo_reformat(&self, _path: &SPath) -> Option<FormattingPromise> {

@@ -13,12 +13,14 @@ use crate::unpack_or;
 
 /*
 This is a completely useless variant of cursor, that is used only because LSP uses it.
-It does not easily convert neither to char idx NOR screen pos, because it does not mind multi-column
- chars.
+It does not easily convert neither to byte offset NOR char idx NOR screen pos, because it does not
+mind multi-column chars.
  */
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct StupidCursor {
+    // Zero based
     pub char_idx: u32,
+    // Zero based
     pub line: u32,
 }
 
@@ -118,7 +120,7 @@ impl StupidCursor {
     }
 
     pub fn is_between(&self, left_inclusive: StupidCursor, right_exclusive: StupidCursor) -> bool {
-        if right_exclusive >= left_inclusive {
+        if left_inclusive >= right_exclusive {
             error!("stupid cursor {:?} can't be within deformed range {:?} {:?}", self, left_inclusive, right_exclusive);
             return false;
         }
