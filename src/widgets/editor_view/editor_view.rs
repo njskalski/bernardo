@@ -359,7 +359,7 @@ impl Widget for EditorView {
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         return match msg.as_msg::<EditorViewMsg>() {
             None => {
-                debug!("expected EditorViewMsg, got {:?}, passing through", msg);
+                debug!(target: "recursive_treat_views", "expected EditorViewMsg, got {:?}, passing through", msg);
                 Some(msg) //passthrough
             }
             Some(msg) => {

@@ -38,8 +38,11 @@ pub fn recursive_treat_views(
             Some(message_from_child) => {
                 let msg_from_child_text = format!("{:?}", &message_from_child);
                 let my_message_to_parent = view.update(message_from_child);
-                debug!(target: "recursive_treat_views", "{:?}: message_from_child: {:?} sent to me, responding {:?} to parent",
-                        my_desc, msg_from_child_text, &my_message_to_parent);
+                debug!(target: "recursive_treat_views", "{:?} receives from child {:?} message {:?}, responding {:?} to parent",
+                        my_desc,
+                        child_desc,
+                        msg_from_child_text,
+                        &my_message_to_parent);
                 (true, my_message_to_parent)
             }
         };

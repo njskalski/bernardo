@@ -944,13 +944,13 @@ impl EditorWidget {
             promise.read().map(|c| c.clone())
         }).flatten().flatten();
 
+        // TODO(#24) without navcomp symbol, we don't offer show-usage. This is not a strict requirement I guess.
         let symbol = unpack_or!(symbol_op, None, "no navcomp symbol (yet?)");
         let selection = unpack_or!(StupidCursor::to_real_cursor_range(symbol.stupid_range, buffer), None, "failed to cast stupid range");
 
         let symbol = unpack_or!(buffer.get_selected_chars(selection).0, None, "failed to get text");
 
         let promise = unpack_or!(navcomp.todo_get_symbol_usages(path, stupid_cursor), None, "failed retrieving usage symbol");
-
 
         let wrapped_promise = WrappedSymbolUsagesPromise::new(
             symbol,
@@ -1046,9 +1046,10 @@ impl Widget for EditorWidget {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+        debug!(target: "recursive_treat_views", "update {:?}, receives {:?}", self as &dyn Widget, &msg);
         return match msg.as_msg::<EditorWidgetMsg>() {
             None => {
-                debug!("expected EditorWidgetMsg, got {:?}, passing through", msg);
+                debug!(target: "recursive_treat_views", "expected EditorWidgetMsg, got {:?}, passing through", msg);
                 Some(msg)
             }
             Some(msg) => {

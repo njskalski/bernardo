@@ -8,7 +8,7 @@ use either::Left;
 use log::{debug, error, warn};
 use regex::internal::Input;
 
-use crate::{subwidget, unpack_or_e};
+use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::read_error::ReadError;
@@ -16,12 +16,13 @@ use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::loading_state::LoadingState;
-use crate::io::output::Output;
+use crate::io::output::{Metadata, Output};
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::cursor_set::Cursor;
 use crate::primitives::cursor_set::CursorSet;
+use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
@@ -272,6 +273,19 @@ impl Widget for CodeResultsView {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(test)]
+        {
+            let size = unpack_or!(output.size_constraint().visible_hint()).size;
+            output.emit_metadata(
+                Metadata {
+                    id: self.wid,
+                    typename: self.typename().to_string(),
+                    rect: Rect::from_zero(size),
+                    focused,
+                }
+            );
+        }
+
         self.complex_render(theme, focused, output)
     }
 }

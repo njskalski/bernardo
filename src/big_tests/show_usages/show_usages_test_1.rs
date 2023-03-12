@@ -1,4 +1,6 @@
 use std::ops::Range;
+use std::thread::sleep;
+use std::time::Duration;
 
 use log::debug;
 
@@ -86,6 +88,9 @@ fn show_usages_integ_test_1() {
         f.get_first_editor().unwrap().get_visible_cursor_lines().find(|line| line.contents.text.trim() == "some_function(\"a\");⏎").is_some()
     }));
 
+    // TODO(#24)
+    sleep(Duration::from_millis(300));
+
     full_setup.send_key(full_setup.config().keyboard_config.global.everything_bar);
 
     assert!(full_setup.wait_for(|f| {
@@ -97,8 +102,11 @@ fn show_usages_integ_test_1() {
         f.get_first_editor().unwrap().context_bar_op().map(|c| c.selected_option().map(|c| c.trim().starts_with("show usages")).unwrap_or(false)).unwrap_or(false)
     }));
 
-
     assert!(full_setup.send_key(Keycode::Enter.to_key()));
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup.get_code_results_view().is_some()
+    }));
 
     full_setup.wait_frame();
     full_setup.screenshot();
