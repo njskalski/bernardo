@@ -234,20 +234,22 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        self.widget.on_input(input_event)
+        None
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         debug!(target: "recursive_treat_views", "in scroll, passing {:?} to {:?}", &msg, &self.widget as &dyn Widget);
-        self.widget.update(msg)
+        // do NOT route the message down the tree again, that's the job of recursive_treat_views.
+        // Pass it down through.
+        Some(msg)
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
-        self.widget.get_focused()
+        Some(&self.widget)
     }
 
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        self.widget.get_focused_mut()
+        Some(&mut self.widget)
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
