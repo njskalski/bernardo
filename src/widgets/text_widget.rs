@@ -39,6 +39,10 @@ impl TextWidget {
     pub fn get_text(&self) -> String {
         self.text.to_string()
     }
+
+    pub fn set_text(&mut self, text: Box<dyn Printable>) {
+        self.text = text;
+    }
 }
 
 impl Widget for TextWidget {

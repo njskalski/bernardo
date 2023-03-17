@@ -30,6 +30,7 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
 
     fn layout(&self, root: &mut W, sc: SizeConstraint) -> LayoutResult<W> {
         let root_id = root.id();
+        let root_desc = format!("{:?}", root as &dyn Widget);
         let widget = self.widget.get_mut(root);
         let skip = root_id == widget.id();
 
@@ -55,7 +56,11 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
                     )],
                     xy)
             } else {
-                error!("got layout too small (sc: {:?}) to draw widget [{:?}] min_size {}, returning min_size instead, but this will lead to incorrect layouting", sc, widget, widget_min_size);
+                error!("layouting {}: got layout too small (sc: {:?}) to draw widget [{:?}] min_size {}, returning min_size instead, but this will lead to incorrect layouting",
+                    root_desc,
+                    sc,
+                    widget,
+                    widget_min_size);
                 LayoutResult::new(
                     vec![],
                     widget_min_size)

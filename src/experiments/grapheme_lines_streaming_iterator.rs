@@ -46,3 +46,33 @@ impl<'a> StreamingIterator for GraphemeLinesStreamingIterator<'a> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #![allow(dead_code)]
+
+    use streaming_iterator::StreamingIterator;
+
+    use crate::experiments::grapheme_lines_streaming_iterator::GraphemeLinesStreamingIterator;
+    use crate::primitives::printable::Printable;
+
+    #[test]
+    fn test_1_line() {
+        let text = "abcd";
+        let mut it = GraphemeLinesStreamingIterator::new(text.graphemes());
+
+        assert_eq!(it.next(), Some(&"abcd".to_string()));
+        assert_eq!(it.next(), None);
+    }
+
+    #[test]
+    fn test_3_line() {
+        let text = "abcd\nefgh\nijkl";
+        let mut it = GraphemeLinesStreamingIterator::new(text.graphemes());
+
+        assert_eq!(it.next(), Some(&"abcd".to_string()));
+        assert_eq!(it.next(), Some(&"efgh".to_string()));
+        assert_eq!(it.next(), Some(&"ijkl".to_string()));
+        assert_eq!(it.next(), None);
+    }
+}

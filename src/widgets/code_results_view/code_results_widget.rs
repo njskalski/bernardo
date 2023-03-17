@@ -109,9 +109,11 @@ impl Widget for CodeResultsView {
         if old_state == LoadingState::NotStarted || old_state == LoadingState::InProgress {
             let poll_result = self.data_provider.poll();
             if poll_result.has_first_result() {
-                self.set_focused(subwidget!(Self.item_list))
+                self.set_focused(subwidget!(Self.item_list));
             }
         }
+
+        self.label.set_text(self.data_provider.description());
 
         {
             let mut buffer_register_lock = unpack_or_e!(self.providers.buffer_register().try_write().ok(), (), "failed to acquire buffer register");
