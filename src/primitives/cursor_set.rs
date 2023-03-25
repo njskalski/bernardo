@@ -12,11 +12,11 @@ pub struct CursorSet {
     set: Vec<Cursor>,
 }
 
-impl Default for CursorSet {
-    fn default() -> Self {
-        CursorSet::single()
-    }
-}
+// impl Default for CursorSet {
+//     fn default() -> Self {
+//         CursorSet::single()
+//     }
+// }
 
 impl CursorSet {
     pub fn single() -> Self {

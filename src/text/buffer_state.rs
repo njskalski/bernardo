@@ -261,7 +261,7 @@ impl BufferState {
         BufferState {
             subtype: BufferType::Full,
             tree_sitter_op,
-            history: vec![ContentsAndCursors::default()],
+            history: vec![ContentsAndCursors::empty_for(document_identifier.buffer_id)],
             history_pos: 0,
             lang_id: None,
             document_identifier,
@@ -386,13 +386,14 @@ impl BufferState {
     }
 
     pub fn simplified_single_line() -> BufferState {
+        let doc_id = DocumentIdentifier::new_unique();
         BufferState {
             subtype: BufferType::SingleLine,
             tree_sitter_op: None,
-            history: vec![ContentsAndCursors::default()],
+            history: vec![ContentsAndCursors::empty_for(doc_id.buffer_id)],
             history_pos: 0,
             lang_id: None,
-            document_identifier: DocumentIdentifier::new_unique(),
+            document_identifier: doc_id,
         }
     }
 
@@ -439,7 +440,7 @@ impl BufferState {
     pub fn with_text<T: AsRef<str>>(self, text: T) -> Self {
         let rope = ropey::Rope::from_str(text.as_ref());
         let mut result = Self {
-            history: vec![ContentsAndCursors::default().with_rope(rope)],
+            history: vec![ContentsAndCursors::empty_for(self.document_identifier.buffer_id).with_rope(rope)],
             history_pos: 0,
             ..self
         };
@@ -454,7 +455,7 @@ impl BufferState {
     This is expected to be used only in construction, it clears the history.
      */
     pub fn with_text_from_rope(self, rope: Rope, lang_id: Option<LangId>) -> Self {
-        let text = ContentsAndCursors::default().with_rope(rope);
+        let text = ContentsAndCursors::empty_for(self.document_identifier.buffer_id).with_rope(rope);
 
         let mut res = Self {
             history: vec![text],

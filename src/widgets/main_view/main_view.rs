@@ -45,6 +45,8 @@ use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 use crate::widgets::with_scroll::WithScroll;
 
+pub type BufferId = Uuid;
+
 pub enum HoverItem {
     FuzzySearch(WithScroll<FuzzySearchWidget>),
 }
@@ -53,14 +55,14 @@ pub enum HoverItem {
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct DocumentIdentifier {
-    pub uuid: Uuid,
+    pub buffer_id: BufferId,
     pub file_path: Option<SPath>,
 }
 
 impl DocumentIdentifier {
     pub fn new_unique() -> DocumentIdentifier {
         DocumentIdentifier {
-            uuid: Uuid::new_v4(),
+            buffer_id: Uuid::new_v4(),
             file_path: None,
         }
     }

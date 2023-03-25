@@ -12,8 +12,9 @@ use crate::primitives::search_pattern::SearchPattern;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::widgets::main_view::main_view::BufferId;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct ContentsAndCursors {
     pub rope: Rope,
     pub parsing: Option<ParsingTuple>,
@@ -21,6 +22,14 @@ pub struct ContentsAndCursors {
 }
 
 impl ContentsAndCursors {
+    pub fn empty_for(buffer_id : BufferId) -> Self {
+        ContentsAndCursors  {
+            rope : Rope::default(),
+            parsing : None,
+            cursor_set : CursorSet::single(),
+        }
+    }
+
     pub fn with_rope(self, rope: Rope) -> Self {
         Self {
             rope,
