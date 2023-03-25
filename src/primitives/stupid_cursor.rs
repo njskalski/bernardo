@@ -6,7 +6,8 @@ use log::error;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::primitives::cursor_set::{Cursor, Selection};
+use crate::primitives::cursor::Selection;
+use crate::primitives::cursor::Cursor;
 use crate::primitives::xy::XY;
 use crate::text::text_buffer::TextBuffer;
 use crate::unpack_or;

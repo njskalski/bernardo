@@ -3,7 +3,7 @@ use std::fmt::{Debug, Formatter};
 use ropey::iter::{Chars, Chunks};
 use streaming_iterator::StreamingIterator;
 
-use crate::primitives::cursor_set::Selection;
+use crate::primitives::cursor::Selection;
 use crate::tsw::lang_id::LangId;
 
 //TODO create tests for undo/redo/set milestone

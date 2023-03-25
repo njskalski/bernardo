@@ -12,7 +12,7 @@ use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
 use crate::io::sub_output::SubOutput;
 use crate::primitives::common_edit_msgs::key_to_edit_msg;
-use crate::primitives::cursor_set::CursorStatus;
+use crate::primitives::cursor::CursorStatus;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;

@@ -15,8 +15,9 @@ pub mod tests {
 
     use ropey::Rope;
 
-    // use serde::de::Unexpected::Str;
-    use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
+    use crate::primitives::cursor::Selection;
+    use crate::primitives::cursor::Cursor;
+    use crate::primitives::cursor_set::CursorSet;
 
     pub fn text_to_buffer_cursors(s: &str) -> (Rope, CursorSet) {
         let mut cursors: Vec<usize> = vec![];

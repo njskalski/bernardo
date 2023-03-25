@@ -30,3 +30,4 @@ pub mod cursor_set_fuzz;
 pub mod scroll_enum;
 pub mod has_invariant;
 pub mod printable;
+pub mod cursor;

@@ -9,7 +9,7 @@ use crate::config::load_error::LoadError;
 use crate::config::save_error::SaveError;
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::color::Color;
-use crate::primitives::cursor_set::CursorStatus;
+use crate::primitives::cursor::CursorStatus;
 use crate::primitives::tmtheme::TmTheme;
 
 // TODO get rid of clone (in mock output we need Rc/Arc)

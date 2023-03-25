@@ -20,7 +20,7 @@ use crate::io::output::{Metadata, Output};
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
-use crate::primitives::cursor_set::Cursor;
+use crate::primitives::cursor::Cursor;
 use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;

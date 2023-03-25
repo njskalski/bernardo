@@ -2,7 +2,7 @@ use either::Either;
 
 use crate::experiments::focus_group::FocusUpdate;
 use crate::fs::path::SPath;
-use crate::primitives::cursor_set::Cursor;
+use crate::primitives::cursor::Cursor;
 use crate::w7e::navcomp_provider::SymbolUsagesPromise;
 use crate::widget::any_msg::AnyMsg;
 use crate::widgets::code_results_view::promise_provider::WrappedSymbolUsagesPromise;

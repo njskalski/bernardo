@@ -4,7 +4,12 @@ use libfuzzer_sys::arbitrary::{Arbitrary, Result, Unstructured};
 use unicode_segmentation::UnicodeSegmentation;
 
 #[allow(unused_imports)]
-use crate::primitives::cursor_set::{Cursor, CursorSet, Selection};
+use crate::primitives::cursor::Selection;
+
+#[allow(unused_imports)]
+use crate::primitives::cursor::Cursor;
+use crate::primitives::cursor_set::CursorSet;
+
 #[allow(unused_imports)]
 use crate::text::buffer_state::{BufferState, BufferType};
 

@@ -1,6 +1,6 @@
 use libfuzzer_sys::arbitrary::{Arbitrary, Result, Unstructured};
 
-use crate::primitives::cursor_set::Selection;
+use crate::primitives::cursor::Selection;
 
 impl<'a> Arbitrary<'a> for Selection {
     fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
