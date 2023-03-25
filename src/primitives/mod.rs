@@ -31,3 +31,5 @@ pub mod scroll_enum;
 pub mod has_invariant;
 pub mod printable;
 pub mod cursor;
+mod multiple_cursor_sets_selection_tests;
+mod cursor_tests_common;

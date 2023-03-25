@@ -1,4 +1,4 @@
-// Copyright 2018 Google LLC, 2021 Andrzej J Skalski
+// Copyright 2021-2023 Andrzej J Skalski, 2018 Google LLC
 // original file was part of sly-editor, at
 // https://github.com/njskalski/sly-editor/blob/master/src/cursor_set.rs
 // it's copyrighted by Google LLC at Apache 2 license.
@@ -18,155 +18,18 @@ pub mod tests {
     use crate::primitives::cursor::Selection;
     use crate::primitives::cursor::Cursor;
     use crate::primitives::cursor_set::CursorSet;
+    use crate::primitives::cursor_tests_common::tests::{common_assert_pair_makes_sense, common_buffer_cursors_sel_to_text, common_text_to_buffer_cursors_with_selections};
+    use crate::text::text_buffer::TextBuffer;
 
-    pub fn text_to_buffer_cursors(s: &str) -> (Rope, CursorSet) {
-        let mut cursors: Vec<usize> = vec![];
-        let mut text = String::new();
-
-        dbg!(s);
-
-        for c in s.chars() {
-            if c == '#' {
-                cursors.push(text.len());
-                continue;
-            }
-
-            text.push(c);
-        }
-
-        dbg!(&cursors);
-
-        let cursors: Vec<Cursor> = cursors.iter().map(|a| (*a).into()).collect();
-
-        (Rope::from(text), CursorSet::new(cursors))
+    fn text_to_buffer_cursors(text : &str) -> (Rope, CursorSet) {
+        let res = common_text_to_buffer_cursors_with_selections(text);
+        assert!(res.1.are_simple());
+        res
     }
 
-    // cursors start with [ or # and end with ] or #, having exactly one #, and exactly one of [ or ]
-    pub fn text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSet) {
-        let text = String::new();
-
-        let mut cursors: Vec<Cursor> = vec![];
-
-        dbg!(s);
-
-        let mut other_part: Option<usize> = None;
-
-        for c in s.chars() {
-            let pos = text.len();
-            if c == '#' {
-                match other_part {
-                    None => other_part = Some(pos),
-                    Some(idx) => {
-                        cursors.push(
-                            Cursor::new(pos).with_selection(Selection::new(idx, pos))
-                        );
-                    }
-                }
-                continue;
-            }
-
-            if c == '[' || c == ']' {
-                match other_part {
-                    None => other_part = Some(pos),
-                    Some(idx) => {
-                        cursors.push(
-                            Cursor::new(idx).with_selection(Selection::new(idx, pos))
-                        );
-                    }
-                };
-                continue;
-            }
-        }
-
-        dbg!(&cursors);
-
-        let cursors: Vec<Cursor> = cursors.iter().map(|a| (*a).into()).collect();
-
-        (Rope::from(text), CursorSet::new(cursors))
-    }
-
-    pub fn buffer_cursors_to_text<T: Borrow<Rope>>(b: T, cs: &CursorSet) -> String {
-        let mut output = String::new();
-        let mut anchors: Vec<usize> = cs.set().iter().map(|c| c.a).collect();
-        anchors.sort();
-
-        let buffer = b.borrow().to_string();
-
-        let mut prev: usize = 0;
-        for a in anchors {
-            if prev < buffer.len() {
-                output.push_str(&buffer[prev..std::cmp::min(a, buffer.len())]);
-            }
-
-            if output.chars().last() == Some('#') {
-                continue; // reducing
-            }
-            output.push_str("#");
-            prev = a;
-        }
-        if prev < buffer.len() {
-            output.push_str(&buffer[prev..]);
-        }
-
-        output
-    }
-
-    fn a_to_c(anchors: Vec<usize>) -> CursorSet {
-        CursorSet::new(anchors.iter().map(|a| (*a).into()).collect())
-    }
-
-    #[test]
-    fn get_buffer_test_1() {
-        let (bs, cs) = text_to_buffer_cursors("te#xt");
-        let text = bs.to_string();
-
-        assert_eq!(text, "text".to_owned());
-        assert_eq!(
-            cs.set().iter().map(|c| c.a).collect::<Vec<usize>>(),
-            vec![2]
-        );
-    }
-
-    #[test]
-    fn get_buffer_test_2() {
-        let (bs, cs) = text_to_buffer_cursors("#text#");
-        let text = bs.to_string();
-
-        assert_eq!(text, "text".to_owned());
-        assert_eq!(
-            cs.set().iter().map(|c| c.a).collect::<Vec<usize>>(),
-            vec![0, 4]
-        );
-    }
-
-    #[test]
-    fn buffer_cursors_to_text_1() {
-        let cursors = a_to_c(vec![2]);
-        let buffer = Rope::from_str("text");
-
-        let output = buffer_cursors_to_text(&buffer, &cursors);
-
-        assert_eq!(output, "te#xt".to_owned());
-    }
-
-    #[test]
-    fn buffer_cursors_to_text_2() {
-        let cursors = a_to_c(vec![0, 4]);
-        let buffer = Rope::from_str("text");
-
-        let output = buffer_cursors_to_text(&buffer, &cursors);
-
-        assert_eq!(output, "#text#".to_owned());
-    }
-
-    #[test]
-    fn buffer_cursors_to_text_3() {
-        let cursors = a_to_c(vec![1]);
-        let buffer = Rope::from_str("text");
-
-        let output = buffer_cursors_to_text(&buffer, &cursors);
-
-        assert_eq!(output, "t#ext".to_owned());
+    fn buffer_cursors_to_text(rope : &dyn TextBuffer, cs : &CursorSet) -> String {
+        assert!(cs.are_simple());
+        common_buffer_cursors_sel_to_text(rope, cs)
     }
 
     #[test]
@@ -178,7 +41,7 @@ pub mod tests {
         "dr#ess ball\n",
         "he just went for fun\n",
         "dressed up as bone\n",
-        "and dog ea#t h#im up in the# hall.\n"
+        "and dog ea#t h#im up in the# hall\n"
         );
 
         let (buffer, cursors) = text_to_buffer_cursors(text);
@@ -189,7 +52,11 @@ pub mod tests {
 
     fn apply(input: &str, f: fn(&mut CursorSet, &Rope) -> ()) -> String {
         let (bs, mut cs) = text_to_buffer_cursors(input);
+
+        common_assert_pair_makes_sense(&bs, &cs);
         f(&mut cs, &bs);
+        common_assert_pair_makes_sense(&bs, &cs);
+
         buffer_cursors_to_text(&bs, &cs)
     }
 
@@ -373,7 +240,7 @@ pub mod tests {
             "dress ball\n",
             "he just went for fun\n",
             "dressed up as bone\n",
-            "and dog eat him up in the hall.\n"
+            "and dog eat him up in the hall\n"
             );
 
             let new_text = concat!(
@@ -383,7 +250,7 @@ pub mod tests {
             "d#ress ball\n",
             "he just went for fun\n",
             "dressed up as bone\n",
-            "and dog eat him up in the hall.\n"
+            "and dog eat him up in the hall\n"
             );
 
             assert_eq!(apply(text, f), new_text);
@@ -397,7 +264,7 @@ pub mod tests {
             "dress ball\n",
             "he just went for fun\n",
             "dressed up as bone\n",
-            "and dog eat him up in the hall.\n"
+            "and dog eat him up in the hall\n"
             );
 
             let new_text = concat!(
@@ -407,7 +274,7 @@ pub mod tests {
             "d#ress ball#\n",
             "he ju#st went for fun\n",
             "dressed up as bone\n",
-            "and dog eat him up in the hall.\n"
+            "and dog eat him up in the hall\n"
             );
 
             assert_eq!(apply(text, f), new_text);
@@ -494,7 +361,7 @@ pub mod tests {
             "dress ball\n",
             "he just went for fun\n",
             "d#ressed up as bone\n",
-            "and dog eat him up in the hall.#\n"
+            "and dog eat him up in the hall#\n"
             );
 
             let new_text = concat!(
@@ -504,7 +371,7 @@ pub mod tests {
             "dress ball#\n",
             "he just went for fun\n",
             "dressed up as bone\n",
-            "and dog eat him up in the hall.\n"
+            "and dog eat him up in the hall\n"
             );
 
             assert_eq!(apply(text, f), new_text);

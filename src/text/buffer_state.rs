@@ -85,6 +85,7 @@ impl BufferState {
                     return false;
                 }
                 CommonEditMsg::Block(block) => {
+                    // TODO not sure if this should be here
                     let new_block = block.replace("\n", "");
                     cem = CommonEditMsg::Block(new_block);
                 }

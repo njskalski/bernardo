@@ -6,17 +6,25 @@ use crate::primitives::cursor::{BackwardWordDeterminant, Cursor, CursorStatus, d
 use crate::primitives::has_invariant::HasInvariant;
 use crate::text::text_buffer::TextBuffer;
 
+// INVARIANTS:
+// - non-empty
+//      this is so I can use cursor for anchoring and call "supercursor" easily
+// - cursors are distinct
+// - cursors have their anchors either on begin or on end, and they all have the anchor on the same side
+// - cursors DO NOT OVERLAP
+// - cursors are SORTED by their anchor
+
+// TODO add invariants:
+// - sort cursors by anchor (they don't overlap, so it's easy)
+// - (maybe) add "supercursor", which is always the first or the last, depending on which direction they were moved.
+//      it would help with anchoring.
+
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct CursorSet {
     set: Vec<Cursor>,
 }
-
-// impl Default for CursorSet {
-//     fn default() -> Self {
-//         CursorSet::single()
-//     }
-// }
 
 impl CursorSet {
     pub fn single() -> Self {

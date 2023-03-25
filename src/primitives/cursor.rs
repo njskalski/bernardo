@@ -1,4 +1,4 @@
-// Copyright 2018-2020 Google LLC, 2021-2023 Andrzej J Skalski
+// Copyright 2021-2023 Andrzej J Skalski, 2018-2020 Google LLC
 // This version of the file (2021+) is licensed with GNU LGPLv3 License.
 // For older version of file (licensed under Apache 2 license), see sly-editor, at
 // https://github.com/njskalski/sly-editor/blob/master/src/cursor_set.rs
@@ -17,21 +17,7 @@
 // Newline is always an end of previous line, not a beginning of new.
 
 // TODO change the selection to Option<usize> to ENFORCE the invariant by reducing the volume of data.
-// TODO decide: introduce a special cursor to derive from while in "dropping_cursor" mode?
 // TODO add "invariant protectors" to cursor set and warnings/errors, maybe add tests.
-
-// INVARIANTS:
-// - non-empty
-//      this is so I can use cursor for anchoring and call "supercursor" easily
-// - cursors are distinct
-// - cursors have their anchors either on begin or on end, and they all have the anchor on the same side
-// - cursors DO NOT OVERLAP
-// - cursors are SORTED by their anchor
-
-// TODO add invariants:
-// - sort cursors by anchor (they don't overlap, so it's easy)
-// - (maybe) add "supercursor", which is always the first or the last, depending on which direction they were moved.
-//      it would help with anchoring.
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
