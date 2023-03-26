@@ -298,6 +298,89 @@ fn insert_to_rope_at_random_place(cs: &mut CursorSet,
     }
 }
 
+fn update_cursors_after_removal(cs: &mut CursorSet,
+                                char_range: Range<usize>) {
+
+    // first, throwing away cursors inside the block
+    {
+        let mut to_remove: Vec<usize> = Vec::new();
+        for c in cs.iter() {
+            if char_range.start <= c.get_begin() && c.get_end() <= char_range.end {
+                to_remove.push(c.a);
+            }
+        }
+
+        for ca in to_remove.into_iter() {
+            let paranoia = cs.remove_by_anchor(ca);
+            debug_assert!(paranoia);
+        }
+    }
+    let stride = char_range.len();
+    // second, cutting cursors overlapping with block
+    {
+        for c in cs.iter_mut() {
+            if c.intersects(&char_range) {
+                // end inside
+                if char_range.contains(&c.get_end()) {
+                    debug_assert!(char_range.contains(&c.s.unwrap().e));
+
+                    if let Some(sel) = c.s.as_mut() {
+                        if c.a == sel.e {
+                            sel.e = char_range.start;
+                            c.a = char_range.start;
+                        } else {
+                            sel.e = char_range.start;
+                        }
+                    }
+                    continue;
+                }
+
+                // begin inside
+                if char_range.contains(&c.a) {
+                    if let Some(sel) = c.s.as_mut() {
+                        if c.a == sel.b {
+                            sel.b = char_range.end;
+                            c.a = char_range.end;
+                        } else {
+                            sel.b = char_range.end;
+                        }
+                    }
+                    continue;
+                }
+
+                // entire block was inside cursor
+                if let Some(sel) = c.s.as_mut() {
+                    debug_assert!(sel.b <= char_range.start);
+                    debug_assert!(char_range.end <= sel.e);
+                    debug_assert!(sel.e - sel.b >= char_range.len());
+
+                    if c.a == sel.e {
+                        c.a -= stride;
+                        sel.e -= stride;
+                    } else {
+                        sel.e -= stride;
+                    }
+                    continue;
+                }
+
+                debug_assert!(false);
+            }
+        }
+    }
+
+    // moving all cursors that were after the removed block
+    for c in cs.iter_mut() {
+        if char_range.end <= c.get_begin() {
+            c.shift_by(-(stride as isize)); // TODO overflow
+        }
+    }
+
+    if cs.len() == 0 {
+        error!("cs empty after removing block, will set to a single cursor at block start");
+        cs.add_cursor(Cursor::new(char_range.start));
+    }
+}
+
 fn remove_from_rope_at_random_place(cs: &mut CursorSet,
                                     rope: &mut dyn TextBuffer,
                                     char_range: Range<usize>) -> (usize, bool) {
@@ -309,92 +392,15 @@ fn remove_from_rope_at_random_place(cs: &mut CursorSet,
             error!("failed to remove block");
             (0, false)
         } else {
-            // first, throwing away cursors inside the block
-            {
-                let mut to_remove: Vec<usize> = Vec::new();
-                for c in cs.iter() {
-                    if char_range.start <= c.get_begin() && c.get_end() <= char_range.end {
-                        to_remove.push(c.a);
-                    }
-                }
-
-                for ca in to_remove.into_iter() {
-                    let paranoia = cs.remove_by_anchor(ca);
-                    debug_assert!(paranoia);
-                }
-            }
+            update_cursors_after_removal(cs, char_range.clone());
             let stride = char_range.len();
-            // second, cutting cursors overlapping with block
-            {
-                for c in cs.iter_mut() {
-                    if c.intersects(&char_range) {
-                        // end inside
-                        if char_range.contains(&c.get_end()) {
-                            debug_assert!(char_range.contains(&c.s.unwrap().e));
-
-                            if let Some(sel) = c.s.as_mut() {
-                                if c.a == sel.e {
-                                    sel.e = char_range.start;
-                                    c.a = char_range.start;
-                                } else {
-                                    sel.e = char_range.start;
-                                }
-                            }
-                            continue;
-                        }
-
-                        // begin inside
-                        if char_range.contains(&c.a) {
-                            if let Some(sel) = c.s.as_mut() {
-                                if c.a == sel.b {
-                                    sel.b = char_range.end;
-                                    c.a = char_range.end;
-                                } else {
-                                    sel.b = char_range.end;
-                                }
-                            }
-                            continue;
-                        }
-
-                        // entire block was inside cursor
-                        if let Some(sel) = c.s.as_mut() {
-                            debug_assert!(sel.b <= char_range.start);
-                            debug_assert!(char_range.end <= sel.e);
-                            debug_assert!(sel.e - sel.b >= char_range.len());
-
-                            if c.a == sel.e {
-                                c.a -= stride;
-                                sel.e -= stride;
-                            } else {
-                                sel.e -= stride;
-                            }
-                            continue;
-                        }
-
-                        debug_assert!(false);
-                    }
-                }
-            }
-
-            // moving all cursors that were after the removed block
-            for c in cs.iter_mut() {
-                if char_range.end <= c.get_begin() {
-                    c.shift_by(-(stride as isize)); // TODO overflow
-                }
-            }
-
-            if cs.len() == 0 {
-                error!("cs empty after removing block, will set to a single cursor at block start");
-                cs.add_cursor(Cursor::new(char_range.start));
-            }
-
             (stride, true)
         }
     }
 }
 
 fn handle_backspace_and_delete(cursor_set: &mut CursorSet,
-                               other_cursor_sets: &Vec<&mut CursorSet>,
+                               other_cursor_sets: &mut Vec<&mut CursorSet>,
                                backspace: bool,
                                rope: &mut dyn TextBuffer) -> (usize, bool) {
     let mut res = false;
@@ -415,6 +421,10 @@ fn handle_backspace_and_delete(cursor_set: &mut CursorSet,
             if rope.remove(sel.b, sel.e) {
                 res |= true;
                 diff_len += sel.len();
+
+                for other_cursor_set in other_cursor_sets.iter_mut() {
+                    update_cursors_after_removal(other_cursor_set, sel.b..sel.e);
+                }
             } else {
                 warn!("expected to remove non-empty item substring but failed");
             }
@@ -437,15 +447,19 @@ fn handle_backspace_and_delete(cursor_set: &mut CursorSet,
                 }
             }
 
-            let small_range = if backspace {
-                (c.a - 1)..c.a
+            let (b, e) = if backspace {
+                (c.a - 1, c.a)
             } else {
-                c.a..(c.a + 1)
+                (c.a, c.a + 1)
             };
 
-            if rope.remove(small_range.start, small_range.end) {
+            if rope.remove(b, e) {
                 res |= true;
                 diff_len += 1;
+
+                for other_cursor_set in other_cursor_sets.iter_mut() {
+                    update_cursors_after_removal(other_cursor_set, b..e);
+                }
             } else {
                 warn!("expected to remove char but failed");
             }
@@ -495,7 +509,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
         }
         CommonEditMsg::Backspace => {
             handle_backspace_and_delete(cursor_set,
-                                        &vec![],
+                                        &mut vec![],
                                         true,
                                         rope,
             )
@@ -530,7 +544,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
         }
         CommonEditMsg::Delete => {
             handle_backspace_and_delete(cursor_set,
-                                        &vec![],
+                                        &mut vec![],
                                         false,
                                         rope,
             )

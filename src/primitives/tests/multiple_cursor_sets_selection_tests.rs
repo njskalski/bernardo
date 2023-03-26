@@ -69,6 +69,6 @@ fn single_cursor_test_1() {
 
     let new_texts = texts_to_texts(&texts, 1, CommonEditMsg::Backspace, None);
 
-    assert_eq!(new_texts[0].as_str(), "fisstte#st");
-    assert_eq!(new_texts[1].as_str(), "fi#ssttest");
+    assert_eq!(new_texts[0].as_str(), "fistte#st");
+    assert_eq!(new_texts[1].as_str(), "fi#sttest");
 }
