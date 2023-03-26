@@ -393,104 +393,131 @@ fn remove_from_rope_at_random_place(cs: &mut CursorSet,
     }
 }
 
+fn handle_backspace_and_delete(cursor_set: &mut CursorSet,
+                               other_cursor_sets: &Vec<&mut CursorSet>,
+                               backspace: bool,
+                               rope: &mut dyn TextBuffer) -> (usize, bool) {
+    let mut res = false;
+    let mut modifier: isize = 0;
+    let mut diff_len: usize = 0;
+    for c in cursor_set.iter_mut() {
+        c.shift_by(modifier);
+
+        if cfg!(debug_assertions) {
+            // equal is OK.
+            if c.a > rope.len_chars() {
+                error!("cursor beyond length of rope: {} > {}", c.a, rope.len_chars());
+                continue;
+            }
+        }
+
+        if let Some(sel) = c.s {
+            if rope.remove(sel.b, sel.e) {
+                res |= true;
+                diff_len += sel.len();
+            } else {
+                warn!("expected to remove non-empty item substring but failed");
+            }
+
+            // TODO underflow/overflow
+            let change = (sel.e - sel.b) as isize;
+            modifier -= change;
+
+            if c.anchor_right() {
+                c.shift_by(change);
+            }
+        } else {
+            if backspace {
+                if c.a == 0 {
+                    continue;
+                }
+            } else {
+                if c.a == rope.len_chars() {
+                    continue;
+                }
+            }
+
+            let small_range = if backspace {
+                (c.a - 1)..c.a
+            } else {
+                c.a..(c.a + 1)
+            };
+
+            if rope.remove(small_range.start, small_range.end) {
+                res |= true;
+                diff_len += 1;
+            } else {
+                warn!("expected to remove char but failed");
+            }
+            modifier -= 1;
+
+            if backspace {
+                c.shift_by(-1);
+            }
+        }
+        c.clear_both();
+        debug_assert!(c.check_invariant());
+    };
+
+    cursor_set.reduce_left();
+    debug_assert!(cursor_set.check_invariant());
+    (diff_len, res)
+}
+
 // Returns tuple:
 //      first is number of chars that changed (inserted, removed, changed), or 0 in case of UNDO/REDO
 //      FALSE iff the command results in no-op.
 pub fn _apply_cem(cem: CommonEditMsg,
-                  cs: &mut CursorSet,
+                  cursor_set: &mut CursorSet,
+                  observer_cursor_sets: Vec<&mut CursorSet>,
                   rope: &mut dyn TextBuffer,
                   page_height: usize,
                   clipboard: Option<&ClipboardRef>) -> (usize, bool) {
     let res = match cem {
         CommonEditMsg::Char(char) => {
             // TODO optimise
-            insert_to_rope(cs, rope, None, char.to_string().as_str())
+            insert_to_rope(cursor_set, rope, None, char.to_string().as_str())
         }
         CommonEditMsg::Block(s) => {
-            insert_to_rope(cs, rope, None, &s)
+            insert_to_rope(cursor_set, rope, None, &s)
         }
         CommonEditMsg::CursorUp { selecting } => {
-            (0, cs.move_vertically_by(rope, -1, selecting))
+            (0, cursor_set.move_vertically_by(rope, -1, selecting))
         }
         CommonEditMsg::CursorDown { selecting } => {
-            (0, cs.move_vertically_by(rope, 1, selecting))
+            (0, cursor_set.move_vertically_by(rope, 1, selecting))
         }
         CommonEditMsg::CursorLeft { selecting } => {
-            (0, cs.move_left(selecting))
+            (0, cursor_set.move_left(selecting))
         }
         CommonEditMsg::CursorRight { selecting } => {
-            (0, cs.move_right(rope, selecting))
+            (0, cursor_set.move_right(rope, selecting))
         }
         CommonEditMsg::Backspace => {
-            let mut res = false;
-            let mut modifier: isize = 0;
-            let mut diff_len: usize = 0;
-            for c in cs.iter_mut() {
-                c.shift_by(modifier);
-
-                if cfg!(debug_assertions) {
-                    // equal is OK.
-                    if c.a > rope.len_chars() {
-                        error!("cursor beyond length of rope: {} > {}", c.a, rope.len_chars());
-                        continue;
-                    }
-                }
-
-                if let Some(sel) = c.s {
-                    if rope.remove(sel.b, sel.e) {
-                        res |= true;
-                        diff_len += sel.len();
-                    } else {
-                        warn!("expected to remove non-empty item substring but failed");
-                    }
-
-                    // TODO underflow/overflow
-                    let change = (sel.e - sel.b) as isize;
-                    modifier -= change;
-
-                    if c.anchor_right() {
-                        c.shift_by(change);
-                    }
-                } else {
-                    if c.a == 0 {
-                        continue;
-                    }
-
-                    if rope.remove(c.a - 1, c.a) {
-                        res |= true;
-                        diff_len += 1;
-                    } else {
-                        warn!("expected to remove char but failed");
-                    }
-                    modifier -= 1;
-                    c.shift_by(-1);
-                }
-                c.clear_both();
-                debug_assert!(c.check_invariant());
-            };
-
-            cs.reduce_left();
-            debug_assert!(cs.check_invariant());
-            (diff_len, res)
+            handle_backspace_and_delete(cursor_set,
+                                        &vec![],
+                                        true,
+                                        rope,
+            )
         }
         CommonEditMsg::LineBegin { selecting } => {
-            (0, cs.move_home(rope, selecting))
+            (0, cursor_set.move_home(rope, selecting))
         }
         CommonEditMsg::LineEnd { selecting } => {
-            (0, cs.move_end(rope, selecting))
+            (0, cursor_set.move_end(rope, selecting))
         }
         CommonEditMsg::WordBegin { selecting } => {
-            (0, cs.word_begin_default(rope, selecting))
+            (0, cursor_set.word_begin_default(rope, selecting))
         }
         CommonEditMsg::WordEnd { selecting } => {
-            (0, cs.word_end_default(rope, selecting))
+            (0, cursor_set.word_end_default(rope, selecting))
         }
         CommonEditMsg::PageUp { selecting } => {
             if page_height > PAGE_HEIGHT_LIMIT {
                 error!("received PageUp of page_height {}, ignoring.", page_height);
                 (0, false)
             } else {
-                (0, cs.move_vertically_by(rope, -(page_height as isize), selecting))
+                (0, cursor_set.move_vertically_by(rope, -(page_height as isize), selecting))
             }
         }
         CommonEditMsg::PageDown { selecting } => {
@@ -498,63 +525,20 @@ pub fn _apply_cem(cem: CommonEditMsg,
                 error!("received PageDown of page_height {}, ignoring.", page_height);
                 (0, false)
             } else {
-                (0, cs.move_vertically_by(rope, page_height as isize, selecting))
+                (0, cursor_set.move_vertically_by(rope, page_height as isize, selecting))
             }
         }
         CommonEditMsg::Delete => {
-            let mut res = false;
-            let mut modifier: isize = 0;
-            let mut diff_len: usize = 0;
-            for c in cs.iter_mut() {
-                c.shift_by(modifier);
-
-                if cfg!(debug_assertions) {
-                    // equal is OK.
-                    if c.a > rope.len_chars() {
-                        error!("cursor beyond length of rope: {} > {}", c.a, rope.len_chars());
-                        continue;
-                    }
-                }
-
-                if let Some(sel) = c.s {
-                    if rope.remove(sel.b, sel.e) {
-                        res |= true;
-                        diff_len += sel.len();
-                    } else {
-                        warn!("expected to remove non-empty item substring but failed");
-                    }
-
-                    let change = (sel.e - sel.b) as isize;
-                    modifier -= change;
-
-                    if c.anchor_right() {
-                        c.shift_by(change);
-                    }
-                } else {
-                    if c.a == rope.len_chars() {
-                        continue;
-                    }
-
-                    if rope.remove(c.a, c.a + 1) {
-                        res |= true;
-                        diff_len += 1;
-                    } else {
-                        warn!("expected to remove char but failed");
-                    }
-                    modifier -= 1;
-                }
-                c.clear_both();
-                debug_assert!(c.check_invariant());
-            };
-
-            cs.reduce_left();
-            debug_assert!(cs.check_invariant());
-            (diff_len, res)
+            handle_backspace_and_delete(cursor_set,
+                                        &vec![],
+                                        false,
+                                        rope,
+            )
         }
         CommonEditMsg::Copy => {
             if let Some(clipboard) = clipboard {
                 let mut contents = String::new();
-                for c in cs.iter() {
+                for c in cursor_set.iter() {
                     if !contents.is_empty() {
                         contents.push('\n');
                     }
@@ -574,7 +558,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
         }
         CommonEditMsg::Paste => {
             if let Some(clipboard) = clipboard {
-                let cursor_count = cs.set().len();
+                let cursor_count = cursor_set.set().len();
                 let contents = clipboard.get();
                 if contents.is_empty() {
                     warn!("not pasting empty contents");
@@ -583,14 +567,14 @@ pub fn _apply_cem(cem: CommonEditMsg,
                     let split_lines = contents.lines().count() == cursor_count;
                     // easy, each cursor gets full copy
                     if !split_lines {
-                        insert_to_rope(cs, rope, None, &contents)
+                        insert_to_rope(cursor_set, rope, None, &contents)
                     } else {
                         let mut res = false;
                         let mut it = contents.lines();
                         let mut common_idx: usize = 0;
                         let mut diff_len: usize = 0;
                         while let Some(line) = it.next() {
-                            let (dl, r) = insert_to_rope(cs, rope, Some(common_idx), line);
+                            let (dl, r) = insert_to_rope(cursor_set, rope, Some(common_idx), line);
                             res |= r;
                             diff_len += dl;
                             common_idx += 1;
@@ -611,10 +595,10 @@ pub fn _apply_cem(cem: CommonEditMsg,
             (0, rope.redo())
         }
         CommonEditMsg::DeleteBlock { char_range } => {
-            remove_from_rope_at_random_place(cs, rope, char_range)
+            remove_from_rope_at_random_place(cursor_set, rope, char_range)
         }
         CommonEditMsg::InsertBlock { char_pos, what } => {
-            insert_to_rope_at_random_place(cs, rope, char_pos, &what)
+            insert_to_rope_at_random_place(cursor_set, rope, char_pos, &what)
         }
         CommonEditMsg::Tab => {
             let mut tab: String = String::new();
@@ -624,10 +608,10 @@ pub fn _apply_cem(cem: CommonEditMsg,
             let tab = tab;
 
             // if they are simple, we just add spaces
-            if cs.are_simple() {
-                insert_to_rope(cs, rope, None, &tab)
+            if cursor_set.are_simple() {
+                insert_to_rope(cursor_set, rope, None, &tab)
             } else {
-                let all_complex = cs.iter().fold(true, |acc, c| acc && !c.is_simple());
+                let all_complex = cursor_set.iter().fold(true, |acc, c| acc && !c.is_simple());
                 if !all_complex {
                     error!("ignoring tab on mixed cursor set");
                     (0, false)
@@ -635,10 +619,10 @@ pub fn _apply_cem(cem: CommonEditMsg,
                     let mut num_chars: usize = 0;
                     let mut modified = false;
 
-                    let indices = cursors_to_line_indices(rope, cs);
+                    let indices = cursors_to_line_indices(rope, cursor_set);
                     for line_idx in indices.into_iter() {
                         if let Some(char_begin_idx) = rope.line_to_char(line_idx) {
-                            let res = insert_to_rope_at_random_place(cs, rope, char_begin_idx, &tab);
+                            let res = insert_to_rope_at_random_place(cursor_set, rope, char_begin_idx, &tab);
                             num_chars += res.0;
                             modified |= res.1;
                         } else {
@@ -650,7 +634,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
             }
         }
         CommonEditMsg::ShiftTab => {
-            let indices = cursors_to_line_indices(rope, cs);
+            let indices = cursors_to_line_indices(rope, cursor_set);
             let mut chars_removed: usize = 0;
             let mut modified = false;
 
@@ -693,7 +677,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
                     }
 
                     // debug!("ordering to remove from line {} [{}] chars", line_idx, how_many_chars_to_eat);
-                    let partial_res = remove_from_rope_at_random_place(cs, rope, char_begin_idx..char_begin_idx + how_many_chars_to_eat);
+                    let partial_res = remove_from_rope_at_random_place(cursor_set, rope, char_begin_idx..char_begin_idx + how_many_chars_to_eat);
 
                     chars_removed += partial_res.0;
                     modified |= partial_res.1;
@@ -706,9 +690,9 @@ pub fn _apply_cem(cem: CommonEditMsg,
         }
     };
 
-    debug_assert!(cs.check_invariant());
+    debug_assert!(cursor_set.check_invariant());
 
-    for c in cs.iter() {
+    for c in cursor_set.iter() {
         debug_assert!(c.get_end() <= rope.len_chars());
     }
 

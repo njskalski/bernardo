@@ -15,7 +15,6 @@ pub mod alphabet;
 pub mod is_default;
 pub mod tmtheme;
 pub mod common_edit_msgs;
-mod common_edit_msgs_tests;
 pub mod search_pattern;
 pub mod provider;
 pub mod macros;
@@ -25,3 +24,6 @@ pub mod stupid_cursor;
 pub mod scroll_enum;
 pub mod has_invariant;
 pub mod printable;
+
+#[cfg(test)]
+mod tests;

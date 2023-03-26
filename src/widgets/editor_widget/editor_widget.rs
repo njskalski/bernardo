@@ -1128,7 +1128,7 @@ impl Widget for EditorWidget {
                             let mut set = CursorSet::singleton(special_cursor);
                             // TODO make sure this had no changing effect?
                             let height = self.page_height();
-                            _apply_cem(cem.clone(), &mut set, &mut *buffer, height as usize, Some(self.providers.clipboard()));
+                            _apply_cem(cem.clone(), &mut set, vec![], &mut *buffer, height as usize, Some(self.providers.clipboard()));
                             self.state = EditorState::DroppingCursor { special_cursor: set.as_single().unwrap() };
                             None
                         }

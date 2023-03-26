@@ -109,7 +109,7 @@ impl BufferState {
 
         // TODO optimise
         let mut cursors = self.text().cursor_set.clone();
-        let (_diff_len_chars, any_change) = _apply_cem(cem.clone(), &mut cursors, self, page_height as usize, clipboard);
+        let (_diff_len_chars, any_change) = _apply_cem(cem.clone(), &mut cursors, vec![], self, page_height as usize, clipboard);
 
         //undo/redo invalidates cursors copy, so I need to watch for those
         match cem {
