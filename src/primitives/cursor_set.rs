@@ -330,6 +330,10 @@ impl CursorSet {
                 c.update_select(old_pos, c.a);
             }
 
+            if old_pos != c.a {
+                res = true;
+            }
+
             debug_assert!(c.a <= rope.len_chars(), "somehow put the cursor {:?} too far out (len_chars = {})", c, rope.len_chars());
         }
 
