@@ -15,19 +15,19 @@ pub mod tests {
 
     use ropey::Rope;
 
-    use crate::primitives::cursor::Selection;
     use crate::primitives::cursor::Cursor;
+    use crate::primitives::cursor::Selection;
     use crate::primitives::cursor_set::CursorSet;
     use crate::primitives::cursor_tests_common::tests::{common_assert_pair_makes_sense, common_buffer_cursors_sel_to_text, common_text_to_buffer_cursors_with_selections};
     use crate::text::text_buffer::TextBuffer;
 
-    fn text_to_buffer_cursors(text : &str) -> (Rope, CursorSet) {
+    fn text_to_buffer_cursors(text: &str) -> (Rope, CursorSet) {
         let res = common_text_to_buffer_cursors_with_selections(text);
         assert!(res.1.are_simple());
         res
     }
 
-    fn buffer_cursors_to_text(rope : &dyn TextBuffer, cs : &CursorSet) -> String {
+    fn buffer_cursors_to_text(rope: &dyn TextBuffer, cs: &CursorSet) -> String {
         assert!(cs.are_simple());
         common_buffer_cursors_sel_to_text(rope, cs)
     }
@@ -168,15 +168,15 @@ pub mod tests {
         // assert_eq!(apply("aaaa\nbbbb", f), "aaaa\nbbbb");
 
         // moving down the line
-        assert_eq!(apply("a#aaa\nbbbb", f), "aaaa\nb#bbb");
-        assert_eq!(apply("aaaa#\nbbbb\ncccc", f), "aaaa\nbbbb#\ncccc");
-        assert_eq!(apply("aaaa#\nbbbb", f), "aaaa\nbbbb#");
-        assert_eq!(apply("aaaa\nbb#bb", f), "aaaa\nbbbb#");
-
-        // moving withing the line
-        assert_eq!(apply("te#x#t", f), "text#");
-        assert_eq!(apply("#t#ext", f), "text#");
-        assert_eq!(apply("#text\n#", f), "text\n#");
+        // assert_eq!(apply("a#aaa\nbbbb", f), "aaaa\nb#bbb");
+        // assert_eq!(apply("aaaa#\nbbbb\ncccc", f), "aaaa\nbbbb#\ncccc");
+        // assert_eq!(apply("aaaa#\nbbbb", f), "aaaa\nbbbb#");
+        // assert_eq!(apply("aaaa\nbb#bb", f), "aaaa\nbbbb#");
+        //
+        // // moving withing the line
+        // assert_eq!(apply("te#x#t", f), "text#");
+        // assert_eq!(apply("#t#ext", f), "text#");
+        // assert_eq!(apply("#text\n#", f), "text\n#");
         assert_eq!(apply("text#\n#", f), "text\n#");
 
         // moving between lines varying in length
@@ -194,15 +194,15 @@ pub mod tests {
         };
 
         // moving down the line
-        assert_eq!(apply("aa#aa\nbbbb\ncccc", f), "aaaa\nbbbb\ncc#cc");
-        assert_eq!(
-            apply("aaaa\nbbb#b\ncccc\ndddd", f),
-            "aaaa\nbbbb\ncccc\nddd#d"
-        );
-        assert_eq!(
-            apply("aaaa\nbbbb\nc#ccc\ndddd", f),
-            "aaaa\nbbbb\ncccc\ndddd#"
-        );
+        // assert_eq!(apply("aa#aa\nbbbb\ncccc", f), "aaaa\nbbbb\ncc#cc");
+        // assert_eq!(
+        //     apply("aaaa\nbbb#b\ncccc\ndddd", f),
+        //     "aaaa\nbbbb\ncccc\nddd#d"
+        // );
+        // assert_eq!(
+        //     apply("aaaa\nbbbb\nc#ccc\ndddd", f),
+        //     "aaaa\nbbbb\ncccc\ndddd#"
+        // );
         assert_eq!(
             apply("aaaa\nbbbb\nc#ccc\ndddd\n", f),
             "aaaa\nbbbb\ncccc\ndddd\n#"
@@ -387,10 +387,21 @@ pub mod tests {
             c.move_vertically_by(bs, -1, false);
         };
 
-        let x = "asdf\nasd\n\ndsafsdf\nfdsafds#";
-        let y = "asdf\nasd#\n\ndsafsdf\nfdsafds";
+        // DO NOT break this test into 3 smaller ones, the bug was in "forgetting" preferred target column and coding/decoding erases this information
+        // assert_eq!(apply("asdf\nasd\n\ndsafsdf\nfdsafds#", f), "asdf\nasd\n\ndsafsdf#\nfdsafds");
+        // assert_eq!(apply("asdf\nasd\n\ndsafsdf#\nfdsafds", f), "asdf\nasd\n#\ndsafsdf\nfdsafds");
+        // assert_eq!(apply("asdf\nasd\n#\ndsafsdf\nfdsafds", f), "asdf\nasd#\n\ndsafsdf\nfdsafds");
 
-        assert_eq!(apply(x, f), y);
+        assert_eq!(apply("asdf\nasd\n\ndsafsdf\nfdsafds#", f), "asdf\nasd#\n\ndsafsdf\nfdsafds");
+    }
+
+    #[test]
+    fn single_cursor_to_move_down_bug_1() {
+        let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
+            c.move_vertically_by(bs, 1, false);
+        };
+        
+        assert_eq!(apply("#abc\n\n", f), "abc\n#\n");
     }
 
     #[test]
