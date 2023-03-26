@@ -14,6 +14,7 @@ pub mod tsw;
 pub mod w7e;
 pub mod widget;
 pub mod widgets;
+pub mod cursor;
 
 #[cfg(test)]
 pub mod big_tests;

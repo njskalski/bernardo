@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
+    use crate::cursor::tests::cursor_tests_common::{common_assert_pair_makes_sense, common_buffer_cursors_sel_to_text, common_text_to_buffer_cursors_with_selections};
     use crate::experiments::clipboard::{ClipboardRef, get_me_fake_clipboard};
     use crate::primitives::common_edit_msgs::{_apply_cem, CommonEditMsg};
-    use crate::primitives::cursor_tests_common::tests::{common_assert_pair_makes_sense, common_buffer_cursors_sel_to_text, common_text_to_buffer_cursors_with_selections};
     use crate::primitives::has_invariant::HasInvariant;
 
     fn text_to_text(text: &str, cem: CommonEditMsg, clipboard: Option<&ClipboardRef>) -> String {

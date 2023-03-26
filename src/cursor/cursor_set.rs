@@ -4,7 +4,7 @@ use std::slice::{Iter, IterMut};
 
 use log::{error, warn};
 
-use crate::primitives::cursor::{BackwardWordDeterminant, Cursor, CursorStatus, default_word_determinant, ForwardWordDeterminant, NEWLINE_LENGTH, ZERO_CURSOR};
+use crate::cursor::cursor::{BackwardWordDeterminant, Cursor, CursorStatus, default_word_determinant, ForwardWordDeterminant, NEWLINE_LENGTH, ZERO_CURSOR};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::text::text_buffer::TextBuffer;
 

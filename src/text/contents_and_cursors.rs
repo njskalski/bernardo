@@ -4,10 +4,10 @@ use log::{debug, error};
 use ropey::Rope;
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::cursor::cursor::Cursor;
+use crate::cursor::cursor::Selection;
+use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::regex_search::{FindError, regex_find};
-use crate::primitives::cursor::Selection;
-use crate::primitives::cursor::Cursor;
-use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::search_pattern::SearchPattern;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
@@ -22,11 +22,11 @@ pub struct ContentsAndCursors {
 }
 
 impl ContentsAndCursors {
-    pub fn empty_for(buffer_id : BufferId) -> Self {
-        ContentsAndCursors  {
-            rope : Rope::default(),
-            parsing : None,
-            cursor_set : CursorSet::single(),
+    pub fn empty_for(buffer_id: BufferId) -> Self {
+        ContentsAndCursors {
+            rope: Rope::default(),
+            parsing: None,
+            cursor_set: CursorSet::single(),
         }
     }
 

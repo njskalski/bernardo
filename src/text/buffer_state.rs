@@ -9,13 +9,13 @@ use streaming_iterator::StreamingIterator;
 use tree_sitter::Point;
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::experiments::regex_search::FindError;
 use crate::fs::path::SPath;
 use crate::io::output::Output;
 use crate::primitives::common_edit_msgs::{_apply_cem, CommonEditMsg};
-use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::has_invariant::HasInvariant;
 use crate::text::contents_and_cursors::ContentsAndCursors;
 use crate::text::text_buffer::{LinesIter, TextBuffer};

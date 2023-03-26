@@ -1,7 +1,7 @@
 use log::error;
 
-use crate::primitives::cursor::Cursor;
-use crate::primitives::cursor_set::CursorSet;
+use crate::cursor::cursor::Cursor;
+use crate::cursor::cursor_set::CursorSet;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::text::text_buffer::TextBuffer;

@@ -1,5 +1,6 @@
 use log::error;
 
+use crate::cursor::cursor::CursorStatus;
 use crate::io::buffer_output_iter::VerticalIterItem;
 use crate::io::cell::Cell;
 use crate::io::output::Metadata;
@@ -9,7 +10,6 @@ use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::savefile_interpreter::SaveFileInterpreter;
 use crate::mocks::scroll_interpreter::ScrollInterpreter;
-use crate::primitives::cursor::CursorStatus;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widgets::edit_box::EditBoxWidget;

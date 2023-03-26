@@ -1,9 +1,9 @@
 #![no_main]
 
+use bernardo::cursor::cursor_set::CursorSet;
+use bernardo::cursor::cursor_set_fuzz;
+use bernardo::cursor::cursor_set_fuzz::*;
 use bernardo::primitives::common_edit_msgs::CommonEditMsg;
-use bernardo::primitives::cursor_set::CursorSet;
-use bernardo::primitives::cursor_set_fuzz;
-use bernardo::primitives::cursor_set_fuzz::*;
 use bernardo::text::buffer_state::BufferState;
 use bernardo::text::buffer_state_fuzz::*;
 use libfuzzer_sys::arbitrary;

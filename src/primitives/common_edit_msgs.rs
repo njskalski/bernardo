@@ -4,11 +4,11 @@ use std::ops::Range;
 use log::{error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::cursor::cursor::Cursor;
+use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::io::keys::{Key, Keycode};
 use crate::primitives::arrow::Arrow;
-use crate::primitives::cursor::Cursor;
-use crate::primitives::cursor_set::CursorSet;
 use crate::primitives::has_invariant::HasInvariant;
 use crate::text::text_buffer::TextBuffer;
 

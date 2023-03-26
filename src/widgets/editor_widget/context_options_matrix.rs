@@ -1,7 +1,7 @@
 use log::debug;
 
-use crate::primitives::cursor::Cursor;
-use crate::primitives::cursor_set::CursorSet;
+use crate::cursor::cursor::Cursor;
+use crate::cursor::cursor_set::CursorSet;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::w7e::navcomp_provider::NavCompSymbol;
 use crate::widgets::editor_widget::context_bar::context_bar_item::ContextBarItem;
