@@ -544,7 +544,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
         }
         CommonEditMsg::Delete => {
             handle_backspace_and_delete(cursor_set,
-                                        &mut vec![],
+                                        observer_cursor_sets,
                                         false,
                                         rope,
             )

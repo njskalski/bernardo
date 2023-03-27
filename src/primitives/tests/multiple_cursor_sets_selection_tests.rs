@@ -61,7 +61,21 @@ fn texts_to_texts(texts: &Vec<&str>, selected: usize, cem: CommonEditMsg, clipbo
 }
 
 #[test]
-fn single_cursor_test_1() {
+fn single_cursor_test_1_1() {
+    let texts: Vec<&str> = vec![
+        "fir.stte#st",
+        "fir#stte.st",
+    ];
+
+    // Backspace
+    let new_texts = texts_to_texts(&texts, 0, CommonEditMsg::Backspace, None);
+
+    assert_eq!(new_texts[0].as_str(), "firstt#st");
+    assert_eq!(new_texts[1].as_str(), "fir#sttst");
+}
+
+#[test]
+fn single_cursor_test_1_2() {
     let texts: Vec<&str> = vec![
         "fir.stte#st",
         "fir#stte.st",
@@ -71,4 +85,64 @@ fn single_cursor_test_1() {
 
     assert_eq!(new_texts[0].as_str(), "fistte#st");
     assert_eq!(new_texts[1].as_str(), "fi#sttest");
+}
+
+#[test]
+fn single_cursor_test_2_1() {
+    let texts: Vec<&str> = vec![
+        "fir.stte#st",
+        "fir#stte.st",
+    ];
+    // Delete
+    let new_texts = texts_to_texts(&texts, 0, CommonEditMsg::Delete, None);
+
+    assert_eq!(new_texts[0].as_str(), "firstte#t");
+    assert_eq!(new_texts[1].as_str(), "fir#sttet");
+}
+
+#[test]
+fn single_cursor_test_2_2() {
+    let texts: Vec<&str> = vec![
+        "fir.stte#st",
+        "fir#stte.st",
+    ];
+
+    let new_texts = texts_to_texts(&texts, 1, CommonEditMsg::Delete, None);
+
+    assert_eq!(new_texts[0].as_str(), "firtte#st");
+    assert_eq!(new_texts[1].as_str(), "fir#ttest");
+}
+
+#[test]
+fn single_cursor_test_3_1() {
+    let texts: Vec<&str> = vec![
+        "fir[st.te)s.t",
+        "fir.st.te.s#t",
+        "fir.st#te#s.t",
+    ];
+
+    {
+        let new_texts = texts_to_texts(&texts, 0, CommonEditMsg::Backspace, None);
+
+        assert_eq!(new_texts[0].as_str(), "fir#st");
+        assert_eq!(new_texts[1].as_str(), "firs#t");
+        assert_eq!(new_texts[2].as_str(), "fir#st");
+    }
+}
+
+#[test]
+fn single_cursor_test_3_2() {
+    let texts: Vec<&str> = vec![
+        "fir[st.te)s.t",
+        "fir.st.te.s#t",
+        "fir.st#te#s.t",
+    ];
+
+    {
+        let new_texts = texts_to_texts(&texts, 1, CommonEditMsg::Backspace, None);
+
+        assert_eq!(new_texts[0].as_str(), "fir[stte)t");
+        assert_eq!(new_texts[1].as_str(), "firstte#t");
+        assert_eq!(new_texts[2].as_str(), "first#t#et");
+    }
 }
