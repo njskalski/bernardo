@@ -121,13 +121,12 @@ fn single_cursor_test_3_1() {
         "fir.st#te#s.t",
     ];
 
-    {
-        let new_texts = texts_to_texts(&texts, 0, CommonEditMsg::Backspace, None);
 
-        assert_eq!(new_texts[0].as_str(), "fir#st");
-        assert_eq!(new_texts[1].as_str(), "firs#t");
-        assert_eq!(new_texts[2].as_str(), "fir#st");
-    }
+    let new_texts = texts_to_texts(&texts, 0, CommonEditMsg::Backspace, None);
+
+    assert_eq!(new_texts[0].as_str(), "fir#st");
+    assert_eq!(new_texts[1].as_str(), "firs#t");
+    assert_eq!(new_texts[2].as_str(), "fir#st");
 }
 
 #[test]
@@ -138,11 +137,26 @@ fn single_cursor_test_3_2() {
         "fir.st#te#s.t",
     ];
 
-    {
-        let new_texts = texts_to_texts(&texts, 1, CommonEditMsg::Backspace, None);
 
-        assert_eq!(new_texts[0].as_str(), "fir[stte)t");
-        assert_eq!(new_texts[1].as_str(), "firstte#t");
-        assert_eq!(new_texts[2].as_str(), "first#t#et");
-    }
+    let new_texts = texts_to_texts(&texts, 1, CommonEditMsg::Backspace, None);
+
+    assert_eq!(new_texts[0].as_str(), "fir[stte)t");
+    assert_eq!(new_texts[1].as_str(), "firstte#t");
+    assert_eq!(new_texts[2].as_str(), "first#te#t");
+}
+
+#[test]
+fn single_cursor_test_3_3() {
+    let texts: Vec<&str> = vec![
+        "fir[st.te)s.t",
+        "fir.st.te.s#t",
+        "fir.st#te#s.t",
+    ];
+
+
+    let new_texts = texts_to_texts(&texts, 2, CommonEditMsg::Backspace, None);
+
+    assert_eq!(new_texts[0].as_str(), "fir[st)st");
+    assert_eq!(new_texts[1].as_str(), "firsts#t");
+    assert_eq!(new_texts[2].as_str(), "firs#t#st");
 }

@@ -305,7 +305,8 @@ fn update_cursors_after_removal(cs: &mut CursorSet,
     {
         let mut to_remove: Vec<usize> = Vec::new();
         for c in cs.iter() {
-            if char_range.start <= c.get_begin() && c.get_end() <= char_range.end {
+            // the first ineq must be sharp - removing char that would have been *replaced* by cursor, does not invalidate the cursor
+            if char_range.start < c.get_begin() && c.get_end() <= char_range.end {
                 to_remove.push(c.a);
             }
         }
@@ -319,7 +320,7 @@ fn update_cursors_after_removal(cs: &mut CursorSet,
     // second, cutting cursors overlapping with block
     {
         for c in cs.iter_mut() {
-            if c.intersects(&char_range) {
+            if !c.is_simple() && c.intersects(&char_range) {
                 // end inside
                 if char_range.contains(&c.get_end()) {
                     debug_assert!(char_range.contains(&c.s.unwrap().e));
