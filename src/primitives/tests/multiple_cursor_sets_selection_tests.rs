@@ -45,7 +45,7 @@ fn texts_to_texts(texts: &Vec<&str>, selected: usize, cem: CommonEditMsg, clipbo
         }
     }
 
-    _apply_cem(cem, selected_cursor_set.unwrap(), other_cursors, &mut buffer, 4, clipboard);
+    _apply_cem(cem, selected_cursor_set.unwrap(), &mut other_cursors, &mut buffer, 4, clipboard);
 
     let mut results: Vec<String> = Vec::new();
 

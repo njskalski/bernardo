@@ -7,7 +7,7 @@ fn text_to_text(text: &str, cem: CommonEditMsg, clipboard: Option<&ClipboardRef>
     let (mut buffer, mut cs) = common_text_to_buffer_cursors_with_selections(text);
     debug_assert!(cs.check_invariant());
     common_assert_pair_makes_sense(&buffer, &cs);
-    _apply_cem(cem, &mut cs, vec![], &mut buffer, 4, clipboard);
+    _apply_cem(cem, &mut cs, &mut vec![], &mut buffer, 4, clipboard);
     debug_assert!(cs.check_invariant());
     common_assert_pair_makes_sense(&buffer, &cs);
     common_buffer_cursors_sel_to_text(&buffer, &cs)

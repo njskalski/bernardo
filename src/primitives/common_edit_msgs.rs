@@ -483,7 +483,7 @@ fn handle_backspace_and_delete(cursor_set: &mut CursorSet,
 //      FALSE iff the command results in no-op.
 pub fn _apply_cem(cem: CommonEditMsg,
                   cursor_set: &mut CursorSet,
-                  observer_cursor_sets: Vec<&mut CursorSet>,
+                  observer_cursor_sets: &mut Vec<&mut CursorSet>,
                   rope: &mut dyn TextBuffer,
                   page_height: usize,
                   clipboard: Option<&ClipboardRef>) -> (usize, bool) {
@@ -509,7 +509,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
         }
         CommonEditMsg::Backspace => {
             handle_backspace_and_delete(cursor_set,
-                                        &mut vec![],
+                                        observer_cursor_sets,
                                         true,
                                         rope,
             )
