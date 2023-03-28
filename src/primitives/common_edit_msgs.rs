@@ -200,7 +200,8 @@ returns tuple
     whether any change happened (to text or cursors)
  */
 // TODO assumptions that filelen < usize all over the place, assumption that diff < usize
-fn insert_to_rope(cs: &mut CursorSet,
+fn insert_to_rope(cursor_set: &mut CursorSet,
+                  other_cursor_sets: &mut Vec<&mut CursorSet>,
                   rope: &mut dyn TextBuffer,
                   // if None, all cursors will input the same. If Some(idx) only this cursor will insert and rest will get updated.
                   specific_cursor: Option<usize>,
@@ -208,7 +209,7 @@ fn insert_to_rope(cs: &mut CursorSet,
     let mut res = false;
     let mut modifier: isize = 0;
     let mut diff_len: usize = 0;
-    for (cursor_idx, c) in cs.iter_mut().enumerate() {
+    for (cursor_idx, c) in cursor_set.iter_mut().enumerate() {
         let mut cursor_specific_diff_len: usize = 0;
 
         c.shift_by(modifier);
@@ -235,6 +236,10 @@ fn insert_to_rope(cs: &mut CursorSet,
                 let change = (sel.e - sel.b) as isize;
                 modifier -= change;
 
+                for other_cursor_set in other_cursor_sets.iter_mut() {
+                    update_cursors_after_removal(other_cursor_set, sel.b..sel.e);
+                }
+
                 // this is necessary, because otherwise shift below may fail. I copy out, since later there is no anchor.
                 let was_anchor_right = c.anchor_right();
                 c.clear_selection();
@@ -260,12 +265,13 @@ fn insert_to_rope(cs: &mut CursorSet,
             debug_assert!(c.check_invariant());
         }
     };
-    cs.reduce_right();
-    debug_assert!(cs.check_invariant());
+    cursor_set.reduce_right();
+    debug_assert!(cursor_set.check_invariant());
     (diff_len, res)
 }
 
-fn insert_to_rope_at_random_place(cs: &mut CursorSet,
+fn insert_to_rope_at_random_place(cursor_set: &mut CursorSet,
+                                  other_cursor_sets: &mut Vec<&mut CursorSet>,
                                   rope: &mut dyn TextBuffer,
                                   char_pos: usize,
                                   what: &str) -> (usize, bool) {
@@ -274,28 +280,36 @@ fn insert_to_rope_at_random_place(cs: &mut CursorSet,
     } else {
         let stride = what.graphemes(true).count();
 
-        for c in cs.iter_mut() {
-            if char_pos <= c.get_begin() {
-                c.shift_by(stride as isize); // TODO overflow
-            } else {
-                // "dupa[kot)" + { char_pos: 5, what: "nic" } -> "dupa[knicot)"
-                if char_pos < c.get_end() {
-                    if let Some(mut sel) = c.s.as_mut() {
-                        if c.a == sel.e {
-                            c.a += stride;
-                            sel.e += stride;
-                        } else {
-                            sel.e += stride;
-                        }
+        update_cursors_after_insertion(cursor_set, char_pos, stride);
+
+        for other_cursor_set in other_cursor_sets.iter_mut() {
+            update_cursors_after_insertion(cursor_set, char_pos, stride);
+        }
+
+        (stride, true)
+    }
+}
+
+fn update_cursors_after_insertion(cs: &mut CursorSet, char_pos: usize, char_len: usize) {
+    for c in cs.iter_mut() {
+        if char_pos <= c.get_begin() {
+            c.shift_by(char_len as isize); // TODO overflow
+        } else {
+            // "dupa[kot)" + { char_pos: 5, what: "nic" } -> "dupa[knicot)"
+            if char_pos < c.get_end() {
+                if let Some(mut sel) = c.s.as_mut() {
+                    if c.a == sel.e {
+                        c.a += char_len;
+                        sel.e += char_len;
+                    } else {
+                        sel.e += char_len;
                     }
                 }
             }
         }
-
-        debug_assert!(cs.check_invariant());
-
-        (stride, true)
     }
+
+    debug_assert!(cs.check_invariant());
 }
 
 fn update_cursors_after_removal(cs: &mut CursorSet,
@@ -491,10 +505,10 @@ pub fn _apply_cem(cem: CommonEditMsg,
     let res = match cem {
         CommonEditMsg::Char(char) => {
             // TODO optimise
-            insert_to_rope(cursor_set, rope, None, char.to_string().as_str())
+            insert_to_rope(cursor_set, observer_cursor_sets, rope, None, char.to_string().as_str())
         }
         CommonEditMsg::Block(s) => {
-            insert_to_rope(cursor_set, rope, None, &s)
+            insert_to_rope(cursor_set, observer_cursor_sets, rope, None, &s)
         }
         CommonEditMsg::CursorUp { selecting } => {
             (0, cursor_set.move_vertically_by(rope, -1, selecting))
@@ -582,14 +596,14 @@ pub fn _apply_cem(cem: CommonEditMsg,
                     let split_lines = contents.lines().count() == cursor_count;
                     // easy, each cursor gets full copy
                     if !split_lines {
-                        insert_to_rope(cursor_set, rope, None, &contents)
+                        insert_to_rope(cursor_set, observer_cursor_sets, rope, None, &contents)
                     } else {
                         let mut res = false;
                         let mut it = contents.lines();
                         let mut common_idx: usize = 0;
                         let mut diff_len: usize = 0;
                         while let Some(line) = it.next() {
-                            let (dl, r) = insert_to_rope(cursor_set, rope, Some(common_idx), line);
+                            let (dl, r) = insert_to_rope(cursor_set, observer_cursor_sets, rope, Some(common_idx), line);
                             res |= r;
                             diff_len += dl;
                             common_idx += 1;
@@ -613,7 +627,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
             remove_from_rope_at_random_place(cursor_set, rope, char_range)
         }
         CommonEditMsg::InsertBlock { char_pos, what } => {
-            insert_to_rope_at_random_place(cursor_set, rope, char_pos, &what)
+            insert_to_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_pos, &what)
         }
         CommonEditMsg::Tab => {
             let mut tab: String = String::new();
@@ -624,7 +638,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
 
             // if they are simple, we just add spaces
             if cursor_set.are_simple() {
-                insert_to_rope(cursor_set, rope, None, &tab)
+                insert_to_rope(cursor_set, observer_cursor_sets, rope, None, &tab)
             } else {
                 let all_complex = cursor_set.iter().fold(true, |acc, c| acc && !c.is_simple());
                 if !all_complex {
@@ -637,7 +651,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
                     let indices = cursors_to_line_indices(rope, cursor_set);
                     for line_idx in indices.into_iter() {
                         if let Some(char_begin_idx) = rope.line_to_char(line_idx) {
-                            let res = insert_to_rope_at_random_place(cursor_set, rope, char_begin_idx, &tab);
+                            let res = insert_to_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_begin_idx, &tab);
                             num_chars += res.0;
                             modified |= res.1;
                         } else {
