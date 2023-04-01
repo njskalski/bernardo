@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use log::{debug, error};
+use log::{debug, error, warn};
 use ropey::Rope;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -8,49 +8,89 @@ use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor::Selection;
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::regex_search::{FindError, regex_find};
+use crate::io::buffer;
 use crate::primitives::search_pattern::SearchPattern;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
-use crate::widgets::main_view::main_view::BufferId;
+use crate::widget::widget::WID;
 
 #[derive(Clone, Debug)]
 pub struct ContentsAndCursors {
     pub rope: Rope,
     pub parsing: Option<ParsingTuple>,
-    pub cursor_set: CursorSet,
+    pub cursor_sets: Vec<(WID, CursorSet)>,
 }
 
 impl ContentsAndCursors {
-    pub fn empty_for(buffer_id: BufferId) -> Self {
+    pub fn add_cursor_set(&mut self, widget_id: WID, cs: CursorSet) -> bool {
+        if self.cursor_sets.iter().find(|(wid, _)| wid == widget_id).is_some() {
+            error!("can't add cursor set for WidgetID {} - it's already present. Did you mean 'set_cursor_set'?", widget_id);
+            return false;
+        }
+
+        self.cursor_sets.push((widget_id, cs));
+        true
+    }
+
+    /*
+    Returns true iff:
+        - all cursors have selections
+        - all selections match the pattern
+     */
+    pub fn do_cursors_match_regex(&self, pattern: &SearchPattern) -> bool {
+        for c in self.cursor_set.iter() {
+            if c.s.is_none() {
+                return false;
+            }
+            let sel = c.s.unwrap();
+            let selected: String = self.rope.chars().skip(sel.b).take(sel.e - sel.b).collect();
+
+            if !pattern.matches(&selected) {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    pub fn empty_for(wid: WID) -> Self {
         ContentsAndCursors {
             rope: Rope::default(),
             parsing: None,
-            cursor_set: CursorSet::single(),
+            cursor_sets: vec![(wid, CursorSet::single())],
         }
     }
 
-    pub fn with_rope(self, rope: Rope) -> Self {
-        Self {
-            rope,
-            ..self
+    pub fn ends_with_at(&self, char_offset: usize, what: &str) -> bool {
+        let what_char_len = what.graphemes(true).count();
+
+        if self.rope.len_chars() < char_offset {
+            debug!("ends_wit_at beyond end");
+            return false;
         }
-    }
+        let sub_rope = self.rope.slice(0..char_offset);
+        let rope_len = sub_rope.len_chars();
 
-    pub fn with_cursor_set(self, cursor_set: CursorSet) -> Self {
-        Self {
-            cursor_set,
-            ..self
-        }
-    }
-
-    pub fn parse(&mut self, tree_sitter: Arc<TreeSitterWrapper>, lang_id: LangId) -> bool {
-        if let Some(parsing_tuple) = tree_sitter.new_parse(lang_id) {
-            self.parsing = Some(parsing_tuple);
-
-            true
-        } else {
+        if rope_len < what_char_len {
             false
+        } else {
+            let mut tail = String::new();
+            for char_idx in 0..what_char_len {
+                match sub_rope.get_char(rope_len - what_char_len + char_idx) {
+                    Some(ch) => {
+                        tail.push(ch);
+                    }
+                    None => {
+                        error!("failed unwrapping expected character");
+                        return false;
+                    }
+                }
+            }
+
+            debug_assert!(tail.graphemes(true).count() == what_char_len);
+
+            what == &tail
         }
     }
 
@@ -86,56 +126,46 @@ impl ContentsAndCursors {
         }
     }
 
-    /*
-    Returns true iff:
-        - all cursors have selections
-        - all selections match the pattern
-     */
-    pub fn do_cursors_match_regex(&self, pattern: &SearchPattern) -> bool {
-        for c in self.cursor_set.iter() {
-            if c.s.is_none() {
-                return false;
-            }
-            let sel = c.s.unwrap();
-            let selected: String = self.rope.chars().skip(sel.b).take(sel.e - sel.b).collect();
-
-            if !pattern.matches(&selected) {
-                return false;
-            }
-        }
-
-        true
+    pub fn get_cursor_set(&self, widget_id: WID) -> Option<&CursorSet> {
+        self.cursor_sets.iter().find(|(wid, _)| *wid == widget_id)
     }
 
-    pub fn ends_with_at(&self, char_offset: usize, what: &str) -> bool {
-        let what_char_len = what.graphemes(true).count();
+    pub fn get_cursor_set_mut(&mut self, widget_id: WID) -> Option<&mut CursorSet> {
+        self.cursor_sets.iter_mut().find(|(wid, _)| *wid == widget_id)
+    }
 
-        if self.rope.len_chars() < char_offset {
-            debug!("ends_wit_at beyond end");
-            return false;
-        }
-        let sub_rope = self.rope.slice(0..char_offset);
-        let rope_len = sub_rope.len_chars();
+    pub fn parse(&mut self, tree_sitter: Arc<TreeSitterWrapper>, lang_id: LangId) -> bool {
+        if let Some(parsing_tuple) = tree_sitter.new_parse(lang_id) {
+            self.parsing = Some(parsing_tuple);
 
-        if rope_len < what_char_len {
-            false
+            true
         } else {
-            let mut tail = String::new();
-            for char_idx in 0..what_char_len {
-                match sub_rope.get_char(rope_len - what_char_len + char_idx) {
-                    Some(ch) => {
-                        tail.push(ch);
-                    }
-                    None => {
-                        error!("failed unwrapping expected character");
-                        return false;
-                    }
-                }
+            false
+        }
+    }
+
+    pub fn set_cursor_set(&mut self, widget_id: WID, cs: CursorSet) -> bool {
+        match self.get_cursor_set_mut(widget_id) {
+            Some(old_cs) => {
+                *old_cs = cs;
+                true
             }
+            None => {
+                error!("NOT setting cursor_set for previously unknown WidgetID {:?}, this is most likely an error. Did you mean 'add_cursor_set'?", widget_id);
+                false
+            }
+        }
+    }
 
-            debug_assert!(tail.graphemes(true).count() == what_char_len);
+    pub fn with_cursor_set(mut self, wid_and_cursor_set: (WID, CursorSet)) -> Self {
+        self.cursor_sets.push(wid_and_cursor_set);
+        self
+    }
 
-            what == &tail
+    pub fn with_rope(self, rope: Rope) -> Self {
+        Self {
+            rope,
+            ..self
         }
     }
 }

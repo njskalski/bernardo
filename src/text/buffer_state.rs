@@ -23,6 +23,7 @@ use crate::tsw::lang_id::LangId;
 use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
 use crate::unpack_or;
 use crate::w7e::navcomp_provider::StupidSubstituteMessage;
+use crate::widget::widget::WID;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
 
 // TODO it would use a method "would_accept_cem" to be used in "on_input" but before "update"
@@ -70,6 +71,7 @@ pub struct BufferState {
 impl BufferState {
     pub fn apply_cem(&mut self,
                      mut cem: CommonEditMsg,
+                     widget_id: WID,
                      page_height: usize,
                      clipboard: Option<&ClipboardRef>,
     ) -> bool {
@@ -106,16 +108,23 @@ impl BufferState {
             }
         }
 
+        let mut cursors = match self.text().get_cursor_set_mut(widget_id) {
+            None => {
+                return false;
+            }
+            Some(cs) => {
+                cs.clone()
+            }
+        };
 
-        // TODO optimise
-        let mut cursors = self.text().cursor_set.clone();
         let (_diff_len_chars, any_change) = _apply_cem(cem.clone(), &mut cursors, &mut vec![], self, page_height as usize, clipboard);
 
         //undo/redo invalidates cursors copy, so I need to watch for those
         match cem {
             CommonEditMsg::Undo | CommonEditMsg::Redo => {}
             _ => {
-                self.text_mut().cursor_set = cursors;
+                // self.text_mut().cursor_set = cursors;
+                self.text_mut().set_cursor_set(widget_id, cursors);
 
                 if !any_change {
                     self.undo_milestone();
@@ -126,9 +135,18 @@ impl BufferState {
         any_change
     }
 
-    // returns whether a change happened. Undoes changes on fail.
+    /*
+     Returns whether a change happened. Undoes changes on fail.
+     Used in "reformat".
+    */
     // TODO fuzzy that invariant: false => unchanged
-    pub fn apply_stupid_substitute_messages(&mut self, stupid_messages: &Vec<StupidSubstituteMessage>, page_height: usize) -> bool {
+    pub fn apply_stupid_substitute_messages(&mut self,
+                                            /*
+                                            This is not necessary, but I put it so I don't have to think about reducing it now.
+                                             */
+                                            widget_id: WID,
+                                            stupid_messages: &Vec<StupidSubstituteMessage>,
+                                            page_height: usize) -> bool {
         if stupid_messages.is_empty() {
             warn!("calling apply_stupid_substitute_messages with empty list");
             return false;
@@ -137,7 +155,7 @@ impl BufferState {
         let mut res = false;
 
         for msg in stupid_messages.iter() {
-            if self._apply_stupid_substitute_message(msg, page_height) {
+            if self._apply_stupid_substitute_message(widget_id, msg, page_height) {
                 self.reduce_merge_milestone();
                 res = true;
             }
@@ -147,16 +165,26 @@ impl BufferState {
     }
 
 
-    // returns whether a change happened. Undoes changes on fail.
+    /*
+     Returns whether a change happened. Undoes changes on fail.
+     Used in "reformat".
+    */
     // TODO fuzzy that invariant: false => unchanged
     // TODO maybe, just maybe, these stupid messages should go to CEM, not sure. Because moving them out already made me forgot about updating navcomp and updating treesitter.
     fn _apply_stupid_substitute_message(&mut self,
+                                        /*
+                                        This is not necessary, but I put it so I don't have to think about reducing it now.
+                                         */
+                                        widget_id: WID,
                                         stupid_message: &StupidSubstituteMessage,
                                         page_height: usize,
     ) -> bool {
-        if !self.text().cursor_set.are_simple() {
-            error!("refuse to apply stupid_edit_to_cem: cursors are not simple");
-            return false;
+        {
+            let cursor_set = unpack_or!(self.text().get_cursor_set(widget_id), false, "failed _apply_stupid_substitute_message - WID not found");
+            if cursor_set.are_simple() {
+                error!("refuse to apply stupid_edit_to_cem: cursors are not simple");
+                return false;
+            }
         }
 
         let begin = unpack_or!(stupid_message.stupid_range.0.to_real_cursor(self), false, "failed to cast (1) to real cursor");
@@ -168,6 +196,7 @@ impl BufferState {
         if stupid_message.stupid_range.0 != stupid_message.stupid_range.1 {
             if self.apply_cem(
                 CommonEditMsg::DeleteBlock { char_range: begin.a..end.a },
+                widget_id,
                 page_height,
                 None,
             ) {
@@ -192,6 +221,7 @@ impl BufferState {
             if self.apply_cem(
                 // TODO unnecessary clone
                 CommonEditMsg::InsertBlock { char_pos: begin.a, what },
+                widget_id,
                 page_height,
                 None,
             ) {
@@ -228,8 +258,8 @@ impl BufferState {
         Some(first_char_idx..beyond_last_char_idx)
     }
 
-    pub fn cursors(&self) -> &CursorSet {
-        &self.text().cursor_set
+    pub fn cursors(&self, widget_id: WID) -> Option<&CursorSet> {
+        self.text().get_cursor_set(widget_id)
     }
 
     /*
