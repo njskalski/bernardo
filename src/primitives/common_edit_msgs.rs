@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::ops::Range;
 
 use log::{error, warn};
+use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::cursor::cursor::Cursor;
@@ -10,6 +11,7 @@ use crate::experiments::clipboard::ClipboardRef;
 use crate::io::keys::{Key, Keycode};
 use crate::primitives::arrow::Arrow;
 use crate::primitives::has_invariant::HasInvariant;
+use crate::primitives::printable::Printable;
 use crate::text::text_buffer::TextBuffer;
 
 /*
@@ -254,6 +256,11 @@ fn insert_to_rope(cursor_set: &mut CursorSet,
             if rope.insert_block(c.a, what) {
                 res |= true;
                 cursor_specific_diff_len = std::cmp::max(cursor_specific_diff_len, what_len);
+
+                let stride = what.graphemes(true).count();
+                for other_cursor_set in other_cursor_sets.iter_mut() {
+                    update_cursors_after_insertion(other_cursor_set, c.a, stride);
+                }
             } else {
                 warn!("expected to insert {} characters at {}, but failed", what_len, c.a);
             }
@@ -283,7 +290,7 @@ fn insert_to_rope_at_random_place(cursor_set: &mut CursorSet,
         update_cursors_after_insertion(cursor_set, char_pos, stride);
 
         for other_cursor_set in other_cursor_sets.iter_mut() {
-            update_cursors_after_insertion(cursor_set, char_pos, stride);
+            update_cursors_after_insertion(other_cursor_set, char_pos, stride);
         }
 
         (stride, true)
@@ -396,7 +403,8 @@ fn update_cursors_after_removal(cs: &mut CursorSet,
     }
 }
 
-fn remove_from_rope_at_random_place(cs: &mut CursorSet,
+fn remove_from_rope_at_random_place(cursor_set: &mut CursorSet,
+                                    other_cursor_sets: &mut Vec<&mut CursorSet>,
                                     rope: &mut dyn TextBuffer,
                                     char_range: Range<usize>) -> (usize, bool) {
     if char_range.is_empty() {
@@ -407,7 +415,12 @@ fn remove_from_rope_at_random_place(cs: &mut CursorSet,
             error!("failed to remove block");
             (0, false)
         } else {
-            update_cursors_after_removal(cs, char_range.clone());
+            update_cursors_after_removal(cursor_set, char_range.clone());
+
+            for other_cursor_set in other_cursor_sets.iter_mut() {
+                update_cursors_after_removal(other_cursor_set, char_range.clone());
+            }
+
             let stride = char_range.len();
             (stride, true)
         }
@@ -624,7 +637,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
             (0, rope.redo())
         }
         CommonEditMsg::DeleteBlock { char_range } => {
-            remove_from_rope_at_random_place(cursor_set, rope, char_range)
+            remove_from_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_range)
         }
         CommonEditMsg::InsertBlock { char_pos, what } => {
             insert_to_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_pos, &what)
@@ -706,7 +719,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
                     }
 
                     // debug!("ordering to remove from line {} [{}] chars", line_idx, how_many_chars_to_eat);
-                    let partial_res = remove_from_rope_at_random_place(cursor_set, rope, char_begin_idx..char_begin_idx + how_many_chars_to_eat);
+                    let partial_res = remove_from_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_begin_idx..char_begin_idx + how_many_chars_to_eat);
 
                     chars_removed += partial_res.0;
                     modified |= partial_res.1;

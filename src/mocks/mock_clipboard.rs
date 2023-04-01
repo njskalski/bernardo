@@ -1,9 +1,9 @@
 use std::ops::Deref;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use log::error;
 
-use crate::experiments::clipboard::Clipboard;
+use crate::experiments::clipboard::{Clipboard, ClipboardRef};
 
 #[derive(Debug, Default)]
 pub struct MockClipboard {
@@ -34,5 +34,11 @@ impl Clipboard for MockClipboard {
                 false
             }
         }
+    }
+}
+
+impl MockClipboard {
+    pub fn into_clipboardref(self) -> ClipboardRef {
+        Arc::new(Box::new(self))
     }
 }

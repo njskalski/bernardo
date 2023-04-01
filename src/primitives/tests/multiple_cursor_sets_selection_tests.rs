@@ -6,9 +6,11 @@ use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor::Selection;
 use crate::cursor::cursor_set::CursorSet;
 use crate::cursor::tests::cursor_tests_common::{common_assert_pair_makes_sense, common_buffer_cursors_sel_to_text, common_text_to_buffer_cursors_with_selections};
-use crate::experiments::clipboard::ClipboardRef;
+use crate::experiments::clipboard::{Clipboard, ClipboardRef};
+use crate::mocks::mock_clipboard::MockClipboard;
 use crate::primitives::common_edit_msgs::{_apply_cem, CommonEditMsg};
 use crate::primitives::has_invariant::HasInvariant;
+use crate::primitives::printable::Printable;
 use crate::text::text_buffer::TextBuffer;
 
 /*
@@ -61,7 +63,7 @@ fn texts_to_texts(texts: &Vec<&str>, selected: usize, cem: CommonEditMsg, clipbo
 }
 
 #[test]
-fn single_cursor_test_1_1() {
+fn multiple_cursor_test_1_1() {
     let texts: Vec<&str> = vec![
         "fir.stte#st",
         "fir#stte.st",
@@ -75,7 +77,7 @@ fn single_cursor_test_1_1() {
 }
 
 #[test]
-fn single_cursor_test_1_2() {
+fn multiple_cursor_test_1_2() {
     let texts: Vec<&str> = vec![
         "fir.stte#st",
         "fir#stte.st",
@@ -88,7 +90,7 @@ fn single_cursor_test_1_2() {
 }
 
 #[test]
-fn single_cursor_test_2_1() {
+fn multiple_cursor_test_2_1() {
     let texts: Vec<&str> = vec![
         "fir.stte#st",
         "fir#stte.st",
@@ -101,7 +103,7 @@ fn single_cursor_test_2_1() {
 }
 
 #[test]
-fn single_cursor_test_2_2() {
+fn multiple_cursor_test_2_2() {
     let texts: Vec<&str> = vec![
         "fir.stte#st",
         "fir#stte.st",
@@ -114,7 +116,7 @@ fn single_cursor_test_2_2() {
 }
 
 #[test]
-fn single_cursor_test_3_1() {
+fn multiple_cursor_test_3_1() {
     let texts: Vec<&str> = vec![
         "fir[st.te)s.t",
         "fir.st.te.s#t",
@@ -130,7 +132,7 @@ fn single_cursor_test_3_1() {
 }
 
 #[test]
-fn single_cursor_test_3_2() {
+fn multiple_cursor_test_3_2() {
     let texts: Vec<&str> = vec![
         "fir[st.te)s.t",
         "fir.st.te.s#t",
@@ -146,7 +148,7 @@ fn single_cursor_test_3_2() {
 }
 
 #[test]
-fn single_cursor_test_3_3() {
+fn multiple_cursor_test_3_3() {
     let texts: Vec<&str> = vec![
         "fir[st.te)s.t",
         "fir.st.te.s#t",
@@ -162,7 +164,7 @@ fn single_cursor_test_3_3() {
 }
 
 #[test]
-fn single_cursor_test_3_4() {
+fn multiple_cursor_test_3_4() {
     let texts: Vec<&str> = vec![
         "fir[st.te)s.t",
         "fir.st.te.s#t",
@@ -178,7 +180,7 @@ fn single_cursor_test_3_4() {
 }
 
 #[test]
-fn single_cursor_test_3_5() {
+fn multiple_cursor_test_3_5() {
     let texts: Vec<&str> = vec![
         "fir[st.te)s.t",
         "fir.st.te.s#t",
@@ -194,7 +196,7 @@ fn single_cursor_test_3_5() {
 }
 
 #[test]
-fn single_cursor_test_3_6() {
+fn multiple_cursor_test_3_6() {
     let texts: Vec<&str> = vec![
         "fir[st.te)s.t",
         "fir.st.te.s#t",
@@ -210,7 +212,7 @@ fn single_cursor_test_3_6() {
 }
 
 #[test]
-fn single_cursor_test_4_1() {
+fn multiple_cursor_test_4_1() {
     let texts: Vec<&str> = vec![
         "fir[stte)st",
         "fir#stte#st",
@@ -223,7 +225,7 @@ fn single_cursor_test_4_1() {
 }
 
 #[test]
-fn single_cursor_test_4_2() {
+fn multiple_cursor_test_4_2() {
     let texts: Vec<&str> = vec![
         "fir[stte)st",
         "fir#stte#st",
@@ -236,7 +238,7 @@ fn single_cursor_test_4_2() {
 }
 
 #[test]
-fn single_cursor_test_4_3() {
+fn multiple_cursor_test_4_3() {
     let texts: Vec<&str> = vec![
         "fir[stte)st",
         "fir#stte#st",
@@ -249,7 +251,7 @@ fn single_cursor_test_4_3() {
 }
 
 #[test]
-fn single_cursor_test_4_4() {
+fn multiple_cursor_test_4_4() {
     let texts: Vec<&str> = vec![
         "fir[stte)st",
         "fir#stte#st",
@@ -259,4 +261,64 @@ fn single_cursor_test_4_4() {
 
     assert_eq!(new_texts[0].as_str(), "fir[tte)t");
     assert_eq!(new_texts[1].as_str(), "fir#tte#t");
+}
+
+
+#[test]
+fn multiple_cursor_test_5_1() {
+    let texts: Vec<&str> = vec![
+        "fir[stte)st",
+        "fir#stte#st",
+    ];
+
+    let new_texts = texts_to_texts(&texts, 0, CommonEditMsg::Char('a'), None);
+
+    assert_eq!(new_texts[0].as_str(), "fira#st");
+    // this I don't know, the intuition was fir#a#st
+    assert_eq!(new_texts[1].as_str(), "fira#st");
+}
+
+#[test]
+fn multiple_cursor_test_5_2() {
+    let texts: Vec<&str> = vec![
+        "fir[stte)st",
+        "fir#stte#st",
+    ];
+
+    let new_texts = texts_to_texts(&texts, 1, CommonEditMsg::Char('a'), None);
+
+    assert_eq!(new_texts[0].as_str(), "fira[stte)ast");
+    assert_eq!(new_texts[1].as_str(), "fira#sttea#st");
+}
+
+#[test]
+fn multiple_cursor_test_6_1() {
+    let texts: Vec<&str> = vec![
+        "fir[stte)st",
+        "fir#stte#st",
+    ];
+
+    let mut clipboard = MockClipboard::default();
+    clipboard.set("xxx".to_string());
+
+    let new_texts = texts_to_texts(&texts, 0, CommonEditMsg::Paste, Some(&clipboard.into_clipboardref()));
+
+    assert_eq!(new_texts[0].as_str(), "firxxx#st");
+    assert_eq!(new_texts[1].as_str(), "firxxx#st");
+}
+
+#[test]
+fn multiple_cursor_test_6_2() {
+    let texts: Vec<&str> = vec![
+        "fir[stte)st",
+        "fir#stte#st",
+    ];
+
+    let mut clipboard = MockClipboard::default();
+    clipboard.set("xxx".to_string());
+
+    let new_texts = texts_to_texts(&texts, 1, CommonEditMsg::Paste, Some(&clipboard.into_clipboardref()));
+
+    assert_eq!(new_texts[0].as_str(), "firxxx[stte)xxxst");
+    assert_eq!(new_texts[1].as_str(), "firxxx#sttexxx#st");
 }
