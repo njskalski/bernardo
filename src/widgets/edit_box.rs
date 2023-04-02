@@ -209,6 +209,8 @@ impl Widget for EditBoxWidget {
             "EditBoxWidgetMsg: received input to disabled component!"
         );
 
+        let cursor_set_copy = unpack_or_e!(self.buffer.text().get_cursor_set(self.id), None, "failed to get cursor_set").clone();
+
         return match input_event {
             KeyInput(key_event) => {
                 if key_event.keycode == Keycode::Enter {
@@ -219,8 +221,8 @@ impl Widget for EditBoxWidget {
                             // the 4 cases below are designed to NOT consume the event in case it cannot be used.
                             CommonEditMsg::CursorUp { selecting: _ } |
                             CommonEditMsg::CursorDown { selecting: _ } => None,
-                            CommonEditMsg::CursorLeft { selecting: _ } if self.buffer.text().cursor_set.as_single().map(|c| c.a == 0).unwrap_or(false) => None,
-                            CommonEditMsg::CursorRight { selecting: _ } if self.buffer.text().cursor_set.as_single()
+                            CommonEditMsg::CursorLeft { selecting: _ } if cursor_set_copy.as_single().map(|c| c.a == 0).unwrap_or(false) => None,
+                            CommonEditMsg::CursorRight { selecting: _ } if cursor_set_copy.as_single()
                                 .map(|c| c.a > self.buffer.len_chars()).unwrap_or(false) => None,
                             _ => Some(Box::new(EditBoxWidgetMsg::CommonEditMsg(cem))),
                         }
@@ -244,6 +246,7 @@ impl Widget for EditBoxWidget {
             EditBoxWidgetMsg::Hit => self.event_hit(),
             EditBoxWidgetMsg::CommonEditMsg(cem) => {
                 if self.buffer.apply_cem(cem.clone(),
+                                         self.id,
                                          1,
                                          self.clipboard_op.as_ref(),
                 ) {
@@ -270,6 +273,8 @@ impl Widget for EditBoxWidget {
         let primary_style = theme.highlighted(focused);
         helpers::fill_output(primary_style.background, output);
 
+        let cursor_set_copy = unpack_or_e!(self.buffer.text().get_cursor_set(self.id), (), "failed to get cursor_set").clone();
+
         let mut x: usize = 0;
         for (char_idx, g) in self.buffer.to_string().graphemes(true).enumerate() {
             if x + g.width() > size.x as usize {
@@ -277,7 +282,7 @@ impl Widget for EditBoxWidget {
                 break;
             }
 
-            let style = match theme.cursor_background(self.buffer.text().cursor_set.get_cursor_status_for_char(char_idx)) {
+            let style = match theme.cursor_background(cursor_set_copy.get_cursor_status_for_char(char_idx)) {
                 Some(bg) => {
                     primary_style.with_background(if focused { bg } else { bg.half() })
                 }
@@ -292,7 +297,7 @@ impl Widget for EditBoxWidget {
         }
         // one character after, but only if it fits.
         if x < size.x as usize {
-            let style = match theme.cursor_background(self.buffer.text().cursor_set.get_cursor_status_for_char(self.buffer.len_chars())) {
+            let style = match theme.cursor_background(cursor_set_copy.get_cursor_status_for_char(self.buffer.len_chars())) {
                 Some(bg) => {
                     primary_style.with_background(if focused { bg } else { bg.half() })
                 }
@@ -307,7 +312,7 @@ impl Widget for EditBoxWidget {
 
         // if cursor is after the text, we need to add an offset, so the background does not
         // overwrite cursor style.
-        let cursor_offset: u16 = self.buffer.text().cursor_set.max_cursor_pos() as u16 + 1; //TODO
+        let cursor_offset: u16 = cursor_set_copy.max_cursor_pos() as u16 + 1; //TODO
         let text_width = self.buffer.to_string().width() as u16; //TODO
         let end_of_text = cursor_offset.max(text_width);
 
