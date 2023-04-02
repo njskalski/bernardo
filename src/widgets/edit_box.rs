@@ -143,7 +143,7 @@ impl EditBoxWidget {
     pub fn set_cursor_end(&mut self) {
         let mut cursor_set = CursorSet::single();
         cursor_set.move_end(&self.buffer, false);
-        self.buffer.text_mut().cursor_set = cursor_set;
+        self.buffer.text_mut().set_cursor_set(self.id, cursor_set);
     }
 
     pub fn clear(&mut self) {

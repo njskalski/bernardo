@@ -13,7 +13,13 @@ use crate::primitives::search_pattern::SearchPattern;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::unpack_or_e;
 use crate::widget::widget::WID;
+
+/*
+I allow empty history, it means "nobody is looking at the buffer now, first who comes needs to set
+it's cursors.
+ */
 
 #[derive(Clone, Debug)]
 pub struct ContentsAndCursors {
@@ -24,7 +30,7 @@ pub struct ContentsAndCursors {
 
 impl ContentsAndCursors {
     pub fn add_cursor_set(&mut self, widget_id: WID, cs: CursorSet) -> bool {
-        if self.cursor_sets.iter().find(|(wid, _)| wid == widget_id).is_some() {
+        if self.cursor_sets.iter().find(|(wid, _)| *wid == widget_id).is_some() {
             error!("can't add cursor set for WidgetID {} - it's already present. Did you mean 'set_cursor_set'?", widget_id);
             return false;
         }
@@ -38,8 +44,10 @@ impl ContentsAndCursors {
         - all cursors have selections
         - all selections match the pattern
      */
-    pub fn do_cursors_match_regex(&self, pattern: &SearchPattern) -> bool {
-        for c in self.cursor_set.iter() {
+    pub fn do_cursors_match_regex(&self, widget_id: WID, pattern: &SearchPattern) -> bool {
+        let cursor_set = unpack_or_e!(self.get_cursor_set(widget_id), false, "can't find cursor set for WidgetID {}", widget_id);
+
+        for c in cursor_set.iter() {
             if c.s.is_none() {
                 return false;
             }
@@ -54,11 +62,11 @@ impl ContentsAndCursors {
         true
     }
 
-    pub fn empty_for(wid: WID) -> Self {
+    pub fn empty() -> Self {
         ContentsAndCursors {
             rope: Rope::default(),
             parsing: None,
-            cursor_sets: vec![(wid, CursorSet::single())],
+            cursor_sets: vec![],
         }
     }
 
@@ -95,13 +103,15 @@ impl ContentsAndCursors {
     }
 
     /*
-    This is an action destructive to cursor set - it uses only the supercursor.anchor as starting point for
-    search.
+    This is an action destructive to cursor set - it uses only the supercursor.anchor as starting
+    point for search.
 
     returns Ok(true) iff there was an occurrence
      */
-    pub fn find_once(&mut self, pattern: &str) -> Result<bool, FindError> {
-        let start_pos = self.cursor_set.supercursor().a;
+    pub fn find_once(&mut self, widget_id: WID, pattern: &str) -> Result<bool, FindError> {
+        let cursor_set = unpack_or_e!(self.get_cursor_set(widget_id), Err(FindError::WidgetIdNotFound), "WidgetId not found");
+
+        let start_pos = cursor_set.supercursor().a;
         let mut matches = regex_find(
             pattern,
             &self.rope,
@@ -118,7 +128,7 @@ impl ContentsAndCursors {
                 Cursor::new(m.1).with_selection(Selection::new(m.0, m.1))
             );
 
-            self.cursor_set = new_cursors;
+            self.set_cursor_set(widget_id, new_cursors);
 
             Ok(true)
         } else {
@@ -127,11 +137,11 @@ impl ContentsAndCursors {
     }
 
     pub fn get_cursor_set(&self, widget_id: WID) -> Option<&CursorSet> {
-        self.cursor_sets.iter().find(|(wid, _)| *wid == widget_id)
+        self.cursor_sets.iter().find(|(wid, _)| *wid == widget_id).map(|(_, cs)| cs)
     }
 
     pub fn get_cursor_set_mut(&mut self, widget_id: WID) -> Option<&mut CursorSet> {
-        self.cursor_sets.iter_mut().find(|(wid, _)| *wid == widget_id)
+        self.cursor_sets.iter_mut().find(|(wid, _)| *wid == widget_id).map(|(_, cs)| cs)
     }
 
     pub fn parse(&mut self, tree_sitter: Arc<TreeSitterWrapper>, lang_id: LangId) -> bool {
@@ -144,10 +154,10 @@ impl ContentsAndCursors {
         }
     }
 
-    pub fn set_cursor_set(&mut self, widget_id: WID, cs: CursorSet) -> bool {
+    pub fn set_cursor_set(&mut self, widget_id: WID, cursor_set: CursorSet) -> bool {
         match self.get_cursor_set_mut(widget_id) {
             Some(old_cs) => {
-                *old_cs = cs;
+                *old_cs = cursor_set;
                 true
             }
             None => {

@@ -267,11 +267,13 @@ impl BufferState {
     search.
 
     returns Ok(true) iff there was an occurrence
+
+    // TODO change pattern from str to enum we created
      */
-    pub fn find_once(&mut self, pattern: &str) -> Result<bool, FindError> {
+    pub fn find_once(&mut self, widget_id: WID, pattern: &str) -> Result<bool, FindError> {
         self.set_milestone();
 
-        match self.text_mut().find_once(pattern) {
+        match self.text_mut().find_once(widget_id, pattern) {
             Err(e) => {
                 // not even started the search: strip milestone and propagate error.
                 self.undo_milestone();
@@ -288,11 +290,12 @@ impl BufferState {
         }
     }
 
-    pub fn full(tree_sitter_op: Option<Arc<TreeSitterWrapper>>, document_identifier: DocumentIdentifier) -> BufferState {
+    pub fn full(tree_sitter_op: Option<Arc<TreeSitterWrapper>>,
+                document_identifier: DocumentIdentifier) -> BufferState {
         BufferState {
             subtype: BufferType::Full,
             tree_sitter_op,
-            history: vec![ContentsAndCursors::empty_for(document_identifier.buffer_id)],
+            history: vec![],
             history_pos: 0,
             lang_id: None,
             document_identifier,
@@ -421,7 +424,7 @@ impl BufferState {
         BufferState {
             subtype: BufferType::SingleLine,
             tree_sitter_op: None,
-            history: vec![ContentsAndCursors::empty_for(doc_id.buffer_id)],
+            history: vec![],
             history_pos: 0,
             lang_id: None,
             document_identifier: doc_id,
@@ -471,7 +474,7 @@ impl BufferState {
     pub fn with_text<T: AsRef<str>>(self, text: T) -> Self {
         let rope = ropey::Rope::from_str(text.as_ref());
         let mut result = Self {
-            history: vec![ContentsAndCursors::empty_for(self.document_identifier.buffer_id).with_rope(rope)],
+            history: vec![ContentsAndCursors::empty().with_rope(rope)],
             history_pos: 0,
             ..self
         };
@@ -486,7 +489,7 @@ impl BufferState {
     This is expected to be used only in construction, it clears the history.
      */
     pub fn with_text_from_rope(self, rope: Rope, lang_id: Option<LangId>) -> Self {
-        let text = ContentsAndCursors::empty_for(self.document_identifier.buffer_id).with_rope(rope);
+        let text = ContentsAndCursors::empty().with_rope(rope);
 
         let mut res = Self {
             history: vec![text],

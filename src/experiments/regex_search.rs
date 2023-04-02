@@ -12,6 +12,7 @@ pub enum FindError {
     EmptyPattern,
     CharToByteFail,
     FailedToLock,
+    WidgetIdNotFound,
 }
 
 /*
