@@ -1,5 +1,4 @@
 use std::cmp::Ordering;
-use std::ops::Range;
 
 use log::debug;
 use log::error;

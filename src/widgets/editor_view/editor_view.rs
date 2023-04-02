@@ -13,6 +13,7 @@ use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::common_edit_msgs::CommonEditMsg;
+use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::search_pattern::SearchPattern;
@@ -261,10 +262,9 @@ impl EditorView {
     fn hit_replace_once(&mut self, buffer_mut: &mut BufferState) -> bool {
         let phrase = unpack_or!(self.get_pattern(), false ,"hit_replace_once with empty phrase - ignoring");
         let curr_text = buffer_mut.text();
-        let editor_widget_id = self.editor.id();
+        let editor_widget_id = self.editor.internal().id();
         let cursor_set = unpack_or!(curr_text.get_cursor_set(editor_widget_id), false, "no cursors for editor");
-
-        let editor_widget_id = self.editor.id();
+        
         if cursor_set.is_single() && curr_text.do_cursors_match_regex(editor_widget_id, &phrase) {
             let with_what = self.replace_box.get_buffer().to_string();
             let page_height = self.editor.internal().page_height() as usize;
@@ -543,5 +543,11 @@ impl ComplexWidget for EditorView {
 
     fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
         self.display_state.as_mut()
+    }
+}
+
+impl HasInvariant for EditorView {
+    fn check_invariant(&self) -> bool {
+        self.editor.internal().check_invariant()
     }
 }

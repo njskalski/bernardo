@@ -1,4 +1,5 @@
 use std::cmp::{max, min};
+use std::sync::RwLockWriteGuard;
 
 use log::{debug, error, warn};
 use matches::debug_assert_matches;
@@ -186,7 +187,7 @@ impl EditorWidget {
             ignore_input_altogether: false,
             last_size: None,
             last_hover_rect: None,
-            buffer,
+            buffer: buffer.clone(),
             kite: XY::ZERO,
             state: EditorState::Editing,
             navcomp: None,
@@ -197,6 +198,15 @@ impl EditorWidget {
 
         if buffer_named {
             res.after_path_change();
+        }
+
+        match buffer.lock_rw() {
+            Some(mut buffer_lock) => {
+                buffer_lock.initialize_for_widget(res.wid, None);
+            }
+            None => {
+                error!("failed to lock buffer for rw, shit will blow up");
+            }
         }
 
         res
@@ -1241,3 +1251,21 @@ impl Widget for EditorWidget {
 //         }
 //     }
 // }
+
+impl HasInvariant for EditorWidget {
+    fn check_invariant(&self) -> bool {
+        if let Some(lock) = self.buffer.lock() {
+            if !lock.check_invariant() {
+                return false;
+            };
+
+            if !lock.text().has_cursor_set_for(self.wid) {
+                return false;
+            }
+            
+            true
+        } else {
+            false
+        }
+    }
+}

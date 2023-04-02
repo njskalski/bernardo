@@ -31,7 +31,11 @@ pub struct DisplayState<S: Widget> {
 }
 
 pub trait ComplexWidget: Widget + Sized {
+    fn internal_prelayout(&mut self) {}
+
     fn complex_prelayout(&mut self) {
+        self.internal_prelayout();
+        
         let layout = self.get_layout();
         layout.prelayout(self);
     }

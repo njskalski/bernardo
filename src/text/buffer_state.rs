@@ -286,14 +286,18 @@ impl BufferState {
 
     pub fn full(tree_sitter_op: Option<Arc<TreeSitterWrapper>>,
                 document_identifier: DocumentIdentifier) -> BufferState {
-        BufferState {
+        let res = BufferState {
             subtype: BufferType::Full,
             tree_sitter_op,
-            history: vec![],
+            history: vec![ContentsAndCursors::empty()],
             history_pos: 0,
             lang_id: None,
             document_identifier,
-        }
+        };
+
+        debug_assert!(res.check_invariant());
+
+        res
     }
 
     pub fn get_path(&self) -> Option<&SPath> {
@@ -415,14 +419,18 @@ impl BufferState {
 
     pub fn simplified_single_line() -> BufferState {
         let doc_id = DocumentIdentifier::new_unique();
-        BufferState {
+        let res = BufferState {
             subtype: BufferType::SingleLine,
             tree_sitter_op: None,
-            history: vec![],
+            history: vec![ContentsAndCursors::empty()],
             history_pos: 0,
             lang_id: None,
             document_identifier: doc_id,
-        }
+        };
+
+        debug_assert!(res.check_invariant());
+
+        res
     }
 
     pub fn streaming_iterator(&self) -> BufferStateStreamingIterator {
@@ -434,6 +442,11 @@ impl BufferState {
 
     pub fn subtype(&self) -> &BufferType {
         &self.subtype
+    }
+
+    pub fn initialize_for_widget(&mut self, widget_id: WID, cursors_op: Option<CursorSet>) {
+        let cursor_set = cursors_op.unwrap_or(CursorSet::single());
+        self.history[self.history_pos].add_cursor_set(widget_id, cursor_set);
     }
 
     pub fn text(&self) -> &ContentsAndCursors {
@@ -459,14 +472,19 @@ impl BufferState {
             error!("setting lang in non TextBuffer::Full!");
         }
 
-        Self {
+        let res = Self {
             lang_id: Some(lang_id),
             ..self
-        }
+        };
+
+        debug_assert!(res.check_invariant());
+
+        res
     }
 
     pub fn with_text<T: AsRef<str>>(self, text: T) -> Self {
         let rope = ropey::Rope::from_str(text.as_ref());
+
         let mut result = Self {
             history: vec![ContentsAndCursors::empty().with_rope(rope)],
             history_pos: 0,
@@ -474,6 +492,8 @@ impl BufferState {
         };
 
         result.set_parsing_tuple();
+
+        debug_assert!(result.check_invariant());
 
         result
     }

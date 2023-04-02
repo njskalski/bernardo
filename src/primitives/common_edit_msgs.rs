@@ -44,7 +44,7 @@ pub enum CommonEditMsg {
     PageUp { selecting: bool },
     PageDown { selecting: bool },
     Delete,
-
+    
     Copy,
     Paste,
     Undo,

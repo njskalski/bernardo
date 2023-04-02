@@ -154,6 +154,10 @@ impl ContentsAndCursors {
         }
     }
 
+    pub fn has_cursor_set_for(&self, widget_id: WID) -> bool {
+        self.cursor_sets.iter().find(|(wid, _)| *wid == widget_id).is_some()
+    }
+
     pub fn set_cursor_set(&mut self, widget_id: WID, cursor_set: CursorSet) -> bool {
         match self.get_cursor_set_mut(widget_id) {
             Some(old_cs) => {

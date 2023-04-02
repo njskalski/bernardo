@@ -49,7 +49,7 @@ impl EditBoxWidget {
     pub const TYPENAME: &'static str = "edit_box";
 
     pub fn new() -> Self {
-        EditBoxWidget {
+        let mut res = EditBoxWidget {
             id: get_new_widget_id(),
             enabled: true,
             buffer: BufferState::simplified_single_line(),
@@ -61,7 +61,11 @@ impl EditBoxWidget {
             fill_x: false,
             last_size_x: None,
             min_width_op: None,
-        }
+        };
+
+        res.buffer.initialize_for_widget(res.id, None);
+
+        res
     }
 
     pub fn with_clipboard(self, clipboard: ClipboardRef) -> Self {
@@ -148,6 +152,7 @@ impl EditBoxWidget {
 
     pub fn clear(&mut self) {
         self.buffer = BufferState::simplified_single_line();
+        self.buffer.initialize_for_widget(self.id, None);
     }
 
     fn event_changed(&self) -> Option<Box<dyn AnyMsg>> {
