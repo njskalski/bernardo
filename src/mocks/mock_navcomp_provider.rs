@@ -196,35 +196,35 @@ impl NavCompProvider for MockNavCompProvider {
         None
     }
 
-    fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
-        let symbols = unpack_or_e!(self.symbols.read().ok(), None, "failed acquiring lock on symbols");
-
-        let res = symbols
-            .iter()
-            .find(|candidate| candidate.matches(Some(path), cursor))
-            .map(|c| {
-                match c.usages.as_ref() {
-                    None => {
-                        debug!("returning broken symbol promise");
-                        Box::new(
-                            MockNavCompPromise::<Option<NavCompSymbol>>::new_broken(self.navcomp_tick_server.clone())
-                        ) as SymbolPromise
-                    }
-                    Some(_) => {
-                        debug!("returning successful symbol promise");
-                        Box::new(
-                            MockNavCompPromise::new_succ(self.navcomp_tick_server.clone(), Some(c.symbol.clone()))
-                        ) as SymbolPromise
-                    }
-                }
-            });
-
-        if res.is_none() {
-            debug!("no results for symbol");
-        }
-
-        res
-    }
+    // fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
+    //     let symbols = unpack_or_e!(self.symbols.read().ok(), None, "failed acquiring lock on symbols");
+    //
+    //     let res = symbols
+    //         .iter()
+    //         .find(|candidate| candidate.matches(Some(path), cursor))
+    //         .map(|c| {
+    //             match c.usages.as_ref() {
+    //                 None => {
+    //                     debug!("returning broken symbol promise");
+    //                     Box::new(
+    //                         MockNavCompPromise::<Option<NavCompSymbol>>::new_broken(self.navcomp_tick_server.clone())
+    //                     ) as SymbolPromise
+    //                 }
+    //                 Some(_) => {
+    //                     debug!("returning successful symbol promise");
+    //                     Box::new(
+    //                         MockNavCompPromise::new_succ(self.navcomp_tick_server.clone(), Some(c.symbol.clone()))
+    //                     ) as SymbolPromise
+    //                 }
+    //             }
+    //         });
+    //
+    //     if res.is_none() {
+    //         debug!("no results for symbol");
+    //     }
+    //
+    //     res
+    // }
 
     fn todo_get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
         let symbols = unpack_or_e!(self.symbols.read().ok(), None, "failed acquiring lock on symbols");

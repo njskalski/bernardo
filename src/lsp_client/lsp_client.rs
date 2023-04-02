@@ -210,7 +210,7 @@ impl LspWrapper {
             Err(LspWriteError::BrokenPipe.into())
         }
     }
-    
+
     #[allow(deprecated)]
     pub fn initialize(&mut self) -> Result<lsp_types::InitializeResult, LspIOError> {
         let pid = std::process::id();
@@ -418,7 +418,6 @@ impl LspWrapper {
 
     pub fn text_document_document_symbol(&mut self,
                                          url: Url,
-                                         _cursor: StupidCursor,
     ) -> Result<LSPPromise<lsp_types::request::DocumentSymbolRequest>, LspWriteError> {
         self.send_message::<lsp_types::request::DocumentSymbolRequest>(
             lsp_types::DocumentSymbolParams {

@@ -143,46 +143,46 @@ impl NavCompProvider for NavCompProviderLsp {
         todo!()
     }
 
-    fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
-        let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url", path);
-        let mut lock = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring lock");
-
-        match lock.text_document_document_symbol(url, cursor) {
-            Ok(resp) => {
-                let new_promise = resp.map(|response| {
-                    let mut symbol_op: Option<NavCompSymbol> = None;
-                    response.map(|symbol| {
-                        match symbol {
-                            DocumentSymbolResponse::Flat(v) => {
-                                v.first().map(|f| {
-                                    symbol_op = Some(NavCompSymbol {
-                                        symbol_type: f.kind.into(),
-                                        // range: f.location.range,
-                                        stupid_range: (f.location.range.start.into(), f.location.range.end.into()),
-                                    })
-                                });
-                            }
-                            DocumentSymbolResponse::Nested(v) => {
-                                v.first().map(|f| {
-                                    symbol_op = Some(NavCompSymbol {
-                                        symbol_type: f.kind.into(),
-                                        stupid_range: (f.range.start.into(), f.range.end.into()),
-                                    })
-                                });
-                            }
-                        }
-                    });
-                    symbol_op
-                });
-
-                Some(Box::new(new_promise))
-            }
-            Err(e) => {
-                self.eat_write_error(e);
-                None
-            }
-        }
-    }
+    // fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
+    //     let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url", path);
+    //     let mut lock = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring lock");
+    //
+    //     match lock.text_document_document_symbol(url) {
+    //         Ok(resp) => {
+    //             let new_promise = resp.map(|response| {
+    //                 let mut symbol_op: Option<NavCompSymbol> = None;
+    //                 response.map(|symbol| {
+    //                     match symbol {
+    //                         DocumentSymbolResponse::Flat(v) => {
+    //                             v.last().map(|f| {
+    //                                 symbol_op = Some(NavCompSymbol {
+    //                                     symbol_type: f.kind.into(),
+    //                                     // range: f.location.range,
+    //                                     stupid_range: (f.location.range.start.into(), f.location.range.end.into()),
+    //                                 })
+    //                             });
+    //                         }
+    //                         DocumentSymbolResponse::Nested(v) => {
+    //                             v.last().map(|f| {
+    //                                 symbol_op = Some(NavCompSymbol {
+    //                                     symbol_type: f.kind.into(),
+    //                                     stupid_range: (f.range.start.into(), f.range.end.into()),
+    //                                 })
+    //                             });
+    //                         }
+    //                     }
+    //                 });
+    //                 symbol_op
+    //             });
+    //
+    //             Some(Box::new(new_promise))
+    //         }
+    //         Err(e) => {
+    //             self.eat_write_error(e);
+    //             None
+    //         }
+    //     }
+    // }
 
     fn todo_get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
         let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url", path);

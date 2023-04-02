@@ -1,4 +1,5 @@
 use std::iter;
+use std::sync::Arc;
 
 use log::debug;
 
@@ -10,14 +11,14 @@ use crate::widgets::code_results_view::code_results_provider::{CodeResultsProvid
 
 #[derive(Debug)]
 pub struct WrappedSymbolUsagesPromise {
-    symbol: String,
+    desc: Arc<String>,
     promise: SymbolUsagesPromise,
 }
 
 impl WrappedSymbolUsagesPromise {
-    pub fn new(symbol: String, promise: SymbolUsagesPromise) -> Self {
+    pub fn new(desc: String, promise: SymbolUsagesPromise) -> Self {
         WrappedSymbolUsagesPromise {
-            symbol,
+            desc: Arc::new(desc),
             promise,
         }
     }
@@ -25,7 +26,7 @@ impl WrappedSymbolUsagesPromise {
 
 impl CodeResultsProvider for WrappedSymbolUsagesPromise {
     fn description(&self) -> Box<dyn Printable> {
-        Box::new(format!("Usages of symbol \"{}\"", &self.symbol))
+        Box::new(self.desc.clone())
     }
 
     fn poll(&mut self) -> PollResult {

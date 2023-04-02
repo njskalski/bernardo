@@ -320,6 +320,35 @@ impl BufferState {
         }).flatten().unwrap_or(vec![])
     }
 
+    // TODO merge with above?
+    pub fn smallest_highlight(&self, char_idx: usize) -> Option<HighlightItem> {
+        let text = self.text();
+        if text.rope.len_chars() < char_idx + 1 {
+            return None;
+        };
+
+        let parsing = unpack_or!(&text.parsing, None);
+        let items = parsing.highlight_iter(&text.rope, Some(char_idx..char_idx + 1))?;
+
+        let mut best: Option<HighlightItem> = None;
+
+        for item in items.into_iter() {
+            if item.char_begin <= char_idx && char_idx <= item.char_end {
+                if let Some(old_best) = best.as_ref() {
+                    let old_len = old_best.char_end - old_best.char_begin;
+                    let new_len = item.char_end - item.char_begin;
+                    if old_len > new_len {
+                        best = Some(item);
+                    }
+                } else {
+                    best = Some(item);
+                }
+            }
+        }
+
+        best
+    }
+
     pub fn remove_history(&mut self) {
         if self.history_pos != 0 {
             self.history.swap(0, self.history_pos)

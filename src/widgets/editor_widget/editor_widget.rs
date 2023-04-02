@@ -9,7 +9,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
-use crate::cursor::cursor::{Cursor, CursorStatus};
+use crate::cursor::cursor::{Cursor, CursorStatus, Selection};
 use crate::cursor::cursor_set::CursorSet;
 use crate::cursor::cursor_set_rect::cursor_set_to_rect;
 use crate::experiments::regex_search::FindError;
@@ -24,6 +24,7 @@ use crate::primitives::color::Color;
 use crate::primitives::common_edit_msgs::{_apply_cem, cme_to_direction, CommonEditMsg, key_to_edit_msg};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::helpers;
+use crate::primitives::printable::Printable;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::stupid_cursor::StupidCursor;
@@ -31,6 +32,7 @@ use crate::primitives::xy::XY;
 use crate::promise::promise::{Promise, PromiseState};
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
+use crate::tsw::tree_sitter_wrapper::HighlightItem;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_provider::{CompletionAction, NavCompSymbol};
@@ -155,7 +157,8 @@ pub struct EditorWidget {
     // navcomp is to submit edit messages, suggestion display will probably be somewhere else
     navcomp: Option<NavCompRef>,
 
-    navcomp_symbol: Option<Box<dyn Promise<Option<NavCompSymbol>>>>,
+    // TODO this was supposed to be a "symbol under cursor" but of course it doesn't work this way.
+    // navcomp_symbol: Option<Box<dyn Promise<Option<NavCompSymbol>>>>,
 
     state: EditorState,
 
@@ -192,8 +195,6 @@ impl EditorWidget {
             state: EditorState::Editing,
             navcomp: None,
             requested_hover: None,
-            navcomp_symbol: None,
-
         };
 
         if buffer_named {
@@ -394,9 +395,9 @@ impl EditorWidget {
         debug!("request_context_bar");
 
         // need to resolve first
-        if let Some(navcomp_symbol) = self.navcomp_symbol.as_mut() {
-            navcomp_symbol.update();
-        };
+        // if let Some(navcomp_symbol) = self.navcomp_symbol.as_mut() {
+        //     navcomp_symbol.update();
+        // };
 
         let cursor_set = unpack_or!(buffer.cursors(self.wid), (), "no cursor for wid").clone();
 
@@ -405,9 +406,9 @@ impl EditorWidget {
             |c| StupidCursor::from_real_cursor(buffer, c).ok()
         ).flatten();
 
-        let lsp_symbol_op = self.navcomp_symbol.as_ref().map(|ncsp| {
-            ncsp.read().map(|c| c.as_ref())
-        }).flatten().flatten();
+        // let lsp_symbol_op = self.navcomp_symbol.as_ref().map(|ncsp| {
+        //     ncsp.read().map(|c| c.as_ref())
+        // }).flatten().flatten();
 
         let char_range_op = single_cursor.map(|a| {
             match a.s {
@@ -428,7 +429,7 @@ impl EditorWidget {
             // debug!("highlight items: [{:?}]", &highlight_items);
             highlight_items.first().map(|c| (*c).clone())
         }).flatten().map(|highlight_item| {
-            highlight_item.identifier.to_string()
+            highlight_item.identifier
         });
 
         let items = get_context_options(
@@ -436,7 +437,7 @@ impl EditorWidget {
             single_cursor,
             &cursor_set,
             stupid_cursor_op,
-            lsp_symbol_op,
+            None,
             tree_sitter_highlight.as_ref().map(|c| c.as_str()));
 
         if items.is_empty() {
@@ -620,7 +621,7 @@ impl EditorWidget {
             };
 
             let mut x_offset: usize = 0;
-            for (c_idx, c) in line.graphemes(true).into_iter().enumerate() {
+            for (c_idx, c) in line.graphemes().into_iter().enumerate() {
                 let char_idx = line_begin + c_idx;
 
                 while let Some(item) = highlight_iter.peek() {
@@ -879,9 +880,9 @@ impl EditorWidget {
 
         // TODO add support for scrachpad (path == None)
 
-        self.navcomp_symbol = self.navcomp.as_ref().map(|navcomp|
-            navcomp.todo_get_symbol_at(path, stupid_cursor)
-        ).flatten();
+        // self.navcomp_symbol = self.navcomp.as_ref().map(|navcomp|
+        //     navcomp.todo_get_symbol_at(path, stupid_cursor)
+        // ).flatten();
     }
 
     fn after_content_changed(&self, buffer: &BufferState) {
@@ -965,20 +966,21 @@ impl EditorWidget {
         let path = unpack_or!(buffer.get_path(), None, "no path set");
         let stupid_cursor = unpack_or!(StupidCursor::from_real_cursor(buffer, cursor).ok(), None, "failed conversion to stupid cursor");
 
-        let symbol_op = self.navcomp_symbol.as_ref().map(|promise| {
-            promise.read().map(|c| c.clone())
-        }).flatten().flatten();
+        let highlight = buffer.smallest_highlight(cursor.a);
+        let symbol_op: Option<String> = highlight.as_ref().map(|item| buffer.get_selected_chars(Selection::new(item.char_begin, item.char_end)).0).flatten();
 
-        // TODO(#24) without navcomp symbol, we don't offer show-usage. This is not a strict requirement I guess.
-        let symbol = unpack_or!(symbol_op, None, "no navcomp symbol (yet?)");
-        let selection = unpack_or!(StupidCursor::to_real_cursor_range(symbol.stupid_range, buffer), None, "failed to cast stupid range");
-
-        let symbol = unpack_or!(buffer.get_selected_chars(selection).0, None, "failed to get text");
+        let symbol_desc: String = match (highlight, symbol_op) {
+            (Some(type_), Some(item)) => {
+                format!("Usages of {} \"{}\"", type_.identifier.as_ref(), item)
+            }
+            _ => {
+                format!("Usages of symbol:")
+            }
+        };
 
         let promise = unpack_or!(navcomp.todo_get_symbol_usages(path, stupid_cursor), None, "failed retrieving usage symbol");
-
         let wrapped_promise = WrappedSymbolUsagesPromise::new(
-            symbol,
+            symbol_desc,
             promise,
         );
 
@@ -1262,7 +1264,7 @@ impl HasInvariant for EditorWidget {
             if !lock.text().has_cursor_set_for(self.wid) {
                 return false;
             }
-            
+
             true
         } else {
             false

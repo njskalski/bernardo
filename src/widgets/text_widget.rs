@@ -26,7 +26,8 @@ impl TextWidget {
     pub fn text_size(&self) -> XY {
         let mut size = XY::ZERO;
 
-        // TODO overflows
+        let debug_text = self.text.to_string();
+
         let mut line_it = self.text.lines();
         while let Some(line) = line_it.next() {
             size.x = size.x.max(line.width() as u16);
