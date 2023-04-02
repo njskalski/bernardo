@@ -143,7 +143,7 @@ impl Widget for ContextBarWidget {
                     EditorWidgetMsg::HoverClose.someboxed()
                 }
                 ContextBarWidgetMsg::Edit(cem) => {
-                    if self.query.apply_cem(cem.clone(), 1, None) {
+                    if self.query.apply_cem(cem.clone(), self.id, 1, None) {
                         self.on_query_change();
                     }
                     None

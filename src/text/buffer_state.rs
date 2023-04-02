@@ -9,6 +9,7 @@ use streaming_iterator::StreamingIterator;
 use tree_sitter::Point;
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::{unpack_or, unpack_or_e};
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::filename_to_language::filename_to_language;
@@ -21,7 +22,6 @@ use crate::text::contents_and_cursors::ContentsAndCursors;
 use crate::text::text_buffer::{LinesIter, TextBuffer};
 use crate::tsw::lang_id::LangId;
 use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
-use crate::unpack_or;
 use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 use crate::widget::widget::WID;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
@@ -96,6 +96,7 @@ impl BufferState {
         }
 
         let cem = cem;
+        let mut cursors_copy = unpack_or_e!(self.text().get_cursor_set(widget_id), false, "cursor set not found").clone();
 
         /*
         TODO the fact that Undo/Redo requires special handling here a lot suggests that maybe these shouldn't be CEMs. But it works now.
@@ -108,24 +109,13 @@ impl BufferState {
             }
         }
 
-        let mut cursors = match self.text().get_cursor_set_mut(widget_id) {
-            None => {
-                return false;
-            }
-            Some(cs) => {
-                cs.clone()
-            }
-        };
-
-        let (_diff_len_chars, any_change) = _apply_cem(cem.clone(), &mut cursors, &mut vec![], self, page_height as usize, clipboard);
+        let (_diff_len_chars, any_change) = _apply_cem(cem.clone(), &mut cursors_copy, &mut vec![], self, page_height as usize, clipboard);
 
         //undo/redo invalidates cursors copy, so I need to watch for those
         match cem {
             CommonEditMsg::Undo | CommonEditMsg::Redo => {}
             _ => {
-                // self.text_mut().cursor_set = cursors;
-                self.text_mut().set_cursor_set(widget_id, cursors);
-
+                self.text_mut().set_cursor_set(widget_id, cursors_copy);
                 if !any_change {
                     self.undo_milestone();
                 }
@@ -260,6 +250,10 @@ impl BufferState {
 
     pub fn cursors(&self, widget_id: WID) -> Option<&CursorSet> {
         self.text().get_cursor_set(widget_id)
+    }
+
+    pub fn cursors_mut(&mut self, widget_id: WID) -> Option<&mut CursorSet> {
+        self.text_mut().get_cursor_set_mut(widget_id)
     }
 
     /*

@@ -93,6 +93,18 @@ impl CodeResultsView {
         // TODO unwrap
         self.get_selected_item().get_buffer().lock().unwrap().get_document_identifier().clone()
     }
+
+    fn on_hit(&self) -> Option<Box<dyn AnyMsg>> {
+        let editor = self.get_selected_item();
+        let editor_widget_id = editor.id();
+        let buffer = unpack_or_e!(editor.get_buffer().lock(), None, "can't lock buffer");
+        let single_cursor = unpack_or!(buffer.cursors(editor_widget_id).map(|cs| cs.as_single()).flatten(), None, "can't single the cursor");
+
+        MainViewMsg::OpenFile {
+            file: buffer.get_document_identifier().clone(),
+            position_op: single_cursor,
+        }.someboxed()
+    }
 }
 
 impl Widget for CodeResultsView {
@@ -246,22 +258,7 @@ impl Widget for CodeResultsView {
         #[allow(unreachable_patterns)]
         return match our_msg.unwrap() {
             CodeResultsMsg::Hit => {
-                // TODO using first instead of "single"
-                if let Some((doc_id, cursor)) = self.get_selected_item().get_buffer().lock().map(|lock| {
-                    let doc_id = lock.get_document_identifier().clone();
-                    let cursor = lock.cursors().first();
-
-                    (doc_id, cursor)
-                }) {
-                    MainViewMsg::OpenFile {
-                        file: doc_id.clone(),
-                        position_op: cursor,
-                    }.someboxed()
-                } else {
-                    error!("couldn't get item path");
-
-                    None
-                }
+                self.on_hit()
             }
         };
     }

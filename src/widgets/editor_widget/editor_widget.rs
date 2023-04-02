@@ -264,7 +264,10 @@ impl EditorWidget {
     fn update_kite(&mut self, buffer: &BufferState, last_move_direction: Arrow) {
         // TODO test
         // TODO cleanup - now cursor_set is part of buffer, we can move cursor_set_to_rect method there
-        let cursor_rect = cursor_set_to_rect(&buffer.text().cursor_set, &*buffer);
+
+        let cursor_set = unpack_or_e!(buffer.text().get_cursor_set(self.wid), (), "failed to get cursor_set");
+
+        let cursor_rect = cursor_set_to_rect(cursor_set, &*buffer);
         match last_move_direction {
             Arrow::Up => {
                 if self.kite.y > cursor_rect.upper_left().y {
@@ -291,8 +294,11 @@ impl EditorWidget {
 
     pub fn enter_dropping_cursor_mode(&mut self, buffer: &BufferState) {
         debug_assert_matches!(self.state, EditorState::Editing);
+
+        // TODO there was something called "supercursor" that seems to be useful here
+        let cursors = unpack_or_e!(buffer.text().get_cursor_set(self.wid), (), "failed getting cursor set");
         self.state = EditorState::DroppingCursor {
-            special_cursor: buffer.cursors().iter().next().map(|c| *c).unwrap_or_else(|| {
+            special_cursor: cursors.iter().next().map(|c| *c).unwrap_or_else(|| {
                 warn!("empty cursor set!");
                 Cursor::single()
             })
@@ -344,7 +350,7 @@ impl EditorWidget {
      */
     pub fn get_cursor_related_hover_settings(&self, buffer: &BufferState, triggers: Option<&Vec<String>>) -> Option<HoverSettings> {
         // let last_size = unpack_or!(self.last_size, None, "requested hover before layout");
-        let cursor: Cursor = unpack_or!(buffer.cursors().as_single().map(|c| c.clone()), None, "multiple cursors or none, not doing hover");
+        let cursor: Cursor = unpack_or!(buffer.cursors(self.wid).map(|co| co.as_single()).flatten().map(|c| c.clone()), None, "multiple cursors or none, not doing hover");
         let cursor_pos = unpack_or!(self.get_single_cursor_screen_pos(buffer, cursor), None, "can't position hover, no cursor local pos");
         let cursor_screen_pos = unpack_or!(cursor_pos.widget_space, None, "no cursor position in screen space");
         // let buffer_r: BufferR = unpack_or!(self.buffer.lock(), None, "failed to lock buffer");
@@ -382,7 +388,9 @@ impl EditorWidget {
             navcomp_symbol.update();
         };
 
-        let single_cursor = buffer.cursors().as_single();
+        let cursor_set = unpack_or!(buffer.cursors(self.wid), (), "no cursor for wid").clone();
+
+        let single_cursor = cursor_set.as_single();
         let stupid_cursor_op = single_cursor.map(
             |c| StupidCursor::from_real_cursor(buffer, c).ok()
         ).flatten();
@@ -416,7 +424,7 @@ impl EditorWidget {
         let items = get_context_options(
             &self.state,
             single_cursor,
-            buffer.cursors(),
+            &cursor_set,
             stupid_cursor_op,
             lsp_symbol_op,
             tree_sitter_highlight.as_ref().map(|c| c.as_str()));
@@ -438,8 +446,9 @@ impl EditorWidget {
         let navcomp = unpack_or!(self.navcomp.as_ref(), false, "can't reformat: navcomp not available");
         let path = unpack_or!(buffer.get_path(), false , "can't reformat: unsaved file");
         let mut promise = unpack_or!(navcomp.todo_reformat(path), false, "can't reformat: no promise for reformat");
+        let cursor_set = unpack_or!(buffer.cursors(self.wid), false, "no cursor for wid");
 
-        if !buffer.text().cursor_set.are_simple() {
+        if !cursor_set.are_simple() {
             warn!("can't format: unimplemented for non-simple cursors, sorry");
             return false;
         }
@@ -449,7 +458,7 @@ impl EditorWidget {
             let edits = unpack_or!(promise.read().unwrap(), false, "can't reformat: promise empty");
 
             let page_height = self.page_height();
-            let res = buffer.apply_stupid_substitute_messages(edits, page_height as usize);
+            let res = buffer.apply_stupid_substitute_messages(self.wid, edits, page_height as usize);
 
             // This theoretically could be optimised out, but maybe it's not worth it, it leads to
             // a new category of bugs if statement above turns out to be false, and it rarely is,
@@ -521,14 +530,14 @@ impl EditorWidget {
             return false;
         }
 
-        buffer_mut.text_mut().cursor_set = cursor_set;
+        buffer_mut.text_mut().set_cursor_set(self.wid, cursor_set);
         self.update_kite(&buffer_mut, Arrow::Down);
 
         true
     }
 
     pub fn find_once(&mut self, buffer_mut: &mut BufferState, phrase: &String) -> Result<bool, FindError> {
-        let res = buffer_mut.find_once(phrase);
+        let res = buffer_mut.find_once(self.wid, phrase);
         if res == Ok(true) {
             // TODO handle "restart from the top"
             self.update_kite(&buffer_mut, Arrow::Down);
@@ -569,6 +578,7 @@ impl EditorWidget {
         helpers::fill_output(default.background, output);
 
         let buffer = unpack_or!(self.buffer.lock(), (), "failed to lock buffer for rendering");
+        let cursor_set_copy = unpack_or!(buffer.cursors(self.wid), (), "no cursors for rendering").clone();
 
         let sc = output.size_constraint();
         let visible_rect = unpack_or!(sc.visible_hint(), (), "not visible - not rendering");
@@ -628,7 +638,7 @@ impl EditorWidget {
                     }
                 }
 
-                self.pos_to_cursor(buffer.cursors(), theme, char_idx).map(|mut bg| {
+                self.pos_to_cursor(&cursor_set_copy, theme, char_idx).map(|mut bg| {
                     if !focused {
                         bg = bg.half();
                     }
@@ -666,7 +676,7 @@ impl EditorWidget {
         if one_beyond_last_pos < visible_rect.lower_right() {
             let mut style = default;
 
-            self.pos_to_cursor(buffer.cursors(), theme, one_beyond_limit).map(|mut bg| {
+            self.pos_to_cursor(&cursor_set_copy, theme, one_beyond_limit).map(|mut bg| {
                 if !focused {
                     bg = bg.half();
                 }
@@ -726,7 +736,7 @@ impl EditorWidget {
     }
 
     pub fn request_completions(&mut self, buffer: &BufferState) {
-        let cursor = unpack_or!(buffer.cursors().as_single(), (), "not opening completions - cursor not single.");
+        let cursor = unpack_or!(buffer.cursors(self.wid).map(|c| c.as_single()).flatten(), (), "not opening completions - cursor not single.");
         let navcomp = unpack_or!(self.navcomp.clone(), (), "not opening completions - navcomp not available.");
         let stupid_cursor = unpack_or_e!(StupidCursor::from_real_cursor(buffer, cursor).ok(), (), "failed converting cursor to lsp_cursor");
         let path = unpack_or_e!(buffer.get_path(), (), "path not available");
@@ -758,7 +768,9 @@ impl EditorWidget {
 
     // TODO merge with function above
     pub fn update_completions(&mut self, buffer: &BufferState) {
-        let cursor_pos = match buffer.cursors().as_single().map(|c| self.get_single_cursor_screen_pos(buffer, c)).flatten().clone() {
+        let cursor = unpack_or!(buffer.cursors(self.wid).map(|c| c.as_single()).flatten(), (), "not opening completions - cursor not single.");
+
+        let cursor_pos = match self.get_single_cursor_screen_pos(buffer, cursor).clone() {
             Some(c) => c,
             None => {
                 debug!("cursor not single or not on screen");
@@ -835,6 +847,7 @@ impl EditorWidget {
                 CompletionAction::Insert(what) => what,
             };
             buffer.apply_cem(CommonEditMsg::Block(to_insert.clone()),
+                             self.wid,
                              self.page_height() as usize,
                              Some(self.providers.clipboard()),
             ); // TODO unnecessary clone
@@ -849,7 +862,8 @@ impl EditorWidget {
 
     // This is supposed to be called each time cursor is moved
     fn todo_after_cursor_moved(&mut self, buffer: &BufferState) {
-        let cursor = unpack_or!(buffer.cursors().as_single(), (), "cursor not single");
+        let cursor = unpack_or!(buffer.cursors(self.wid).map(|c| c.as_single()).flatten(), (), "not opening completions - cursor not single.");
+
         let path = unpack_or!(buffer.get_path(), (), "no path set");
         let stupid_cursor = unpack_or!(StupidCursor::from_real_cursor(buffer, cursor).ok(), (), "failed conversion to stupid cursor");
 
@@ -937,7 +951,7 @@ impl EditorWidget {
 
     pub fn show_usages(&self, buffer: &BufferState) -> Option<Box<dyn AnyMsg>> {
         let navcomp = unpack_or_e!(&self.navcomp, None, "can't show usages without navcomp");
-        let cursor = unpack_or!(buffer.cursors().as_single(), None, "cursor not single");
+        let cursor = unpack_or!(buffer.cursors(self.wid).map(|c| c.as_single()).flatten(), None, "not opening completions - cursor not single.");
         let path = unpack_or!(buffer.get_path(), None, "no path set");
         let stupid_cursor = unpack_or!(StupidCursor::from_real_cursor(buffer, cursor).ok(), None, "failed conversion to stupid cursor");
 
@@ -1061,6 +1075,7 @@ impl Widget for EditorWidget {
                             // page_height as usize is safe, since page_height is u16 and usize is larger.
                             let changed = buffer.apply_cem(
                                 cem.clone(),
+                                self.wid,
                                 page_height as usize,
                                 Some(self.providers.clipboard()),
                             );
@@ -1096,31 +1111,31 @@ impl Widget for EditorWidget {
                         (&EditorState::DroppingCursor { special_cursor }, EditorWidgetMsg::DropCursorFlip { cursor }) => {
                             debug_assert!(special_cursor.is_simple());
 
-                            if !buffer.text().cursor_set.are_simple() {
+                            let mut cursor_set = unpack_or!(buffer.cursors_mut(self.wid), None, "can't get cursor set");
+
+                            if !cursor_set.are_simple() {
                                 warn!("Cursors were supposed to be simple at this point. Recovering, but there was error.");
-                                buffer.text_mut().cursor_set.simplify();
+                                cursor_set.simplify();
                             }
 
-                            let has_cursor = buffer.text().cursor_set.get_cursor_status_for_char(special_cursor.a) == CursorStatus::UnderCursor;
+                            let has_cursor = cursor_set.get_cursor_status_for_char(special_cursor.a) == CursorStatus::UnderCursor;
 
                             if has_cursor {
-                                let cs = &mut buffer.text_mut().cursor_set;
-
                                 // We don't remove a single cursor, to not invalidate invariant
-                                if cs.len() > 1 {
-                                    if !cs.remove_by_anchor(special_cursor.a) {
+                                if cursor_set.len() > 1 {
+                                    if !cursor_set.remove_by_anchor(special_cursor.a) {
                                         warn!("Failed to remove cursor by anchor {}, ignoring request", special_cursor.a);
                                     }
                                 } else {
                                     debug!("Not removing a single cursor at {}", special_cursor.a);
                                 }
                             } else {
-                                if !buffer.text_mut().cursor_set.add_cursor(*cursor) {
+                                if !cursor_set.add_cursor(*cursor) {
                                     warn!("Failed to add cursor {:?} to set", cursor);
                                 }
                             }
 
-                            debug_assert!(buffer.text().cursor_set.check_invariant());
+                            debug_assert!(cursor_set.check_invariant());
 
                             None
                         }

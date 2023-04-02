@@ -1,7 +1,7 @@
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
-use crate::{subwidget, unpack_or_e};
+use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::path::SPath;
@@ -259,20 +259,18 @@ impl EditorView {
     Just lookup otherwise.
      */
     fn hit_replace_once(&mut self, buffer_mut: &mut BufferState) -> bool {
-        let phrase = match self.get_pattern() {
-            Some(p) => p,
-            None => {
-                debug!("hit_replace_once with empty phrase - ignoring");
-                return false;
-            }
-        };
-
+        let phrase = unpack_or!(self.get_pattern(), false ,"hit_replace_once with empty phrase - ignoring");
         let curr_text = buffer_mut.text();
-        if curr_text.cursor_set.is_single() && curr_text.do_cursors_match_regex(&phrase) {
+        let editor_widget_id = self.editor.id();
+        let cursor_set = unpack_or!(curr_text.get_cursor_set(editor_widget_id), false, "no cursors for editor");
+
+        let editor_widget_id = self.editor.id();
+        if cursor_set.is_single() && curr_text.do_cursors_match_regex(editor_widget_id, &phrase) {
             let with_what = self.replace_box.get_buffer().to_string();
             let page_height = self.editor.internal().page_height() as usize;
             buffer_mut.apply_cem(
                 CommonEditMsg::Block(with_what),
+                editor_widget_id,
                 page_height,
                 Some(self.providers.clipboard()), //not really needed but why not
             );
