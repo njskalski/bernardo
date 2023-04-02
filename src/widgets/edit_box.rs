@@ -142,6 +142,7 @@ impl EditBoxWidget {
 
     pub fn set_text<'a, T: AsRef<str>>(&mut self, text: T) {
         self.buffer = BufferState::simplified_single_line().with_text(text);
+        self.buffer.initialize_for_widget(self.id, None);
     }
 
     pub fn set_cursor_end(&mut self) {
