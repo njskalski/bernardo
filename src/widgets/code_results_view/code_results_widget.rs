@@ -44,7 +44,7 @@ pub struct CodeResultsView {
     wid: WID,
 
     label: TextWidget,
-    item_list: WithScroll<BigList<EditorWidget>>,
+    item_list: WithScroll<BigList<WithScroll<EditorWidget>>>,
 
     //providers
     data_provider: Box<dyn CodeResultsProvider>,
@@ -82,11 +82,11 @@ impl CodeResultsView {
     }
 
     pub fn get_selected_item(&self) -> &EditorWidget {
-        self.item_list.internal().get_selected_item()
+        self.item_list.internal().get_selected_item().internal()
     }
 
     pub fn get_selected_item_mut(&mut self) -> &mut EditorWidget {
-        self.item_list.internal_mut().get_selected_item_mut()
+        self.item_list.internal_mut().get_selected_item_mut().internal_mut()
     }
 
     pub fn get_selected_doc_id(&self) -> DocumentIdentifier {
@@ -194,12 +194,6 @@ impl Widget for CodeResultsView {
                                 continue;
                             }
                             Some(first_cursor) => {
-                                if open_result.opened {
-                                    warn!("I will destroy cursor data, because issue #23 - we don't have multiple views properly implemented, sorry");
-                                }
-
-                                buffer.remove_history();
-
                                 CursorSet::singleton(first_cursor)
                             }
                         }
@@ -219,8 +213,8 @@ impl Widget for CodeResultsView {
                 }
 
                 self.item_list.internal_mut().add_item(
-                    SplitRule::Fixed(5),
-                    edit_widget,
+                    SplitRule::Fixed(3),
+                    WithScroll::new(ScrollDirection::Vertical, edit_widget).with_line_no(),
                 )
             }
         } // to drop buffer_register_lock

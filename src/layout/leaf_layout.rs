@@ -10,11 +10,22 @@ use crate::widget::widget::Widget;
 
 pub struct LeafLayout<W: Widget> {
     widget: SubwidgetPointer<W>,
+    focusable: bool,
 }
 
 impl<W: Widget> LeafLayout<W> {
     pub fn new(widget: SubwidgetPointer<W>) -> Self {
-        LeafLayout { widget }
+        LeafLayout {
+            widget,
+            focusable: true,
+        }
+    }
+
+    pub fn with_focusable(self, focusable: bool) -> Self {
+        Self {
+            focusable: true,
+            ..self
+        }
     }
 }
 
