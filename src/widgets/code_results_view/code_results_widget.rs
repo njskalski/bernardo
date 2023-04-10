@@ -32,6 +32,7 @@ use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::big_list::big_list_widget::BigList;
+use crate::widgets::code_results_view::code_preview_widget::code_preview_widget::CodePreviewWidget;
 use crate::widgets::code_results_view::code_results_msg::CodeResultsMsg;
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
@@ -44,7 +45,7 @@ pub struct CodeResultsView {
     wid: WID,
 
     label: TextWidget,
-    item_list: WithScroll<BigList<WithScroll<EditorWidget>>>,
+    item_list: WithScroll<BigList<CodePreviewWidget>>,
 
     //providers
     data_provider: Box<dyn CodeResultsProvider>,
@@ -82,11 +83,11 @@ impl CodeResultsView {
     }
 
     pub fn get_selected_item(&self) -> &EditorWidget {
-        self.item_list.internal().get_selected_item().internal()
+        self.item_list.internal().get_selected_item().editor()
     }
 
     pub fn get_selected_item_mut(&mut self) -> &mut EditorWidget {
-        self.item_list.internal_mut().get_selected_item_mut().internal_mut()
+        self.item_list.internal_mut().get_selected_item_mut().editor_mut()
     }
 
     pub fn get_selected_doc_id(&self) -> DocumentIdentifier {
@@ -212,10 +213,14 @@ impl Widget for CodeResultsView {
                     continue;
                 }
 
+                let file_path = spath.to_string();
                 self.item_list.internal_mut().add_item(
-                    SplitRule::Fixed(3),
-                    WithScroll::new(ScrollDirection::Vertical, edit_widget).with_line_no(),
-                )
+                    SplitRule::Fixed(6),
+                    CodePreviewWidget::new(
+                        TextWidget::new(Box::new(file_path)),
+                        edit_widget,
+                    ),
+                );
             }
         } // to drop buffer_register_lock
 

@@ -1,10 +1,13 @@
+use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::Arc;
 
+use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::experiments::grapheme_lines_streaming_iterator::GraphemeLinesStreamingIterator;
+use crate::fs::path::SPath;
 
 pub trait Printable {
     fn graphemes(&self) -> Box<dyn Iterator<Item=&str> + '_>;
@@ -60,4 +63,3 @@ impl Printable for String {
         Box::new(UnicodeSegmentation::graphemes(self.as_str(), true))
     }
 }
-

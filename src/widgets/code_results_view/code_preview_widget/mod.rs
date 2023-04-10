@@ -1,1 +1,1 @@
-mod code_preview_widget;
+pub mod code_preview_widget;

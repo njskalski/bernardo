@@ -1,7 +1,12 @@
+use std::borrow::Borrow;
 use std::borrow::Cow;
 use std::cmp::Ordering;
+use std::collections::VecDeque;
+use std::ffi::OsStr;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
+use std::ops::Deref;
+use std::panic::panic_any;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -235,6 +240,20 @@ impl SPath {
         ParentRefIter::new(Some(self))
     }
 
+    pub fn cell_streaming_iter(&self) -> CellIter {
+        CellIter::new(self)
+    }
+
+    pub fn cell_iter(&self) -> impl Iterator<Item=Arc<PathCell>> {
+        let mut vec_deq: VecDeque<Arc<PathCell>> = VecDeque::new();
+        let mut iter = self.ancestors_and_self_ref();
+        while let Some(item) = iter.next() {
+            vec_deq.push_back(item.0.clone());
+        }
+
+        vec_deq.into_iter()
+    }
+
     pub fn is_parent_of(&self, other: &SPath) -> bool {
         let mut iter = other.ancestors_and_self_ref();
         while let Some(parent) = iter.next() {
@@ -392,6 +411,51 @@ impl Ord for SPath {
 
         // probably in after profiling I will decide to optimise here
         self.absolute_path().cmp(&other.absolute_path())
+    }
+}
+
+pub struct CellIter {
+    did_first_advance_happen: bool,
+    vec: VecDeque<Arc<PathCell>>,
+}
+
+impl CellIter {
+    pub fn new(path: &SPath) -> Self {
+        let mut vec_deq: VecDeque<Arc<PathCell>> = VecDeque::new();
+        let mut iter = path.ancestors_and_self_ref();
+        while let Some(item) = iter.next() {
+            vec_deq.push_back(item.0.clone());
+        }
+
+        CellIter {
+            did_first_advance_happen: false,
+            vec: vec_deq,
+        }
+    }
+}
+
+impl StreamingIterator for CellIter {
+    type Item = OsStr;
+
+    fn advance(&mut self) {
+        if self.did_first_advance_happen {
+            self.vec.pop_front();
+        } else {
+            self.did_first_advance_happen = true;
+        }
+    }
+
+    fn get(&self) -> Option<&Self::Item> {
+        self.vec.front().map(|oc| {
+            match oc.borrow() {
+                PathCell::Head(head) => {
+                    head.root_path_buf().as_os_str()
+                }
+                PathCell::Segment { prev, cell } => {
+                    cell.as_os_str()
+                }
+            }
+        })
     }
 }
 

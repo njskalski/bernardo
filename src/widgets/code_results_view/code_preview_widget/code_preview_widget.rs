@@ -5,6 +5,7 @@ use crate::io::output::Output;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::subwidget;
@@ -13,11 +14,12 @@ use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::text_widget::TextWidget;
+use crate::widgets::with_scroll::WithScroll;
 
-struct CodePreviewWidget {
+pub struct CodePreviewWidget {
     id: WID,
     label: TextWidget,
-    editor: EditorWidget,
+    editor: WithScroll<EditorWidget>,
 
     display_state: Option<DisplayState<CodePreviewWidget>>,
 
@@ -26,15 +28,23 @@ struct CodePreviewWidget {
 
 impl CodePreviewWidget {
     pub const TYPENAME: &'static str = "code_preview_widget";
-    
+
     pub fn new(label: TextWidget, editor: EditorWidget) -> Self {
         CodePreviewWidget {
             id: get_new_widget_id(),
             label,
-            editor,
+            editor: WithScroll::new(ScrollDirection::Vertical, editor),
             display_state: None,
-            editor_lines: 3,
+            editor_lines: 5,
         }
+    }
+
+    pub fn editor(&self) -> &EditorWidget {
+        self.editor.internal()
+    }
+
+    pub fn editor_mut(&mut self) -> &mut EditorWidget {
+        self.editor.internal_mut()
     }
 }
 
@@ -76,7 +86,7 @@ impl Widget for CodePreviewWidget {
 
 impl ComplexWidget for CodePreviewWidget {
     fn get_layout(&self) -> Box<dyn Layout<Self>> {
-        SplitLayout::new(SplitDirection::Horizontal)
+        SplitLayout::new(SplitDirection::Vertical)
             .with(
                 SplitRule::Fixed(1),
                 LeafLayout::new(subwidget!(Self.label))
@@ -84,7 +94,7 @@ impl ComplexWidget for CodePreviewWidget {
                     .boxed(),
             )
             .with(
-                SplitRule::Fixed(3),
+                SplitRule::Fixed(5),
                 LeafLayout::new(subwidget!(Self.editor)).boxed(),
             )
             .boxed()

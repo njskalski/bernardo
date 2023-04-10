@@ -53,6 +53,8 @@ impl<W: Widget> WithScroll<W> {
         &self.scroll
     }
 
+    pub fn scroll_mut(&mut self) -> &mut Scroll { &mut self.scroll }
+
     /*
     Returns (margin_width, nested size_constraint).
     This is where it's decided whether to wr
