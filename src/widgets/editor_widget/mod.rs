@@ -4,3 +4,7 @@ pub mod completion;
 mod helpers;
 pub mod context_bar;
 mod context_options_matrix;
+pub mod label;
+
+#[test]
+mod tests;

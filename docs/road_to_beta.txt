@@ -32,6 +32,9 @@ git filtering in:
 6)
 Editor "labels" (in-code overlay-"comments", clearly distingushible messages noting errors/warnings)
 
+6.5)
+Status bar (at minimum file, col, row)
+
 7)
 Code "collapsing"
 
