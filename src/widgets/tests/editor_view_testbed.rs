@@ -16,15 +16,14 @@ use crate::widget::widget::Widget;
 use crate::widgets::editor_view::editor_view::EditorView;
 
 pub struct EditorViewTestbed {
-    editor_view: EditorView,
-    fsf: FsfRef,
-    input_sender: Sender<InputEvent>,
-    output_receiver: Receiver<MetaOutputFrame>,
-    config: ConfigRef,
-    clipboard: ClipboardRef,
-    theme: Theme,
-    last_frame: Option<MetaOutputFrame>,
-    mock_navcomp_pilot: MockNavCompProviderPilot,
+    pub editor_view: EditorView,
+    pub input_sender: Sender<InputEvent>,
+    pub output_receiver: Receiver<MetaOutputFrame>,
+    pub config: ConfigRef,
+    pub clipboard: ClipboardRef,
+    pub theme: Theme,
+    pub last_frame: Option<MetaOutputFrame>,
+    pub mock_navcomp_pilot: MockNavCompProviderPilot,
 }
 
 

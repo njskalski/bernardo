@@ -22,6 +22,7 @@ use crate::text::contents_and_cursors::ContentsAndCursors;
 use crate::text::text_buffer::{LinesIter, TextBuffer};
 use crate::tsw::lang_id::LangId;
 use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
+use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 use crate::widget::widget::WID;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
@@ -69,6 +70,10 @@ pub struct BufferState {
 }
 
 impl BufferState {
+    pub fn into_bsr(self) -> BufferSharedRef {
+        BufferSharedRef::new_from_buffer(self)
+    }
+
     pub fn apply_cem(&mut self,
                      mut cem: CommonEditMsg,
                      widget_id: WID,
