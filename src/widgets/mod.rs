@@ -22,5 +22,5 @@ pub mod code_results_view;
 pub mod big_list;
 pub mod attention_node;
 
-#[test]
+#[cfg(test)]
 mod tests;
