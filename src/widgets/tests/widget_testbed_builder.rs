@@ -22,6 +22,7 @@ use crate::tsw::lang_id::LangId;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
+use crate::widget::widget::Widget;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
 use crate::widgets::tests::editor_view_testbed::EditorViewTestbed;
@@ -108,11 +109,7 @@ impl WidgetTestbedBuilder {
 
     pub fn build_editor(self) -> EditorViewTestbed {
         let size = self.size;
-        let step_frame = self.step_frame;
         let (providers, side_channels) = self.providers();
-
-        let (input, input_sender) = MockInput::new();
-        let (output, output_receiver) = MockOutput::new(size, step_frame, providers.theme().clone());
 
         let docid = DocumentIdentifier::new_unique();
         let buffer = BufferState::full(Some(providers.tree_sitter().clone()), docid)
@@ -125,8 +122,7 @@ impl WidgetTestbedBuilder {
 
         EditorViewTestbed {
             editor_view,
-            input_sender,
-            output_receiver,
+            size,
             config: providers.config().clone(),
             clipboard: providers.clipboard().clone(),
             theme: providers.theme().clone(),

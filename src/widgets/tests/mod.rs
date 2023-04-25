@@ -1,3 +1,3 @@
-mod editor_view_testbed;
-mod widget_testbed_builder;
+pub mod editor_view_testbed;
+pub mod widget_testbed_builder;
 

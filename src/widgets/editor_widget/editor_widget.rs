@@ -589,7 +589,12 @@ impl EditorWidget {
         helpers::fill_output(default.background, output);
 
         let buffer = unpack_or!(self.buffer.lock(), (), "failed to lock buffer for rendering");
-        let cursor_set_copy = unpack_or!(buffer.cursors(self.wid), (), "no cursors for rendering").clone();
+        let cursor_set_copy = match buffer.cursors(self.wid) {
+            None => {
+                CursorSet::single()
+            }
+            Some(cs) => cs.clone(),
+        };
 
         let sc = output.size_constraint();
         let visible_rect = unpack_or!(sc.visible_hint(), (), "not visible - not rendering");

@@ -532,6 +532,17 @@ impl BufferState {
         result
     }
 
+    /*
+    Destroys history
+     */
+    pub fn set_text<T: AsRef<str>>(&mut self, text: T) {
+        self.history = vec![ContentsAndCursors::empty().with_rope(Rope::from_str(text.as_ref()))];
+        self.history_pos = 0;
+
+        self.set_parsing_tuple();
+        self.check_invariant();
+    }
+
 
     /*
     This is expected to be used only in construction, it clears the history.
