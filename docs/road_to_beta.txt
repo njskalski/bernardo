@@ -45,6 +45,8 @@ Nice to haves (only if they turn out to be low hanging fruits):
 
 9) errors/warnings in editor
 
+9.5) a file descriptor I can stream to output from build commands to make the labels
+
 10)
 Tests:
 save as:
