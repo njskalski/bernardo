@@ -58,7 +58,7 @@ impl FuzzySearchWidget {
     pub const TYPENAME: &'static str = "fuzzy_search";
 
     pub fn new(on_close: WidgetAction<Self>, clipboard_op: Option<ClipboardRef>) -> Self {
-        let mut edit = EditBoxWidget::new();
+        let mut edit = EditBoxWidget::new().with_fill_x();
 
         match clipboard_op {
             None => {}
@@ -243,7 +243,7 @@ impl Widget for FuzzySearchWidget {
             min_size.x
         });
 
-        if let Some(edit_sc) = sc.cut_out_rect(Rect::from_zero(XY::new(width, 0))) {
+        if let Some(edit_sc) = sc.cut_out_rect(Rect::from_zero(XY::new(width, 1))) {
             self.edit.layout(edit_sc);
         } else {
             error!("not layouting edit - emtpy cut_out_rect empty!")
