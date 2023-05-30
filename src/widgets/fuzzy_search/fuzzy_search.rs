@@ -42,8 +42,6 @@ pub struct FuzzySearchWidget {
 
     draw_comment: DrawComment,
 
-    last_height_limit: Option<u16>,
-
     highlighted: usize,
 
     on_close: WidgetAction<Self>,
@@ -75,7 +73,6 @@ impl FuzzySearchWidget {
             providers: Vec::default(),
             context_shortcuts: Vec::default(),
             draw_comment: DrawComment::None,
-            last_height_limit: None,
             highlighted: 0,
             on_close,
             on_miss: None,
@@ -137,8 +134,8 @@ impl FuzzySearchWidget {
     }
 
     fn items(&self) -> ItemIter {
-        let rows_limit = self.last_height_limit.unwrap_or_else(|| {
-            error!("items called before last_height_limit set, using 128 as 'safe default'");
+        let rows_limit = self.last_size.map(|xy| xy.y).unwrap_or_else(|| {
+            error!("items called before last_size set, using 128 as 'safe default'");
             128
         });
 
