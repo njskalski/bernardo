@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
-use crate::io::buffer_output::BufferOutput;
+use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::io::style::TextStyle;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;

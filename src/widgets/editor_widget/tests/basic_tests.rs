@@ -6,6 +6,12 @@ fn basic_editor_testbed_test() {
     let mut setup = get_setup();
     setup.next_frame();
 
-    let i = &setup.frame().unwrap().buffer;
-    screenshot(i);
+    assert!(setup.interpreter().unwrap().is_editor_focused());
+
+    {
+        // let interpreter = setup.interpreter()?;
+    }
+
+
+    // screenshot(i);
 }

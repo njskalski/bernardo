@@ -4,7 +4,7 @@ use std::io::Error;
 use crossbeam_channel::{Receiver, Sender};
 
 use crate::config::theme::Theme;
-use crate::io::buffer_output::BufferOutput;
+use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::io::output::{FinalOutput, Metadata, Output};
 use crate::io::style::TextStyle;
 use crate::mocks::meta_frame::MetaOutputFrame;

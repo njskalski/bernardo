@@ -6,7 +6,8 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::buffer::Buffer;
-use crate::io::buffer_output_iter::{BufferLinesIter, BufferOutputCellsIter, BufferStyleIter};
+use crate::io::buffer_output::buffer_output_cells_iter::BufferOutputCellsIter;
+use crate::io::buffer_output::buffer_output_iter::{BufferLinesIter, BufferStyleIter};
 use crate::io::cell::Cell;
 use crate::io::output::{Metadata, Output};
 use crate::io::style::TextStyle;
@@ -79,7 +80,7 @@ impl Output for BufferOutput {
         SizeConstraint::simple(self.size())
     }
 
-    
+
     #[cfg(test)]
     fn emit_metadata(&mut self, _meta: Metadata) {}
 }

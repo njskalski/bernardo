@@ -7,7 +7,7 @@ use crossterm::terminal::{Clear, ClearType};
 use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;
 
-use crate::io::buffer_output::BufferOutput;
+use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::output::{FinalOutput, Metadata, Output};
 use crate::io::style::{Effect, TextStyle};
@@ -100,7 +100,7 @@ impl<W: Write> Output for CrosstermOutput<W> {
         SizeConstraint::simple(self.size)
     }
 
-    
+
     #[cfg(test)]
     fn emit_metadata(&mut self, _meta: Metadata) {
         debug_assert!(false, "you should not be emmiting metadata to an actual output");

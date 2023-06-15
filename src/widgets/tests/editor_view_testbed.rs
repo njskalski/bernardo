@@ -5,6 +5,7 @@ use crossbeam_channel::{Receiver, Sender};
 use crate::config::config::{Config, ConfigRef};
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
+use crate::experiments::screen_shot::screenshot;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::mock_fs::MockFS;
@@ -50,7 +51,19 @@ impl EditorViewTestbed {
         self.last_frame = Some(frame);
     }
 
-    pub fn frame(&self) -> Option<&MetaOutputFrame> {
+    pub fn frame_op(&self) -> Option<&MetaOutputFrame> {
         self.last_frame.as_ref()
+    }
+
+    pub fn interpreter(&self) -> Option<EditorInterpreter<'_>> {
+        self.frame_op().map(|frame| {
+            EditorInterpreter::new(frame, frame.metadata.first().unwrap())
+        }).flatten()
+    }
+
+    pub fn screenshot(&self) -> bool {
+        self.frame_op().map(|frame|
+            screenshot(&frame.buffer)
+        ).unwrap_or(false)
     }
 }

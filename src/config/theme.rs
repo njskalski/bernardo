@@ -82,8 +82,11 @@ pub struct UiTheme {
     pub non_focused_highlighted: TextStyle,
     pub header: TextStyle,
     pub cursors: CursorsSettings,
+
     // not sure if I should not rearrange this
     pub mode_2_background: Color,
+    pub label_warning: TextStyle,
+    pub label_error: TextStyle,
 }
 
 lazy_static!(
@@ -108,6 +111,10 @@ lazy_static!(
     static ref HEADER_FOREGROUND : Color = ron::from_str("\"#AC5894\"").unwrap();
 
     static ref MODE2_BACKGROUND : Color = ron::from_str("\"#122322\"").unwrap();
+
+    static ref MUSTARD_COLOR : Color = ron::from_str("\"#EABE38\"").unwrap();
+    static ref KETCHUP_COLOR : Color = ron::from_str("\"#B10B0B\"").unwrap();
+    static ref BLACK : Color = ron::from_str("\"#000000\"").unwrap();
 );
 
 impl Default for UiTheme {
@@ -145,6 +152,16 @@ impl Default for UiTheme {
                 foreground: Some(*CURSORS_FOREGROUND),
             },
             mode_2_background: *MODE2_BACKGROUND,
+            label_warning: TextStyle {
+                foreground: *BLACK,
+                background: *MUSTARD_COLOR,
+                effect: Default::default(),
+            },
+            label_error: TextStyle {
+                foreground: *BLACK,
+                background: *KETCHUP_COLOR,
+                effect: Default::default(),
+            },
         }
     }
 }

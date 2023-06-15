@@ -1,7 +1,7 @@
 use streaming_iterator::StreamingIterator;
 
 use crate::config::theme::Theme;
-use crate::io::buffer_output::BufferOutput;
+use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::io::output::Metadata;
 use crate::mocks::code_results_interpreter::CodeResultsViewInterpreter;
 use crate::mocks::editor_interpreter::EditorInterpreter;

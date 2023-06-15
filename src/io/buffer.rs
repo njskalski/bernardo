@@ -92,7 +92,7 @@ impl<T: Default + Clone> Buffer<T> where T: Serialize + DeserializeOwned + ?Size
 
 #[cfg(test)]
 mod test {
-    use crate::io::buffer_output::BufferOutput;
+    use crate::io::buffer_output::buffer_output::BufferOutput;
     use crate::primitives::xy::XY;
 
     #[test]

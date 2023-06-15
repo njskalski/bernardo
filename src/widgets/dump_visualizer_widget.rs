@@ -2,7 +2,7 @@ use std::cmp::min;
 use std::mem;
 
 use crate::config::theme::Theme;
-use crate::io::buffer_output::BufferOutput;
+use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;

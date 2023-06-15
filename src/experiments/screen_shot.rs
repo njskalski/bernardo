@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use log::{debug, error};
 
-use crate::io::buffer_output::BufferOutput;
+use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::primitives::helpers::get_next_filename;
 
 pub fn screenshot(dump: &BufferOutput) -> bool {

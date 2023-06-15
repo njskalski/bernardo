@@ -1,4 +1,4 @@
-use crate::io::buffer_output_iter::VerticalIterItem;
+use crate::io::buffer_output::buffer_output_iter::HorizontalIterItem;
 use crate::io::output::Metadata;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::primitives::xy::XY;
@@ -16,7 +16,7 @@ impl<'a> CompletionInterpreter<'a> {
         }
     }
 
-    pub fn items(&self) -> impl Iterator<Item=VerticalIterItem> + '_ {
+    pub fn items(&self) -> impl Iterator<Item=HorizontalIterItem> + '_ {
         // for d in self.output.buffer.lines_iter().with_rect(self.meta.rect) {
         //     debug!("items: [{}]", d);
         // }

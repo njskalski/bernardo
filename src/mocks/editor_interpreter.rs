@@ -1,9 +1,10 @@
 use log::error;
 
 use crate::cursor::cursor::CursorStatus;
-use crate::io::buffer_output_iter::VerticalIterItem;
+use crate::io::buffer_output::buffer_output_iter::HorizontalIterItem;
 use crate::io::cell::Cell;
 use crate::io::output::Metadata;
+use crate::io::style::TextStyle;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
 use crate::mocks::context_bar_interpreter::ContextBarWidgetInterpreter;
 use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
@@ -43,7 +44,7 @@ pub struct LineIdxPair {
 pub struct LineIdxTuple {
     pub y: u16,
     pub visible_idx: usize,
-    pub contents: VerticalIterItem,
+    pub contents: HorizontalIterItem,
 }
 
 impl<'a> EditorInterpreter<'a> {
@@ -144,14 +145,25 @@ impl<'a> EditorInterpreter<'a> {
         )
     }
 
-    /*
-    first item is u16 0-based screen position
-    second item is usize 1-based display line idx
-     */
     pub fn get_visible_cursor_line_indices(&self) -> impl Iterator<Item=LineIdxPair> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
         self.get_visible_cursor_cells().map(move |(xy, _)| LineIdxPair { y: xy.y, visible_idx: xy.y as usize + offset })
     }
+
+    /*
+    Return visible items conforming to given style, enriched with information about line index they are displayed in
+     */
+    // pub fn get_indexed_items_by_style(&self, style : &TextStyle) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    //     let offset = self.scroll.lowest_number().unwrap();
+    //
+    //     self.mock_output.
+    // }
+
+
+    // pub fn get_warnings(&self) -> impl Iterator<Item=LineIdxPair> + '_ {
+    //     let offset = self.scroll.lowest_number().unwrap();
+    //     self.get
+    // }
 
     /*
     first item is u16 0-based screen position
@@ -171,7 +183,7 @@ impl<'a> EditorInterpreter<'a> {
         ).flatten()
     }
 
-    pub fn get_line_by_y(&self, screen_pos_y: u16) -> Option<VerticalIterItem> {
+    pub fn get_line_by_y(&self, screen_pos_y: u16) -> Option<HorizontalIterItem> {
         debug_assert!(self.meta.rect.lower_right().y > screen_pos_y);
         self.mock_output.buffer.lines_iter().with_rect(self.rect_without_scroll).skip(screen_pos_y as usize).next()
     }
