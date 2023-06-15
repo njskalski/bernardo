@@ -153,18 +153,34 @@ impl<'a> EditorInterpreter<'a> {
 
     /*
     Return visible items conforming to given style, enriched with information about line index they are displayed in
+    TODO: not tested
      */
-    // pub fn get_indexed_items_by_style(&self, style: TextStyle) -> impl Iterator<Item=LineIdxTuple> + '_ {
-    //     let offset = self.scroll.lowest_number().unwrap();
-    //
-    //     self.mock_output.buffer.items_of_style(style)
-    // }
+    pub fn get_indexed_items_by_style(&self, style: TextStyle) -> impl Iterator<Item=LineIdxTuple> + '_ {
+        let offset = self.scroll.lowest_number().unwrap();
+
+        self.mock_output
+            .buffer
+            .items_of_style(style)
+            .with_rect(self.rect_without_scroll.clone())
+            .map(move |horizontal_iter_item: HorizontalIterItem| {
+                assert!(horizontal_iter_item.text_style.is_some());
+                
+                LineIdxTuple {
+                    y: horizontal_iter_item.absolute_pos.y,
+                    visible_idx: horizontal_iter_item.absolute_pos.y as usize + offset,
+                    contents: horizontal_iter_item,
+                }
+            })
+    }
 
 
-    // pub fn get_warnings(&self) -> impl Iterator<Item=LineIdxPair> + '_ {
-    //     let offset = self.scroll.lowest_number().unwrap();
-    //     self.get
-    // }
+    pub fn get_warnings(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+        self.get_indexed_items_by_style(self.mock_output.theme.editor_label_warning())
+    }
+
+    pub fn get_errors(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+        self.get_indexed_items_by_style(self.mock_output.theme.editor_label_error())
+    }
 
     /*
     first item is u16 0-based screen position

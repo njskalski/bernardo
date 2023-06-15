@@ -72,6 +72,14 @@ impl Theme {
             self.ui.header.with_background(self.ui.non_focused.background)
         }
     }
+
+    pub fn editor_label_warning(&self) -> TextStyle {
+        self.ui.label_warning
+    }
+
+    pub fn editor_label_error(&self) -> TextStyle {
+        self.ui.label_error
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
