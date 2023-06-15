@@ -15,6 +15,8 @@ pub struct BufferStyleIter<'a> {
     buffer: &'a BufferOutput,
     text_style: TextStyle,
     pos: XY,
+
+    rect_op: Option<Rect>,
 }
 
 impl<'a> BufferStyleIter<'a> {
@@ -23,6 +25,19 @@ impl<'a> BufferStyleIter<'a> {
             buffer,
             text_style,
             pos: XY::ZERO,
+            rect_op: None,
+        }
+    }
+
+    pub fn with_rect(self, rect: Rect) -> Self {
+        assert!(self.pos == XY::ZERO, "can't add rect-filter after the iterator started!");
+
+        let pos = rect.pos;
+
+        BufferStyleIter {
+            rect_op: Some(rect),
+            pos,
+            ..self
         }
     }
 }
@@ -31,17 +46,20 @@ impl<'a> Iterator for BufferStyleIter<'a> {
     type Item = HorizontalIterItem;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.pos >= self.buffer.size() {
+        let default_rect = Rect::from_zero(self.buffer.size());
+        let rect = self.rect_op.as_ref().unwrap_or(&default_rect);
+
+        if self.pos >= rect.lower_right() {
             None
         } else {
-            while self.pos.y < self.buffer.size().y {
-                if self.pos.x == self.buffer.size().x {
-                    if self.pos.y + 1 < self.buffer.size().y {
-                        self.pos.x = 0;
+            while self.pos.y < rect.lower_right().y {
+                if self.pos.x == rect.lower_right().x {
+                    if self.pos.y + 1 < rect.lower_right().y {
+                        self.pos.x = rect.upper_left().x;
                         self.pos.y += 1;
-                        debug_assert!(self.pos.y <= self.buffer.size().y);
+                        debug_assert!(self.pos.y <= rect.lower_right().y);
                     } else {
-                        self.pos = self.buffer.size();
+                        self.pos = rect.lower_right();
                         return None;
                     }
                 }
@@ -50,10 +68,10 @@ impl<'a> Iterator for BufferStyleIter<'a> {
                 let mut begin: Option<XY> = None;
 
                 'sticking:
-                for x in self.pos.x..self.buffer.size().x {
+                for x in self.pos.x..rect.lower_right().x {
                     let cell = &self.buffer[self.pos];
                     self.pos = XY::new(x + 1, self.pos.y);
-                    debug_assert!(self.pos.x <= self.buffer.size().x);
+                    debug_assert!(self.pos.x <= rect.lower_right().x);
 
                     if let Cell::Begin { style, grapheme } = cell {
                         if *style == self.text_style {

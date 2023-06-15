@@ -5,6 +5,7 @@ use crate::io::buffer_output::horizontal_iter_item::HorizontalIterItem;
 use crate::io::cell::Cell;
 use crate::io::output::Metadata;
 use crate::io::style::TextStyle;
+use crate::io::sub_output::SubOutput;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
 use crate::mocks::context_bar_interpreter::ContextBarWidgetInterpreter;
 use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
@@ -153,10 +154,10 @@ impl<'a> EditorInterpreter<'a> {
     /*
     Return visible items conforming to given style, enriched with information about line index they are displayed in
      */
-    // pub fn get_indexed_items_by_style(&self, style : &TextStyle) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    // pub fn get_indexed_items_by_style(&self, style: TextStyle) -> impl Iterator<Item=LineIdxTuple> + '_ {
     //     let offset = self.scroll.lowest_number().unwrap();
     //
-    //     self.mock_output.
+    //     self.mock_output.buffer.items_of_style(style)
     // }
 
 
