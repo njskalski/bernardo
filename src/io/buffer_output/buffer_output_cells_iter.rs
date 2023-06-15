@@ -56,50 +56,6 @@ mod tests {
     use crate::primitives::xy::XY;
 
     #[test]
-    fn test_buffer_output_iter() {
-        let theme = Theme::default();
-        let non_focused = theme.ui.non_focused;
-        let focused = theme.ui.focused;
-
-        let mut buffer: BufferOutput = BufferOutput::new(XY::new(10, 4));
-
-        let a = Cell::new(non_focused, "a".to_string());
-        let b = Cell::new(focused, "b".to_string());
-
-        for x in 0..10 as u16 {
-            for y in 0..3 as u16 {
-                if x < 3 || x >= 8 {
-                    buffer[XY::new(x, y)].set(&b);
-                } else {
-                    buffer[XY::new(x, y)].set(&a);
-                }
-            }
-        }
-
-        for x in 0..10 as u16 {
-            buffer[XY::new(x, 1)].set(&b);
-        }
-
-        /*
-         01234567890
-        0bbbaaaaabb
-        1bbbbbbbbbb
-        2bbbaaaaabb
-        3
-         */
-
-        let mut iter = buffer.items_of_style(focused);
-        assert_eq!(iter.next().unwrap().text, "bbb");
-        assert_eq!(iter.next().unwrap().text, "bb");
-
-        assert_eq!(iter.next().unwrap().text, "bbbbbbbbbb");
-
-        assert_eq!(iter.next().unwrap().text, "bbb");
-        assert_eq!(iter.next().unwrap().text, "bb");
-        assert_eq!(iter.next(), None);
-    }
-
-    #[test]
     fn test_buffer_output_cell_iter() {
         let theme = Theme::default();
         let non_focused = theme.ui.non_focused;

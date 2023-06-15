@@ -7,7 +7,8 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::io::buffer::Buffer;
 use crate::io::buffer_output::buffer_output_cells_iter::BufferOutputCellsIter;
-use crate::io::buffer_output::buffer_output_iter::{BufferLinesIter, BufferStyleIter};
+use crate::io::buffer_output::buffer_output_lines_iter::BufferLinesIter;
+use crate::io::buffer_output::buffer_output_styles_iter::BufferStyleIter;
 use crate::io::cell::Cell;
 use crate::io::output::{Metadata, Output};
 use crate::io::style::TextStyle;
