@@ -43,6 +43,7 @@ use crate::widgets::editor_widget::completion::completion_widget::CompletionWidg
 use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::context_options_matrix::get_context_options;
 use crate::widgets::editor_widget::helpers::{CursorScreenPosition, find_trigger_and_substring};
+use crate::widgets::editor_widget::label::labels_provider::LabelsProviderRef;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::main_view::msg::MainViewMsg;
 
@@ -165,6 +166,9 @@ pub struct EditorWidget {
     // This is completion or navigation
     // Settings are calculated based on last_size, and entire hover will be discarded on resize.
     requested_hover: Option<(HoverSettings, EditorHover)>,
+
+    // These are label providers. Their order is important.
+    todo_lable_providers: Vec<LabelsProviderRef>,
 }
 
 impl EditorWidget {
@@ -195,6 +199,7 @@ impl EditorWidget {
             state: EditorState::Editing,
             navcomp: None,
             requested_hover: None,
+            todo_lable_providers: vec![],
         };
 
         if buffer_named {
