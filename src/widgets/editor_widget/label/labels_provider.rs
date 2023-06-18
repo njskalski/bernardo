@@ -15,13 +15,8 @@ use crate::text::text_buffer::TextBuffer;
 use crate::widgets::editor_widget::label::label::Label;
 
 pub trait LabelsProvider {
-    /*
-    TODO at this point there is no contract "in what order the labels are supposed to be returned"
-     */
     fn query_for(&self,
-                 path_op: Option<SPath>,
-                 buffer: &dyn TextBuffer,
-                 char_range: Range<usize>) -> Box<dyn Iterator<Item=&'_ Label> + '_>;
+                 path_op: Option<&SPath>) -> Box<dyn Iterator<Item=&'_ Label> + '_>;
 }
 
 pub type LabelsProviderRef = Arc<Box<dyn LabelsProvider>>;

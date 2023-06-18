@@ -1,10 +1,15 @@
 use std::fmt::{Debug, Formatter};
 
+use jsonrpc_core::futures::future::err;
+use jsonrpc_core::Id::Str;
+use log::error;
 use ropey::iter::{Chars, Chunks};
 use streaming_iterator::StreamingIterator;
 
 use crate::cursor::cursor::Selection;
+use crate::primitives::xy::XY;
 use crate::tsw::lang_id::LangId;
+use crate::unpack_or;
 
 //TODO create tests for undo/redo/set milestone
 
@@ -56,6 +61,47 @@ pub trait TextBuffer: ToString {
     fn tab_width(&self) -> usize { 4 }
     fn try_parse(&mut self, _lang_id: LangId) -> bool { false }
     fn undo(&mut self) -> bool { false }
+
+    // TODO test
+    fn char_idx_to_xy(&self, char_idx: usize) -> Option<XY> {
+        if self.len_chars() < char_idx {
+            return None;
+        }
+
+        let line_idx_0b = self.char_to_line(char_idx).unwrap();
+        let char_idx_in_line_0b = char_idx - line_idx_0b;
+
+        if line_idx_0b > u16::MAX as usize {
+            error!("line index too high");
+            return None;
+        }
+
+        if char_idx_in_line_0b > u16::MAX as usize {
+            error!("char in line index too high");
+            return None;
+        }
+
+        Some(XY::new(char_idx_in_line_0b as u16, line_idx_0b as u16))
+    }
+
+    // TODO test
+    fn get_line(&self, line_idx_0b: usize) -> Option<String> {
+        if self.len_lines() <= line_idx_0b {
+            return None;
+        }
+
+        let line_begin_char_idx_0b = unpack_or!(self.line_to_char(line_idx_0b), None);
+        let mut result = String::new();
+        for char in self.chars().skip(line_begin_char_idx_0b) {
+            if char != '\n' {
+                result.push(char);
+            } else {
+                break;
+            }
+        }
+
+        Some(result)
+    }
 }
 
 pub struct LinesIter<'a> {

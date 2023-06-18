@@ -19,9 +19,9 @@ mind multi-column chars.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct StupidCursor {
     // Zero based
-    pub char_idx: u32,
+    pub char_idx_0b: u32,
     // Zero based
-    pub line: u32,
+    pub line_0b: u32,
 }
 
 // TODO fuzzy some test!
@@ -29,8 +29,8 @@ pub struct StupidCursor {
 impl StupidCursor {
     pub fn new(char_idx: u32, line: u32) -> StupidCursor {
         StupidCursor {
-            char_idx,
-            line,
+            char_idx_0b: char_idx,
+            line_0b: line,
         }
     }
 
@@ -60,36 +60,33 @@ impl StupidCursor {
         let col = cursor.a - begin_line;
 
         Ok(StupidCursor {
-            line: line as u32,
-            char_idx: col as u32,
+            line_0b: line as u32,
+            char_idx_0b: col as u32,
         })
     }
 
-    pub fn to_xy(&self, rope: &ropey::Rope) -> Option<XY> {
-        if rope.lines().count() <= self.line as usize {
-            debug!("StupidCursor.line {} > {} rope.lines().count", self.line, rope.lines().count());
+    pub fn to_xy(&self, rope: &dyn TextBuffer) -> Option<XY> {
+        if rope.len_lines() <= self.line_0b as usize {
+            debug!("StupidCursor.line {} > {} rope.lines().count", self.line_0b, rope.len_lines());
             return None;
         }
-        if self.line >= u16::MAX as u32 {
-            debug!("StupidCursor.line {} > u16::MAX", self.line);
+        if self.line_0b >= u16::MAX as u32 {
+            debug!("StupidCursor.line {} > u16::MAX", self.line_0b);
             return None;
         }
-
-        let line_idx = self.line as u16;
-        let line = rope.line(line_idx as usize);
 
         let mut x = 0 as u16;
-        for g in line.to_string().graphemes(false).take(self.char_idx as usize) {
+        for g in rope.get_line(self.line_0b as usize) {
             x += g.width() as u16;
         }
 
-        Some(XY::new(x, line_idx))
+        Some(XY::new(x, self.line_0b as u16))
     }
 
     pub fn to_real_cursor(&self, buffer: &dyn TextBuffer) -> Option<Cursor> {
-        let line_begin_char = unpack_or!(buffer.line_to_char(self.line as usize), None, "can't cast stupid cursor to real cursor: not enough lines");
-        let candidate = line_begin_char + self.char_idx as usize;
-        if let Some(next_line_begin_char) = buffer.line_to_char((self.line + 1) as usize) {
+        let line_begin_char = unpack_or!(buffer.line_to_char(self.line_0b as usize), None, "can't cast stupid cursor to real cursor: not enough lines");
+        let candidate = line_begin_char + self.char_idx_0b as usize;
+        if let Some(next_line_begin_char) = buffer.line_to_char((self.line_0b + 1) as usize) {
             // I don't know why it works, but it works. So maybe test it, but sharp inequality was failing.
             if candidate <= next_line_begin_char {
                 Some(Cursor::new(candidate))
@@ -137,11 +134,11 @@ impl PartialOrd<Self> for StupidCursor {
 
 impl Ord for StupidCursor {
     fn cmp(&self, other: &Self) -> Ordering {
-        let cmp1 = self.line.cmp(&other.line);
+        let cmp1 = self.line_0b.cmp(&other.line_0b);
         if cmp1 != Ordering::Equal {
             cmp1
         } else {
-            self.char_idx.cmp(&other.char_idx)
+            self.char_idx_0b.cmp(&other.char_idx_0b)
         }
     }
 }

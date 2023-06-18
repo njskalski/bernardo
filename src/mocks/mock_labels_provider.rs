@@ -18,8 +18,8 @@ impl MockLabelsProvider {
 }
 
 impl LabelsProvider for MockLabelsProvider {
-    fn query_for(&self, path_op: Option<SPath>, buffer: &dyn TextBuffer, char_range: Range<usize>) -> Box<dyn Iterator<Item=&'_ Label> + '_> {
-        todo!()
+    fn query_for(&self, path_op: Option<&SPath>) -> Box<dyn Iterator<Item=&'_ Label> + '_> {
+        Box::new(self.labels.iter())
     }
 }
 

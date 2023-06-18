@@ -163,8 +163,8 @@ impl LspWrapper {
         lsp_types::TextDocumentPositionParams {
             text_document: lsp_types::TextDocumentIdentifier { uri: url },
             position: lsp_types::Position {
-                line: cursor.line,
-                character: cursor.char_idx,
+                line: cursor.line_0b,
+                character: cursor.char_idx_0b,
             },
         }
     }

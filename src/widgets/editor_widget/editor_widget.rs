@@ -1,4 +1,5 @@
 use std::cmp::{max, min};
+use std::collections::BTreeMap;
 use std::sync::RwLockWriteGuard;
 
 use log::{debug, error, warn};
@@ -43,6 +44,7 @@ use crate::widgets::editor_widget::completion::completion_widget::CompletionWidg
 use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::context_options_matrix::get_context_options;
 use crate::widgets::editor_widget::helpers::{CursorScreenPosition, find_trigger_and_substring};
+use crate::widgets::editor_widget::label::label::Label;
 use crate::widgets::editor_widget::label::labels_provider::LabelsProviderRef;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::main_view::msg::MainViewMsg;
@@ -605,11 +607,24 @@ impl EditorWidget {
         let visible_rect = unpack_or!(sc.visible_hint(), (), "not visible - not rendering");
 
         let char_range_op = buffer.char_range(output);
+        // highlights are actually just code coloring
         let highlights = buffer.highlight(char_range_op.clone());
 
         let mut highlight_iter = highlights.iter().peekable();
 
         let lines_to_skip = visible_rect.upper_left().y as usize;
+        let mut labels_and_positions: BTreeMap<(usize, usize), &Label> = BTreeMap::new();
+
+        // if we don't have a char_range, that means the "visible rect" is empty, so we don't draw anything
+        if let Some(char_range) = char_range_op.as_ref() {
+            for label_provider in self.todo_lable_providers.iter() {
+                for label in label_provider.query_for(buffer.get_path()) {
+                    // if label.pos.should_draw(char_range.clone(), lines_to_skip..visible_rect.lower_right().y as usize) {
+                    //     if let (some_char_idx) = label.pos.into_char_idx(&buffer) {}
+                    // }
+                }
+            }
+        }
 
         let mut lines_it = buffer.lines().skip(lines_to_skip);
         // skipping lines that cannot be visible, because they are before hint()

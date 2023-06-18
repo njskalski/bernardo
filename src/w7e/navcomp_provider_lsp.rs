@@ -26,8 +26,8 @@ TODO (same as above) Use NavCompRes everywhere.
 impl From<Position> for StupidCursor {
     fn from(loc: Position) -> Self {
         StupidCursor {
-            char_idx: loc.character,
-            line: loc.line,
+            char_idx_0b: loc.character,
+            line_0b: loc.line,
         }
     }
 }
@@ -198,11 +198,11 @@ impl NavCompProvider for NavCompProviderLsp {
                                 SymbolUsage {
                                     path: loc.uri.to_string(),
                                     stupid_range: (StupidCursor {
-                                        char_idx: loc.range.start.character,
-                                        line: loc.range.start.line,
+                                        char_idx_0b: loc.range.start.character,
+                                        line_0b: loc.range.start.line,
                                     }, StupidCursor {
-                                        char_idx: loc.range.end.character,
-                                        line: loc.range.end.line,
+                                        char_idx_0b: loc.range.end.character,
+                                        line_0b: loc.range.end.line,
                                     }),
                                 }
                             }).collect()
@@ -235,11 +235,11 @@ impl NavCompProvider for NavCompProviderLsp {
                                 StupidSubstituteMessage {
                                     substitute: te.new_text,
                                     stupid_range: (StupidCursor {
-                                        char_idx: te.range.start.character,
-                                        line: te.range.start.line,
+                                        char_idx_0b: te.range.start.character,
+                                        line_0b: te.range.start.line,
                                     }, StupidCursor {
-                                        char_idx: te.range.end.character,
-                                        line: te.range.end.line,
+                                        char_idx_0b: te.range.end.character,
+                                        line_0b: te.range.end.line,
                                     }),
                                 }
                             }).collect();
