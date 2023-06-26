@@ -1,5 +1,6 @@
 use std::cmp::{max, min};
 use std::collections::BTreeMap;
+use std::ops::Range;
 use std::sync::RwLockWriteGuard;
 
 use log::{debug, error, warn};
@@ -19,6 +20,7 @@ use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
+use crate::io::style::TextStyle;
 use crate::io::sub_output::SubOutput;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
@@ -585,7 +587,29 @@ impl EditorWidget {
         )))
     }
 
+    fn can_add_label(labels: &mut BTreeMap<XY, &Label>, new_label: (XY, &Label)) -> bool {
+        let width = new_label.1.contents.screen_width();
+        let new_rect = Rect::new(new_label.0, XY::new(width, 1));
+
+        for (pos, label) in labels.iter() {
+            let width = label.contents.screen_width();
+            let old_rect = Rect::new(*pos, XY::new(width, 1));
+
+            if old_rect.intersect(&new_rect).is_some() {
+                return false;
+            }
+        }
+
+        true
+    }
+
     fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        /* TODO
+        Introduction of labels lowered the performance of this method significantly. Follow the standard protocol:
+        1) create shitload of widget tests
+        2) then optimise the function
+         */
+
         let default = match self.state {
             EditorState::Editing => { theme.default_text(focused) }
             EditorState::DroppingCursor { .. } => {
@@ -611,24 +635,36 @@ impl EditorWidget {
         let highlights = buffer.highlight(char_range_op.clone());
 
         let mut highlight_iter = highlights.iter().peekable();
-
         let lines_to_skip = visible_rect.upper_left().y as usize;
-        let mut labels_and_positions: BTreeMap<(usize, usize), &Label> = BTreeMap::new();
-
-        // if we don't have a char_range, that means the "visible rect" is empty, so we don't draw anything
-        if let Some(char_range) = char_range_op.as_ref() {
-            for label_provider in self.todo_lable_providers.iter() {
-                for label in label_provider.query_for(buffer.get_path()) {
-                    // if label.pos.should_draw(char_range.clone(), lines_to_skip..visible_rect.lower_right().y as usize) {
-                    //     if let (some_char_idx) = label.pos.into_char_idx(&buffer) {}
-                    // }
-                }
-            }
-        }
 
         let mut lines_it = buffer.lines().skip(lines_to_skip);
         // skipping lines that cannot be visible, because they are before hint()
         let mut line_idx = lines_to_skip;
+
+        // preparing labels
+        // Right now labels "chain" one after another. Provided priority does not change, they should not glitter.
+        let mut labels: BTreeMap<XY, &Label> = BTreeMap::new();
+
+        // if we don't have a char_range, that means the "visible rect" is empty, so we don't draw anything
+        if let Some(char_range) = char_range_op {
+            for label_provider in self.todo_lable_providers.iter() {
+                for label in label_provider.query_for(buffer.get_path()) {
+                    if label.pos.maybe_should_draw(char_range.clone(), lines_to_skip..visible_rect.lower_right().y as usize) {
+                        if let Some(xy) = label.pos.into_position(&*buffer) {
+                            if (xy.y as usize) < lines_to_skip {
+                                continue;
+                            }
+
+                            if Self::can_add_label(&mut labels, (xy, label)) {
+                                labels.insert(xy, label);
+                            } else {
+                                warn!("Discarding a label because of collision. This is an omission most likely.");
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // for (line_idx, line) in self.buffer.new_lines().enumerate()
         //     // skipping lines that cannot be visible, because they are before hint()
@@ -645,7 +681,42 @@ impl EditorWidget {
                 None => continue,
             };
 
+            // let's generate the "combined line" of actual file and labels.
+            let mut filtered_labels: Vec<(XY, &Label)> = Vec::new();
+
+            for (label_pos, label) in labels.iter() {
+                if label_pos.y as usize != line_idx {
+                    continue;
+                }
+
+                // some paranoia checks in case somebody removes ordering accidentally
+                if let Some(last_label) = filtered_labels.last() {
+                    debug_assert!(last_label.0.x <= label_pos.x);
+                }
+
+                filtered_labels.push((*label_pos, label));
+            }
+
+            let mut combined_line: Vec<(XY, TextStyle, &str)> = Vec::new();
+            let mut label_it = filtered_labels.iter().peekable();
             let mut x_offset: usize = 0;
+
+            for (c_idx, c) in line.graphemes().into_iter().enumerate() {
+                let pos = XY::new(x_offset as u16, line_idx as u16);
+
+                // while let Some((label_pos, label)) = label_it.peek() {
+                //     if label_pos == pos {
+                //         let mut local_pos = pos;
+                //         for grapheme in label.contents.graphemes() {
+                //             combined_line.push((local_pos, label.style )
+                //         }
+                //     }
+                // }
+            }
+
+            let mut x_offset: usize = 0;
+
+
             for (c_idx, c) in line.graphemes().into_iter().enumerate() {
                 let char_idx = line_begin + c_idx;
 

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::primitives::size_constraint::SizeConstraint;
 
-#[derive(Clone, Copy, Debug, Hash, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Hash, Eq, Serialize, Deserialize, Ord)]
 pub struct XY {
     pub x: u16,
     pub y: u16,

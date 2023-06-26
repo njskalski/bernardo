@@ -65,8 +65,6 @@ impl Rect {
     }
 
     pub fn intersect(&self, other: &Rect) -> Option<Rect> {
-        //TODO write tests
-
         /*
         idea: I sort beginnings and ends by their position.
             I require two beginnings before two endings on BOTH axis to have any
