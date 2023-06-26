@@ -27,6 +27,7 @@ Generated with chat-gpt:
 const warning_pattern_str: &'static str = r"warning:.+[\r\n]+\s+-->\s+([^:]+?):([0-9]+):([0-9]+)[\r\n]+";
 const error_pattern_str: &'static str = r"error[^:]*:[^:]*[\r\n]+\s+-->\s+([^:]+?):([0-9]+):([0-9]+)[\r\n]+";
 
+// TODO I actually think this should be written in Python in a separate program, first of "plugins", to test out the idea.
 pub struct RustcOutputParserLabelProvider {
     warning_regex: Regex,
     error_regex: Regex,
@@ -90,11 +91,11 @@ impl RustcOutputParserLabelProvider {
                 }
             };
 
-            new_labels.push(Label {
-                pos: LabelPos::LineAfter { line_no_1b: line_number },
-                style: LabelStyle::Warning,
-                contents: Box::new(warning_message.to_string()),
-            })
+            new_labels.push(Label::new(
+                LabelPos::LineAfter { line_no_1b: line_number },
+                LabelStyle::Warning,
+                Box::new(warning_message.to_string()),
+            ));
         }
 
         for capture in self.error_regex.captures_iter(rustc_output) {
@@ -130,11 +131,11 @@ impl RustcOutputParserLabelProvider {
                 }
             };
 
-            new_labels.push(Label {
-                pos: LabelPos::LineAfter { line_no_1b: line_number },
-                style: LabelStyle::Error,
-                contents: Box::new(error_message.to_string()),
-            })
+            new_labels.push(Label::new(
+                LabelPos::LineAfter { line_no_1b: line_number },
+                LabelStyle::Error,
+                Box::new(error_message.to_string()),
+            ));
         }
 
         self.labels = new_labels;

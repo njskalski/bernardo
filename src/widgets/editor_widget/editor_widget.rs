@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::ops::Range;
 use std::sync::RwLockWriteGuard;
 
+use crossterm::style::style;
 use log::{debug, error, warn};
 use matches::debug_assert_matches;
 use streaming_iterator::StreamingIterator;
@@ -31,6 +32,7 @@ use crate::primitives::printable::Printable;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::stupid_cursor::StupidCursor;
+use crate::primitives::styled_printable::StyledPrintable;
 use crate::primitives::xy::XY;
 use crate::promise::promise::{Promise, PromiseState};
 use crate::text::buffer_state::BufferState;
@@ -588,11 +590,11 @@ impl EditorWidget {
     }
 
     fn can_add_label(labels: &mut BTreeMap<XY, &Label>, new_label: (XY, &Label)) -> bool {
-        let width = new_label.1.contents.screen_width();
+        let width = new_label.1.screen_width();
         let new_rect = Rect::new(new_label.0, XY::new(width, 1));
 
         for (pos, label) in labels.iter() {
-            let width = label.contents.screen_width();
+            let width = label.screen_width();
             let old_rect = Rect::new(*pos, XY::new(width, 1));
 
             if old_rect.intersect(&new_rect).is_some() {
@@ -697,73 +699,96 @@ impl EditorWidget {
                 filtered_labels.push((*label_pos, label));
             }
 
-            let mut combined_line: Vec<(XY, TextStyle, &str)> = Vec::new();
-            let mut label_it = filtered_labels.iter().peekable();
-            let mut x_offset: usize = 0;
+            let mut combined_line: Vec<(TextStyle, String)> = Vec::new();
 
-            for (c_idx, c) in line.graphemes().into_iter().enumerate() {
-                let pos = XY::new(x_offset as u16, line_idx as u16);
+            {
+                let mut label_it = filtered_labels.iter().peekable();
+                let mut x_offset: usize = 0;
 
-                // while let Some((label_pos, label)) = label_it.peek() {
-                //     if label_pos == pos {
-                //         let mut local_pos = pos;
-                //         for grapheme in label.contents.graphemes() {
-                //             combined_line.push((local_pos, label.style )
-                //         }
-                //     }
-                // }
-            }
+                for (c_idx, c) in line.graphemes().into_iter().enumerate() {
+                    let text_pos = XY::new(x_offset as u16, line_idx as u16);
 
-            let mut x_offset: usize = 0;
+                    while let Some((label_pos, label)) = label_it.peek() {
+                        for (style, grapheme) in label.contents(self.providers.theme()).styled_graphemes() {
+                            // TODO crazy unoptimization
+                            combined_line.push((*style, grapheme.to_string()));
+                        }
+                        label_it.next();
+                    }
+
+                    // now I just move code from typical rendering here
+
+                    let char_idx = line_begin + c_idx;
+
+                    while let Some(item) = highlight_iter.peek() {
+                        if char_idx >= item.char_end {
+                            highlight_iter.next();
+                        } else {
+                            break;
+                        }
+                    }
+
+                    // TODO optimise
+                    let tr = if c == "\n" { NEWLINE.to_string() } else { c.to_string() };
+
+                    let mut style = default;
+
+                    if tr != NEWLINE { // TODO cleanup
+                        if let Some(item) = highlight_iter.peek() {
+                            if let Some(color) = theme.name_to_theme(&item.identifier) {
+                                style = style.with_foreground(color);
+                            }
+                        }
+                    }
+
+                    self.pos_to_cursor(&cursor_set_copy, theme, char_idx).map(|mut bg| {
+                        if !focused {
+                            bg = bg.half();
+                        }
+                        style = style.with_background(bg);
+                    });
 
 
-            for (c_idx, c) in line.graphemes().into_iter().enumerate() {
-                let char_idx = line_begin + c_idx;
+                    if !focused {
+                        style.foreground = style.foreground.half();
+                    }
 
-                while let Some(item) = highlight_iter.peek() {
-                    if char_idx >= item.char_end {
-                        highlight_iter.next();
-                    } else {
+                    x_offset += tr.width();
+                    combined_line.push((style, tr));
+
+                    if x_offset as u16 >= visible_rect.lower_right().x {
+                        debug!("early exit 6");
                         break;
                     }
                 }
 
-                // let cursor_status = self.cursors.get_cursor_status_for_char(char_idx);
+                let mut local_style = default;
+                if !focused {
+                    local_style.foreground = local_style.foreground.half()
+                }
+
+                // I follow up on not drawn labels
+                while let Some((label_pos, label)) = label_it.next() {
+                    // moving cursor to right place
+                    while x_offset < label_pos.x as usize {
+                        combined_line.push((local_style, " ".to_string()));
+                        x_offset += 1;
+                    }
+
+                    for (style, grapheme) in label.contents(self.providers.theme()).styled_graphemes() {
+                        // TODO crazy unoptimization
+                        combined_line.push((*style, grapheme.to_string()));
+                    }
+                }
+            }
+
+            // ok, at this point I consume the combined line
+            let mut x_offset: usize = 0;
+            for (style, grapheme) in combined_line.styled_graphemes() {
                 let pos = XY::new(x_offset as u16, line_idx as u16);
 
-                // TODO optimise
-                let text = format!("{}", c);
-                let tr = if c == "\n" { NEWLINE } else { text.as_str() };
-
-                let mut style = default;
-
-                if tr != NEWLINE { // TODO cleanup
-                    if let Some(item) = highlight_iter.peek() {
-                        if let Some(color) = theme.name_to_theme(&item.identifier) {
-                            style = style.with_foreground(color);
-                        }
-                    }
-                }
-
-                self.pos_to_cursor(&cursor_set_copy, theme, char_idx).map(|mut bg| {
-                    if !focused {
-                        bg = bg.half();
-                    }
-                    style = style.with_background(bg);
-                });
-
-
-                if !focused {
-                    style.foreground = style.foreground.half();
-                }
-
-                output.print_at(pos, style, tr);
-
-                x_offset += tr.width();
-                if x_offset as u16 >= visible_rect.lower_right().x {
-                    // debug!("early exit 6");
-                    break;
-                }
+                output.print_at(pos, *style, grapheme);
+                x_offset += grapheme.width();
             }
 
             line_idx += 1;

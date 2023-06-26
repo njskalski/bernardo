@@ -24,6 +24,8 @@ pub mod stupid_cursor;
 pub mod scroll_enum;
 pub mod has_invariant;
 pub mod printable;
+pub mod styled_printable;
 
 #[cfg(test)]
 mod tests;
+

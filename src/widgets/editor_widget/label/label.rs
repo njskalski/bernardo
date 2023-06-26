@@ -2,10 +2,13 @@ use std::ops::Range;
 
 use log::warn;
 
+use crate::config::config::ConfigRef;
+use crate::config::theme::Theme;
 use crate::cursor::cursor::{Cursor, Selection};
 use crate::io::style::TextStyle;
 use crate::primitives::printable::Printable;
 use crate::primitives::stupid_cursor::StupidCursor;
+use crate::primitives::styled_printable::{StyleBorrowedPrintable, StyledPrintable, StyleWrappedPrintable};
 use crate::primitives::xy::XY;
 use crate::text::text_buffer::TextBuffer;
 use crate::unpack_or;
@@ -102,7 +105,37 @@ pub struct Label {
     // TODO make private
     pub pos: LabelPos,
     pub style: LabelStyle,
-    pub contents: Box<dyn Printable>,
+    contents: Box<dyn Printable>,
+}
+
+impl Label {
+    pub fn new(label_pos: LabelPos, style: LabelStyle, contents: Box<dyn Printable>) -> Self {
+        Label {
+            pos: label_pos,
+            style,
+            contents,
+        }
+    }
+
+    pub fn screen_width(&self) -> u16 {
+        self.contents.screen_width()
+    }
+
+    pub fn contents(&self, theme: &Theme) -> impl StyledPrintable + '_ {
+        let computed_style = match self.style {
+            LabelStyle::Warning => {
+                theme.ui.label_warning.clone()
+            }
+            LabelStyle::Error => {
+                theme.ui.label_error.clone()
+            }
+            LabelStyle::Random(style) => {
+                style
+            }
+        };
+
+        StyleBorrowedPrintable::new(computed_style, &self.contents)
+    }
 }
 
 
