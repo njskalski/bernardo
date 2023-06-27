@@ -14,6 +14,7 @@ use crate::fs::fsf_ref::FsfRef;
 use crate::gladius::navcomp_loader::NavCompLoader;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::navcomp_group::NavCompGroup;
+use crate::widgets::editor_widget::label::labels_provider::LabelsProviderRef;
 
 // do not share via Arc, we want to be able to "overload" providers in tests or exotic cases
 #[derive(Clone)]
@@ -28,6 +29,8 @@ pub struct Providers {
     navcomp_group: Arc<RwLock<NavCompGroup>>,
 
     buffer_register: BufferRegisterRef,
+
+    todo_labels_providers: Vec<LabelsProviderRef>,
 }
 
 impl Providers {
@@ -41,6 +44,7 @@ impl Providers {
                information, just implementation so I'll keep it here.
                 */
                navcomp_loader: Arc<Box<dyn NavCompLoader>>,
+               todo_labels_providers: Vec<LabelsProviderRef>,
     ) -> Self {
         Providers {
             config,
@@ -51,6 +55,7 @@ impl Providers {
             navcomp_loader,
             navcomp_group: Arc::new(RwLock::new(NavCompGroup::new())),
             buffer_register: Arc::new(RwLock::new(BufferRegister::new())),
+            todo_labels_providers,
         }
     }
 

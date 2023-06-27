@@ -46,11 +46,11 @@ impl<P: Printable> StyledPrintable for StyleWrappedPrintable<P> {
 
 pub struct StyleBorrowedPrintable<'a> {
     style: TextStyle,
-    printable: &'a Box<dyn Printable>,
+    printable: &'a dyn Printable,
 }
 
 impl<'a> StyleBorrowedPrintable<'a> {
-    pub fn new(text_style: TextStyle, printable: &'a Box<dyn Printable>) -> Self {
+    pub fn new(text_style: TextStyle, printable: &'a dyn Printable) -> Self {
         StyleBorrowedPrintable {
             style: text_style,
             printable,

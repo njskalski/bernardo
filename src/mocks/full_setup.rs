@@ -156,6 +156,7 @@ impl FullSetupBuilder {
             local_theme,
             tree_sitter,
             mock_navcomp_loader,
+            vec![],
         );
 
         let providers_clone = providers.clone();

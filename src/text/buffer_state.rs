@@ -248,7 +248,8 @@ impl BufferState {
         let beyond_last_lane = visible_rect.lower_right().y as usize + 1;
 
         let first_char_idx = rope.try_line_to_char(first_line).ok()?;
-        let beyond_last_char_idx = rope.try_line_to_char(beyond_last_lane).ok()?;
+        let beyond_last_char_idx = rope.try_line_to_char(beyond_last_lane).
+            unwrap_or(rope.len_chars() + 1);
 
         Some(first_char_idx..beyond_last_char_idx)
     }

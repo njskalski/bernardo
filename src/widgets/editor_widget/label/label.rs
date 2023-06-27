@@ -98,6 +98,7 @@ impl LabelPos {
 pub enum LabelStyle {
     Warning,
     Error,
+    TypeAnnotation,
     Random(TextStyle),
 }
 
@@ -105,11 +106,11 @@ pub struct Label {
     // TODO make private
     pub pos: LabelPos,
     pub style: LabelStyle,
-    contents: Box<dyn Printable>,
+    contents: Box<dyn Printable + Sync + Send>,
 }
 
 impl Label {
-    pub fn new(label_pos: LabelPos, style: LabelStyle, contents: Box<dyn Printable>) -> Self {
+    pub fn new(label_pos: LabelPos, style: LabelStyle, contents: Box<dyn Printable + Sync + Send>) -> Self {
         Label {
             pos: label_pos,
             style,
@@ -129,12 +130,15 @@ impl Label {
             LabelStyle::Error => {
                 theme.ui.label_error.clone()
             }
+            LabelStyle::TypeAnnotation => {
+                theme.ui.label_type_annotation.clone()
+            }
             LabelStyle::Random(style) => {
                 style
             }
         };
 
-        StyleBorrowedPrintable::new(computed_style, &self.contents)
+        StyleBorrowedPrintable::new(computed_style, self.contents.as_ref())
     }
 }
 

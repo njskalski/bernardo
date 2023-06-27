@@ -24,6 +24,7 @@ use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::widget::Widget;
 use crate::widgets::editor_view::editor_view::EditorView;
+use crate::widgets::editor_widget::label::labels_provider::LabelsProviderRef;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
 use crate::widgets::tests::editor_view_testbed::EditorViewTestbed;
 
@@ -36,6 +37,7 @@ pub struct WidgetTestbedBuilder {
     fsf: Option<Box<dyn FilesystemFront>>,
     config: Option<Config>,
     theme: Option<Theme>,
+    label_providers: Vec<LabelsProviderRef>,
     step_frame: bool,
 }
 
@@ -48,6 +50,7 @@ impl WidgetTestbedBuilder {
             fsf: None,
             config: None,
             theme: None,
+            label_providers: vec![],
             step_frame: false,
         }
     }
@@ -80,6 +83,11 @@ impl WidgetTestbedBuilder {
         }
     }
 
+    pub fn with_label_provider(mut self, provider: LabelsProviderRef) -> Self {
+        self.label_providers.push(provider);
+        self
+    }
+
     pub fn providers(self) -> (Providers, SideChannels) {
         let config: ConfigRef = Arc::new(self.config.unwrap_or(Config::default()));
         let fsfref: FsfRef = FsfRef::new(MockFS::new("/"));
@@ -95,8 +103,18 @@ impl WidgetTestbedBuilder {
                                                     comp_matcher.clone(),
                                                     symbol_matcher.clone());
 
+        let todo_labels_providers = self.label_providers.clone();
+
         (
-            Providers::new(config, fsfref, clipboard, theme, tree_sitter, Arc::new(Box::new(navcomp_loader))),
+            Providers::new(
+                config,
+                fsfref,
+                clipboard,
+                theme,
+                tree_sitter,
+                Arc::new(Box::new(navcomp_loader)),
+                todo_labels_providers,
+            ),
             SideChannels {
                 navcomp_pilot: MockNavCompProviderPilot::new(
                     mock_navcomp_event_recvr,
