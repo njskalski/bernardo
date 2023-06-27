@@ -90,4 +90,8 @@ impl Providers {
     pub fn buffer_register(&self) -> &BufferRegisterRef { &self.buffer_register }
 
     pub fn navcomp_group(&self) -> &Arc<RwLock<NavCompGroup>> { &self.navcomp_group }
+
+    pub fn todo_label_providers(&self) -> impl Iterator<Item=&LabelsProviderRef> {
+        self.todo_labels_providers.iter()
+    }
 }

@@ -174,7 +174,7 @@ pub struct EditorWidget {
     requested_hover: Option<(HoverSettings, EditorHover)>,
 
     // These are label providers. Their order is important.
-    todo_lable_providers: Vec<LabelsProviderRef>,
+    // todo_lable_providers: Vec<LabelsProviderRef>, // moved to providers
 }
 
 impl EditorWidget {
@@ -205,7 +205,6 @@ impl EditorWidget {
             state: EditorState::Editing,
             navcomp: None,
             requested_hover: None,
-            todo_lable_providers: vec![],
         };
 
         if buffer_named {
@@ -649,7 +648,7 @@ impl EditorWidget {
 
         // if we don't have a char_range, that means the "visible rect" is empty, so we don't draw anything
         if let Some(char_range) = char_range_op {
-            for label_provider in self.todo_lable_providers.iter() {
+            for label_provider in self.providers.todo_label_providers() {
                 for label in label_provider.query_for(buffer.get_path()) {
                     if label.pos.maybe_should_draw(char_range.clone(), lines_to_skip..visible_rect.lower_right().y as usize) {
                         if let Some(xy) = label.pos.into_position(&*buffer) {

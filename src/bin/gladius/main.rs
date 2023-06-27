@@ -70,6 +70,7 @@ fn main() {
         theme,
         tree_sitter,
         navcomp_loader,
+        vec![],
     );
 
     run_gladius(
