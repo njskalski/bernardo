@@ -11,10 +11,10 @@ fn get_setup() -> EditorViewTestbed {
 
     mock_labels_provider.labels.push(
         Label::new(
-            LabelPos::Inline { char_idx: 51 },
+            LabelPos::Inline { char_idx: 49 },
             LabelStyle::TypeAnnotation,
             Box::new(
-                "PathBuf".to_string()
+                ":PathBuf".to_string()
             )));
 
     let mut editor_view_testbed = WidgetTestbedBuilder::new()
@@ -46,10 +46,11 @@ fn editor_label() {
 
     assert!(setup.interpreter().unwrap().is_editor_focused());
 
-    {
-        // let interpreter = setup.interpreter()?;
-    }
-    let i = &setup.frame_op().unwrap().buffer;
+    let interpreter = setup.interpreter().unwrap();
 
-    screenshot(i);
+    let first_type = interpreter.get_type_annotations().next().unwrap();
+    assert_eq!(first_type.y, 3);
+    assert_eq!(first_type.contents.text, ":PathBuf");
+
+    assert_eq!(interpreter.get_line_by_y(3).unwrap().text.trim(), "let path:PathBuf = PathBuf::from(\"./src\");⏎");
 }

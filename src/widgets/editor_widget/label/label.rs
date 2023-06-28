@@ -61,7 +61,8 @@ impl LabelPos {
             LabelPos::Inline { char_idx } => {
                 if let Some(line_no_0b) = text_buffer.char_to_line(*char_idx) {
                     debug_assert!(line_no_0b <= *char_idx);
-                    let in_line_char_idx = char_idx - line_no_0b;
+                    let line_begin_char_idx_0b = text_buffer.line_to_char(line_no_0b)?;
+                    let in_line_char_idx = char_idx - line_begin_char_idx_0b;
 
                     debug_assert!(line_no_0b <= u16::MAX as usize);
                     debug_assert!(in_line_char_idx <= u16::MAX as usize);

@@ -37,11 +37,13 @@ pub struct EditorInterpreter<'a> {
     contextbar_op: Option<ContextBarWidgetInterpreter<'a>>,
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct LineIdxPair {
     pub y: u16,
     pub visible_idx: usize,
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct LineIdxTuple {
     pub y: u16,
     pub visible_idx: usize,
@@ -164,7 +166,7 @@ impl<'a> EditorInterpreter<'a> {
             .with_rect(self.rect_without_scroll.clone())
             .map(move |horizontal_iter_item: HorizontalIterItem| {
                 assert!(horizontal_iter_item.text_style.is_some());
-                
+
                 LineIdxTuple {
                     y: horizontal_iter_item.absolute_pos.y,
                     visible_idx: horizontal_iter_item.absolute_pos.y as usize + offset,
@@ -180,6 +182,10 @@ impl<'a> EditorInterpreter<'a> {
 
     pub fn get_errors(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
         self.get_indexed_items_by_style(self.mock_output.theme.editor_label_error())
+    }
+
+    pub fn get_type_annotations(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+        self.get_indexed_items_by_style(self.mock_output.theme.editor_label_type_annotation())
     }
 
     /*

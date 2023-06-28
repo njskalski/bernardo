@@ -708,11 +708,15 @@ impl EditorWidget {
                     let text_pos = XY::new(x_offset as u16, line_idx as u16);
 
                     while let Some((label_pos, label)) = label_it.peek() {
-                        for (style, grapheme) in label.contents(self.providers.theme()).styled_graphemes() {
-                            // TODO crazy unoptimization
-                            combined_line.push((*style, grapheme.to_string()));
+                        if *label_pos == text_pos {
+                            for (style, grapheme) in label.contents(self.providers.theme()).styled_graphemes() {
+                                // TODO crazy unoptimization
+                                combined_line.push((*style, grapheme.to_string()));
+                            }
+                            label_it.next();
+                        } else {
+                            break;
                         }
-                        label_it.next();
                     }
 
                     // now I just move code from typical rendering here

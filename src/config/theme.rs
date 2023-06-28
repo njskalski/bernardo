@@ -80,6 +80,10 @@ impl Theme {
     pub fn editor_label_error(&self) -> TextStyle {
         self.ui.label_error
     }
+
+    pub fn editor_label_type_annotation(&self) -> TextStyle {
+        self.ui.label_type_annotation
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -124,7 +128,7 @@ lazy_static!(
     static ref MUSTARD_COLOR : Color = ron::from_str("\"#EABE38\"").unwrap();
     static ref KETCHUP_COLOR : Color = ron::from_str("\"#B10B0B\"").unwrap();
     static ref BLACK_COLOR : Color = ron::from_str("\"#000000\"").unwrap();
-    static ref GREY_COLOR : Color = ron::from_str("\"#111111\"").unwrap();
+    static ref GREY_COLOR : Color = ron::from_str("\"#999999\"").unwrap();
 );
 
 impl Default for UiTheme {
