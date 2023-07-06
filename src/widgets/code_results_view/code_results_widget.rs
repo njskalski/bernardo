@@ -6,7 +6,6 @@ use std::sync::RwLockWriteGuard;
 
 use either::Left;
 use log::{debug, error, warn};
-use regex::internal::Input;
 
 use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;

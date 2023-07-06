@@ -4,7 +4,7 @@ use std::slice::{Iter, IterMut};
 
 use log::{error, warn};
 
-use crate::cursor::cursor::{BackwardWordDeterminant, Cursor, CursorStatus, default_word_determinant, ForwardWordDeterminant, NEWLINE_LENGTH, ZERO_CURSOR};
+use crate::cursor::cursor::{BackwardWordDeterminant, Cursor, CursorStatus, default_word_determinant, ForwardWordDeterminant, NEWLINE_WIDTH, ZERO_CURSOR};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::text::text_buffer::TextBuffer;
 
@@ -285,7 +285,7 @@ impl CursorSet {
                 rope.len_chars()
             } else {
                 match rope.line_to_char(new_line_idx + 1) {
-                    Some(char_idx) => char_idx - NEWLINE_LENGTH,
+                    Some(char_idx) => char_idx - NEWLINE_WIDTH as usize,
                     None => {
                         error!("rope.line_to_char failed unexpectedly (2), skipping cursor.");
                         continue;

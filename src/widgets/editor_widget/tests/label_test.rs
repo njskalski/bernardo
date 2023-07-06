@@ -16,6 +16,13 @@ fn get_setup() -> EditorViewTestbed {
             Box::new(
                 ":PathBuf".to_string()
             )));
+    mock_labels_provider.labels.push(
+        Label::new(
+            LabelPos::LineAfter { line_no_1b: 3 },
+            LabelStyle::Warning,
+            Box::new("just a warning".to_string()),
+        )
+    );
 
     let mut editor_view_testbed = WidgetTestbedBuilder::new()
         .with_label_provider(
@@ -40,9 +47,11 @@ fn main() {
 }
 
 #[test]
-fn editor_label() {
+fn editor_label_type_annotation() {
     let mut setup = get_setup();
     setup.next_frame();
+
+    screenshot(&setup.frame_op().as_ref().unwrap().buffer);
 
     assert!(setup.interpreter().unwrap().is_editor_focused());
 
@@ -53,4 +62,20 @@ fn editor_label() {
     assert_eq!(first_type.contents.text, ":PathBuf");
 
     assert_eq!(interpreter.get_line_by_y(3).unwrap().text.trim(), "let path:PathBuf = PathBuf::from(\"./src\");⏎");
+}
+
+#[test]
+fn editor_label_warning() {
+    let mut setup = get_setup();
+    setup.next_frame();
+
+    assert!(setup.interpreter().unwrap().is_editor_focused());
+
+    let interpreter = setup.interpreter().unwrap();
+
+    let first_type = interpreter.get_warnings().next().unwrap();
+    assert_eq!(first_type.y, 2);
+    assert_eq!(first_type.contents.text, "just a warning");
+
+    assert_eq!(interpreter.get_line_by_y(2).unwrap().text.trim(), "fn main() {⏎just a warning");
 }

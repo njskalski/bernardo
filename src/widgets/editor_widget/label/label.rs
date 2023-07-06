@@ -4,7 +4,7 @@ use log::warn;
 
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
-use crate::cursor::cursor::{Cursor, Selection};
+use crate::cursor::cursor::{Cursor, NEWLINE_WIDTH, Selection};
 use crate::io::style::TextStyle;
 use crate::primitives::printable::Printable;
 use crate::primitives::stupid_cursor::StupidCursor;
@@ -77,7 +77,7 @@ impl LabelPos {
             }
             LabelPos::LineAfter { line_no_1b } => {
                 debug_assert!(*line_no_1b >= 1);
-                if *line_no_1b > 1 && text_buffer.len_lines() > line_no_1b - 1 {
+                if text_buffer.len_lines() + 1 > *line_no_1b {
                     let line_no_0b = line_no_1b - 1;
                     if line_no_0b > u16::MAX as usize {
                         warn!("line too far");
@@ -86,7 +86,8 @@ impl LabelPos {
 
                     let line = unpack_or!(text_buffer.get_line(line_no_0b), None);
 
-                    Some(XY::new(line_no_0b as u16, line.screen_width()))
+                    // I add NEWLINE_WIDTH to cover the "⏎" char
+                    Some(XY::new(line.screen_width() + NEWLINE_WIDTH, line_no_0b as u16))
                 } else {
                     None
                 }

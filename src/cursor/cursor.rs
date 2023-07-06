@@ -29,7 +29,7 @@ use log::{error, warn};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::text::text_buffer::TextBuffer;
 
-pub const NEWLINE_LENGTH: usize = 1; // TODO(njskalski): add support for multisymbol newlines?
+pub const NEWLINE_WIDTH: u16 = 1; // TODO(njskalski): add support for multisymbol newlines?
 
 pub const ZERO_CURSOR: Cursor = Cursor::new(0);
 
