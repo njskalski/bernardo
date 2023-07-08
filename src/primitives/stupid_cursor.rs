@@ -7,6 +7,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor::Selection;
+use crate::primitives::printable::Printable;
 use crate::primitives::xy::XY;
 use crate::text::text_buffer::TextBuffer;
 use crate::unpack_or;
@@ -75,12 +76,19 @@ impl StupidCursor {
             return None;
         }
 
-        let mut x = 0 as u16;
-        for g in rope.get_line(self.line_0b as usize) {
-            x += g.width() as u16;
-        }
+        if let Some(line) = rope.get_line(self.line_0b as usize) {
+            if self.char_idx_0b as usize > line.width() {
+                debug!("line #{} (0b) is too short ({} wide, {} requested)", self.line_0b, line.width(), self.char_idx_0b);
+                None
+            } else {
 
-        Some(XY::new(x, self.line_0b as u16))
+                //I could support "wide characters" here, but I kinda expect the "stupid cursor" to be stupid.
+                Some(XY::new(self.char_idx_0b as u16, self.line_0b as u16))
+            }
+        } else {
+            debug!("no line no {} (0b)", self.line_0b);
+            None
+        }
     }
 
     pub fn to_real_cursor(&self, buffer: &dyn TextBuffer) -> Option<Cursor> {
