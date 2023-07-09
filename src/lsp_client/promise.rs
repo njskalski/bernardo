@@ -1,8 +1,12 @@
 use std::fmt::{Debug, Formatter};
+use std::ops::Add;
+use std::time;
+use std::time::Duration;
 
-use crossbeam_channel::{Receiver, Sender, TryRecvError};
+use crossbeam_channel::{Receiver, RecvError, RecvTimeoutError, Sender, TryRecvError};
 use log::{debug, error, warn};
 use lsp_types::request::Request;
+use serde_json::Value;
 
 use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::promise::promise::{Promise, PromiseState, UpdateResult};
@@ -62,7 +66,7 @@ impl<R: Request> Promise<R::Result> for LSPPromise<R> {
         PromiseState::Unresolved
     }
 
-    fn wait(&mut self) -> PromiseState {
+    fn wait(&mut self, how_long: Option<Duration>) -> PromiseState {
         if self.state() == PromiseState::Broken {
             error!("wait on broken promise {:?}", self);
             return PromiseState::Broken;
@@ -73,13 +77,32 @@ impl<R: Request> Promise<R::Result> for LSPPromise<R> {
             return PromiseState::Ready;
         }
 
-        match self.receiver.recv() {
-            Ok(value) => {
-                self.set_from_value(value) // ready or broken
+        let mut timeout = false;
+        let (timeout, value_op): (bool, Option<Value>) = if let Some(duration) = how_long {
+            match self.receiver.recv_deadline(time::Instant::now().add(duration)) {
+                Ok(value) => (false, Some(value)),
+                Err(e) => match e {
+                    RecvTimeoutError::Timeout => {
+                        (true, None)
+                    }
+                    RecvTimeoutError::Disconnected => {
+                        (false, None)
+                    }
+                }
             }
-            Err(err) => {
-                error!("broken on wait: {:?}", self);
-                self.err = Some(err.into());
+        } else {
+            (false, self.receiver.recv().ok())
+        };
+
+        assert!((timeout && value_op.is_some()) == false);
+
+        if timeout {
+            PromiseState::Unresolved
+        } else {
+            if let Some(value) = value_op {
+                self.set_from_value(value)
+            } else {
+                self.err = Some(LspReadError::BrokenChannel);
                 PromiseState::Broken
             }
         }

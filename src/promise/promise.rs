@@ -1,4 +1,7 @@
 use std::fmt::{Debug, Formatter};
+use std::time::{Duration, Instant};
+
+use log::debug;
 
 use crate::promise::promise_map::MappedPromise;
 
@@ -40,10 +43,11 @@ pub struct UpdateResult {
 pub trait Promise<T> {
     fn state(&self) -> PromiseState;
 
-    // Blocks current thread until promise is delivered or broken.
+    // Blocks current thread until promise is delivered or broken or deadline is exceeded.
     // Double wait *is not* an error.
     // Returns true iff value became available, false if promise is broken.
-    fn wait(&mut self) -> PromiseState;
+    // If how_long is exceeded, it returns Unresolved
+    fn wait(&mut self, how_long: Option<Duration>) -> PromiseState;
 
     /*
     TODO I am not sure I want to have read/update separated. If a list displays a promise result,
@@ -88,8 +92,10 @@ impl<A> ResolvedPromise<A> {
 }
 
 impl<A> Promise<A> for ResolvedPromise<A> {
-    fn wait(&mut self) -> PromiseState {
-        self.state()
+    fn wait(&mut self, _how_long: Option<Duration>) -> PromiseState {
+        let result = self.state();
+        debug_assert!(result != PromiseState::Unresolved);
+        result
     }
 
     fn update(&mut self) -> UpdateResult {

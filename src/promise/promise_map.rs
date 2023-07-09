@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 use std::mem;
+use std::time::Duration;
 
 use log::{debug, error};
 
@@ -100,7 +101,7 @@ impl<A, P: Promise<A>, B, F: FnOnce(A) -> B> Promise<B> for MappedPromise<A, P, 
         PromiseState::Broken
     }
 
-    fn wait(&mut self) -> PromiseState {
+    fn wait(&mut self, how_long: Option<Duration>) -> PromiseState {
         if self.state() == PromiseState::Ready {
             debug!("rather unexpected wait on done");
             return PromiseState::Ready;
@@ -111,11 +112,9 @@ impl<A, P: Promise<A>, B, F: FnOnce(A) -> B> Promise<B> for MappedPromise<A, P, 
             return PromiseState::Broken;
         }
 
-        match self.parent.as_mut().unwrap().wait() {
+        match self.parent.as_mut().unwrap().wait(how_long) {
             PromiseState::Unresolved => {
-                error!("parent promise broke invariant - got unresolved on wait! Breaking promise.");
-                self.break_promise();
-                PromiseState::Broken
+                PromiseState::Unresolved
             }
             _ => self.execute_mapping()
         }
@@ -167,6 +166,7 @@ impl<A, P: Promise<A>, B, F: FnOnce(A) -> B> Promise<B> for MappedPromise<A, P, 
 #[cfg(test)]
 mod tests {
     use std::mem;
+    use std::time::Duration;
 
     use crate::promise::promise::{Promise, PromiseState, ResolvedPromise, UpdateResult};
     use crate::promise::promise_map::MappedPromise;
@@ -195,7 +195,7 @@ mod tests {
             }
         }
 
-        fn wait(&mut self) -> PromiseState {
+        fn wait(&mut self, _how_long: Option<Duration>) -> PromiseState {
             mem::swap(&mut self.value, &mut self.will_become);
             self.done = true;
             self.state()
@@ -210,7 +210,7 @@ mod tests {
                 }
             } else {
                 // this is stupid but it's a mock.
-                self.wait();
+                self.wait(None);
                 UpdateResult { state: self.state(), has_changed: true }
             }
         }
@@ -268,8 +268,8 @@ mod tests {
             state: PromiseState::Unresolved,
             has_changed: false,
         });
-        assert_eq!(mapped.wait(), PromiseState::Broken);
-        assert_eq!(mapped.wait(), PromiseState::Broken);
+        assert_eq!(mapped.wait(None), PromiseState::Broken);
+        assert_eq!(mapped.wait(None), PromiseState::Broken);
         assert_eq!(mapped.read(), None);
         assert_eq!(mapped.state(), PromiseState::Broken);
     }
@@ -295,8 +295,8 @@ mod tests {
             state: PromiseState::Unresolved,
             has_changed: false,
         });
-        assert_eq!(mapped.wait(), PromiseState::Ready);
-        assert_eq!(mapped.wait(), PromiseState::Ready);
+        assert_eq!(mapped.wait(None), PromiseState::Ready);
+        assert_eq!(mapped.wait(None), PromiseState::Ready);
         assert_eq!(mapped.read(), Some(&4));
         assert_eq!(mapped.read(), Some(&4));
         assert_eq!(mapped.state().is_broken(), false);
@@ -321,8 +321,8 @@ mod tests {
         assert_eq!(mapped.update().has_changed, true);
         assert_eq!(mapped.update().has_changed, false);
         assert_eq!(mapped.read(), Some(&4));
-        assert_eq!(mapped.wait(), PromiseState::Ready);
-        assert_eq!(mapped.wait(), PromiseState::Ready);
+        assert_eq!(mapped.wait(None), PromiseState::Ready);
+        assert_eq!(mapped.wait(None), PromiseState::Ready);
         assert_eq!(mapped.read(), Some(&4));
         assert_eq!(mapped.read(), Some(&4));
         assert_eq!(mapped.state().is_broken(), false);
@@ -347,7 +347,7 @@ mod tests {
         assert_eq!(mapped.read(), None);
         assert_eq!(mapped.update().has_changed, true);
         assert_eq!(mapped.read(), None);
-        assert_eq!(mapped.wait(), PromiseState::Broken);
+        assert_eq!(mapped.wait(None), PromiseState::Broken);
         assert_eq!(mapped.read(), None);
         assert_eq!(mapped.read(), None);
         assert_eq!(mapped.state().is_broken(), true);

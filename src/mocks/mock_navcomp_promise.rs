@@ -119,7 +119,7 @@ impl<T: Send + 'static> Promise<T> for MockNavCompPromise<T> {
         res
     }
 
-    fn wait(&mut self) -> PromiseState {
+    fn wait(&mut self, _how_long: Option<Duration>) -> PromiseState {
         let res = match self.receiver.recv() {
             Ok(value) => {
                 self.item = Some(value);

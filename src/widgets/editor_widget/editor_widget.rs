@@ -2,6 +2,7 @@ use std::cmp::{max, min};
 use std::collections::BTreeMap;
 use std::ops::Range;
 use std::sync::RwLockWriteGuard;
+use std::time::Duration;
 
 use crossterm::style::style;
 use log::{debug, error, warn};
@@ -58,6 +59,8 @@ const MIN_EDITOR_SIZE: XY = XY::new(10, 3);
 
 const NEWLINE: &'static str = "⏎";
 const BEYOND: &'static str = "⇱";
+
+const DEFAULT_EDITOR_TIMEOUT: Duration = Duration::from_millis(500);
 
 /*
 This is heart and soul of Gladius Editor.
@@ -474,7 +477,7 @@ impl EditorWidget {
             return false;
         }
 
-        if promise.wait() == PromiseState::Ready {
+        if promise.wait(Some(DEFAULT_EDITOR_TIMEOUT)) == PromiseState::Ready {
             // invariant : promise ready => take.is_some()
             let edits = unpack_or!(promise.read().unwrap(), false, "can't reformat: promise empty");
 

@@ -141,7 +141,7 @@ impl Widget for CodeResultsView {
 
                 let no_prefix = match symbol.path.strip_prefix("file://") {
                     None => {
-                        error!("failed stripping prefix from {}", &symbol.path);
+                        error!("failed stripping prefix file:// from {}", &symbol.path);
                         self.failed_ids.insert(idx);
                         continue;
                     }
@@ -153,7 +153,7 @@ impl Widget for CodeResultsView {
 
                 let in_workspace = match no_prefix.strip_prefix(&root_path_buf) {
                     None => {
-                        error!("failed stripping prefix from {}", &no_prefix);
+                        error!("failed stripping prefix root_path from {}", &no_prefix);
                         self.failed_ids.insert(idx);
                         continue;
                     }

@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::process::{ChildStderr, ChildStdout, Stdio};
 use std::sync::{Arc, RwLock};
 use std::thread::JoinHandle;
+use std::time::Duration;
 
 use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error, warn};
@@ -60,6 +61,8 @@ pub struct LspWrapper {
 // pub type LspWrapperRef = Arc<RwLock<LspWrapper>>;
 
 impl LspWrapper {
+    pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(1);
+
     /*
     This spawns a reader thread that awaits server's stdout/stderr and pipes messages.
 
@@ -231,7 +234,6 @@ impl LspWrapper {
             name: "".to_string(),
         };
 
-
         let mut result = self.send_message::<lsp_types::request::Initialize>(lsp_types::InitializeParams {
             process_id: Some(pid),
             // process_id: None,
@@ -292,7 +294,7 @@ impl LspWrapper {
         })?;
 
         //before returning I will send syn-ack as protocol demands.
-        if result.wait() == PromiseState::Ready {
+        if result.wait(Some(Self::DEFAULT_TIMEOUT)) == PromiseState::Ready {
             self.send_notification_no_params::<lsp_types::notification::Initialized>()?;
             Ok(result.take().unwrap())
         } else {
