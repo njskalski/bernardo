@@ -191,6 +191,7 @@ impl<W: Widget> SplitLayout<W> {
                         match sc.cut_out_rect(rect) {
                             Some(new_sc) => {
                                 let resp = child.layout.layout(root, new_sc);
+                                debug!("layouting child #{} with rect {} new_sc {}, resulting in {}", child_idx, rect, new_sc, resp.total_size);
                                 for wwrsc in resp.wwrs.into_iter() {
                                     result.push(wwrsc.shifted(rect.pos))
                                 }

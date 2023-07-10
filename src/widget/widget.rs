@@ -38,6 +38,10 @@ pub trait Widget: 'static {
     // afterwards, or if even at all. A widget can decide to remove child widget and *not* layout it
     // for whatever reason.
     //
+    // TODO I need to write down what is the contract if FillPolicy means "fill", but the constraint
+    //  is actually smaller than the amount of data widget can fill. I guess "fill" should be "just
+    //  use whatever SizeConstraint is is. So it's either "self constrain, or sc-constrain"
+    //
     // Widget is given size constraint and returns "how much space I will use under given constraints".
     // Whether widget "fills" the space or just uses as little as it can depends on Widget, not on
     // layout. No css bs here.

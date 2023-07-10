@@ -43,6 +43,7 @@ use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_provider::{CompletionAction, NavCompSymbol};
 use crate::widget::any_msg::{AnyMsg, AsAny};
+use crate::widget::fill_policy::FillPolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::code_results_view::promise_provider::WrappedSymbolUsagesPromise;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
@@ -81,6 +82,7 @@ TODO:
     they need unification.
 - backspace beyond trigger should close completions
 - completions should be anchored to trigger, not to cursor
+- I don't think the the layout() follows the invariant I set in widget
  */
 
 /*
@@ -157,6 +159,7 @@ pub struct EditorWidget {
     ignore_input_altogether: bool,
 
     last_size: Option<SizeConstraint>,
+    fill_policy: FillPolicy,
     // to be constructed in layout step based on HoverSettings
     last_hover_rect: Option<Rect>,
 
@@ -208,6 +211,7 @@ impl EditorWidget {
             state: EditorState::Editing,
             navcomp: None,
             requested_hover: None,
+            fill_policy: FillPolicy::CONSTRAINED,
         };
 
         if buffer_named {
@@ -229,6 +233,13 @@ impl EditorWidget {
     pub fn with_readonly(self) -> Self {
         Self {
             readonly: true,
+            ..self
+        }
+    }
+
+    pub fn with_fill_policy(self, fill_policy: FillPolicy) -> Self {
+        Self {
+            fill_policy,
             ..self
         }
     }
@@ -1131,6 +1142,41 @@ impl Widget for EditorWidget {
     }
 
     fn layout(&mut self, sc: SizeConstraint) -> XY {
+        let x = if self.fill_policy.fill_x {
+            if let Some(x) = sc.x() {
+                x
+            } else {
+                error!("can't fill unlimited x, using min_size instead");
+                self.size().x
+            }
+        } else {
+            if let Some(rect) = sc.visible_hint() {
+                rect.size.x
+            } else {
+                error!("can't grab size.x from visible_rect, using min_size instead");
+                self.size().x
+            }
+        };
+
+        let y = if self.fill_policy.fill_y {
+            if let Some(y) = sc.y() {
+                y
+            } else {
+                error!("can't fill unlimited y, using min_size instead");
+                self.size().y
+            }
+        } else {
+            if let Some(rect) = sc.visible_hint() {
+                rect.size.y
+            } else {
+                error!("can't grab size.y from visible_rect, using min_size instead");
+                self.size().y
+            }
+        };
+
+        /*
+        Here's some issue: this is one of the "old type"
+         */
         if self.last_size != Some(sc) {
             debug!("changed size");
 
@@ -1147,7 +1193,7 @@ impl Widget for EditorWidget {
 
         self.layout_hover(visible_rect, sc);
 
-        visible_rect.size
+        XY::new(x, y)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

@@ -29,6 +29,7 @@ use crate::text::buffer_state::BufferState;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
+use crate::widget::fill_policy::FillPolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::big_list::big_list_widget::BigList;
 use crate::widgets::code_results_view::code_results_msg::CodeResultsMsg;
@@ -209,7 +210,8 @@ impl Widget for CodeResultsView {
                     self.providers.clone(),
                     buffer_state_ref,
                 ).with_readonly()
-                    .with_ignore_input_altogether();
+                    .with_ignore_input_altogether()
+                    .with_fill_policy(FillPolicy::FILL_BOTH);
 
                 if edit_widget.set_cursors(cursor_set) == false {
                     error!("failed setting cursor set, will not add this editor to list {}", spath);

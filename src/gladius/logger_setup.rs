@@ -23,6 +23,7 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("bernardo::widgets::main_view::main_view", log::LevelFilter::Info),
     ("bernardo::widgets::save_file_dialog::save_file_dialog", log::LevelFilter::Warn),
     ("bernardo::layout", log::LevelFilter::Info),
+    ("bernardo::layout::split_layout", log::LevelFilter::Debug),
     // ("bernardo::layout::leaf_layout", log::LevelFilter::Debug),
 
     // This guy leaves a lot of data in trace, it seems like it spawns a new thread. I think it deserves profiling.
