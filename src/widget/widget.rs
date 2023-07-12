@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::config::theme::Theme;
@@ -93,6 +93,12 @@ pub trait Widget: 'static {
 }
 
 impl<'a> Debug for dyn Widget + 'a {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "W{}:{}", self.typename(), self.id())
+    }
+}
+
+impl<'a> Display for dyn Widget + 'a {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "W{}:{}", self.typename(), self.id())
     }

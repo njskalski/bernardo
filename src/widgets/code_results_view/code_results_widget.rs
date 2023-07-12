@@ -117,13 +117,8 @@ impl Widget for CodeResultsView {
     }
 
     fn prelayout(&mut self) {
-        let old_state = self.data_provider.loading_state();
-        if old_state == LoadingState::NotStarted || old_state == LoadingState::InProgress {
-            let poll_result = self.data_provider.poll();
-            if poll_result.has_first_result() {
-                self.set_focused(subwidget!(Self.item_list));
-            }
-        }
+        let was_empty = self.item_list.internal().is_empty();
+        self.data_provider.poll();
 
         self.label.set_text(self.data_provider.description());
 
@@ -225,6 +220,12 @@ impl Widget for CodeResultsView {
                 )
             }
         } // to drop buffer_register_lock
+
+        let is_empty = self.item_list.internal().is_empty();
+
+        if was_empty && !is_empty {
+            self.set_focused(subwidget!(Self.item_list));
+        }
 
         self.complex_prelayout();
     }

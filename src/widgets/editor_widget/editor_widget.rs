@@ -774,7 +774,7 @@ impl EditorWidget {
                     combined_line.push((style, tr));
 
                     if x_offset as u16 >= visible_rect.lower_right().x {
-                        debug!("early exit 6");
+                        debug!("early exit 6: widget after visible rect");
                         break;
                     }
                 }

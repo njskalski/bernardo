@@ -91,6 +91,10 @@ impl<T: Widget> BigList<T> {
     }
 
     pub fn add_item(&mut self, split_rule: SplitRule, item: T) {
+        if self.items.is_empty() {
+            self.update_focus_path()
+        }
+
         self.items.push((split_rule, item));
     }
 
@@ -120,6 +124,10 @@ impl<T: Widget> BigList<T> {
 
     pub fn items(&self) -> impl Iterator<Item=&T> {
         self.items.iter().map(|(_split_rule, widget)| widget)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.items().next().is_none()
     }
 
     fn update_focus_path(&mut self) {
