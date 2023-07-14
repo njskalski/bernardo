@@ -21,6 +21,8 @@ So I don't have to reimplement basic edit properties for multiple widgets, I mov
 // this is a completely arbitrary number against which I compare Page length, to avoid under/overflow while casting to isize safely.
 const PAGE_HEIGHT_LIMIT: usize = 2000;
 
+// TODO remove the integer result, it's not binding nor used anyways
+
 /*
 I am beginning to think, CEM should be broken into several smaller types, like:
 move
@@ -44,7 +46,7 @@ pub enum CommonEditMsg {
     PageUp { selecting: bool },
     PageDown { selecting: bool },
     Delete,
-    
+
     Copy,
     Paste,
     Undo,
@@ -52,6 +54,8 @@ pub enum CommonEditMsg {
 
     DeleteBlock { char_range: Range<usize> },
     InsertBlock { char_pos: usize, what: String },
+    // not tested, created to remove _apply_stupid_substitute_message from BufferState
+    SubstituteBlock { char_range: Range<usize>, with_what: String },
     Tab,
     ShiftTab,
 }
@@ -111,6 +115,7 @@ impl CommonEditMsg {
             CommonEditMsg::Redo => true,
             CommonEditMsg::DeleteBlock { .. } => true,
             CommonEditMsg::InsertBlock { .. } => true,
+            CommonEditMsg::SubstituteBlock { .. } => true,
             CommonEditMsg::Tab => true,
             CommonEditMsg::ShiftTab => true,
         }
@@ -730,6 +735,18 @@ pub fn _apply_cem(cem: CommonEditMsg,
 
             (chars_removed, modified)
         }
+        CommonEditMsg::SubstituteBlock { char_range, with_what } => {
+            let removal_result = if !char_range.is_empty() {
+                remove_from_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_range.clone())
+            } else { (0, true) };
+
+            if removal_result.1 {
+                let insertion_result = insert_to_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_range.start, &with_what);
+                (removal_result.0 + insertion_result.0, true)
+            } else {
+                (0, false)
+            }
+        }
     };
 
     debug_assert!(cursor_set.check_invariant());
@@ -766,7 +783,9 @@ pub fn cme_to_direction(cme: &CommonEditMsg) -> Option<Arrow> {
         CommonEditMsg::Redo => None,
         CommonEditMsg::ShiftTab => Some(Arrow::Left),
         CommonEditMsg::Tab => Some(Arrow::Right),
+        // TODO these 3 can be implemented. Do I want it?
         CommonEditMsg::DeleteBlock { .. } => None,
-        CommonEditMsg::InsertBlock { .. } => None
+        CommonEditMsg::InsertBlock { .. } => None,
+        CommonEditMsg::SubstituteBlock { .. } => None,
     }
 }

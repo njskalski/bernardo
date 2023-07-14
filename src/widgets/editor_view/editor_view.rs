@@ -264,7 +264,7 @@ impl EditorView {
         let curr_text = buffer_mut.text();
         let editor_widget_id = self.editor.internal().id();
         let cursor_set = unpack_or!(curr_text.get_cursor_set(editor_widget_id), false, "no cursors for editor");
-        
+
         if cursor_set.is_single() && curr_text.do_cursors_match_regex(editor_widget_id, &phrase) {
             let with_what = self.replace_box.get_buffer().to_string();
             let page_height = self.editor.internal().page_height() as usize;
@@ -298,6 +298,10 @@ impl EditorView {
         self.editor.internal().get_buffer().lock().map(|buffer_lock|
             buffer_lock.get_path().map(|c| c.clone())
         ).flatten()
+    }
+
+    pub fn get_internal_widget(&self) -> &EditorWidget {
+        self.editor.internal()
     }
 }
 

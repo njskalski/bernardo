@@ -220,7 +220,7 @@ impl EditorWidget {
 
         match buffer.lock_rw() {
             Some(mut buffer_lock) => {
-                buffer_lock.initialize_for_widget(res.wid, None);
+                debug_assert!(buffer_lock.initialize_for_widget(res.wid, None));
             }
             None => {
                 error!("failed to lock buffer for rw, shit will blow up");
@@ -282,7 +282,7 @@ impl EditorWidget {
                buffer.get_path(),
         ) {
             (Some(navcomp), Some(spath)) => {
-                navcomp.file_open_for_edition(spath, buffer.text().rope.clone());
+                navcomp.file_open_for_edition(spath, buffer.text().rope().clone());
             }
             (Some(navcomp), None) => {
                 warn!("unimplemented variant - set navcomp but not path");
@@ -347,7 +347,7 @@ impl EditorWidget {
 
     pub fn get_single_cursor_screen_pos(&self, buffer: &BufferState, cursor: Cursor) -> Option<CursorScreenPosition> {
         let lsp_cursor = unpack_or_e!(StupidCursor::from_real_cursor(buffer, cursor).ok(), None, "failed mapping cursor to lsp-cursor");
-        let lsp_cursor_xy = unpack_or_e!(lsp_cursor.to_xy(&buffer.text().rope), None, "lsp cursor beyond XY max");
+        let lsp_cursor_xy = unpack_or_e!(lsp_cursor.to_xy(buffer), None, "lsp cursor beyond XY max");
 
         let sc = unpack_or!(self.last_size, None, "single_cursor_screen_pos called before first layout");
         let visible_rect = unpack_or!(sc.visible_hint(), None, "no visible rect - no screen cursor pos");
@@ -493,14 +493,17 @@ impl EditorWidget {
             let edits = unpack_or!(promise.read().unwrap(), false, "can't reformat: promise empty");
 
             let page_height = self.page_height();
-            let res = buffer.apply_stupid_substitute_messages(self.wid, edits, page_height as usize);
+
+            // TODO re-enable format
+            // let res = buffer.apply_stupid_substitute_messages(self.wid, edits, page_height as usize);
 
             // This theoretically could be optimised out, but maybe it's not worth it, it leads to
             // a new category of bugs if statement above turns out to be false, and it rarely is,
             // so it's very very hard to test. So I keep this here for peace of mind.
             self.after_content_changed(buffer);
 
-            res
+            //res
+            true
         } else {
             warn!("reformat promise broken");
             false
@@ -1026,7 +1029,7 @@ impl EditorWidget {
     fn after_content_changed(&self, buffer: &BufferState) {
         match (&self.navcomp, buffer.get_path()) {
             (Some(navcomp), Some(path)) => {
-                let contents = buffer.text().rope.clone();
+                let contents = buffer.text().rope().clone();
                 navcomp.submit_edit_event(path, contents);
             }
             _ => {}

@@ -9,6 +9,7 @@ use crate::experiments::screen_shot::screenshot;
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::mock_fs::MockFS;
+use crate::gladius::paradigm::recursive_treat_views;
 use crate::io::input_event::InputEvent;
 use crate::io::output::{FinalOutput, Metadata};
 use crate::mocks::editor_interpreter::EditorInterpreter;
@@ -65,5 +66,10 @@ impl EditorViewTestbed {
         self.frame_op().map(|frame|
             screenshot(&frame.buffer)
         ).unwrap_or(false)
+    }
+
+    pub fn push_input(&mut self, input: InputEvent) {
+        recursive_treat_views(&mut self.editor_view, input);
+        self.next_frame();
     }
 }

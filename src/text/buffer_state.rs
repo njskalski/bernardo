@@ -195,8 +195,8 @@ impl BufferState {
                 page_height,
                 None,
             ) {
-                let rope = self.text().rope.clone(); // shallow copy
-                self.text_mut().parsing.as_mut().map_or_else(
+                let rope = self.text().rope().clone(); // shallow copy
+                self.text_mut().parsing_mut().map_or_else(
                     || {
                         debug!("failed to acquire parse_tuple 1");
                     },
@@ -220,8 +220,8 @@ impl BufferState {
                 page_height,
                 None,
             ) {
-                let rope = self.text().rope.clone(); // shallow copy
-                self.text_mut().parsing.as_mut().map_or_else(
+                let rope = self.text().rope().clone(); // shallow copy
+                self.text_mut().parsing_mut().map_or_else(
                     || {
                         debug!("failed to acquire parse_tuple 1");
                     },
@@ -239,7 +239,7 @@ impl BufferState {
     }
 
     pub fn char_range(&self, output: &mut dyn Output) -> Option<Range<usize>> {
-        let rope = &self.text().rope;
+        let rope = self.text().rope();
 
         let sc = output.size_constraint();
         let visible_rect = unpack_or!(sc.visible_hint(), None);
@@ -321,20 +321,20 @@ impl BufferState {
     // TODO move to text?
     pub fn highlight(&self, char_range_op: Option<Range<usize>>) -> Vec<HighlightItem> {
         let text = self.text();
-        text.parsing.as_ref().map(|parsing| {
-            parsing.highlight_iter(&text.rope, char_range_op)
+        text.parsing().map(|parsing| {
+            parsing.highlight_iter(text.rope(), char_range_op)
         }).flatten().unwrap_or(vec![])
     }
 
     // TODO merge with above?
     pub fn smallest_highlight(&self, char_idx: usize) -> Option<HighlightItem> {
         let text = self.text();
-        if text.rope.len_chars() < char_idx + 1 {
+        if text.rope().len_chars() < char_idx + 1 {
             return None;
         };
 
-        let parsing = unpack_or!(&text.parsing, None);
-        let items = parsing.highlight_iter(&text.rope, Some(char_idx..char_idx + 1))?;
+        let parsing = unpack_or!(text.parsing(), None);
+        let items = parsing.highlight_iter(text.rope(), Some(char_idx..char_idx + 1))?;
 
         let mut best: Option<HighlightItem> = None;
 
@@ -430,13 +430,13 @@ impl BufferState {
             }
         };
 
-        let copy_rope = self.text().rope.clone();
+        let copy_rope = self.text().rope().clone();
 
         if let Some(tree_sitter_clone) = self.tree_sitter_op.as_ref().map(|r| r.clone()) {
             let parse_success: bool = self.text_mut().parse(tree_sitter_clone, lang_id);
 
             if parse_success {
-                self.text_mut().parsing.as_mut().map(|parsing| {
+                self.text_mut().parsing_mut().map(|parsing| {
                     if !parsing.try_reparse(&copy_rope) {
                         error!("failed try_reparse");
                     }
@@ -479,9 +479,9 @@ impl BufferState {
         &self.subtype
     }
 
-    pub fn initialize_for_widget(&mut self, widget_id: WID, cursors_op: Option<CursorSet>) {
+    pub fn initialize_for_widget(&mut self, widget_id: WID, cursors_op: Option<CursorSet>) -> bool {
         let cursor_set = cursors_op.unwrap_or(CursorSet::single());
-        self.history[self.history_pos].add_cursor_set(widget_id, cursor_set);
+        self.history[self.history_pos].add_cursor_set(widget_id, cursor_set)
     }
 
     pub fn text(&self) -> &ContentsAndCursors {
@@ -589,11 +589,11 @@ impl ToString for BufferState {
 
 impl TextBuffer for BufferState {
     fn byte_to_char(&self, byte_idx: usize) -> Option<usize> {
-        self.text().rope.try_byte_to_char(byte_idx).ok()
+        self.text().rope().try_byte_to_char(byte_idx).ok()
     }
 
     fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {
-        self.text().rope.callback_for_parser()
+        self.text().rope().callback_for_parser()
     }
 
     fn can_redo(&self) -> bool {
@@ -605,26 +605,26 @@ impl TextBuffer for BufferState {
     }
 
     fn char_at(&self, char_idx: usize) -> Option<char> {
-        self.text().rope.char_at(char_idx)
+        self.text().rope().char_at(char_idx)
     }
 
     fn char_to_byte(&self, char_idx: usize) -> Option<usize> {
-        self.text().rope.try_char_to_byte(char_idx).ok()
+        self.text().rope().try_char_to_byte(char_idx).ok()
     }
 
     fn char_to_line(&self, char_idx: usize) -> Option<usize> {
-        match self.text().rope.try_char_to_line(char_idx) {
+        match self.text().rope().try_char_to_line(char_idx) {
             Ok(idx) => Some(idx),
             Err(_) => None,
         }
     }
 
     fn chars(&self) -> Chars {
-        self.text().rope.chars()
+        self.text().rope().chars()
     }
 
     fn chunks(&self) -> Chunks {
-        self.text().rope.chunks()
+        self.text().rope().chunks()
     }
 
     fn insert_block(&mut self, char_idx: usize, block: &str) -> bool {
@@ -632,11 +632,11 @@ impl TextBuffer for BufferState {
         let grapheme_len = block.graphemes(true).count();
         let text = self.text_mut();
 
-        match text.rope.try_insert(char_idx, block) {
+        match text.rope_mut().try_insert(char_idx, block) {
             Ok(_) => {
-                let rope_clone = text.rope.clone();
+                let rope_clone = text.rope().clone();
 
-                text.parsing.as_mut().map_or_else(
+                text.parsing_mut().map_or_else(
                     || {
                         debug!("failed to acquire parse_tuple 2");
                     },
@@ -655,12 +655,12 @@ impl TextBuffer for BufferState {
 
     fn insert_char(&mut self, char_idx: usize, ch: char) -> bool {
         let text = self.text_mut();
-        match text.rope.try_insert_char(char_idx, ch) {
+        match text.rope_mut().try_insert_char(char_idx, ch) {
             Ok(_) => {
                 // TODO maybe this method should be moved to text object.
-                let rope_clone = text.rope.clone();
+                let rope_clone = text.rope().clone();
 
-                text.parsing.as_mut().map_or_else(
+                text.parsing_mut().map_or_else(
                     || {
                         debug!("failed to acquire parse_tuple 1");
                     },
@@ -682,23 +682,23 @@ impl TextBuffer for BufferState {
     }
 
     fn len_bytes(&self) -> usize {
-        self.text().rope.len_bytes()
+        self.text().rope().len_bytes()
     }
 
     fn len_chars(&self) -> usize {
-        self.text().rope.len_chars()
+        self.text().rope().len_chars()
     }
 
     fn len_lines(&self) -> usize {
-        self.text().rope.len_lines()
+        self.text().rope().len_lines()
     }
 
     fn lines(&self) -> LinesIter {
-        LinesIter::new(self.text().rope.chars())
+        LinesIter::new(self.text().rope().chars())
     }
 
     fn line_to_char(&self, line_idx: usize) -> Option<usize> {
-        match self.text().rope.try_line_to_char(line_idx) {
+        match self.text().rope().try_line_to_char(line_idx) {
             Ok(idx) => Some(idx),
             Err(_) => None,
         }
@@ -719,11 +719,11 @@ impl TextBuffer for BufferState {
         }
 
         let text = self.text_mut();
-        match text.rope.try_remove(char_idx_begin..char_idx_end) {
+        match text.rope_mut().try_remove(char_idx_begin..char_idx_end) {
             Ok(_) => {
-                let rope_clone = text.rope.clone();
+                let rope_clone = text.rope().clone();
 
-                text.parsing.as_mut().map_or_else(
+                text.parsing_mut().map_or_else(
                     || {
                         debug!("failed to acquire parse_tuple 3");
                     },

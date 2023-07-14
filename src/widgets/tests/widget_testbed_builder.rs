@@ -135,8 +135,10 @@ impl WidgetTestbedBuilder {
 
         let editor_view = EditorView::new(
             providers.clone(),
-            buffer,
+            buffer.clone(),
         );
+
+        assert!(buffer.lock_rw().unwrap().text().get_cursor_set(editor_view.get_internal_widget().id()).is_some());
 
         EditorViewTestbed {
             editor_view,

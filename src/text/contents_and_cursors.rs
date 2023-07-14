@@ -23,12 +23,20 @@ it's cursors.
 
 #[derive(Clone, Debug)]
 pub struct ContentsAndCursors {
-    pub rope: Rope,
-    pub parsing: Option<ParsingTuple>,
-    pub cursor_sets: Vec<(WID, CursorSet)>,
+    rope: Rope,
+    parsing: Option<ParsingTuple>,
+    cursor_sets: Vec<(WID, CursorSet)>,
 }
 
 impl ContentsAndCursors {
+    pub fn new(rope: Rope, parsing: Option<ParsingTuple>) -> Self {
+        ContentsAndCursors {
+            rope,
+            parsing,
+            cursor_sets: Vec::new(),
+        }
+    }
+
     pub fn add_cursor_set(&mut self, widget_id: WID, cs: CursorSet) -> bool {
         if self.cursor_sets.iter().find(|(wid, _)| *wid == widget_id).is_some() {
             error!("can't add cursor set for WidgetID {} - it's already present. Did you mean 'set_cursor_set'?", widget_id);
@@ -152,6 +160,22 @@ impl ContentsAndCursors {
         } else {
             false
         }
+    }
+
+    pub fn parsing(&self) -> Option<&ParsingTuple> {
+        self.parsing.as_ref()
+    }
+
+    pub fn parsing_mut(&mut self) -> Option<&mut ParsingTuple> {
+        self.parsing.as_mut()
+    }
+
+    pub fn rope(&self) -> &Rope {
+        &self.rope
+    }
+
+    pub fn rope_mut(&mut self) -> &mut Rope {
+        &mut self.rope
     }
 
     pub fn has_cursor_set_for(&self, widget_id: WID) -> bool {
