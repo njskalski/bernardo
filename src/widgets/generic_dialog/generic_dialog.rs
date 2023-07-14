@@ -15,6 +15,7 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::border::BorderStyle;
 use crate::primitives::printable::Printable;
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::subwidget;
@@ -95,7 +96,7 @@ impl GenericDialog {
     pub fn get_total_options_width(&self, interval: u16) -> u16 {
         let mut result: usize = 0;
         for (idx, button) in self.buttons.iter().enumerate() {
-            result += button.size().x as usize;
+            result += button.full_size().x as usize;
             if idx + 1 < self.buttons.len() {
                 result += interval as usize;
             }
@@ -133,7 +134,7 @@ impl Widget for GenericDialog {
         self.complex_prelayout();
     }
 
-    fn size(&self) -> XY {
+    fn full_size(&self) -> XY {
         let mut total_size = self.text_widget.text_size();
 
         if !self.buttons.is_empty() {
@@ -148,8 +149,8 @@ impl Widget for GenericDialog {
         total_size + if self.with_border.is_some() { XY::new(2, 2) } else { XY::ZERO }
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        self.complex_layout(sc)
+    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+        self.complex_layout(output_size, visible_rect)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -177,7 +178,7 @@ impl Widget for GenericDialog {
             debug!("generic_dialog passes through message {:?} to parent", msg);
             return Some(msg);
         }
-        
+
         #[allow(unreachable_patterns)]
         return match our_msg.unwrap() {
             GenericDialogMsg::FocusUpdate(focus_update) => {

@@ -4,6 +4,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
@@ -26,38 +27,13 @@ pub trait Widget: 'static {
     // Size of the view. If the output cannot satisfy it, a replacement is drawn instead, and the
     // view cannot be focused.
     //
-    // size can be data dependent. Widgets *should not* implement their own scrolling.
+    // Size can be data dependent. Widgets *should not* implement their own scrolling.
     // So it's perfectly reasonable for widget to require O(n) time to answer question "how big I
     // need to be" (if it's slow, we'll be caching *after* profiling).
-    fn size(&self) -> XY;
+    fn full_size(&self) -> XY;
 
-    // This is guaranteed to be called before each render. It is guaranteed to be called with
-    // SizeConstraint >= self.size().
-    //
-    // This is an opportunity for widget to "update itself" and decide how it's going to be drawn.
-    // There is no enforced contract on whether widget should layout it's subwidgets first or
-    // afterwards, or if even at all. A widget can decide to remove child widget and *not* layout it
-    // for whatever reason.
-    //
-    // TODO I need to write down what is the contract if FillPolicy means "fill", but the constraint
-    //  is actually smaller than the amount of data widget can fill. I guess "fill" should be "just
-    //  use whatever SizeConstraint is is. So it's either "self constrain, or sc-constrain"
-    //
-    // Widget is given size constraint and returns "how much space I will use under given constraints".
-    // Whether widget "fills" the space or just uses as little as it can depends on Widget, not on
-    // layout. No css bs here.
-    //
-    // It is assumed that no widget is "infinite", because I say so. Infinite sources are not
-    // supported at this time.
-    //
-    // In case I forget why I added it: to inform the "split layout" on actual size of widgets.
-    // Without it, it would be impossible to decide "which widget gets how much space" before
-    // rendering them.
-    //
-    // If widget size is VisibleRect dependent (everything that fills buffers in greedy way) and
-    // SizeConstraint.visible_rect() == None, a self.min_size() is used instead.
-    fn layout(&mut self, sc: SizeConstraint) -> XY;
-
+    // Invariant visible_rect is not empty, and visible_rect.lower_right <= full_size.
+    fn layout(&mut self, output_size: XY, visible_rect: Rect);
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>>;

@@ -6,6 +6,7 @@ use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
@@ -51,14 +52,12 @@ impl Widget for DumpVisualizerWidget {
         "DumpVisualizerWidget"
     }
 
-    fn size(&self) -> XY {
+    fn full_size(&self) -> XY {
         self.dump_op.as_ref().map(|oo| oo.size()).unwrap_or(XY::new(10, 10))
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let size = sc.as_finite().unwrap_or(self.size());
-        self.last_size = Some(size);
-        size
+    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+        self.last_size = Some(output_size)
     }
 
     fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

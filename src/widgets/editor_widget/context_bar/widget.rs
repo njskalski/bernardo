@@ -17,7 +17,7 @@ use crate::text::buffer_state::BufferState;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::any_msg::AsAny;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::fill_policy::FillPolicy;
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::editor_widget::context_bar::context_bar_item::ContextBarItem;
 use crate::widgets::editor_widget::context_bar::msg::ContextBarWidgetMsg;
@@ -43,7 +43,7 @@ impl ContextBarWidget {
                 .with_selection()
                 .with_provider(Box::new(items))
                 .with_show_column_names(false)
-                .with_fill_policy(FillPolicy::MATCH_LAYOUTS_WIDTH)
+                .with_fill_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
                 .with_on_hit(|_| {
                     ContextBarWidgetMsg::Hit.someboxed()
                 })
@@ -77,12 +77,12 @@ impl Widget for ContextBarWidget {
         self.complex_prelayout();
     }
 
-    fn size(&self) -> XY {
+    fn full_size(&self) -> XY {
         XY::new(1, 12) // TODO completely arbitrary
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        self.complex_layout(sc)
+    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+        self.complex_layout(output_size, visible_rect)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

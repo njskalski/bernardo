@@ -6,15 +6,24 @@ use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::Widget;
 
 pub struct LeafLayout<W: Widget> {
     widget: SubwidgetPointer<W>,
+    size_policy: SizePolicy,
 }
 
 impl<W: Widget> LeafLayout<W> {
     pub fn new(widget: SubwidgetPointer<W>) -> Self {
-        LeafLayout { widget }
+        LeafLayout { widget, size_policy: SizePolicy::default() }
+    }
+
+    pub fn with_size_policy(self, size_policy: SizePolicy) -> Self {
+        Self {
+            size_policy,
+            ..self
+        }
     }
 }
 
@@ -25,7 +34,7 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
     }
 
     fn min_size(&self, root: &W) -> XY {
-        self.widget.get(root).size()
+        self.widget.get(root).full_size()
     }
 
     fn layout(&self, root: &mut W, sc: SizeConstraint) -> LayoutResult<W> {
@@ -34,7 +43,7 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
         let widget = self.widget.get_mut(root);
         let skip = root_id == widget.id();
 
-        let widget_min_size = widget.size();
+        let widget_min_size = widget.full_size();
         let properly_sized = sc.bigger_equal_than(widget_min_size);
         let _widget_name = widget.typename();
 

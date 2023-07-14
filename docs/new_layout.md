@@ -13,10 +13,10 @@ The final size of Widget is determined with a following algorithm:
 
 For each axis, we have following this matrix of options:
 
-|             | DeterminedBy::Widget             | DeterminedBy::Layout                                            |
-|-------------|----------------------------------|-----------------------------------------------------------------|
-| Some(max_x) | Widget uses between size.x space | Widget uses EXACTLY max_x space, no matter how much data it has |
-| None        | Widget uses size.x space         | Warning is emitted, same behavior as with DeterminedBy::Widget  |
+|             | DeterminedBy::Widget     | DeterminedBy::Layout                                            |
+|-------------|--------------------------|-----------------------------------------------------------------|
+| Some(max_x) | Widget uses size.x space | Widget uses EXACTLY max_x space, no matter how much data it has |
+| None        | Widget uses size.x space | Warning is emitted, same behavior as with DeterminedBy::Widget  |
 
 But if this is determinant (and it seems so), does widget even need to return result? Not really, we can guess it's
 size.
@@ -59,3 +59,7 @@ Let's discuss how to implement Option2
 1) change size to full_size()
 2) move fill policy from widget to Layout's setting (LeafLayout and SplitLayout are enough)
 3) change Layout signature from sc to pair (your decided size, your visible part != none)
+
+Maybe I can throw away "SizeConstraint" totally? Because if you think about it,
+the only place it's used is for scrolling. And if I have "full_size" already, scroll
+will give the widget the full_size-d output anyway. 

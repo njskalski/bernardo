@@ -32,28 +32,28 @@ impl Scroll {
         }
     }
 
-    pub fn follow_anchor(&mut self, output_size: XY, anchor: XY) {
+    pub fn follow_kite(&mut self, output_size: XY, kite: XY) {
         let adjust_x = self.direction == ScrollDirection::Horizontal || self.direction == ScrollDirection::Both;
         let adjust_y = self.direction == ScrollDirection::Vertical || self.direction == ScrollDirection::Both;
 
         if adjust_x {
-            if anchor.x < self.offset.x {
-                self.offset.x = anchor.x;
+            if kite.x < self.offset.x {
+                self.offset.x = kite.x;
             }
 
-            if anchor.x >= (self.offset.x + output_size.x) {
-                let diff = 1 + anchor.x - (self.offset.x + output_size.x);
+            if kite.x >= (self.offset.x + output_size.x) {
+                let diff = 1 + kite.x - (self.offset.x + output_size.x);
                 self.offset.x += diff;
             }
         }
 
         if adjust_y {
-            if anchor.y < self.offset.y {
-                self.offset.y = anchor.y;
+            if kite.y < self.offset.y {
+                self.offset.y = kite.y;
             }
 
-            if anchor.y >= (self.offset.y + output_size.y) {
-                let diff = 1 + anchor.y - (self.offset.y + output_size.y);
+            if kite.y >= (self.offset.y + output_size.y) {
+                let diff = 1 + kite.y - (self.offset.y + output_size.y);
                 self.offset.y += diff;
             }
         }

@@ -1,4 +1,5 @@
 use log::{debug, error, warn};
+use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
@@ -51,40 +52,6 @@ impl<W: Widget> WithScroll<W> {
 
     pub fn scroll(&self) -> &Scroll {
         &self.scroll
-    }
-
-    /*
-    Returns (margin_width, nested size_constraint).
-    This is where it's decided whether to wr
-     */
-    fn nested_sc(&self, sc: SizeConstraint) -> (u16, SizeConstraint) {
-        if sc.x().is_none() || sc.y().is_none() {
-            error!("nesting scrolling is not supported - that's beyond TUI")
-            // in case of nesting I probably need to add "sc.hint().pos" to offset in Rect
-            // constructor below . Or substract it. I don't want to waste mana on it now.
-        }
-
-        let margin_width = self.line_count_margin_width(sc);
-        let with_margin = self.line_no && sc.strictly_bigger_than(XY::new(margin_width, 0));
-
-        let visible_part_size = sc.visible_hint().map(|visible_hint| if with_margin {
-            XY::new(visible_hint.size.x - margin_width, visible_hint.size.y)
-        } else {
-            visible_hint.size
-        });
-
-        let new_sc = SizeConstraint::new(
-            if self.scroll.direction.free_x() { None } else {
-                sc.x().map(/* this works because strictly_bigger_than above */ |x|
-                    if with_margin {
-                        x - margin_width
-                    } else { x })
-            },
-            if self.scroll.direction.free_y() { None } else { sc.y() },
-            visible_part_size.map(|size| Rect::new(self.scroll.offset, size)),
-        );
-
-        (if with_margin { margin_width } else { 0 }, new_sc)
     }
 
     pub fn internal_mut(&mut self) -> &mut W {
@@ -192,8 +159,8 @@ impl<W: Widget> Widget for WithScroll<W> {
         self.widget.prelayout();
     }
 
-    fn size(&self) -> XY {
-        let child = self.widget.size();
+    fn full_size(&self) -> XY {
+        let child = self.widget.full_size();
         let margin = if self.line_no { self.line_count_margin_width_for_lower_right(child) } else { 0 };
 
         let res = match self.scroll.direction {
@@ -211,22 +178,35 @@ impl<W: Widget> Widget for WithScroll<W> {
         res
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        debug_assert!(sc.is_finite(), "nesting scrolls not supported");
-        let output_size = if let Some(size) = sc.as_finite() {
-            size
+    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+        let child_full_size = self.widget.full_size();
+        let margin_width = if self.line_no {
+            format!("{}", child_full_size.y).width() as u16 // logarithm? never heard of it.
         } else {
-            error!("nesting scrolls not supported");
-            self.widget.size()
+            0 as u16
         };
 
-        let (margin_width, internal_sc) = self.nested_sc(sc);
-        let _child_size = self.widget.layout(internal_sc);
+        if !self.scroll.direction.free_x() {
+            debug_assert!(child_full_size.x + margin_width as u16 <= output_size.x)
+        }
 
-        debug_assert!(margin_width <= output_size.x);
+        if !self.scroll.direction.free_y() {
+            debug_assert!(child_full_size.y <= output_size.y)
+        }
 
-        self.scroll.follow_anchor(output_size - XY::new(margin_width, 0),
-                                  self.widget.kite());
+        let internal_output_size = XY::new(
+            if self.scroll.direction.free_x() { child_full_size.x } else { output_size.x - margin_width },
+            if self.scroll.direction.free_y() { child_full_size.y } else { output_size.y },
+        );
+
+        let mut internal_visible_rect = visible_rect;
+        internal_visible_rect.pos = self.scroll.offset;
+        internal_visible_rect.size -= XY::new(margin_width, 0);
+
+        self.widget.layout(internal_output_size, internal_visible_rect);
+
+        self.scroll.follow_kite(internal_output_size,
+                                self.widget.kite());
 
         self.last_size = Some(output_size);
 

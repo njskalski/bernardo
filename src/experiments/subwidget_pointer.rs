@@ -174,7 +174,7 @@ mod tests {
                 unimplemented!()
             }
 
-            fn size(&self) -> XY {
+            fn full_size(&self) -> XY {
                 unimplemented!()
             }
 
@@ -210,7 +210,7 @@ mod tests {
                 unimplemented!()
             }
 
-            fn size(&self) -> XY {
+            fn full_size(&self) -> XY {
                 unimplemented!()
             }
 

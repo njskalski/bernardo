@@ -17,7 +17,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::fill_policy::FillPolicy;
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::tree_view::tree_it::TreeIt;
 use crate::widgets::tree_view::tree_view_node::{TreeItFilter, TreeViewNode};
@@ -36,9 +36,6 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key
     // TODO rethink that
     // at this point, highlighted can move (nodes can disappear if the filter throws them away with delay)
     highlighted: usize,
-
-    fill_policy: FillPolicy,
-    last_size: Option<XY>,
 
     //events
     on_miss: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
@@ -80,7 +77,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
             root_node,
             expanded: HashSet::new(),
             highlighted: 0,
-            fill_policy: FillPolicy::MATCH_LAYOUT,
+            fill_policy: SizePolicy::MATCH_LAYOUT,
             last_size: None,
             on_miss: None,
             on_highlighted_changed: None,
@@ -233,32 +230,11 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
         TYPENAME
     }
 
-    fn size(&self) -> XY {
+    fn full_size(&self) -> XY {
         self.size_from_items()
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let mut size = self.size_from_items();
-        debug_assert!(sc.bigger_equal_than(size));
-
-        if let Some(max_x) = sc.x() {
-            if self.fill_policy.fill_x {
-                debug_assert!(size.x <= max_x);
-                size.x = max_x;
-            }
-        }
-
-        if let Some(max_y) = sc.y() {
-            if self.fill_policy.fill_y {
-                debug_assert!(size.y <= max_y);
-                size.y = max_y;
-            }
-        }
-
-        self.last_size = Some(size);
-
-        size
-    }
+    fn layout(&mut self, _output_size: XY, _visible_rect: Rect) {}
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         // debug!("tree_view.on_input {:?}", input_event);

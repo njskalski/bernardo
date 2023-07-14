@@ -23,7 +23,7 @@ use crate::subwidget;
 use crate::w7e::navcomp_provider::{Completion, CompletionsPromise};
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::fill_policy::FillPolicy;
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::editor_widget::completion::msg::CompletionWidgetMsg;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
@@ -58,7 +58,7 @@ impl CompletionWidget {
                                          ListWidget::new()
                                              .with_selection()
                                              .with_show_column_names(false)
-                                             .with_fill_policy(FillPolicy::MATCH_LAYOUTS_WIDTH)
+                                             .with_fill_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
                                              .with_on_hit(|w| {
                                                  w.get_highlighted().map(|c| {
                                                      CompletionWidgetMsg::Selected(c.action.clone()).boxed()
@@ -170,20 +170,18 @@ impl Widget for CompletionWidget {
         self.complex_prelayout();
     }
 
-    fn size(&self) -> XY {
+    fn full_size(&self) -> XY {
         let res = if self.has_completions() {
-            self.list_widget.size()
+            self.list_widget.full_size()
         } else {
-            self.label_widget.size()
+            self.label_widget.full_size()
         };
         debug!("min_size: {}", res);
         res
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let res = self.complex_layout(sc);
-        debug!("has_completions {}, layout {}", self.has_completions(), res);
-        res
+    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+        self.complex_layout(output_size, visible_rect)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

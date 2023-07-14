@@ -41,15 +41,12 @@ impl Widget for NoEditorWidget {
         Self::TYPENAME
     }
 
-    fn size(&self) -> XY {
+    fn full_size(&self) -> XY {
         XY::new(Self::NO_EDIT_TEXT.len() as u16, 3)
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let size = sc.as_finite().unwrap_or_else(|| {
-            error!("non-simple size constratint on expanding widget, using min size");
-            self.size()
-        });
+    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+        let size = output_size;
 
         let mut x = 0;
         if size.x >= Self::NO_EDIT_TEXT.len() as u16 {
@@ -60,7 +57,6 @@ impl Widget for NoEditorWidget {
 
         self.text_pos = XY::new(x, y);
         self.last_size = Some(size);
-        size
     }
 
     fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> { None }

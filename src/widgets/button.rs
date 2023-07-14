@@ -35,23 +35,12 @@ impl Widget for ButtonWidget {
         Self::TYPENAME
     }
 
-    fn size(&self) -> XY {
+    fn full_size(&self) -> XY {
         XY::new((self.text.screen_width() + 2) as u16, 1)
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        debug_assert!(sc.bigger_equal_than(self.size()), "min_size {}, got {}", self.size(), sc);
-
-        let mut size = self.size();
-
-        if let Some(max_x) = sc.x() {
-            if self.fill_x {
-                size.x = max_x;
-            }
-        }
-
-        self.last_size_x = Some(size.x);
-        size
+    fn layout(&mut self, output_size: XY, _visible_rect: Rect) {
+        self.last_size_x = Some(output_size.x);
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

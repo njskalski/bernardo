@@ -19,7 +19,7 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::fill_policy::FillPolicy;
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 use crate::widgets::list_widget::provider::ListItemProvider;
@@ -40,7 +40,7 @@ pub struct ListWidget<Item: ListWidgetItem> {
 
     query: Option<CommonQuery>,
 
-    fill_policy: FillPolicy,
+    fill_policy: SizePolicy,
 
     last_size: Option<XY>,
 }
@@ -181,18 +181,18 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
-    pub fn with_fill_policy(self, fill_policy: FillPolicy) -> Self {
+    pub fn with_fill_policy(self, fill_policy: SizePolicy) -> Self {
         Self {
             fill_policy,
             ..self
         }
     }
 
-    pub fn set_fill_policy(&mut self, fill_policy: FillPolicy) {
+    pub fn set_fill_policy(&mut self, fill_policy: SizePolicy) {
         self.fill_policy = fill_policy;
     }
 
-    pub fn get_fill_policy(&self) -> FillPolicy {
+    pub fn get_fill_policy(&self) -> SizePolicy {
         self.fill_policy
     }
 
@@ -239,19 +239,12 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
         TYPENAME
     }
 
-    fn size(&self) -> XY {
+    fn full_size(&self) -> XY {
         self.full_size_from_items()
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        debug_assert!(sc.bigger_equal_than(self.size()),
-                      "sc: {} self.min_size(): {}",
-                      sc, self.size());
-
-        let res = self.fill_policy.get_size_from_constraints(&sc, self.full_size_from_items());
-        self.last_size = Some(res);
-
-        res
+    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+        self.last_size = Some(output_size);
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

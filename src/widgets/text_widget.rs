@@ -5,6 +5,7 @@ use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::printable::Printable;
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
@@ -55,13 +56,11 @@ impl Widget for TextWidget {
         "TextWidget"
     }
 
-    fn size(&self) -> XY {
+    fn full_size(&self) -> XY {
         self.text_size()
     }
 
-    fn layout(&mut self, _sc: SizeConstraint) -> XY {
-        self.text_size()
-    }
+    fn layout(&mut self, output_size: XY, visible_rect: Rect) {}
 
     fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         None

@@ -35,7 +35,7 @@ pub trait ComplexWidget: Widget + Sized {
 
     fn complex_prelayout(&mut self) {
         self.internal_prelayout();
-        
+
         let layout = self.get_layout();
         layout.prelayout(self);
     }
@@ -91,12 +91,12 @@ pub trait ComplexWidget: Widget + Sized {
     This function automatically assumes you want to consume entire visible space with layout.
     If you want something else, override it. But remember to set display_cache or render will fail.
      */
-    fn complex_layout(&mut self, sc: SizeConstraint) -> XY {
+    fn complex_layout(&mut self, output_size: XY, visible_rect: Rect) {
         let layout = self.get_layout();
-        let layout_res = layout.layout(self, sc);
+        let layout_res = layout.layout(self, SizeConstraint::simple(output_size));
 
         for wwr in layout_res.wwrs.iter() {
-            debug_assert!(sc.bigger_equal_than(wwr.rect().lower_right()));
+            debug_assert!(output_size >= wwr.rect().lower_right());
             debug_assert!(layout_res.total_size >= wwr.rect().lower_right(), "total_size = {}, rect = {}", layout_res.total_size, wwr.rect());
         }
 

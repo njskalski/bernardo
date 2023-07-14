@@ -51,7 +51,7 @@ pub mod tests {
     impl Widget for MockWidget {
         fn id(&self) -> WID { todo!() }
         fn typename(&self) -> &'static str { todo!() }
-        fn size(&self) -> XY { todo!() }
+        fn full_size(&self) -> XY { todo!() }
         fn layout(&mut self, _sc: SizeConstraint) -> XY { todo!() }
         fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> { todo!() }
         fn update(&mut self, _msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> { todo!() }

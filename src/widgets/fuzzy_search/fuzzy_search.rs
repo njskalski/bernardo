@@ -48,8 +48,6 @@ pub struct FuzzySearchWidget {
     on_miss: Option<WidgetAction<Self>>,
     // on_hit is a part of PROVIDER.
 
-    fill_y: bool,
-
     // always greedy on X
     last_size: Option<XY>,
 }
@@ -170,7 +168,7 @@ impl FuzzySearchWidget {
             res.y += local_xy.y;
         }
 
-        let edit_min = self.edit.size();
+        let edit_min = self.edit.full_size();
         res.x = max(res.x, edit_min.x);
         res.y += edit_min.y;
 
@@ -228,40 +226,12 @@ impl Widget for FuzzySearchWidget {
         Self::TYPENAME
     }
 
-    fn size(&self) -> XY {
+    fn full_size(&self) -> XY {
         self.size_from_items()
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let min_size = self.size();
-        debug_assert!(sc.bigger_equal_than(self.size()),
-                      "sc: {} self.min_size(): {}",
-                      sc, min_size);
-
-        let width = sc.x().unwrap_or_else(|| {
-            warn!("fuzzy_search is greedy on width, but no x constraint was provided");
-            min_size.x
-        });
-
-        if let Some(edit_sc) = sc.cut_out_rect(Rect::from_zero(XY::new(width, 1))) {
-            self.edit.layout(edit_sc);
-        } else {
-            error!("not layouting edit - emtpy cut_out_rect empty!")
-        }
-
-        let height: u16 = if let Some(max_y) = sc.y() {
-            if self.fill_y {
-                max_y
-            } else {
-                min_size.y
-            }
-        } else {
-            min_size.y
-        };
-
-        let size = XY::new(width, height);
-        self.last_size = Some(size);
-        size
+    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+        self.last_size = Some(output_size);
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

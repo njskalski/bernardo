@@ -29,7 +29,7 @@ use crate::text::buffer_state::BufferState;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::fill_policy::FillPolicy;
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::big_list::big_list_widget::BigList;
 use crate::widgets::code_results_view::code_results_msg::CodeResultsMsg;
@@ -206,7 +206,7 @@ impl Widget for CodeResultsView {
                     buffer_state_ref,
                 ).with_readonly()
                     .with_ignore_input_altogether()
-                    .with_fill_policy(FillPolicy::MATCH_LAYOUT);
+                    .with_fill_policy(SizePolicy::MATCH_LAYOUT);
 
                 if edit_widget.set_cursors(cursor_set) == false {
                     error!("failed setting cursor set, will not add this editor to list {}", spath);
@@ -230,13 +230,13 @@ impl Widget for CodeResultsView {
         self.complex_prelayout();
     }
 
-    fn size(&self) -> XY {
-        let item_min_size = self.item_list.size();
+    fn full_size(&self) -> XY {
+        let item_min_size = self.item_list.full_size();
         XY::new(max(Self::MIN_WIDTH, item_min_size.x), 1 + item_min_size.y)
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        self.complex_layout(sc)
+    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+        self.complex_layout(output_size, visible_rect)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

@@ -369,13 +369,13 @@ impl Widget for MainView {
         self.complex_prelayout();
     }
 
-    fn size(&self) -> XY {
+    fn full_size(&self) -> XY {
         // TODO delegate to complex_layout?
         Self::MIN_SIZE
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        self.complex_layout(sc)
+    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+        self.complex_layout(output_size, visible_rect)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

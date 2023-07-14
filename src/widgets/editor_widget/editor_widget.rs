@@ -43,7 +43,7 @@ use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_provider::{CompletionAction, NavCompSymbol};
 use crate::widget::any_msg::{AnyMsg, AsAny};
-use crate::widget::fill_policy::FillPolicy;
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::code_results_view::promise_provider::WrappedSymbolUsagesPromise;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
@@ -158,8 +158,8 @@ pub struct EditorWidget {
     // I'd prefer to have "constrain cursors to visible part", but since it's non-trivial, I don't do it now.
     ignore_input_altogether: bool,
 
-    last_size: Option<SizeConstraint>,
-    fill_policy: FillPolicy,
+    last_size: Option<XY>,
+
     // to be constructed in layout step based on HoverSettings
     last_hover_rect: Option<Rect>,
 
@@ -211,7 +211,7 @@ impl EditorWidget {
             state: EditorState::Editing,
             navcomp: None,
             requested_hover: None,
-            fill_policy: FillPolicy::SELF_DETERMINED,
+            fill_policy: SizePolicy::SELF_DETERMINED,
         };
 
         if buffer_named {
@@ -237,7 +237,7 @@ impl EditorWidget {
         }
     }
 
-    pub fn with_fill_policy(self, fill_policy: FillPolicy) -> Self {
+    pub fn with_fill_policy(self, fill_policy: SizePolicy) -> Self {
         Self {
             fill_policy,
             ..self
@@ -1036,7 +1036,7 @@ impl EditorWidget {
         }
     }
 
-    fn layout_hover(&mut self, visible_rect: &Rect, _sc: SizeConstraint) {
+    fn layout_hover(&mut self, visible_rect: Rect) {
         let (hover_settings, hover) = unpack_or!(self.requested_hover.as_mut(), ());
 
         let mid_line = (visible_rect.pos.y + visible_rect.size.y) / 2;
@@ -1140,47 +1140,12 @@ impl Widget for EditorWidget {
         Self::TYPENAME
     }
 
-    fn size(&self) -> XY {
+    fn full_size(&self) -> XY {
         MIN_EDITOR_SIZE
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        let x = if self.fill_policy.fill_x {
-            if let Some(x) = sc.x() {
-                x
-            } else {
-                error!("can't fill unlimited x, using min_size instead");
-                self.size().x
-            }
-        } else {
-            if let Some(rect) = sc.visible_hint() {
-                rect.size.x
-            } else {
-                error!("can't grab size.x from visible_rect, using min_size instead");
-                self.size().x
-            }
-        };
-
-        let y = if self.fill_policy.fill_y {
-            if let Some(y) = sc.y() {
-                y
-            } else {
-                error!("can't fill unlimited y, using min_size instead");
-                self.size().y
-            }
-        } else {
-            if let Some(rect) = sc.visible_hint() {
-                rect.size.y
-            } else {
-                error!("can't grab size.y from visible_rect, using min_size instead");
-                self.size().y
-            }
-        };
-
-        /*
-        Here's some issue: this is one of the "old type"
-         */
-        if self.last_size != Some(sc) {
+    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+        if self.last_size != Some(output_size) {
             debug!("changed size");
 
             if self.requested_hover.is_some() {
@@ -1190,13 +1155,8 @@ impl Widget for EditorWidget {
         }
 
         self.last_hover_rect = None;
-
-        self.last_size = Some(sc);
-        let visible_rect = unpack_or!(sc.visible_hint(), self.size(), "can't layout greedy widget - no visible part");
-
-        self.layout_hover(visible_rect, sc);
-
-        XY::new(x, y)
+        self.last_size = Some(output_size);
+        self.layout_hover(&visible_rect);
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

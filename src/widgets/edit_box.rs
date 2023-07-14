@@ -191,22 +191,12 @@ impl Widget for EditBoxWidget {
         Self::TYPENAME
     }
 
-    fn size(&self) -> XY {
+    fn full_size(&self) -> XY {
         XY::new(self.min_width_op.unwrap_or(Self::MIN_WIDTH), 1)
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        debug_assert!(sc.bigger_equal_than(self.size()));
-
-        let mut x = self.size().x;
-        if let Some(max_x) = sc.x() {
-            if self.fill_x {
-                x = max_x;
-            }
-        }
-
-        self.last_size_x = Some(x);
-        XY::new(x, 1)
+    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+        self.last_size_x = Some(output_size.x);
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
