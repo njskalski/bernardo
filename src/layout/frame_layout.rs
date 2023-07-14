@@ -34,27 +34,37 @@ impl<W: Widget> Layout<W> for FrameLayout<W> {
         self.layout.prelayout(root);
     }
 
-    fn min_size(&self, root: &W) -> XY {
-        self.layout.min_size(root) + self.margins * 2
+    fn exact_size(&self, root: &W, output_size: XY) -> XY {
+        if !(self.margins * 2 >= output_size) {
+            error!("output size not twice margin size");
+            return output_size;
+        }
+
+        self.layout.exact_size(root, output_size - (self.margins * 2)) + self.margins * 2
     }
 
-    fn layout(&self, root: &mut W, sc: SizeConstraint) -> LayoutResult<W> {
-        if let Some(new_sc) = sc.cut_out_margin(self.margins) {
-            let subresp = self.layout.layout(root, new_sc);
+    fn layout(&self, root: &mut W, output_size: XY, visible_rect: Rect) -> LayoutResult<W> {
+        if !(self.margins * 2 >= output_size) {
+            error!("output size not twice margin size");
+            return LayoutResult::new(Vec::default(), output_size);
+        }
+
+        if let Some(visible_subrect) = visible_rect.intersect(&self.sub_rect(output_size).unwrap()) {
+            let new_output_size = output_size - (self.margins * 2);
+            let mut new_visible_rect = visible_subrect;
+            new_visible_rect.pos -= self.margins;
+
+            let subresp = self.layout.layout(root, new_output_size, new_visible_rect);
+
             let wwrs: Vec<WidgetWithRect<W>> = subresp.wwrs.into_iter().map(|wir| {
                 wir.shifted(self.margins)
             }).collect();
 
             LayoutResult::new(wwrs, subresp.total_size + self.margins * 2)
         } else {
-            error!("too small output to render with margins");
+            error!("no visible rect, skipping entire layout");
 
-            if let Some(size) = sc.as_finite() {
-                LayoutResult::new(Vec::default(), size)
-            } else {
-                error!("and we don't have a good size estimation. Returning (1,1).");
-                LayoutResult::new(Vec::default(), XY::new(1, 1))
-            }
+            LayoutResult::new(Vec::default(), output_size)
         }
     }
 }

@@ -1,4 +1,5 @@
 use crate::layout::widget_with_rect::WidgetWithRect;
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
@@ -28,21 +29,14 @@ impl<W: Widget> LayoutResult<W> {
 }
 
 /*
- Layout will SKIP a widget, if it's widget.id() == root.id()!
+ Layout will SKIP a widget, if it's widget.id() == root.id(), that's due to a crazy edge case in complex widget.
  */
 pub trait Layout<W: Widget> {
     fn prelayout(&self, root: &mut W);
 
-    fn min_size(&self, root: &W) -> XY;
+    fn exact_size(&self, root: &W, output_size: XY) -> XY;
 
-    /*
-    Current semantics: returns wwrs that intersect with "SizeConstraint" and have non empty visible
-     intersection. So it does culling and layouting.
-
-     Why culling? Because I need "visible rect" calculation for centering anyways, so it was free.
-     Why not caching? Because contents of widget may change without "update" method call.
-     */
-    fn layout(&self, root: &mut W, sc: SizeConstraint) -> LayoutResult<W>;
+    fn layout(&self, root: &mut W, output_size: XY, visible_rect: Rect) -> LayoutResult<W>;
 
     fn boxed(self) -> Box<dyn Layout<W>> where Self: Sized, Self: 'static {
         Box::new(self)

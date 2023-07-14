@@ -6,7 +6,7 @@ use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
-use crate::widget::fill_policy::SizePolicy;
+use crate::widget::fill_policy::{DeterminedBy, SizePolicy};
 use crate::widget::widget::Widget;
 
 pub struct LeafLayout<W: Widget> {
@@ -33,49 +33,65 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
         widget.prelayout();
     }
 
-    fn min_size(&self, root: &W) -> XY {
-        self.widget.get(root).full_size()
+    fn exact_size(&self, root: &W, output_size: XY) -> XY {
+        let widget = self.widget.get(root);
+        let widget_full_size = widget.full_size();
+
+        let widget_output_size = XY::new(
+            if self.size_policy.x == DeterminedBy::Widget {
+                widget_full_size.x
+            } else {
+                output_size.x
+            },
+            if self.size_policy.y == DeterminedBy::Widget {
+                widget_full_size.y
+            } else {
+                output_size.y
+            },
+        );
+        widget_output_size
     }
 
-    fn layout(&self, root: &mut W, sc: SizeConstraint) -> LayoutResult<W> {
+    fn layout(&self, root: &mut W, output_size: XY, visible_rect: Rect) -> LayoutResult<W> {
+        let widget_output_size = self.exact_size(root, output_size);
+
         let root_id = root.id();
         let root_desc = format!("{:?}", root as &dyn Widget);
         let widget = self.widget.get_mut(root);
         let skip = root_id == widget.id();
 
-        let widget_min_size = widget.full_size();
-        let properly_sized = sc.bigger_equal_than(widget_min_size);
-        let _widget_name = widget.typename();
+        if skip {
+            return LayoutResult::new(vec![], XY::ZERO);
+        }
 
-        if !skip {
-            if properly_sized {
-                let xy = widget.layout(sc);
+        let widget_desc = format!("W{}{}", widget.typename(), widget.id());
+        let widget_full_size = widget.full_size();
 
-                debug_assert!(sc.bigger_equal_than(xy),
-                              "widget {} #{} violated invariant",
-                              widget.typename(), widget.id());
+        if !(widget_full_size <= output_size) {
+            error!("can't fit widget {}, required {} scaled to {} and got max {}", &widget_desc, widget_full_size, widget_output_size, output_size);
+            return LayoutResult::new(vec![], widget_output_size);
+        }
 
-                debug!("leaf layout for {:?}, returning {}", widget.typename(), xy);
+        debug_assert!(widget_output_size <= output_size);
 
-                LayoutResult::new(
-                    vec![WidgetWithRect::new(
-                        self.widget.clone(),
-                        Rect::new(XY::ZERO, xy),
-                        true,
-                    )],
-                    xy)
-            } else {
-                error!("layouting {}: got layout too small (sc: {:?}) to draw widget [{:?}] min_size {}, returning min_size instead, but this will lead to incorrect layouting",
-                    root_desc,
-                    sc,
-                    widget,
-                    widget_min_size);
-                LayoutResult::new(
-                    vec![],
-                    widget_min_size)
-            }
+        if let Some(widget_visible_rect) = visible_rect.cap_at(widget_output_size) {
+            widget.layout(widget_output_size, widget_visible_rect);
+
+            debug!("leaf layout for {}, returning {}", &widget_desc, widget_output_size);
+
+            LayoutResult::new(
+                vec![WidgetWithRect::new(
+                    self.widget.clone(),
+                    Rect::new(XY::ZERO, widget_output_size),
+                    true,
+                )],
+                widget_output_size)
         } else {
-            LayoutResult::new(vec![], XY::ZERO)
+            debug!("leaf layout for {} CULLED, returning {}", &widget_desc, widget_output_size);
+
+            LayoutResult::new(
+                vec![],
+                widget_output_size)
         }
     }
 }

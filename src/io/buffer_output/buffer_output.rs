@@ -12,6 +12,7 @@ use crate::io::buffer_output::buffer_output_styles_iter::BufferStyleIter;
 use crate::io::cell::Cell;
 use crate::io::output::{Metadata, Output};
 use crate::io::style::TextStyle;
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
@@ -20,11 +21,12 @@ pub type BufferOutput = Buffer<Cell>;
 
 impl Output for BufferOutput {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
-        if !self.size_constraint().strictly_bigger_than(pos) {
+        // if !self.size_constraint().strictly_bigger_than(pos) {
+        if pos >= Output::size(self) {
             warn!(
                 "early exit on drawing beyond border (req {}, border {:?})",
                 pos,
-                self.size_constraint()
+                Output::size(self)
             );
             return;
         }
@@ -36,20 +38,16 @@ impl Output for BufferOutput {
         for (idx, grapheme) in text.graphemes(true).enumerate() {
             let shift_x = (idx as u16) + offset;
 
-            match self.size_constraint().x() {
-                Some(max_x) => {
-                    if pos.x + shift_x >= max_x {
-                        break;
-                    }
+            let max_x = Output::size(self).x;
 
-                    if (max_x as usize) - ((pos.x + shift_x) as usize) < grapheme.width() {
-                        debug!("early quit on wide char.");
-                        break;
-                    }
-                }
-                None => {}
+            if pos.x + shift_x >= max_x {
+                break;
             }
 
+            if (max_x as usize) - ((pos.x + shift_x) as usize) < grapheme.width() {
+                debug!("early quit on wide char.");
+                break;
+            }
 
             let xy = pos + XY::new(shift_x as u16, 0);
             self[xy] = Cell::Begin {
@@ -77,10 +75,13 @@ impl Output for BufferOutput {
         Ok(())
     }
 
-    fn size_constraint(&self) -> SizeConstraint {
-        SizeConstraint::simple(self.size())
+    fn size(&self) -> XY {
+        SizedXY::size(self)
     }
 
+    fn visible_rect(&self) -> Rect {
+        Rect::from_zero(Output::size(self))
+    }
 
     #[cfg(test)]
     fn emit_metadata(&mut self, _meta: Metadata) {}
@@ -88,7 +89,7 @@ impl Output for BufferOutput {
 
 impl Debug for BufferOutput {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[BufferOutput {}]", self.size())
+        write!(f, "[BufferOutput {}]", Output::size(self))
     }
 }
 
@@ -104,14 +105,14 @@ impl BufferOutput {
     pub fn lines_iter(&self) -> BufferLinesIter { BufferLinesIter::new(self) }
 
     pub fn get_line(&self, line_idx: u16) -> Option<String> {
-        if line_idx >= self.size().y {
+        if line_idx >= Output::size(self).y {
             return None;
         }
 
         let mut res = String::new();
-        res.reserve(self.size().x as usize);
+        res.reserve(Output::size(self).x as usize);
 
-        for x in 0..self.size().x {
+        for x in 0..Output::size(self).x {
             let pos = XY::new(x, line_idx);
             let cell = &self[pos];
             match cell {
@@ -128,11 +129,12 @@ impl BufferOutput {
 
 impl ToString for BufferOutput {
     fn to_string(&self) -> String {
+        let size = Output::size(self);
         let mut wchujdlugistring = String::new();
-        wchujdlugistring.reserve((self.size().x * self.size().y + 1) as usize);
+        wchujdlugistring.reserve((size.x * size.y + 1) as usize);
 
-        for x in 0..self.size().x {
-            for y in 0..self.size().y {
+        for x in 0..size.x {
+            for y in 0..size.y {
                 let pos = XY::new(x, y);
                 let cell = &self[pos];
                 match cell {

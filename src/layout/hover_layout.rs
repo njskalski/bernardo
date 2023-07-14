@@ -11,7 +11,7 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 
-pub type ChildRectFunc = Box<dyn Fn(SizeConstraint) -> Option<Rect>>;
+pub type ChildRectFunc = Box<dyn Fn(XY, Rect) -> Option<Rect>>;
 
 pub struct HoverLayout<W: Widget> {
     parent: Box<dyn Layout<W>>,
@@ -41,12 +41,12 @@ impl<W: Widget> Layout<W> for HoverLayout<W> {
         self.child.prelayout(root);
     }
 
-    fn min_size(&self, root: &W) -> XY {
-        self.parent.min_size(root)
+    fn exact_size(&self, root: &W, output_size: XY) -> XY {
+        self.parent.exact_size(root, output_size)
     }
 
-    fn layout(&self, root: &mut W, sc: SizeConstraint) -> LayoutResult<W> {
-        let mut result = self.parent.layout(root, sc);
+    fn layout(&self, root: &mut W, output_size: XY, visible_rect: Rect) -> LayoutResult<W> {
+        let mut result = self.parent.layout(root, output_size, visible_rect);
 
         if self.blocking_background {
             for wwr in result.wwrs.iter_mut() {
@@ -54,13 +54,16 @@ impl<W: Widget> Layout<W> for HoverLayout<W> {
             }
         }
 
-        let child_rect_op = (self.child_rect_func)(sc);
+        let child_rect_op = (self.child_rect_func)(output_size, visible_rect);
         if let Some(child_rect) = child_rect_op {
-            if !(sc.bigger_equal_than(child_rect.lower_right())) {
-                error!("not enough space to draw child {} at {}", child_rect, sc);
+            if !(output_size >= child_rect.lower_right()) {
+                error!("not enough space to draw child {} within os {} vsr {}", child_rect, output_size, visible_rect);
             } else {
-                if let Some(new_sc) = sc.cut_out_rect(child_rect) {
-                    let mut partial: Vec<WidgetWithRect<W>> = self.child.layout(root, new_sc).wwrs.into_iter().map(
+                if let Some(child_visible_rect) = visible_rect.intersect(&child_rect) {
+                    let mut child_visible_rect_in_child_space = child_visible_rect;
+                    child_visible_rect_in_child_space.pos -= child_rect.pos;
+
+                    let mut partial: Vec<WidgetWithRect<W>> = self.child.layout(root, child_rect.size, child_visible_rect_in_child_space).wwrs.into_iter().map(
                         |wir| wir.shifted(child_rect.pos)
                     ).collect();
 

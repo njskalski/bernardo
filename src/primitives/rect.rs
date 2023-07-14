@@ -64,6 +64,7 @@ impl Rect {
         self.size.x == 0 || self.size.y == 0
     }
 
+    // TODO change type to NOT take reference, I guess 64 bits is light enough to be copied
     pub fn intersect(&self, other: &Rect) -> Option<Rect> {
         /*
         idea: I sort beginnings and ends by their position.

@@ -11,6 +11,7 @@ use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::output::{FinalOutput, Metadata, Output};
 use crate::io::style::{Effect, TextStyle};
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 
@@ -96,8 +97,12 @@ impl<W: Write> Output for CrosstermOutput<W> {
         buffer.clear()
     }
 
-    fn size_constraint(&self) -> SizeConstraint {
-        SizeConstraint::simple(self.size)
+    fn size(&self) -> XY {
+        self.size
+    }
+
+    fn visible_rect(&self) -> Rect {
+        Rect::from_zero(self.size())
     }
 
 

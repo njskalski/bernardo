@@ -1,6 +1,7 @@
 use log::error;
 
 use crate::layout::layout::{Layout, LayoutResult};
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
@@ -29,26 +30,19 @@ impl EmptyLayout {
 impl<W: Widget> Layout<W> for EmptyLayout {
     fn prelayout(&self, _root: &mut W) {}
 
-    fn min_size(&self, _root: &W) -> XY {
+    fn exact_size(&self, _root: &W, output_size: XY) -> XY {
         self.size.unwrap_or(XY::ZERO)
     }
 
-    fn layout(&self, _root: &mut W, sc: SizeConstraint) -> LayoutResult<W> {
-        let viewport_size: XY = match (sc.as_finite(), self.size) {
-            (Some(sc), Some(size)) => {
-                if sc < size {
-                    error!("layouting EmptyLayout with not enough space!");
-                };
-                sc
+    fn layout(&self, _root: &mut W, output_size: XY, visible_rect: Rect) -> LayoutResult<W> {
+        if let Some(requested_size) = self.size {
+            if !(requested_size < output_size) {
+                error!("requested size {} !< output_size {}", requested_size, output_size);
             }
-            (Some(sc), None) => sc,
-            (None, Some(size)) => size,
-            (None, None) => {
-                error!("requested empty layout size with no size set and no constraint on input. Returning (1,1).");
-                XY::new(1, 1)
-            }
-        };
 
-        LayoutResult::new(Vec::default(), viewport_size)
+            LayoutResult::new(Vec::default(), requested_size)
+        } else {
+            LayoutResult::new(Vec::default(), output_size)
+        }
     }
 }

@@ -87,13 +87,9 @@ pub trait ComplexWidget: Widget + Sized {
         }
     }
 
-    /*
-    This function automatically assumes you want to consume entire visible space with layout.
-    If you want something else, override it. But remember to set display_cache or render will fail.
-     */
     fn complex_layout(&mut self, output_size: XY, visible_rect: Rect) {
         let layout = self.get_layout();
-        let layout_res = layout.layout(self, SizeConstraint::simple(output_size));
+        let layout_res = layout.layout(self, output_size, visible_rect);
 
         for wwr in layout_res.wwrs.iter() {
             debug_assert!(output_size >= wwr.rect().lower_right());
@@ -125,8 +121,6 @@ pub trait ComplexWidget: Widget + Sized {
         };
 
         self.set_display_state(new_state);
-
-        layout_res.total_size
     }
 
     fn complex_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {

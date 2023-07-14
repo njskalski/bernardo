@@ -7,28 +7,33 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::io::output::{Metadata, Output};
 use crate::io::style::TextStyle;
+use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::unpack_or;
 
-// Over output (maybe I'll rename it as super output) is an output that is bigger than original,
+// Over output is an output that is bigger than original,
 // physical or in-memory display. All write operations targeting lines/columns beyond it's borders
 // are to be silently disregarded.
 
 pub struct OverOutput<'a> {
     output: &'a mut dyn Output,
-    size_constraint: SizeConstraint,
+
+    faked_size: XY,
+    real_output_offset: XY,
+
 }
 
 impl<'a> OverOutput<'a> {
     pub fn new(
         output: &'a mut dyn Output,
-        size_constraint: SizeConstraint,
+        faked_size: XY,
+        real_output_offset: XY,
     ) -> Self {
-        // debug!("making overoutput {:?}", size_constraint);
         OverOutput {
             output,
-            size_constraint,
+            faked_size,
+            real_output_offset,
         }
     }
 }
@@ -38,34 +43,28 @@ impl Output for OverOutput<'_> {
     Again, remember, pos is in "widget space", not in space where "size constraint" was created.
      */
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
-        let visible_rect = match self.size_constraint.visible_hint() {
-            None => {
-                debug!("skipping drawing - no visible part");
-                return;
-            }
-            Some(v) => v,
-        };
-
         if text.width() > u16::MAX as usize {
             warn!("got text width that would overflow u16::MAX, not drawing.");
-            // debug!("early exit 0");
+            debug!("early exit 0");
             return;
         }
 
-        if pos.y < visible_rect.pos.y {
-            // debug!("early exit 1");
+        let local_visible_rect = self.output.visible_rect() + self.real_output_offset;
+
+        if pos.y < local_visible_rect.pos.y {
+            debug!("early exit 1");
             return;
         }
         // no analogue exit on x, as something starting left from frame might still overlap with it.
 
-        if pos.y >= visible_rect.lower_right().y {
-            debug!("drawing beyond output, early exit. pos: {} sc: {}", pos, self.size_constraint());
+        if pos.y >= local_visible_rect.lower_right().y {
+            debug!("drawing beyond output, early exit. pos: {} lvr: {}", pos, local_visible_rect);
             return;
         }
 
         let mut x_offset: i32 = 0;
         for grapheme in text.graphemes(true).into_iter() {
-            let x = pos.x as i32 + x_offset - visible_rect.upper_left().x as i32;
+            let x = pos.x as i32 + x_offset - local_visible_rect.upper_left().x as i32;
             if x < 0 {
                 continue;
             }
@@ -75,12 +74,12 @@ impl Output for OverOutput<'_> {
             }
             let x = x as u16;
 
-            if self.output.size_constraint().x().map(|max_x| max_x <= x).unwrap_or(true) {
-                // debug!("early exit 3");
+            if x >= local_visible_rect.lower_right().x {
+                debug!("early exit 3");
                 break;
             }
 
-            let y = pos.y - visible_rect.upper_left().y; // >= 0, tested above and < u16::MAX since no addition.
+            let y = pos.y - local_visible_rect.upper_left().y; // >= 0, tested above and < u16::MAX since no addition.
             let local_pos = XY::new(x as u16, y);
 
             self.output.print_at(local_pos, style, grapheme);
@@ -92,8 +91,13 @@ impl Output for OverOutput<'_> {
         self.output.clear()
     }
 
-    fn size_constraint(&self) -> SizeConstraint {
-        self.size_constraint
+    fn size(&self) -> XY {
+        self.faked_size
+    }
+
+    fn visible_rect(&self) -> Rect {
+        debug_assert!(self.real_output_offset + self.output.size() <= self.faked_size);
+        Rect::new(self.real_output_offset, self.output.size())
     }
 
     #[cfg(test)]
@@ -116,6 +120,6 @@ impl Output for OverOutput<'_> {
 
 impl<'a> Debug for OverOutput<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "( OverOutput sc {:?} over {:?} )", self.size_constraint, self.output)
+        write!(f, "( OverOutput size {} offset {:?} over {:?} )", self.faked_size, self.real_output_offset, self.output)
     }
 }

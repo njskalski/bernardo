@@ -296,19 +296,17 @@ impl SaveFileDialogWidget {
         }
     }
 
-    fn get_child_hover_rect(sc: SizeConstraint) -> Option<Rect> {
-        sc.as_finite().map(|finite_sc| {
-            if finite_sc >= XY::new(10, 8) {
-                let max_size = finite_sc - XY::new(2, 2);
-                let margins = max_size / 10;
-                Some(Rect::new(
-                    margins,
-                    max_size - (margins * 2),
-                ))
-            } else {
-                None
-            }
-        }).flatten()
+    fn get_child_hover_rect(output_size: XY, visible_rect: Rect) -> Option<Rect> {
+        if output_size >= XY::new(10, 8) {
+            let max_size = output_size - XY::new(2, 2);
+            let margins = max_size / 10;
+            Some(Rect::new(
+                margins,
+                max_size - (margins * 2),
+            ))
+        } else {
+            None
+        }
     }
 }
 

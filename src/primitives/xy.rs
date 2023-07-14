@@ -2,7 +2,7 @@ use std::cmp::{min, Ordering};
 use std::fmt;
 use std::fmt::Formatter;
 use std::hash::Hash;
-use std::ops::{Add, AddAssign, Div, Mul, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};
 
 use log::error;
 use serde::{Deserialize, Serialize};
@@ -221,6 +221,12 @@ impl Sub for XY {
                 self.y - other.y
             } else { 0 },
         )
+    }
+}
+
+impl SubAssign for XY {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs
     }
 }
 

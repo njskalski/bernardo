@@ -16,6 +16,11 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
 // const DEFAULT_MARGIN_WIDTH: u16 = 4;
 
+struct LayoutRes {
+    margin_width: u16,
+    size_of_new_output: XY,
+}
+
 pub struct WithScroll<W: Widget> {
     id: WID,
     widget: W,
@@ -24,7 +29,9 @@ pub struct WithScroll<W: Widget> {
 
     // TODO I guess that was for something but I forgot what was that
     fill_non_free_axis: bool,
-    last_size: Option<XY>,
+
+    // margin, size of new output
+    layout_res: Option<LayoutRes>,
 }
 
 impl<W: Widget> WithScroll<W> {
@@ -39,7 +46,7 @@ impl<W: Widget> WithScroll<W> {
             scroll: Scroll::new(scroll_direction),
             line_no: false,
             fill_non_free_axis: true,
-            last_size: None,
+            layout_res: None,
         }
     }
 
@@ -96,15 +103,17 @@ impl<W: Widget> WithScroll<W> {
     }
 
     fn render_line_no(&self, margin_width: u16, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let size = unpack_or!(self.last_size, (), "render before layout");
+        let layout_res = unpack_or!(self.layout_res, (), "render before layout");
         #[cfg(test)]
         {
             output.emit_metadata(Metadata {
                 id: self.id(),
                 typename: self.typename().to_string(),
-                rect: Rect::from_zero(XY::new(margin_width, size.y)),
+                rect: Rect::from_zero(XY::new(margin_width, output.size_constraint().y().unwrap())),
                 focused,
             });
+
+            assert!(false, "unimplemented");
         }
 
         debug_assert!(self.line_no);
@@ -118,7 +127,8 @@ impl<W: Widget> WithScroll<W> {
 
         // let anchor_row = self.widget.anchor().y;
 
-        for idx in 0..size.y {
+        // TODO narrow to visible rect
+        for idx in 0..output.size().y {
             let line_no_base_0 = start_idx + idx;
             let item = format!("{} ", line_no_base_0 + 1);
             let num_digits = item.len() as u16;
@@ -202,15 +212,17 @@ impl<W: Widget> Widget for WithScroll<W> {
         let mut internal_visible_rect = visible_rect;
         internal_visible_rect.pos = self.scroll.offset;
         internal_visible_rect.size -= XY::new(margin_width, 0);
+        // TODO what if it's empty?
 
         self.widget.layout(internal_output_size, internal_visible_rect);
 
         self.scroll.follow_kite(internal_output_size,
                                 self.widget.kite());
 
-        self.last_size = Some(output_size);
-
-        output_size
+        self.layout_res = Some(LayoutRes {
+            margin_width,
+            size_of_new_output: internal_output_size,
+        });
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

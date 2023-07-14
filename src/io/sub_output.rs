@@ -68,9 +68,14 @@ impl Output for SubOutput<'_> {
         Ok(())
     }
 
-    fn size_constraint(&self) -> SizeConstraint {
-        SizeConstraint::simple(self.frame.size)
+    fn size(&self) -> XY {
+        todo!()
     }
+
+    fn visible_rect(&self) -> Rect {
+        todo!()
+    }
+
 
     // #[cfg(test)]
     // fn get_final_position(&self, local_pos: XY) -> Option<XY> {

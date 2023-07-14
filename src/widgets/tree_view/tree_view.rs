@@ -37,6 +37,8 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key
     // at this point, highlighted can move (nodes can disappear if the filter throws them away with delay)
     highlighted: usize,
 
+    last_size: Option<XY>,
+
     //events
     on_miss: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
     on_highlighted_changed: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
@@ -77,7 +79,6 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
             root_node,
             expanded: HashSet::new(),
             highlighted: 0,
-            fill_policy: SizePolicy::MATCH_LAYOUT,
             last_size: None,
             on_miss: None,
             on_highlighted_changed: None,

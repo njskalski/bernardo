@@ -33,6 +33,7 @@ pub trait Widget: 'static {
     fn full_size(&self) -> XY;
 
     // Invariant visible_rect is not empty, and visible_rect.lower_right <= full_size.
+    //  Why? We don't layout invisible stuff.
     fn layout(&mut self, output_size: XY, visible_rect: Rect);
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.

@@ -127,7 +127,7 @@ pub fn run_gladius<
             }
         }
         main_view.prelayout();
-        let output_size = output.size_constraint().as_finite().unwrap();
+        let output_size = output.size();
 
         main_view.layout(output_size, Rect::from_zero(output_size));
         main_view.render(providers.theme(), true, &mut output);

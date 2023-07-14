@@ -61,7 +61,7 @@ pub mod tests {
     impl Layout<MockWidget> for MockLayout {
         fn prelayout(&self, _root: &mut MockWidget) {}
 
-        fn min_size(&self, _root: &MockWidget) -> XY {
+        fn exact_size(&self, _root: &MockWidget) -> XY {
             self.min_size
         }
 

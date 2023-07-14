@@ -22,7 +22,8 @@ pub struct Metadata {
 pub trait Output: Debug {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str);
     fn clear(&mut self) -> Result<(), std::io::Error>;
-    fn size_constraint(&self) -> SizeConstraint;
+    fn size(&self) -> XY;
+    fn visible_rect(&self) -> Rect;
 
     #[cfg(test)]
     fn emit_metadata(&mut self, meta: Metadata);
