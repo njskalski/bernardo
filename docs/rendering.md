@@ -16,6 +16,10 @@ This chapter describes some design choices about rendering that are worth knowin
 - **SizeConstraint** - in order to support scrolling, a widget needs to hear "use as much of that dimension as you want"
   . Therefore, a
   size of **Output** is given with **SizeConstraint**, which allows any of the axis to be unconstrained.
+- **SizePolicy** is a **Widget**'s setting that determines how it will use available space. It can be:
+
+    - self determined (DeterminedBy::Widget)
+    - imposed by layout (DeterminedBy::Layout)
 
 ### More about SizeConstraint
 

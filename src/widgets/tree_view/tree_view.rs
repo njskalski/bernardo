@@ -80,7 +80,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
             root_node,
             expanded: HashSet::new(),
             highlighted: 0,
-            fill_policy: FillPolicy::FILL_BOTH,
+            fill_policy: FillPolicy::MATCH_LAYOUT,
             last_size: None,
             on_miss: None,
             on_highlighted_changed: None,

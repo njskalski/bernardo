@@ -1,4 +1,6 @@
-# Layout
+# Layouting
+
+## Layout
 
 In previous chapters I wrote why Layouts are not Widget. So what are they?
 They are pieces of common code that help to arrange **SubWidgets** within a parent **Widget**.

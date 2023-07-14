@@ -43,7 +43,7 @@ impl ContextBarWidget {
                 .with_selection()
                 .with_provider(Box::new(items))
                 .with_show_column_names(false)
-                .with_fill_policy(FillPolicy::FILL_WIDTH)
+                .with_fill_policy(FillPolicy::MATCH_LAYOUTS_WIDTH)
                 .with_on_hit(|_| {
                     ContextBarWidgetMsg::Hit.someboxed()
                 })

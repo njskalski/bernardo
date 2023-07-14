@@ -20,6 +20,7 @@ pub trait Widget: 'static {
     fn typename(&self) -> &'static str;
 
     // This call is created to pull widget-independent data before size() call.
+    // TODO replace with subscriptions?
     fn prelayout(&mut self) {}
 
     // Size of the view. If the output cannot satisfy it, a replacement is drawn instead, and the

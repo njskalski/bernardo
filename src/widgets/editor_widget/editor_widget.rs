@@ -211,7 +211,7 @@ impl EditorWidget {
             state: EditorState::Editing,
             navcomp: None,
             requested_hover: None,
-            fill_policy: FillPolicy::CONSTRAINED,
+            fill_policy: FillPolicy::SELF_DETERMINED,
         };
 
         if buffer_named {

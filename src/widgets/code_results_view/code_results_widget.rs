@@ -206,7 +206,7 @@ impl Widget for CodeResultsView {
                     buffer_state_ref,
                 ).with_readonly()
                     .with_ignore_input_altogether()
-                    .with_fill_policy(FillPolicy::FILL_BOTH);
+                    .with_fill_policy(FillPolicy::MATCH_LAYOUT);
 
                 if edit_widget.set_cursors(cursor_set) == false {
                     error!("failed setting cursor set, will not add this editor to list {}", spath);

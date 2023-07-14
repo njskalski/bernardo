@@ -11,28 +11,34 @@ use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum DeterminedBy {
+    Widget,
+    Layout,
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct FillPolicy {
     pub fill_x: bool,
     pub fill_y: bool,
 }
 
 impl FillPolicy {
-    pub const CONSTRAINED: FillPolicy = FillPolicy {
+    pub const SELF_DETERMINED: FillPolicy = FillPolicy {
         fill_x: false,
         fill_y: false,
     };
 
-    pub const FILL_WIDTH: FillPolicy = FillPolicy {
+    pub const MATCH_LAYOUTS_WIDTH: FillPolicy = FillPolicy {
         fill_x: true,
         fill_y: false,
     };
 
-    pub const FILL_HEIGHT: FillPolicy = FillPolicy {
+    pub const MATCH_LAYOUTS_HEIGHT: FillPolicy = FillPolicy {
         fill_x: false,
         fill_y: true,
     };
 
-    pub const FILL_BOTH: FillPolicy = FillPolicy {
+    pub const MATCH_LAYOUT: FillPolicy = FillPolicy {
         fill_x: true,
         fill_y: true,
     };
