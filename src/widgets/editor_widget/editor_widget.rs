@@ -477,6 +477,7 @@ impl EditorWidget {
         }
     }
 
+    // TODO add test to reformat
     pub fn reformat(&mut self, buffer: &mut BufferState) -> bool {
         let navcomp = unpack_or!(self.navcomp.as_ref(), false, "can't reformat: navcomp not available");
         let path = unpack_or!(buffer.get_path(), false , "can't reformat: unsaved file");
@@ -494,8 +495,7 @@ impl EditorWidget {
 
             let page_height = self.page_height();
 
-            // TODO re-enable format
-            // let res = buffer.apply_stupid_substitute_messages(self.wid, edits, page_height as usize);
+            let res = buffer.apply_stupid_substitute_messages(self.wid, edits, page_height as usize);
 
             // This theoretically could be optimised out, but maybe it's not worth it, it leads to
             // a new category of bugs if statement above turns out to be false, and it rarely is,
