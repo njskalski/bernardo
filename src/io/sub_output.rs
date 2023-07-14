@@ -7,6 +7,7 @@ use crate::io::output::{Metadata, Output};
 use crate::io::style::{TEXT_STYLE_WHITE_ON_BLACK, TextStyle};
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
+use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 
 pub struct SubOutput<'a> {
@@ -16,13 +17,16 @@ pub struct SubOutput<'a> {
 
 impl<'a> SubOutput<'a> {
     pub fn new(output: &'a mut dyn Output, frame: Rect) -> Self {
-        // TODO add tests if frame is fully contained in Output and write errors to logs if its not.
-
-        debug_assert!(output.size_constraint().bigger_equal_than(frame.lower_right()),
-                      "frame = {}, output.size_constraint() = {}\n, output : {:?}",
-                      frame, output.size_constraint(), output);
+        debug_assert!(frame.lower_right() <= output.size());
+        debug_assert!(output.visible_rect().intersect(&frame).is_some());
 
         SubOutput { output, frame }
+    }
+}
+
+impl SizedXY for SubOutput<'_> {
+    fn size(&self) -> XY {
+        self.frame.size
     }
 }
 
@@ -68,12 +72,8 @@ impl Output for SubOutput<'_> {
         Ok(())
     }
 
-    fn size(&self) -> XY {
-        todo!()
-    }
-
     fn visible_rect(&self) -> Rect {
-        todo!()
+        self.output.visible_rect().intersect(&self.frame).unwrap()
     }
 
 
@@ -100,6 +100,6 @@ impl Output for SubOutput<'_> {
 
 impl Debug for SubOutput<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "<SubOutput sc : {:?} of {:?} >", self.size_constraint(), self.output)
+        write!(f, "<SubOutput rect : {:?} of {:?} >", self.frame, self.output)
     }
 }

@@ -48,7 +48,7 @@ pub fn fill_output(color: Color, output: &mut dyn Output) {
         Effect::None,
     );
 
-    let rect = unpack_or!(output.size_constraint().visible_hint(), ()).clone();
+    let rect = output.visible_rect();
 
     for x in rect.upper_left().x..rect.lower_right().x {
         for y in rect.upper_left().y..rect.lower_right().y {

@@ -103,7 +103,7 @@ impl<W: Widget> WithScroll<W> {
     }
 
     fn render_line_no(&self, margin_width: u16, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let layout_res = unpack_or!(self.layout_res, (), "render before layout");
+        let layout_res = unpack_or!(self.layout_res.as_ref(), (), "render before layout");
         #[cfg(test)]
         {
             output.emit_metadata(Metadata {
@@ -245,18 +245,17 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let parent_size = unpack_or!(self.last_size, (), "render before layout");
-        let (margin_width, new_sc) = self.nested_sc(output.size_constraint());
+        let layout_res = unpack_or!(self.layout_res.as_ref(), (), "render before layout");
 
-        if margin_width > 0 {
-            self.render_line_no(margin_width, theme, focused, output);
+        if layout_res.margin_width > 0 {
+            self.render_line_no(layout_res.margin_width, theme, focused, output);
         }
 
         // This is narrowing the scope to make margin for line_no
         let mut sub_output: Option<SubOutput> = if self.line_no {
-            let shift = XY::new(margin_width, 0);
+            let shift = XY::new(layout_res.margin_width, 0);
             // TODO this should be safe after layout, but I might want to add a no-panic default.
-            let frame = Rect::new(shift, parent_size - shift);
+            let frame = Rect::new(shift, output.size() - shift);
             let suboutput = SubOutput::new(output, frame);
 
             Some(suboutput)
@@ -266,8 +265,10 @@ impl<W: Widget> Widget for WithScroll<W> {
 
         // This is removing one or both constraints to enable scrolling
         let mut over_output = match sub_output.as_mut() {
-            Some(sub_output) => OverOutput::new(sub_output, new_sc),
-            None => OverOutput::new(output, new_sc),
+            Some(sub_output) => OverOutput::new(sub_output,
+                                                layout_res.size_of_new_output,
+                                                self.scroll.offset),
+            None => OverOutput::new(output, layout_res.size_of_new_output, self.scroll.offset),
         };
 
         self.widget.render(theme, focused, &mut over_output);

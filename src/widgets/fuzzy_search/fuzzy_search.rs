@@ -74,7 +74,6 @@ impl FuzzySearchWidget {
             highlighted: 0,
             on_close,
             on_miss: None,
-            fill_y: false,
             last_size: None,
         }
     }
@@ -103,17 +102,6 @@ impl FuzzySearchWidget {
             draw_comment: draw_context_setting,
             ..self
         }
-    }
-
-    pub fn with_fill_y(self) -> Self {
-        Self {
-            fill_y: true,
-            ..self
-        }
-    }
-
-    pub fn set_fill_y(&mut self, greedy_y: bool) {
-        self.fill_y = greedy_y;
     }
 
     pub fn set_draw_comment_setting(&mut self, draw_context_setting: DrawComment) {
@@ -363,7 +351,7 @@ impl Widget for FuzzySearchWidget {
                     query_it.next();
                 }
 
-                if output.size_constraint().x().map(|max_x| x >= max_x).unwrap_or(false) {
+                if x > output.size().x {
                     break;
                 }
             }

@@ -22,6 +22,7 @@ use bernardo::gladius::run_gladius::run_gladius;
 use bernardo::io::crossterm_input::CrosstermInput;
 use bernardo::io::crossterm_output::CrosstermOutput;
 use bernardo::io::output::Output;
+use bernardo::primitives::sized_xy::SizedXY;
 use bernardo::primitives::xy::XY;
 use bernardo::tsw::language_set::LanguageSet;
 use bernardo::tsw::tree_sitter_wrapper::TreeSitterWrapper;
@@ -54,7 +55,7 @@ fn main() {
     let stdout = stdout();
     let output = CrosstermOutput::new(stdout);
 
-    if !output.size_constraint().visible_hint().map(|vr| vr.size > XY::ZERO).unwrap_or(false) {
+    if output.size() == XY::ZERO {
         error!("it seems like the screen has zero size.");
         return;
     }

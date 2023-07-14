@@ -319,8 +319,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
             }
         );
 
-        let sc = output.size_constraint();
-        let visible_rect = unpack_or!(sc.visible_hint(), ());
+        let visible_rect = output.visible_rect();
 
         let primary_style = theme.default_text(focused);
         helpers::fill_output(primary_style.background, output);
@@ -335,13 +334,9 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
                 break;
             }
 
-            // TODO this I think can be skipped
-            match output.size_constraint().y() {
-                Some(y) => if item_idx >= y as usize {
-                    debug!("idx {}, output.size().y {}", item_idx, output.size_constraint());
-                    break;
-                }
-                None => {}
+            if item_idx >= output.visible_rect().lower_right().y as usize {
+                debug!("idx {}, output.visible_rect().y {}", item_idx, output.visible_rect().lower_right().y);
+                break;
             }
 
             let style = if item_idx == self.highlighted {

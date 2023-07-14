@@ -150,6 +150,11 @@ impl EditorHover {
     }
 }
 
+struct LayoutRes {
+    size: XY,
+    visible_rect: Rect,
+}
+
 pub struct EditorWidget {
     wid: WID,
     providers: Providers,
@@ -158,7 +163,7 @@ pub struct EditorWidget {
     // I'd prefer to have "constrain cursors to visible part", but since it's non-trivial, I don't do it now.
     ignore_input_altogether: bool,
 
-    last_size: Option<XY>,
+    layout_res: Option<LayoutRes>,
 
     // to be constructed in layout step based on HoverSettings
     last_hover_rect: Option<Rect>,
@@ -204,14 +209,14 @@ impl EditorWidget {
             providers,
             readonly: false,
             ignore_input_altogether: false,
-            last_size: None,
+            layout_res: None,
             last_hover_rect: None,
             buffer: buffer.clone(),
             kite: XY::ZERO,
             state: EditorState::Editing,
             navcomp: None,
             requested_hover: None,
-            fill_policy: SizePolicy::SELF_DETERMINED,
+
         };
 
         if buffer_named {
@@ -233,13 +238,6 @@ impl EditorWidget {
     pub fn with_readonly(self) -> Self {
         Self {
             readonly: true,
-            ..self
-        }
-    }
-
-    pub fn with_fill_policy(self, fill_policy: SizePolicy) -> Self {
-        Self {
-            fill_policy,
             ..self
         }
     }
@@ -349,11 +347,11 @@ impl EditorWidget {
         let lsp_cursor = unpack_or_e!(StupidCursor::from_real_cursor(buffer, cursor).ok(), None, "failed mapping cursor to lsp-cursor");
         let lsp_cursor_xy = unpack_or_e!(lsp_cursor.to_xy(buffer), None, "lsp cursor beyond XY max");
 
-        let sc = unpack_or!(self.last_size, None, "single_cursor_screen_pos called before first layout");
-        let visible_rect = unpack_or!(sc.visible_hint(), None, "no visible rect - no screen cursor pos");
+        let layout_res = unpack_or!(self.layout_res.as_ref(), None, "single_cursor_screen_pos called before first layout");
+        let visible_rect = layout_res.visible_rect;
 
         if !visible_rect.contains(lsp_cursor_xy) {
-            warn!("cursor seems to be outside visible hint {:?}", sc.visible_hint());
+            warn!("cursor seems to be outside visible hint {:?}", layout_res.visible_rect);
             return Some(CursorScreenPosition {
                 cursor,
                 widget_space: None,
@@ -527,17 +525,9 @@ impl EditorWidget {
     }
 
     pub fn page_height(&self) -> u16 {
-        match self.last_size {
-            Some(sc) => {
-                match sc.visible_hint() {
-                    None => {
-                        error!("requested page_height without screen space, using {} as page_height instead", MIN_EDITOR_SIZE.y);
-                        MIN_EDITOR_SIZE.y
-                    }
-                    Some(xy) => {
-                        xy.size.y
-                    }
-                }
+        match &self.layout_res {
+            Some(layout_res) => {
+                layout_res.visible_rect.size.y
             }
             None => {
                 error!("requested height before layout, using {} as page_height instead", MIN_EDITOR_SIZE.y);
@@ -645,10 +635,9 @@ impl EditorWidget {
             Some(cs) => cs.clone(),
         };
 
-        let sc = output.size_constraint();
-        let visible_rect = unpack_or!(sc.visible_hint(), (), "not visible - not rendering");
+        let visible_rect = output.visible_rect();
 
-        let char_range_op = buffer.char_range(output);
+        let char_range_op = buffer.get_visible_chars_range(output);
         // highlights are actually just code coloring
         let highlights = buffer.highlight(char_range_op.clone());
 
@@ -1069,9 +1058,7 @@ impl EditorWidget {
                 visible_rect.lower_right().y - hover_settings.anchor.y - 1 // there was a drawing, it should be OK.
             };
 
-            let hover_sc = SizeConstraint::simple(XY::new(maxx, maxy));
-
-            let hover_size = hover.get_widget_mut().layout(hover_sc);
+            let hover_size = XY::new(maxx, maxy);
 
             // this says "to the right, but not if that would mean going out of visible rect"
             let pos_x = if hover_size.x + hover_settings.anchor.x > visible_rect.lower_right().x {
@@ -1145,7 +1132,7 @@ impl Widget for EditorWidget {
     }
 
     fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        if self.last_size != Some(output_size) {
+        if self.layout_res.as_ref().map(|x| x.size) != Some(output_size) {
             debug!("changed size");
 
             if self.requested_hover.is_some() {
@@ -1155,8 +1142,11 @@ impl Widget for EditorWidget {
         }
 
         self.last_hover_rect = None;
-        self.last_size = Some(output_size);
-        self.layout_hover(&visible_rect);
+        self.layout_res = Some(LayoutRes {
+            size: output_size,
+            visible_rect,
+        });
+        self.layout_hover(visible_rect);
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

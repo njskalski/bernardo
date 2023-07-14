@@ -7,6 +7,7 @@ use crate::io::cell::Cell;
 use crate::io::style::TextStyle;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
+use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::widget::widget::WID;
 
@@ -19,10 +20,10 @@ pub struct Metadata {
     pub focused: bool,
 }
 
-pub trait Output: Debug {
+pub trait Output: SizedXY + Debug {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str);
     fn clear(&mut self) -> Result<(), std::io::Error>;
-    fn size(&self) -> XY;
+    // fn size(&self) -> XY;
     fn visible_rect(&self) -> Rect;
 
     #[cfg(test)]

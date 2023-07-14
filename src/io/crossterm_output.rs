@@ -13,6 +13,7 @@ use crate::io::output::{FinalOutput, Metadata, Output};
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
+use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 
 pub struct CrosstermOutput<W: Write> {
@@ -72,6 +73,12 @@ impl<W: Write> CrosstermOutput<W> {
     }
 }
 
+impl<W: Write> SizedXY for CrosstermOutput<W> {
+    fn size(&self) -> XY {
+        self.size
+    }
+}
+
 impl<W: Write> Output for CrosstermOutput<W> {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
         let buffer = if self.current_buffer == false {
@@ -97,9 +104,6 @@ impl<W: Write> Output for CrosstermOutput<W> {
         buffer.clear()
     }
 
-    fn size(&self) -> XY {
-        self.size
-    }
 
     fn visible_rect(&self) -> Rect {
         Rect::from_zero(self.size())

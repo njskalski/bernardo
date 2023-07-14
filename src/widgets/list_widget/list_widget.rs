@@ -388,7 +388,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
         }
 
         for (line_idx, item) in self.items().enumerate() {
-            debug!("y+idx = {}, osy = {:?}, item = {:?}", y_offset as usize + line_idx, output.size_constraint().y(), item);
+            debug!("y+idx = {}, osy = {:?}, item = {:?}", y_offset as usize + line_idx, output.size().y, item);
 
             if y_offset as usize + line_idx >= size.y as usize {
                 break;
@@ -411,10 +411,9 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                 // it get's at most "what's left", but not more than it requires
                 let mut column_width = min(Item::get_min_column_width(column_idx), size.x - x_offset);
                 debug_assert!(column_width > 0);
-
-                // TODO implement proper dividing space between columns when fill_policy.fill_x == true
+                
                 // that is unless it's a last cell, then it gets all there is
-                if column_idx + 1 == Item::len_columns() && self.fill_policy.fill_x {
+                if column_idx + 1 == Item::len_columns() {
                     column_width = size.x - x_offset;
                 }
 

@@ -201,18 +201,16 @@ impl MainView {
         None
     }
 
-    fn get_hover_rect(sc: SizeConstraint) -> Option<Rect> {
-        sc.as_finite().map(|finite_sc| {
-            if finite_sc >= XY::new(10, 8) {
-                let margin = finite_sc / 10;
-                let res = Rect::new(margin,
-                                    finite_sc - margin * 2,
-                );
-                Some(res)
-            } else {
-                None
-            }
-        }).flatten()
+    fn get_hover_rect(output_size: XY, visible_rect: Rect) -> Option<Rect> {
+        if output_size >= XY::new(10, 8) {
+            let margin = output_size / 10;
+            let res = Rect::new(margin,
+                                output_size - margin * 2,
+            );
+            Some(res)
+        } else {
+            None
+        }
     }
 
     pub fn new(providers: Providers

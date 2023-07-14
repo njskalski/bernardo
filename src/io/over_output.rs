@@ -9,6 +9,7 @@ use crate::io::output::{Metadata, Output};
 use crate::io::style::TextStyle;
 use crate::primitives::rect::Rect;
 use crate::primitives::size_constraint::SizeConstraint;
+use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::unpack_or;
 
@@ -35,6 +36,12 @@ impl<'a> OverOutput<'a> {
             faked_size,
             real_output_offset,
         }
+    }
+}
+
+impl SizedXY for OverOutput<'_> {
+    fn size(&self) -> XY {
+        self.faked_size
     }
 }
 
@@ -89,10 +96,6 @@ impl Output for OverOutput<'_> {
 
     fn clear(&mut self) -> Result<(), std::io::Error> {
         self.output.clear()
-    }
-
-    fn size(&self) -> XY {
-        self.faked_size
     }
 
     fn visible_rect(&self) -> Rect {

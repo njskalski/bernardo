@@ -22,11 +22,11 @@ pub type BufferOutput = Buffer<Cell>;
 impl Output for BufferOutput {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
         // if !self.size_constraint().strictly_bigger_than(pos) {
-        if pos >= Output::size(self) {
+        if pos >= self.size() {
             warn!(
                 "early exit on drawing beyond border (req {}, border {:?})",
                 pos,
-                Output::size(self)
+                self.size()
             );
             return;
         }
@@ -38,7 +38,7 @@ impl Output for BufferOutput {
         for (idx, grapheme) in text.graphemes(true).enumerate() {
             let shift_x = (idx as u16) + offset;
 
-            let max_x = Output::size(self).x;
+            let max_x = self.size().x;
 
             if pos.x + shift_x >= max_x {
                 break;
@@ -75,12 +75,12 @@ impl Output for BufferOutput {
         Ok(())
     }
 
-    fn size(&self) -> XY {
-        SizedXY::size(self)
-    }
+    // fn size(&self) -> XY {
+    //     SizedXY::size(self)
+    // }
 
     fn visible_rect(&self) -> Rect {
-        Rect::from_zero(Output::size(self))
+        Rect::from_zero(self.size())
     }
 
     #[cfg(test)]
@@ -89,7 +89,7 @@ impl Output for BufferOutput {
 
 impl Debug for BufferOutput {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[BufferOutput {}]", Output::size(self))
+        write!(f, "[BufferOutput {}]", self.size())
     }
 }
 
@@ -105,14 +105,14 @@ impl BufferOutput {
     pub fn lines_iter(&self) -> BufferLinesIter { BufferLinesIter::new(self) }
 
     pub fn get_line(&self, line_idx: u16) -> Option<String> {
-        if line_idx >= Output::size(self).y {
+        if line_idx >= self.size().y {
             return None;
         }
 
         let mut res = String::new();
-        res.reserve(Output::size(self).x as usize);
+        res.reserve(self.size().x as usize);
 
-        for x in 0..Output::size(self).x {
+        for x in 0..self.size().x {
             let pos = XY::new(x, line_idx);
             let cell = &self[pos];
             match cell {
@@ -129,7 +129,7 @@ impl BufferOutput {
 
 impl ToString for BufferOutput {
     fn to_string(&self) -> String {
-        let size = Output::size(self);
+        let size = self.size();
         let mut wchujdlugistring = String::new();
         wchujdlugistring.reserve((size.x * size.y + 1) as usize);
 
