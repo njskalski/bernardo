@@ -7,7 +7,6 @@ use crate::io::cell::Cell;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::unpack_or;

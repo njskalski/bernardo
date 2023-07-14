@@ -14,7 +14,6 @@ use crate::io::output::{Metadata, Output};
 use crate::io::sub_output::SubOutput;
 use crate::primitives::common_edit_msgs::key_to_edit_msg;
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
@@ -301,12 +300,11 @@ impl Widget for FuzzySearchWidget {
 
         #[cfg(test)]
         {
-            let size = unpack_or!(output.size_constraint().visible_hint()).size;
             output.emit_metadata(
                 Metadata {
                     id: self.id,
                     typename: self.typename().to_string(),
-                    rect: Rect::from_zero(size),
+                    rect: Rect::from_zero(output.size()),
                     focused,
                 }
             );

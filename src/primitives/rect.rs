@@ -64,8 +64,7 @@ impl Rect {
         self.size.x == 0 || self.size.y == 0
     }
 
-    // TODO change type to NOT take reference, I guess 64 bits is light enough to be copied
-    pub fn intersect(&self, other: &Rect) -> Option<Rect> {
+    pub fn intersect(&self, other: Rect) -> Option<Rect> {
         /*
         idea: I sort beginnings and ends by their position.
             I require two beginnings before two endings on BOTH axis to have any
@@ -283,13 +282,13 @@ pub mod tests {
     #[test]
     fn rect_intersect_test() {
         assert_eq!(Rect::new(XY::new(48, 36), XY::new(25, 1)).intersect(
-            &Rect::new(XY::ZERO, XY::new(49, 1))
+            Rect::new(XY::ZERO, XY::new(49, 1))
         ), None);
 
         assert_eq!(
             Rect::new(XY::ZERO, XY::new(10, 10),
             ).intersect(
-                &Rect::new(XY::ZERO, XY::new(4, 4))
+                Rect::new(XY::ZERO, XY::new(4, 4))
             ),
             Some(Rect::new(XY::ZERO, XY::new(4, 4)))
         );
@@ -297,7 +296,7 @@ pub mod tests {
         assert_eq!(
             Rect::new(XY::ZERO, XY::new(10, 10),
             ).intersect(
-                &Rect::new(XY::new(10, 10), XY::new(4, 4))
+                Rect::new(XY::new(10, 10), XY::new(4, 4))
             ),
             None,
         );
@@ -305,14 +304,14 @@ pub mod tests {
         assert_eq!(
             Rect::new(XY::ZERO, XY::new(10, 10),
             ).intersect(
-                &Rect::new(XY::new(9, 9), XY::new(4, 4))
+                Rect::new(XY::new(9, 9), XY::new(4, 4))
             ),
             Some(Rect::new(XY::new(9, 9), XY::new(1, 1))),
         );
 
         assert_eq!(
             Rect::new(XY::new(9, 9), XY::new(4, 4)).intersect(
-                &Rect::new(XY::ZERO, XY::new(10, 10))),
+                Rect::new(XY::ZERO, XY::new(10, 10))),
             Some(Rect::new(XY::new(9, 9), XY::new(1, 1))),
         );
 
@@ -332,7 +331,7 @@ pub mod tests {
 
         assert_eq!(
             Rect::new(XY::ZERO, XY::new(10, 6)).intersect(
-                &Rect::new(XY::new(0, 3), XY::new(6, 5))),
+                Rect::new(XY::new(0, 3), XY::new(6, 5))),
             Some(Rect::new(XY::new(0, 3), XY::new(6, 3))),
         );
     }

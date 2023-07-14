@@ -6,8 +6,8 @@ use bernardo::io::buffer_output::buffer_output::BufferOutput;
 use bernardo::io::input_event::InputEvent;
 use bernardo::io::keys::{Key, Keycode};
 use bernardo::io::output::Output;
+use bernardo::primitives::rect::Rect;
 use bernardo::primitives::scroll::ScrollDirection;
-use bernardo::primitives::size_constraint::SizeConstraint;
 use bernardo::primitives::xy::XY;
 use bernardo::widget::any_msg::AnyMsg;
 use bernardo::widget::widget::{get_new_widget_id, WID, Widget};
@@ -53,8 +53,8 @@ impl Widget for ReaderMainWidget {
         XY::new(10, 10)
     }
 
-    fn layout(&mut self, sc: SizeConstraint) -> XY {
-        self.main_display.layout(sc)
+    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+        self.main_display.layout(output_size, visible_rect)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

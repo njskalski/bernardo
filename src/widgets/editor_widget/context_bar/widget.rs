@@ -10,7 +10,6 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::common_edit_msgs::{CommonEditMsg, key_to_edit_msg};
 use crate::primitives::common_query::CommonQuery;
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::subwidget;
 use crate::text::buffer_state::BufferState;

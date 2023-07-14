@@ -23,7 +23,6 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
@@ -275,12 +274,11 @@ impl Widget for CodeResultsView {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         #[cfg(test)]
         {
-            let size = unpack_or!(output.size_constraint().visible_hint()).size;
             output.emit_metadata(
                 Metadata {
                     id: self.wid,
                     typename: self.typename().to_string(),
-                    rect: Rect::from_zero(size),
+                    rect: Rect::from_zero(output.size()),
                     focused,
                 }
             );

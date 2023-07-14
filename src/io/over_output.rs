@@ -8,7 +8,6 @@ use unicode_width::UnicodeWidthStr;
 use crate::io::output::{Metadata, Output};
 use crate::io::style::TextStyle;
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::unpack_or;
@@ -105,10 +104,9 @@ impl Output for OverOutput<'_> {
 
     #[cfg(test)]
     fn emit_metadata(&mut self, mut meta: Metadata) {
-        let visible_rect = unpack_or!(self.size_constraint.visible_hint(), (), "not emiting, no visible part");
-        let upper_left = visible_rect.upper_left();
+        let upper_left = self.visible_rect().upper_left();
 
-        if let Some(intersect_rect) = meta.rect.intersect(visible_rect) {
+        if let Some(intersect_rect) = meta.rect.intersect(self.visible_rect()) {
             // this will give us intersection size
             meta.rect = intersect_rect;
             // but we also need to take account for the offset
@@ -116,7 +114,7 @@ impl Output for OverOutput<'_> {
 
             self.output.emit_metadata(meta);
         } else {
-            debug!("discarding metadata, because i is no intersection: meta.typename {} meta.rect {}, visible_rect {}", meta.typename, meta.rect, visible_rect);
+            debug!("discarding metadata, because i is no intersection: meta.typename {} meta.rect {}, visible_rect {}", meta.typename, meta.rect, self.visible_rect());
         }
     }
 }

@@ -4,7 +4,6 @@ use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::fill_policy::{DeterminedBy, SizePolicy};
 use crate::widget::widget::Widget;

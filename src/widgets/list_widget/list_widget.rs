@@ -15,7 +15,6 @@ use crate::primitives::common_query::CommonQuery;
 use crate::primitives::helpers;
 use crate::primitives::helpers::copy_first_n_columns;
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
@@ -411,7 +410,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                 // it get's at most "what's left", but not more than it requires
                 let mut column_width = min(Item::get_min_column_width(column_idx), size.x - x_offset);
                 debug_assert!(column_width > 0);
-                
+
                 // that is unless it's a last cell, then it gets all there is
                 if column_idx + 1 == Item::len_columns() {
                     column_width = size.x - x_offset;

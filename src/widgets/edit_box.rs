@@ -12,7 +12,6 @@ use crate::io::output::{Metadata, Output};
 use crate::primitives::common_edit_msgs::{CommonEditMsg, key_to_edit_msg};
 use crate::primitives::helpers;
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;

@@ -157,7 +157,7 @@ mod tests {
     use crate::experiments::subwidget_pointer::{SubwidgetPointer, SubwidgetPointerOp};
     use crate::io::input_event::InputEvent;
     use crate::io::output::Output;
-    use crate::primitives::size_constraint::SizeConstraint;
+    use crate::primitives::rect::Rect;
     use crate::primitives::xy::XY;
     use crate::widget::any_msg::AnyMsg;
     use crate::widget::widget::{WID, Widget};
@@ -178,8 +178,8 @@ mod tests {
                 unimplemented!()
             }
 
-            fn layout(&mut self, _sc: SizeConstraint) -> XY {
-                unimplemented!()
+            fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+                todo!()
             }
 
             fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -214,9 +214,10 @@ mod tests {
                 unimplemented!()
             }
 
-            fn layout(&mut self, _sc: SizeConstraint) -> XY {
-                unimplemented!()
+            fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+                todo!()
             }
+
 
             fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
                 unimplemented!()

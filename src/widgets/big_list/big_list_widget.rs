@@ -10,7 +10,6 @@ use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::arrow::Arrow;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll_enum::ScrollEnum;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::subwidget;
 use crate::widget::any_msg::{AnyMsg, AsAny};

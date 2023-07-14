@@ -16,7 +16,6 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::common_query::CommonQuery;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::promise::promise::PromiseState;
 use crate::subwidget;

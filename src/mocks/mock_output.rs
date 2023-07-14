@@ -8,7 +8,8 @@ use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::io::output::{FinalOutput, Metadata, Output};
 use crate::io::style::TextStyle;
 use crate::mocks::meta_frame::MetaOutputFrame;
-use crate::primitives::size_constraint::SizeConstraint;
+use crate::primitives::rect::Rect;
+use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 
 pub struct MockOutput {
@@ -75,7 +76,13 @@ impl MockOutput {
 
 impl Debug for MockOutput {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[MockBuffer front: {} sc: {:?}]", self.which_front, self.buffer_0.size_constraint())
+        write!(f, "[MockBuffer front: {} sc: {:?}]", self.which_front, self.buffer_0.size())
+    }
+}
+
+impl SizedXY for MockOutput {
+    fn size(&self) -> XY {
+        self.buffer_0.size()
     }
 }
 
@@ -90,8 +97,8 @@ impl Output for MockOutput {
         Ok(())
     }
 
-    fn size_constraint(&self) -> SizeConstraint {
-        self.buffer_0.size_constraint()
+    fn visible_rect(&self) -> Rect {
+        Rect::from_zero(self.buffer_0.size())
     }
 
 

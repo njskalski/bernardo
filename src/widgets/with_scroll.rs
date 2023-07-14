@@ -8,7 +8,6 @@ use crate::io::over_output::OverOutput;
 use crate::io::sub_output::SubOutput;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::{Scroll, ScrollDirection};
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
@@ -82,26 +81,6 @@ impl<W: Widget> WithScroll<W> {
         width
     }
 
-    fn line_count_margin_width(&self, sc: SizeConstraint) -> u16 {
-        /*
-        there's a little chicken-egg problem here: to determine width of line_no margin I need to know
-        number of lines of self.widget. At the same time, I need this number to decide on layout.
-
-        So here's what I am going to do: I'll take the lower right of scroll.offset + sc.visible_hint,
-        to determine margin width and add 1, to make it way more likely that it will not change frame-to-frame.
-
-        I *could* use the previous size, but I want "layout" to NOT use previous state.
-         */
-
-        let lower_right = self.scroll.offset +
-            sc.visible_hint().map(|vh| vh.lower_right())
-                .unwrap_or_else(|| {
-                    warn!("layouting scroll without visibility information. Expect bugs.");
-                    XY::ZERO
-                });
-        self.line_count_margin_width_for_lower_right(lower_right)
-    }
-
     fn render_line_no(&self, margin_width: u16, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let layout_res = unpack_or!(self.layout_res.as_ref(), (), "render before layout");
         #[cfg(test)]
@@ -109,7 +88,7 @@ impl<W: Widget> WithScroll<W> {
             output.emit_metadata(Metadata {
                 id: self.id(),
                 typename: self.typename().to_string(),
-                rect: Rect::from_zero(XY::new(margin_width, output.size_constraint().y().unwrap())),
+                rect: Rect::from_zero(XY::new(margin_width, output.size().y)),
                 focused,
             });
 

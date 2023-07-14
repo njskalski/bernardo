@@ -12,7 +12,6 @@ use crate::io::cell::Cell;
 use crate::io::output::{FinalOutput, Metadata, Output};
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 

@@ -10,7 +10,6 @@ use crate::layout::layout::Layout;
 use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::helpers::fill_output;
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::widget::{WID, Widget};
 

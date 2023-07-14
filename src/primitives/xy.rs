@@ -7,8 +7,6 @@ use std::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};
 use log::error;
 use serde::{Deserialize, Serialize};
 
-use crate::primitives::size_constraint::SizeConstraint;
-
 #[derive(Clone, Copy, Debug, Hash, Eq, Serialize, Deserialize, Ord)]
 pub struct XY {
     pub x: u16,
@@ -22,23 +20,7 @@ impl XY {
     pub const fn new(x: u16, y: u16) -> Self {
         XY { x, y }
     }
-
-    pub fn cut(&self, sc: SizeConstraint) -> XY {
-        let mut res = *self;
-
-        match sc.x() {
-            Some(x) => if x < res.x { res.x = x; },
-            _ => {}
-        }
-
-        match sc.y() {
-            Some(y) => if y < res.y { res.y = y; },
-            _ => {}
-        }
-
-        res
-    }
-
+    
     pub fn maybe_minus(&self, other: XY) -> Option<XY> {
         if self.x >= other.x && self.y >= other.y {
             Some(XY::new(self.x - other.x, self.y - other.y))

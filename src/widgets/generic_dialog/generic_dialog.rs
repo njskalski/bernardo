@@ -16,7 +16,6 @@ use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::border::BorderStyle;
 use crate::primitives::printable::Printable;
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::subwidget;
 use crate::widget::any_msg::AnyMsg;

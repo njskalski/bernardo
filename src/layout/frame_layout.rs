@@ -3,7 +3,6 @@ use log::error;
 use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 
@@ -49,7 +48,7 @@ impl<W: Widget> Layout<W> for FrameLayout<W> {
             return LayoutResult::new(Vec::default(), output_size);
         }
 
-        if let Some(visible_subrect) = visible_rect.intersect(&self.sub_rect(output_size).unwrap()) {
+        if let Some(visible_subrect) = visible_rect.intersect(self.sub_rect(output_size).unwrap()) {
             let new_output_size = output_size - (self.margins * 2);
             let mut new_visible_rect = visible_subrect;
             new_visible_rect.pos -= self.margins;

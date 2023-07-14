@@ -5,7 +5,6 @@ use log::{debug, error, warn};
 use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 
@@ -103,7 +102,7 @@ impl<W: Widget> SplitLayout<W> {
 
         for (idx, child_layout) in self.children.iter().enumerate() {
             let rect = &rects[idx];
-            if let Some(visible_rect) = visible_rect.intersect(rect) {
+            if let Some(visible_rect) = visible_rect.intersect(*rect) {
                 let mut visible_rect_in_child_space = visible_rect;
                 visible_rect_in_child_space.pos -= rect.pos;
 

@@ -18,6 +18,8 @@ use bernardo::io::input::Input;
 use bernardo::io::input_event::InputEvent;
 use bernardo::io::keys::Keycode;
 use bernardo::io::output::{FinalOutput, Output};
+use bernardo::primitives::rect::Rect;
+use bernardo::primitives::sized_xy::SizedXY;
 use bernardo::widget::widget::Widget;
 
 use crate::reader_main_widget::ReaderMainWidget;
@@ -91,7 +93,7 @@ fn main() {
                 break;
             }
         }
-        main_view.layout(output.size_constraint());
+        main_view.layout(output.size(), Rect::from_zero(output.size()));
         main_view.render(&theme, true, &mut output);
         match output.end_frame() {
             Ok(_) => {}

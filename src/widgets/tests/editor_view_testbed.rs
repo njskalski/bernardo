@@ -16,7 +16,8 @@ use crate::mocks::editor_interpreter::EditorInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
 use crate::mocks::mock_output::MockOutput;
-use crate::primitives::size_constraint::SizeConstraint;
+use crate::primitives::rect::Rect;
+use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 use crate::widgets::editor_view::editor_view::EditorView;
@@ -43,7 +44,7 @@ impl EditorViewTestbed {
         let (mut output, rcvr) = MockOutput::new(self.size, false, self.theme.clone());
 
         self.editor_view.prelayout();
-        self.editor_view.layout(SizeConstraint::simple(self.size));
+        self.editor_view.layout(output.size(), Rect::from_zero(output.size()));
         self.editor_view.render(&self.theme, true, &mut output);
 
         output.end_frame().unwrap();

@@ -6,7 +6,6 @@ use unicode_width::UnicodeWidthStr;
 use crate::io::output::{Metadata, Output};
 use crate::io::style::{TEXT_STYLE_WHITE_ON_BLACK, TextStyle};
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 
@@ -18,7 +17,7 @@ pub struct SubOutput<'a> {
 impl<'a> SubOutput<'a> {
     pub fn new(output: &'a mut dyn Output, frame: Rect) -> Self {
         debug_assert!(frame.lower_right() <= output.size());
-        debug_assert!(output.visible_rect().intersect(&frame).is_some());
+        debug_assert!(output.visible_rect().intersect(frame).is_some());
 
         SubOutput { output, frame }
     }
@@ -73,7 +72,7 @@ impl Output for SubOutput<'_> {
     }
 
     fn visible_rect(&self) -> Rect {
-        self.output.visible_rect().intersect(&self.frame).unwrap()
+        self.output.visible_rect().intersect(self.frame).unwrap()
     }
 
 

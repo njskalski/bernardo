@@ -6,7 +6,7 @@ pub mod styled_string;
 pub mod xy;
 pub mod helpers;
 pub mod border;
-pub mod size_constraint;
+
 
 mod rope_buffer_state;
 pub mod scroll;

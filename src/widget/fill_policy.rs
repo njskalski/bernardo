@@ -7,7 +7,6 @@ Also, if there is no limit on dimension (scrolling) widget will fall back to "co
 
 use log::debug;
 
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

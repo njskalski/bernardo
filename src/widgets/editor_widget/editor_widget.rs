@@ -31,7 +31,6 @@ use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::helpers;
 use crate::primitives::printable::Printable;
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::primitives::styled_printable::StyledPrintable;
 use crate::primitives::xy::XY;
@@ -603,7 +602,7 @@ impl EditorWidget {
             let width = label.screen_width();
             let old_rect = Rect::new(*pos, XY::new(width, 1));
 
-            if old_rect.intersect(&new_rect).is_some() {
+            if old_rect.intersect(new_rect).is_some() {
                 return false;
             }
         }
@@ -1340,13 +1339,12 @@ impl Widget for EditorWidget {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         #[cfg(test)]
         {
-            let size = unpack_or!(output.size_constraint().visible_hint()).size;
             output.emit_metadata(
                 Metadata {
                     id: self.wid,
                     typename: self.typename().to_string(),
                     // TODO I am not sure of that
-                    rect: Rect::from_zero(size),
+                    rect: Rect::from_zero(output.size()),
                     focused,
                 }
             );

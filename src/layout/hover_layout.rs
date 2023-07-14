@@ -7,7 +7,6 @@ use log::{error, warn};
 use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
-use crate::primitives::size_constraint::SizeConstraint;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 
@@ -59,7 +58,7 @@ impl<W: Widget> Layout<W> for HoverLayout<W> {
             if !(output_size >= child_rect.lower_right()) {
                 error!("not enough space to draw child {} within os {} vsr {}", child_rect, output_size, visible_rect);
             } else {
-                if let Some(child_visible_rect) = visible_rect.intersect(&child_rect) {
+                if let Some(child_visible_rect) = visible_rect.intersect(child_rect) {
                     let mut child_visible_rect_in_child_space = child_visible_rect;
                     child_visible_rect_in_child_space.pos -= child_rect.pos;
 
