@@ -28,6 +28,7 @@ use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
@@ -517,15 +518,15 @@ impl Widget for MainView {
         self.complex_get_focused_mut()
     }
 
-    fn render(&self, theme: &Theme, _focused: bool, output: &mut dyn Output) {
-        self.complex_render(theme, _focused, output)
+    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        self.complex_render(theme, focused, output)
     }
 }
 
 impl ComplexWidget for MainView {
     fn get_layout(&self) -> Box<dyn Layout<Self>> {
-        let left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
-        let right_column = LeafLayout::new(self.get_curr_display_ptr()).boxed();
+        let left_column = LeafLayout::new(subwidget!(Self.tree_widget)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed();
+        let right_column = LeafLayout::new(self.get_curr_display_ptr()).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed();
 
         let bg_layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0),

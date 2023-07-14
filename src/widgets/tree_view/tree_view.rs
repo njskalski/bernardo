@@ -234,7 +234,9 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
         self.size_from_items()
     }
 
-    fn layout(&mut self, _output_size: XY, _visible_rect: Rect) {}
+    fn layout(&mut self, output_size: XY, _visible_rect: Rect) {
+        self.last_size = Some(output_size)
+    }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         // debug!("tree_view.on_input {:?}", input_event);

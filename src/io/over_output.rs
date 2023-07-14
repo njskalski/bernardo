@@ -98,7 +98,7 @@ impl Output for OverOutput<'_> {
     }
 
     fn visible_rect(&self) -> Rect {
-        debug_assert!(self.real_output_offset + self.output.size() <= self.faked_size);
+        debug_assert!(self.real_output_offset + self.output.size() <= self.faked_size, "real_output_offset {}, output {}, faked {}", self.real_output_offset, self.output.size(), self.faked_size);
         Rect::new(self.real_output_offset, self.output.size())
     }
 
