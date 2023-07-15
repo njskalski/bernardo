@@ -78,8 +78,8 @@ impl Output for SubOutput<'_> {
 
         let my_visible_rect_in_parent_space = parent_visible_rect.intersect(self.frame_in_parent_space).unwrap(); // TODO unwrap
 
-        let mut my_visible_space_in_my_space = my_visible_rect_in_parent_space;
-        my_visible_space_in_my_space.pos -= self.frame_in_parent_space.pos;
+        let mut my_visible_space_in_my_space = my_visible_rect_in_parent_space.minus_shift(self.frame_in_parent_space.pos).unwrap();
+        // my_visible_space_in_my_space.pos -= self.frame_in_parent_space.pos;
 
         let res = my_visible_space_in_my_space;
 

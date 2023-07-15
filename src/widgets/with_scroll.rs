@@ -172,6 +172,20 @@ impl<W: Widget> Widget for WithScroll<W> {
         res
     }
 
+    fn size_policy(&self) -> SizePolicy {
+        match self.scroll.direction {
+            ScrollDirection::Horizontal => {
+                SizePolicy::MATCH_LAYOUTS_WIDTH
+            }
+            ScrollDirection::Vertical => {
+                SizePolicy::MATCH_LAYOUTS_HEIGHT
+            }
+            ScrollDirection::Both => {
+                SizePolicy::MATCH_LAYOUT
+            }
+        }
+    }
+
     fn layout(&mut self, output_size: XY, visible_rect: Rect) {
         let child_full_size = self.child_widget.full_size();
         let margin_width = if self.line_no {
@@ -188,9 +202,10 @@ impl<W: Widget> Widget for WithScroll<W> {
             debug_assert!(child_full_size.y <= output_size.y)
         }
 
-        let parent_space_child_x = min(child_full_size.x + margin_width, output_size.x);
-        let parent_space_child_y = min(child_full_size.y, output_size.y);
-        let parent_space_child_output_rect = Rect::new(XY::new(margin_width, 0), XY::new(parent_space_child_x, parent_space_child_y));
+
+        // ok, first let's determine parent_space_child_output_rect. I just take everything that's not a margin, no matter scroll settings. (this might be a TODO)
+        debug_assert!(output_size.x > margin_width);
+        let parent_space_child_output_rect = Rect::new(XY::new(margin_width, 0), XY::new(output_size.x - margin_width, output_size.y));
         self.scroll.follow_kite(parent_space_child_output_rect.size,
                                 self.child_widget.kite());
 
@@ -212,16 +227,16 @@ impl<W: Widget> Widget for WithScroll<W> {
         );
 
         // TODO what if it's empty?
-        let mut child_space_visible_rect = visible_rect.intersect(parent_space_child_output_rect).unwrap();
-        child_space_visible_rect = child_space_visible_rect.minus_shift(self.scroll.offset + XY::new(margin_width, 0)).unwrap();
-        child_space_visible_rect = child_space_visible_rect.capped_at(output_size).unwrap();
+        // let mut child_space_visible_rect = visible_rect.intersect(parent_space_child_output_rect).unwrap();
+        let child_space_visible_rect = visible_rect.shifted(self.scroll.offset);
+        // child_space_visible_rect = child_space_visible_rect.capped_at(child_space_output_size).unwrap();
 
         self.child_widget.layout(child_space_output_size, child_space_visible_rect);
 
-        debug_assert!(parent_space_child_output_rect.lower_right() == output_size,
-                      "parent_space_child_output_rect.lower_right() = {} != {} = output_size, rect {}",
-                      parent_space_child_output_rect.lower_right(), output_size, parent_space_child_output_rect,
-        );
+        // debug_assert!(parent_space_child_output_rect.lower_right() == output_size,
+        //               "parent_space_child_output_rect.lower_right() = {} != {} = output_size, rect {}",
+        //               parent_space_child_output_rect.lower_right(), output_size, parent_space_child_output_rect,
+        // );
 
         self.layout_res = Some(LayoutRes {
             margin_width,
@@ -281,7 +296,7 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn kite(&self) -> XY {
-        // scroll nesting would probably affect that
+        error!("Scroll nesting is unsupported! I should crash on you now!");
         XY::ZERO
     }
 }

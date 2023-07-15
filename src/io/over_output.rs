@@ -39,13 +39,9 @@ impl<'a> OverOutput<'a> {
             local_to_parent,
         };
 
-        debug_assert!(res.validate_has_visible_rect());
+        res.visible_rect();
 
         res
-    }
-
-    fn validate_has_visible_rect(&self) -> bool {
-        self.output.visible_rect().minus_shift(self.local_to_parent).map(|new_visible_rect| new_visible_rect.capped_at(self.size())).flatten().is_some()
     }
 }
 
@@ -111,16 +107,14 @@ impl Output for OverOutput<'_> {
 
     // TODO more tests
     fn visible_rect(&self) -> Rect {
-        debug_assert!(self.validate_has_visible_rect());
-
         let parent_vis_rect = self.output.visible_rect();
 
-        let my_rect = parent_vis_rect.minus_shift(self.local_to_parent).unwrap();
+        let my_rect = parent_vis_rect.shifted(self.local_to_parent);
         let my_rect = my_rect.capped_at(self.size()).unwrap();
 
-        debug_assert!(my_rect.lower_right() <= self.size());
-        debug_assert!(my_rect.shifted(self.local_to_parent).lower_right() <= parent_vis_rect.lower_right());
-        debug_assert!(parent_vis_rect.contains_rect(my_rect.shifted(self.local_to_parent)));
+        // debug_assert!(my_rect.lower_right() <= self.size());
+        // debug_assert!(my_rect.shifted(self.local_to_parent).lower_right() <= parent_vis_rect.lower_right());
+        // debug_assert!(parent_vis_rect.contains_rect(my_rect.shifted(self.local_to_parent)));
 
         my_rect
     }

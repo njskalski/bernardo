@@ -31,9 +31,8 @@ impl Scroll {
             direction,
         }
     }
-
-    // TODO whose output size? Parent or child?
-    pub fn follow_kite(&mut self, output_size: XY, kite: XY) {
+    
+    pub fn follow_kite(&mut self, parent_output_size: XY, kite: XY) {
         let adjust_x = self.direction == ScrollDirection::Horizontal || self.direction == ScrollDirection::Both;
         let adjust_y = self.direction == ScrollDirection::Vertical || self.direction == ScrollDirection::Both;
 
@@ -42,8 +41,8 @@ impl Scroll {
                 self.offset.x = kite.x;
             }
 
-            if kite.x >= (self.offset.x + output_size.x) {
-                let diff = 1 + kite.x - (self.offset.x + output_size.x);
+            if kite.x >= (self.offset.x + parent_output_size.x) {
+                let diff = 1 + kite.x - (self.offset.x + parent_output_size.x);
                 self.offset.x += diff;
             }
         }
@@ -53,8 +52,8 @@ impl Scroll {
                 self.offset.y = kite.y;
             }
 
-            if kite.y >= (self.offset.y + output_size.y) {
-                let diff = 1 + kite.y - (self.offset.y + output_size.y);
+            if kite.y >= (self.offset.y + parent_output_size.y) {
+                let diff = 1 + kite.y - (self.offset.y + parent_output_size.y);
                 self.offset.y += diff;
             }
         }

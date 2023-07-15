@@ -26,9 +26,13 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
 
     fn exact_size(&self, root: &W, output_size: XY) -> XY {
         let widget = self.widget.get(root);
-        let widget_full_size = widget.full_size();
-        let size_policy = widget.size_policy();
 
+        let size_policy = widget.size_policy();
+        if size_policy == SizePolicy::MATCH_LAYOUT {
+            return output_size;
+        }
+
+        let widget_full_size = widget.full_size();
         let widget_output_size = XY::new(
             if size_policy.x == DeterminedBy::Widget {
                 widget_full_size.x
@@ -57,12 +61,12 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
         }
 
         let widget_desc = format!("W{}{}", widget.typename(), widget.id());
-        let widget_full_size = widget.full_size();
-
-        if !(widget_full_size <= output_size) {
-            error!("can't fit widget {}, required {} scaled to {} and got max {}", &widget_desc, widget_full_size, widget_output_size, output_size);
-            return LayoutResult::new(vec![], widget_output_size);
-        }
+        // let widget_full_size = widget.full_size();
+        //
+        // if !(widget_full_size <= output_size) {
+        //     error!("can't fit widget {}, required {} scaled to {} and got max {}", &widget_desc, widget_full_size, widget_output_size, output_size);
+        //     return LayoutResult::new(vec![], widget_output_size);
+        // }
 
         debug_assert!(widget_output_size <= output_size);
 
