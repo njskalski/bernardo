@@ -62,7 +62,7 @@ impl Output for OverOutput<'_> {
             return;
         }
 
-        let local_visible_rect = unpack_or_e!(self.output.visible_rect().minus_shift(self.local_to_parent), (), "no visible rect");
+        let local_visible_rect = self.visible_rect();
 
         if pos.y < local_visible_rect.pos.y {
             debug!("early exit 1");
