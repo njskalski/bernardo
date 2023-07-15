@@ -1080,10 +1080,17 @@ impl EditorWidget {
             }
         };
 
-        if hover_rect.is_none() {
-            self.requested_hover = None;
+        if let Some(hover_rect) = hover_rect {
+            self.last_hover_rect = Some(hover_rect);
+
+            if let Some(parent_space_hover_rect_view) = visible_rect.intersect(hover_rect) {
+                let hover_space_hover_visible_rect = parent_space_hover_rect_view.minus_shift(hover_rect.pos).unwrap(); // TODO
+                hover.get_widget_mut().layout(hover_rect.size, hover_space_hover_visible_rect);
+            } else {
+                error!("no intersection between hover_rect and visible rect");
+            }
         } else {
-            self.last_hover_rect = hover_rect;
+            self.requested_hover = None;
         }
     }
 
