@@ -4,6 +4,7 @@ use crate::io::output::Output;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
 pub struct LayoutRes {
@@ -15,6 +16,7 @@ pub struct MockWidget {
     id: WID,
     pub full_size: XY,
     pub last_layout: Option<LayoutRes>,
+    pub size_policy: SizePolicy,
 }
 
 impl MockWidget {
@@ -23,6 +25,14 @@ impl MockWidget {
             id: get_new_widget_id(),
             full_size,
             last_layout: None,
+            size_policy: SizePolicy::SELF_DETERMINED,
+        }
+    }
+
+    pub fn with_size_policy(self, size_policy: SizePolicy) -> Self {
+        Self {
+            size_policy,
+            ..self
         }
     }
 }
@@ -38,6 +48,10 @@ impl Widget for MockWidget {
 
     fn full_size(&self) -> XY {
         self.full_size
+    }
+
+    fn size_policy(&self) -> SizePolicy {
+        self.size_policy
     }
 
     fn layout(&mut self, output_size: XY, visible_rect: Rect) {

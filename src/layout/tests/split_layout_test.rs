@@ -21,9 +21,9 @@ fn split_layout_test_widget_determined() {
         ],
         Box::new(|parent_widget: &MockComplexWidget| -> Box<dyn Layout<MockComplexWidget>> {
             SplitLayout::new(SplitDirection::Horizontal)
-                .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).with_size_policy(SizePolicy::SELF_DETERMINED).boxed())
-                .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).with_size_policy(SizePolicy::SELF_DETERMINED).boxed())
-                .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).with_size_policy(SizePolicy::SELF_DETERMINED).boxed())
+                .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).boxed())
+                .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).boxed())
+                .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).boxed())
                 .boxed()
         }));
 
@@ -51,15 +51,16 @@ fn split_layout_test_widget_determined() {
 fn split_layout_test_layout_determined() {
     let mut mock_parent_widget = MockComplexWidget::new(
         XY::new(10, 10),
-        vec![MockWidget::new(XY::new(1, 1)),
-             MockWidget::new(XY::new(1, 1)),
-             MockWidget::new(XY::new(1, 1)),
+        vec![
+            MockWidget::new(XY::new(1, 1)).with_size_policy(SizePolicy::MATCH_LAYOUT),
+            MockWidget::new(XY::new(1, 1)).with_size_policy(SizePolicy::MATCH_LAYOUT),
+            MockWidget::new(XY::new(1, 1)).with_size_policy(SizePolicy::MATCH_LAYOUT),
         ],
         Box::new(|parent_widget: &MockComplexWidget| -> Box<dyn Layout<MockComplexWidget>> {
             SplitLayout::new(SplitDirection::Horizontal)
-                .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed())
-                .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed())
-                .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed())
+                .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).boxed())
+                .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).boxed())
+                .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).boxed())
                 .boxed()
         }));
 

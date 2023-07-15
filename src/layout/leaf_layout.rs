@@ -10,19 +10,11 @@ use crate::widget::widget::Widget;
 
 pub struct LeafLayout<W: Widget> {
     widget: SubwidgetPointer<W>,
-    size_policy: SizePolicy,
 }
 
 impl<W: Widget> LeafLayout<W> {
     pub fn new(widget: SubwidgetPointer<W>) -> Self {
-        LeafLayout { widget, size_policy: SizePolicy::default() }
-    }
-
-    pub fn with_size_policy(self, size_policy: SizePolicy) -> Self {
-        Self {
-            size_policy,
-            ..self
-        }
+        LeafLayout { widget }
     }
 }
 
@@ -35,14 +27,15 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
     fn exact_size(&self, root: &W, output_size: XY) -> XY {
         let widget = self.widget.get(root);
         let widget_full_size = widget.full_size();
+        let size_policy = widget.size_policy();
 
         let widget_output_size = XY::new(
-            if self.size_policy.x == DeterminedBy::Widget {
+            if size_policy.x == DeterminedBy::Widget {
                 widget_full_size.x
             } else {
                 output_size.x
             },
-            if self.size_policy.y == DeterminedBy::Widget {
+            if size_policy.y == DeterminedBy::Widget {
                 widget_full_size.y
             } else {
                 output_size.y

@@ -525,8 +525,8 @@ impl Widget for MainView {
 
 impl ComplexWidget for MainView {
     fn get_layout(&self) -> Box<dyn Layout<Self>> {
-        let left_column = LeafLayout::new(subwidget!(Self.tree_widget)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed();
-        let right_column = LeafLayout::new(self.get_curr_display_ptr()).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed();
+        let left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
+        let right_column = LeafLayout::new(self.get_curr_display_ptr()).boxed();
 
         let bg_layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0),

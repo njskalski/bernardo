@@ -476,17 +476,17 @@ impl Widget for EditorView {
 
 impl ComplexWidget for EditorView {
     fn get_layout(&self) -> Box<dyn Layout<Self>> {
-        let editor_layout = LeafLayout::new(subwidget!(Self.editor)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed();
-        let find_text_layout = LeafLayout::new(subwidget!(Self.find_label)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed();
-        let find_box_layout = LeafLayout::new(subwidget!(Self.find_box)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed();
+        let editor_layout = LeafLayout::new(subwidget!(Self.editor)).boxed();
+        let find_text_layout = LeafLayout::new(subwidget!(Self.find_label)).boxed();
+        let find_box_layout = LeafLayout::new(subwidget!(Self.find_box)).boxed();
         let find_layout =
             SplitLayout::new(SplitDirection::Horizontal)
                 .with(SplitRule::Fixed(PATTERN.width().try_into().unwrap()), find_text_layout)
                 .with(SplitRule::Proportional(1.0), find_box_layout)
                 .boxed();
 
-        let replace_text_layout = LeafLayout::new(subwidget!(Self.replace_label)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed();
-        let replace_box_layout = LeafLayout::new(subwidget!(Self.replace_box)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed();
+        let replace_text_layout = LeafLayout::new(subwidget!(Self.replace_label)).boxed();
+        let replace_box_layout = LeafLayout::new(subwidget!(Self.replace_box)).boxed();
         let replace_layout =
             SplitLayout::new(SplitDirection::Horizontal)
                 .with(SplitRule::Fixed(REPLACE.width().try_into().unwrap()), replace_text_layout)
@@ -522,7 +522,7 @@ impl ComplexWidget for EditorView {
                 Box::new(|s: &mut Self| {
                     s.hover_dialog.as_mut().unwrap()
                 }),
-            )).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed();
+            )).boxed();
 
             HoverLayout::new(background,
                              hover,

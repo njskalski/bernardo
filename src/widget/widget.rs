@@ -7,6 +7,7 @@ use crate::io::output::Output;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
+use crate::widget::fill_policy::SizePolicy;
 
 // this corresponds to message to Parent.
 pub type WidgetAction<W> = fn(&W) -> Option<Box<dyn AnyMsg>>;
@@ -31,8 +32,12 @@ pub trait Widget: 'static {
     // need to be" (if it's slow, we'll be caching *after* profiling).
     fn full_size(&self) -> XY;
 
-    // Invariant visible_rect is not empty, and visible_rect.lower_right <= full_size.
-    //  Why? We don't layout invisible stuff.
+    // This is information to layout on how the Widget wants to be drawn. It's completely optional
+    fn size_policy(&self) -> SizePolicy { SizePolicy::SELF_DETERMINED }
+
+    // Invariants:
+    // - visible_rect is not empty and not degraded (we don't layout invisible stuff)
+    // - full_size <= output_size (if we can't satisfy requirement, we don't draw)
     fn layout(&mut self, output_size: XY, visible_rect: Rect);
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.
