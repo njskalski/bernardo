@@ -49,10 +49,17 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
     }
 
     fn layout(&self, root: &mut W, output_size: XY, visible_rect: Rect) -> LayoutResult<W> {
-        let widget_output_size = self.exact_size(root, output_size);
-
         let root_id = root.id();
         let root_desc = format!("{:?}", root as &dyn Widget);
+
+        let widget_desc = {
+            let widget = self.widget.get(root);
+            format!("{:?}", widget)
+        };
+
+        let widget_output_size = self.exact_size(root, output_size);
+        debug_assert!(widget_output_size <= output_size);
+
         let widget = self.widget.get_mut(root);
         let skip = root_id == widget.id();
 
@@ -68,7 +75,6 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
         //     return LayoutResult::new(vec![], widget_output_size);
         // }
 
-        debug_assert!(widget_output_size <= output_size);
 
         if let Some(widget_visible_rect) = visible_rect.capped_at(widget_output_size) {
             widget.layout(widget_output_size, widget_visible_rect);
