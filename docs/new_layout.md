@@ -54,12 +54,41 @@ That's it. So hovers and culling.
 - Nothing changes in Scroll
 - Nothing changes in Lists
 
-Let's discuss how to implement Option2
+I went with this, and here are the issues I have found:
 
-1) change size to full_size()
-2) move fill policy from widget to Layout's setting (LeafLayout and SplitLayout are enough)
-3) change Layout signature from sc to pair (your decided size, your visible part != none)
+I moved SizePolicy to Layout, and now I don't know how to implement WithScroll that acts like a widget.
+Why? Well I have to decide FullSize of WithScroll not knowing "how much space is available".
 
-Maybe I can throw away "SizeConstraint" totally? Because if you think about it,
-the only place it's used is for scrolling. And if I have "full_size" already, scroll
-will give the widget the full_size-d output anyway. 
+What would happen if (again) I'd add return value to widget "here is your max, give me your size", and move the ...
+ahh, I'd get "unbounded" issue again - how can I limit the widget not knowing it's size. FUCK.
+
+So there is a solution, Widget can say "as much as possible" in their full_size(). How would that work:
+Widget returns "potentially unbounded" full size. Layout decides "this is your quota" and sends the info back to widget.
+
+But that's the problem back again: if widget tells me "as much as possible" and I have scroll, I can't give it back
+"ok, this is your quota", because there is no limit.
+
+One of the parties have to decide AHEAD of time their size. The information flows from the TOP, from the Layout,
+because only screen size is known.
+
+Widget has to know it's full size. Now how do WithScroll/Editor knows "what's my desired size".
+If I do full expensive calculation of true size of widget within WithScroll and Editor, would that
+solve the issue?
+No. WithScroll would not know what to communicate upwards. It could easily say "too much" and get replacement
+drawn. I could handle this widget separately, but that's a disaster.
+
+I could also remake scroll into a stateful layout. The layout has the information WithScroll needs.
+
+Wait, again if I tell widget "give me your size given this limit" and it chooses to use everything,
+I do have the information I need by the time I create an output. Ah, but I can't communicate the limit to widget
+if I have a scroll, because scroll means I have no limit.
+So letting widget choose it's size given "constraint" implies the hell I just removed.
+
+OK, options:
+
+1) WithScroll becomes a Layout
+2) Widget returns a PAIR (my true full size, my preference for alignment)
+
+Can we decide based on that?
+We can scale up Editor and Scroll and List to whatever layout can do.
+Scroll can ask widget below for true size, and ignore preference... YES. This can fkn work.

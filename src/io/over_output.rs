@@ -5,12 +5,12 @@ use log::warn;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use crate::{unpack_or, unpack_or_e};
 use crate::io::output::{Metadata, Output};
 use crate::io::style::TextStyle;
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
-use crate::unpack_or;
 
 // Over output is an output that is bigger than original,
 // physical or in-memory display. All write operations targeting lines/columns beyond it's borders
@@ -66,7 +66,7 @@ impl Output for OverOutput<'_> {
             return;
         }
 
-        let local_visible_rect = self.output.visible_rect() + self.local_to_parent;
+        let local_visible_rect = unpack_or_e!(self.output.visible_rect().minus_shift(self.local_to_parent), (), "no visible rect");
 
         if pos.y < local_visible_rect.pos.y {
             debug!("early exit 1");
