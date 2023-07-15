@@ -1126,16 +1126,11 @@ impl Widget for EditorWidget {
         Self::TYPENAME
     }
 
+    fn size_policy(&self) -> SizePolicy {
+        SizePolicy::MATCH_LAYOUT
+    }
+
     fn full_size(&self) -> XY {
-
-        // match self.buffer.lock() {
-        //     Some(buffer_lock) => {
-        //         buffer_lock.get
-        //
-        //     }
-        //     None => {}
-        // }
-
         MIN_EDITOR_SIZE
     }
 

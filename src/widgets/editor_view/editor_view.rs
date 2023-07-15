@@ -317,6 +317,10 @@ impl Widget for EditorView {
         self.complex_prelayout();
     }
 
+    fn size_policy(&self) -> SizePolicy {
+        SizePolicy::MATCH_LAYOUT
+    }
+
     fn full_size(&self) -> XY {
         XY::new(10, 3) // TODO completely arbitrary
     }
