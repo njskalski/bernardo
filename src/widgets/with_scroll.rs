@@ -91,8 +91,6 @@ impl<W: Widget> WithScroll<W> {
                 rect: Rect::from_zero(XY::new(margin_width, output.size().y)),
                 focused,
             });
-
-            assert!(false, "unimplemented");
         }
 
         debug_assert!(self.line_no);
@@ -108,7 +106,10 @@ impl<W: Widget> WithScroll<W> {
             let line_no_base_0 = start_idx + idx;
             let item = format!("{}", line_no_base_0 + 1);
             let num_digits = item.len() as u16;
-            let offset = margin_width - num_digits;
+            let offset = if num_digits <= margin_width { margin_width - num_digits } else {
+                error!("num_digits > margin_width, hardcoding safe fix");
+                0
+            };
 
             // let style = if line_no_base_0 == anchor_row {
             //     style.with_background(theme.ui.cursors.background)
@@ -131,7 +132,7 @@ impl<W: Widget> WithScroll<W> {
     }
 
     fn get_margin_width_for_size(size: XY) -> u16 {
-        format!("{}", size.y).width() as u16
+        format!("{}", size.y).width() as u16 + 2 // TODO this is a dirty fix
     }
 }
 
