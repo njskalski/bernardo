@@ -13,89 +13,94 @@ This chapter describes some design choices about rendering that are worth knowin
       requires more than one column to be drawn".  
       There are some characters that are wider than one column even using monospace font, and in the
       beginning of this project I was ambitious enough to support them.
-- **SizeConstraint** - in order to support scrolling, a widget needs to hear "use as much of that dimension as you want"
-  . Therefore, a
-  size of **Output** is given with **SizeConstraint**, which allows any of the axis to be unconstrained.
-- **SizePolicy** is a **Widget**'s setting that determines how it will use available space. It can be:
+- **visible_rect** is an argument showing up in multiple function, used for rendering optimisation. It's always
+  non-empty.
+- **SizePolicy** is a **Widget**'s setting that determines how it will use available space. For each axis (X, Y):
 
     - self determined (DeterminedBy::Widget)
     - imposed by layout (DeterminedBy::Layout)
 
-### More about SizeConstraint
-
-Of course there is no infinite arrays in memory, draws beyond what can be seen result in no-ops. Nevertheless, I try
-to optimise them out providing ```.visible_hint()``` method, that retuns a Rect corresponding to "actual surface
-underlying this Output", but translated to **Widget**'s coordinate space.
-It's also "abused" sometimes for cases where no good solution in infinite space exists. An example of such situation
-is "NoEditorWidget" which draws a centered "no editor loaded" message. In order to center the message, a proper size
-limit needs to exist, so ```.visible_hint()``` is used.
-
 ## Basics
 
-An entry point to a widget rendering is obviously
+The size of Widget is negotiated between it's and Parent Widget usually with help of Layouts, but not necessarily.
+
+The long story short is that Widget has two options:
+
+1) it can either say "whatever, I'll accept any size to render" OR
+2) it has to decide "my full size" without knowing any limits.
+
+If requested "full size" is beyond what is possible to draw in current frame, Widget will NOT be drawn, and a
+replacement will be drawn instead. Most of the time, Widgets will either declare "whatever" or be covered with "
+scrolls", enabling any size they desire.
+
+### Full cycle
+
+Cycle of drawing of widget is multiple calls:
+
+1) First, we call
+
+```rust
+fn prelaout(&mut self)
+```
+
+This is a call which widgets use to pull data from sources other than message system. I am still debating if I don't
+want to move to "subscription" model like in Elm / PureScript.
+
+2) Most of the times
+
+```rust
+fn size_policy(&self) -> SizePolicy
+```
+
+is consulted. If it says "use whatever layout decided" then step nr 3 doesn't happen. Otherwise (on at least one axis)
+it does.
+
+3) Most of the times (but not always)
+
+```rust
+fn full_size(&self) -> XY
+```
+
+is called. This call is supposed to return A FULL SIZE of the Widget. Not a minimal size, not a maximal size, but "
+imagine there is no limits, how much would you use" size. There is no way to inform Widget ahead of time "what is the
+limit" ahead of that call (there is a very good reason for that in [here](braindumps/history_of_new_layout.md), but long
+story short,
+lifting that requirement is a can of worms it took me hours to clean up). If this is called, most likely widget will be
+acomodated with a Scroll, so its wishes are met no matter what they are.
+
+4) Then (always), layout is called
+
+```rust
+fn layout(&mut self, output_size: XY, visible_rect: Rect);
+```
+
+When it's called, one of the two things are guaranteed: either Widget declared "whatever size" via ```size_policy``` OR
+```output_size``` is at least as big as ```full_size()```.
+Furthermore, visible_rect is not degenerated, that is - it's at least 1 cell big. We do NOT layout/render widgets, that
+will not be visible.
+
+This is the call, where Wideget is supposed to do all the calculations before rendering. It's NOT supposed to change
+anything else, but I can't enforce that.
+
+We are not interested in any results of Layout. Widget that was called to Layout will be drawn. It cannot change the
+contract it communicated in steps 2 and 3 at this point.
+
+```visible_rect``` can be used for such thing as "cenering the label", but really - shouldn't.
+
+5) An entry point to a widget rendering is obviously
 
 ```rust
 fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output);
 ```
 
+Output carries the parameters of ```size()``` and ```visible_rect``` that are guaranteed to be identical to ones
+in ```layout``` call.
+
 As you probably noticed, there is no "position" parameter. That's because all widgets are drawn in their own coordinate
-spaces, that spans from (0, 0) to ```output.size_constraint()```.
+spaces, that spans from (0, 0) to ```output.size()```.
 This softly enforces the rule "widget cannot draw beyond it's allocated part of the screen".
-The upper limits are enforced dynamically, but it is an error to draw beyond ```output.size_constraint()```, and in
-debug mode
-Bernardo will assert it.
-
-But how this allocation is decided? Well, before render is called, few other things happen.
-
-## Layouting: size() and layout()
-
-### TL;DR
-
-**Widgets** tell how big they are.  
-In a two-step negotiaion process:
-
-- first they say "this is how much space I need to be fully drawn"
-- in second step "ok, then within this budget, that's how much I want"
-
-Decision of "how to use budget" is made by **Widget**  
-Size of the budget (**SizeConstraint**) is decided by parent **Widget**.
-
-That's it. Things can be simple. In your face W3C!
-
-### Proper description
-
-```rust 
-fn size(&self) -> XY;
-```
-
-Tells the full size of the widget, based on all available information at the time of call. Widgets **should not** return
-a portion of their full size and implement scrolling themselves. Widgets **should** return full size, and refuse to
-render in case there's not enough space, to force programmer to use proper scrolling wherever necessary.
-
-Guarantees:
-
-- called each frame before layout()
-
-```rust 
-fn layout(&mut self, sc: SizeConstraint) -> XY;
-```
-
-This method allows **Widget** to prepare for drawing (hence the ```&mut```) and returns information "how much space
-the **Widget** will use in this draw, under given constraint".
-
-Widgets cannot be infinite, hence XY as return type. Reason: scrolling.
-
-Widgets themselves choose the way they use the space - some will decide to use "as much as possible", while other will
-constrain themselves. Some will offer user a choice of policy via ```FillPolicy``` typed parameter.
-
-Guarantees:
-
-- SizeConstraint >= self.size()
-- called each frame before render()
-
-Requirements:
-
-- return value <= SizeConstraint
+The upper limits are enforced dynamically, but it is an error to draw beyond ```output.size()```, and in
+debug mode Bernardo will assert it.
 
 ## Scrolling
 
@@ -110,16 +115,12 @@ How to think about it: imagine you are kite surfing. Kite is the opposite of anc
 Widget can tell "of all the things rendered, this one pixel is the most important". A scroll is supposed to make "least
 effort move to accomodate for that".
 
-A ```WithScroll<W: Widget>``` renders ```W``` in *infinite* output, and then shows a finite window of it. A window
+A ```WithScroll<W: Widget>``` renders ```W``` in "as much space as needed" output, and then shows a finite window of it.
+A window
 moves as little as possible from it's previous position to a new one in such the direction, that ```W.kite()``` is
-included in that window.
+always included in that window.
 
-What is kite? Usually some cursor. If you want to scroll around the file, you have to move the cursor. But "that's
-destructive". Don't worry, attention tree got your back.
-
-Requirements:
-
-- self.kite() <= self.layout(...)
+What is kite? Usually some cursor. If you want to scroll around the file, you have to move the cursor.
 
 ## TODO
 
