@@ -32,6 +32,7 @@ impl Scroll {
         }
     }
 
+    // TODO whose output size? Parent or child?
     pub fn follow_kite(&mut self, output_size: XY, kite: XY) {
         let adjust_x = self.direction == ScrollDirection::Horizontal || self.direction == ScrollDirection::Both;
         let adjust_y = self.direction == ScrollDirection::Vertical || self.direction == ScrollDirection::Both;

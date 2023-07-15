@@ -20,7 +20,8 @@ use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
 struct LayoutRes {
     margin_width: u16,
-    size_of_new_output: XY,
+    parent_space_child_output_rect: Rect,
+    child_space_visible_rect: Rect,
 }
 
 pub struct WithScroll<W: Widget> {
@@ -118,10 +119,7 @@ impl<W: Widget> WithScroll<W> {
             theme.ui.header.half()
         }.with_background(theme.default_text(focused).background);
 
-        // let anchor_row = self.widget.anchor().y;
-
-        // TODO narrow to visible rect
-        for idx in 0..output.size().y {
+        for idx in output.visible_rect().pos.y..output.visible_rect().lower_right().y {
             let line_no_base_0 = start_idx + idx;
             let item = format!("{} ", line_no_base_0 + 1);
             let num_digits = item.len() as u16;
@@ -204,7 +202,7 @@ impl<W: Widget> Widget for WithScroll<W> {
                 min(child_full_size.x, output_size.x - margin_width)
             }
             (DeterminedBy::Layout, true) => {
-                max(output_size.x, child_full_size.x)
+                max(output_size.x - margin_width, child_full_size.x)
             }
             (DeterminedBy::Layout, false) => {
                 debug_assert!(child_full_size.x + margin_width <= output_size.x);
@@ -227,22 +225,26 @@ impl<W: Widget> Widget for WithScroll<W> {
             }
         };
 
-        let internal_output_size = XY::new(x, y);
+        let parent_space_child_output_rect = Rect::new(XY::new(margin_width, 0), XY::new(x, y));
 
-        let mut internal_visible_rect = visible_rect;
-        internal_visible_rect.pos = self.scroll.offset;
-        internal_visible_rect.size -= XY::new(margin_width, 0);
         // TODO what if it's empty?
+        let mut child_space_visible_rect = visible_rect.intersect(parent_space_child_output_rect).unwrap();
+        child_space_visible_rect = child_space_visible_rect.minus_shift(self.scroll.offset + XY::new(margin_width, 0)).unwrap();
 
-        // self.child_widget.layout(internal_output_size, internal_visible_rect);
-        self.child_widget.layout(internal_output_size, Rect::from_zero(internal_output_size));
+        self.child_widget.layout(parent_space_child_output_rect.size, child_space_visible_rect);
 
-        self.scroll.follow_kite(internal_output_size,
+        self.scroll.follow_kite(parent_space_child_output_rect.size,
                                 self.child_widget.kite());
+
+        debug_assert!(parent_space_child_output_rect.lower_right() == output_size,
+                      "parent_space_child_output_rect.lower_right() = {} != {} = output_size, rect {}",
+                      parent_space_child_output_rect.lower_right(), output_size, parent_space_child_output_rect,
+        );
 
         self.layout_res = Some(LayoutRes {
             margin_width,
-            size_of_new_output: internal_output_size,
+            parent_space_child_output_rect,
+            child_space_visible_rect,
         });
     }
 
@@ -272,24 +274,24 @@ impl<W: Widget> Widget for WithScroll<W> {
             self.render_line_no(layout_res.margin_width, theme, focused, output);
         }
 
-        // This is narrowing the scope to make margin for line_no
-        let mut sub_output: Option<SubOutput> = if self.line_no {
-            let shift = XY::new(layout_res.margin_width, 0);
-            // TODO this should be safe after layout, but I might want to add a no-panic default.
-            let frame = Rect::new(shift, output.size() - shift);
-            let suboutput = SubOutput::new(output, frame);
+        debug_assert!((layout_res.margin_width > 0) == self.line_no);
 
+        // This is narrowing the scope to make margin for line_no
+        let mut sub_output: Option<SubOutput> = if layout_res.margin_width > 0 {
+            debug_assert!(layout_res.parent_space_child_output_rect.pos != XY::ZERO);
+            let suboutput = SubOutput::new(output, layout_res.parent_space_child_output_rect);
             Some(suboutput)
         } else {
+            debug_assert!(layout_res.parent_space_child_output_rect.pos == XY::ZERO);
             None
         };
 
         // This is removing one or both constraints to enable scrolling
         let mut over_output = match sub_output.as_mut() {
             Some(sub_output) => OverOutput::new(sub_output,
-                                                layout_res.size_of_new_output,
+                                                layout_res.parent_space_child_output_rect.size,
                                                 self.scroll.offset),
-            None => OverOutput::new(output, layout_res.size_of_new_output, self.scroll.offset),
+            None => OverOutput::new(output, layout_res.parent_space_child_output_rect.size, self.scroll.offset),
         };
 
         self.child_widget.render(theme, focused, &mut over_output);
