@@ -20,13 +20,22 @@ impl XY {
     pub const fn new(x: u16, y: u16) -> Self {
         XY { x, y }
     }
-    
-    pub fn maybe_minus(&self, other: XY) -> Option<XY> {
+
+    pub fn maybe_minused(&self, other: XY) -> Option<XY> {
         if self.x >= other.x && self.y >= other.y {
             Some(XY::new(self.x - other.x, self.y - other.y))
         } else {
             None
         }
+    }
+
+    pub fn minus_at_most(&self, other: XY) -> XY {
+        let pos_x: i32 = self.x as i32 - other.x as i32;
+        let pos_y: i32 = self.y as i32 - other.y as i32;
+        let new_pos_x = if pos_x > 0 { pos_x as u16 } else { 0 };
+        let new_pos_y = if pos_y > 0 { pos_y as u16 } else { 0 };
+
+        XY::new(new_pos_x, new_pos_y)
     }
 
     pub fn neighbours(&self) -> NeighboursIterator {

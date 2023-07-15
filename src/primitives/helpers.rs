@@ -9,6 +9,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::color::Color;
+use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::unpack_or;
 
@@ -48,7 +49,8 @@ pub fn fill_output(color: Color, output: &mut dyn Output) {
         Effect::None,
     );
 
-    let mut rect = output.visible_rect();
+    // let mut rect = output.visible_rect();
+    let mut rect = Rect::from_zero(output.size());
 
     // this test just protects substractions in the loop below.
     if rect.lower_right().x < 1 || rect.lower_right().y < 1 {

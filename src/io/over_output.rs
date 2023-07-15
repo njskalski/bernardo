@@ -21,7 +21,6 @@ pub struct OverOutput<'a> {
 
     faked_size: XY,
     local_to_parent: XY,
-
 }
 
 impl<'a> OverOutput<'a> {
@@ -102,17 +101,27 @@ impl Output for OverOutput<'_> {
         self.output.clear()
     }
 
+    // TODO more tests
     fn visible_rect(&self) -> Rect {
         let parent_vis_rect = self.output.visible_rect();
-        let parent_name = format!("{:?}", self.output);
+        // let parent_name = format!("{:?}", self.output);
         let mut parent_vis_rect_in_my_space = parent_vis_rect;
-        parent_vis_rect_in_my_space.pos -= self.local_to_parent; // reverse transformation. I bring rect from parent space to local, ergo I apply reverse transformation.
-        // TODO unwrap
-        parent_vis_rect_in_my_space = parent_vis_rect_in_my_space.capped_at(self.faked_size).unwrap();
 
-        debug_assert!(parent_vis_rect_in_my_space.lower_right() <= self.size());
+        // moving from parent space to mine.
+        parent_vis_rect_in_my_space.pos = parent_vis_rect_in_my_space.pos.minus_at_most(self.local_to_parent);
+        // I also need to move lower_right corner by -local_to_parent
 
-        parent_vis_rect_in_my_space
+        let new_lower_right = parent_vis_rect.lower_right().minus_at_most(self.local_to_parent);
+        parent_vis_rect_in_my_space.size = new_lower_right.minus_at_most(parent_vis_rect_in_my_space.pos);
+        debug_assert!(parent_vis_rect_in_my_space.lower_right() == new_lower_right);
+
+        let my_rect = parent_vis_rect_in_my_space;
+
+        debug_assert!(my_rect.lower_right() <= self.size());
+        debug_assert!(my_rect.shifted(self.local_to_parent).lower_right() <= parent_vis_rect.lower_right());
+        debug_assert!(parent_vis_rect.contains_rect(my_rect.shifted(self.local_to_parent)));
+
+        my_rect
     }
 
     #[cfg(test)]

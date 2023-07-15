@@ -15,6 +15,6 @@ pub mod crossterm_output;
 pub mod loading_state;
 
 #[cfg(test)]
-mod sub_output_tests;
+mod tests;
 
 

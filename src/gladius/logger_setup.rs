@@ -12,7 +12,7 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("bernardo::primitives::tmtheme", log::LevelFilter::Info),
     ("bernardo::fs::local_filesystem_front", log::LevelFilter::Error),
     ("bernardo::gladius::run_gladius", log::LevelFilter::Info),
-    ("bernardo::io::over_output", log::LevelFilter::Info),
+    ("bernardo::io::over_output", log::LevelFilter::Error),
     ("bernardo::text::buffer_state", log::LevelFilter::Warn),
     ("bernardo::tsw::tree_sitter_wrapper", log::LevelFilter::Error),
     ("bernardo::widgets", log::LevelFilter::Debug),
@@ -25,7 +25,7 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("bernardo::widgets::save_file_dialog::save_file_dialog", log::LevelFilter::Warn),
     ("bernardo::widgets::code_results_widget", log::LevelFilter::Debug),
     ("bernardo::layout", log::LevelFilter::Info),
-    ("bernardo::layout::split_layout", log::LevelFilter::Debug),
+    ("bernardo::layout::split_layout", log::LevelFilter::Info),
     // ("bernardo::layout::leaf_layout", log::LevelFilter::Debug),
 
     // This guy leaves a lot of data in trace, it seems like it spawns a new thread. I think it deserves profiling.
