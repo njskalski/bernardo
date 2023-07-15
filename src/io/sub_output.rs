@@ -11,7 +11,7 @@ use crate::primitives::xy::XY;
 
 pub struct SubOutput<'a> {
     output: &'a mut dyn Output,
-    frame: Rect,
+    frame_in_parent_space: Rect,
 }
 
 impl<'a> SubOutput<'a> {
@@ -19,13 +19,13 @@ impl<'a> SubOutput<'a> {
         debug_assert!(frame.lower_right() <= output.size());
         debug_assert!(output.visible_rect().intersect(frame).is_some(), "no intersection between output.visible_rect() {} and frame of sub-output {}", output.visible_rect(), frame);
 
-        SubOutput { output, frame }
+        SubOutput { output, frame_in_parent_space: frame }
     }
 }
 
 impl SizedXY for SubOutput<'_> {
     fn size(&self) -> XY {
-        self.frame.size
+        self.frame_in_parent_space.size
     }
 }
 
@@ -41,21 +41,21 @@ impl Output for SubOutput<'_> {
 
         if cfg!(debug_assertions) {
             // this <= is not an error, grapheme END can meet with frame END.
-            debug_assert!(end_pos.x <= self.frame.size.x,
+            debug_assert!(end_pos.x <= self.frame_in_parent_space.size.x,
                           "drawing outside (to the right) the sub-output: ({} to {}) of {}",
-                          pos, end_pos, self.frame.size);
-            debug_assert!(end_pos.y < self.frame.size.y,
+                          pos, end_pos, self.frame_in_parent_space.size);
+            debug_assert!(end_pos.y < self.frame_in_parent_space.size.y,
                           "drawing outside (below) the sub-output: ({} to {}) of {}",
-                          pos, end_pos, self.frame.size);
+                          pos, end_pos, self.frame_in_parent_space.size);
         } else {
-            if !(end_pos.x <= self.frame.size.x && end_pos.y < self.frame.size.y) {
+            if !(end_pos.x <= self.frame_in_parent_space.size.x && end_pos.y < self.frame_in_parent_space.size.y) {
                 error!("drawing outside the sub-output: ({} to {}) of {}",
-                    pos, end_pos, self.frame.size);
+                    pos, end_pos, self.frame_in_parent_space.size);
             }
         }
 
         // TODO add grapheme cutting
-        self.output.print_at(self.frame.pos + pos, style, text)
+        self.output.print_at(self.frame_in_parent_space.pos + pos, style, text)
     }
 
     fn clear(&mut self) -> Result<(), std::io::Error> {
@@ -63,20 +63,25 @@ impl Output for SubOutput<'_> {
 
         let style = TEXT_STYLE_WHITE_ON_BLACK;
 
-        for x in 0..self.frame.size.x {
-            for y in 0..self.frame.size.y {
+        for x in 0..self.frame_in_parent_space.size.x {
+            for y in 0..self.frame_in_parent_space.size.y {
                 self.output
-                    .print_at(self.frame.pos + XY::new(x, y), style, " ")
+                    .print_at(self.frame_in_parent_space.pos + XY::new(x, y), style, " ")
             }
         }
         Ok(())
     }
 
     fn visible_rect(&self) -> Rect {
+        // let parent_name = format!("{:?}", self.output);
         let parent_visible_rect = self.output.visible_rect();
-        let mut parent_visible_rect_in_my_space = parent_visible_rect;
-        parent_visible_rect_in_my_space.pos += self.frame.pos;
-        let res = parent_visible_rect_in_my_space.capped_at(self.size()).unwrap();
+
+        let my_visible_rect_in_parent_space = parent_visible_rect.intersect(self.frame_in_parent_space).unwrap(); // TODO unwrap
+
+        let mut my_visible_space_in_my_space = my_visible_rect_in_parent_space;
+        my_visible_space_in_my_space.pos -= self.frame_in_parent_space.pos;
+
+        let res = my_visible_space_in_my_space;
 
         debug_assert!(res.lower_right() <= self.size(), "res = {}, self.size() = {}", res, self.size());
 
@@ -96,8 +101,8 @@ impl Output for SubOutput<'_> {
 
     #[cfg(test)]
     fn emit_metadata(&mut self, mut meta: Metadata) {
-        meta.rect.pos = meta.rect.pos + self.frame.pos;
-        if meta.rect.lower_right() <= self.frame.lower_right() {
+        meta.rect.pos = meta.rect.pos + self.frame_in_parent_space.pos;
+        if meta.rect.lower_right() <= self.frame_in_parent_space.lower_right() {
             self.output.emit_metadata(meta)
         } else {
             debug!("suppressing metadata: {:?} - out of view", meta)
@@ -107,6 +112,6 @@ impl Output for SubOutput<'_> {
 
 impl Debug for SubOutput<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "<SubOutput rect : {:?} of {:?} >", self.frame, self.output)
+        write!(f, "<SubOutput rect : {:?} of {:?} >", self.frame_in_parent_space, self.output)
     }
 }

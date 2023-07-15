@@ -14,4 +14,7 @@ pub mod crossterm_keys;
 pub mod crossterm_output;
 pub mod loading_state;
 
+#[cfg(test)]
+mod sub_output_tests;
+
 

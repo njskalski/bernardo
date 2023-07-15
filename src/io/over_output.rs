@@ -20,7 +20,7 @@ pub struct OverOutput<'a> {
     output: &'a mut dyn Output,
 
     faked_size: XY,
-    real_output_offset: XY,
+    local_to_parent: XY,
 
 }
 
@@ -28,16 +28,16 @@ impl<'a> OverOutput<'a> {
     pub fn new(
         output: &'a mut dyn Output,
         faked_size: XY,
-        real_output_offset: XY,
+        local_to_parent: XY,
     ) -> Self {
-        if faked_size + real_output_offset < output.size() {
-            warn!("seemingly unnecessary OverOutput, which fits entirely within parent output: faked_size: {}, offset: {}, source output: {}", faked_size, real_output_offset, output.size());
+        if faked_size + local_to_parent < output.size() {
+            warn!("seemingly unnecessary OverOutput, which fits entirely within parent output: faked_size: {}, offset: {}, source output: {}", faked_size, local_to_parent, output.size());
         }
 
         OverOutput {
             output,
             faked_size,
-            real_output_offset,
+            local_to_parent,
         }
     }
 }
@@ -59,7 +59,7 @@ impl Output for OverOutput<'_> {
             return;
         }
 
-        let local_visible_rect = self.output.visible_rect() + self.real_output_offset;
+        let local_visible_rect = self.output.visible_rect() + self.local_to_parent;
 
         if pos.y < local_visible_rect.pos.y {
             debug!("early exit 1");
@@ -104,8 +104,9 @@ impl Output for OverOutput<'_> {
 
     fn visible_rect(&self) -> Rect {
         let parent_vis_rect = self.output.visible_rect();
+        let parent_name = format!("{:?}", self.output);
         let mut parent_vis_rect_in_my_space = parent_vis_rect;
-        parent_vis_rect_in_my_space.pos + self.real_output_offset;
+        parent_vis_rect_in_my_space.pos -= self.local_to_parent; // reverse transformation. I bring rect from parent space to local, ergo I apply reverse transformation.
         // TODO unwrap
         parent_vis_rect_in_my_space = parent_vis_rect_in_my_space.capped_at(self.faked_size).unwrap();
 
@@ -133,6 +134,6 @@ impl Output for OverOutput<'_> {
 
 impl<'a> Debug for OverOutput<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "( OverOutput size {} offset {:?} over {:?} )", self.faked_size, self.real_output_offset, self.output)
+        write!(f, "( OverOutput size {} offset {:?} over {:?} )", self.faked_size, self.local_to_parent, self.output)
     }
 }

@@ -22,7 +22,7 @@ struct LayoutRes {
 
 pub struct WithScroll<W: Widget> {
     id: WID,
-    widget: W,
+    child_widget: W,
     scroll: Scroll,
     line_no: bool,
 
@@ -41,7 +41,7 @@ impl<W: Widget> WithScroll<W> {
         let id = get_new_widget_id();
         Self {
             id,
-            widget,
+            child_widget: widget,
             scroll: Scroll::new(scroll_direction),
             line_no: false,
             fill_non_free_axis: true,
@@ -61,22 +61,22 @@ impl<W: Widget> WithScroll<W> {
     }
 
     pub fn internal_mut(&mut self) -> &mut W {
-        &mut self.widget
+        &mut self.child_widget
     }
 
     pub fn internal(&self) -> &W {
-        &self.widget
+        &self.child_widget
     }
 
     pub fn mutate_internal<F: FnOnce(W) -> W>(self, mutator: F) -> Self {
         Self {
-            widget: mutator(self.widget),
+            child_widget: mutator(self.child_widget),
             ..self
         }
     }
 
-    fn line_count_margin_width_for_lower_right(&self, lower_right: XY) -> u16 {
-        // logarithm? Never heard of it.
+    fn line_count_margin_width_for_lower_right(&self) -> u16 {
+        let lower_right = self.child_widget.full_size();
         let width = format!("{}", lower_right.y).len() as u16 + 2;
         width
     }
@@ -145,19 +145,19 @@ impl<W: Widget> Widget for WithScroll<W> {
 
     fn prelayout(&mut self) {
         // debug!("prelayout {}", self.typename());
-        self.widget.prelayout();
+        self.child_widget.prelayout();
     }
 
     fn full_size(&self) -> XY {
-        let child = self.widget.full_size();
-        let margin = if self.line_no { self.line_count_margin_width_for_lower_right(child) } else { 0 };
+        let child_full_size = self.child_widget.full_size();
+        let margin = if self.line_no { self.line_count_margin_width_for_lower_right() } else { 0 };
 
         let res = match self.scroll.direction {
             ScrollDirection::Horizontal => {
-                XY::new(Self::MIN_SIZE.x + margin, child.y)
+                XY::new(Self::MIN_SIZE.x + margin, child_full_size.y)
             }
             ScrollDirection::Vertical => {
-                XY::new(child.x + margin, Self::MIN_SIZE.y)
+                XY::new(child_full_size.x + margin, Self::MIN_SIZE.y)
             }
             ScrollDirection::Both => {
                 Self::MIN_SIZE + XY::new(margin, 0)
@@ -168,9 +168,9 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        let child_full_size = self.widget.full_size();
+        let child_full_size = self.child_widget.full_size();
         let margin_width = if self.line_no {
-            format!("{}", child_full_size.y).width() as u16 // logarithm? never heard of it.
+            self.line_count_margin_width_for_lower_right()
         } else {
             0 as u16
         };
@@ -193,10 +193,10 @@ impl<W: Widget> Widget for WithScroll<W> {
         internal_visible_rect.size -= XY::new(margin_width, 0);
         // TODO what if it's empty?
 
-        self.widget.layout(internal_output_size, internal_visible_rect);
+        self.child_widget.layout(internal_output_size, internal_visible_rect);
 
         self.scroll.follow_kite(internal_output_size,
-                                self.widget.kite());
+                                self.child_widget.kite());
 
         self.layout_res = Some(LayoutRes {
             margin_width,
@@ -209,18 +209,18 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        debug!(target: "recursive_treat_views", "in scroll, passing {:?} to {:?}", &msg, &self.widget as &dyn Widget);
+        debug!(target: "recursive_treat_views", "in scroll, passing {:?} to {:?}", &msg, &self.child_widget as &dyn Widget);
         // do NOT route the message down the tree again, that's the job of recursive_treat_views.
         // Pass it down through.
         Some(msg)
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
-        Some(&self.widget)
+        Some(&self.child_widget)
     }
 
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        Some(&mut self.widget)
+        Some(&mut self.child_widget)
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
@@ -250,7 +250,7 @@ impl<W: Widget> Widget for WithScroll<W> {
             None => OverOutput::new(output, layout_res.size_of_new_output, self.scroll.offset),
         };
 
-        self.widget.render(theme, focused, &mut over_output);
+        self.child_widget.render(theme, focused, &mut over_output);
     }
 
     fn kite(&self) -> XY {
