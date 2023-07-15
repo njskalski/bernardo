@@ -81,12 +81,6 @@ impl<W: Widget> WithScroll<W> {
         }
     }
 
-    fn line_count_margin_width_for_lower_right(&self) -> u16 {
-        let lower_right = self.child_widget.full_size();
-        let width = format!("{}", lower_right.y).len() as u16 + 2;
-        width
-    }
-
     fn render_line_no(&self, margin_width: u16, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let layout_res = unpack_or!(self.layout_res.as_ref(), (), "render before layout");
         #[cfg(test)]
@@ -112,7 +106,7 @@ impl<W: Widget> WithScroll<W> {
 
         for idx in output.visible_rect().pos.y..output.visible_rect().lower_right().y {
             let line_no_base_0 = start_idx + idx;
-            let item = format!("{} ", line_no_base_0 + 1);
+            let item = format!("{}", line_no_base_0 + 1);
             let num_digits = item.len() as u16;
             let offset = margin_width - num_digits;
 
@@ -135,6 +129,10 @@ impl<W: Widget> WithScroll<W> {
             );
         }
     }
+
+    fn get_margin_width_for_size(size: XY) -> u16 {
+        format!("{}", size.y).width() as u16
+    }
 }
 
 impl<W: Widget> Widget for WithScroll<W> {
@@ -155,7 +153,8 @@ impl<W: Widget> Widget for WithScroll<W> {
         error!("this shouldn't be even called, with scroll should be used only with greedy layout");
 
         let child_full_size = self.child_widget.full_size();
-        let margin = if self.line_no { self.line_count_margin_width_for_lower_right() } else { 0 };
+        // there is a potential error here, if we are later called with different size than child_full_size, margin might get too small
+        let margin = if self.line_no { Self::get_margin_width_for_size(child_full_size) } else { 0 };
 
         let res = match self.scroll.direction {
             ScrollDirection::Horizontal => {
@@ -189,7 +188,7 @@ impl<W: Widget> Widget for WithScroll<W> {
     fn layout(&mut self, output_size: XY, visible_rect: Rect) {
         let child_full_size = self.child_widget.full_size();
         let margin_width = if self.line_no {
-            self.line_count_margin_width_for_lower_right()
+            Self::get_margin_width_for_size(child_full_size)
         } else {
             0 as u16
         };

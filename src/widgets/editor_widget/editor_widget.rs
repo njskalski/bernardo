@@ -1131,7 +1131,12 @@ impl Widget for EditorWidget {
     }
 
     fn full_size(&self) -> XY {
-        MIN_EDITOR_SIZE
+        if let Some(lock) = self.buffer.lock() {
+            lock.size()
+        } else {
+            error!("couldn't lock buffer to count");
+            MIN_EDITOR_SIZE
+        }
     }
 
     fn layout(&mut self, output_size: XY, visible_rect: Rect) {

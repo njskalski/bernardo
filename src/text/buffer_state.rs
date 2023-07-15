@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::fmt::Debug;
 use std::ops::Range;
 use std::sync::Arc;
@@ -8,6 +9,7 @@ use ropey::Rope;
 use streaming_iterator::StreamingIterator;
 use tree_sitter::Point;
 use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 use crate::{unpack_or, unpack_or_e};
 use crate::cursor::cursor_set::CursorSet;
@@ -18,6 +20,7 @@ use crate::fs::path::SPath;
 use crate::io::output::Output;
 use crate::primitives::common_edit_msgs::{_apply_cem, CommonEditMsg};
 use crate::primitives::has_invariant::HasInvariant;
+use crate::primitives::xy::XY;
 use crate::text::contents_and_cursors::ContentsAndCursors;
 use crate::text::text_buffer::{LinesIter, TextBuffer};
 use crate::tsw::lang_id::LangId;
@@ -371,6 +374,20 @@ impl BufferState {
 
         self.history.remove(self.history_pos - 1);
         self.history_pos -= 1;
+    }
+
+    // TODO overload and optimise?
+    pub fn size(&self) -> XY {
+        let mut size = XY::ZERO;
+
+        size.y = self.len_lines() as u16; // TODO overflow
+
+        let mut lines_iter = self.lines();
+        while let Some(line) = lines_iter.next() {
+            size.x = max(size.x, line.width() as u16) // TODO overflow
+        }
+
+        size
     }
 
     /*
