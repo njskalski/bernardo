@@ -46,8 +46,11 @@ pub enum SplitDirection {
 pub enum SplitRule {
     // Uses exactly usize space on free axis
     Fixed(u16),
-    // Uses ExactSize
-    ExactSize,
+    /*
+     I don't know how to implement "exact size", given the fact "exact_size" on layout needs to know
+     "but how much space is available?". Well, that's what I am trying to figure out here.
+     */
+    // ExactSize,
 
     // Splits the free space proportionally to given numbers.
     Proportional(f32),
@@ -132,28 +135,21 @@ impl<W: Widget> SplitLayout<W> {
             output_size.x as usize
         };
 
-        let fixed_amount: usize = self.children.iter().fold(0, |acc, item| {
+        let fixed_amounts_sum: usize = self.children.iter().fold(0, |acc, item| {
             acc + match item.split_rule {
                 SplitRule::Fixed(i) => i as usize,
-                SplitRule::ExactSize => {
-                    let ms = item.layout.exact_size(root, output_size);
-                    if self.split_direction == SplitDirection::Vertical {
-                        ms.y as usize
-                    } else {
-                        ms.x as usize
-                    }
-                }
+                // SplitRule::ExactSize => { 0 }
                 SplitRule::Proportional(_) => 0,
             }
         });
 
-        if fixed_amount > free_axis {
+        if fixed_amounts_sum > free_axis {
             return None;
         }
 
-        let leftover = free_axis - fixed_amount;
-        let mut amounts: Vec<usize> = vec![0; self.children.len()];
+        let leftover = free_axis - fixed_amounts_sum;
 
+        let mut amounts: Vec<usize> = vec![0; self.children.len()];
         let mut sum_props = 0.0f32;
 
         for (idx, child) in self.children.iter().enumerate() {
@@ -161,15 +157,15 @@ impl<W: Widget> SplitLayout<W> {
                 SplitRule::Fixed(f) => {
                     amounts[idx] = f as usize;
                 }
-                SplitRule::ExactSize => {
-                    let ms = child.layout.exact_size(root, output_size);
-                    let f = if self.split_direction == SplitDirection::Vertical {
-                        ms.y
-                    } else {
-                        ms.x
-                    } as usize;
-                    amounts[idx] = f;
-                }
+                // SplitRule::ExactSize => {
+                //     let ms = child.layout.exact_size(root, output_size);
+                //     let f = if self.split_direction == SplitDirection::Vertical {
+                //         ms.y
+                //     } else {
+                //         ms.x
+                //     } as usize;
+                //     amounts[idx] = f;
+                // }
                 SplitRule::Proportional(prop) => {
                     sum_props += prop;
                 }
@@ -256,7 +252,7 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
                         res.y = max(res.y, exact_size.y);
                     }
                 }
-                SplitRule::Proportional(_) | SplitRule::ExactSize => {
+                SplitRule::Proportional(_) /*| SplitRule::ExactSize*/ => {
                     if self.split_direction == SplitDirection::Vertical {
                         res.x = max(res.x, exact_size.x);
                         res.y += exact_size.y;

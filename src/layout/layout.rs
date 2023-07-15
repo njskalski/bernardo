@@ -32,7 +32,7 @@ impl<W: Widget> LayoutResult<W> {
  */
 pub trait Layout<W: Widget> {
     fn prelayout(&self, root: &mut W);
-
+    
     fn exact_size(&self, root: &W, output_size: XY) -> XY;
 
     fn layout(&self, root: &mut W, output_size: XY, visible_rect: Rect) -> LayoutResult<W>;

@@ -51,9 +51,9 @@ fn split_layout_test_widget_determined() {
 fn split_layout_test_layout_determined() {
     let mut mock_parent_widget = MockComplexWidget::new(
         XY::new(10, 10),
-        vec![MockWidget::new(XY::new(3, 3)),
-             MockWidget::new(XY::new(3, 3)),
-             MockWidget::new(XY::new(3, 3)),
+        vec![MockWidget::new(XY::new(1, 1)),
+             MockWidget::new(XY::new(1, 1)),
+             MockWidget::new(XY::new(1, 1)),
         ],
         Box::new(|parent_widget: &MockComplexWidget| -> Box<dyn Layout<MockComplexWidget>> {
             SplitLayout::new(SplitDirection::Horizontal)
@@ -82,3 +82,20 @@ fn split_layout_test_layout_determined() {
         assert_eq!(layout_res.wwrs[2].rect(), Rect::new(XY::new(7, 0), XY::new(3, 10)));
     }
 }
+
+// #[test]
+// fn split_layout_test_layout_determined() {
+//     let mut mock_parent_widget = MockComplexWidget::new(
+//         XY::new(10, 10),
+//         vec![MockWidget::new(XY::new(1, 1)),
+//              MockWidget::new(XY::new(1, 1)),
+//              MockWidget::new(XY::new(1, 1)),
+//         ],
+//         Box::new(|parent_widget: &MockComplexWidget| -> Box<dyn Layout<MockComplexWidget>> {
+//             SplitLayout::new(SplitDirection::Horizontal)
+//                 .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed())
+//                 .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed())
+//                 .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed())
+//                 .boxed()
+//         }));
+// }
