@@ -89,13 +89,15 @@ impl EditorView {
                 EditorViewMsg::FindHit.someboxed()
             })
             .with_fill_x()
-            .with_clipboard(providers.clipboard().clone());
+            .with_clipboard(providers.clipboard().clone())
+            .with_size_policy(SizePolicy::MATCH_LAYOUT);
         let replace_box = EditBoxWidget::new()
             .with_on_hit(|_| {
                 EditorViewMsg::ReplaceHit.someboxed()
             })
             .with_fill_x()
-            .with_clipboard(providers.clipboard().clone());
+            .with_clipboard(providers.clipboard().clone())
+            .with_size_policy(SizePolicy::MATCH_LAYOUT);
 
         EditorView {
             wid: get_new_widget_id(),

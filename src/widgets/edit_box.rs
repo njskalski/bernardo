@@ -17,6 +17,7 @@ use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
 use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
 //TODO filter out the newlines on paste
@@ -39,6 +40,8 @@ pub struct EditBoxWidget {
 
     fill_x: bool,
     last_size_x: Option<u16>,
+
+    size_policy: SizePolicy,
 }
 
 
@@ -60,11 +63,19 @@ impl EditBoxWidget {
             fill_x: false,
             last_size_x: None,
             min_width_op: None,
+            size_policy: SizePolicy::SELF_DETERMINED,
         };
 
         res.buffer.initialize_for_widget(res.id, None);
 
         res
+    }
+
+    pub fn with_size_policy(self, size_policy: SizePolicy) -> Self {
+        Self {
+            size_policy,
+            ..self
+        }
     }
 
     pub fn with_clipboard(self, clipboard: ClipboardRef) -> Self {
@@ -192,6 +203,10 @@ impl Widget for EditBoxWidget {
 
     fn full_size(&self) -> XY {
         XY::new(self.min_width_op.unwrap_or(Self::MIN_WIDTH), 1)
+    }
+
+    fn size_policy(&self) -> SizePolicy {
+        self.size_policy
     }
 
     fn layout(&mut self, output_size: XY, visible_rect: Rect) {

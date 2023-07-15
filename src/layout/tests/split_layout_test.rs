@@ -84,19 +84,25 @@ fn split_layout_test_layout_determined() {
     }
 }
 
-// #[test]
-// fn split_layout_test_layout_determined() {
-//     let mut mock_parent_widget = MockComplexWidget::new(
-//         XY::new(10, 10),
-//         vec![MockWidget::new(XY::new(1, 1)),
-//              MockWidget::new(XY::new(1, 1)),
-//              MockWidget::new(XY::new(1, 1)),
-//         ],
-//         Box::new(|parent_widget: &MockComplexWidget| -> Box<dyn Layout<MockComplexWidget>> {
-//             SplitLayout::new(SplitDirection::Horizontal)
-//                 .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed())
-//                 .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed())
-//                 .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).with_size_policy(SizePolicy::MATCH_LAYOUT).boxed())
-//                 .boxed()
-//         }));
-// }
+#[test]
+fn split_layout_test_layout_determined_2() {
+    let mut mock_parent_widget = MockComplexWidget::new(
+        XY::new(10, 10),
+        vec![MockWidget::new(XY::new(1, 1)).with_size_policy(SizePolicy::MATCH_LAYOUT),
+             MockWidget::new(XY::new(1, 1)).with_size_policy(SizePolicy::MATCH_LAYOUT),
+        ],
+        Box::new(|parent_widget: &MockComplexWidget| -> Box<dyn Layout<MockComplexWidget>> {
+            SplitLayout::new(SplitDirection::Horizontal)
+                .with(SplitRule::Fixed(3), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).boxed())
+                .with(SplitRule::Proportional(1.0), LeafLayout::new(parent_widget.get_subwidget_ptr(0)).boxed())
+                .boxed()
+        }));
+
+    {
+        let layout_res = mock_parent_widget.get_layout_res(XY::new(10, 10), Rect::from_zero(XY::new(10, 10)));
+
+        assert_eq!(layout_res.wwrs.len(), 2);
+        assert_eq!(layout_res.wwrs[0].rect(), Rect::new(XY::new(0, 0), XY::new(3, 10)));
+        assert_eq!(layout_res.wwrs[1].rect(), Rect::new(XY::new(3, 0), XY::new(7, 10)));
+    }
+}

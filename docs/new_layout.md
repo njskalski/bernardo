@@ -92,3 +92,9 @@ OK, options:
 Can we decide based on that?
 We can scale up Editor and Scroll and List to whatever layout can do.
 Scroll can ask widget below for true size, and ignore preference... YES. This can fkn work.
+
+THIS DOES WORK
+
+BUGS:
+
+- for some reason, scrolling to the end of file causes 1) super slowdown 2) treesitter/highlighting fails
