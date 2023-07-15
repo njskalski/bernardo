@@ -33,11 +33,19 @@ impl<'a> OverOutput<'a> {
             warn!("seemingly unnecessary OverOutput, which fits entirely within parent output: faked_size: {}, offset: {}, source output: {}", faked_size, local_to_parent, output.size());
         }
 
-        OverOutput {
+        let res = OverOutput {
             output,
             faked_size,
             local_to_parent,
-        }
+        };
+
+        debug_assert!(res.validate_has_visible_rect());
+
+        res
+    }
+
+    fn validate_has_visible_rect(&self) -> bool {
+        self.output.visible_rect().minus_shift(self.local_to_parent).map(|new_visible_rect| new_visible_rect.capped_at(self.size())).flatten().is_some()
     }
 }
 
@@ -103,19 +111,12 @@ impl Output for OverOutput<'_> {
 
     // TODO more tests
     fn visible_rect(&self) -> Rect {
+        debug_assert!(self.validate_has_visible_rect());
+
         let parent_vis_rect = self.output.visible_rect();
-        // let parent_name = format!("{:?}", self.output);
-        let mut parent_vis_rect_in_my_space = parent_vis_rect;
 
-        // moving from parent space to mine.
-        parent_vis_rect_in_my_space.pos = parent_vis_rect_in_my_space.pos.minus_at_most(self.local_to_parent);
-        // I also need to move lower_right corner by -local_to_parent
-
-        let new_lower_right = parent_vis_rect.lower_right().minus_at_most(self.local_to_parent);
-        parent_vis_rect_in_my_space.size = new_lower_right.minus_at_most(parent_vis_rect_in_my_space.pos);
-        debug_assert!(parent_vis_rect_in_my_space.lower_right() == new_lower_right);
-
-        let my_rect = parent_vis_rect_in_my_space;
+        let my_rect = parent_vis_rect.minus_shift(self.local_to_parent).unwrap();
+        let my_rect = my_rect.capped_at(self.size()).unwrap();
 
         debug_assert!(my_rect.lower_right() <= self.size());
         debug_assert!(my_rect.shifted(self.local_to_parent).lower_right() <= parent_vis_rect.lower_right());
