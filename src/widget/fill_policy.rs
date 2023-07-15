@@ -45,6 +45,6 @@ impl SizePolicy {
 
 impl Default for SizePolicy {
     fn default() -> Self {
-        SizePolicy::SELF_DETERMINED
+        SizePolicy::MATCH_LAYOUT
     }
 }
