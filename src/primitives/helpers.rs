@@ -49,8 +49,8 @@ pub fn fill_output(color: Color, output: &mut dyn Output) {
         Effect::None,
     );
 
-    // let mut rect = output.visible_rect();
-    let mut rect = Rect::from_zero(output.size());
+    let mut rect = output.visible_rect();
+    // let mut rect = Rect::from_zero(output.size());
 
     // this test just protects substractions in the loop below.
     if rect.lower_right().x < 1 || rect.lower_right().y < 1 {

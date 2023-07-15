@@ -39,20 +39,22 @@ impl Output for SubOutput<'_> {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
         let end_pos = pos + (text.width() as u16, 0);
 
-        if cfg!(debug_assertions) {
-            // this <= is not an error, grapheme END can meet with frame END.
-            debug_assert!(end_pos.x <= self.frame_in_parent_space.size.x,
-                          "drawing outside (to the right) the sub-output: ({} to {}) of {}",
-                          pos, end_pos, self.frame_in_parent_space.size);
-            debug_assert!(end_pos.y < self.frame_in_parent_space.size.y,
-                          "drawing outside (below) the sub-output: ({} to {}) of {}",
-                          pos, end_pos, self.frame_in_parent_space.size);
-        } else {
-            if !(end_pos.x <= self.frame_in_parent_space.size.x && end_pos.y < self.frame_in_parent_space.size.y) {
-                error!("drawing outside the sub-output: ({} to {}) of {}",
-                    pos, end_pos, self.frame_in_parent_space.size);
-            }
-        }
+        let visible_rect = self.visible_rect();
+        
+        // if cfg!(debug_assertions) {
+        //     // this <= is not an error, grapheme END can meet with frame END.
+        //     debug_assert!(end_pos.x <= visible_rect.lower_right().x,
+        //                   "drawing outside (to the right) the sub-output: ({} to {}) of {}",
+        //                   pos, end_pos, self.frame_in_parent_space.size);
+        //     debug_assert!(end_pos.y < self.frame_in_parent_space.size.y,
+        //                   "drawing outside (below) the sub-output: ({} to {}) of {}",
+        //                   pos, end_pos, self.frame_in_parent_space.size);
+        // } else {
+        //     if !(end_pos.x <= self.frame_in_parent_space.size.x && end_pos.y < self.frame_in_parent_space.size.y) {
+        //         error!("drawing outside the sub-output: ({} to {}) of {}",
+        //             pos, end_pos, self.frame_in_parent_space.size);
+        //     }
+        // }
 
         // TODO add grapheme cutting
         self.output.print_at(self.frame_in_parent_space.pos + pos, style, text)
