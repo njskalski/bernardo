@@ -26,12 +26,14 @@ use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::border::SINGLE_BORDER_STYLE;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::xy::XY;
 use crate::text::text_buffer::TextBuffer;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction, WidgetActionParam};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
@@ -75,7 +77,7 @@ impl SaveFileDialogWidget {
         let root = fsf.root();
 
         let tree_widget = TreeViewWidget::<SPath, DirTreeNode>::new(DirTreeNode::new(root.clone()))
-            // .with_filter(filter, Some(0))
+            .with_size_policy(SizePolicy::MATCH_LAYOUT)
             .with_on_flip_expand(|widget| {
                 let (_, item) = widget.get_highlighted();
                 Some(Box::new(SaveFileDialogMsg::TreeExpanded(item.spath().clone())))
@@ -92,12 +94,14 @@ impl SaveFileDialogWidget {
         let scroll_tree_widget = WithScroll::new(ScrollDirection::Vertical, tree_widget);
 
         let list_widget: ListWidget<SPath> = ListWidget::new().with_selection()
+            .with_size_policy(SizePolicy::MATCH_LAYOUT)
             .with_on_hit(|w| {
                 w.get_highlighted().map(|item| {
                     Some(SaveFileDialogMsg::FileListHit(item.clone()).boxed())
                 }).flatten()
             });
         let edit_box = EditBoxWidget::new()
+            .with_size_policy(SizePolicy::MATCH_LAYOUT)
             .with_enabled(true)
             .with_on_hit(
                 |_| SaveFileDialogMsg::EditBoxHit.someboxed()
@@ -326,6 +330,10 @@ impl Widget for SaveFileDialogWidget {
         XY::new(4, 4)
     }
 
+    fn size_policy(&self) -> SizePolicy {
+        SizePolicy::MATCH_LAYOUT
+    }
+
     fn layout(&mut self, output_size: XY, visible_rect: Rect) {
         self.complex_layout(output_size, visible_rect)
     }
@@ -439,7 +447,8 @@ impl Widget for SaveFileDialogWidget {
             }
         );
 
-        self.complex_render(theme, focused, output)
+        self.complex_render(theme, focused, output);
+        SINGLE_BORDER_STYLE.draw_edges(theme.default_text(focused), output);
     }
 }
 

@@ -55,6 +55,8 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key
     // filter_depth = None means "don't dive"
     // filter_depth = Some(x) means "look for items down to x levels down".
     filter_depth_op: Option<usize>,
+
+    size_policy: SizePolicy,
 }
 
 #[derive(Debug)]
@@ -86,12 +88,20 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
             highlighter_op: None,
             filter_op: None,
             filter_depth_op: None,
+            size_policy: SizePolicy::MATCH_LAYOUT,
         }
     }
 
     pub fn with_highlighter(self, highlighter: LabelHighlighter) -> Self {
         Self {
             highlighter_op: Some(highlighter),
+            ..self
+        }
+    }
+
+    pub fn with_size_policy(self, size_policy: SizePolicy) -> Self {
+        Self {
+            size_policy,
             ..self
         }
     }
@@ -232,6 +242,10 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
 
     fn full_size(&self) -> XY {
         self.size_from_items()
+    }
+
+    fn size_policy(&self) -> SizePolicy {
+        self.size_policy
     }
 
     fn layout(&mut self, output_size: XY, _visible_rect: Rect) {

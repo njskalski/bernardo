@@ -34,7 +34,7 @@ impl<W: Widget> Layout<W> for FrameLayout<W> {
     }
 
     fn exact_size(&self, root: &W, output_size: XY) -> XY {
-        if !(self.margins * 2 >= output_size) {
+        if !(self.margins * 2 < output_size) {
             error!("output size not twice margin size");
             return output_size;
         }
@@ -43,7 +43,7 @@ impl<W: Widget> Layout<W> for FrameLayout<W> {
     }
 
     fn layout(&self, root: &mut W, output_size: XY, visible_rect: Rect) -> LayoutResult<W> {
-        if !(self.margins * 2 >= output_size) {
+        if !(self.margins * 2 < output_size) {
             error!("output size not twice margin size");
             return LayoutResult::new(Vec::default(), output_size);
         }

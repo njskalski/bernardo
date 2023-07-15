@@ -180,7 +180,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         }
     }
 
-    pub fn with_fill_policy(self, fill_policy: SizePolicy) -> Self {
+    pub fn with_size_policy(self, fill_policy: SizePolicy) -> Self {
         Self {
             fill_policy,
             ..self
@@ -240,6 +240,10 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
 
     fn full_size(&self) -> XY {
         self.full_size_from_items()
+    }
+
+    fn size_policy(&self) -> SizePolicy {
+        self.fill_policy
     }
 
     fn layout(&mut self, output_size: XY, visible_rect: Rect) {
