@@ -74,12 +74,10 @@ impl Output for BufferOutput {
         Ok(())
     }
 
-    // fn size(&self) -> XY {
-    //     SizedXY::size(self)
-    // }
-
     fn visible_rect(&self) -> Rect {
-        Rect::from_zero(self.size())
+        let res = Rect::from_zero(self.size());
+        debug_assert!(res.lower_right() <= self.size());
+        res
     }
 
     #[cfg(test)]

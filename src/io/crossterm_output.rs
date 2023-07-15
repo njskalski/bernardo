@@ -105,7 +105,11 @@ impl<W: Write> Output for CrosstermOutput<W> {
 
 
     fn visible_rect(&self) -> Rect {
-        Rect::from_zero(self.size())
+        let res = Rect::from_zero(self.size());
+
+        debug_assert!(res.lower_right() <= self.size);
+
+        res
     }
 
 

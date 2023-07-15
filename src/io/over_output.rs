@@ -30,6 +30,10 @@ impl<'a> OverOutput<'a> {
         faked_size: XY,
         real_output_offset: XY,
     ) -> Self {
+        if faked_size + real_output_offset < output.size() {
+            warn!("seemingly unnecessary OverOutput, which fits entirely within parent output: faked_size: {}, offset: {}, source output: {}", faked_size, real_output_offset, output.size());
+        }
+
         OverOutput {
             output,
             faked_size,
@@ -99,7 +103,15 @@ impl Output for OverOutput<'_> {
     }
 
     fn visible_rect(&self) -> Rect {
-        Rect::new(self.real_output_offset, self.output.size())
+        let parent_vis_rect = self.output.visible_rect();
+        let mut parent_vis_rect_in_my_space = parent_vis_rect;
+        parent_vis_rect_in_my_space.pos + self.real_output_offset;
+        // TODO unwrap
+        parent_vis_rect_in_my_space = parent_vis_rect_in_my_space.capped_at(self.faked_size).unwrap();
+
+        debug_assert!(parent_vis_rect_in_my_space.lower_right() <= self.size());
+
+        parent_vis_rect_in_my_space
     }
 
     #[cfg(test)]

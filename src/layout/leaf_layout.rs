@@ -73,7 +73,7 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
 
         debug_assert!(widget_output_size <= output_size);
 
-        if let Some(widget_visible_rect) = visible_rect.cap_at(widget_output_size) {
+        if let Some(widget_visible_rect) = visible_rect.capped_at(widget_output_size) {
             widget.layout(widget_output_size, widget_visible_rect);
 
             debug!("leaf layout for {}, returning {}", &widget_desc, widget_output_size);

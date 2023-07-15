@@ -6,3 +6,6 @@ pub mod empty_layout;
 pub mod frame_layout;
 pub mod widget_with_rect;
 mod layout_tests;
+
+#[cfg(test)]
+mod tests;

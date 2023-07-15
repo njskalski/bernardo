@@ -1,4 +1,4 @@
-use log::error;
+use log::{debug, error};
 
 use crate::config::theme::Theme;
 use crate::experiments::focus_group::{FocusGraph, FocusUpdate};
@@ -125,6 +125,8 @@ pub trait ComplexWidget: Widget + Sized {
     fn complex_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         fill_output(theme.ui.non_focused.background, output);
 
+        let visible_rect = output.visible_rect();
+
         match self.get_display_state_op() {
             None => error!("failed rendering {} without cached_sizes", self.typename()),
             Some(ds) => {
@@ -132,11 +134,24 @@ pub trait ComplexWidget: Widget + Sized {
                 let self_id = self.id();
 
                 let focused_subwidget = ds.focused.get(self);
-                let focused_desc = format!("{:?}", focused_subwidget);
+                let focused_desc = format!("{}", focused_subwidget);
 
                 for wwr in &ds.wwrs {
-                    let sub_output = &mut SubOutput::new(output, *wwr.rect());
                     let widget = wwr.widget().get(self);
+                    let child_widget_desc = format!("{}", widget);
+
+                    if visible_rect.intersect(wwr.rect()).is_none() {
+                        debug!("culling child widget {} of {}, no intersection between visible rect {} and wwr.rect {}",
+                            widget,
+                            self.typename(),
+                            visible_rect,
+                            wwr.rect()
+                        );
+                        continue;
+                    }
+
+                    let sub_output = &mut SubOutput::new(output, wwr.rect());
+
                     let subwidget_focused = focused && widget.id() == focused_subwidget.id();
 
                     if widget.id() != self_id {

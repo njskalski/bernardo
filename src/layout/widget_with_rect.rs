@@ -28,8 +28,8 @@ impl<W: Widget> WidgetWithRect<W> {
         }
     }
 
-    pub fn rect(&self) -> &Rect {
-        &self.rect
+    pub fn rect(&self) -> Rect {
+        self.rect
     }
 
     pub fn widget(&self) -> &SubwidgetPointer<W> {

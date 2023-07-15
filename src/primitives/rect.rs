@@ -142,7 +142,7 @@ impl Rect {
         }
     }
 
-    pub fn cap_at(&self, xy: XY) -> Option<Rect> {
+    pub fn capped_at(&self, xy: XY) -> Option<Rect> {
         let upper_left = self.upper_left();
 
         if upper_left.x >= xy.x {

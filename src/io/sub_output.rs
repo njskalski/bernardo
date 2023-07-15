@@ -17,7 +17,7 @@ pub struct SubOutput<'a> {
 impl<'a> SubOutput<'a> {
     pub fn new(output: &'a mut dyn Output, frame: Rect) -> Self {
         debug_assert!(frame.lower_right() <= output.size());
-        debug_assert!(output.visible_rect().intersect(frame).is_some());
+        debug_assert!(output.visible_rect().intersect(frame).is_some(), "no intersection between output.visible_rect() {} and frame of sub-output {}", output.visible_rect(), frame);
 
         SubOutput { output, frame }
     }
@@ -73,7 +73,14 @@ impl Output for SubOutput<'_> {
     }
 
     fn visible_rect(&self) -> Rect {
-        self.output.visible_rect().intersect(self.frame).unwrap()
+        let parent_visible_rect = self.output.visible_rect();
+        let mut parent_visible_rect_in_my_space = parent_visible_rect;
+        parent_visible_rect_in_my_space.pos += self.frame.pos;
+        let res = parent_visible_rect_in_my_space.capped_at(self.size()).unwrap();
+
+        debug_assert!(res.lower_right() <= self.size(), "res = {}, self.size() = {}", res, self.size());
+
+        res
     }
 
 

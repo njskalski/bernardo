@@ -56,10 +56,11 @@ pub fn fill_output(color: Color, output: &mut dyn Output) {
         return;
     }
 
-    if !(rect.lower_right() <= output.size()) {
+    let parent_size = output.size();
+    if !(rect.lower_right() <= parent_size) {
         error!("visible rect outside output size, that's definitely an error. Restoring by imposing artificial limit");
         rect.size = output.size() - rect.pos;
-        debug_assert!(rect.lower_right() <= output.size());
+        debug_assert!(rect.lower_right() <= parent_size);
     }
 
     for x in rect.upper_left().x..(rect.lower_right().x - 1) {

@@ -98,7 +98,9 @@ impl Output for MockOutput {
     }
 
     fn visible_rect(&self) -> Rect {
-        Rect::from_zero(self.buffer_0.size())
+        let res = Rect::from_zero(self.buffer_0.size());
+        debug_assert!(res.lower_right() <= self.size());
+        res
     }
 
 

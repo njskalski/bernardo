@@ -275,11 +275,3 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
         self.simple_layout(root, output_size, visible_rect)
     }
 }
-
-/*
-not returning a cut_out_rect that would have been invisible (rect
-Rect { pos: XY { x: 0, y: 0 }, size: XY { x: 49, y: 1 } },
-
-SizeConstraint { x: Some(73), y: Some(1), visible: Rect { pos: XY { x: 48, y: 36 }, size: XY { x: 25, y: 1 } } })
-
- */
