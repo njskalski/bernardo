@@ -80,7 +80,8 @@ impl Output for OverOutput<'_> {
             }
             let x = x as u16;
 
-            if x >= local_visible_rect.lower_right().x {
+            // if character would be drawn beyond output, drop it.
+            if x + grapheme.width() as u16 >= local_visible_rect.lower_right().x {
                 debug!("early exit 3");
                 break;
             }

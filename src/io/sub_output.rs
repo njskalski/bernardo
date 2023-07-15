@@ -40,6 +40,7 @@ impl Output for SubOutput<'_> {
         let end_pos = pos + (text.width() as u16, 0);
 
         if cfg!(debug_assertions) {
+            // this <= is not an error, grapheme END can meet with frame END.
             debug_assert!(end_pos.x <= self.frame.size.x,
                           "drawing outside (to the right) the sub-output: ({} to {}) of {}",
                           pos, end_pos, self.frame.size);

@@ -48,10 +48,22 @@ pub fn fill_output(color: Color, output: &mut dyn Output) {
         Effect::None,
     );
 
-    let rect = output.visible_rect();
+    let mut rect = output.visible_rect();
 
-    for x in rect.upper_left().x..rect.lower_right().x {
-        for y in rect.upper_left().y..rect.lower_right().y {
+    // this test just protects substractions in the loop below.
+    if rect.lower_right().x < 1 || rect.lower_right().y < 1 {
+        error!("degenerated rect, skipping fill_output");
+        return;
+    }
+
+    if !(rect.lower_right() <= output.size()) {
+        error!("visible rect outside output size, that's definitely an error. Restoring by imposing artificial limit");
+        rect.size = output.size() - rect.pos;
+        debug_assert!(rect.lower_right() <= output.size());
+    }
+
+    for x in rect.upper_left().x..(rect.lower_right().x - 1) {
+        for y in rect.upper_left().y..(rect.lower_right().y - 1) {
             output.print_at(
                 XY::new(x, y),
                 style,
