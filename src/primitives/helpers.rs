@@ -65,8 +65,8 @@ pub fn fill_output(color: Color, output: &mut dyn Output) {
         debug_assert!(rect.lower_right() <= parent_size);
     }
 
-    for x in rect.upper_left().x..(rect.lower_right().x - 1) {
-        for y in rect.upper_left().y..(rect.lower_right().y - 1) {
+    for x in rect.upper_left().x..rect.lower_right().x {
+        for y in rect.upper_left().y..rect.lower_right().y {
             output.print_at(
                 XY::new(x, y),
                 style,

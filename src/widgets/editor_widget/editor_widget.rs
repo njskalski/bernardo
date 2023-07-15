@@ -1,7 +1,7 @@
 use std::cmp::{max, min};
 use std::collections::BTreeMap;
 use std::ops::Range;
-use std::sync::RwLockWriteGuard;
+use std::sync::{RwLockReadGuard, RwLockWriteGuard};
 use std::time::Duration;
 
 use crossterm::style::style;
@@ -765,7 +765,7 @@ impl EditorWidget {
                     combined_line.push((style, tr));
 
                     if x_offset as u16 >= visible_rect.lower_right().x {
-                        debug!("early exit 6: widget after visible rect");
+                        debug!("early exit 6: character after visible rect");
                         break;
                     }
                 }
@@ -1127,6 +1127,15 @@ impl Widget for EditorWidget {
     }
 
     fn full_size(&self) -> XY {
+
+        // match self.buffer.lock() {
+        //     Some(buffer_lock) => {
+        //         buffer_lock.get
+        //
+        //     }
+        //     None => {}
+        // }
+
         MIN_EDITOR_SIZE
     }
 

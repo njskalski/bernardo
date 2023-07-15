@@ -145,10 +145,10 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
 
         for item in self.items() {
             size = XY::new(
-                // depth * 2 + 1 + label_length
+                // depth * 2 + 2 + label_length. The +2 comes from the fact, that even at 0 depth, we add a triangle AND a space before the label.
                 size
                     .x
-                    .max(item.0 * 2 + 1 + item.1.label().width() as u16), // TODO fight overflow here.
+                    .max(item.0 * 2 + 2 + item.1.label().width() as u16), // TODO fight overflow here.
                 size.y + 1,
             );
         }
