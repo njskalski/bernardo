@@ -131,8 +131,8 @@ impl<W: Widget> WithScroll<W> {
         }
     }
 
-    fn get_margin_width_for_size(size: XY) -> u16 {
-        format!("{}", size.y).width() as u16 + 2 // TODO this is a dirty fix
+    fn get_margin_width_for_height(height: u16) -> u16 {
+        format!("{}", height).width() as u16 + 2 // TODO this is a dirty fix
     }
 }
 
@@ -155,7 +155,7 @@ impl<W: Widget> Widget for WithScroll<W> {
 
         let child_full_size = self.child_widget.full_size();
         // there is a potential error here, if we are later called with different size than child_full_size, margin might get too small
-        let margin = if self.line_no { Self::get_margin_width_for_size(child_full_size) } else { 0 };
+        let margin = if self.line_no { Self::get_margin_width_for_height(child_full_size.y) } else { 0 };
 
         let res = match self.scroll.direction {
             ScrollDirection::Horizontal => {
@@ -173,23 +173,44 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn size_policy(&self) -> SizePolicy {
-        match self.scroll.direction {
-            ScrollDirection::Horizontal => {
-                SizePolicy::MATCH_LAYOUTS_WIDTH
-            }
-            ScrollDirection::Vertical => {
-                SizePolicy::MATCH_LAYOUTS_HEIGHT
-            }
-            ScrollDirection::Both => {
-                SizePolicy::MATCH_LAYOUT
-            }
-        }
+        // match self.scroll.direction {
+        //     ScrollDirection::Horizontal => {
+        //         SizePolicy::MATCH_LAYOUTS_WIDTH
+        //     }
+        //     ScrollDirection::Vertical => {
+        //         SizePolicy::MATCH_LAYOUTS_HEIGHT
+        //     }
+        //     ScrollDirection::Both => {
+        //         SizePolicy::MATCH_LAYOUT
+        //     }
+        // }
+        // this has to be MATCH_LAYOUT in order for full_size to not be called.
+        SizePolicy::MATCH_LAYOUT
     }
 
     fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        let child_full_size = self.child_widget.full_size();
+        // TODO make sure margin is never wider than x, add failsafes
+        let child_full_size: XY = match self.child_widget.size_policy() {
+            SizePolicy::MATCH_LAYOUT => {
+                let y = output_size.y;
+                let x = output_size.x - if self.line_no { Self::get_margin_width_for_height(y) } else { 0 };
+                XY::new(x, y)
+            }
+            SizePolicy::MATCH_LAYOUTS_HEIGHT => {
+                let y = output_size.y;
+                let x = min(self.child_widget.full_size().x, output_size.x - if self.line_no { Self::get_margin_width_for_height(y) } else { 0 });
+                XY::new(x, y)
+            }
+            SizePolicy::MATCH_LAYOUTS_WIDTH => {
+                let y = self.child_widget.full_size().y;
+                let x = output_size.x - if self.line_no { Self::get_margin_width_for_height(y) } else { 0 };
+                XY::new(x, y)
+            }
+        };
+
+        // let child_full_size = self.child_widget.full_size();
         let margin_width = if self.line_no {
-            Self::get_margin_width_for_size(child_full_size)
+            Self::get_margin_width_for_height(child_full_size.y)
         } else {
             0 as u16
         };
@@ -220,7 +241,7 @@ impl<W: Widget> Widget for WithScroll<W> {
                 min(child_full_size.x, parent_space_child_output_rect.size.x)
             },
             if self.scroll.direction.free_y() {
-                max(child_full_size.x, parent_space_child_output_rect.size.x)
+                max(child_full_size.y, parent_space_child_output_rect.size.y)
             } else {
                 min(child_full_size.y, parent_space_child_output_rect.size.y)
             },
