@@ -14,6 +14,7 @@ use crate::primitives::xy::XY;
 use crate::subwidget;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::big_list::msg::BigListWidgetMsg;
 use crate::widgets::text_widget::TextWidget;
@@ -36,6 +37,8 @@ pub struct BigList<T: Widget> {
 
     display_state: Option<DisplayState<Self>>,
     kite: XY,
+
+    size_policy: SizePolicy,
 }
 
 impl<T: Widget> BigList<T> {
@@ -50,6 +53,7 @@ impl<T: Widget> BigList<T> {
             no_items_text: TextWidget::new(Box::new("empty")),
             display_state: None,
             kite: XY::ZERO,
+            size_policy: SizePolicy::MATCH_LAYOUTS_WIDTH,
         }
     }
 
@@ -70,6 +74,13 @@ impl<T: Widget> BigList<T> {
             ScrollEnum::End => can_go_down,
             ScrollEnum::PageUp => can_go_up,
             ScrollEnum::PageDown => can_go_down,
+        }
+    }
+
+    pub fn with_size_policy(self, size_policy: SizePolicy) -> Self {
+        Self {
+            size_policy,
+            ..self
         }
     }
 
@@ -169,11 +180,16 @@ impl<T: Widget> Widget for BigList<T> {
     }
 
     fn full_size(&self) -> XY {
+        warn!("using completely arbitrary value - expected to be filling the space");
         XY::new(10, 4) // TODO completely arbitrary
     }
 
     fn layout(&mut self, output_size: XY, visible_rect: Rect) {
         self.complex_layout(output_size, visible_rect)
+    }
+
+    fn size_policy(&self) -> SizePolicy {
+        self.size_policy
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

@@ -38,6 +38,11 @@ pub struct WithScroll<W: Widget> {
     layout_res: Option<LayoutRes>,
 }
 
+struct InternalOutputSize {
+    size: XY,
+    margin_width: u16,
+}
+
 impl<W: Widget> WithScroll<W> {
     pub const TYPENAME: &'static str = "with_scroll";
     pub const MIN_SIZE: XY = XY::new(3, 4);
@@ -131,8 +136,79 @@ impl<W: Widget> WithScroll<W> {
         }
     }
 
-    fn get_margin_width_for_size(size: XY) -> u16 {
-        format!("{}", size.y).width() as u16 + 2 // TODO this is a dirty fix
+    fn get_margin_width_for_height(height: u16) -> u16 {
+        format!("{}", height).width() as u16 + 2 // TODO logarithm? Never heard of it.
+    }
+
+    fn get_output_size_that_will_be_offered_to_child(&self, output_size: XY) -> InternalOutputSize {
+        /*
+        This is a little over-documented function, but I am tired and I make mistakes, so it's quicker to just dump my brain then investigate "what was I thinking" later.
+         */
+        let child_size_policy = self.child_widget.size_policy();
+
+        // let's decide how much space will be offered to child first.
+        let child_full_size = self.child_widget.full_size();
+        let mut internal_output_size = child_full_size;
+
+        if self.scroll.direction.free_y() {
+            // we have infinite y, let's see what child widget would like to do.
+            if self.child_widget.size_policy().y == DeterminedBy::Widget {
+                debug!("y1 Widget decides height, it has infinite space. So it takes child_full_size.y = {}", child_full_size.y);
+                internal_output_size.y = child_full_size.y;
+            } else {
+                internal_output_size.y = max(child_full_size.y, output_size.y);
+                debug!("y2 Widget relies on layout to decide height, it has infinite space and is at most {} tall. So it takes max(child_full_size.y = {}, output_size.y = {}) = {}", child_full_size.y, child_full_size.y, output_size.y, internal_output_size.y);
+            }
+        } else {
+            // we have at most output_size.y cells available
+            if self.child_widget.size_policy().y == DeterminedBy::Widget {
+                internal_output_size.y = min(child_full_size.y, output_size.y);
+                debug!("y3 Widget decides height, it has FINITE space. It takes child_full_size.y = {}, layout height is = {}. It takes min() = {}", child_full_size.y, output_size.y, internal_output_size.y);
+            } else {
+                debug!("y4 Widget relies on layout to decide height, layout is {} high.", output_size.y);
+                internal_output_size.y = output_size.y;
+            }
+        }
+
+        // now that we know height y, we can see what's our final width.
+        let (margin_width, max_output_width) = if self.line_no {
+            let margin_width = Self::get_margin_width_for_height(internal_output_size.y);
+            debug!("having {} lines to count, I need {} width for the numbers.", internal_output_size.y, margin_width);
+
+            if margin_width > output_size.x {
+                error!("margin_width = {} > {} = output_size.x, this is a TODO.", margin_width, output_size.x);
+                (0, output_size.x)
+            } else {
+                (margin_width, output_size.x - margin_width)
+            }
+        } else {
+            debug!("with no line numbers, I can use full width of {}", output_size.x);
+            (0, output_size.x)
+        };
+
+        if self.scroll.direction.free_x() {
+            if self.child_widget.size_policy().x == DeterminedBy::Widget {
+                debug!("x1 Widget decides width, it has infinite space. So it takes child_full_size.x = {}", child_full_size.x);
+                internal_output_size.x = child_full_size.x;
+            } else {
+                internal_output_size.x = max(child_full_size.x, max_output_width);
+                debug!("x2 Widget relies on layout to decide width, it has infinite space and is at most {} wide. So it takes max(child_full_size.x = {}, max_output_width = {}) = {}", child_full_size.x, child_full_size.x, max_output_width, internal_output_size.x);
+            }
+        } else {
+            // we have at most max_output_width cells available
+            if self.child_widget.size_policy().x == DeterminedBy::Widget {
+                internal_output_size.x = min(child_full_size.x, max_output_width);
+                debug!("x3 Widget decides width, it has FINITE space. It takes child_full_size.x = {}, max_output_width is = {}. It takes min() = {}", child_full_size.x, max_output_width, internal_output_size.x);
+            } else {
+                debug!("x4 Widget relies on layout to decide width, layout is {} wide.", max_output_width);
+                internal_output_size.y = max_output_width;
+            }
+        }
+
+        InternalOutputSize {
+            size: internal_output_size,
+            margin_width,
+        }
     }
 }
 
@@ -153,96 +229,60 @@ impl<W: Widget> Widget for WithScroll<W> {
     fn full_size(&self) -> XY {
         error!("this shouldn't be even called, with scroll should be used only with greedy layout");
 
-        let child_full_size = self.child_widget.full_size();
-        // there is a potential error here, if we are later called with different size than child_full_size, margin might get too small
-        let margin = if self.line_no { Self::get_margin_width_for_size(child_full_size) } else { 0 };
-
-        let res = match self.scroll.direction {
-            ScrollDirection::Horizontal => {
-                XY::new(Self::MIN_SIZE.x + margin, child_full_size.y)
-            }
-            ScrollDirection::Vertical => {
-                XY::new(child_full_size.x + margin, Self::MIN_SIZE.y)
-            }
-            ScrollDirection::Both => {
-                Self::MIN_SIZE + XY::new(margin, 0)
-            }
-        };
-
-        res
+        // this code should be dead, ignore it.
+        XY::new(3, 3)
     }
 
     fn size_policy(&self) -> SizePolicy {
-        match self.scroll.direction {
-            ScrollDirection::Horizontal => {
-                SizePolicy::MATCH_LAYOUTS_WIDTH
-            }
-            ScrollDirection::Vertical => {
-                SizePolicy::MATCH_LAYOUTS_HEIGHT
-            }
-            ScrollDirection::Both => {
-                SizePolicy::MATCH_LAYOUT
-            }
-        }
+        // this has to be MATCH_LAYOUT in order for full_size to not be called.
+        // If I want the scrolled things to not be completely greedy, I'd need to change the contract.
+        // But I don't think it makes sense, it's super easy to create artificial constraint.
+
+        SizePolicy::MATCH_LAYOUT
     }
 
     fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        let child_full_size = self.child_widget.full_size();
-        let margin_width = if self.line_no {
-            Self::get_margin_width_for_size(child_full_size)
-        } else {
-            0 as u16
+        self.layout_res = None; // erasing old layout_res
+
+        let child_output = self.get_output_size_that_will_be_offered_to_child(output_size);
+
+        if child_output.size.x == 0 || child_output.size.y == 0 {
+            error!("child output is degenerated ({}), will not lay out further.", child_output.size);
+            return;
+        }
+
+        if child_output.margin_width > visible_rect.size.x {
+            warn!("margin ({}) is wider than visible rect ({}), will not lay out further.", child_output.margin_width, visible_rect.size.x);
+            return;
+        }
+
+        let child_visible_rect_pos_in_parent_space = XY::new(child_output.margin_width, 0);
+        let parent_space_child_output_rect = /* output part that can be offered to child*/ Rect::new(child_visible_rect_pos_in_parent_space, output_size - child_visible_rect_pos_in_parent_space);
+        let child_visible_rect_in_parent_space: Rect = match visible_rect.intersect(parent_space_child_output_rect) {
+            Some(intersection) => {
+                debug!("in parent space, visible rect is {}, so with {} margin, child has {}", visible_rect, child_output.margin_width, intersection);
+                intersection
+            }
+            None => {
+                debug!("intersection between visible rect {} and space we can offer child after substracting {} margin was empty, so we do not layout further.", visible_rect, child_output.margin_width);
+                return;
+            }
         };
 
-        if !self.scroll.direction.free_x() {
-            debug_assert!(child_full_size.x + margin_width as u16 <= output_size.x)
-        }
-
-        if !self.scroll.direction.free_y() {
-            debug_assert!(child_full_size.y <= output_size.y)
-        }
-
-
-        // ok, first let's determine parent_space_child_output_rect. I just take everything that's not a margin, no matter scroll settings. (this might be a TODO)
-        debug_assert!(output_size.x > margin_width);
-        let parent_space_child_output_rect = Rect::new(XY::new(margin_width, 0), XY::new(output_size.x - margin_width, output_size.y));
-        self.scroll.follow_kite(parent_space_child_output_rect.size,
-                                self.child_widget.kite());
-
-        /*
-        this is the size of output communicated to child, so LARGER, because we have scroll
-         */
-        let child_space_output_size: XY = XY::new(
-            if self.scroll.direction.free_x() {
-                // this is the case when we want to offer "at least as much as widget wants"
-                max(child_full_size.x, parent_space_child_output_rect.size.x)
-            } else {
-                min(child_full_size.x, parent_space_child_output_rect.size.x)
-            },
-            if self.scroll.direction.free_y() {
-                max(child_full_size.x, parent_space_child_output_rect.size.x)
-            } else {
-                min(child_full_size.y, parent_space_child_output_rect.size.y)
-            },
-        );
-
-        // TODO what if it's empty?
-        // let mut child_space_visible_rect = visible_rect.intersect(parent_space_child_output_rect).unwrap();
-        let child_space_visible_rect = visible_rect.shifted(self.scroll.offset);
-        // child_space_visible_rect = child_space_visible_rect.capped_at(child_space_output_size).unwrap();
-
-        self.child_widget.layout(child_space_output_size, child_space_visible_rect);
-
-        // debug_assert!(parent_space_child_output_rect.lower_right() == output_size,
-        //               "parent_space_child_output_rect.lower_right() = {} != {} = output_size, rect {}",
-        //               parent_space_child_output_rect.lower_right(), output_size, parent_space_child_output_rect,
-        // );
-
+        let child_visible_rect_in_child_space: Rect = match child_visible_rect_in_parent_space.minus_shift(child_visible_rect_pos_in_parent_space) {
+            Some(s) => s,
+            None => {
+                error!("impossible: failed to unwrap minus shift of some other shift.");
+                return;
+            }
+        };
+        self.child_widget.layout(child_output.size, child_visible_rect_in_child_space);
+        
         self.layout_res = Some(LayoutRes {
-            margin_width,
+            margin_width: child_output.margin_width,
             parent_space_child_output_rect,
-            child_space_output_size,
-            child_space_visible_rect,
+            child_space_output_size: child_output.size,
+            child_space_visible_rect: child_visible_rect_in_child_space,
         });
     }
 
