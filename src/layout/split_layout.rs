@@ -172,25 +172,31 @@ impl<W: Widget> SplitLayout<W> {
             }
         }
 
-        let unit = leftover as f32 / sum_props;
-        let mut biggest_idx = 0;
+        let mut biggest_prop_idx: Option<usize> = None;
+        let unit = if sum_props > 0.0f32 { leftover as f32 / sum_props } else { 0.0f32 };
 
         for (idx, child) in self.children.iter().enumerate() {
             if let SplitRule::Proportional(p) = child.split_rule {
-                amounts[idx] = (unit * p) as usize;
+                if unit > 0.0f32 {
+                    amounts[idx] += (unit * p) as usize;
+                }
 
                 // TODO this can potentially lead to extending a fixed-sized #0 slot
-                if idx > 0 {
-                    if amounts[idx] > amounts[biggest_idx] {
-                        biggest_idx = idx;
+                if let Some(old_idx) = biggest_prop_idx {
+                    if amounts[idx] > amounts[old_idx] {
+                        biggest_prop_idx = Some(idx)
                     }
+                } else {
+                    biggest_prop_idx = Some(idx);
                 }
             }
         }
 
-        let sum_ = amounts.iter().fold(0 as usize, |a, b| a + *b);
-        let difference = free_axis - sum_;
-        amounts[biggest_idx] += difference;
+        if let Some(idx) = biggest_prop_idx {
+            let sum_ = amounts.iter().fold(0 as usize, |a, b| a + *b);
+            let difference = free_axis - sum_;
+            amounts[idx] += difference;
+        }
 
         let mut res: Vec<Rect> = Vec::new();
         res.reserve(amounts.len());
