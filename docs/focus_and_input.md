@@ -9,22 +9,21 @@ Bernardo TUI, and it's most mature component.
 As opposed to many other libraries, Layouts are not **Widgets**.  
 **Widget tree** is a tree in a sense of data structures, but not represented as any particular type. We say that A is
 parent
-of B when B owns and contains A.  
+of B when A owns and contains B.  
 **Focus** is "where the input goes first". It's hinted to the user with a color highlight.  
 **Focus path** is a path in **Widget Tree**, always starting with the top one (root of the tree), down to the smallest
-one that is
-highlighted. Entire **Focus path** should be properly hinted to user.  
+one that is highlighted. Entire **Focus path** should be properly hinted to user.  
 **Input** are universal events that are delivered to highlighted **Widget** via *on_input* method. Only **Widgets** on
-the
-**Focus Path** will be offered any input.  
+the **Focus Path** will be offered any input.  
 **Message** is any type implementing *AnyMsg* trait.
 
 ## Rules
 
 1. **Widgets** form a tree. This tree represents *at the same time* two different relationships:
     - ownership (parent owns child in borrowchecker sense)
-    - geometric containment: all children are guaranteed to draw only within the area of parent
-      All widgets are rectangular.
+    - geometric containment: all children are guaranteed to draw only within the area of parent.
+
+   All widgets are rectangular.
 2. Each **Widget** can point at most one of its children as a successor, this way forming **Focus Path**. No successor
    means "**Focus Path** ends
    on me". This is represented in code by methods:
@@ -45,9 +44,8 @@ the
 
     - **Input** is consumed, and a **Message** specific to **Widget** *A* is created.
     - **Input** is ignored, and then offered to a predecessor of **Widget** *A* on the **Focus Path**, which is a parent
-      of *A* in the **Widget Tree**. This process may continue up to the root of **Widget tree**, at which point **
-      Input**
-      event can be discarded as irrelevant.
+      of *A* in the **Widget Tree**. This process may continue up to the root of **Widget tree**, at which
+      point **Input** event can be discarded as irrelevant.
 
 4. A **Message** created by **Widget** *A* will be offered to **Widget** *A* in method
 

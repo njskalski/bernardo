@@ -1,4 +1,5 @@
 use crate::experiments::screen_shot::screenshot;
+use crate::primitives::xy::XY;
 use crate::widgets::tests::editor_view_testbed::EditorViewTestbed;
 use crate::widgets::tests::widget_testbed_builder::WidgetTestbedBuilder;
 

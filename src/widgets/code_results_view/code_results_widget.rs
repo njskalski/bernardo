@@ -66,8 +66,9 @@ impl CodeResultsView {
         Self {
             wid: get_new_widget_id(),
             label: TextWidget::new(Box::new("no description")).with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH),
-            item_list: WithScroll::new(ScrollDirection::Vertical,
-                                       BigList::new(vec![]),
+            item_list: WithScroll::new(ScrollDirection::Horizontal,
+                                       BigList::new(vec![])
+                                           .with_size_policy(SizePolicy::MATCH_LAYOUT),
             ),
             data_provider,
             failed_ids: HashSet::new(),
@@ -226,6 +227,10 @@ impl Widget for CodeResultsView {
         }
 
         self.complex_prelayout();
+    }
+
+    fn size_policy(&self) -> SizePolicy {
+        SizePolicy::MATCH_LAYOUT
     }
 
     fn full_size(&self) -> XY {
