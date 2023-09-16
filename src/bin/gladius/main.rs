@@ -1,14 +1,12 @@
 #![allow(dead_code)]
 #![allow(unreachable_patterns)]
 
-use std::io::stdout;
-use std::rc::Rc;
 use std::sync::Arc;
 
 use clap::Parser;
-use crossterm::terminal;
-use log::{debug, error};
+use log::debug;
 
+use bernardo::app::App;
 use bernardo::config::theme::Theme;
 use bernardo::experiments::clipboard::get_me_some_clipboard;
 use bernardo::fs::filesystem_front::FilesystemFront;
@@ -19,11 +17,6 @@ use bernardo::gladius::navcomp_loader::NavCompLoader;
 use bernardo::gladius::providers::Providers;
 use bernardo::gladius::real_navcomp_loader::RealNavCompLoader;
 use bernardo::gladius::run_gladius::run_gladius;
-use bernardo::io::crossterm_input::CrosstermInput;
-use bernardo::io::crossterm_output::CrosstermOutput;
-use bernardo::io::output::Output;
-use bernardo::primitives::sized_xy::SizedXY;
-use bernardo::primitives::xy::XY;
 use bernardo::tsw::language_set::LanguageSet;
 use bernardo::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 
@@ -48,36 +41,22 @@ fn main() {
     let (start_dir, files) = args.paths();
     let fsf = RealFS::new(start_dir).to_fsf();
 
-
     // Initializing Bernardo TUI
-    terminal::enable_raw_mode().expect("failed entering raw mode");
-    let input = CrosstermInput::new();
-    let stdout = stdout();
-    let output = CrosstermOutput::new(stdout);
+    App::init().with_alt_screen_mode().run_with(move |input, output| {
 
-    if output.size() == XY::ZERO {
-        error!("it seems like the screen has zero size.");
-        return;
-    }
+        let tree_sitter = Arc::new(TreeSitterWrapper::new(LanguageSet::full()));
+        let navcomp_loader = Arc::new(Box::new(RealNavCompLoader::new()) as Box<dyn NavCompLoader>);
 
-    let tree_sitter = Arc::new(TreeSitterWrapper::new(LanguageSet::full()));
-    let navcomp_loader = Arc::new(Box::new(
-        RealNavCompLoader::new()) as Box<dyn NavCompLoader>);
+        let providers = Providers::new(
+            config_ref,
+            fsf,
+            clipboard,
+            theme,
+            tree_sitter,
+            navcomp_loader,
+            vec![],
+        );
 
-    let providers = Providers::new(
-        config_ref,
-        fsf,
-        clipboard,
-        theme,
-        tree_sitter,
-        navcomp_loader,
-        vec![],
-    );
-
-    run_gladius(
-        providers,
-        input,
-        output,
-        files,
-    )
+        run_gladius(providers, input, output, files);
+    }).expect("Expected the app to work")
 }
