@@ -19,6 +19,8 @@ pub struct TextWidget {
 }
 
 impl TextWidget {
+    pub const TYPENAME: &'static str = "text_widget";
+
     pub fn new(text: Box<dyn Printable>) -> Self {
         Self {
             wid: get_new_widget_id(),
@@ -63,9 +65,9 @@ impl Widget for TextWidget {
     }
 
     fn typename(&self) -> &'static str {
-        "TextWidget"
+        Self::TYPENAME
     }
-
+    fn static_typename() -> &'static str where Self: Sized { Self::TYPENAME }
     fn size_policy(&self) -> SizePolicy {
         self.size_policy
     }

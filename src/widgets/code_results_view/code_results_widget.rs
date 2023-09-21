@@ -107,6 +107,9 @@ impl Widget for CodeResultsView {
         Self::TYPENAME
     }
 
+    fn static_typename() -> &'static str where Self: Sized {
+        Self::TYPENAME
+    }
     fn prelayout(&mut self) {
         let was_empty = self.item_list.internal().is_empty();
         self.data_provider.poll();

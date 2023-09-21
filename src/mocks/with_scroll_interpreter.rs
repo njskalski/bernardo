@@ -13,10 +13,10 @@ pub struct WithScrollWidgetInterpreter<'a, T: Widget> {
 
 impl<'a, T: Widget> WithScrollWidgetInterpreter<'a, T> {
     pub fn new(output: &'a MetaOutputFrame, meta: &'a Metadata) -> Self {
-        debug_assert!(meta.typename == WithScroll::TYPENAME);
+        debug_assert!(meta.typename == WithScroll::<T>::static_typename());
 
         // Checking if we have this thing inside
-        debug_assert!(output.get_meta_by_type(T::typename()).find(|item| {
+        debug_assert!(output.get_meta_by_type(T::static_typename()).find(|item| {
             meta.rect.contains_rect(item.rect)
         }).is_some());
 

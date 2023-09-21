@@ -311,7 +311,9 @@ impl Widget for EditorView {
     fn typename(&self) -> &'static str {
         Self::TYPENAME
     }
-
+    fn static_typename() -> &'static str where Self: Sized {
+        Self::TYPENAME
+    }
     fn prelayout(&mut self) {
         self.complex_prelayout();
     }

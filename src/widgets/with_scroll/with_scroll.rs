@@ -216,7 +216,9 @@ impl<W: Widget> Widget for WithScroll<W> {
     fn id(&self) -> WID {
         self.id
     }
-
+    fn static_typename() -> &'static str where Self: Sized {
+        Self::TYPENAME
+    }
     fn typename(&self) -> &'static str {
         Self::TYPENAME
     }

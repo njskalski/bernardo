@@ -237,7 +237,9 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     fn typename(&self) -> &'static str {
         TYPENAME
     }
-
+    fn static_typename() -> &'static str where Self: Sized {
+        TYPENAME
+    }
     fn full_size(&self) -> XY {
         self.full_size_from_items()
     }

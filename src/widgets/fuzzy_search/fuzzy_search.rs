@@ -4,7 +4,6 @@ use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::unpack_or_e;
 use crate::config::theme::Theme;
 use crate::cursor::cursor::CursorStatus;
 use crate::experiments::clipboard::ClipboardRef;
@@ -15,6 +14,7 @@ use crate::io::sub_output::SubOutput;
 use crate::primitives::common_edit_msgs::key_to_edit_msg;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
+use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
@@ -212,7 +212,9 @@ impl Widget for FuzzySearchWidget {
     fn typename(&self) -> &'static str {
         Self::TYPENAME
     }
-
+    fn static_typename() -> &'static str where Self: Sized {
+        Self::TYPENAME
+    }
     fn full_size(&self) -> XY {
         self.size_from_items()
     }

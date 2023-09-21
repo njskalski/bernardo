@@ -170,6 +170,10 @@ mod tests {
                 unimplemented!()
             }
 
+            fn static_typename() -> &'static str where Self: Sized {
+                unimplemented!()
+            }
+
             fn typename(&self) -> &'static str {
                 unimplemented!()
             }
@@ -203,6 +207,10 @@ mod tests {
         }
         impl Widget for DummyWidget {
             fn id(&self) -> WID {
+                unimplemented!()
+            }
+
+            fn static_typename() -> &'static str where Self: Sized {
                 unimplemented!()
             }
 

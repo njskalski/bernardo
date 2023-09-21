@@ -89,6 +89,7 @@ pub struct MainView {
 
 impl MainView {
     pub const MIN_SIZE: XY = XY::new(32, 10);
+    pub const TYPENAME: &'static str = "main_view";
 
     pub fn create_new_display_for_code_results(&mut self, data_provider: Box<dyn CodeResultsProvider>) -> Result<usize, ()> {
         self.displays.push(
@@ -351,9 +352,11 @@ impl Widget for MainView {
     fn id(&self) -> WID {
         self.wid
     }
-
+    fn static_typename() -> &'static str where Self: Sized {
+        Self::TYPENAME
+    }
     fn typename(&self) -> &'static str {
-        "main_view"
+        Self::TYPENAME
     }
 
     fn prelayout(&mut self) {
