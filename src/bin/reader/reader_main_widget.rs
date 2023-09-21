@@ -1,10 +1,8 @@
-use std::borrow::BorrowMut;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 
 use bernardo::config::theme::Theme;
 use bernardo::io::buffer_output::buffer_output::BufferOutput;
 use bernardo::io::input_event::InputEvent;
-use bernardo::io::keys::{Key, Keycode};
 use bernardo::io::output::Output;
 use bernardo::primitives::rect::Rect;
 use bernardo::primitives::scroll::ScrollDirection;

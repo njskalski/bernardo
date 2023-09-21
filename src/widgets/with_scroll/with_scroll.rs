@@ -277,7 +277,7 @@ impl<W: Widget> Widget for WithScroll<W> {
             }
         };
         self.child_widget.layout(child_output.size, child_visible_rect_in_child_space);
-        
+
         self.layout_res = Some(LayoutRes {
             margin_width: child_output.margin_width,
             parent_space_child_output_rect,

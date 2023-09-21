@@ -28,7 +28,7 @@ use crate::widgets::editor_widget::completion::msg::CompletionWidgetMsg;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::list_widget::list_widget::ListWidget;
 use crate::widgets::text_widget::TextWidget;
-use crate::widgets::with_scroll::WithScroll;
+use crate::widgets::with_scroll::with_scroll::WithScroll;
 
 pub struct CompletionWidget {
     wid: WID,

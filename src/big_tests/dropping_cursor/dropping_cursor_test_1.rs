@@ -74,7 +74,7 @@ fn dropping_cursor_test_1() {
         lines == vec!["[some line )no1⏎", "[some line )no2⏎", "[some line )no3⏎", "[some line )no4⇱"]
     }));
 
-    full_setup.screenshot();
+    // full_setup.screenshot();
 
     full_setup.type_in("ugabuga!");
 

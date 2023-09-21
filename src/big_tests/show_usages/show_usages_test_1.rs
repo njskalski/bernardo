@@ -1,17 +1,12 @@
-use std::ops::Range;
 use std::thread::sleep;
 use std::time::Duration;
 
-use log::debug;
-
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
-use crate::mocks::mock_navcomp_provider::{MockCompletionMatcher, MockSymbolMatcher};
-use crate::primitives::printable::Printable;
+use crate::mocks::mock_navcomp_provider::MockSymbolMatcher;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::spath;
-use crate::w7e::navcomp_provider::{Completion, NavCompSymbol, SymbolType, SymbolUsage};
-use crate::w7e::navcomp_provider::CompletionAction::Insert;
+use crate::w7e::navcomp_provider::{NavCompSymbol, SymbolType, SymbolUsage};
 
 fn get_full_setup() -> FullSetup {
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/show_usages_test_1")
@@ -109,5 +104,5 @@ fn show_usages_integ_test_1() {
     }));
 
     full_setup.wait_frame();
-    full_setup.screenshot();
+    // full_setup.screenshot();
 }

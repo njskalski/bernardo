@@ -6,7 +6,7 @@ use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{unpack_or, unpack_or_e};
+use crate::unpack_or_e;
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;

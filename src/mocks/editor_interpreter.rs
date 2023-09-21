@@ -5,7 +5,6 @@ use crate::io::buffer_output::horizontal_iter_item::HorizontalIterItem;
 use crate::io::cell::Cell;
 use crate::io::output::Metadata;
 use crate::io::style::TextStyle;
-use crate::io::sub_output::SubOutput;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
 use crate::mocks::context_bar_interpreter::ContextBarWidgetInterpreter;
 use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
@@ -19,7 +18,7 @@ use crate::widgets::editor_widget::completion::completion_widget::CompletionWidg
 use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
-use crate::widgets::with_scroll::WithScroll;
+use crate::widgets::with_scroll::with_scroll::WithScroll;
 
 pub struct EditorInterpreter<'a> {
     meta: &'a Metadata,

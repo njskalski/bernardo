@@ -26,3 +26,4 @@ pub mod mock_navcomp_loader;
 pub mod context_bar_interpreter;
 pub mod code_results_interpreter;
 pub mod mock_labels_provider;
+pub mod with_scroll_interpreter;

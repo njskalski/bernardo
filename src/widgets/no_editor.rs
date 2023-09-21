@@ -1,5 +1,3 @@
-use log::error;
-
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::output::{Metadata, Output};
