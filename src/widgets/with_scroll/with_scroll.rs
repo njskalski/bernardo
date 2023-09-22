@@ -308,6 +308,18 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(test)]
+        {
+            output.emit_metadata(
+                Metadata {
+                    id: self.id,
+                    typename: self.typename().to_string(),
+                    rect: Rect::from_zero(output.size()),
+                    focused,
+                }
+            );
+        }
+
         let layout_res = unpack_or!(self.layout_res.as_ref(), (), "render before layout");
 
         if layout_res.margin_width > 0 {

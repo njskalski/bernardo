@@ -1,17 +1,15 @@
 use std::rc::Rc;
 
-use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
-use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::screen_shot::screenshot;
 use crate::gladius::paradigm::recursive_treat_views;
 use crate::io::input_event::InputEvent;
 use crate::io::output::FinalOutput;
-use crate::mocks::editor_interpreter::EditorInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
-use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
 use crate::mocks::mock_output::MockOutput;
+use crate::mocks::with_scroll_interpreter::WithScrollWidgetInterpreter;
 use crate::primitives::rect::Rect;
+use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
@@ -49,23 +47,32 @@ impl ListWidgetItem for Rc<String> {
 pub type ListWithScroll = WithScroll<ListWidget<Rc<String>>>;
 
 pub struct WithScrollTestbed {
-    pub editor_view: ListWithScroll,
+    pub widget: ListWithScroll,
     pub size: XY,
-    pub config: ConfigRef,
-    pub clipboard: ClipboardRef,
     pub theme: Theme,
     pub last_frame: Option<MetaOutputFrame>,
-    pub mock_navcomp_pilot: MockNavCompProviderPilot,
 }
 
 
 impl WithScrollTestbed {
+    pub fn new() -> Self {
+        let list_widget = ListWidget::<Rc<String>>::new();
+
+        Self {
+            widget: ListWithScroll::new(ScrollDirection::Vertical, list_widget),
+            size: XY::new(10, 20),
+            theme: Default::default(),
+            last_frame: None,
+        }
+    }
+
+
     pub fn next_frame(&mut self) {
         let (mut output, rcvr) = MockOutput::new(self.size, false, self.theme.clone());
 
-        self.editor_view.prelayout();
-        self.editor_view.layout(output.size(), Rect::from_zero(output.size()));
-        self.editor_view.render(&self.theme, true, &mut output);
+        self.widget.prelayout();
+        self.widget.layout(output.size(), Rect::from_zero(output.size()));
+        self.widget.render(&self.theme, true, &mut output);
 
         output.end_frame().unwrap();
 
@@ -77,10 +84,14 @@ impl WithScrollTestbed {
         self.last_frame.as_ref()
     }
 
-    pub fn interpreter(&self) -> Option<EditorInterpreter<'_>> {
+    pub fn interpreter(&self) -> Option<WithScrollWidgetInterpreter<'_, ListWidget<Rc<String>>>> {
         self.frame_op().map(|frame| {
-            EditorInterpreter::new(frame, frame.metadata.first().unwrap())
-        }).flatten()
+            let meta = frame.metadata.iter().find(|item| {
+                item.typename == ListWithScroll::static_typename()
+            }).unwrap();
+
+            WithScrollWidgetInterpreter::new(frame, meta)
+        })
     }
 
     pub fn screenshot(&self) -> bool {
@@ -90,7 +101,7 @@ impl WithScrollTestbed {
     }
 
     pub fn push_input(&mut self, input: InputEvent) {
-        recursive_treat_views(&mut self.editor_view, input);
+        recursive_treat_views(&mut self.widget, input);
         self.next_frame();
     }
 }
