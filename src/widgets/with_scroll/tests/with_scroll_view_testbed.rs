@@ -12,6 +12,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::Widget;
 use crate::widgets::list_widget::list_widget::ListWidget;
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
@@ -56,10 +57,11 @@ pub struct WithScrollTestbed {
 
 impl WithScrollTestbed {
     pub fn new() -> Self {
-        let list_widget = ListWidget::<Rc<String>>::new();
+        let mut list_widget = ListWidget::<Rc<String>>::new();
+        list_widget.set_fill_policy(SizePolicy::MATCH_LAYOUT);
 
         Self {
-            widget: ListWithScroll::new(ScrollDirection::Vertical, list_widget),
+            widget: ListWithScroll::new(ScrollDirection::Vertical, list_widget).with_line_no(),
             size: XY::new(10, 20),
             theme: Default::default(),
             last_frame: None,

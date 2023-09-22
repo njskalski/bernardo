@@ -201,7 +201,7 @@ impl<W: Widget> WithScroll<W> {
                 debug!("x3 Widget decides width, it has FINITE space. It takes child_full_size.x = {}, max_output_width is = {}. It takes min() = {}", child_full_size.x, max_output_width, internal_output_size.x);
             } else {
                 debug!("x4 Widget relies on layout to decide width, layout is {} wide.", max_output_width);
-                internal_output_size.y = max_output_width;
+                internal_output_size.x = max_output_width;
             }
         }
 

@@ -217,7 +217,8 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
     }
 
     pub fn full_size_from_items(&self) -> XY {
-        let rows = 2 + if self.show_column_names { 1 } else { 0 } as u16;
+        // TODO overflow
+        let rows = self.items().count() as u16 + if self.show_column_names { 1 } else { 0 } as u16;
         let mut cols = 0;
 
         for i in 0..Item::len_columns() {

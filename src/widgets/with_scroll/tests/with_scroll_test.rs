@@ -1,5 +1,7 @@
 use std::rc::Rc;
 
+use test_log::test;
+
 use crate::experiments::screen_shot::screenshot;
 use crate::widgets::with_scroll::tests::with_scroll_view_testbed::WithScrollTestbed;
 
@@ -26,7 +28,7 @@ fn basic_with_scroll_testbed_test() {
     {
         // let interpreter = setup.interpreter()?;
     }
-    
+
     screenshot(&setup.frame_op().unwrap().buffer);
 }
 
