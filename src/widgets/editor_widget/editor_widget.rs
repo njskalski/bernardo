@@ -1,14 +1,10 @@
 use std::cmp::{max, min};
 use std::collections::BTreeMap;
-use std::ops::Range;
-use std::sync::{RwLockReadGuard, RwLockWriteGuard};
 use std::time::Duration;
 
-use crossterm::style::style;
 use log::{debug, error, warn};
 use matches::debug_assert_matches;
 use streaming_iterator::StreamingIterator;
-use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{unpack_or, unpack_or_e};
@@ -37,10 +33,9 @@ use crate::primitives::xy::XY;
 use crate::promise::promise::{Promise, PromiseState};
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
-use crate::tsw::tree_sitter_wrapper::HighlightItem;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::handler::NavCompRef;
-use crate::w7e::navcomp_provider::{CompletionAction, NavCompSymbol};
+use crate::w7e::navcomp_provider::CompletionAction;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
@@ -50,7 +45,6 @@ use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::context_options_matrix::get_context_options;
 use crate::widgets::editor_widget::helpers::{CursorScreenPosition, find_trigger_and_substring};
 use crate::widgets::editor_widget::label::label::Label;
-use crate::widgets::editor_widget::label::labels_provider::LabelsProviderRef;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::main_view::msg::MainViewMsg;
 
@@ -1128,7 +1122,9 @@ impl Widget for EditorWidget {
     fn id(&self) -> WID {
         self.wid
     }
-
+    fn static_typename() -> &'static str where Self: Sized {
+        Self::TYPENAME
+    }
     fn typename(&self) -> &'static str {
         Self::TYPENAME
     }

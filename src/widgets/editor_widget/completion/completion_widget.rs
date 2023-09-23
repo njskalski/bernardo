@@ -28,7 +28,7 @@ use crate::widgets::editor_widget::completion::msg::CompletionWidgetMsg;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::list_widget::list_widget::ListWidget;
 use crate::widgets::text_widget::TextWidget;
-use crate::widgets::with_scroll::WithScroll;
+use crate::widgets::with_scroll::with_scroll::WithScroll;
 
 pub struct CompletionWidget {
     wid: WID,
@@ -156,7 +156,9 @@ impl Widget for CompletionWidget {
     fn id(&self) -> WID {
         self.wid
     }
-
+    fn static_typename() -> &'static str where Self: Sized {
+        Self::TYPENAME
+    }
     fn typename(&self) -> &'static str {
         Self::TYPENAME
     }

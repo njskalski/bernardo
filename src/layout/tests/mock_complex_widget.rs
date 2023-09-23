@@ -54,6 +54,10 @@ impl Widget for MockComplexWidget {
         self.id
     }
 
+    fn static_typename() -> &'static str where Self: Sized {
+        "MockComplexWidget"
+    }
+
     fn typename(&self) -> &'static str {
         "MockCompexWidget"
     }

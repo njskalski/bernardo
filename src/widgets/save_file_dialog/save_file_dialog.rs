@@ -43,7 +43,7 @@ use crate::widgets::save_file_dialog::dialogs::override_dialog;
 use crate::widgets::save_file_dialog::save_file_dialog_msg::SaveFileDialogMsg;
 use crate::widgets::spath_tree_view_node::DirTreeNode;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
-use crate::widgets::with_scroll::WithScroll;
+use crate::widgets::with_scroll::with_scroll::WithScroll;
 
 // TODO now it displays both files and directories in tree view, it should only directories
 
@@ -316,6 +316,10 @@ impl SaveFileDialogWidget {
 impl Widget for SaveFileDialogWidget {
     fn id(&self) -> WID {
         self.id
+    }
+
+    fn static_typename() -> &'static str where Self: Sized {
+        Self::TYPENAME
     }
 
     fn typename(&self) -> &'static str {

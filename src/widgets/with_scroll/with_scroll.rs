@@ -45,6 +45,8 @@ struct InternalOutputSize {
 
 impl<W: Widget> WithScroll<W> {
     pub const TYPENAME: &'static str = "with_scroll";
+
+    pub const TYPENAME_FOR_MARGIN: &'static str = "with_scroll_margin";
     pub const MIN_SIZE: XY = XY::new(3, 4);
 
     pub fn new(scroll_direction: ScrollDirection, widget: W) -> Self {
@@ -92,7 +94,7 @@ impl<W: Widget> WithScroll<W> {
         {
             output.emit_metadata(Metadata {
                 id: self.id(),
-                typename: self.typename().to_string(),
+                typename: Self::TYPENAME_FOR_MARGIN.to_string(),
                 rect: Rect::from_zero(XY::new(margin_width, output.size().y)),
                 focused,
             });
@@ -201,7 +203,7 @@ impl<W: Widget> WithScroll<W> {
                 debug!("x3 Widget decides width, it has FINITE space. It takes child_full_size.x = {}, max_output_width is = {}. It takes min() = {}", child_full_size.x, max_output_width, internal_output_size.x);
             } else {
                 debug!("x4 Widget relies on layout to decide width, layout is {} wide.", max_output_width);
-                internal_output_size.y = max_output_width;
+                internal_output_size.x = max_output_width;
             }
         }
 
@@ -216,7 +218,9 @@ impl<W: Widget> Widget for WithScroll<W> {
     fn id(&self) -> WID {
         self.id
     }
-
+    fn static_typename() -> &'static str where Self: Sized {
+        Self::TYPENAME
+    }
     fn typename(&self) -> &'static str {
         Self::TYPENAME
     }
@@ -277,7 +281,10 @@ impl<W: Widget> Widget for WithScroll<W> {
             }
         };
         self.child_widget.layout(child_output.size, child_visible_rect_in_child_space);
-        
+
+        // This is where scroll actually follows the widget.
+        self.scroll.follow_kite(output_size, self.child_widget.kite());
+
         self.layout_res = Some(LayoutRes {
             margin_width: child_output.margin_width,
             parent_space_child_output_rect,
@@ -306,6 +313,18 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(test)]
+        {
+            output.emit_metadata(
+                Metadata {
+                    id: self.id,
+                    typename: self.typename().to_string(),
+                    rect: Rect::from_zero(output.size()),
+                    focused,
+                }
+            );
+        }
+
         let layout_res = unpack_or!(self.layout_res.as_ref(), (), "render before layout");
 
         if layout_res.margin_width > 0 {

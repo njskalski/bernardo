@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::rc::Rc;
 
 use log::{debug, error, warn};
@@ -13,7 +12,6 @@ use crate::fs::path::SPath;
 use crate::fs::read_error::ReadError;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
-use crate::io::loading_state::LoadingState;
 use crate::io::output::Output;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
@@ -22,13 +20,8 @@ use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::xy::XY;
-use crate::promise::promise::PromiseState;
-use crate::text::buffer_state::BufferState;
-use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
-use crate::w7e::navcomp_group::NavCompGroupRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
@@ -43,7 +36,7 @@ use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
-use crate::widgets::with_scroll::WithScroll;
+use crate::widgets::with_scroll::with_scroll::WithScroll;
 
 pub type BufferId = Uuid;
 
@@ -96,6 +89,7 @@ pub struct MainView {
 
 impl MainView {
     pub const MIN_SIZE: XY = XY::new(32, 10);
+    pub const TYPENAME: &'static str = "main_view";
 
     pub fn create_new_display_for_code_results(&mut self, data_provider: Box<dyn CodeResultsProvider>) -> Result<usize, ()> {
         self.displays.push(
@@ -358,9 +352,11 @@ impl Widget for MainView {
     fn id(&self) -> WID {
         self.wid
     }
-
+    fn static_typename() -> &'static str where Self: Sized {
+        Self::TYPENAME
+    }
     fn typename(&self) -> &'static str {
-        "main_view"
+        Self::TYPENAME
     }
 
     fn prelayout(&mut self) {

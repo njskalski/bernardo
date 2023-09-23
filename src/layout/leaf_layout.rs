@@ -1,4 +1,4 @@
-use log::{debug, error};
+use log::debug;
 
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::{Layout, LayoutResult};
