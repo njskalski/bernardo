@@ -43,7 +43,8 @@ fn save_saves() {
     // we hit ctrl-s
     assert!(full_setup.send_key(full_setup.config().keyboard_config.editor.save));
 
-    // full_setup.screenshot();
+    // TODO this is necessary for some reason, not sure why
+    full_setup.wait_frame();
 
     // and now the filesystem DOES contain the string in question
     let read_back = file.read_entire_file_to_string().unwrap();

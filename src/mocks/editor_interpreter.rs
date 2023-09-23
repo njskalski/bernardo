@@ -52,7 +52,7 @@ pub struct LineIdxTuple {
 impl<'a> EditorInterpreter<'a> {
     pub fn new(mock_output: &'a MetaOutputFrame, meta: &'a Metadata) -> Option<Self> {
         let scrolls: Vec<&Metadata> = mock_output
-            .get_meta_by_type(WithScroll::<EditorWidget>::TYPENAME)
+            .get_meta_by_type(WithScroll::<EditorWidget>::TYPENAME_FOR_MARGIN)
             .filter(|c| meta.rect.contains_rect(c.rect))
             .collect();
 

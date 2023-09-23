@@ -36,7 +36,7 @@ impl MetaOutputFrame {
     }
 
     pub fn get_scroll<T: Widget>(&self) -> impl Iterator<Item=WithScrollWidgetInterpreter<T>> {
-        self.get_meta_by_type(WithScroll::<T>::TYPENAME).map(|meta|
+        self.get_meta_by_type(WithScroll::<T>::TYPENAME_FOR_MARGIN).map(|meta|
             WithScrollWidgetInterpreter::new(self, meta)
         )
     }

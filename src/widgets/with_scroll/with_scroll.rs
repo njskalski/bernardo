@@ -45,6 +45,8 @@ struct InternalOutputSize {
 
 impl<W: Widget> WithScroll<W> {
     pub const TYPENAME: &'static str = "with_scroll";
+
+    pub const TYPENAME_FOR_MARGIN: &'static str = "with_scroll_margin";
     pub const MIN_SIZE: XY = XY::new(3, 4);
 
     pub fn new(scroll_direction: ScrollDirection, widget: W) -> Self {
@@ -92,7 +94,7 @@ impl<W: Widget> WithScroll<W> {
         {
             output.emit_metadata(Metadata {
                 id: self.id(),
-                typename: self.typename().to_string(),
+                typename: Self::TYPENAME_FOR_MARGIN.to_string(),
                 rect: Rect::from_zero(XY::new(margin_width, output.size().y)),
                 focused,
             });
