@@ -54,7 +54,6 @@ pub struct WithScrollTestbed {
     pub last_frame: Option<MetaOutputFrame>,
 }
 
-
 impl WithScrollTestbed {
     pub fn new() -> Self {
         let mut list_widget = ListWidget::<Rc<String>>::new();
@@ -102,7 +101,7 @@ impl WithScrollTestbed {
         ).unwrap_or(false)
     }
 
-    pub fn push_input(&mut self, input: InputEvent) {
+    pub fn send_input(&mut self, input: InputEvent) {
         recursive_treat_views(&mut self.widget, input);
         self.next_frame();
     }

@@ -280,6 +280,9 @@ impl<W: Widget> Widget for WithScroll<W> {
         };
         self.child_widget.layout(child_output.size, child_visible_rect_in_child_space);
 
+        // This is where scroll actually follows the widget.
+        self.scroll.follow_kite(output_size, self.child_widget.kite());
+
         self.layout_res = Some(LayoutRes {
             margin_width: child_output.margin_width,
             parent_space_child_output_rect,

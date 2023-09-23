@@ -7,6 +7,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
+use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
@@ -22,6 +23,9 @@ use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 use crate::widgets::list_widget::provider::ListItemProvider;
+
+// TODO there is an issue here. Theoretically between prelayout and render, the number of items in provider can SHORTEN making "highlighted" invalid.
+// This highlights very clearly the problem with "providers" - they are not guaranteed to be constant. I'd have to copy the data from them out, or introduce some new invariants.
 
 pub const TYPENAME: &'static str = "list_widget";
 
@@ -41,7 +45,7 @@ pub struct ListWidget<Item: ListWidgetItem> {
 
     fill_policy: SizePolicy,
 
-    last_size: Option<XY>,
+    last_size: Option<Screenspace>,
 }
 
 // TODO reduce with ScrollEnum
@@ -67,9 +71,9 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
             on_miss: None,
             on_hit: None,
             on_change: None,
-            last_size: None,
             fill_policy: Default::default(),
             query: None,
+            last_size: None,
         }
     }
 
@@ -250,7 +254,12 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     }
 
     fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        self.last_size = Some(output_size);
+        self.last_size = Some(Screenspace::new(output_size, visible_rect));
+    }
+
+    fn kite(&self) -> XY {
+        // TODO overflow
+        XY::new(0, self.highlighted.unwrap_or(0) as u16)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -346,8 +355,49 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
             }
             ListWidgetMsg::Home => { None }
             ListWidgetMsg::End => { None }
-            ListWidgetMsg::PageUp => { None }
-            ListWidgetMsg::PageDown => { None }
+            ListWidgetMsg::PageUp => {
+                if let Some(highlighted) = self.highlighted {
+                    if highlighted > 0 {
+                        let last_size = unpack_or_e!(self.last_size, None, "page_up before layout");
+                        let page_height = last_size.page_height();
+                        let preferred_idx = if highlighted > page_height as usize { highlighted - page_height as usize } else { 0 };
+
+                        let count = self.items().take(preferred_idx + 1).count();
+                        if count > preferred_idx {
+                            self.highlighted = Some(preferred_idx);
+                        } else {
+                            if count > 0 {
+                                self.highlighted = Some(count - 1);
+                            } else {
+                                self.highlighted = None;
+                            }
+                        }
+                        self.on_change()
+                    } else {
+                        self.on_miss()
+                    }
+                } else {
+                    self.on_miss()
+                }
+            }
+            ListWidgetMsg::PageDown => {
+                if let Some(highlighted) = self.highlighted {
+                    let last_size = unpack_or_e!(self.last_size, None, "page_down before layout");
+                    let page_height = last_size.page_height();
+                    let preferred_idx = highlighted + page_height as usize;
+
+                    let count = self.items().take(preferred_idx + 1).count();
+                    if count > 0 {
+                        self.highlighted = Some(count - 1);
+                        self.on_change()
+                    } else {
+                        error!("something was highlighted, now provider is empty. That's an error described in focus_and_input.md in section about subscriptions");
+                        self.on_miss()
+                    }
+                } else {
+                    self.on_miss()
+                }
+            }
         };
     }
 
@@ -358,7 +408,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
             Metadata {
                 id: self.id(),
                 typename: self.typename().to_string(),
-                rect: Rect::from_zero(size),
+                rect: Rect::from_zero(size.output_size()),
                 focused,
             }
         );
@@ -396,7 +446,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
         for (line_idx, item) in self.items().enumerate() {
             debug!("y+idx = {}, osy = {:?}, item = {:?}", y_offset as usize + line_idx, output.size().y, item);
 
-            if y_offset as usize + line_idx >= size.y as usize {
+            if y_offset as usize + line_idx >= size.output_size().y as usize {
                 break;
             }
 
@@ -409,18 +459,18 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
             };
 
             for column_idx in 0..Item::len_columns() {
-                if x_offset >= size.x {
+                if x_offset >= size.output_size().x {
                     warn!("completely skipping drawing a column {} and consecutive, because it's offset is beyond output", column_idx);
                     break;
                 }
 
                 // it get's at most "what's left", but not more than it requires
-                let mut column_width = min(Item::get_min_column_width(column_idx), size.x - x_offset);
+                let mut column_width = min(Item::get_min_column_width(column_idx), size.output_size().x - x_offset);
                 debug_assert!(column_width > 0);
 
                 // that is unless it's a last cell, then it gets all there is
                 if column_idx + 1 == Item::len_columns() {
-                    column_width = size.x - x_offset;
+                    column_width = size.output_size().x - x_offset;
                 }
 
                 let actual_max_text_length = column_width;
