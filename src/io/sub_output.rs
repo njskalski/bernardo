@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Formatter};
 
-use log::{debug, error};
+use log::debug;
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::output::{Metadata, Output};
@@ -16,7 +16,7 @@ pub struct SubOutput<'a> {
 
 impl<'a> SubOutput<'a> {
     pub fn new(output: &'a mut dyn Output, frame: Rect) -> Self {
-        debug_assert!(frame.lower_right() <= output.size());
+        debug_assert!(frame.lower_right() <= output.size(), "{} <?= {}", frame.lower_right(), output.size());
         debug_assert!(output.visible_rect().intersect(frame).is_some(), "no intersection between output.visible_rect() {} and frame of sub-output {}", output.visible_rect(), frame);
 
         SubOutput { output, frame_in_parent_space: frame }
@@ -40,7 +40,7 @@ impl Output for SubOutput<'_> {
         let end_pos = pos + (text.width() as u16, 0);
 
         let visible_rect = self.visible_rect();
-        
+
         // if cfg!(debug_assertions) {
         //     // this <= is not an error, grapheme END can meet with frame END.
         //     debug_assert!(end_pos.x <= visible_rect.lower_right().x,

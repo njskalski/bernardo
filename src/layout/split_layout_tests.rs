@@ -40,16 +40,35 @@ pub mod tests {
     }
 
     impl Widget for MockWidget {
-        fn id(&self) -> WID { self.wid }
-        fn typename(&self) -> &'static str { "mock_widget" }
+        fn id(&self) -> WID {
+            self.wid
+        }
+        fn typename(&self) -> &'static str {
+            "mock_widget"
+        }
         fn size_policy(&self) -> SizePolicy {
             self.size_policy
         }
-        fn full_size(&self) -> XY { self.full_size }
+        fn full_size(&self) -> XY {
+            self.full_size
+        }
         fn layout(&mut self, output_size: XY, visible_rect: Rect) {}
-        fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> { todo!() }
-        fn update(&mut self, _msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> { todo!() }
-        fn render(&self, _theme: &Theme, _focused: bool, _output: &mut dyn Output) { todo!() }
+        fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+            todo!()
+        }
+        fn update(&mut self, _msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+            todo!()
+        }
+        fn render(&self, _theme: &Theme, _focused: bool, _output: &mut dyn Output) {
+            todo!()
+        }
+
+        fn static_typename() -> &'static str
+            where
+                Self: Sized,
+        {
+            "mock_widget"
+        }
     }
 
     struct MockComplexWidget {
@@ -70,8 +89,12 @@ pub mod tests {
         fn get_widget_pointer(idx: usize) -> SubwidgetPointer<MockComplexWidget> {
             let idx2 = idx;
             SubwidgetPointer::new(
-                Box::new(move |root: &MockComplexWidget| &root.items.get(idx).unwrap().1 as &dyn Widget),
-                Box::new(move |root: &mut MockComplexWidget| &mut root.items.get_mut(idx2).unwrap().1 as &mut dyn Widget),
+                Box::new(move |root: &MockComplexWidget| {
+                    &root.items.get(idx).unwrap().1 as &dyn Widget
+                }),
+                Box::new(move |root: &mut MockComplexWidget| {
+                    &mut root.items.get_mut(idx2).unwrap().1 as &mut dyn Widget
+                }),
             )
         }
 
@@ -82,7 +105,13 @@ pub mod tests {
             let mut result: Vec<u16> = Vec::new();
             for wwr in layout_result.wwrs {
                 let y_offset = result.iter().fold(0 as u16, |acc, item| acc + item);
-                assert_eq!(wwr.rect().pos.y, y_offset, "wwr.pos.y = {}, y_offset = {}", wwr.rect().pos, y_offset);
+                assert_eq!(
+                    wwr.rect().pos.y,
+                    y_offset,
+                    "wwr.pos.y = {}, y_offset = {}",
+                    wwr.rect().pos,
+                    y_offset
+                );
                 result.push(wwr.rect().size.y);
             }
 
@@ -91,34 +120,61 @@ pub mod tests {
     }
 
     impl Widget for MockComplexWidget {
-        fn id(&self) -> WID { self.wid }
+        fn id(&self) -> WID {
+            self.wid
+        }
 
-        fn typename(&self) -> &'static str { "mock_complex_widget" }
+        fn static_typename() -> &'static str where Self: Sized {
+            "mock_complex_widget"
+        }
 
-        fn full_size(&self) -> XY { self.size }
+        fn typename(&self) -> &'static str {
+            "mock_complex_widget"
+        }
 
-        fn layout(&mut self, output_size: XY, visible_rect: Rect) { self.complex_layout(output_size, visible_rect) }
-        fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> { todo!() }
-        fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> { todo!() }
-        fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) { todo!() }
+        fn full_size(&self) -> XY {
+            self.size
+        }
+
+        fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+            self.complex_layout(output_size, visible_rect)
+        }
+        fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+            todo!()
+        }
+        fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+            todo!()
+        }
+        fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+            todo!()
+        }
     }
 
     impl ComplexWidget for MockComplexWidget {
         fn get_layout(&self) -> Box<dyn Layout<Self>> {
             let mut layout = SplitLayout::new(SplitDirection::Vertical);
             for (idx, (split_rule, _)) in self.items.iter().enumerate() {
-                layout = layout.with(*split_rule, Box::new(LeafLayout::new(
-                    Self::get_widget_pointer(idx)
-                )));
+                layout = layout.with(
+                    *split_rule,
+                    Box::new(LeafLayout::new(Self::get_widget_pointer(idx))),
+                );
             }
 
             Box::new(layout)
         }
 
-        fn get_default_focused(&self) -> SubwidgetPointer<Self> { todo!() }
-        fn set_display_state(&mut self, display_state: DisplayState<Self>) { todo!() }
-        fn get_display_state_op(&self) -> Option<&DisplayState<Self>> { todo!() }
-        fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> { todo!() }
+        fn get_default_focused(&self) -> SubwidgetPointer<Self> {
+            todo!()
+        }
+        fn set_display_state(&mut self, display_state: DisplayState<Self>) {
+            todo!()
+        }
+        fn get_display_state_op(&self) -> Option<&DisplayState<Self>> {
+            todo!()
+        }
+        fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
+            todo!()
+        }
     }
 
     #[test]
@@ -131,12 +187,14 @@ pub mod tests {
 
         let mut mcw = MockComplexWidget::new(items);
 
-        assert_eq!(mcw.get_results(XY::new(10, 10), Rect::from_zero(XY::new(10, 10))),
-                   (XY::new(10, 10), vec![2, 4, 4])
+        assert_eq!(
+            mcw.get_results(XY::new(10, 10), Rect::from_zero(XY::new(10, 10))),
+            (XY::new(10, 10), vec![2, 4, 4])
         );
 
-        assert_eq!(mcw.get_results(XY::new(6, 6), Rect::from_zero(XY::new(6, 6))),
-                   (XY::new(6, 6), vec![2, 2, 2])
+        assert_eq!(
+            mcw.get_results(XY::new(6, 6), Rect::from_zero(XY::new(6, 6))),
+            (XY::new(6, 6), vec![2, 2, 2])
         );
     }
 
@@ -150,8 +208,9 @@ pub mod tests {
 
         let mut mcw = MockComplexWidget::new(items);
 
-        assert_eq!(mcw.get_results(XY::new(11, 11), Rect::from_zero(XY::new(11, 11))),
-                   (XY::new(11, 11), vec![2, 3, 6])
+        assert_eq!(
+            mcw.get_results(XY::new(11, 11), Rect::from_zero(XY::new(11, 11))),
+            (XY::new(11, 11), vec![2, 3, 6])
         );
     }
 
@@ -162,22 +221,20 @@ pub mod tests {
             (SplitRule::Fixed(5), MockWidget::new()),
         ];
 
-
         let mut mcw = MockComplexWidget::new(items);
 
-        assert_eq!(mcw.get_results(
-            XY::new(10, 13),
-            Rect::new(XY::ZERO, XY::new(10, 13)),
-        ),
-                   (XY::new(10, 13), vec![5, 5])
+        assert_eq!(
+            mcw.get_results(XY::new(10, 13), Rect::new(XY::ZERO, XY::new(10, 13))),
+            (XY::new(10, 13), vec![5, 5])
         );
     }
 
     #[test]
     fn test_split_4() {
-        let mut items: Vec<(SplitRule, MockWidget)> = vec![
-            (SplitRule::Fixed(2), /*XY::new(1, 1), Some(XY::new(10, 2))*/ MockWidget::new()),
-        ];
+        let mut items: Vec<(SplitRule, MockWidget)> = vec![(
+            SplitRule::Fixed(2),
+            /*XY::new(1, 1), Some(XY::new(10, 2))*/ MockWidget::new(),
+        )];
 
         for idx in 0..10 {
             items.push((SplitRule::Proportional(2.0 as f32), MockWidget::new()));
@@ -185,11 +242,9 @@ pub mod tests {
 
         let mut mcw = MockComplexWidget::new(items);
 
-        assert_eq!(mcw.get_results(
-            XY::new(10, 12),
-            Rect::new(XY::ZERO, XY::new(10, 12)),
-        ),
-                   (XY::new(10, 12), vec![2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+        assert_eq!(
+            mcw.get_results(XY::new(10, 12), Rect::new(XY::ZERO, XY::new(10, 12))),
+            (XY::new(10, 12), vec![2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
         );
     }
 }

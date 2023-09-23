@@ -21,6 +21,8 @@ pub struct DumpVisualizerWidget {
 }
 
 impl DumpVisualizerWidget {
+    pub const TYPENAME: &'static str = "DumpVisualizerWidget";
+
     pub fn new() -> Self {
         Self {
             wid: get_new_widget_id(),
@@ -48,7 +50,10 @@ impl Widget for DumpVisualizerWidget {
     }
 
     fn typename(&self) -> &'static str {
-        "DumpVisualizerWidget"
+        Self::TYPENAME
+    }
+    fn static_typename() -> &'static str where Self: Sized {
+        Self::TYPENAME
     }
 
     fn full_size(&self) -> XY {

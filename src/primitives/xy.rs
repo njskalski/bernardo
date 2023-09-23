@@ -55,6 +55,14 @@ impl XY {
             u16::min(self.y, other.y),
         )
     }
+
+    pub fn is_non_zero(&self) -> bool {
+        self.x > 0 || self.y > 0
+    }
+
+    pub fn has_non_zero_area(&self) -> bool {
+        self.x > 0 && self.y > 0
+    }
 }
 
 impl Div<u16> for XY {

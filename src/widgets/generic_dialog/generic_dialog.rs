@@ -53,6 +53,8 @@ enum GenericDialogMsg {
 impl AnyMsg for GenericDialogMsg {}
 
 impl GenericDialog {
+    pub const TYPENAME: &'static str = "generic_dialog";
+
     pub fn new(text: Box<dyn Printable>) -> Self {
         Self {
             wid: get_new_widget_id(),
@@ -126,9 +128,11 @@ impl Widget for GenericDialog {
     }
 
     fn typename(&self) -> &'static str {
-        "GenericDialog"
+        Self::TYPENAME
     }
-
+    fn static_typename() -> &'static str where Self: Sized {
+        Self::TYPENAME
+    }
     fn prelayout(&mut self) {
         self.complex_prelayout();
     }

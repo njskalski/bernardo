@@ -10,3 +10,4 @@ pub mod array_streaming_iterator;
 pub mod screen_shot;
 pub mod grapheme_lines_streaming_iterator;
 pub mod buffer_register;
+pub mod screenspace;

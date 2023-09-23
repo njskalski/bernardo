@@ -1,10 +1,8 @@
-use std::borrow::BorrowMut;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 
 use bernardo::config::theme::Theme;
 use bernardo::io::buffer_output::buffer_output::BufferOutput;
 use bernardo::io::input_event::InputEvent;
-use bernardo::io::keys::{Key, Keycode};
 use bernardo::io::output::Output;
 use bernardo::primitives::rect::Rect;
 use bernardo::primitives::scroll::ScrollDirection;
@@ -12,7 +10,7 @@ use bernardo::primitives::xy::XY;
 use bernardo::widget::any_msg::AnyMsg;
 use bernardo::widget::widget::{get_new_widget_id, WID, Widget};
 use bernardo::widgets::dump_visualizer_widget::DumpVisualizerWidget;
-use bernardo::widgets::with_scroll::WithScroll;
+use bernardo::widgets::with_scroll::with_scroll::WithScroll;
 
 pub struct ReaderMainWidget {
     wid: WID,
@@ -20,6 +18,8 @@ pub struct ReaderMainWidget {
 }
 
 impl ReaderMainWidget {
+    pub const TYPENAME: &'static str = "reader_main_widget";
+
     pub fn new(dump: BufferOutput) -> Self {
         Self {
             wid: get_new_widget_id(),
@@ -45,8 +45,12 @@ impl Widget for ReaderMainWidget {
         self.wid
     }
 
+    fn static_typename() -> &'static str where Self: Sized {
+        Self::TYPENAME
+    }
+
     fn typename(&self) -> &'static str {
-        "ReaderMainWidget"
+        Self::TYPENAME
     }
 
     fn full_size(&self) -> XY {

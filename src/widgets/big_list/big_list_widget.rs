@@ -173,6 +173,10 @@ impl<T: Widget> Widget for BigList<T> {
         Self::TYPENAME
     }
 
+
+    fn static_typename() -> &'static str where Self: Sized {
+        Self::TYPENAME
+    }
     fn prelayout(&mut self) {
         debug!("prelayout {}", self.typename());
 

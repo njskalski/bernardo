@@ -1,5 +1,3 @@
-use streaming_iterator::StreamingIterator;
-
 use crate::config::theme::Theme;
 use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::io::output::Metadata;
@@ -7,10 +5,13 @@ use crate::mocks::code_results_interpreter::CodeResultsViewInterpreter;
 use crate::mocks::editor_interpreter::EditorInterpreter;
 use crate::mocks::fuzzy_search_interpreter::FuzzySearchInterpreter;
 use crate::mocks::no_editor_interpreter::NoEditorInterpreter;
+use crate::mocks::with_scroll_interpreter::WithScrollWidgetInterpreter;
+use crate::widget::widget::Widget;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
 use crate::widgets::no_editor::NoEditorWidget;
+use crate::widgets::with_scroll::with_scroll::WithScroll;
 
 /*
 No time to come up with good name. It's basically a frame with "metadata" that was emited while it
@@ -32,6 +33,12 @@ impl MetaOutputFrame {
         self.get_meta_by_type(EditorView::TYPENAME).map(|meta|
             EditorInterpreter::new(self, meta)
         ).flatten()
+    }
+
+    pub fn get_scroll<T: Widget>(&self) -> impl Iterator<Item=WithScrollWidgetInterpreter<T>> {
+        self.get_meta_by_type(WithScroll::<T>::TYPENAME_FOR_MARGIN).map(|meta|
+            WithScrollWidgetInterpreter::new(self, meta)
+        )
     }
 
     pub fn get_no_editor(&self) -> Option<NoEditorInterpreter> {

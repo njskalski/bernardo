@@ -18,6 +18,8 @@ pub type WID = usize;
 pub trait Widget: 'static {
     fn id(&self) -> WID;
 
+    fn static_typename() -> &'static str where Self: Sized;
+
     fn typename(&self) -> &'static str;
 
     // This call is created to pull widget-independent data before size() call.

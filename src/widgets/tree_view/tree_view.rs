@@ -6,7 +6,6 @@ use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
@@ -15,6 +14,7 @@ use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
+use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
@@ -234,6 +234,10 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
 impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widget for TreeViewWidget<K, I> {
     fn id(&self) -> WID {
         self.id
+    }
+
+    fn static_typename() -> &'static str where Self: Sized {
+        TYPENAME
     }
 
     fn typename(&self) -> &'static str {
