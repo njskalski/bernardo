@@ -10,8 +10,7 @@ pub struct Screenspace {
 impl Screenspace {
     pub fn new(output_size: XY, visible_rect: Rect) -> Self {
         debug_assert!(output_size.has_non_zero_area());
-        // TODO this is not always true now
-        // debug_assert!(visible_rect.lower_right() <= output_size);
+        debug_assert!(visible_rect.lower_right() <= output_size);
         debug_assert!(visible_rect.size.has_non_zero_area());
 
         Self {

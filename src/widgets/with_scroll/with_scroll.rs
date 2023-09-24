@@ -39,7 +39,7 @@ pub struct WithScroll<W: Widget> {
 }
 
 struct InternalOutputSize {
-    size: XY,
+    child_size_in_its_output: XY,
     margin_width: u16,
 }
 
@@ -208,7 +208,7 @@ impl<W: Widget> WithScroll<W> {
         }
 
         InternalOutputSize {
-            size: internal_output_size,
+            child_size_in_its_output: internal_output_size,
             margin_width,
         }
     }
@@ -250,8 +250,8 @@ impl<W: Widget> Widget for WithScroll<W> {
 
         let child_output = self.get_output_size_that_will_be_offered_to_child(output_size);
 
-        if child_output.size.x == 0 || child_output.size.y == 0 {
-            error!("child output is degenerated ({}), will not lay out further.", child_output.size);
+        if child_output.child_size_in_its_output.x == 0 || child_output.child_size_in_its_output.y == 0 {
+            error!("child output is degenerated ({}), will not lay out further.", child_output.child_size_in_its_output);
             return;
         }
 
@@ -261,7 +261,16 @@ impl<W: Widget> Widget for WithScroll<W> {
         }
 
         let child_visible_rect_pos_in_parent_space = XY::new(child_output.margin_width, 0);
-        let parent_space_child_output_rect = /* output part that can be offered to child*/ Rect::new(child_visible_rect_pos_in_parent_space, output_size - child_visible_rect_pos_in_parent_space);
+
+        // this is the maximum space (constraint) that we *can offer* to the child, so the output of parent - the margin.
+        let parent_space_maximum_child_output_rect = /* output part that can be offered to child*/ Rect::new(child_visible_rect_pos_in_parent_space, output_size - child_visible_rect_pos_in_parent_space);
+
+        // this is tricky part: I take "child_size_in_its_output" which is "how much space child will 'see' as in it's output", but we move it to parent space.
+        // This has no logical meaning other than I want it in parent space, to intersect the it with "parent_space_maximum_child_output_rect" to get the final constraint.
+        let parent_space_child_internal_size = Rect::new(child_visible_rect_pos_in_parent_space, child_output.child_size_in_its_output);
+
+        let parent_space_child_output_rect = parent_space_maximum_child_output_rect.intersect(parent_space_child_internal_size).unwrap(); //TODO prove this can't go wrong.
+
         let child_visible_rect_in_parent_space: Rect = match visible_rect.intersect(parent_space_child_output_rect) {
             Some(intersection) => {
                 debug!("in parent space, visible rect is {}, so with {} margin, child has {}", visible_rect, child_output.margin_width, intersection);
@@ -280,15 +289,15 @@ impl<W: Widget> Widget for WithScroll<W> {
                 return;
             }
         };
-        self.child_widget.layout(child_output.size, child_visible_rect_in_child_space);
+        self.child_widget.layout(child_output.child_size_in_its_output, child_visible_rect_in_child_space);
 
         // This is where scroll actually follows the widget.
         self.scroll.follow_kite(output_size, self.child_widget.kite());
 
         self.layout_res = Some(LayoutRes {
             margin_width: child_output.margin_width,
-            parent_space_child_output_rect,
-            child_space_output_size: child_output.size,
+            parent_space_child_output_rect: parent_space_maximum_child_output_rect,
+            child_space_output_size: child_output.child_size_in_its_output,
             child_space_visible_rect: child_visible_rect_in_child_space,
         });
     }
