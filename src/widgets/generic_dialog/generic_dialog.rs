@@ -5,6 +5,7 @@ use log::{debug, error, warn};
 
 use crate::config::theme::Theme;
 use crate::experiments::focus_group::FocusUpdate;
+use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Key;
@@ -15,7 +16,6 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::border::BorderStyle;
 use crate::primitives::printable::Printable;
-use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::subwidget;
 use crate::widget::any_msg::AnyMsg;
@@ -152,8 +152,8 @@ impl Widget for GenericDialog {
         total_size + if self.with_border.is_some() { XY::new(2, 2) } else { XY::ZERO }
     }
 
-    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        self.complex_layout(output_size, visible_rect)
+    fn layout(&mut self, screenspace: Screenspace) {
+        self.complex_layout(screenspace)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

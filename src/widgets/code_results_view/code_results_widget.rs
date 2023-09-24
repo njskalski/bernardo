@@ -6,6 +6,7 @@ use log::{debug, error, warn};
 use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::cursor::cursor_set::CursorSet;
+use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
@@ -232,8 +233,8 @@ impl Widget for CodeResultsView {
         XY::new(max(Self::MIN_WIDTH, item_min_size.x), 1 + item_min_size.y)
     }
 
-    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        self.complex_layout(output_size, visible_rect)
+    fn layout(&mut self, screenspace: Screenspace) {
+        self.complex_layout(screenspace)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

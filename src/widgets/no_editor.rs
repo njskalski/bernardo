@@ -1,4 +1,5 @@
 use crate::config::theme::Theme;
+use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::output::{Metadata, Output};
 use crate::primitives::rect::Rect;
@@ -44,8 +45,8 @@ impl Widget for NoEditorWidget {
         XY::new(Self::NO_EDIT_TEXT.len() as u16, 3)
     }
 
-    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        let size = output_size;
+    fn layout(&mut self, screenspace: Screenspace) {
+        let size = screenspace.output_size();
 
         let mut x = 0;
         if size.x >= Self::NO_EDIT_TEXT.len() as u16 {

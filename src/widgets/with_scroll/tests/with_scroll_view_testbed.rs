@@ -2,13 +2,13 @@ use std::rc::Rc;
 
 use crate::config::theme::Theme;
 use crate::experiments::screen_shot::screenshot;
+use crate::experiments::screenspace::Screenspace;
 use crate::gladius::paradigm::recursive_treat_views;
 use crate::io::input_event::InputEvent;
 use crate::io::output::FinalOutput;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_output::MockOutput;
 use crate::mocks::with_scroll_interpreter::WithScrollWidgetInterpreter;
-use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
@@ -72,7 +72,7 @@ impl WithScrollTestbed {
         let (mut output, rcvr) = MockOutput::new(self.size, false, self.theme.clone());
 
         self.widget.prelayout();
-        self.widget.layout(output.size(), Rect::from_zero(output.size()));
+        self.widget.layout(Screenspace::full_output(output.size()));
         self.widget.render(&self.theme, true, &mut output);
 
         output.end_frame().unwrap();

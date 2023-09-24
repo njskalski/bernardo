@@ -1,22 +1,15 @@
-use std::sync::Arc;
-
-use crossbeam_channel::{Receiver, Sender};
-
-use crate::config::config::{Config, ConfigRef};
+use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::screen_shot::screenshot;
-use crate::fs::filesystem_front::FilesystemFront;
-use crate::fs::fsf_ref::FsfRef;
-use crate::fs::mock_fs::MockFS;
+use crate::experiments::screenspace::Screenspace;
 use crate::gladius::paradigm::recursive_treat_views;
 use crate::io::input_event::InputEvent;
-use crate::io::output::{FinalOutput, Metadata};
+use crate::io::output::FinalOutput;
 use crate::mocks::editor_interpreter::EditorInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
 use crate::mocks::mock_output::MockOutput;
-use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
@@ -44,7 +37,7 @@ impl EditorViewTestbed {
         let (mut output, rcvr) = MockOutput::new(self.size, false, self.theme.clone());
 
         self.editor_view.prelayout();
-        self.editor_view.layout(output.size(), Rect::from_zero(output.size()));
+        self.editor_view.layout(Screenspace::full_output(output.size()));
         self.editor_view.render(&self.theme, true, &mut output);
 
         output.end_frame().unwrap();

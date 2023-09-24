@@ -18,6 +18,16 @@ impl Screenspace {
             visible_rect,
         }
     }
+
+    pub fn full_output(output_size: XY) -> Self {
+        debug_assert!(output_size.has_non_zero_area());
+
+        Self {
+            output_size,
+            visible_rect: Rect::new(XY::ZERO, output_size),
+        }
+    }
+
     pub fn output_size(&self) -> XY {
         self.output_size
     }

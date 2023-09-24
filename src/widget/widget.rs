@@ -2,9 +2,9 @@ use std::fmt::{Debug, Display, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::config::theme::Theme;
+use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
-use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
@@ -40,7 +40,7 @@ pub trait Widget: 'static {
     // Invariants:
     // - visible_rect is not empty and not degraded (we don't layout invisible stuff)
     // - full_size <= output_size (if we can't satisfy requirement, we don't draw)
-    fn layout(&mut self, output_size: XY, visible_rect: Rect);
+    fn layout(&mut self, screenspace: Screenspace);
 
     // If input is consumed, the output is Some(.). If you don't like it, add noop msg to your widget.
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>>;

@@ -13,6 +13,7 @@ use crate::cursor::cursor::{Cursor, CursorStatus, Selection};
 use crate::cursor::cursor_set::CursorSet;
 use crate::cursor::cursor_set_rect::cursor_set_to_rect;
 use crate::experiments::regex_search::FindError;
+use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
@@ -143,11 +144,6 @@ impl EditorHover {
     }
 }
 
-struct LayoutRes {
-    size: XY,
-    visible_rect: Rect,
-}
-
 pub struct EditorWidget {
     wid: WID,
     providers: Providers,
@@ -156,7 +152,7 @@ pub struct EditorWidget {
     // I'd prefer to have "constrain cursors to visible part", but since it's non-trivial, I don't do it now.
     ignore_input_altogether: bool,
 
-    layout_res: Option<LayoutRes>,
+    layout_res: Option<Screenspace>,
 
     // to be constructed in layout step based on HoverSettings
     last_hover_rect: Option<Rect>,
@@ -341,10 +337,10 @@ impl EditorWidget {
         let lsp_cursor_xy = unpack_or_e!(lsp_cursor.to_xy(buffer), None, "lsp cursor beyond XY max");
 
         let layout_res = unpack_or!(self.layout_res.as_ref(), None, "single_cursor_screen_pos called before first layout");
-        let visible_rect = layout_res.visible_rect;
+        let visible_rect = layout_res.visible_rect();
 
         if !visible_rect.contains(lsp_cursor_xy) {
-            warn!("cursor seems to be outside visible hint {:?}", layout_res.visible_rect);
+            warn!("cursor seems to be outside visible hint {:?}", layout_res.visible_rect());
             return Some(CursorScreenPosition {
                 cursor,
                 widget_space: None,
@@ -520,7 +516,7 @@ impl EditorWidget {
     pub fn page_height(&self) -> u16 {
         match &self.layout_res {
             Some(layout_res) => {
-                layout_res.visible_rect.size.y
+                layout_res.visible_rect().size.y
             }
             None => {
                 error!("requested height before layout, using {} as page_height instead", MIN_EDITOR_SIZE.y);
@@ -1079,7 +1075,7 @@ impl EditorWidget {
 
             if let Some(parent_space_hover_rect_view) = visible_rect.intersect(hover_rect) {
                 let hover_space_hover_visible_rect = parent_space_hover_rect_view.minus_shift(hover_rect.pos).unwrap(); // TODO
-                hover.get_widget_mut().layout(hover_rect.size, hover_space_hover_visible_rect);
+                hover.get_widget_mut().layout(Screenspace::new(hover_rect.size, hover_space_hover_visible_rect));
             } else {
                 error!("no intersection between hover_rect and visible rect");
             }
@@ -1142,8 +1138,8 @@ impl Widget for EditorWidget {
         }
     }
 
-    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        if self.layout_res.as_ref().map(|x| x.size) != Some(output_size) {
+    fn layout(&mut self, screenspace: Screenspace) {
+        if self.layout_res != Some(screenspace) {
             debug!("changed size");
 
             if self.requested_hover.is_some() {
@@ -1153,11 +1149,8 @@ impl Widget for EditorWidget {
         }
 
         self.last_hover_rect = None;
-        self.layout_res = Some(LayoutRes {
-            size: output_size,
-            visible_rect,
-        });
-        self.layout_hover(visible_rect);
+        self.layout_res = Some(screenspace);
+        self.layout_hover(screenspace.visible_rect());
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

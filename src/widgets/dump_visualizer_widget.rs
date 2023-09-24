@@ -2,11 +2,11 @@ use std::cmp::min;
 use std::mem;
 
 use crate::config::theme::Theme;
+use crate::experiments::screenspace::Screenspace;
 use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
-use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::unpack_or;
@@ -17,7 +17,7 @@ pub struct DumpVisualizerWidget {
     wid: WID,
     dump_op: Option<BufferOutput>,
 
-    last_size: Option<XY>,
+    last_size: Option<Screenspace>,
 }
 
 impl DumpVisualizerWidget {
@@ -60,8 +60,8 @@ impl Widget for DumpVisualizerWidget {
         self.dump_op.as_ref().map(|oo| oo.size()).unwrap_or(XY::new(10, 10))
     }
 
-    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        self.last_size = Some(output_size)
+    fn layout(&mut self, screenspace: Screenspace) {
+        self.last_size = Some(screenspace)
     }
 
     fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -76,8 +76,8 @@ impl Widget for DumpVisualizerWidget {
         let size = unpack_or!(self.last_size, (), "render before layout");
 
         if let Some(dump) = self.dump_op.as_ref() {
-            let max_x = min(dump.size().x, size.x);
-            let max_y = min(dump.size().y, size.y);
+            let max_x = min(dump.size().x, size.output_size().x);
+            let max_y = min(dump.size().y, size.output_size().y);
 
             for x in 0..max_x {
                 for y in 0..max_y {

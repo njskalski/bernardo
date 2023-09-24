@@ -1,21 +1,16 @@
 use crate::config::theme::Theme;
+use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
-use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
-pub struct LayoutRes {
-    output_size: XY,
-    visible_rect: Rect,
-}
-
 pub struct MockWidget {
     id: WID,
     pub full_size: XY,
-    pub last_layout: Option<LayoutRes>,
+    pub last_layout: Option<Screenspace>,
     pub size_policy: SizePolicy,
 }
 
@@ -58,8 +53,8 @@ impl Widget for MockWidget {
         self.size_policy
     }
 
-    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        self.last_layout = Some(LayoutRes { output_size, visible_rect })
+    fn layout(&mut self, screenspace: Screenspace) {
+        self.last_layout = Some(screenspace)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

@@ -3,6 +3,7 @@ pub mod tests {
     #![allow(dead_code)]
 
     use crate::config::theme::Theme;
+    use crate::experiments::screenspace::Screenspace;
     use crate::experiments::subwidget_pointer::SubwidgetPointer;
     use crate::io::input_event::InputEvent;
     use crate::io::output::Output;
@@ -52,7 +53,7 @@ pub mod tests {
         fn full_size(&self) -> XY {
             self.full_size
         }
-        fn layout(&mut self, output_size: XY, visible_rect: Rect) {}
+        fn layout(&mut self, screenspace: Screenspace) {}
         fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
             todo!()
         }
@@ -136,8 +137,8 @@ pub mod tests {
             self.size
         }
 
-        fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-            self.complex_layout(output_size, visible_rect)
+        fn layout(&mut self, screenspace: Screenspace) {
+            self.complex_layout(screenspace)
         }
         fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
             todo!()

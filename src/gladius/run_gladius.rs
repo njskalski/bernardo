@@ -5,6 +5,7 @@ use crossbeam_channel::select;
 use log::{debug, error};
 
 use crate::experiments::screen_shot::screenshot;
+use crate::experiments::screenspace::Screenspace;
 use crate::gladius::paradigm::recursive_treat_views;
 use crate::gladius::providers::Providers;
 use crate::io::input::Input;
@@ -12,7 +13,6 @@ use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::FinalOutput;
 use crate::primitives::helpers::get_next_filename;
-use crate::primitives::rect::Rect;
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::inspector::{inspect_workspace, InspectError};
 use crate::w7e::workspace::{LoadError, ScopeLoadErrors, Workspace};
@@ -129,7 +129,7 @@ pub fn run_gladius<
         main_view.prelayout();
         let output_size = output.size();
 
-        main_view.layout(output_size, Rect::from_zero(output_size));
+        main_view.layout(Screenspace::full_output(output_size));
         main_view.render(providers.theme(), true, &mut output);
         match output.end_frame() {
             Ok(_) => {}
