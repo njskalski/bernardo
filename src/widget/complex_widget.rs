@@ -89,7 +89,7 @@ pub trait ComplexWidget: Widget + Sized {
 
     fn complex_layout(&mut self, screenspace: Screenspace) {
         let layout = self.get_layout();
-        let layout_res = layout.layout(self, screenspace.output_size(), screenspace.visible_rect());
+        let layout_res = layout.layout(self, screenspace);
 
         for wwr in layout_res.wwrs.iter() {
             debug_assert!(screenspace.output_size() >= wwr.rect().lower_right());

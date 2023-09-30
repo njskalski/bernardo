@@ -300,7 +300,8 @@ impl SaveFileDialogWidget {
         }
     }
 
-    fn get_child_hover_rect(output_size: XY, visible_rect: Rect) -> Option<Rect> {
+    fn get_child_hover_rect(screenspace: Screenspace) -> Option<Rect> {
+        let output_size = screenspace.output_size();
         if output_size >= XY::new(10, 8) {
             let max_size = output_size - XY::new(2, 2);
             let margins = max_size / 10;

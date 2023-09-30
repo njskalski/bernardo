@@ -45,7 +45,7 @@ impl MockComplexWidget {
      */
     pub fn get_layout_res(&mut self, screenspace: Screenspace) -> LayoutResult<Self> {
         let layout = (self.layout_maker)(self);
-        layout.layout(self, screenspace.output_size(), screenspace.visible_rect())
+        layout.layout(self, screenspace)
     }
 }
 

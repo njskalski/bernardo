@@ -71,7 +71,7 @@ acomodated with a Scroll, so its wishes are met no matter what they are.
 4) Then (always), layout is called
 
 ```rust
-fn layout(&mut self, output_size: XY, visible_rect: Rect);
+fn layout(&mut self, screenspace : Screenspace);
 ```
 
 When it's called, one of the two things are guaranteed: either Widget declared "whatever size" via ```size_policy``` OR

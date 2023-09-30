@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use bernardo::config::theme::Theme;
+use bernardo::experiments::screenspace::Screenspace;
 use bernardo::io::buffer_output::buffer_output::BufferOutput;
 use bernardo::io::input_event::InputEvent;
 use bernardo::io::output::Output;
@@ -57,7 +58,7 @@ impl Widget for ReaderMainWidget {
     }
 
     fn layout(&mut self, screenspace: Screenspace) {
-        self.main_display.layout(output_size, visible_rect)
+        self.main_display.layout(screenspace)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

@@ -1,6 +1,7 @@
 use log::debug;
 
 use crate::experiments::focus_group::FocusUpdate;
+use crate::experiments::screen_shot::screenshot;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
@@ -14,6 +15,9 @@ fn common_start() -> FullSetup {
 
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
     assert!(full_setup.send_key(full_setup.config().keyboard_config.editor.save_as));
+    
+    screenshot(&full_setup.get_frame().unwrap().buffer);
+
     assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().save_file_dialog().is_some()));
 
     assert!(full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().is_focused());

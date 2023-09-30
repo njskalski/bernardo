@@ -153,7 +153,8 @@ impl EditorView {
     }
 
     // copy-pasted from main view, TODO move to layout?
-    fn get_hover_rect(output_size: XY, visible_rect: Rect) -> Option<Rect> {
+    fn get_hover_rect(screenspace: Screenspace) -> Option<Rect> {
+        let output_size = screenspace.output_size();
         if output_size >= XY::new(10, 8) {
             let margin = output_size / 10;
             let res = Rect::new(margin,
