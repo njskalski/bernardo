@@ -1,6 +1,6 @@
 use test_log::test;
 
-use crate::experiments::subwidget_pointer::{Getter, GetterMut, SubwidgetPointer};
+use crate::experiments::screenspace::Screenspace;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
@@ -28,7 +28,7 @@ fn split_layout_test_widget_determined() {
         }));
 
     {
-        let layout_res = mock_parent_widget.get_layout_res(XY::new(9, 9), Rect::from_zero(XY::new(9, 9)));
+        let layout_res = mock_parent_widget.get_layout_res(Screenspace::new(XY::new(9, 9), Rect::from_zero(XY::new(9, 9))));
 
         assert_eq!(layout_res.wwrs.len(), 3);
         assert_eq!(layout_res.wwrs[0].rect(), Rect::new(XY::new(0, 0), XY::new(3, 3)));
@@ -37,7 +37,7 @@ fn split_layout_test_widget_determined() {
     }
 
     {
-        let layout_res = mock_parent_widget.get_layout_res(XY::new(10, 10), Rect::from_zero(XY::new(10, 10)));
+        let layout_res = mock_parent_widget.get_layout_res(Screenspace::new(XY::new(10, 10), Rect::from_zero(XY::new(10, 10))));
 
         assert_eq!(layout_res.wwrs.len(), 3);
         assert_eq!(layout_res.wwrs[0].rect(), Rect::new(XY::new(0, 0), XY::new(3, 3)));
@@ -65,7 +65,7 @@ fn split_layout_test_layout_determined() {
         }));
 
     {
-        let layout_res = mock_parent_widget.get_layout_res(XY::new(9, 9), Rect::from_zero(XY::new(9, 9)));
+        let layout_res = mock_parent_widget.get_layout_res(Screenspace::new(XY::new(9, 9), Rect::from_zero(XY::new(9, 9))));
 
         assert_eq!(layout_res.wwrs.len(), 3);
         assert_eq!(layout_res.wwrs[0].rect(), Rect::new(XY::new(0, 0), XY::new(3, 9)));
@@ -74,7 +74,7 @@ fn split_layout_test_layout_determined() {
     }
 
     {
-        let layout_res = mock_parent_widget.get_layout_res(XY::new(10, 10), Rect::from_zero(XY::new(10, 10)));
+        let layout_res = mock_parent_widget.get_layout_res(Screenspace::new(XY::new(10, 10), Rect::from_zero(XY::new(10, 10))));
 
         assert_eq!(layout_res.wwrs.len(), 3);
         assert_eq!(layout_res.wwrs[0].rect(), Rect::new(XY::new(0, 0), XY::new(4, 10)));
@@ -99,7 +99,7 @@ fn split_layout_test_layout_determined_2() {
         }));
 
     {
-        let layout_res = mock_parent_widget.get_layout_res(XY::new(10, 10), Rect::from_zero(XY::new(10, 10)));
+        let layout_res = mock_parent_widget.get_layout_res(Screenspace::new(XY::new(10, 10), Rect::from_zero(XY::new(10, 10))));
 
         assert_eq!(layout_res.wwrs.len(), 2);
         assert_eq!(layout_res.wwrs[0].rect(), Rect::new(XY::new(0, 0), XY::new(3, 10)));

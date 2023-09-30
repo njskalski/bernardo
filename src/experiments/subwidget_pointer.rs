@@ -154,10 +154,10 @@ mod tests {
     #![allow(dead_code)]
 
     use crate::config::theme::Theme;
+    use crate::experiments::screenspace::Screenspace;
     use crate::experiments::subwidget_pointer::{SubwidgetPointer, SubwidgetPointerOp};
     use crate::io::input_event::InputEvent;
     use crate::io::output::Output;
-    use crate::primitives::rect::Rect;
     use crate::primitives::xy::XY;
     use crate::widget::any_msg::AnyMsg;
     use crate::widget::widget::{WID, Widget};
@@ -182,7 +182,7 @@ mod tests {
                 unimplemented!()
             }
 
-            fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+            fn layout(&mut self, screenspace: Screenspace) {
                 todo!()
             }
 
@@ -222,7 +222,7 @@ mod tests {
                 unimplemented!()
             }
 
-            fn layout(&mut self, output_size: XY, visible_rect: Rect) {
+            fn layout(&mut self, screenspace: Screenspace) {
                 todo!()
             }
 

@@ -2,10 +2,10 @@ use streaming_iterator::StreamingIterator;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
+use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::printable::Printable;
-use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
@@ -76,7 +76,7 @@ impl Widget for TextWidget {
         self.text_size()
     }
 
-    fn layout(&mut self, output_size: XY, visible_rect: Rect) {}
+    fn layout(&mut self, screenspace: Screenspace) {}
 
     fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         None

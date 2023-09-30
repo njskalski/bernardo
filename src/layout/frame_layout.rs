@@ -1,5 +1,6 @@
 use log::error;
 
+use crate::experiments::screenspace::Screenspace;
 use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
@@ -21,7 +22,7 @@ impl<W: Widget> FrameLayout<W> {
 
     pub fn sub_rect(&self, size: XY) -> Option<Rect> {
         if size > self.margins * 2 {
-            Some(Rect::new(self.margins, size - self.margins))
+            Some(Rect::new(self.margins, size - (self.margins * 2)))
         } else {
             None
         }
@@ -42,28 +43,29 @@ impl<W: Widget> Layout<W> for FrameLayout<W> {
         self.layout.exact_size(root, output_size - (self.margins * 2)) + self.margins * 2
     }
 
-    fn layout(&self, root: &mut W, output_size: XY, visible_rect: Rect) -> LayoutResult<W> {
-        if !(self.margins * 2 < output_size) {
+    fn layout(&self, root: &mut W, screenspace: Screenspace) -> LayoutResult<W> {
+        if !(self.margins * 2 < screenspace.output_size()) {
             error!("output size not twice margin size");
-            return LayoutResult::new(Vec::default(), output_size);
+            return LayoutResult::new(Vec::default(), screenspace.output_size());
         }
 
-        if let Some(visible_subrect) = visible_rect.intersect(self.sub_rect(output_size).unwrap()) {
-            let new_output_size = output_size - (self.margins * 2);
-            let mut new_visible_rect = visible_subrect;
-            new_visible_rect.pos -= self.margins;
+        if let Some(sub_rect) = self.sub_rect(screenspace.output_size()) {
+            let new_visible_rect_parent_size = sub_rect.intersect(screenspace.visible_rect()).unwrap(); //TODO
+            let mut new_visible_rect = new_visible_rect_parent_size;
+            new_visible_rect.pos = XY::ZERO;
 
-            let subresp = self.layout.layout(root, new_output_size, new_visible_rect);
+            let new_output_size = sub_rect.size;
+            let subresp = self.layout.layout(root, Screenspace::new(new_output_size, new_visible_rect));
 
             let wwrs: Vec<WidgetWithRect<W>> = subresp.wwrs.into_iter().map(|wir| {
-                wir.shifted(self.margins)
+                wir.shifted(sub_rect.pos)
             }).collect();
 
             LayoutResult::new(wwrs, subresp.total_size + self.margins * 2)
         } else {
             error!("no visible rect, skipping entire layout");
 
-            LayoutResult::new(Vec::default(), output_size)
+            LayoutResult::new(Vec::default(), screenspace.output_size())
         }
     }
 }

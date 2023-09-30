@@ -1,5 +1,5 @@
+use crate::experiments::screenspace::Screenspace;
 use crate::layout::widget_with_rect::WidgetWithRect;
-use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 
@@ -32,10 +32,10 @@ impl<W: Widget> LayoutResult<W> {
  */
 pub trait Layout<W: Widget> {
     fn prelayout(&self, root: &mut W);
-    
+
     fn exact_size(&self, root: &W, output_size: XY) -> XY;
 
-    fn layout(&self, root: &mut W, output_size: XY, visible_rect: Rect) -> LayoutResult<W>;
+    fn layout(&self, root: &mut W, screenspace: Screenspace) -> LayoutResult<W>;
 
     fn boxed(self) -> Box<dyn Layout<W>> where Self: Sized, Self: 'static {
         Box::new(self)

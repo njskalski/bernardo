@@ -7,6 +7,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
+use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
@@ -36,7 +37,7 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key
     // at this point, highlighted can move (nodes can disappear if the filter throws them away with delay)
     highlighted: usize,
 
-    last_size: Option<XY>,
+    last_size: Option<Screenspace>,
 
     //events
     on_miss: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
@@ -252,8 +253,8 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
         self.size_policy
     }
 
-    fn layout(&mut self, output_size: XY, _visible_rect: Rect) {
-        self.last_size = Some(output_size)
+    fn layout(&mut self, screenspace: Screenspace) {
+        self.last_size = Some(screenspace)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -333,7 +334,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
             Metadata {
                 id: self.id(),
                 typename: self.typename().to_string(),
-                rect: Rect::from_zero(size),
+                rect: Rect::from_zero(size.output_size()),
                 focused,
             }
         );

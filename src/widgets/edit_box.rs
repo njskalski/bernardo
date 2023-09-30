@@ -5,6 +5,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::config::theme::Theme;
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::clipboard::ClipboardRef;
+use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
@@ -213,8 +214,8 @@ impl Widget for EditBoxWidget {
         self.size_policy
     }
 
-    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        self.last_size_x = Some(output_size.x);
+    fn layout(&mut self, screenspace: Screenspace) {
+        self.last_size_x = Some(screenspace.output_size().x);
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

@@ -2,6 +2,7 @@ use std::cmp::max;
 
 use log::{debug, error, warn};
 
+use crate::experiments::screenspace::Screenspace;
 use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
@@ -86,14 +87,14 @@ impl<W: Widget> SplitLayout<W> {
         SplitLayout { children, ..self }
     }
 
-    fn simple_layout(&self, root: &mut W, output_size: XY, visible_rect: Rect) -> LayoutResult<W> {
-        let rects_op = self.get_just_rects(output_size, root);
+    fn simple_layout(&self, root: &mut W, screenspace: Screenspace) -> LayoutResult<W> {
+        let rects_op = self.get_just_rects(screenspace.output_size(), root);
         if rects_op.is_none() {
             warn!(
                 "not enough space to get_rects split_layout: {:?}",
-                output_size
+                screenspace
             );
-            return LayoutResult::new(Vec::default(), output_size);
+            return LayoutResult::new(Vec::default(), screenspace.output_size());
         };
 
         let rects = rects_op.unwrap();
@@ -105,27 +106,27 @@ impl<W: Widget> SplitLayout<W> {
 
         for (idx, child_layout) in self.children.iter().enumerate() {
             let rect = &rects[idx];
-            if let Some(visible_rect) = visible_rect.intersect(*rect) {
+            if let Some(visible_rect) = screenspace.visible_rect().intersect(*rect) {
                 let mut visible_rect_in_child_space = visible_rect;
                 visible_rect_in_child_space.pos -= rect.pos;
 
-                let resp = child_layout.layout.layout(root, rect.size, visible_rect_in_child_space);
+                let resp = child_layout.layout.layout(root, Screenspace::new(rect.size, visible_rect_in_child_space));
 
                 for wir in resp.wwrs.into_iter() {
                     let new_wir = wir.shifted(rect.pos);
 
-                    debug_assert!(output_size.x >= new_wir.rect().lower_right().x);
-                    debug_assert!(output_size.y >= new_wir.rect().lower_right().y);
+                    debug_assert!(screenspace.output_size().x >= new_wir.rect().lower_right().x);
+                    debug_assert!(screenspace.output_size().y >= new_wir.rect().lower_right().y);
 
                     res.push(new_wir);
                 }
             } else {
-                debug!("skipping invisible layout #{} rect {} vsr {} ", idx, rect, visible_rect);
+                debug!("skipping invisible layout #{} rect {:?}", idx, screenspace);
                 continue;
             }
         }
 
-        LayoutResult::new(res, output_size)
+        LayoutResult::new(res, screenspace.output_size())
     }
 
     fn get_just_rects(&self, output_size: XY, root: &W) -> Option<Vec<Rect>> {
@@ -273,7 +274,7 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
         res
     }
 
-    fn layout(&self, root: &mut W, output_size: XY, visible_rect: Rect) -> LayoutResult<W> {
-        self.simple_layout(root, output_size, visible_rect)
+    fn layout(&self, root: &mut W, screenspace: Screenspace) -> LayoutResult<W> {
+        self.simple_layout(root, screenspace)
     }
 }

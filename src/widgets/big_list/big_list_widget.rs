@@ -1,6 +1,7 @@
 use log::{debug, error, warn};
 
 use crate::config::theme::Theme;
+use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
 use crate::io::output::{Metadata, Output};
@@ -188,8 +189,8 @@ impl<T: Widget> Widget for BigList<T> {
         XY::new(10, 4) // TODO completely arbitrary
     }
 
-    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        self.complex_layout(output_size, visible_rect)
+    fn layout(&mut self, screenspace: Screenspace) {
+        self.complex_layout(screenspace)
     }
 
     fn size_policy(&self) -> SizePolicy {

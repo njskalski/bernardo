@@ -3,6 +3,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
+use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::path::SPath;
 use crate::gladius::providers::Providers;
@@ -152,7 +153,8 @@ impl EditorView {
     }
 
     // copy-pasted from main view, TODO move to layout?
-    fn get_hover_rect(output_size: XY, visible_rect: Rect) -> Option<Rect> {
+    fn get_hover_rect(screenspace: Screenspace) -> Option<Rect> {
+        let output_size = screenspace.output_size();
         if output_size >= XY::new(10, 8) {
             let margin = output_size / 10;
             let res = Rect::new(margin,
@@ -326,8 +328,8 @@ impl Widget for EditorView {
         XY::new(10, 3) // TODO completely arbitrary
     }
 
-    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        self.complex_layout(output_size, visible_rect)
+    fn layout(&mut self, screenspace: Screenspace) {
+        self.complex_layout(screenspace)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

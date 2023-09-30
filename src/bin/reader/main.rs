@@ -2,19 +2,15 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
-use bernardo::app::App;
 use clap::Parser;
 use crossbeam_channel::select;
-use crossterm::terminal;
 use log::error;
 
+use bernardo::app::App;
 use bernardo::config::theme::Theme;
+use bernardo::experiments::screenspace::Screenspace;
 use bernardo::gladius::paradigm::recursive_treat_views;
-use bernardo::io::buffer::Buffer;
 use bernardo::io::buffer_output::buffer_output::BufferOutput;
-use bernardo::io::cell::Cell;
-use bernardo::io::crossterm_input::CrosstermInput;
-use bernardo::io::crossterm_output::CrosstermOutput;
 use bernardo::io::input::Input;
 use bernardo::io::input_event::InputEvent;
 use bernardo::io::keys::Keycode;
@@ -89,7 +85,7 @@ fn main() {
                     break;
                 }
             }
-            main_view.layout(output.size(), Rect::from_zero(output.size()));
+            main_view.layout(Screenspace::new(output.size(), Rect::from_zero(output.size())));
             main_view.render(&theme, true, &mut output);
             match output.end_frame() {
                 Ok(_) => {}

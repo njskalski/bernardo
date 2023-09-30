@@ -14,6 +14,7 @@ use log::{debug, error, warn};
 
 use crate::{subwidget, unpack_or_e};
 use crate::config::theme::Theme;
+use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::fsf_ref::FsfRef;
 use crate::fs::path::SPath;
@@ -299,7 +300,8 @@ impl SaveFileDialogWidget {
         }
     }
 
-    fn get_child_hover_rect(output_size: XY, visible_rect: Rect) -> Option<Rect> {
+    fn get_child_hover_rect(screenspace: Screenspace) -> Option<Rect> {
+        let output_size = screenspace.output_size();
         if output_size >= XY::new(10, 8) {
             let max_size = output_size - XY::new(2, 2);
             let margins = max_size / 10;
@@ -338,8 +340,8 @@ impl Widget for SaveFileDialogWidget {
         SizePolicy::MATCH_LAYOUT
     }
 
-    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        self.complex_layout(output_size, visible_rect)
+    fn layout(&mut self, screenspace: Screenspace) {
+        self.complex_layout(screenspace)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

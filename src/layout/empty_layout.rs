@@ -1,7 +1,7 @@
 use log::error;
 
+use crate::experiments::screenspace::Screenspace;
 use crate::layout::layout::{Layout, LayoutResult};
-use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 
@@ -33,15 +33,15 @@ impl<W: Widget> Layout<W> for EmptyLayout {
         self.size.unwrap_or(XY::ZERO)
     }
 
-    fn layout(&self, _root: &mut W, output_size: XY, visible_rect: Rect) -> LayoutResult<W> {
+    fn layout(&self, root: &mut W, screenspace: Screenspace) -> LayoutResult<W> {
         if let Some(requested_size) = self.size {
-            if !(requested_size < output_size) {
-                error!("requested size {} !< output_size {}", requested_size, output_size);
+            if !(requested_size < screenspace.output_size()) {
+                error!("requested size {} !< output_size {:?}", requested_size, screenspace);
             }
 
             LayoutResult::new(Vec::default(), requested_size)
         } else {
-            LayoutResult::new(Vec::default(), output_size)
+            LayoutResult::new(Vec::default(), screenspace.output_size())
         }
     }
 }

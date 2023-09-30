@@ -7,6 +7,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::config::theme::Theme;
 use crate::cursor::cursor::CursorStatus;
 use crate::experiments::clipboard::ClipboardRef;
+use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::{Metadata, Output};
@@ -48,7 +49,7 @@ pub struct FuzzySearchWidget {
     // on_hit is a part of PROVIDER.
 
     // always greedy on X
-    last_size: Option<XY>,
+    last_size: Option<Screenspace>,
 }
 
 impl FuzzySearchWidget {
@@ -119,7 +120,7 @@ impl FuzzySearchWidget {
     }
 
     fn items(&self) -> ItemIter {
-        let rows_limit = self.last_size.map(|xy| xy.y).unwrap_or_else(|| {
+        let rows_limit = self.last_size.map(|ss| ss.output_size().y).unwrap_or_else(|| {
             error!("items called before last_size set, using 128 as 'safe default'");
             128
         });
@@ -219,8 +220,8 @@ impl Widget for FuzzySearchWidget {
         self.size_from_items()
     }
 
-    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        self.last_size = Some(output_size);
+    fn layout(&mut self, screenspace: Screenspace) {
+        self.last_size = Some(screenspace);
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -313,7 +314,7 @@ impl Widget for FuzzySearchWidget {
         }
 
         let mut suboutput = SubOutput::new(output,
-                                           Rect::new(XY::ZERO, XY::new(size.x, 1)));
+                                           Rect::new(XY::ZERO, XY::new(size.output_size().x, 1)));
 
         self.edit.render(theme, focused, &mut suboutput);
         let query = self.edit.get_buffer().to_string();
@@ -357,7 +358,7 @@ impl Widget for FuzzySearchWidget {
             }
 
             //TODO cast overflow
-            for x in (item.display_name().as_ref().width() as u16)..size.x {
+            for x in (item.display_name().as_ref().width() as u16)..size.output_size().x {
                 output.print_at(XY::new(x as u16, y),
                                 style,
                                 " ");
@@ -373,7 +374,7 @@ impl Widget for FuzzySearchWidget {
                         x += g.width() as u16; //TODO overflow
                     }
                     //TODO cast overflow
-                    for x in (comment.as_ref().width() as u16)..size.x {
+                    for x in (comment.as_ref().width() as u16)..size.output_size().x {
                         output.print_at(XY::new(x as u16, y + 1),
                                         style,
                                         " ");
@@ -387,7 +388,7 @@ impl Widget for FuzzySearchWidget {
                 DrawComment::All => if item.comment().is_some() { 2 } else { 1 },
             };
 
-            if y >= size.y {
+            if y >= size.output_size().y {
                 break;
             }
         }

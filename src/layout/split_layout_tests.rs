@@ -3,6 +3,7 @@ pub mod tests {
     #![allow(dead_code)]
 
     use crate::config::theme::Theme;
+    use crate::experiments::screenspace::Screenspace;
     use crate::experiments::subwidget_pointer::SubwidgetPointer;
     use crate::io::input_event::InputEvent;
     use crate::io::output::Output;
@@ -52,7 +53,7 @@ pub mod tests {
         fn full_size(&self) -> XY {
             self.full_size
         }
-        fn layout(&mut self, output_size: XY, visible_rect: Rect) {}
+        fn layout(&mut self, screenspace: Screenspace) {}
         fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
             todo!()
         }
@@ -98,9 +99,9 @@ pub mod tests {
             )
         }
 
-        fn get_results(&mut self, output_size: XY, visible_rect: Rect) -> (XY, Vec<u16>) {
+        fn get_results(&mut self, screenspace: Screenspace) -> (XY, Vec<u16>) {
             let layout = self.get_layout();
-            let layout_result = layout.layout(self, output_size, visible_rect);
+            let layout_result = layout.layout(self, screenspace);
 
             let mut result: Vec<u16> = Vec::new();
             for wwr in layout_result.wwrs {
@@ -136,8 +137,8 @@ pub mod tests {
             self.size
         }
 
-        fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-            self.complex_layout(output_size, visible_rect)
+        fn layout(&mut self, screenspace: Screenspace) {
+            self.complex_layout(screenspace)
         }
         fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
             todo!()
@@ -188,12 +189,12 @@ pub mod tests {
         let mut mcw = MockComplexWidget::new(items);
 
         assert_eq!(
-            mcw.get_results(XY::new(10, 10), Rect::from_zero(XY::new(10, 10))),
+            mcw.get_results(Screenspace::new(XY::new(10, 10), Rect::from_zero(XY::new(10, 10)))),
             (XY::new(10, 10), vec![2, 4, 4])
         );
 
         assert_eq!(
-            mcw.get_results(XY::new(6, 6), Rect::from_zero(XY::new(6, 6))),
+            mcw.get_results(Screenspace::new(XY::new(6, 6), Rect::from_zero(XY::new(6, 6)))),
             (XY::new(6, 6), vec![2, 2, 2])
         );
     }
@@ -209,7 +210,7 @@ pub mod tests {
         let mut mcw = MockComplexWidget::new(items);
 
         assert_eq!(
-            mcw.get_results(XY::new(11, 11), Rect::from_zero(XY::new(11, 11))),
+            mcw.get_results(Screenspace::new(XY::new(11, 11), Rect::from_zero(XY::new(11, 11)))),
             (XY::new(11, 11), vec![2, 3, 6])
         );
     }
@@ -224,7 +225,7 @@ pub mod tests {
         let mut mcw = MockComplexWidget::new(items);
 
         assert_eq!(
-            mcw.get_results(XY::new(10, 13), Rect::new(XY::ZERO, XY::new(10, 13))),
+            mcw.get_results(Screenspace::new(XY::new(10, 13), Rect::new(XY::ZERO, XY::new(10, 13)))),
             (XY::new(10, 13), vec![5, 5])
         );
     }
@@ -243,7 +244,7 @@ pub mod tests {
         let mut mcw = MockComplexWidget::new(items);
 
         assert_eq!(
-            mcw.get_results(XY::new(10, 12), Rect::new(XY::ZERO, XY::new(10, 12))),
+            mcw.get_results(Screenspace::new(XY::new(10, 12), Rect::new(XY::ZERO, XY::new(10, 12)))),
             (XY::new(10, 12), vec![2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
         );
     }

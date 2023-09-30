@@ -2,6 +2,7 @@ use log::warn;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
+use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
@@ -42,8 +43,8 @@ impl Widget for ButtonWidget {
         XY::new((self.text.screen_width() + 2) as u16, 1)
     }
 
-    fn layout(&mut self, output_size: XY, _visible_rect: Rect) {
-        self.last_size_x = Some(output_size.x);
+    fn layout(&mut self, screenspace: Screenspace) {
+        self.last_size_x = Some(screenspace.output_size().x);
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

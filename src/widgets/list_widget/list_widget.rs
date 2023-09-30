@@ -253,8 +253,8 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
         self.fill_policy
     }
 
-    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        self.last_size = Some(Screenspace::new(output_size, visible_rect));
+    fn layout(&mut self, screenspace: Screenspace) {
+        self.last_size = Some(screenspace);
     }
 
     fn kite(&self) -> XY {

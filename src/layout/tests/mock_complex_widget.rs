@@ -1,10 +1,10 @@
 use crate::config::theme::Theme;
+use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::tests::mock_widget::MockWidget;
-use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, WID, Widget};
@@ -43,9 +43,9 @@ impl MockComplexWidget {
     /*
     this is supposed to be identical to layout below
      */
-    pub fn get_layout_res(&mut self, output_size: XY, visible_rect: Rect) -> LayoutResult<Self> {
+    pub fn get_layout_res(&mut self, screenspace: Screenspace) -> LayoutResult<Self> {
         let layout = (self.layout_maker)(self);
-        layout.layout(self, output_size, visible_rect)
+        layout.layout(self, screenspace)
     }
 }
 
@@ -66,8 +66,8 @@ impl Widget for MockComplexWidget {
         self.size
     }
 
-    fn layout(&mut self, output_size: XY, visible_rect: Rect) {
-        self.get_layout_res(output_size, visible_rect);
+    fn layout(&mut self, screenspace: Screenspace) {
+        self.get_layout_res(screenspace);
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

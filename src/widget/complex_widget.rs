@@ -3,6 +3,7 @@ use log::{debug, error};
 use crate::config::theme::Theme;
 use crate::experiments::focus_group::{FocusGraph, FocusUpdate};
 use crate::experiments::from_geometry::from_geometry;
+use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
@@ -86,12 +87,12 @@ pub trait ComplexWidget: Widget + Sized {
         }
     }
 
-    fn complex_layout(&mut self, output_size: XY, visible_rect: Rect) {
+    fn complex_layout(&mut self, screenspace: Screenspace) {
         let layout = self.get_layout();
-        let layout_res = layout.layout(self, output_size, visible_rect);
+        let layout_res = layout.layout(self, screenspace);
 
         for wwr in layout_res.wwrs.iter() {
-            debug_assert!(output_size >= wwr.rect().lower_right());
+            debug_assert!(screenspace.output_size() >= wwr.rect().lower_right());
             debug_assert!(layout_res.total_size >= wwr.rect().lower_right(), "total_size = {}, rect = {}", layout_res.total_size, wwr.rect());
         }
 
