@@ -3,7 +3,17 @@ variables:
   GIT_SUBMODULE_UPDATE_FLAGS: --jobs 4
 
 stages:
+  - setup
   - build
+  - test
+
+install_rust_analyzer:
+  stage: setup
+  image: rust:latest
+  script:
+    - 'if ! command -v rust-analyzer &> /dev/null; then cargo install ra_ap_rust-analyzer; fi'
+  only:
+    - branches
 
 rust-latest:
   stage: build
