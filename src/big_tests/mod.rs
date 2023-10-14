@@ -6,3 +6,4 @@ mod save;
 mod save_file_dialog;
 mod syntax_highlighting;
 mod show_usages;
+mod integration;
