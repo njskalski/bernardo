@@ -15,12 +15,11 @@ install_rust_analyzer:
   only:
     - branches
 
-rust-latest:
+rust-latest-build:
   stage: build
   image: rust:latest
   script:
     - cargo build --verbose --release
-    - cargo test --verbose
   cache:
     paths:
       - target/
@@ -29,9 +28,33 @@ rust-latest:
       - target/release/bernardo
     expire_in: 30 days
 
-rust-nightly:
+rust-latest-test:
+  stage: test
+  image: rust:latest
+  script:
+    - cargo test --verbose
+  cache:
+    paths:
+      - target/
+  dependencies:
+    - rust-latest-build
+
+rust-nightly-build:
   stage: build
   image: rustlang/rust:nightly
   script:
     - cargo build --verbose --release
+  cache:
+    paths:
+      - target/
+
+rust-nightly-test:
+  stage: test
+  image: rustlang/rust:nightly
+  script:
     - cargo test --verbose
+  cache:
+    paths:
+      - target/
+  dependencies:
+    - rust-nightly-build
