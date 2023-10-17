@@ -1,4 +1,0 @@
-Invariant: ALL updates gets to widget via STANDARD UPDATE MECHANISM, meaning all NEW information come through
-"update" function. This is the ONLY place, where widget can change it's state. ONLY.
-
-"NEW information" is any information, that is not immediately available to widget via querying it's own fields.

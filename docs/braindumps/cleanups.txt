@@ -1,3 +1,0 @@
-change every new_idx < sth.size() - 1  => to => new_idx + 1 < sth.size() to avoid underflow if sth.size is 0
-use smallvec to optimise cursor set
-remove the second Box in definition of fuzzy file item provider, just return &dyn Item - tried twice, failed twice

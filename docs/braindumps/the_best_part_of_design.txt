@@ -1,6 +1,0 @@
-Why on_input() is different from update():
-
-The reason for it is that a widget can be updated not only by input, but these 3 scenarios:
-1) user input
-2) out-of-user input (filesystem change on SaveFileDialog or sth like this)
-3) in reaction to Msg emitted by child widget (result escalation akin to unwinding the stack).
