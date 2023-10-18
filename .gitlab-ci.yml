@@ -1,6 +1,7 @@
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
   GIT_SUBMODULE_UPDATE_FLAGS: --jobs 4
+  GIT_DEPTH: 10
 
 stages:
   - setup
@@ -20,22 +21,17 @@ rust-latest-build:
   image: rust:latest
   script:
     - cargo build --verbose --release
-  cache:
-    paths:
-      - target/
   artifacts:
     paths:
       - target/release/bernardo
-    expire_in: 30 days
+    expire_in: 1 day
 
 rust-latest-test:
   stage: test
   image: rust:latest
   script:
     - cargo test --verbose
-  cache:
-    paths:
-      - target/
+    - rm -rf target/
   dependencies:
     - rust-latest-build
 
@@ -44,17 +40,12 @@ rust-nightly-build:
   image: rustlang/rust:nightly
   script:
     - cargo build --verbose --release
-  cache:
-    paths:
-      - target/
 
 rust-nightly-test:
   stage: test
   image: rustlang/rust:nightly
   script:
     - cargo test --verbose
-  cache:
-    paths:
-      - target/
+    - rm -rf target/
   dependencies:
     - rust-nightly-build
