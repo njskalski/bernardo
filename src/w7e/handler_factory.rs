@@ -41,6 +41,7 @@ pub fn handler_factory(config: &ConfigRef,
                 Err(e) => Err(e),
             }
         }
+        here
         _ => Err(HandlerLoadError::HandlerNotFound),
     }
 }

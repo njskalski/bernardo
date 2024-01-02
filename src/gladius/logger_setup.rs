@@ -8,7 +8,7 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("mio::poll", log::LevelFilter::Error),
     // this is for "recursive_treat_views", which is the heart and backbone of Bernardo.
     ("recursive_treat_views", log::LevelFilter::Info),
-    ("bernardo", log::LevelFilter::Debug),
+    ("bernardo", log::LevelFilter::Info),
     ("bernardo::primitives::tmtheme", log::LevelFilter::Info),
     ("bernardo::fs::local_filesystem_front", log::LevelFilter::Error),
     ("bernardo::gladius::run_gladius", log::LevelFilter::Info),
@@ -21,6 +21,7 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("bernardo::widgets::completion_widget", log::LevelFilter::Debug),
     ("bernardo::widgets::dir_tree_view", log::LevelFilter::Warn),
     ("bernardo::widgets::edit_box", log::LevelFilter::Warn),
+    ("bernardo::widgets::editor_widget::editor_widget", log::LevelFilter::Warn),
     ("bernardo::widgets::fuzzy_search::fuzzy_search", log::LevelFilter::Warn),
     ("bernardo::widgets::list_widget::list_widget", log::LevelFilter::Warn),
     ("bernardo::widgets::main_view::main_view", log::LevelFilter::Info),
@@ -38,6 +39,7 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("bernardo::lsp_client::lsp_read", log::LevelFilter::Warn),
     ("bernardo::lsp_client::lsp_write", log::LevelFilter::Warn),
     ("bernardo::mocks::full_setup", log::LevelFilter::Warn),
+    ("bernardo::mocks", log::LevelFilter::Warn),
 ];
 
 

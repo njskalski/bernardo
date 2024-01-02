@@ -3,7 +3,7 @@
         (
             lang_id: CPP,
             path: "",
-            handler_id_op: Some("clang"),
+            handler_id_op: Some("cpp"),
         ),
     ],
 )

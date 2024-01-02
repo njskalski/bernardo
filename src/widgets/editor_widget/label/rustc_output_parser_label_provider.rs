@@ -819,7 +819,7 @@ warning: field `read_error_channel` is never read
    |     ^^^^^^^^^^^^^^^^^^
 
 warning: fields `root` and `cargo_file` are never read
-  --> src/w7e/rust/handler_rust.rs:12:5
+  --> src/w7e/rust/handler_cpp:12:5
    |
 11 | pub struct RustHandler {
    |            ----------- fields in this struct

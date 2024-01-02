@@ -37,7 +37,7 @@ impl NavCompLoader for MockNavcompLoader {
                     project_scope: &ProjectScope,
                     navcomp_tick_sender: NavCompTickSender,
     ) -> Result<Box<dyn Handler>, HandlerLoadError> {
-        debug_assert!(project_scope.handler_id.as_ref() == Some(&"rust".to_string())); // yeah I know it's shit, I have 100 compile errors
+        debug_assert!(project_scope.handler_id.as_ref() == Some(&"mock".to_string()));
 
         let navcomp_op = Some(
             Arc::new(

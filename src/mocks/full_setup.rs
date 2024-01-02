@@ -18,6 +18,7 @@ use crate::fs::mock_fs::MockFS;
 use crate::gladius::logger_setup::logger_setup;
 use crate::gladius::navcomp_loader::NavCompLoader;
 use crate::gladius::providers::Providers;
+use crate::gladius::real_navcomp_loader::RealNavCompLoader;
 use crate::gladius::run_gladius::run_gladius;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::{Key, Keycode};
@@ -45,6 +46,7 @@ pub struct FullSetupBuilder {
     recording: bool,
     step_frame: bool,
     frame_based_wait: bool,
+    mock_navcomp: bool,
 }
 
 impl FullSetupBuilder {
@@ -53,6 +55,13 @@ impl FullSetupBuilder {
     pub fn with_config(self, config: Config) -> Self {
         FullSetupBuilder {
             config: Some(config),
+            ..self
+        }
+    }
+
+    pub fn with_mock_navcomp(self, mock_navcomp: bool) -> Self {
+        FullSetupBuilder {
+            mock_navcomp,
             ..self
         }
     }
@@ -106,7 +115,8 @@ pub struct FullSetup {
     gladius_thread_handle: JoinHandle<()>,
     last_frame: Option<MetaOutputFrame>,
     frame_based_wait: bool,
-    mock_navcomp_pilot: MockNavCompProviderPilot,
+    // we have navcomp pilot only if navcomp is mocked.
+    mock_navcomp_pilot: Option<MockNavCompProviderPilot>,
 }
 
 impl FullSetupBuilder {
@@ -130,24 +140,29 @@ impl FullSetupBuilder {
 
         let tree_sitter = Arc::new(TreeSitterWrapper::new(LanguageSet::full()));
 
-        let (mock_navcomp_event_sender, mock_navcomp_event_recvr) = crossbeam_channel::unbounded::<MockNavCompEvent>();
-        let comp_matcher: Arc<RwLock<Vec<MockCompletionMatcher>>> = Arc::new(RwLock::new(Vec::new()));
-        let symbol_matcher: Arc<RwLock<Vec<MockSymbolMatcher>>> = Arc::new(RwLock::new(Vec::new()));
+        let mut mock_navcomp_pilot : Option<MockNavCompProviderPilot> = None;
+        let mut navcomp_loader = Arc::new(Box::new(RealNavCompLoader::new()) as Box<dyn NavCompLoader>);
 
-        let mock_navcomp_pilot = MockNavCompProviderPilot::new(
-            mock_navcomp_event_recvr,
-            comp_matcher.clone(),
-            symbol_matcher.clone(),
-        );
+        if self.mock_navcomp {
+            let (mock_navcomp_event_sender, mock_navcomp_event_recvr) = crossbeam_channel::unbounded::<MockNavCompEvent>();
+            let comp_matcher: Arc<RwLock<Vec<MockCompletionMatcher>>> = Arc::new(RwLock::new(Vec::new()));
+            let symbol_matcher: Arc<RwLock<Vec<MockSymbolMatcher>>> = Arc::new(RwLock::new(Vec::new()));
 
-        let mock_navcomp_loader = Arc::new(Box::new(
-            MockNavcompLoader::new(
-                mock_navcomp_event_sender,
-                comp_matcher,
-                symbol_matcher,
-            )
-        ) as Box<dyn NavCompLoader>
-        );
+            mock_navcomp_pilot = Some(MockNavCompProviderPilot::new(
+                mock_navcomp_event_recvr,
+                comp_matcher.clone(),
+                symbol_matcher.clone(),
+            ));
+
+            navcomp_loader = Arc::new(Box::new(
+                MockNavcompLoader::new(
+                    mock_navcomp_event_sender,
+                    comp_matcher,
+                    symbol_matcher,
+                )
+            ) as Box<dyn NavCompLoader>
+            );
+        }
 
         let providers = Providers::new(
             local_config,
@@ -155,7 +170,7 @@ impl FullSetupBuilder {
             local_clipboard,
             local_theme,
             tree_sitter,
-            mock_navcomp_loader,
+            navcomp_loader,
             vec![],
         );
 
@@ -201,6 +216,7 @@ impl FullSetup {
             recording: false,
             step_frame: false,
             frame_based_wait: false,
+            mock_navcomp : true,
         }
     }
 
@@ -232,8 +248,8 @@ impl FullSetup {
         res
     }
 
-    pub fn navcomp_pilot(&self) -> &MockNavCompProviderPilot {
-        &self.mock_navcomp_pilot
+    pub fn navcomp_pilot(&self) -> Option<&MockNavCompProviderPilot> {
+        self.mock_navcomp_pilot.as_ref()
     }
 
     pub fn get_frame(&self) -> Option<&MetaOutputFrame> {
