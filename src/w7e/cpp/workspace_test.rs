@@ -51,7 +51,7 @@ mod tests {
         let workspace_pill = ron::from_str::<SerializableWorkspace>(workspace).unwrap();
 
         assert_eq!(workspace_pill.scopes.len(), 1);
-        assert_eq!(workspace_pill.scopes[0].lang_id, LangId::RUST);
+        assert_eq!(workspace_pill.scopes[0].lang_id, LangId::CPP);
         assert_eq!(workspace_pill.scopes[0].path, PathBuf::from("cpp_repo"));
         assert_eq!(workspace_pill.scopes[0].handler_id_op, Some("cpp".to_string()));
     }
