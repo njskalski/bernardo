@@ -23,23 +23,29 @@ fn show_usages_clangd_integ_test_1() {
     let mut full_setup = get_full_setup();
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
-    // assert_eq!(full_setup.get_first_editor().unwrap().get_visible_cursor_line_indices().map(|c| c.visible_idx).collect::<Vec<usize>>(), vec![1]);
-    //
-    // for _ in 0..7 {
-    //     assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
-    // }
-    //
-    // assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().find(|line| line.visible_idx == 8).is_some()));
-    //
-    // assert!(full_setup.send_key(Keycode::ArrowRight.to_key().with_ctrl()));
-    //
-    // assert!(full_setup.wait_for(|f| {
-    //     f.get_first_editor().unwrap().get_visible_cursor_lines().find(|line| line.contents.text.trim() == "some_function(\"a\");⏎").is_some()
-    // }));
-    //
-    // // TODO(#24)
-    // sleep(Duration::from_millis(300));
-    //
+    assert_eq!(full_setup.get_first_editor().unwrap().get_visible_cursor_line_indices().map(|c| c.visible_idx).collect::<Vec<usize>>(), vec![1]);
+
+
+
+    for _ in 0..10 {
+        assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
+    }
+
+    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().find(|line| line.visible_idx == 10).is_some()));
+
+    assert!(full_setup.send_key(Keycode::Tab.to_key()));
+
+    assert!(full_setup.type_in("std::"));
+
+    assert!(full_setup.wait_for(|f| {
+        f.get_first_editor().unwrap().get_visible_cursor_lines().find(|line| line.contents.text.trim() == "std::⏎").is_some()
+    }));
+
+    assert!(full_setup.send_key(Keycode::Space.to_key().with_ctrl()));
+
+    // TODO(#24)
+    sleep(Duration::from_millis(300));
+
     // full_setup.send_key(full_setup.config().keyboard_config.global.everything_bar);
     //
     // assert!(full_setup.wait_for(|f| {
@@ -58,5 +64,5 @@ fn show_usages_clangd_integ_test_1() {
     // }));
 
     full_setup.wait_frame();
-    // full_setup.screenshot();
+    full_setup.screenshot();
 }
