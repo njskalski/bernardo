@@ -3,10 +3,6 @@ use std::time::Duration;
 
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
-use crate::mocks::mock_navcomp_provider::MockSymbolMatcher;
-use crate::primitives::stupid_cursor::StupidCursor;
-use crate::spath;
-use crate::w7e::navcomp_provider::{NavCompSymbol, SymbolType, SymbolUsage};
 
 fn get_full_setup() -> FullSetup {
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/lsp_clangd_1")
@@ -24,8 +20,6 @@ fn show_usages_clangd_integ_test_1() {
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
     assert_eq!(full_setup.get_first_editor().unwrap().get_visible_cursor_line_indices().map(|c| c.visible_idx).collect::<Vec<usize>>(), vec![1]);
-
-
 
     for _ in 0..10 {
         assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));

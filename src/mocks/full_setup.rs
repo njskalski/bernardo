@@ -2,10 +2,12 @@ use std::ffi::OsStr;
 use std::option::Option;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
+use std::sync::mpsc::channel;
 use std::thread::JoinHandle;
 use std::time::Duration;
 
 use crossbeam_channel::{Receiver, select, Sender};
+use env_logger::Target;
 use log::{debug, error, LevelFilter, warn};
 
 use crate::config::config::{Config, ConfigRef};
@@ -25,6 +27,7 @@ use crate::io::keys::{Key, Keycode};
 use crate::mocks::code_results_interpreter::CodeResultsViewInterpreter;
 use crate::mocks::editor_interpreter::EditorInterpreter;
 use crate::mocks::fuzzy_search_interpreter::FuzzySearchInterpreter;
+use crate::mocks::log_capture::CapturingLogger;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
@@ -47,6 +50,8 @@ pub struct FullSetupBuilder {
     step_frame: bool,
     frame_based_wait: bool,
     mock_navcomp: bool,
+    // capture logs
+    should_capture_logs : bool,
 }
 
 impl FullSetupBuilder {
@@ -103,7 +108,16 @@ impl FullSetupBuilder {
             ..self
         }
     }
+
+    pub fn with_capture_logs(self) -> Self {
+        FullSetupBuilder {
+            should_capture_logs : true,
+            ..self
+        }
+    }
 }
+
+
 
 pub struct FullSetup {
     fsf: FsfRef,
@@ -117,11 +131,28 @@ pub struct FullSetup {
     frame_based_wait: bool,
     // we have navcomp pilot only if navcomp is mocked.
     mock_navcomp_pilot: Option<MockNavCompProviderPilot>,
+    // receiver of logs
+    logs_receiver_op : Option<Receiver<String>>,
 }
 
 impl FullSetupBuilder {
     pub fn build(self) -> FullSetup {
         logger_setup(LevelFilter::Debug);
+
+        let mut logs_receiver_op : Option<Receiver<String>> = None;
+
+        if self.should_capture_logs {
+            let (sender, receiver) = crossbeam_channel::unbounded::<String>();
+
+            env_logger::Builder::default()
+                .is_test(true)
+                // .target(Target::Pipe(Box::new(CapturingLogger { sender })))
+                .init();
+
+            log::set_boxed_logger(Box::new(CapturingLogger { sender })).unwrap();
+
+            logs_receiver_op = Some(receiver);
+        }
 
         let theme = Theme::default();
 
@@ -195,6 +226,7 @@ impl FullSetupBuilder {
             last_frame: None,
             frame_based_wait: self.frame_based_wait,
             mock_navcomp_pilot,
+            logs_receiver_op,
         }
     }
 }
@@ -217,6 +249,7 @@ impl FullSetup {
             step_frame: false,
             frame_based_wait: false,
             mock_navcomp : true,
+            should_capture_logs: false,
         }
     }
 
