@@ -1,5 +1,6 @@
 use std::io::Write;
 
+use jsonrpc_core::Version;
 use log::debug;
 
 use crate::lsp_client::lsp_write_error::LspWriteError;
@@ -57,7 +58,10 @@ pub fn internal_send_notification<N: lsp_types::notification::Notification, W: W
             Protocol docs do not expect jsonrpc version here:
             https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#notificationMessage
              */
-            jsonrpc: None,
+            /*
+            but stupid clang does.
+             */
+            jsonrpc: Some(Version::V2),
             method: N::METHOD.to_string(),
             params: jsonrpc_core::Params::Map(params),
         };
@@ -96,7 +100,10 @@ pub fn internal_send_notification_no_params<N: lsp_types::notification::Notifica
         Protocol docs do not expect jsonrpc version here:
         https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#notificationMessage
          */
-        jsonrpc: None,
+        /*
+        but stupid clang does.
+         */
+        jsonrpc: Some(Version::V2),
         method: N::METHOD.to_string(),
         params: jsonrpc_core::Params::None,
     };

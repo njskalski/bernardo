@@ -1,15 +1,14 @@
 use log::debug;
 
-use std::process::Command;
-use crate::mocks::full_setup::FullSetup;
 use crate::io::keys::Keycode;
+use crate::mocks::full_setup::FullSetup;
 
 #[test]
 fn integration_test_with_rust_analyzer() {
-    let _ra_process = Command::new("rust-analyzer")
-        .arg("some_arg")
-        .spawn()
-        .expect("Failed to start rust-analyzer process");
+    // let _ra_process = Command::new("rust-analyzer")
+    //     .arg("some_arg")
+    //     .spawn()
+    //     .expect("Failed to start rust-analyzer process");
 
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/integration_test_1")
         .with_files(["src/main.rs"])
@@ -25,7 +24,7 @@ fn integration_test_with_rust_analyzer() {
     // Simulate user typing
     let typing_result = full_setup.type_in("path.");
     assert!(typing_result, "Failed to type in");
-    
+
     // Make sure we have an editor, then proceed
     let first_editor = full_setup.get_first_editor()
         .expect("Failed to get first editor");

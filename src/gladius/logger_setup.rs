@@ -36,8 +36,9 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("bernardo::lsp_client", log::LevelFilter::Debug),
     ("bernardo::w7e", log::LevelFilter::Debug),
     ("bernardo::config", log::LevelFilter::Debug),
-    ("bernardo::lsp_client::lsp_read", log::LevelFilter::Warn),
-    ("bernardo::lsp_client::lsp_write", log::LevelFilter::Warn),
+    ("bernardo::lsp_client", log::LevelFilter::Debug),
+    ("bernardo::lsp_client::lsp_read", log::LevelFilter::Debug),
+    ("bernardo::lsp_client::lsp_write", log::LevelFilter::Debug),
     ("bernardo::mocks::full_setup", log::LevelFilter::Warn),
     ("bernardo::mocks", log::LevelFilter::Warn),
 ];

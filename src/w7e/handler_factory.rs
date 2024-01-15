@@ -4,6 +4,7 @@ use log::{debug, error};
 
 use crate::config::config::ConfigRef;
 use crate::fs::path::SPath;
+use crate::tsw::lang_id::LangId;
 use crate::w7e::cpp::handler_cpp::CppHandler;
 use crate::w7e::handler::{Handler, NavCompRef};
 use crate::w7e::handler_load_error::HandlerLoadError;
@@ -29,7 +30,7 @@ pub fn handler_factory(config: &ConfigRef,
             let lsp_path = config.global.get_rust_lsp_path().ok_or(HandlerLoadError::LspNotFound)?;
             let workspace_root = ff.absolute_path();
             let mut navcomp_op: Option<NavCompRef> = None;
-            if let Some(navcomp_lsp) = NavCompProviderLsp::new(lsp_path, workspace_root, navcomp_tick_sender) {
+            if let Some(navcomp_lsp) = NavCompProviderLsp::new(lsp_path, workspace_root, LangId::RUST, navcomp_tick_sender) {
                 navcomp_op = Some(Arc::new(Box::new(navcomp_lsp)));
             } else {
                 error!("LspWrapper construction failed.")
@@ -49,15 +50,15 @@ pub fn handler_factory(config: &ConfigRef,
             let lsp_path = config.global.get_clangd_lsp_path().ok_or(HandlerLoadError::LspNotFound)?;
             let workspace_root = ff.absolute_path();
             let mut navcomp_op: Option<NavCompRef> = None;
-            if let Some(navcomp_lsp) = NavCompProviderLsp::new(lsp_path, workspace_root, navcomp_tick_sender) {
+            if let Some(navcomp_lsp) = NavCompProviderLsp::new(lsp_path, workspace_root, LangId::CPP, navcomp_tick_sender) {
                 navcomp_op = Some(Arc::new(Box::new(navcomp_lsp)));
             } else {
                 error!("LspWrapper construction failed.")
             }
 
             match CppHandler::load(config,
-                                    ff,
-                                    navcomp_op,
+                                   ff,
+                                   navcomp_op,
             ) {
                 Ok(o) => Ok(Box::new(o)),
                 Err(e) => Err(e),

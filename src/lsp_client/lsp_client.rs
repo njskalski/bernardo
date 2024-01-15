@@ -70,6 +70,7 @@ impl LspWrapper {
     // TODO make result
     pub fn new(lsp_path: PathBuf,
                workspace_root: PathBuf,
+               language: LangId,
                tick_sender: NavCompTickSender,
                error_sink: Sender<LspReadError>,
     ) -> Option<LspWrapper> {
@@ -138,7 +139,7 @@ impl LspWrapper {
             LspWrapper {
                 server_path: lsp_path,
                 workspace_root_path: workspace_root,
-                language: LangId::RUST,
+                language,
                 child,
                 ids,
                 file_versions,
