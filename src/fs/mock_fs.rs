@@ -176,7 +176,12 @@ pub struct MockFS {
 
 impl MockFS {
     pub fn new<T: Into<PathBuf>>(root_path: T) -> Self {
-        let root_path = root_path.into().canonicalize().unwrap(); // TODO unwrap
+        let root_path: PathBuf = root_path.into();
+        let root_path = if root_path.is_absolute() {
+            root_path
+        } else {
+            root_path.canonicalize().unwrap() // TODO unwrap
+        };
 
         MockFS {
             root_path,
