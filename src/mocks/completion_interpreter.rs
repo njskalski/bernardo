@@ -1,3 +1,5 @@
+use streaming_iterator::StreamingIterator;
+
 use crate::io::buffer_output::horizontal_iter_item::HorizontalIterItem;
 use crate::io::output::Metadata;
 use crate::mocks::meta_frame::MetaOutputFrame;
@@ -44,5 +46,13 @@ impl<'a> CompletionInterpreter<'a> {
         idx.map(|idx| {
             (idx, self.output.buffer.lines_iter().with_rect(self.meta.rect).skip(idx as usize).next().unwrap().text)
         })
+    }
+
+    pub fn is_loading(&self) -> bool {
+        if self.items().count() != 1 {
+            return false;
+        }
+
+        self.items().map(|item| item.text).next() == Some("loading...".to_string())
     }
 }
