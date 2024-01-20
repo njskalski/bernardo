@@ -41,6 +41,10 @@ rust-latest-test:
       - target/
   dependencies:
     - rust-latest-build
+  artifacts:
+    paths:
+      - "clang*"
+      - "screenshots"
 
 rust-nightly-build:
   stage: build
@@ -64,3 +68,7 @@ rust-nightly-test:
       - target/
   dependencies:
     - rust-nightly-build
+  artifacts:
+    paths:
+      - "clang*"
+      - "screenshots"
