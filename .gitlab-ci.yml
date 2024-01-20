@@ -15,6 +15,16 @@ install_rust_analyzer:
   only:
     - branches
 
+install_clangd:
+  stage: setup
+  image: rust:latest
+  script:
+    - apt-get update
+    - apt-get install -y clangd
+    - rm -rf /var/lib/apt/lists/*
+  only:
+    - branches
+
 rust-latest-build:
   stage: build
   image: rust:latest
