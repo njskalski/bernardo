@@ -15,16 +15,6 @@ install_rust_analyzer:
   only:
     - branches
 
-install_clangd:
-  stage: setup
-  image: rust:latest
-  script:
-    - apt-get update
-    - apt-get install -y clangd
-    - rm -rf /var/lib/apt/lists/*
-  only:
-    - branches
-
 rust-latest-build:
   stage: build
   image: rust:latest
@@ -41,6 +31,10 @@ rust-latest-build:
 rust-latest-test:
   stage: test
   image: rust:latest
+  before_script:
+    - apt-get update
+    - apt-get install -y clangd
+    - rm -rf /var/lib/apt/lists/*
   script:
     - cargo test --verbose
   cache:
@@ -61,6 +55,10 @@ rust-nightly-build:
 rust-nightly-test:
   stage: test
   image: rustlang/rust:nightly
+  before_script:
+    - apt-get update
+    - apt-get install -y clangd
+    - rm -rf /var/lib/apt/lists/*
   script:
     - cargo test --verbose
   cache:
