@@ -1,7 +1,4 @@
-use env_logger::{Builder, Env};
-use log::{Level, Log, Metadata, Record};
-
-use std::io::Write;
+use log::{Log, Metadata, Record};
 
 pub struct CapturingLogger {
     pub(crate) sender: crossbeam_channel::Sender<String>,

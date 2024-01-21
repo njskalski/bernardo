@@ -33,7 +33,7 @@ fn texts_to_texts(texts: &Vec<&str>, selected: usize, cem: CommonEditMsg, clipbo
 
     let mut selected_cursor_set: Option<&mut CursorSet> = None;
 
-    for (idx, (rope, cursors)) in buffer_cs_pair.iter_mut().enumerate() {
+    for (idx, (_rope, cursors)) in buffer_cs_pair.iter_mut().enumerate() {
         if idx == selected {
             selected_cursor_set = Some(cursors);
         } else {
@@ -292,7 +292,7 @@ fn multiple_cursor_test_6_1() {
         "fir#stte#st",
     ];
 
-    let mut clipboard = MockClipboard::default();
+    let clipboard = MockClipboard::default();
     clipboard.set("xxx".to_string());
 
     let new_texts = texts_to_texts(&texts, 0, CommonEditMsg::Paste, Some(&clipboard.into_clipboardref()));
@@ -308,7 +308,7 @@ fn multiple_cursor_test_6_2() {
         "fir#stte#st",
     ];
 
-    let mut clipboard = MockClipboard::default();
+    let clipboard = MockClipboard::default();
     clipboard.set("xxx".to_string());
 
     let new_texts = texts_to_texts(&texts, 1, CommonEditMsg::Paste, Some(&clipboard.into_clipboardref()));

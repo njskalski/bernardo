@@ -3,12 +3,12 @@ use test_log::test;
 use crate::experiments::screen_shot::screenshot;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::widget::widget::Widget;
+
 use crate::widgets::tests::editor_view_testbed::EditorViewTestbed;
 use crate::widgets::tests::widget_testbed_builder::WidgetTestbedBuilder;
 
 pub fn get_setup() -> EditorViewTestbed {
-    let mut editor_view_testbed = WidgetTestbedBuilder::new().build_editor();
+    let editor_view_testbed = WidgetTestbedBuilder::new().build_editor();
 
     {
         let some_text = r#"use std::path::PathBuf;
@@ -66,7 +66,7 @@ fn editor_view_context() {
     let mut setup = get_setup();
     setup.next_frame();
 
-    for i in 0..5 {
+    for _i in 0..5 {
         setup.push_input(InputEvent::KeyInput(Keycode::ArrowDown.to_key()))
     }
 

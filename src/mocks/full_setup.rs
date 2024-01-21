@@ -1,13 +1,13 @@
 use std::ffi::OsStr;
 use std::option::Option;
 use std::path::PathBuf;
-use std::sync::mpsc::channel;
+
 use std::sync::{Arc, RwLock};
 use std::thread::JoinHandle;
 use std::time::Duration;
 
 use crossbeam_channel::{select, Receiver, Sender};
-use env_logger::Target;
+
 use log::{debug, error, warn, LevelFilter};
 
 use crate::config::config::{Config, ConfigRef};
@@ -38,7 +38,7 @@ use crate::mocks::treeview_interpreter::TreeViewInterpreter;
 use crate::primitives::xy::XY;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
-use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
+
 use crate::widgets::tree_view;
 
 pub struct FullSetupBuilder {

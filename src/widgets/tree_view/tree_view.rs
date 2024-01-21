@@ -15,7 +15,7 @@ use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
 
 use crate::primitives::xy::XY;
-use crate::unpack_or_e;
+
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
@@ -322,12 +322,12 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         #[cfg(test)]
         {
-            let _size = unpack_or_e!(self.last_size, (), "render before layout");
+            let size = crate::unpack_or_e!(self.last_size, (), "render before layout");
 
             output.emit_metadata(crate::io::output::Metadata {
                 id: self.id(),
                 typename: self.typename().to_string(),
-                rect: crate::primitives::rect::Rect::from_zero(_size.output_size()),
+                rect: crate::primitives::rect::Rect::from_zero(size.output_size()),
                 focused,
             });
         }
