@@ -12,3 +12,4 @@ pub mod suggestions_provider;
 pub mod workspace;
 pub mod navcomp_group;
 pub mod buffer_state_shared_ref;
+mod cpp;

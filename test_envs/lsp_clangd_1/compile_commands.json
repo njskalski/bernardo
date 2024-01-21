@@ -1,0 +1,34 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-Wall",
+      "-Wextra",
+      "-pedantic",
+      "-std=c++11",
+      "-c",
+      "-o",
+      "obj/main.o",
+      "src/main.cpp"
+    ],
+    "directory": "/home/andrzej/r/bernardo/test_envs/lsp_clangd_1",
+    "file": "/home/andrzej/r/bernardo/test_envs/lsp_clangd_1/src/main.cpp",
+    "output": "/home/andrzej/r/bernardo/test_envs/lsp_clangd_1/obj/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-Wall",
+      "-Wextra",
+      "-pedantic",
+      "-std=c++11",
+      "-c",
+      "-o",
+      "obj/hello.o",
+      "src/hello.cpp"
+    ],
+    "directory": "/home/andrzej/r/bernardo/test_envs/lsp_clangd_1",
+    "file": "/home/andrzej/r/bernardo/test_envs/lsp_clangd_1/src/hello.cpp",
+    "output": "/home/andrzej/r/bernardo/test_envs/lsp_clangd_1/obj/hello.o"
+  }
+]

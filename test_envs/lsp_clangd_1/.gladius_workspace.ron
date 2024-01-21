@@ -1,0 +1,9 @@
+(
+    scopes: [
+        (
+            lang_id: CPP,
+            path: "",
+            handler_id_op: Some("cpp"),
+        ),
+    ],
+)

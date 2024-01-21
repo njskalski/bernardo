@@ -15,7 +15,7 @@ fn get_full_setup() -> FullSetup {
         .build();
 
     {
-        let mut symbols = full_setup.navcomp_pilot().symbols().unwrap();
+        let mut symbols = full_setup.navcomp_pilot().unwrap().symbols().unwrap();
 
         let first_occ = (StupidCursor::new(4, 7), StupidCursor::new(17, 7));
         let second_occ = (StupidCursor::new(4, 11), StupidCursor::new(17, 11));

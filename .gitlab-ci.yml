@@ -3,58 +3,21 @@ variables:
   GIT_SUBMODULE_UPDATE_FLAGS: --jobs 4
 
 stages:
-  - setup
-  - build
-  - test
+  - everything
 
-install_rust_analyzer:
-  stage: setup
-  image: rust:latest
+debian:
+  stage: everything
+  image: debian:stable
+  before_script:
+    - apt-get update
+    - apt-get install -y curl build-essential gcc make clangd clang
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    - source "$HOME/.cargo/env"
+    - rustup component add rust-analyzer
   script:
-    - 'if ! command -v rust-analyzer &> /dev/null; then cargo install ra_ap_rust-analyzer; fi'
-  only:
-    - branches
-
-rust-latest-build:
-  stage: build
-  image: rust:latest
-  script:
-    - cargo build --verbose --release
-  cache:
-    paths:
-      - target/
+    - cargo build
+    - cargo test
   artifacts:
     paths:
-      - target/release/bernardo
-    expire_in: 30 days
-
-rust-latest-test:
-  stage: test
-  image: rust:latest
-  script:
-    - cargo test --verbose
-  cache:
-    paths:
-      - target/
-  dependencies:
-    - rust-latest-build
-
-rust-nightly-build:
-  stage: build
-  image: rustlang/rust:nightly
-  script:
-    - cargo build --verbose --release
-  cache:
-    paths:
-      - target/
-
-rust-nightly-test:
-  stage: test
-  image: rustlang/rust:nightly
-  script:
-    - cargo test --verbose
-  cache:
-    paths:
-      - target/
-  dependencies:
-    - rust-nightly-build
+      - "clang*"
+      - "screenshots"

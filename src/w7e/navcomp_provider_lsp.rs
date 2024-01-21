@@ -1,11 +1,10 @@
-use std::cell::Cell;
 use std::fmt::{Debug, Formatter};
 use std::path::PathBuf;
 use std::sync::RwLock;
 
 use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error};
-use lsp_types::{CompletionResponse, CompletionTextEdit, DocumentSymbolResponse, Position, SymbolKind};
+use lsp_types::{CompletionResponse, CompletionTextEdit, Position, SymbolKind};
 
 use crate::fs::path::SPath;
 use crate::lsp_client::lsp_client::LspWrapper;
@@ -14,9 +13,10 @@ use crate::lsp_client::lsp_read_error::LspReadError;
 use crate::lsp_client::lsp_write_error::LspWriteError;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
+use crate::tsw::lang_id::LangId;
 use crate::unpack_or_e;
 use crate::w7e::navcomp_group::NavCompTickSender;
-use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, StupidSubstituteMessage, SymbolContextActionsPromise, SymbolPromise, SymbolType, SymbolUsage, SymbolUsagesPromise};
+use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, StupidSubstituteMessage, SymbolContextActionsPromise, SymbolType, SymbolUsage, SymbolUsagesPromise};
 
 /*
 TODO I am silently ignoring errors here. I guess that if NavComp fails it should get re-started.
@@ -53,26 +53,33 @@ impl NavCompProviderLsp {
     pub fn new(
         lsp_path: PathBuf,
         workspace_root: PathBuf,
+        language: LangId,
         tick_sender: NavCompTickSender,
     ) -> Option<Self> {
         let error_channel = crossbeam_channel::unbounded::<LspReadError>();
 
         if let Some(mut lsp) = LspWrapper::new(lsp_path,
-                                               workspace_root, tick_sender.clone(), error_channel.0.clone()) {
-            if lsp.initialize().is_ok() {
-                Some(
-                    NavCompProviderLsp {
+                                               workspace_root,
+                                               language,
+                                               tick_sender.clone(),
+                                               error_channel.0.clone()) {
+            match lsp.initialize() {
+                Ok(lsp_answer) => {
+                    debug!("lsp initialization success: {:?}", lsp_answer);
+
+                    Some(NavCompProviderLsp {
                         lsp: RwLock::new(lsp),
                         todo_tick_sender: tick_sender,
                         // TODO this will get lang specific
                         triggers: vec![".".to_string(), "::".to_string()],
                         read_error_channel: error_channel,
                         crashed: RwLock::new(false),
-                    }
-                )
-            } else {
-                error!("swallowed lsp init error");
-                None
+                    })
+                }
+                Err(lsp_err) => {
+                    error!("lsp error {:?}", lsp_err);
+                    None
+                }
             }
         } else {
             None

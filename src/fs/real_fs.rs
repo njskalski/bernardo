@@ -1,4 +1,5 @@
 use std::fmt::{Debug, Formatter};
+use std::io;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
@@ -16,10 +17,16 @@ pub struct RealFS {
 }
 
 impl RealFS {
-    pub fn new(root_path: PathBuf) -> RealFS {
-        RealFS {
+    pub fn new(root_path: PathBuf) -> io::Result<RealFS> {
+        let root_path = if root_path.is_absolute() {
             root_path
-        }
+        } else {
+            root_path.canonicalize()?
+        };
+
+        Ok(RealFS {
+            root_path
+        })
     }
 }
 
