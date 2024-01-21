@@ -2,3 +2,5 @@
 Cargo.lock
 /test_envs/*/target
 /screenshots/*
+
+.fleet
