@@ -63,20 +63,23 @@ impl NavCompProviderLsp {
                                                language,
                                                tick_sender.clone(),
                                                error_channel.0.clone()) {
-            if lsp.initialize().is_ok() {
-                Some(
-                    NavCompProviderLsp {
+            match lsp.initialize() {
+                Ok(lsp_answer) => {
+                    debug!("lsp initialization success: {:?}", lsp_answer);
+
+                    Some(NavCompProviderLsp {
                         lsp: RwLock::new(lsp),
                         todo_tick_sender: tick_sender,
                         // TODO this will get lang specific
                         triggers: vec![".".to_string(), "::".to_string()],
                         read_error_channel: error_channel,
                         crashed: RwLock::new(false),
-                    }
-                )
-            } else {
-                error!("swallowed lsp init error");
-                None
+                    })
+                }
+                Err(lsp_err) => {
+                    error!("lsp error {:?}", lsp_err);
+                    None
+                }
             }
         } else {
             None
