@@ -22,7 +22,7 @@ use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::tree_view::tree_it::TreeIt;
 use crate::widgets::tree_view::tree_view_node::{TreeItFilter, TreeViewNode};
 
-pub const TYPENAME: &'static str = "tree_view";
+pub const TYPENAME: &str = "tree_view";
 
 // expectation is that these are sorted
 pub type LabelHighlighter = fn(&str) -> Vec<usize>;

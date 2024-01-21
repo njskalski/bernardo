@@ -29,7 +29,7 @@ use crate::widgets::text_widget::TextWidget;
 pub trait KeyToMsg: Fn(&Key) -> Option<Box<dyn AnyMsg>> {}
 
 const DEFAULT_INTERVAL: u16 = 2;
-const CANCEL_LABEL: &'static str = "Cancel";
+const CANCEL_LABEL: &str = "Cancel";
 
 pub struct GenericDialog {
     wid: WID,

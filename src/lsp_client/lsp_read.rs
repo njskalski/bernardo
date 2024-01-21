@@ -165,7 +165,7 @@ fn internal_send_to_promise(
     }
 }
 
-static CONTENT_LENGTH_HEADER: &'static str = "Content-Length:";
+static CONTENT_LENGTH_HEADER: &str = "Content-Length:";
 
 pub fn get_len_from_headers(headers: &String) -> Option<usize> {
     for line in headers.lines() {

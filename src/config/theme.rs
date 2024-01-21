@@ -186,7 +186,7 @@ pub struct CursorsSettings {
     pub foreground: Option<Color>,
 }
 
-const DEFAULT_THEME_PATH: &'static str = "themes/default.ron";
+const DEFAULT_THEME_PATH: &str = "themes/default.ron";
 
 impl Theme {
     /*

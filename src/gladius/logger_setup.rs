@@ -1,6 +1,6 @@
 use log::{warn, LevelFilter};
 
-const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
+const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     // this is for git ignore
     ("globset", log::LevelFilter::Error),
     // I have no clue where it comes from, and I don't care so I suppress it
