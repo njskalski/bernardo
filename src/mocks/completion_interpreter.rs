@@ -1,5 +1,3 @@
-use streaming_iterator::StreamingIterator;
-
 use crate::io::buffer_output::horizontal_iter_item::HorizontalIterItem;
 use crate::io::output::Metadata;
 use crate::mocks::meta_frame::MetaOutputFrame;

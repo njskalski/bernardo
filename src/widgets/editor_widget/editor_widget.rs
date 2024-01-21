@@ -30,7 +30,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::primitives::styled_printable::StyledPrintable;
 use crate::primitives::xy::XY;
-use crate::promise::promise::{Promise, PromiseState};
+use crate::promise::promise::PromiseState;
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;

@@ -1,8 +1,6 @@
 use log::warn;
 use regex::Regex;
 
-use crate::primitives::printable::Printable;
-
 use crate::widgets::editor_widget::label::label::{Label, LabelPos, LabelStyle};
 
 /*
