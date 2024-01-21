@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use log::error;
 
-const LSP_DEBUG_MODE: bool = true;
+const LSP_DEBUG_MODE: bool = false;
 
 pub fn lsp_debug_save(file: PathBuf, contents: String) {
     if !LSP_DEBUG_MODE {
