@@ -12,7 +12,8 @@ tasks:
       source "$HOME/.cargo/env"
       rustup component add rust-src
       
-      apt install clangd clang
+      apt update
+      apt install -y clangd clang
   - build: |
       source "$HOME/.cargo/env"
       cd bernardo
