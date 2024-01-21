@@ -1,4 +1,4 @@
 max_width = 140
 comment_width = 100
-wrap_comments = false
+wrap_comments = true
 
