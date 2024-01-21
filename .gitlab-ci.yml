@@ -33,7 +33,7 @@ rust-latest-test:
   image: rust:latest
   before_script:
     - apt-get update
-    - apt-get install -y clangd-14 clang-14
+    - apt-get install -y clangd clang
   script:
     - cargo test --verbose
   cache:
@@ -60,7 +60,7 @@ rust-nightly-test:
   image: rustlang/rust:nightly
   before_script:
     - apt-get update
-    - apt-get install -y clangd-14 clang-14
+    - apt-get install -y clangd clang
   script:
     - cargo test --verbose
   cache:
