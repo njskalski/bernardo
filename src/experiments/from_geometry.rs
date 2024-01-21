@@ -71,8 +71,8 @@ fn walk_to_first_hit(buffer: &Buffer<WID>, wid: WID, rect: &Rect, step: (i16, i1
             let dst = buffer[*w];
             if dst != 0 && dst != wid {
                 let mut prev = match hits.get(&dst) {
-                    None => (0 as usize, u16::MAX),
-                    Some(p) => p.clone(),
+                    None => (0, u16::MAX),
+                    Some(p) => *p,
                 };
 
                 prev.0 += 1;
@@ -137,28 +137,24 @@ pub fn from_geometry<AdditionalData: Clone>(
     let mut buffer: Buffer<WID> = Buffer::new(output_size);
 
     for (wid, _, rect) in widgets_and_positions.iter() {
-        fill(&mut buffer, *wid, &rect);
+        fill(&mut buffer, *wid, rect);
     }
 
     for (source, _, rect) in widgets_and_positions {
         let mut edges: Vec<(FocusUpdate, WID)> = Vec::new();
 
-        match walk_to_first_hit(&buffer, *source, rect, (-1, 0)) {
-            Some(left) => edges.push((FocusUpdate::Left, left)),
-            None => {}
-        };
-        match walk_to_first_hit(&buffer, *source, rect, (1, 0)) {
-            Some(right) => edges.push((FocusUpdate::Right, right)),
-            None => {}
-        };
-        match walk_to_first_hit(&buffer, *source, rect, (0, 1)) {
-            Some(down) => edges.push((FocusUpdate::Down, down)),
-            None => {}
-        };
-        match walk_to_first_hit(&buffer, *source, rect, (0, -1)) {
-            Some(up) => edges.push((FocusUpdate::Up, up)),
-            None => {}
-        };
+        if let Some(left) = walk_to_first_hit(&buffer, *source, rect, (-1, 0)) {
+            edges.push((FocusUpdate::Left, left))
+        }
+        if let Some(right) = walk_to_first_hit(&buffer, *source, rect, (1, 0)) {
+            edges.push((FocusUpdate::Right, right))
+        }
+        if let Some(down) = walk_to_first_hit(&buffer, *source, rect, (0, 1)) {
+            edges.push((FocusUpdate::Down, down))
+        }
+        if let Some(up) = walk_to_first_hit(&buffer, *source, rect, (0, -1)) {
+            edges.push((FocusUpdate::Up, up))
+        }
 
         for (focus_update, target) in edges {
             fgi.add_edge(*source, focus_update, target);
@@ -222,32 +218,32 @@ mod tests {
         let mut focus_group = from_geometry::<()>(&widgets_and_positions, 1, XY::new(5, 5));
 
         assert_eq!(focus_group.get_focused_id(), 1);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Left), false);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Right), false);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Up), false);
+        assert!(!focus_group.update_focus(FocusUpdate::Left));
+        assert!(!focus_group.update_focus(FocusUpdate::Right));
+        assert!(!focus_group.update_focus(FocusUpdate::Up));
 
-        assert_eq!(focus_group.update_focus(FocusUpdate::Down), true);
+        assert!(focus_group.update_focus(FocusUpdate::Down));
         assert_eq!(focus_group.get_focused_id(), 3);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Up), true);
+        assert!(focus_group.update_focus(FocusUpdate::Up));
         assert_eq!(focus_group.get_focused_id(), 1);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Down), true);
+        assert!(focus_group.update_focus(FocusUpdate::Down));
         assert_eq!(focus_group.get_focused_id(), 3);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Left), true);
+        assert!(focus_group.update_focus(FocusUpdate::Left));
         assert_eq!(focus_group.get_focused_id(), 2);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Up), false);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Down), false);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Right), true);
+        assert!(!focus_group.update_focus(FocusUpdate::Up));
+        assert!(!focus_group.update_focus(FocusUpdate::Down));
+        assert!(focus_group.update_focus(FocusUpdate::Right));
         assert_eq!(focus_group.get_focused_id(), 3);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Right), true);
+        assert!(focus_group.update_focus(FocusUpdate::Right));
         assert_eq!(focus_group.get_focused_id(), 4);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Up), false);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Down), true);
+        assert!(!focus_group.update_focus(FocusUpdate::Up));
+        assert!(focus_group.update_focus(FocusUpdate::Down));
         assert_eq!(focus_group.get_focused_id(), 5);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Left), false);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Right), false);
-        assert_eq!(focus_group.update_focus(FocusUpdate::Down), false);
+        assert!(!focus_group.update_focus(FocusUpdate::Left));
+        assert!(!focus_group.update_focus(FocusUpdate::Right));
+        assert!(!focus_group.update_focus(FocusUpdate::Down));
 
-        assert_eq!(focus_group.update_focus(FocusUpdate::Up), true);
+        assert!(focus_group.update_focus(FocusUpdate::Up));
         assert_eq!(focus_group.get_focused_id(), 3);
     }
 }
