@@ -10,7 +10,6 @@ use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::fill_policy::SizePolicy;
 
-
 #[test]
 fn split_layout_test_widget_determined() {
     let mut mock_parent_widget = MockComplexWidget::new(

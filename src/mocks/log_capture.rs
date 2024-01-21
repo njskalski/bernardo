@@ -1,7 +1,4 @@
-
 use log::{Log, Metadata, Record};
-
-
 
 pub struct CapturingLogger {
     pub(crate) sender: crossbeam_channel::Sender<String>,

@@ -1,10 +1,4 @@
-
-
-
 use crate::mocks::full_setup::FullSetup;
-
-
-
 
 // This test is not super advanced, but I have bigger fish to fry than implementing yet another parsed output iterator
 

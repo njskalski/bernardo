@@ -106,7 +106,7 @@ mod tests {
     use crate::config::theme::Theme;
     use crate::io::buffer_output::buffer_output::BufferOutput;
     use crate::io::cell::Cell;
-    
+
     use crate::primitives::xy::XY;
 
     #[test]

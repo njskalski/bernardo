@@ -1,7 +1,6 @@
 use std::fmt::{Debug, Formatter};
 use std::io::Error;
 
-
 use crate::io::output::{Metadata, Output};
 use crate::io::style::TextStyle;
 

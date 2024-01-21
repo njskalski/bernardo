@@ -1,7 +1,4 @@
-
-
 use crate::fs::path::SPath;
-
 use crate::widgets::editor_widget::label::label::Label;
 use crate::widgets::editor_widget::label::labels_provider::LabelsProvider;
 

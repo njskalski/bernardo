@@ -1,5 +1,3 @@
-
-
 use ropey::Rope;
 
 use crate::cursor::cursor::Cursor;

@@ -210,8 +210,7 @@ pub mod tests {
 
     #[test]
     fn test_split_3() {
-        let items: Vec<(SplitRule, MockWidget)> =
-            vec![(SplitRule::Fixed(5), MockWidget::new()), (SplitRule::Fixed(5), MockWidget::new())];
+        let items: Vec<(SplitRule, MockWidget)> = vec![(SplitRule::Fixed(5), MockWidget::new()), (SplitRule::Fixed(5), MockWidget::new())];
 
         let mut mcw = MockComplexWidget::new(items);
 

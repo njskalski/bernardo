@@ -9,11 +9,7 @@
 
 #![allow(dead_code)]
 
-
-
 use ropey::Rope;
-
-
 
 use crate::cursor::cursor_set::CursorSet;
 use crate::cursor::tests::cursor_tests_common::{
