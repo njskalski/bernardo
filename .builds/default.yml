@@ -22,3 +22,7 @@ tasks:
       source "$HOME/.cargo/env"
       cd bernardo
       cargo test
+  - check_format: |
+      source "$HOME/.cargo/env"
+      cd bernardo
+      cargo fmt --check
