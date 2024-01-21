@@ -23,10 +23,7 @@ impl<'a> TreeViewInterpreter<'a> {
     pub fn new(meta: &'a Metadata, output: &'a MetaOutputFrame) -> Self {
         debug_assert!(meta.typename == tree_view::TYPENAME);
 
-        TreeViewInterpreter {
-            meta,
-            output,
-        }
+        TreeViewInterpreter { meta, output }
     }
 
     pub fn items(&self) -> Vec<TreeViewInterpreterItem> {

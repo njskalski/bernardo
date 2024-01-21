@@ -7,4 +7,3 @@ pub enum BigListWidgetMsg {
 }
 
 impl AnyMsg for BigListWidgetMsg {}
-

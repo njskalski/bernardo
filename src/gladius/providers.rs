@@ -3,7 +3,6 @@ This is a simplified "dependency injection" struct, because I just have too much
 of key components like EditorView or CodeResultsView
  */
 
-
 use std::sync::{Arc, RwLock};
 
 use crate::config::config::ConfigRef;
@@ -34,17 +33,18 @@ pub struct Providers {
 }
 
 impl Providers {
-    pub fn new(config: ConfigRef,
-               fsf: FsfRef,
-               clipboard: ClipboardRef,
-               theme: Theme,
-               tree_sitter: Arc<TreeSitterWrapper>,
-               /*
-               I am not sure this shouldn't be part of workspace, but for now it carries no
-               information, just implementation so I'll keep it here.
-                */
-               navcomp_loader: Arc<Box<dyn NavCompLoader>>,
-               todo_labels_providers: Vec<LabelsProviderRef>,
+    pub fn new(
+        config: ConfigRef,
+        fsf: FsfRef,
+        clipboard: ClipboardRef,
+        theme: Theme,
+        tree_sitter: Arc<TreeSitterWrapper>,
+        /*
+        I am not sure this shouldn't be part of workspace, but for now it carries no
+        information, just implementation so I'll keep it here.
+         */
+        navcomp_loader: Arc<Box<dyn NavCompLoader>>,
+        todo_labels_providers: Vec<LabelsProviderRef>,
     ) -> Self {
         Providers {
             config,
@@ -87,11 +87,15 @@ impl Providers {
         &self.clipboard
     }
 
-    pub fn buffer_register(&self) -> &BufferRegisterRef { &self.buffer_register }
+    pub fn buffer_register(&self) -> &BufferRegisterRef {
+        &self.buffer_register
+    }
 
-    pub fn navcomp_group(&self) -> &Arc<RwLock<NavCompGroup>> { &self.navcomp_group }
+    pub fn navcomp_group(&self) -> &Arc<RwLock<NavCompGroup>> {
+        &self.navcomp_group
+    }
 
-    pub fn todo_label_providers(&self) -> impl Iterator<Item=&LabelsProviderRef> {
+    pub fn todo_label_providers(&self) -> impl Iterator<Item = &LabelsProviderRef> {
         self.todo_labels_providers.iter()
     }
 }

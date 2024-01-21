@@ -2,8 +2,7 @@ use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 
 fn common_start() -> FullSetup {
-    let mut full_setup: FullSetup = FullSetup::new("./test_envs/fuzzy_file_open_test_1")
-        .build();
+    let mut full_setup: FullSetup = FullSetup::new("./test_envs/fuzzy_file_open_test_1").build();
 
     assert!(full_setup.wait_for(|f| f.is_no_editor_opened()));
 

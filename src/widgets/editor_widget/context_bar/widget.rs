@@ -5,10 +5,10 @@ use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::io::output::{Metadata, Output};
+use crate::io::output::Output;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
-use crate::primitives::common_edit_msgs::{CommonEditMsg, key_to_edit_msg};
+use crate::primitives::common_edit_msgs::{key_to_edit_msg, CommonEditMsg};
 use crate::primitives::common_query::CommonQuery;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
@@ -18,7 +18,7 @@ use crate::widget::any_msg::AnyMsg;
 use crate::widget::any_msg::AsAny;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::editor_widget::context_bar::context_bar_item::ContextBarItem;
 use crate::widgets::editor_widget::context_bar::msg::ContextBarWidgetMsg;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
@@ -44,10 +44,7 @@ impl ContextBarWidget {
                 .with_provider(Box::new(items))
                 .with_show_column_names(false)
                 .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
-                .with_on_hit(|_| {
-                    ContextBarWidgetMsg::Hit.someboxed()
-                })
-            ,
+                .with_on_hit(|_| ContextBarWidgetMsg::Hit.someboxed()),
             display_state: None,
             query: BufferState::simplified_single_line(),
         }
@@ -68,7 +65,10 @@ impl Widget for ContextBarWidget {
     fn id(&self) -> WID {
         self.id
     }
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         Self::TYPENAME
     }
     fn typename(&self) -> &'static str {
@@ -89,9 +89,7 @@ impl Widget for ContextBarWidget {
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         return match input_event {
-            InputEvent::KeyInput(key) if key.keycode == Keycode::Esc => {
-                ContextBarWidgetMsg::Close.someboxed()
-            }
+            InputEvent::KeyInput(key) if key.keycode == Keycode::Esc => ContextBarWidgetMsg::Close.someboxed(),
             InputEvent::KeyInput(key) if key_to_edit_msg(key).is_some() => {
                 let msg = key_to_edit_msg(key).unwrap();
 
@@ -142,23 +140,19 @@ impl Widget for ContextBarWidget {
                 None
             }
             Some(msg) => match msg {
-                ContextBarWidgetMsg::Close => {
-                    EditorWidgetMsg::HoverClose.someboxed()
-                }
+                ContextBarWidgetMsg::Close => EditorWidgetMsg::HoverClose.someboxed(),
                 ContextBarWidgetMsg::Edit(cem) => {
                     if self.query.apply_cem(cem.clone(), self.id, 1, None) {
                         self.on_query_change();
                     }
                     None
                 }
-                ContextBarWidgetMsg::Hit => {
-                    self.list.get_highlighted_item().map(|item| item.msg())
-                }
+                ContextBarWidgetMsg::Hit => self.list.get_highlighted_item().map(|item| item.msg()),
                 _ => {
                     warn!("ignoring message {:?}", msg);
                     None
                 }
-            }
+            },
         };
     }
 
@@ -166,7 +160,7 @@ impl Widget for ContextBarWidget {
         #[cfg(test)]
         {
             if let Some(ds) = self.get_display_state_op() {
-                output.emit_metadata(Metadata {
+                output.emit_metadata(crate::io::output::Metadata {
                     id: self.id,
                     typename: self.typename().to_string(),
                     rect: Rect::new(XY::ZERO, ds.total_size),

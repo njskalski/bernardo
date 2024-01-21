@@ -4,7 +4,7 @@ use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
-use crate::io::output::{Metadata, Output};
+use crate::io::output::Output;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
@@ -16,7 +16,7 @@ use crate::subwidget;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::big_list::msg::BigListWidgetMsg;
 use crate::widgets::text_widget::TextWidget;
 
@@ -63,14 +63,12 @@ impl<T: Widget> BigList<T> {
         let can_go_down = self.item_idx + 1 < self.items.len();
 
         match se {
-            ScrollEnum::Arrow(arrow) => {
-                match arrow {
-                    Arrow::Up => can_go_up,
-                    Arrow::Down => can_go_down,
-                    Arrow::Left => false,
-                    Arrow::Right => false,
-                }
-            }
+            ScrollEnum::Arrow(arrow) => match arrow {
+                Arrow::Up => can_go_up,
+                Arrow::Down => can_go_down,
+                Arrow::Left => false,
+                Arrow::Right => false,
+            },
             ScrollEnum::Home => can_go_up,
             ScrollEnum::End => can_go_down,
             ScrollEnum::PageUp => can_go_up,
@@ -79,10 +77,7 @@ impl<T: Widget> BigList<T> {
     }
 
     pub fn with_size_policy(self, size_policy: SizePolicy) -> Self {
-        Self {
-            size_policy,
-            ..self
-        }
+        Self { size_policy, ..self }
     }
 
     fn last_page_height(&self) -> Option<u16> {
@@ -92,12 +87,8 @@ impl<T: Widget> BigList<T> {
     fn get_item_widget_ptr(&self, idx: usize) -> SubwidgetPointer<Self> {
         let idx2 = idx;
         SubwidgetPointer::new(
-            Box::new(move |s: &Self| {
-                &s.items[idx].1
-            }),
-            Box::new(move |s: &mut Self| {
-                &mut s.items[idx2].1
-            }),
+            Box::new(move |s: &Self| &s.items[idx].1),
+            Box::new(move |s: &mut Self| &mut s.items[idx2].1),
         )
     }
 
@@ -133,7 +124,7 @@ impl<T: Widget> BigList<T> {
         }
     }
 
-    pub fn items(&self) -> impl Iterator<Item=&T> {
+    pub fn items(&self) -> impl Iterator<Item = &T> {
         self.items.iter().map(|(_split_rule, widget)| widget)
     }
 
@@ -174,8 +165,10 @@ impl<T: Widget> Widget for BigList<T> {
         Self::TYPENAME
     }
 
-
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         Self::TYPENAME
     }
     fn prelayout(&mut self) {
@@ -224,31 +217,29 @@ impl<T: Widget> Widget for BigList<T> {
         return match our_msg.unwrap() {
             BigListWidgetMsg::Scroll(se) => {
                 match se {
-                    ScrollEnum::Arrow(arrow) => {
-                        match arrow {
-                            Arrow::Up => {
-                                if self.item_idx > 0 {
-                                    self.item_idx -= 1;
-                                    self.update_focus_path();
-                                    self.set_kite(true);
-                                } else {
-                                    warn!("arrow up widget can't handle");
-                                }
-                                None
+                    ScrollEnum::Arrow(arrow) => match arrow {
+                        Arrow::Up => {
+                            if self.item_idx > 0 {
+                                self.item_idx -= 1;
+                                self.update_focus_path();
+                                self.set_kite(true);
+                            } else {
+                                warn!("arrow up widget can't handle");
                             }
-                            Arrow::Down => {
-                                if self.item_idx + 1 < self.items.len() {
-                                    self.item_idx += 1;
-                                    self.update_focus_path();
-                                    self.set_kite(false);
-                                } else {
-                                    warn!("arrow down widget can't handle");
-                                }
-                                None
-                            }
-                            _ => None,
+                            None
                         }
-                    }
+                        Arrow::Down => {
+                            if self.item_idx + 1 < self.items.len() {
+                                self.item_idx += 1;
+                                self.update_focus_path();
+                                self.set_kite(false);
+                            } else {
+                                warn!("arrow down widget can't handle");
+                            }
+                            None
+                        }
+                        _ => None,
+                    },
                     ScrollEnum::Home => {
                         if self.item_idx > 0 {
                             self.item_idx = 0;
@@ -286,7 +277,8 @@ impl<T: Widget> Widget for BigList<T> {
                         None
                     }
                     ScrollEnum::PageDown => {
-                        if let Some(_height) = self.last_page_height() {} else {
+                        if let Some(_height) = self.last_page_height() {
+                        } else {
                             warn!("page_down prior layout")
                         }
                         None
@@ -308,14 +300,12 @@ impl<T: Widget> Widget for BigList<T> {
         #[cfg(test)]
         {
             let total_size = self.display_state.as_ref().unwrap().total_size;
-            output.emit_metadata(
-                Metadata {
-                    id: self.wid,
-                    typename: self.typename().to_string(),
-                    rect: Rect::from_zero(total_size),
-                    focused,
-                }
-            );
+            output.emit_metadata(crate::io::output::Metadata {
+                id: self.wid,
+                typename: self.typename().to_string(),
+                rect: Rect::from_zero(total_size),
+                focused,
+            });
         }
 
         self.complex_render(theme, focused, output)

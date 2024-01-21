@@ -36,8 +36,7 @@ impl Debug for FsfRef {
 
 impl PartialEq for FsfRef {
     fn eq(&self, other: &Self) -> bool {
-        self.fs.fs.hash_seed() == other.fs.fs.hash_seed() &&
-            self.fs.fs.root_path() == other.fs.fs.root_path()
+        self.fs.fs.hash_seed() == other.fs.fs.hash_seed() && self.fs.fs.root_path() == other.fs.fs.root_path()
     }
 }
 
@@ -56,7 +55,7 @@ impl FsfRef {
             fs: Arc::new(FsAndCache {
                 fs: Box::new(fs) as Box<dyn FilesystemFront + Sync + Send>,
                 caches: RwLock::new(Default::default()),
-            })
+            }),
         };
 
         fsf
@@ -96,7 +95,12 @@ impl FsfRef {
         Some(spath)
     }
 
-    pub fn overwrite_with_stream(&self, spath: &SPath, stream: &mut dyn StreamingIterator<Item=[u8]>, must_exist: bool) -> Result<usize, WriteError> {
+    pub fn overwrite_with_stream(
+        &self,
+        spath: &SPath,
+        stream: &mut dyn StreamingIterator<Item = [u8]>,
+        must_exist: bool,
+    ) -> Result<usize, WriteError> {
         let path = spath.relative_path();
         self.fs.fs.blocking_overwrite_with_stream(&path, stream, must_exist)
     }
@@ -125,9 +129,7 @@ impl FsfRef {
 
         match self.fs.caches.try_write() {
             Ok(mut cache) => {
-                cache.insert(spath.clone(), DirCache {
-                    vec: dir_cache.clone(),
-                });
+                cache.insert(spath.clone(), DirCache { vec: dir_cache.clone() });
             }
             Err(e) => {
                 error!("failed writing cache, because {:?}", e);

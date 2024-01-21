@@ -11,7 +11,9 @@ impl<W, T: Fn(&W) -> &(dyn Widget) + Clone + 'static> Getter<W> for T {
 }
 
 impl<W: 'static> Clone for Box<dyn Getter<W>> {
-    fn clone(&self) -> Self { (**self).clone_box() }
+    fn clone(&self) -> Self {
+        (**self).clone_box()
+    }
 }
 
 pub trait GetterMut<W>: Fn(&mut W) -> &mut dyn Widget {
@@ -25,7 +27,9 @@ impl<W, T: Fn(&mut W) -> &mut (dyn Widget) + Clone + 'static> GetterMut<W> for T
 }
 
 impl<W: 'static> Clone for Box<dyn GetterMut<W>> {
-    fn clone(&self) -> Self { (**self).clone_box() }
+    fn clone(&self) -> Self {
+        (**self).clone_box()
+    }
 }
 
 pub trait GetterOp<W>: Fn(&W) -> Option<&dyn Widget> {
@@ -39,7 +43,9 @@ impl<W, T: Fn(&W) -> Option<&(dyn Widget)> + Clone + 'static> GetterOp<W> for T 
 }
 
 impl<W: 'static> Clone for Box<dyn GetterOp<W>> {
-    fn clone(&self) -> Self { (**self).clone_box() }
+    fn clone(&self) -> Self {
+        (**self).clone_box()
+    }
 }
 
 pub trait GetterOpMut<W>: Fn(&mut W) -> Option<&mut dyn Widget> {
@@ -53,9 +59,10 @@ impl<W, T: Fn(&mut W) -> Option<&mut (dyn Widget)> + Clone + 'static> GetterOpMu
 }
 
 impl<W: 'static> Clone for Box<dyn GetterOpMut<W>> {
-    fn clone(&self) -> Self { (**self).clone_box() }
+    fn clone(&self) -> Self {
+        (**self).clone_box()
+    }
 }
-
 
 pub struct SubwidgetPointer<W: Widget> {
     getter: Box<dyn Getter<W>>,
@@ -73,10 +80,7 @@ impl<W: Widget> Clone for SubwidgetPointer<W> {
 
 impl<W: Widget> SubwidgetPointer<W> {
     pub fn new(getter: Box<dyn Getter<W>>, getter_mut: Box<dyn GetterMut<W>>) -> Self {
-        SubwidgetPointer {
-            getter,
-            getter_mut,
-        }
+        SubwidgetPointer { getter, getter_mut }
     }
 
     pub fn get<'a>(&self, parent: &'a W) -> &'a dyn Widget {
@@ -104,10 +108,7 @@ impl<W: Widget> Clone for SubwidgetPointerOp<W> {
 
 impl<W: Widget> SubwidgetPointerOp<W> {
     pub fn new(getter_op: Box<dyn GetterOp<W>>, getter_op_mut: Box<dyn GetterOpMut<W>>) -> Self {
-        SubwidgetPointerOp {
-            getter_op,
-            getter_op_mut,
-        }
+        SubwidgetPointerOp { getter_op, getter_op_mut }
     }
 
     pub fn get<'a>(&self, parent: &'a W) -> Option<&'a dyn Widget> {
@@ -121,32 +122,32 @@ impl<W: Widget> SubwidgetPointerOp<W> {
 
 #[macro_export]
 macro_rules! subwidget {
-($parent: ident.$ child: ident) => {
-    crate::experiments::subwidget_pointer::SubwidgetPointer::new(
-        Box::new(|p : &$parent| { &p.$child}),
-        Box::new(|p : &mut $parent| { &mut p.$child}),
-    )
-}
+    ($parent: ident.$ child: ident) => {
+        crate::experiments::subwidget_pointer::SubwidgetPointer::new(
+            Box::new(|p: &$parent| &p.$child),
+            Box::new(|p: &mut $parent| &mut p.$child),
+        )
+    };
 }
 
 #[macro_export]
 macro_rules! selfwidget {
-($parent: ident) => {
-    crate::experiments::subwidget_pointer::SubwidgetPointer::new(
-        Box::new(|p : &$parent| { p as &dyn Widget}),
-        Box::new(|p : &mut $parent| { p as &mut dyn Widget}),
-    )
-}
+    ($parent: ident) => {
+        crate::experiments::subwidget_pointer::SubwidgetPointer::new(
+            Box::new(|p: &$parent| p as &dyn Widget),
+            Box::new(|p: &mut $parent| p as &mut dyn Widget),
+        )
+    };
 }
 
 #[macro_export]
 macro_rules! subwidget_op {
-($parent: ident.$ child: ident) => {
-    crate::experiments::subwidget_pointer::SubwidgetPointerOp::new(
-        Box::new(|p : &$parent| { p.$child.as_ref().map(|w| {w as &dyn Widget}) }),
-        Box::new(|p : &mut $parent| { p.$child.as_mut().map(|w| {w as &mut dyn Widget}) }),
-    )
-}
+    ($parent: ident.$ child: ident) => {
+        crate::experiments::subwidget_pointer::SubwidgetPointerOp::new(
+            Box::new(|p: &$parent| p.$child.as_ref().map(|w| w as &dyn Widget)),
+            Box::new(|p: &mut $parent| p.$child.as_mut().map(|w| w as &mut dyn Widget)),
+        )
+    };
 }
 
 #[cfg(test)]
@@ -160,7 +161,7 @@ mod tests {
     use crate::io::output::Output;
     use crate::primitives::xy::XY;
     use crate::widget::any_msg::AnyMsg;
-    use crate::widget::widget::{WID, Widget};
+    use crate::widget::widget::{Widget, WID};
 
     #[test]
     fn test_interface() {
@@ -170,7 +171,10 @@ mod tests {
                 unimplemented!()
             }
 
-            fn static_typename() -> &'static str where Self: Sized {
+            fn static_typename() -> &'static str
+            where
+                Self: Sized,
+            {
                 unimplemented!()
             }
 
@@ -210,7 +214,10 @@ mod tests {
                 unimplemented!()
             }
 
-            fn static_typename() -> &'static str where Self: Sized {
+            fn static_typename() -> &'static str
+            where
+                Self: Sized,
+            {
                 unimplemented!()
             }
 
@@ -226,7 +233,6 @@ mod tests {
                 todo!()
             }
 
-
             fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
                 unimplemented!()
             }
@@ -241,12 +247,8 @@ mod tests {
         }
 
         let _sp = SubwidgetPointer::new(
-            Box::new(|dw: &DummyWidget| {
-                &dw.subwidget
-            }),
-            Box::new(|dw: &mut DummyWidget| {
-                &mut dw.subwidget
-            }),
+            Box::new(|dw: &DummyWidget| &dw.subwidget),
+            Box::new(|dw: &mut DummyWidget| &mut dw.subwidget),
         );
 
         let sp3 = subwidget!(DummyWidget.subwidget);

@@ -16,9 +16,10 @@ impl<'a, T: Widget> WithScrollWidgetInterpreter<'a, T> {
         debug_assert!(meta.typename == WithScroll::<T>::static_typename());
 
         // Checking if we have this thing inside
-        debug_assert!(output.get_meta_by_type(T::static_typename()).find(|item| {
-            meta.rect.contains_rect(item.rect)
-        }).is_some());
+        debug_assert!(output
+            .get_meta_by_type(T::static_typename())
+            .find(|item| { meta.rect.contains_rect(item.rect) })
+            .is_some());
 
         Self {
             meta,

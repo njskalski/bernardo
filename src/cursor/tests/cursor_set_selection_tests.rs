@@ -5,7 +5,9 @@ use ropey::Rope;
 use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor::Selection;
 use crate::cursor::cursor_set::CursorSet;
-use crate::cursor::tests::cursor_tests_common::{common_assert_pair_makes_sense, common_buffer_cursors_sel_to_text, common_text_to_buffer_cursors_with_selections};
+use crate::cursor::tests::cursor_tests_common::{
+    common_assert_pair_makes_sense, common_buffer_cursors_sel_to_text, common_text_to_buffer_cursors_with_selections,
+};
 use crate::text::text_buffer::TextBuffer;
 
 fn text_to_buffer_cursors(text: &str) -> (Rope, CursorSet) {
@@ -67,32 +69,30 @@ fn test_common_text_to_buffer_cursors_with_selections_4() {
 
 #[test]
 fn test_buffer_cursors_sel_to_text_0() {
-    let text = buffer_cursors_sel_to_text(&Rope::from("text"), &CursorSet::new(
-        vec![]
-    ));
+    let text = buffer_cursors_sel_to_text(&Rope::from("text"), &CursorSet::new(vec![]));
 
     assert_eq!(text, "text");
 }
 
 #[test]
 fn test_buffer_cursors_sel_to_text_1() {
-    let text = buffer_cursors_sel_to_text(&Rope::from("text"), &CursorSet::new(
-        vec![
-            Cursor::new(0).with_selection(Selection::new(0, 2)),
-        ]
-    ));
+    let text = buffer_cursors_sel_to_text(
+        &Rope::from("text"),
+        &CursorSet::new(vec![Cursor::new(0).with_selection(Selection::new(0, 2))]),
+    );
 
     assert_eq!(text, "[te)xt");
 }
 
 #[test]
 fn test_buffer_cursors_sel_to_text_2() {
-    let text = buffer_cursors_sel_to_text(&Rope::from("text"), &CursorSet::new(
-        vec![
+    let text = buffer_cursors_sel_to_text(
+        &Rope::from("text"),
+        &CursorSet::new(vec![
             Cursor::new(0).with_selection(Selection::new(0, 2)),
             Cursor::new(2).with_selection(Selection::new(2, 4)),
-        ]
-    ));
+        ]),
+    );
 
     assert_eq!(text, "[te)[xt)");
 }

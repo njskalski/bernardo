@@ -9,7 +9,6 @@ use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 
 pub type SPathToMsg = fn(&SPath) -> Box<dyn AnyMsg>;
 
-
 // TODO add subdirectory
 pub struct FsfProvider {
     fsf: FsfRef,
@@ -59,18 +58,17 @@ impl ItemsProvider for FsfProvider {
         Rc::new("fs".to_string())
     }
 
-    fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
+    fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item = Box<dyn Item + '_>> + '_> {
         Box::new(
-            self.fsf.root()
+            self.fsf
+                .root()
                 .recursive_iter()
-                .filter(
-                    move |item| {
-                        let item_str = item.relative_path().to_string_lossy().to_string();
-                        is_subsequence(&item_str, &query)
-                    }
-                )
+                .filter(move |item| {
+                    let item_str = item.relative_path().to_string_lossy().to_string();
+                    is_subsequence(&item_str, &query)
+                })
                 .map(|f| Box::new(f) as Box<dyn Item>)
-                .take(limit)
+                .take(limit),
         )
     }
 }

@@ -10,35 +10,30 @@ use crate::widgets::tests::widget_testbed_builder::WidgetTestbedBuilder;
 fn get_setup() -> EditorViewTestbed {
     let mut mock_labels_provider = MockLabelsProvider::new();
 
-    mock_labels_provider.labels.push(
-        Label::new(
-            LabelPos::Inline { char_idx: 49 },
-            LabelStyle::TypeAnnotation,
-            Box::new(
-                ":PathBuf".to_string()
-            )));
-    mock_labels_provider.labels.push(
-        Label::new(
-            LabelPos::LineAfter { line_no_1b: 3 },
-            LabelStyle::Warning,
-            Box::new("just a warning".to_string()),
-        )
-    );
-    mock_labels_provider.labels.push(
-        Label::new(
-            LabelPos::InlineStupid { stupid_cursor: StupidCursor { char_idx_0b: 8, line_0b: 5 } },
-            LabelStyle::Error,
-            Box::new("random error annotation".to_string()),
-        )
-    );
-
+    mock_labels_provider.labels.push(Label::new(
+        LabelPos::Inline { char_idx: 49 },
+        LabelStyle::TypeAnnotation,
+        Box::new(":PathBuf".to_string()),
+    ));
+    mock_labels_provider.labels.push(Label::new(
+        LabelPos::LineAfter { line_no_1b: 3 },
+        LabelStyle::Warning,
+        Box::new("just a warning".to_string()),
+    ));
+    mock_labels_provider.labels.push(Label::new(
+        LabelPos::InlineStupid {
+            stupid_cursor: StupidCursor {
+                char_idx_0b: 8,
+                line_0b: 5,
+            },
+        },
+        LabelStyle::Error,
+        Box::new("random error annotation".to_string()),
+    ));
 
     let mut editor_view_testbed = WidgetTestbedBuilder::new()
-        .with_label_provider(
-            mock_labels_provider.into_ref()
-        )
+        .with_label_provider(mock_labels_provider.into_ref())
         .build_editor();
-
 
     {
         let some_text = r#"use std::path::PathBuf;
@@ -70,7 +65,10 @@ fn editor_label_type_annotation_inline() {
     assert_eq!(first_type.y, 3);
     assert_eq!(first_type.contents.text, ":PathBuf");
 
-    assert_eq!(interpreter.get_line_by_y(3).unwrap().text.trim(), "let path:PathBuf = PathBuf::from(\"./src\");⏎");
+    assert_eq!(
+        interpreter.get_line_by_y(3).unwrap().text.trim(),
+        "let path:PathBuf = PathBuf::from(\"./src\");⏎"
+    );
 }
 
 #[test]
@@ -102,5 +100,8 @@ fn editor_label_error_stupid_cursor() {
     assert_eq!(first_type.y, 5);
     assert_eq!(first_type.contents.text, "random error annotation");
 
-    assert_eq!(interpreter.get_line_by_y(5).unwrap().text.trim(), "// srandom error annotationome comment to avoid formatting collapse⏎");
+    assert_eq!(
+        interpreter.get_line_by_y(5).unwrap().text.trim(),
+        "// srandom error annotationome comment to avoid formatting collapse⏎"
+    );
 }

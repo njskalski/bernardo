@@ -2,14 +2,14 @@ use std::io::Read;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use crossbeam_channel::{Sender, SendError};
+use crossbeam_channel::{SendError, Sender};
 use jsonrpc_core::{Call, Id, Output};
 use log::{debug, error};
 use serde_json::Value;
 
 use crate::lsp_client::debug_helpers::{format_or_noop, lsp_debug_save};
 use crate::lsp_client::lsp_client::IdToCallInfo;
-use crate::lsp_client::lsp_notification::{LspServerNotification, parse_notification};
+use crate::lsp_client::lsp_notification::{parse_notification, LspServerNotification};
 use crate::lsp_client::lsp_read_error::LspReadError;
 
 // TODO one can reduce allocation here
@@ -38,7 +38,7 @@ pub fn read_lsp<R: Read>(
 
         if headers.len() > 3 {
             // The crosses below are an exorcism against heretic line terminators.
-            if headers.ends_with(/* ✞ */"\r\n\r\n".as_bytes() /* ✞ */) {
+            if headers.ends_with(/* ✞ */ "\r\n\r\n".as_bytes() /* ✞ */) {
                 break;
             }
         }
@@ -76,11 +76,7 @@ pub fn read_lsp<R: Read>(
             Call::MethodCall(call) => {
                 debug!("deserialized call->method_call");
                 let value: Value = call.params.into();
-                internal_send_to_promise(&id_to_method,
-                                         call.id.clone(),
-                                         value,
-                                         Some(&call.method),
-                )
+                internal_send_to_promise(&id_to_method, call.id.clone(), value, Some(&call.method))
             }
             Call::Notification(notification) => {
                 debug!("deserialized call->notification");
@@ -92,13 +88,11 @@ pub fn read_lsp<R: Read>(
                                 SendError(_) => {
                                     error!("notification_sink.send fail: {:?}, non critical", e);
                                 }
-                            }
+                            },
                         };
                         Ok(())
                     }
-                    Err(e) => {
-                        Err(LspReadError::DeError(e.to_string()))
-                    }
+                    Err(e) => Err(LspReadError::DeError(e.to_string())),
                 }
             }
             Call::Invalid { id } => {
@@ -116,11 +110,7 @@ pub fn read_lsp<R: Read>(
                             }
                             Output::Success(succ) => {
                                 debug!("call info id {:?}", &succ.id);
-                                internal_send_to_promise(&id_to_method,
-                                                         succ.id,
-                                                         succ.result,
-                                                         None,
-                                )
+                                internal_send_to_promise(&id_to_method, succ.id, succ.result, None)
                             }
                         }
                     } else {
@@ -133,9 +123,7 @@ pub fn read_lsp<R: Read>(
                             notification_sink.send(no).map_err(|_| LspReadError::BrokenChannel)?;
                             Ok(())
                         }
-                        Err(e) => {
-                            Err(LspReadError::DeError(e.to_string()))
-                        }
+                        Err(e) => Err(LspReadError::DeError(e.to_string())),
                     }
                 } else {
                     error!("failed to parse [{}] into either Notification or Response", &s);
@@ -190,7 +178,6 @@ pub fn get_len_from_headers(headers: &String) -> Option<usize> {
 
     None
 }
-
 
 #[cfg(test)]
 mod tests {

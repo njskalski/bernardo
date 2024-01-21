@@ -10,9 +10,7 @@ pub struct Actions<W: Widget> {
 
 impl<W: Widget> Actions<W> {
     pub fn new(vec: Vec<ActionTrigger<W>>) -> Self {
-        Actions {
-            vec
-        }
+        Actions { vec }
     }
 }
 
@@ -21,7 +19,7 @@ impl<W: Widget> ItemsProvider for Actions<W> {
         todo!()
     }
 
-    fn items(&self, _query: String, _limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
+    fn items(&self, _query: String, _limit: usize) -> Box<dyn Iterator<Item = Box<dyn Item + '_>> + '_> {
         todo!()
     }
 }

@@ -41,14 +41,12 @@ pub fn regex_find<'a>(pattern: &'a str, rope: &'a dyn TextBuffer, start_pos_char
 
     let byte_pos: usize = match start_pos_chars {
         None => 0,
-        Some(char_pos) => {
-            match rope.char_to_byte(char_pos) {
-                None => {
-                    return Err(FindError::CharToByteFail);
-                }
-                Some(byte_pos) => byte_pos,
+        Some(char_pos) => match rope.char_to_byte(char_pos) {
+            None => {
+                return Err(FindError::CharToByteFail);
             }
-        }
+            Some(byte_pos) => byte_pos,
+        },
     };
 
     Ok(RegexMatches {
@@ -67,7 +65,7 @@ impl<'a> Iterator for RegexMatches {
                 self.byte_pos = m.end();
                 Some((m.start(), m.end()))
             }
-            None => None
+            None => None,
         }
     }
 }

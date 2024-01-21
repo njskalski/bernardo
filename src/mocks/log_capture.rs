@@ -4,7 +4,7 @@ use log::{Level, Log, Metadata, Record};
 use std::io::Write;
 
 pub struct CapturingLogger {
-    pub(crate) sender : crossbeam_channel::Sender<String>
+    pub(crate) sender: crossbeam_channel::Sender<String>,
 }
 
 impl Log for CapturingLogger {

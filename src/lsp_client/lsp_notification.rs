@@ -1,7 +1,12 @@
 use jsonrpc_core::Error;
-use lsp_types::{CancelParams, CreateFilesParams, DeleteFilesParams, DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams, InitializedParams, LogMessageParams, LogTraceParams, ProgressParams, PublishDiagnosticsParams, RenameFilesParams, SetTraceParams, ShowMessageParams, WillSaveTextDocumentParams, WorkDoneProgressCancelParams};
 use lsp_types::notification as n;
 use lsp_types::notification::Notification;
+use lsp_types::{
+    CancelParams, CreateFilesParams, DeleteFilesParams, DidChangeConfigurationParams, DidChangeTextDocumentParams,
+    DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    DidSaveTextDocumentParams, InitializedParams, LogMessageParams, LogTraceParams, ProgressParams, PublishDiagnosticsParams,
+    RenameFilesParams, SetTraceParams, ShowMessageParams, WillSaveTextDocumentParams, WorkDoneProgressCancelParams,
+};
 
 #[derive(Debug)]
 pub enum LspNotificationParsingError {
@@ -39,9 +44,7 @@ pub fn parse_notification(jn: jsonrpc_core::Notification) -> Result<LspServerNot
             let params = jn.params.parse::<InitializedParams>()?;
             Ok(LspServerNotification::Initialized(params))
         }
-        n::Exit::METHOD => {
-            Ok(LspServerNotification::Exit(()))
-        }
+        n::Exit::METHOD => Ok(LspServerNotification::Exit(())),
         n::ShowMessage::METHOD => {
             let params = jn.params.parse::<ShowMessageParams>()?;
             Ok(LspServerNotification::WindowShowMessage(params))
@@ -110,7 +113,7 @@ pub fn parse_notification(jn: jsonrpc_core::Notification) -> Result<LspServerNot
             let params = jn.params.parse::<DeleteFilesParams>()?;
             Ok(LspServerNotification::WorkspaceDidDeleteFiles(params))
         }
-        _ => Err(LspNotificationParsingError::UnknownMethod)
+        _ => Err(LspNotificationParsingError::UnknownMethod),
     }
 }
 
@@ -139,4 +142,3 @@ pub enum LspServerNotification {
     WorkspaceDidRenameFiles(RenameFilesParams),
     WorkspaceDidDeleteFiles(DeleteFilesParams),
 }
-

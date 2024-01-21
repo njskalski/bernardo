@@ -11,7 +11,7 @@ pub enum SaveFileDialogMsg {
     TreeHighlighted(SPath),
 
     TreeHit(SPath),
-    
+
     FileListHit(SPath),
     EditBoxHit,
 

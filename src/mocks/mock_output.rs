@@ -31,14 +31,17 @@ impl MockOutput {
             crossbeam_channel::unbounded::<MetaOutputFrame>()
         };
 
-        (MockOutput {
-            buffer_0: BufferOutput::new(size),
-            buffer_1: BufferOutput::new(size),
-            which_front: false,
-            theme,
-            sender,
-            metadata: Vec::new(),
-        }, receiver)
+        (
+            MockOutput {
+                buffer_0: BufferOutput::new(size),
+                buffer_1: BufferOutput::new(size),
+                which_front: false,
+                theme,
+                sender,
+                metadata: Vec::new(),
+            },
+            receiver,
+        )
     }
 
     pub fn frontbuffer(&self) -> &BufferOutput {
@@ -102,7 +105,6 @@ impl Output for MockOutput {
         debug_assert!(res.lower_right() <= self.size());
         res
     }
-
 
     #[cfg(test)]
     fn emit_metadata(&mut self, meta: Metadata) {

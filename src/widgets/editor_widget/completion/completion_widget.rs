@@ -2,8 +2,6 @@
 I guess I should reuse FuzzySearch Widget, this is a placeholder now.
  */
 
-
-
 use log::{debug, error, warn};
 
 use crate::config::theme::Theme;
@@ -11,11 +9,10 @@ use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::io::output::{Metadata, Output};
+use crate::io::output::Output;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::common_query::CommonQuery;
-use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::xy::XY;
 use crate::promise::promise::PromiseState;
@@ -24,7 +21,7 @@ use crate::w7e::navcomp_provider::{Completion, CompletionsPromise};
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::editor_widget::completion::msg::CompletionWidgetMsg;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::list_widget::list_widget::ListWidget;
@@ -34,10 +31,10 @@ use crate::widgets::with_scroll::with_scroll::WithScroll;
 pub struct CompletionWidget {
     wid: WID,
     /*
-     I store the promise until it's resolved, and then either keep broken promise OR move it's
-     contents to list_widget. If promise got broken, I expect EditorWidget to throw away entire
-     CompletionWidget in it's update_and_layout() and log error.
-     */
+    I store the promise until it's resolved, and then either keep broken promise OR move it's
+    contents to list_widget. If promise got broken, I expect EditorWidget to throw away entire
+    CompletionWidget in it's update_and_layout() and log error.
+    */
     completions_promise: Option<CompletionsPromise>,
 
     list_widget: WithScroll<ListWidget<Completion>>,
@@ -54,16 +51,13 @@ impl CompletionWidget {
     pub fn new(completions_promise: CompletionsPromise) -> Self {
         CompletionWidget {
             wid: get_new_widget_id(),
-            list_widget: WithScroll::new(ScrollDirection::Vertical,
-                                         ListWidget::new()
-                                             .with_selection()
-                                             .with_show_column_names(false)
-                                             .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
-                                             .with_on_hit(|w| {
-                                                 w.get_highlighted().map(|c| {
-                                                     CompletionWidgetMsg::Selected(c.action.clone()).boxed()
-                                                 })
-                                             }),
+            list_widget: WithScroll::new(
+                ScrollDirection::Vertical,
+                ListWidget::new()
+                    .with_selection()
+                    .with_show_column_names(false)
+                    .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
+                    .with_on_hit(|w| w.get_highlighted().map(|c| CompletionWidgetMsg::Selected(c.action.clone()).boxed())),
             ),
             completions_promise: Some(completions_promise),
             display_state: None,
@@ -73,10 +67,7 @@ impl CompletionWidget {
     }
 
     pub fn with_fuzzy(self, fuzzy: bool) -> Self {
-        Self {
-            fuzzy,
-            ..self
-        }
+        Self { fuzzy, ..self }
     }
 
     pub fn set_fuzzy(&mut self, fuzzy: bool) {
@@ -88,15 +79,13 @@ impl CompletionWidget {
     }
 
     pub fn set_query_substring(&mut self, query: Option<String>) {
-        self.list_widget
-            .internal_mut()
-            .set_query(query.map(|q|
-                if !self.fuzzy {
-                    CommonQuery::String(q)
-                } else {
-                    CommonQuery::Fuzzy(q)
-                }
-            ));
+        self.list_widget.internal_mut().set_query(query.map(|q| {
+            if !self.fuzzy {
+                CommonQuery::String(q)
+            } else {
+                CommonQuery::Fuzzy(q)
+            }
+        }));
         debug!("updated query: {:?}", self.list_widget.internal().get_query());
     }
 
@@ -112,9 +101,9 @@ impl CompletionWidget {
         let res = match self.completions_promise.as_mut() {
             None => {
                 /*
-                 This indicates, that completions are executed correctly and have been moved away
-                 from promise to ListWidget.
-                 */
+                This indicates, that completions are executed correctly and have been moved away
+                from promise to ListWidget.
+                */
                 true
             }
             Some(promise) => {
@@ -157,7 +146,10 @@ impl Widget for CompletionWidget {
     fn id(&self) -> WID {
         self.wid
     }
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         Self::TYPENAME
     }
     fn typename(&self) -> &'static str {
@@ -188,10 +180,8 @@ impl Widget for CompletionWidget {
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         return match input_event {
-            InputEvent::KeyInput(key) if key.keycode == Keycode::Esc => {
-                CompletionWidgetMsg::Close.someboxed()
-            }
-            _ => None
+            InputEvent::KeyInput(key) if key.keycode == Keycode::Esc => CompletionWidgetMsg::Close.someboxed(),
+            _ => None,
         };
     }
 
@@ -203,17 +193,13 @@ impl Widget for CompletionWidget {
                 None
             }
             Some(msg) => match msg {
-                CompletionWidgetMsg::Close => {
-                    EditorWidgetMsg::HoverClose.someboxed()
-                }
-                CompletionWidgetMsg::Selected(action) => {
-                    EditorWidgetMsg::CompletionWidgetSelected(action.clone()).someboxed()
-                }
+                CompletionWidgetMsg::Close => EditorWidgetMsg::HoverClose.someboxed(),
+                CompletionWidgetMsg::Selected(action) => EditorWidgetMsg::CompletionWidgetSelected(action.clone()).someboxed(),
                 _ => {
                     warn!("ignoring message {:?}", msg);
                     None
                 }
-            }
+            },
         };
     }
 
@@ -229,10 +215,10 @@ impl Widget for CompletionWidget {
         #[cfg(test)]
         {
             if let Some(ds) = self.get_display_state_op() {
-                output.emit_metadata(Metadata {
+                output.emit_metadata(crate::io::output::Metadata {
                     id: self.wid,
                     typename: self.typename().to_string(),
-                    rect: Rect::new(XY::ZERO, ds.total_size),
+                    rect: crate::primitives::rect::Rect::new(XY::ZERO, ds.total_size),
                     focused,
                 });
             }

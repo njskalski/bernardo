@@ -48,9 +48,9 @@ pub enum SplitRule {
     // Uses exactly usize space on free axis
     Fixed(u16),
     /*
-     I don't know how to implement "exact size", given the fact "exact_size" on layout needs to know
-     "but how much space is available?". Well, that's what I am trying to figure out here.
-     */
+    I don't know how to implement "exact size", given the fact "exact_size" on layout needs to know
+    "but how much space is available?". Well, that's what I am trying to figure out here.
+    */
     // ExactSize,
 
     // Splits the free space proportionally to given numbers.
@@ -77,10 +77,7 @@ impl<W: Widget> SplitLayout<W> {
 
     pub fn with(self, split_rule: SplitRule, child: Box<dyn Layout<W>>) -> Self {
         let mut children = self.children;
-        let child = SplitLayoutChild {
-            layout: child,
-            split_rule,
-        };
+        let child = SplitLayoutChild { layout: child, split_rule };
 
         children.push(child);
 
@@ -90,10 +87,7 @@ impl<W: Widget> SplitLayout<W> {
     fn simple_layout(&self, root: &mut W, screenspace: Screenspace) -> LayoutResult<W> {
         let rects_op = self.get_just_rects(screenspace.output_size(), root);
         if rects_op.is_none() {
-            warn!(
-                "not enough space to get_rects split_layout: {:?}",
-                screenspace
-            );
+            warn!("not enough space to get_rects split_layout: {:?}", screenspace);
             return LayoutResult::new(Vec::default(), screenspace.output_size());
         };
 
@@ -110,7 +104,9 @@ impl<W: Widget> SplitLayout<W> {
                 let mut visible_rect_in_child_space = visible_rect;
                 visible_rect_in_child_space.pos -= rect.pos;
 
-                let resp = child_layout.layout.layout(root, Screenspace::new(rect.size, visible_rect_in_child_space));
+                let resp = child_layout
+                    .layout
+                    .layout(root, Screenspace::new(rect.size, visible_rect_in_child_space));
 
                 for wir in resp.wwrs.into_iter() {
                     let new_wir = wir.shifted(rect.pos);
@@ -129,7 +125,7 @@ impl<W: Widget> SplitLayout<W> {
         LayoutResult::new(res, screenspace.output_size())
     }
 
-    fn get_just_rects(&self, output_size: XY, root: &W) -> Option<Vec<Rect>> {
+    fn get_just_rects(&self, output_size: XY, _root: &W) -> Option<Vec<Rect>> {
         let free_axis = if self.split_direction == SplitDirection::Vertical {
             output_size.y as usize
         } else {
@@ -215,10 +211,10 @@ impl<W: Widget> SplitLayout<W> {
 
             upper_left = upper_left
                 + if self.split_direction == SplitDirection::Vertical {
-                XY::new(0, *s as u16)
-            } else {
-                XY::new(*s as u16, 0).into()
-            };
+                    XY::new(0, *s as u16)
+                } else {
+                    XY::new(*s as u16, 0).into()
+                };
         }
 
         debug!("split {:?} size {} rects {:?}", self.split_direction, output_size, res);

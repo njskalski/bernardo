@@ -20,9 +20,8 @@
 // TODO add "invariant protectors" to cursor set and warnings/errors, maybe add tests.
 
 use std::cmp::Ordering;
-use std::collections::HashMap;
+
 use std::ops::Range;
-use std::slice::{Iter, IterMut};
 
 use log::{error, warn};
 
@@ -43,9 +42,9 @@ pub enum CursorStatus {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 /*
-    Describes a selection of text.
-    Invariant: anchor is at begin OR end, never in between.
- */
+   Describes a selection of text.
+   Invariant: anchor is at begin OR end, never in between.
+*/
 pub struct Selection {
     //begin inclusive
     pub b: usize,
@@ -57,10 +56,7 @@ impl Selection {
     pub fn new(b: usize, e: usize) -> Self {
         //TODO got a panic here with move_vertically_by on cursor up
         debug_assert!(b < e, "b {} e {}", b, e);
-        Selection {
-            b,
-            e,
-        }
+        Selection { b, e }
     }
 
     pub fn within(&self, char_idx: usize) -> bool {
@@ -86,9 +82,7 @@ impl PartialOrd<Self> for Selection {
 
 impl Ord for Selection {
     fn cmp(&self, other: &Self) -> Ordering {
-        Ord::cmp(&self.b, &other.b).then(
-            Ord::cmp(&self.e, &other.e)
-        )
+        Ord::cmp(&self.b, &other.b).then(Ord::cmp(&self.e, &other.e))
     }
 }
 
@@ -100,9 +94,7 @@ pub type BackwardWordDeterminant = dyn Fn(&dyn TextBuffer, usize, usize) -> bool
 
 pub fn default_word_determinant(buffer: &dyn TextBuffer, first_idx: usize, current_idx: usize) -> bool {
     let return_value = match (buffer.char_at(first_idx), buffer.char_at(current_idx)) {
-        (Some(first_char), Some(current_char)) => {
-            first_char.is_whitespace() == current_char.is_whitespace()
-        }
+        (Some(first_char), Some(current_char)) => first_char.is_whitespace() == current_char.is_whitespace(),
         _ => false,
     };
 
@@ -217,12 +209,7 @@ impl Cursor {
         }
 
         match self.s {
-            None => {
-                self.s = Some(Selection::new(
-                    usize::min(old_pos, new_pos),
-                    usize::max(old_pos, new_pos),
-                ))
-            }
+            None => self.s = Some(Selection::new(usize::min(old_pos, new_pos), usize::max(old_pos, new_pos))),
             Some(sel) => {
                 /* and here'd be dragons:
                    so I need to cover a following scenario:
@@ -388,7 +375,6 @@ impl Cursor {
             // }
         }
 
-
         if selecting {
             self.update_select(old_pos, self.a);
         } else {
@@ -520,21 +506,14 @@ impl PartialOrd<Self> for Cursor {
 
 impl Ord for Cursor {
     fn cmp(&self, other: &Self) -> Ordering {
-        Ord::cmp(&self.a, &other.a).then(
-            Ord::cmp(&self.s, &other.s).then(
-                Ord::cmp(&self.preferred_column, &other.preferred_column)
-            )
-        )
+        Ord::cmp(&self.a, &other.a).then(Ord::cmp(&self.s, &other.s).then(Ord::cmp(&self.preferred_column, &other.preferred_column)))
     }
 }
 
 impl Into<Cursor> for (usize, usize, usize) {
     fn into(self) -> Cursor {
         Cursor {
-            s: Some(Selection {
-                b: self.0,
-                e: self.1,
-            }),
+            s: Some(Selection { b: self.0, e: self.1 }),
             a: self.2,
             preferred_column: None,
         }

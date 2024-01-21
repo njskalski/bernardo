@@ -15,7 +15,7 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
     fn label(&self) -> Cow<str>;
     fn is_leaf(&self) -> bool;
 
-    fn child_iter(&self) -> Box<dyn Iterator<Item=Self>>;
+    fn child_iter(&self) -> Box<dyn Iterator<Item = Self>>;
 
     fn is_complete(&self) -> bool;
 
@@ -39,7 +39,9 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
         for (_idx, i) in self.child_iter().enumerate() {
             match i.matching_self_or_children(filter, max_depth.map(|i| if i > 0 { i - 1 } else { 0 })) {
                 MaybeBool::True => return MaybeBool::True,
-                MaybeBool::Maybe => { any_chance = true; }
+                MaybeBool::Maybe => {
+                    any_chance = true;
+                }
                 _ => {}
             }
         }

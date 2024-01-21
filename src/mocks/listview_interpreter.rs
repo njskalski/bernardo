@@ -17,10 +17,7 @@ impl<'a> ListViewInterpreter<'a> {
     pub fn new(meta: &'a Metadata, output: &'a MetaOutputFrame) -> Self {
         debug_assert!(meta.typename == list_widget::TYPENAME);
 
-        ListViewInterpreter {
-            meta,
-            output,
-        }
+        ListViewInterpreter { meta, output }
     }
 
     pub fn is_focused(&self) -> bool {

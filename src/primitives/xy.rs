@@ -43,17 +43,11 @@ impl XY {
     }
 
     pub fn max_both_axis(&self, other: XY) -> XY {
-        XY::new(
-            u16::max(self.x, other.x),
-            u16::max(self.y, other.y),
-        )
+        XY::new(u16::max(self.x, other.x), u16::max(self.y, other.y))
     }
 
     pub fn min_both_axis(&self, other: XY) -> XY {
-        XY::new(
-            u16::min(self.x, other.x),
-            u16::min(self.y, other.y),
-        )
+        XY::new(u16::min(self.x, other.x), u16::min(self.y, other.y))
     }
 
     pub fn is_non_zero(&self) -> bool {
@@ -69,10 +63,7 @@ impl Div<u16> for XY {
     type Output = XY;
 
     fn div(self, rhs: u16) -> Self::Output {
-        XY::new(
-            self.x / rhs,
-            self.y / rhs,
-        )
+        XY::new(self.x / rhs, self.y / rhs)
     }
 }
 
@@ -93,7 +84,6 @@ impl Mul<usize> for XY {
     }
 }
 
-
 pub struct NeighboursIterator {
     of: XY,
     item: u8, // 0 is North, 1 is Right (clockwise). After 3 there is nothing.
@@ -101,10 +91,7 @@ pub struct NeighboursIterator {
 
 impl NeighboursIterator {
     pub fn new(of: XY) -> Self {
-        NeighboursIterator {
-            of,
-            item: 0,
-        }
+        NeighboursIterator { of, item: 0 }
     }
 }
 
@@ -148,13 +135,9 @@ impl Iterator for NeighboursIterator {
     }
 }
 
-
 impl From<(u16, u16)> for XY {
     fn from(pair: (u16, u16)) -> Self {
-        XY {
-            x: pair.0,
-            y: pair.1,
-        }
+        XY { x: pair.0, y: pair.1 }
     }
 }
 
@@ -213,12 +196,8 @@ impl Sub for XY {
         }
 
         XY::new(
-            if self.x > other.x {
-                self.x - other.x
-            } else { 0 },
-            if self.y > other.y {
-                self.y - other.y
-            } else { 0 },
+            if self.x > other.x { self.x - other.x } else { 0 },
+            if self.y > other.y { self.y - other.y } else { 0 },
         )
     }
 }

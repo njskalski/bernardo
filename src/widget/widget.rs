@@ -18,7 +18,9 @@ pub type WID = usize;
 pub trait Widget: 'static {
     fn id(&self) -> WID;
 
-    fn static_typename() -> &'static str where Self: Sized;
+    fn static_typename() -> &'static str
+    where
+        Self: Sized;
 
     fn typename(&self) -> &'static str;
 
@@ -35,7 +37,9 @@ pub trait Widget: 'static {
     fn full_size(&self) -> XY;
 
     // This is information to layout on how the Widget wants to be drawn. It's completely optional
-    fn size_policy(&self) -> SizePolicy { SizePolicy::SELF_DETERMINED }
+    fn size_policy(&self) -> SizePolicy {
+        SizePolicy::SELF_DETERMINED
+    }
 
     // Invariants:
     // - visible_rect is not empty and not degraded (we don't layout invisible stuff)
@@ -53,11 +57,14 @@ pub trait Widget: 'static {
     // If these return None, it means that it's not a complex widget - the input should be addressed
     // directly to it.
     // Returning Some(self) would lead to infinite loop.
-    fn get_focused(&self) -> Option<&dyn Widget> { None }
-    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> { None }
+    fn get_focused(&self) -> Option<&dyn Widget> {
+        None
+    }
+    fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
+        None
+    }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output);
-
 
     // Kite is the part of view that is supposed to be followed by the scroll. Scroll always makes
     // the least amount of movement so the display contain a kite.
@@ -67,11 +74,17 @@ pub trait Widget: 'static {
         XY::ZERO
     }
 
-    fn as_any(&self) -> &dyn Widget where Self: Sized {
+    fn as_any(&self) -> &dyn Widget
+    where
+        Self: Sized,
+    {
         self as &dyn Widget
     }
 
-    fn as_any_mut(&mut self) -> &mut dyn Widget where Self: Sized {
+    fn as_any_mut(&mut self) -> &mut dyn Widget
+    where
+        Self: Sized,
+    {
         self as &mut dyn Widget
     }
 }

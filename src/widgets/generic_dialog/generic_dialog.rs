@@ -20,7 +20,7 @@ use crate::primitives::xy::XY;
 use crate::subwidget;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::text_widget::TextWidget;
 
@@ -42,12 +42,11 @@ pub struct GenericDialog {
 
     buttons: Vec<ButtonWidget>,
     keystroke: Option<Box<dyn KeyToMsg>>,
-
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum GenericDialogMsg {
-    FocusUpdate(FocusUpdate)
+    FocusUpdate(FocusUpdate),
 }
 
 impl AnyMsg for GenericDialogMsg {}
@@ -69,10 +68,7 @@ impl GenericDialog {
     pub fn with_option(self, button: ButtonWidget) -> Self {
         let mut buttons = self.buttons;
         buttons.push(button);
-        Self {
-            buttons,
-            ..self
-        }
+        Self { buttons, ..self }
     }
 
     pub fn add_option(&mut self, button: ButtonWidget) {
@@ -130,7 +126,10 @@ impl Widget for GenericDialog {
     fn typename(&self) -> &'static str {
         Self::TYPENAME
     }
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         Self::TYPENAME
     }
     fn prelayout(&mut self) {
@@ -213,29 +212,27 @@ impl ComplexWidget for GenericDialog {
         let text_layout = LeafLayout::new(subwidget!(Self.text_widget)).boxed();
 
         // let mut button_layout = SplitLayout::new(SplitDirection::Vertical);
-        let button_layouts: Vec<Box<dyn Layout<Self>>> = (0..self.buttons.len()).map(|idx| {
-            let idx1 = idx;
-            let idx2 = idx;
-            LeafLayout::new(SubwidgetPointer::new(
-                Box::new(move |s: &Self| {
-                    &s.buttons[idx1]
-                }),
-                Box::new(move |s: &mut Self| {
-                    &mut s.buttons[idx2]
-                }),
-            )).boxed()
-        }).collect();
+        let button_layouts: Vec<Box<dyn Layout<Self>>> = (0..self.buttons.len())
+            .map(|idx| {
+                let idx1 = idx;
+                let idx2 = idx;
+                LeafLayout::new(SubwidgetPointer::new(
+                    Box::new(move |s: &Self| &s.buttons[idx1]),
+                    Box::new(move |s: &mut Self| &mut s.buttons[idx2]),
+                ))
+                .boxed()
+            })
+            .collect();
 
-        let button_layout = button_layouts.into_iter().fold(
-            SplitLayout::new(SplitDirection::Horizontal),
-            |acc, layout| {
+        let button_layout = button_layouts
+            .into_iter()
+            .fold(SplitLayout::new(SplitDirection::Horizontal), |acc, layout| {
                 acc.with(SplitRule::Proportional(1.0), layout)
             })
             .boxed();
 
         let total_layout = SplitLayout::new(SplitDirection::Vertical)
-            .with(SplitRule::Proportional(1.0),
-                  text_layout)
+            .with(SplitRule::Proportional(1.0), text_layout)
             .with(SplitRule::Fixed(1), button_layout)
             .boxed();
 
@@ -250,8 +247,8 @@ impl ComplexWidget for GenericDialog {
             subwidget!(Self.text_widget)
         } else {
             SubwidgetPointer::new(
-                Box::new(|x: &Self| { x.buttons.get(0).unwrap() }),
-                Box::new(|x: &mut Self| { x.buttons.get_mut(0).unwrap() }),
+                Box::new(|x: &Self| x.buttons.get(0).unwrap()),
+                Box::new(|x: &mut Self| x.buttons.get_mut(0).unwrap()),
             )
         }
     }

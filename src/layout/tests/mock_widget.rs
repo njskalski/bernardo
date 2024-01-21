@@ -5,7 +5,7 @@ use crate::io::output::Output;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 
 pub struct MockWidget {
     id: WID,
@@ -25,10 +25,7 @@ impl MockWidget {
     }
 
     pub fn with_size_policy(self, size_policy: SizePolicy) -> Self {
-        Self {
-            size_policy,
-            ..self
-        }
+        Self { size_policy, ..self }
     }
 }
 
@@ -37,7 +34,10 @@ impl Widget for MockWidget {
         self.id
     }
 
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         "MockWidget"
     }
 
@@ -67,4 +67,3 @@ impl Widget for MockWidget {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {}
 }
-

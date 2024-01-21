@@ -23,5 +23,4 @@ pub enum EditorViewMsg {
     ReplaceHit,
 }
 
-
 impl AnyMsg for EditorViewMsg {}

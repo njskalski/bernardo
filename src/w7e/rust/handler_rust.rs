@@ -36,24 +36,18 @@ impl Handler for RustHandler {
 /*
  */
 impl RustHandler {
-    pub fn load(_config: &ConfigRef,
-                ff: SPath,
-                navcomp_op: Option<NavCompRef>,
-    ) -> Result<RustHandler, HandlerLoadError> {
+    pub fn load(_config: &ConfigRef, ff: SPath, navcomp_op: Option<NavCompRef>) -> Result<RustHandler, HandlerLoadError> {
         if !ff.is_dir() {
             return Err(HandlerLoadError::NotAProject);
         }
 
-        let cargo_file = ff
-            .descendant_checked("Cargo.toml")
-            .ok_or(HandlerLoadError::NotAProject)?;
+        let cargo_file = ff.descendant_checked("Cargo.toml").ok_or(HandlerLoadError::NotAProject)?;
         if !cargo_file.is_file() {
             return Err(HandlerLoadError::NotAProject);
         }
 
         let contents = cargo_file.read_entire_file()?;
-        let cargo = cargo_toml::Manifest::from_slice(&contents)
-            .map_err(|e| HandlerLoadError::DeserializationError(e.to_string()))?;
+        let cargo = cargo_toml::Manifest::from_slice(&contents).map_err(|e| HandlerLoadError::DeserializationError(e.to_string()))?;
 
         Ok(RustHandler {
             root: ff,

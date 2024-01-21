@@ -1,7 +1,5 @@
 use std::fmt::{Debug, Formatter};
-use std::time::{Duration, Instant};
-
-use log::debug;
+use std::time::Duration;
 
 use crate::promise::promise_map::MappedPromise;
 
@@ -70,11 +68,17 @@ pub trait Promise<T> {
      */
     fn take(self) -> Option<T>;
 
-    fn map<B, F: FnOnce(T) -> B>(self, mapper: F) -> MappedPromise<T, Self, B, F> where Self: Sized {
+    fn map<B, F: FnOnce(T) -> B>(self, mapper: F) -> MappedPromise<T, Self, B, F>
+    where
+        Self: Sized,
+    {
         MappedPromise::new(self, mapper)
     }
 
-    fn boxed(self) -> Box<dyn Promise<T>> where Self: Sized + 'static {
+    fn boxed(self) -> Box<dyn Promise<T>>
+    where
+        Self: Sized + 'static,
+    {
         Box::new(self)
     }
 }
@@ -85,9 +89,7 @@ pub struct ResolvedPromise<A> {
 
 impl<A> ResolvedPromise<A> {
     pub fn new(op: Option<A>) -> Self {
-        ResolvedPromise {
-            op
-        }
+        ResolvedPromise { op }
     }
 }
 

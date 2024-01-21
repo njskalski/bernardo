@@ -9,8 +9,8 @@ pub struct PollResult {
 
 impl PollResult {
     pub fn has_first_result(&self) -> bool {
-        self.old_state == LoadingState::NotStarted &&
-            (self.new_state == LoadingState::InProgress || self.new_state == LoadingState::Complete)
+        self.old_state == LoadingState::NotStarted
+            && (self.new_state == LoadingState::InProgress || self.new_state == LoadingState::Complete)
     }
 }
 
@@ -24,5 +24,5 @@ pub trait CodeResultsProvider {
 
     fn loading_state(&self) -> LoadingState;
 
-    fn items(&self) -> Box<dyn Iterator<Item=SymbolUsage> + '_>;
+    fn items(&self) -> Box<dyn Iterator<Item = SymbolUsage> + '_>;
 }

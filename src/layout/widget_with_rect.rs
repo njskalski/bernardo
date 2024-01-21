@@ -21,11 +21,7 @@ impl<W: Widget> Clone for WidgetWithRect<W> {
 
 impl<W: Widget> WidgetWithRect<W> {
     pub fn new(widget: SubwidgetPointer<W>, rect: Rect, focusable: bool) -> Self {
-        Self {
-            widget,
-            rect,
-            focusable,
-        }
+        Self { widget, rect, focusable }
     }
 
     pub fn rect(&self) -> Rect {

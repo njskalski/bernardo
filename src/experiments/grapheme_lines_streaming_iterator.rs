@@ -1,13 +1,13 @@
 use streaming_iterator::StreamingIterator;
 
 pub struct GraphemeLinesStreamingIterator<'a> {
-    grapheme_it: Box<dyn Iterator<Item=&'a str> + 'a>,
+    grapheme_it: Box<dyn Iterator<Item = &'a str> + 'a>,
     s: String,
     done: bool,
 }
 
 impl<'a> GraphemeLinesStreamingIterator<'a> {
-    pub fn new(grapheme_it: Box<dyn Iterator<Item=&'a str> + 'a>) -> Self {
+    pub fn new(grapheme_it: Box<dyn Iterator<Item = &'a str> + 'a>) -> Self {
         Self {
             grapheme_it,
             s: "".to_string(),

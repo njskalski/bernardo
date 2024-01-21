@@ -26,7 +26,7 @@ use crate::w7e::navcomp_group::NavCompTickSender;
 
 #[derive(Debug, Clone)]
 pub enum CompletionAction {
-    Insert(String)
+    Insert(String),
 }
 
 #[derive(Debug, Clone)]

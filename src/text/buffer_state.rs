@@ -11,14 +11,13 @@ use tree_sitter::Point;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{unpack_or, unpack_or_e};
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::experiments::regex_search::FindError;
 use crate::fs::path::SPath;
 use crate::io::output::Output;
-use crate::primitives::common_edit_msgs::{_apply_cem, CommonEditMsg};
+use crate::primitives::common_edit_msgs::{CommonEditMsg, _apply_cem};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::xy::XY;
 use crate::text::contents_and_cursors::ContentsAndCursors;
@@ -29,6 +28,7 @@ use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 use crate::widget::widget::WID;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
+use crate::{unpack_or, unpack_or_e};
 
 // TODO it would use a method "would_accept_cem" to be used in "on_input" but before "update"
 
@@ -45,7 +45,6 @@ B needs to be moved too. To avoid "communicating between views" it seams reasona
 some kind of hash map. So I am NOT separating cursors from BufferState, even though they are view
 specific. This is a good place to keep them all.
  */
-
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -77,12 +76,7 @@ impl BufferState {
         BufferSharedRef::new_from_buffer(self)
     }
 
-    pub fn apply_cem(&mut self,
-                     mut cem: CommonEditMsg,
-                     widget_id: WID,
-                     page_height: usize,
-                     clipboard: Option<&ClipboardRef>,
-    ) -> bool {
+    pub fn apply_cem(&mut self, mut cem: CommonEditMsg, widget_id: WID, page_height: usize, clipboard: Option<&ClipboardRef>) -> bool {
         if self.subtype == BufferType::SingleLine {
             if page_height != 1 {
                 error!("page_height required to be 1 on SingleLine buffers!");
@@ -138,13 +132,15 @@ impl BufferState {
      Used in "reformat".
     */
     // TODO fuzzy that invariant: false => unchanged
-    pub fn apply_stupid_substitute_messages(&mut self,
-                                            /*
-                                            This is not necessary, but I put it so I don't have to think about reducing it now.
-                                             */
-                                            widget_id: WID,
-                                            stupid_messages: &Vec<StupidSubstituteMessage>,
-                                            page_height: usize) -> bool {
+    pub fn apply_stupid_substitute_messages(
+        &mut self,
+        /*
+        This is not necessary, but I put it so I don't have to think about reducing it now.
+         */
+        widget_id: WID,
+        stupid_messages: &Vec<StupidSubstituteMessage>,
+        page_height: usize,
+    ) -> bool {
         if stupid_messages.is_empty() {
             warn!("calling apply_stupid_substitute_messages with empty list");
             return false;
@@ -162,38 +158,52 @@ impl BufferState {
         res
     }
 
-
     /*
      Returns whether a change happened. Undoes changes on fail.
      Used in "reformat".
     */
     // TODO fuzzy that invariant: false => unchanged
     // TODO maybe, just maybe, these stupid messages should go to CEM, not sure. Because moving them out already made me forgot about updating navcomp and updating treesitter.
-    fn _apply_stupid_substitute_message(&mut self,
-                                        /*
-                                        This is not necessary, but I put it so I don't have to think about reducing it now.
-                                         */
-                                        widget_id: WID,
-                                        stupid_message: &StupidSubstituteMessage,
-                                        page_height: usize,
+    fn _apply_stupid_substitute_message(
+        &mut self,
+        /*
+        This is not necessary, but I put it so I don't have to think about reducing it now.
+         */
+        widget_id: WID,
+        stupid_message: &StupidSubstituteMessage,
+        page_height: usize,
     ) -> bool {
         {
-            let cursor_set = unpack_or!(self.text().get_cursor_set(widget_id), false, "failed _apply_stupid_substitute_message - WID not found");
+            let cursor_set = unpack_or!(
+                self.text().get_cursor_set(widget_id),
+                false,
+                "failed _apply_stupid_substitute_message - WID not found"
+            );
             if cursor_set.are_simple() {
                 error!("refuse to apply stupid_edit_to_cem: cursors are not simple");
                 return false;
             }
         }
 
-        let begin = unpack_or!(stupid_message.stupid_range.0.to_real_cursor(self), false, "failed to cast (1) to real cursor");
-        let end = unpack_or!(stupid_message.stupid_range.1.to_real_cursor(self), false, "failed to cast (2) to real cursor");
+        let begin = unpack_or!(
+            stupid_message.stupid_range.0.to_real_cursor(self),
+            false,
+            "failed to cast (1) to real cursor"
+        );
+        let end = unpack_or!(
+            stupid_message.stupid_range.1.to_real_cursor(self),
+            false,
+            "failed to cast (2) to real cursor"
+        );
 
         self.set_milestone();
 
         // removing old item
         if stupid_message.stupid_range.0 != stupid_message.stupid_range.1 {
             if self.apply_cem(
-                CommonEditMsg::DeleteBlock { char_range: begin.a..end.a },
+                CommonEditMsg::DeleteBlock {
+                    char_range: begin.a..end.a,
+                },
                 widget_id,
                 page_height,
                 None,
@@ -205,7 +215,8 @@ impl BufferState {
                     },
                     |r| {
                         r.update_parse_on_delete(&rope, begin.a, end.a);
-                    });
+                    },
+                );
             } else {
                 error!("failed to remove range [{}..{}) from rope", begin.a, end.a);
                 self.undo_milestone();
@@ -230,7 +241,8 @@ impl BufferState {
                     },
                     |r| {
                         r.update_parse_on_insert(&rope, begin.a, begin.a + char_len);
-                    });
+                    },
+                );
             } else {
                 error!("failed to remove range [{}..{}) from rope", begin.a, end.a);
                 self.undo_milestone();
@@ -250,8 +262,7 @@ impl BufferState {
         let beyond_last_lane = visible_rect.lower_right().y as usize + 1;
 
         let first_char_idx = rope.try_line_to_char(first_line).ok()?;
-        let beyond_last_char_idx = rope.try_line_to_char(beyond_last_lane).
-            unwrap_or(rope.len_chars() + 1);
+        let beyond_last_char_idx = rope.try_line_to_char(beyond_last_lane).unwrap_or(rope.len_chars() + 1);
 
         Some(first_char_idx..beyond_last_char_idx)
     }
@@ -286,14 +297,11 @@ impl BufferState {
                 self.undo_milestone();
                 Ok(false)
             }
-            Ok(true) => {
-                Ok(true)
-            }
+            Ok(true) => Ok(true),
         }
     }
 
-    pub fn full(tree_sitter_op: Option<Arc<TreeSitterWrapper>>,
-                document_identifier: DocumentIdentifier) -> BufferState {
+    pub fn full(tree_sitter_op: Option<Arc<TreeSitterWrapper>>, document_identifier: DocumentIdentifier) -> BufferState {
         let res = BufferState {
             subtype: BufferType::Full,
             tree_sitter_op,
@@ -323,9 +331,10 @@ impl BufferState {
     // TODO move to text?
     pub fn highlight(&self, char_range_op: Option<Range<usize>>) -> Vec<HighlightItem> {
         let text = self.text();
-        text.parsing().map(|parsing| {
-            parsing.highlight_iter(text.rope(), char_range_op)
-        }).flatten().unwrap_or(vec![])
+        text.parsing()
+            .map(|parsing| parsing.highlight_iter(text.rope(), char_range_op))
+            .flatten()
+            .unwrap_or(vec![])
     }
 
     // TODO merge with above?
@@ -366,8 +375,8 @@ impl BufferState {
     }
 
     /* removes previous to last milestone, and moves last one to it's position.
-       used to chain multiple operations into a single milestone
-     */
+      used to chain multiple operations into a single milestone
+    */
     fn reduce_merge_milestone(&mut self) {
         debug_assert!(self.history_pos + 1 == self.history.len());
         debug_assert!(self.history_pos >= 1);
@@ -435,15 +444,13 @@ impl BufferState {
     fn set_parsing_tuple(&mut self) -> bool {
         let lang_id = match self.lang_id {
             Some(li) => li,
-            None => {
-                match self.get_path().map(filename_to_language).flatten() {
-                    None => {
-                        error!("couldn't determine language: path = {:?}", self.get_path());
-                        return false;
-                    }
-                    Some(lang_id) => lang_id,
+            None => match self.get_path().map(filename_to_language).flatten() {
+                None => {
+                    error!("couldn't determine language: path = {:?}", self.get_path());
+                    return false;
                 }
-            }
+                Some(lang_id) => lang_id,
+            },
         };
 
         let copy_rope = self.text().rope().clone();
@@ -560,7 +567,6 @@ impl BufferState {
         self.check_invariant();
     }
 
-
     /*
     This is expected to be used only in construction, it clears the history.
      */
@@ -658,7 +664,8 @@ impl TextBuffer for BufferState {
                     },
                     |r| {
                         r.update_parse_on_insert(&rope_clone, char_idx, char_idx + grapheme_len);
-                    });
+                    },
+                );
 
                 true
             }
@@ -682,7 +689,8 @@ impl TextBuffer for BufferState {
                     },
                     |r| {
                         r.update_parse_on_insert(&rope_clone, char_idx, char_idx + 1);
-                    });
+                    },
+                );
 
                 true
             }
@@ -725,7 +733,9 @@ impl TextBuffer for BufferState {
         if self.history_pos + 1 < self.history.len() {
             self.history_pos += 1;
             true
-        } else { false }
+        } else {
+            false
+        }
     }
 
     fn remove(&mut self, char_idx_begin: usize, char_idx_end: usize) -> bool {
@@ -745,7 +755,8 @@ impl TextBuffer for BufferState {
                     },
                     |r| {
                         r.update_parse_on_delete(&rope_clone, char_idx_begin, char_idx_end);
-                    });
+                    },
+                );
 
                 true
             }
@@ -761,7 +772,9 @@ impl TextBuffer for BufferState {
         if self.history_pos > 0 {
             self.history_pos -= 1;
             true
-        } else { false }
+        } else {
+            false
+        }
     }
 }
 

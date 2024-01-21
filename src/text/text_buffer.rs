@@ -1,7 +1,5 @@
 use std::fmt::{Debug, Formatter};
 
-use jsonrpc_core::futures::future::err;
-use jsonrpc_core::Id::Str;
 use log::error;
 use ropey::iter::{Chars, Chunks};
 use streaming_iterator::StreamingIterator;
@@ -17,8 +15,12 @@ pub trait TextBuffer: ToString {
     fn byte_to_char(&self, byte_idx: usize) -> Option<usize>;
 
     fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, tree_sitter::Point) -> &'a [u8] + 'a>;
-    fn can_redo(&self) -> bool { false }
-    fn can_undo(&self) -> bool { false }
+    fn can_redo(&self) -> bool {
+        false
+    }
+    fn can_undo(&self) -> bool {
+        false
+    }
     fn char_at(&self, char_idx: usize) -> Option<char>;
     fn char_to_byte(&self, char_idx: usize) -> Option<usize>;
     /*
@@ -56,11 +58,19 @@ pub trait TextBuffer: ToString {
     fn len_lines(&self) -> usize;
     fn lines(&self) -> LinesIter;
     fn line_to_char(&self, line_idx: usize) -> Option<usize>;
-    fn redo(&mut self) -> bool { false }
+    fn redo(&mut self) -> bool {
+        false
+    }
     fn remove(&mut self, char_idx_begin: usize, char_idx_end: usize) -> bool;
-    fn tab_width(&self) -> usize { 4 }
-    fn try_parse(&mut self, _lang_id: LangId) -> bool { false }
-    fn undo(&mut self) -> bool { false }
+    fn tab_width(&self) -> usize {
+        4
+    }
+    fn try_parse(&mut self, _lang_id: LangId) -> bool {
+        false
+    }
+    fn undo(&mut self) -> bool {
+        false
+    }
 
     // TODO test
     fn char_idx_to_xy(&self, char_idx: usize) -> Option<XY> {
@@ -106,12 +116,12 @@ pub trait TextBuffer: ToString {
 
 pub struct LinesIter<'a> {
     line: String,
-    iter: Box<dyn Iterator<Item=char> + 'a>,
+    iter: Box<dyn Iterator<Item = char> + 'a>,
     done: bool,
 }
 
 impl<'a> LinesIter<'a> {
-    pub fn new<T: Iterator<Item=char> + 'a>(iter: T) -> Self {
+    pub fn new<T: Iterator<Item = char> + 'a>(iter: T) -> Self {
         LinesIter {
             line: String::new(),
             iter: Box::new(iter),

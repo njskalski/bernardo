@@ -1,6 +1,3 @@
-use std::rc::Rc;
-use std::sync::Arc;
-
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -8,7 +5,7 @@ use crate::io::style::TextStyle;
 use crate::primitives::printable::Printable;
 
 pub trait StyledPrintable {
-    fn styled_graphemes(&self) -> Box<dyn Iterator<Item=(&TextStyle, &str)> + '_>;
+    fn styled_graphemes(&self) -> Box<dyn Iterator<Item = (&TextStyle, &str)> + '_>;
 
     fn screen_width(&self) -> u16 {
         let mut res = 0 as u16;
@@ -39,7 +36,7 @@ impl<P: Printable> StyleWrappedPrintable<P> {
 }
 
 impl<P: Printable> StyledPrintable for StyleWrappedPrintable<P> {
-    fn styled_graphemes(&self) -> Box<dyn Iterator<Item=(&TextStyle, &str)> + '_> {
+    fn styled_graphemes(&self) -> Box<dyn Iterator<Item = (&TextStyle, &str)> + '_> {
         Box::new(self.printable.graphemes().map(|grapheme| (&self.style, grapheme)))
     }
 }
@@ -59,19 +56,19 @@ impl<'a> StyleBorrowedPrintable<'a> {
 }
 
 impl<'a> StyledPrintable for StyleBorrowedPrintable<'a> {
-    fn styled_graphemes(&self) -> Box<dyn Iterator<Item=(&TextStyle, &str)> + '_> {
+    fn styled_graphemes(&self) -> Box<dyn Iterator<Item = (&TextStyle, &str)> + '_> {
         Box::new(self.printable.graphemes().map(|grapheme| (&self.style, grapheme)))
     }
 }
 
 impl StyledPrintable for (TextStyle, String) {
-    fn styled_graphemes(&self) -> Box<dyn Iterator<Item=(&TextStyle, &str)> + '_> {
+    fn styled_graphemes(&self) -> Box<dyn Iterator<Item = (&TextStyle, &str)> + '_> {
         Box::new(self.1.graphemes().map(|grapeheme| (&self.0, grapeheme)))
     }
 }
 
 impl StyledPrintable for Vec<(TextStyle, String)> {
-    fn styled_graphemes(&self) -> Box<dyn Iterator<Item=(&TextStyle, &str)> + '_> {
+    fn styled_graphemes(&self) -> Box<dyn Iterator<Item = (&TextStyle, &str)> + '_> {
         let mut result: Vec<(&TextStyle, &str)> = vec![];
 
         for (style, text) in self {
@@ -80,9 +77,7 @@ impl StyledPrintable for Vec<(TextStyle, String)> {
             }
         }
 
-        Box::new(
-            result.into_iter()
-        )
+        Box::new(result.into_iter())
     }
 }
 
@@ -109,4 +104,3 @@ impl StyledPrintable for Vec<(TextStyle, String)> {
 //         Box::new(UnicodeSegmentation::graphemes(self.as_str(), true))
 //     }
 // }
-

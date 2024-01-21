@@ -30,7 +30,6 @@ fn over_output_test_1() {
     assert_eq!(over_output.visible_rect(), Rect::new(XY::new(0, 2), XY::new(10, 10)));
 }
 
-
 #[test]
 fn over_output_test_2() {
     let mut parent_output = LocalMockOutput {
@@ -106,7 +105,6 @@ fn over_output_test_4() {
     assert_eq!(over_output.size(), XY::new(10, 20));
     assert_eq!(over_output.visible_rect(), Rect::new(XY::new(5, 2), XY::new(5, 10)));
 }
-
 
 #[test]
 fn over_output_test_5() {

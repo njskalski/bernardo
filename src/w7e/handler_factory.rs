@@ -18,10 +18,11 @@ This is a single point of entry to loading LanguageHandlers, to be used by both 
  */
 
 // TODO move lsp_path to workspace? Or at least allow override.
-pub fn handler_factory(config: &ConfigRef,
-                       handler_id: &str,
-                       ff: SPath,
-                       navcomp_tick_sender: NavCompTickSender,
+pub fn handler_factory(
+    config: &ConfigRef,
+    handler_id: &str,
+    ff: SPath,
+    navcomp_tick_sender: NavCompTickSender,
 ) -> Result<Box<dyn Handler>, HandlerLoadError> {
     debug!("attempting to load handler {} for {:?}", handler_id, ff.absolute_path());
     match handler_id {
@@ -36,10 +37,7 @@ pub fn handler_factory(config: &ConfigRef,
                 error!("LspWrapper construction failed.")
             }
 
-            match RustHandler::load(config,
-                                    ff,
-                                    navcomp_op,
-            ) {
+            match RustHandler::load(config, ff, navcomp_op) {
                 Ok(o) => Ok(Box::new(o)),
                 Err(e) => Err(e),
             }
@@ -56,10 +54,7 @@ pub fn handler_factory(config: &ConfigRef,
                 error!("LspWrapper construction failed.")
             }
 
-            match CppHandler::load(config,
-                                   ff,
-                                   navcomp_op,
-            ) {
+            match CppHandler::load(config, ff, navcomp_op) {
                 Ok(o) => Ok(Box::new(o)),
                 Err(e) => Err(e),
             }

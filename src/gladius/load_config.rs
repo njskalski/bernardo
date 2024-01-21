@@ -35,7 +35,10 @@ pub fn load_config(reconfigure: bool) -> ConfigRef {
             match std::fs::rename(&config_file_path, backup_path) {
                 Ok(_) => {}
                 Err(e) => {
-                    error!("failed backing up config before reconfiguring: {}.\nIn order to retry, remove {:?} manually.", e, &config_file_path);
+                    error!(
+                        "failed backing up config before reconfiguring: {}.\nIn order to retry, remove {:?} manually.",
+                        e, &config_file_path
+                    );
                     exit(2);
                 }
             }
@@ -55,15 +58,13 @@ pub fn load_config(reconfigure: bool) -> ConfigRef {
 
         match &config {
             None => {}
-            Some(c) => {
-                match c.save_to_file(&config_file_path) {
-                    Ok(_) => {}
-                    Err(e) => {
-                        error!("failed saving fresh config at {:?}, because {}.", &config_file_path, e);
-                        exit(4);
-                    }
+            Some(c) => match c.save_to_file(&config_file_path) {
+                Ok(_) => {}
+                Err(e) => {
+                    error!("failed saving fresh config at {:?}, because {}.", &config_file_path, e);
+                    exit(4);
                 }
-            }
+            },
         }
     }
 

@@ -8,9 +8,6 @@ pub struct ActionTrigger<W: Widget> {
 
 impl<W: Widget> ActionTrigger<W> {
     pub fn new(title: String, trigger: Box<dyn FnOnce(&W) -> Option<Box<dyn AnyMsg>>>) -> Self {
-        ActionTrigger {
-            title,
-            trigger,
-        }
+        ActionTrigger { title, trigger }
     }
 }

@@ -1,3 +1,1 @@
-pub struct FileAttrs {
-
-}
+pub struct FileAttrs {}

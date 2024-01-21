@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
-use log::{debug, error, warn};
+use log::{debug, error};
 use ropey::Rope;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor::Selection;
 use crate::cursor::cursor_set::CursorSet;
-use crate::experiments::regex_search::{FindError, regex_find};
-use crate::io::buffer;
+use crate::experiments::regex_search::{regex_find, FindError};
+
 use crate::primitives::search_pattern::SearchPattern;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
@@ -39,7 +39,10 @@ impl ContentsAndCursors {
 
     pub fn add_cursor_set(&mut self, widget_id: WID, cs: CursorSet) -> bool {
         if self.cursor_sets.iter().find(|(wid, _)| *wid == widget_id).is_some() {
-            error!("can't add cursor set for WidgetID {} - it's already present. Did you mean 'set_cursor_set'?", widget_id);
+            error!(
+                "can't add cursor set for WidgetID {} - it's already present. Did you mean 'set_cursor_set'?",
+                widget_id
+            );
             return false;
         }
 
@@ -53,7 +56,12 @@ impl ContentsAndCursors {
         - all selections match the pattern
      */
     pub fn do_cursors_match_regex(&self, widget_id: WID, pattern: &SearchPattern) -> bool {
-        let cursor_set = unpack_or_e!(self.get_cursor_set(widget_id), false, "can't find cursor set for WidgetID {}", widget_id);
+        let cursor_set = unpack_or_e!(
+            self.get_cursor_set(widget_id),
+            false,
+            "can't find cursor set for WidgetID {}",
+            widget_id
+        );
 
         for c in cursor_set.iter() {
             if c.s.is_none() {
@@ -117,14 +125,14 @@ impl ContentsAndCursors {
     returns Ok(true) iff there was an occurrence
      */
     pub fn find_once(&mut self, widget_id: WID, pattern: &str) -> Result<bool, FindError> {
-        let cursor_set = unpack_or_e!(self.get_cursor_set(widget_id), Err(FindError::WidgetIdNotFound), "WidgetId not found");
+        let cursor_set = unpack_or_e!(
+            self.get_cursor_set(widget_id),
+            Err(FindError::WidgetIdNotFound),
+            "WidgetId not found"
+        );
 
         let start_pos = cursor_set.supercursor().a;
-        let mut matches = regex_find(
-            pattern,
-            &self.rope,
-            Some(start_pos),
-        )?;
+        let mut matches = regex_find(pattern, &self.rope, Some(start_pos))?;
 
         if let Some(m) = matches.next() {
             if m.0 == m.1 {
@@ -132,9 +140,7 @@ impl ContentsAndCursors {
                 return Ok(false);
             }
 
-            let new_cursors = CursorSet::singleton(
-                Cursor::new(m.1).with_selection(Selection::new(m.0, m.1))
-            );
+            let new_cursors = CursorSet::singleton(Cursor::new(m.1).with_selection(Selection::new(m.0, m.1)));
 
             self.set_cursor_set(widget_id, new_cursors);
 
@@ -201,10 +207,7 @@ impl ContentsAndCursors {
     }
 
     pub fn with_rope(self, rope: Rope) -> Self {
-        Self {
-            rope,
-            ..self
-        }
+        Self { rope, ..self }
     }
 }
 

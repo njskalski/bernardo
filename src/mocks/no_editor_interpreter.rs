@@ -11,10 +11,7 @@ impl<'a> NoEditorInterpreter<'a> {
     pub fn new(output: &'a MetaOutputFrame, meta: &'a Metadata) -> Self {
         debug_assert!(meta.typename == NoEditorWidget::TYPENAME);
 
-        Self {
-            meta,
-            output,
-        }
+        Self { meta, output }
     }
 
     pub fn is_focused(&self) -> bool {

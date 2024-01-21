@@ -35,18 +35,18 @@ pub mod mock {
 
         fn get_column_name(idx: usize) -> &'static str {
             match idx {
-                0 => { "filename" }
-                1 => { "size" }
-                2 => { "type" }
-                _ => { "N/A" }
+                0 => "filename",
+                1 => "size",
+                2 => "type",
+                _ => "N/A",
             }
         }
 
         fn get(&self, idx: usize) -> Option<Rc<String>> {
             match idx {
-                0 => { Some(Rc::new(self.name.clone())) }
-                1 => { Some(Rc::new(format!("{}", self.size))) }
-                _ => None
+                0 => Some(Rc::new(self.name.clone())),
+                1 => Some(Rc::new(format!("{}", self.size))),
+                _ => None,
             }
         }
 
@@ -63,12 +63,8 @@ pub mod mock {
     pub fn get_mock_file_list() -> Vec<MockFile> {
         let mut res: Vec<MockFile> = vec![];
         for i in 0..10 {
-            res.push(
-                MockFile::new(format!("text_file_{}.txt", i), 1000 + i).with_filetype("txt".to_string())
-            );
-            res.push(
-                MockFile::new(format!("photo_{}.png", i), 30000 + i).with_filetype("png".to_string())
-            );
+            res.push(MockFile::new(format!("text_file_{}.txt", i), 1000 + i).with_filetype("txt".to_string()));
+            res.push(MockFile::new(format!("photo_{}.png", i), 30000 + i).with_filetype("png".to_string()));
         }
 
         res

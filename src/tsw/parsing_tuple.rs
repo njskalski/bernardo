@@ -1,6 +1,5 @@
-use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
-use std::rc::Rc;
+
 use std::sync::{Arc, RwLock};
 
 use tree_sitter::{Language, Parser, Query, Tree};
@@ -24,4 +23,3 @@ impl Debug for ParsingTuple {
         write!(f, "lang_id {:?}", self.lang_id)
     }
 }
-

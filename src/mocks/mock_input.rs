@@ -1,4 +1,4 @@
-use crossbeam_channel::{Receiver, Sender, unbounded};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
@@ -18,8 +18,6 @@ impl MockInput {
     pub fn new() -> (MockInput, Sender<InputEvent>) {
         let (sender, receiver) = unbounded::<InputEvent>();
 
-        (MockInput {
-            receiver
-        }, sender)
+        (MockInput { receiver }, sender)
     }
 }

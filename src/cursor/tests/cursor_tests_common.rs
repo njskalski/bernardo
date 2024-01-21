@@ -24,9 +24,7 @@ pub fn common_text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSe
             match other_part {
                 None => other_part = Some(idx),
                 Some(other_idx) => {
-                    cursors.push(
-                        Cursor::new(idx).with_selection(Selection::new(other_idx, idx))
-                    );
+                    cursors.push(Cursor::new(idx).with_selection(Selection::new(other_idx, idx)));
                     other_part = None;
                 }
             }
@@ -37,9 +35,7 @@ pub fn common_text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSe
             match other_part {
                 None => other_part = Some(idx),
                 Some(other_idx) => {
-                    cursors.push(
-                        Cursor::new(other_idx).with_selection(Selection::new(other_idx, idx))
-                    );
+                    cursors.push(Cursor::new(other_idx).with_selection(Selection::new(other_idx, idx)));
                     other_part = None;
                 }
             };
@@ -101,7 +97,6 @@ pub fn common_buffer_cursors_sel_to_text(b: &dyn TextBuffer, cs: &CursorSet) -> 
     // the +2 is because the last cursor can point at NON EXISTENT character
     colors.resize(b.len_chars() + 2, None);
 
-
     for (cursor_idx, cursor) in cs.iter().enumerate() {
         match cursor.s {
             Some(sel) => {
@@ -111,7 +106,13 @@ pub fn common_buffer_cursors_sel_to_text(b: &dyn TextBuffer, cs: &CursorSet) -> 
                 }
             }
             None => {
-                assert_eq!(colors[cursor.a], None, "cursor {} collides with {:?} by anchor", cursor_idx, colors[cursor.a].unwrap());
+                assert_eq!(
+                    colors[cursor.a],
+                    None,
+                    "cursor {} collides with {:?} by anchor",
+                    cursor_idx,
+                    colors[cursor.a].unwrap()
+                );
             }
         };
     }
@@ -180,7 +181,6 @@ pub fn common_buffer_cursors_sel_to_text(b: &dyn TextBuffer, cs: &CursorSet) -> 
         }
     }
 
-
     // println!("after : cc {:?} output {}", current_cursor_idx, output);
 
     // handling cursor starting in 0
@@ -248,43 +248,37 @@ fn test_common_text_to_buffer_cursors_5() {
 
 #[test]
 fn test_buffer_cursors_sel_to_text_0() {
-    let text = common_buffer_cursors_sel_to_text(&Rope::from("text"), &CursorSet::new(
-        vec![]
-    ));
+    let text = common_buffer_cursors_sel_to_text(&Rope::from("text"), &CursorSet::new(vec![]));
 
     assert_eq!(text, "text");
 }
 
 #[test]
 fn test_buffer_cursors_sel_to_text_1() {
-    let text = common_buffer_cursors_sel_to_text(&Rope::from("text"), &CursorSet::new(
-        vec![
-            Cursor::new(0).with_selection(Selection::new(0, 2)),
-        ]
-    ));
+    let text = common_buffer_cursors_sel_to_text(
+        &Rope::from("text"),
+        &CursorSet::new(vec![Cursor::new(0).with_selection(Selection::new(0, 2))]),
+    );
 
     assert_eq!(text, "[te)xt");
 }
 
 #[test]
 fn test_buffer_cursors_sel_to_text_2() {
-    let text = common_buffer_cursors_sel_to_text(&Rope::from("text"), &CursorSet::new(
-        vec![
+    let text = common_buffer_cursors_sel_to_text(
+        &Rope::from("text"),
+        &CursorSet::new(vec![
             Cursor::new(0).with_selection(Selection::new(0, 2)),
             Cursor::new(2).with_selection(Selection::new(2, 4)),
-        ]
-    ));
+        ]),
+    );
 
     assert_eq!(text, "[te)[xt)");
 }
 
 #[test]
 fn test_buffer_cursors_sel_to_text_3() {
-    let text = common_buffer_cursors_sel_to_text(&Rope::from("text\n"), &CursorSet::new(
-        vec![
-            Cursor::new(5),
-        ]
-    ));
+    let text = common_buffer_cursors_sel_to_text(&Rope::from("text\n"), &CursorSet::new(vec![Cursor::new(5)]));
 
     assert_eq!(text, "text\n#");
 }

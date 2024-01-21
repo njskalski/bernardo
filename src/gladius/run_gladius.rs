@@ -15,37 +15,27 @@ use crate::io::output::FinalOutput;
 use crate::primitives::helpers::get_next_filename;
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::inspector::{inspect_workspace, InspectError};
-use crate::w7e::workspace::{LoadError, ScopeLoadErrors, Workspace};
 use crate::w7e::workspace::WORKSPACE_FILE_NAME;
+use crate::w7e::workspace::{LoadError, ScopeLoadErrors, Workspace};
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
 
-pub fn run_gladius<
-    I: Input,
-    O: FinalOutput,
->(
-    providers: Providers,
-    input: I,
-    mut output: O,
-    files: Vec<PathBuf>,
-) {
+pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut output: O, files: Vec<PathBuf>) {
     // Loading / Building workspace file
     let workspace_dir = providers.fsf().root();
     let (workspace_op, _scope_errors): (Option<Workspace>, ScopeLoadErrors) = match Workspace::try_load(workspace_dir.clone()) {
         Ok(res) => (Some(res.0), res.1),
-        Err(e) => {
-            match e {
-                LoadError::WorkspaceFileNotFound => {
-                    (None, ScopeLoadErrors::default())
-                }
-                LoadError::ReadError(e) => {
-                    error!("failed reading workspace file at {}, because:\n{}\nterminating. To continue, rename/remove {} in that folder.",
-                        workspace_dir, e, WORKSPACE_FILE_NAME);
+        Err(e) => match e {
+            LoadError::WorkspaceFileNotFound => (None, ScopeLoadErrors::default()),
+            LoadError::ReadError(e) => {
+                error!(
+                    "failed reading workspace file at {}, because:\n{}\nterminating. To continue, rename/remove {} in that folder.",
+                    workspace_dir, e, WORKSPACE_FILE_NAME
+                );
 
-                    return;
-                }
+                return;
             }
-        }
+        },
     };
 
     // TODO add option to NOT *save* workspace after creation?
@@ -58,20 +48,30 @@ pub fn run_gladius<
                 Err(e) => {
                     match &e {
                         InspectError::NotAFolder => {
-                            error!("failed inspecting workspace at {:?}, because it doesn't seem to be a folder.",
-                            workspace_dir.absolute_path());
+                            error!(
+                                "failed inspecting workspace at {:?}, because it doesn't seem to be a folder.",
+                                workspace_dir.absolute_path()
+                            );
                             // This should never happen, so I terminate program.
                             return;
                         }
                         _ => {
-                            error!("failed inspecting workspace at {:?}, because:\n{}", workspace_dir.absolute_path(), e);
+                            error!(
+                                "failed inspecting workspace at {:?}, because:\n{}",
+                                workspace_dir.absolute_path(),
+                                e
+                            );
                             // I decided inspection should not have non-fatal errors, just worst case scenario being "no scopes".
                             return;
                         }
                     }
                 }
                 Ok(scopes) => {
-                    debug!("creating new workspace at {:?} with {} scopes", workspace_dir.absolute_path(), scopes.len());
+                    debug!(
+                        "creating new workspace at {:?} with {} scopes",
+                        workspace_dir.absolute_path(),
+                        scopes.len()
+                    );
                     let workspace = Workspace::new(workspace_dir, scopes);
                     match workspace.save() {
                         Ok(_) => {
@@ -102,11 +102,14 @@ pub fn run_gladius<
         debug!("{} handlers failed to load, details : {:?}", scope_errors.len(), scope_errors);
     }
 
-    let mut main_view = MainView::new(
-        providers.clone(),
-    );
+    let mut main_view = MainView::new(providers.clone());
     for f in files.iter() {
-        if !providers.fsf().descendant_checked(f).map(|ff| main_view.open_file(ff)).unwrap_or(false) {
+        if !providers
+            .fsf()
+            .descendant_checked(f)
+            .map(|ff| main_view.open_file(ff))
+            .unwrap_or(false)
+        {
             error!("failed opening file {:?}", f);
         }
     }
@@ -116,8 +119,7 @@ pub fn run_gladius<
     let nav_comp_tick_receiver = providers.navcomp_group().try_read().map(|lock| lock.recvr().clone()).unwrap(); // TODO unwrap
 
     // Genesis
-    'main:
-    loop {
+    'main: loop {
         debug!("new frame");
         match output.clear() {
             Ok(_) => {}

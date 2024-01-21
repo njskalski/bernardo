@@ -3,7 +3,6 @@ use std::rc::Rc;
 use log::{debug, error, warn};
 use uuid::Uuid;
 
-use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::experiments::buffer_register::OpenResult;
 use crate::experiments::filename_to_language::filename_to_language;
@@ -23,7 +22,7 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
 use crate::widgets::editor_view::editor_view::EditorView;
@@ -38,6 +37,7 @@ use crate::widgets::spath_tree_view_node::FileTreeNode;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
+use crate::{subwidget, unpack_or, unpack_or_e};
 
 pub type BufferId = Uuid;
 
@@ -93,13 +93,10 @@ impl MainView {
     pub const TYPENAME: &'static str = "main_view";
 
     pub fn create_new_display_for_code_results(&mut self, data_provider: Box<dyn CodeResultsProvider>) -> Result<usize, ()> {
-        self.displays.push(
-            MainViewDisplay::ResultsView(
-                CodeResultsView::new(self.providers.clone(),
-                                     data_provider,
-                )
-            )
-        );
+        self.displays.push(MainViewDisplay::ResultsView(CodeResultsView::new(
+            self.providers.clone(),
+            data_provider,
+        )));
 
         let res = self.displays.len() - 1;
 
@@ -108,31 +105,29 @@ impl MainView {
 
     pub fn create_new_editor_for_file(&mut self, ff: &SPath) -> Result<usize, ReadError> {
         // TODO this should return some other error, but they are swallowed anyway
-        let mut register_lock = unpack_or_e!(self.providers.buffer_register().try_write().ok(), Err(ReadError::FileNotFound), "failed to lock register");
+        let mut register_lock = unpack_or_e!(
+            self.providers.buffer_register().try_write().ok(),
+            Err(ReadError::FileNotFound),
+            "failed to lock register"
+        );
         let OpenResult {
-            buffer_shared_ref, opened
+            buffer_shared_ref,
+            opened: _,
         } = register_lock.open_file(&self.providers, ff);
-        let mut buffer_shared_ref = buffer_shared_ref?;
+        let buffer_shared_ref = buffer_shared_ref?;
 
         if let Some(mut buffer_lock) = buffer_shared_ref.lock_rw() {
             buffer_lock.set_lang(filename_to_language(&ff));
         }
 
-        self.displays.push(
-            MainViewDisplay::Editor(
-                EditorView::new(self.providers.clone(),
-                                buffer_shared_ref,
-                ).with_path_op(
-                    ff.parent()
-                ),
-            )
-        );
+        self.displays.push(MainViewDisplay::Editor(
+            EditorView::new(self.providers.clone(), buffer_shared_ref).with_path_op(ff.parent()),
+        ));
 
         let res = self.displays.len() - 1;
 
         Ok(res)
     }
-
 
     fn get_curr_display_ptr(&self) -> SubwidgetPointer<Self> {
         if self.display_idx >= self.displays.len() {
@@ -146,36 +141,38 @@ impl MainView {
             let idx1 = self.display_idx;
             let idx2 = self.display_idx;
             SubwidgetPointer::new(
-                Box::new(move |s: &Self| { s.displays.get(idx1).map(|w| w.get_widget()).unwrap_or(&s.no_editor) }),
-                Box::new(move |s: &mut Self| { s.displays.get_mut(idx2).map(|w| w.get_widget_mut()).unwrap_or(&mut s.no_editor) }),
+                Box::new(move |s: &Self| s.displays.get(idx1).map(|w| w.get_widget()).unwrap_or(&s.no_editor)),
+                Box::new(move |s: &mut Self| s.displays.get_mut(idx2).map(|w| w.get_widget_mut()).unwrap_or(&mut s.no_editor)),
             )
         }
     }
 
-
     pub fn get_display_list_provider(&self) -> Box<dyn ItemsProvider> {
-        Box::new(self.displays.iter().enumerate().map(|(idx, display)| {
-            match display {
-                MainViewDisplay::Editor(editor) => {
-                    let text = match editor.get_path() {
-                        None => {
-                            format!("unnamed file #{}", idx)
-                        }
-                        Some(path) => {
-                            path.label().to_string()
-                        }
-                    };
+        Box::new(
+            self.displays
+                .iter()
+                .enumerate()
+                .map(|(idx, display)| {
+                    match display {
+                        MainViewDisplay::Editor(editor) => {
+                            let text = match editor.get_path() {
+                                None => {
+                                    format!("unnamed file #{}", idx)
+                                }
+                                Some(path) => path.label().to_string(),
+                            };
 
-                    // TODO unnecessary Rc over new
-                    DisplayItem::new(idx, Rc::new(text))
-                }
-                MainViewDisplay::ResultsView(result) => {
-                    let text = result.get_text().clone();
+                            // TODO unnecessary Rc over new
+                            DisplayItem::new(idx, Rc::new(text))
+                        }
+                        MainViewDisplay::ResultsView(result) => {
+                            let text = result.get_text().clone();
 
-                    DisplayItem::new(idx, text.into())
-                }
-            }
-        }).collect::<Vec<_>>()
+                            DisplayItem::new(idx, text.into())
+                        }
+                    }
+                })
+                .collect::<Vec<_>>(),
         )
     }
 
@@ -200,17 +197,14 @@ impl MainView {
         let output_size = screenspace.output_size();
         if output_size >= XY::new(10, 8) {
             let margin = output_size / 10;
-            let res = Rect::new(margin,
-                                output_size - margin * 2,
-            );
+            let res = Rect::new(margin, output_size - margin * 2);
             Some(res)
         } else {
             None
         }
     }
 
-    pub fn new(providers: Providers
-    ) -> MainView {
+    pub fn new(providers: Providers) -> MainView {
         let root = providers.fsf().root();
         let tree = TreeViewWidget::new(FileTreeNode::new(root.clone()))
             .with_on_flip_expand(|widget| {
@@ -248,14 +242,8 @@ impl MainView {
             return;
         };
 
-        self.displays.push(
-            MainViewDisplay::Editor(
-                EditorView::new(
-                    self.providers.clone(),
-                    buffer,
-                )
-            )
-        );
+        self.displays
+            .push(MainViewDisplay::Editor(EditorView::new(self.providers.clone(), buffer)));
 
         self.display_idx = self.displays.len() - 1;
         self.set_focus_to_default();
@@ -273,40 +261,34 @@ impl MainView {
                 .map(|idx| {
                     self.display_idx = idx;
                     self.set_focused(self.get_default_focused());
-                }).is_ok()
+                })
+                .is_ok()
         }
     }
 
     fn open_fuzzy_buffer_list_and_focus(&mut self) {
-        self.hover = Some(
-            HoverItem::FuzzySearch(
-                WithScroll::new(
-                    ScrollDirection::Vertical,
-                    FuzzySearchWidget::new(
-                        |_| Some(Box::new(MainViewMsg::CloseHover)),
-                        Some(self.providers.clipboard().clone()),
-                    ).with_provider(
-                        self.get_display_list_provider()
-                    ).with_draw_comment_setting(DrawComment::Highlighted))
+        self.hover = Some(HoverItem::FuzzySearch(WithScroll::new(
+            ScrollDirection::Vertical,
+            FuzzySearchWidget::new(
+                |_| Some(Box::new(MainViewMsg::CloseHover)),
+                Some(self.providers.clipboard().clone()),
             )
-        );
+            .with_provider(self.get_display_list_provider())
+            .with_draw_comment_setting(DrawComment::Highlighted),
+        )));
         self.set_focus_to_hover();
     }
 
     fn open_fuzzy_search_in_files_and_focus(&mut self) {
-        self.hover = Some(
-            HoverItem::FuzzySearch(
-                WithScroll::new(
-                    ScrollDirection::Vertical,
-                    FuzzySearchWidget::new(
-                        |_| Some(Box::new(MainViewMsg::CloseHover)),
-                        Some(self.providers.clipboard().clone()),
-                    ).with_provider(
-                        Box::new(FsfProvider::new(self.providers.fsf().clone()).with_ignores_filter())
-                    ).with_draw_comment_setting(DrawComment::Highlighted),
-                ),
+        self.hover = Some(HoverItem::FuzzySearch(WithScroll::new(
+            ScrollDirection::Vertical,
+            FuzzySearchWidget::new(
+                |_| Some(Box::new(MainViewMsg::CloseHover)),
+                Some(self.providers.clipboard().clone()),
             )
-        );
+            .with_provider(Box::new(FsfProvider::new(self.providers.fsf().clone()).with_ignores_filter()))
+            .with_draw_comment_setting(DrawComment::Highlighted),
+        )));
         self.set_focus_to_hover();
     }
 
@@ -320,7 +302,9 @@ impl MainView {
             Box::new(|s: &MainView| {
                 let hover_present = s.hover.is_some();
                 if hover_present {
-                    match s.hover.as_ref().unwrap() { HoverItem::FuzzySearch(fs) => fs as &dyn Widget }
+                    match s.hover.as_ref().unwrap() {
+                        HoverItem::FuzzySearch(fs) => fs as &dyn Widget,
+                    }
                 } else {
                     error!("failed to unwrap hover widget!");
                     s.get_default_focused().get(s)
@@ -329,7 +313,9 @@ impl MainView {
             Box::new(|s: &mut MainView| {
                 let hover_present = s.hover.is_some();
                 if hover_present {
-                    match s.hover.as_mut().unwrap() { HoverItem::FuzzySearch(fs) => fs as &mut dyn Widget }
+                    match s.hover.as_mut().unwrap() {
+                        HoverItem::FuzzySearch(fs) => fs as &mut dyn Widget,
+                    }
                 } else {
                     error!("failed to unwrap hover widget!");
                     s.get_default_focused().get_mut(s)
@@ -354,7 +340,10 @@ impl Widget for MainView {
     fn id(&self) -> WID {
         self.wid
     }
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         Self::TYPENAME
     }
     fn typename(&self) -> &'static str {
@@ -383,12 +372,8 @@ impl Widget for MainView {
             InputEvent::FocusUpdate(focus_update) if self.will_accept_focus_update(focus_update) => {
                 MainViewMsg::FocusUpdateMsg(focus_update).someboxed()
             }
-            InputEvent::KeyInput(key) if key == config.keyboard_config.global.new_buffer => {
-                MainViewMsg::OpenNewFile.someboxed()
-            }
-            InputEvent::KeyInput(key) if key == config.keyboard_config.global.fuzzy_file => {
-                MainViewMsg::OpenFuzzyFiles.someboxed()
-            }
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.new_buffer => MainViewMsg::OpenNewFile.someboxed(),
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.fuzzy_file => MainViewMsg::OpenFuzzyFiles.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.browse_buffers => {
                 if self.displays.is_empty() {
                     debug!("ignoring browse_buffers request - no displays open.");
@@ -416,9 +401,7 @@ impl Widget for MainView {
 
                     None
                 }
-                MainViewMsg::TreeExpandedFlip { .. } => {
-                    None
-                }
+                MainViewMsg::TreeExpandedFlip { .. } => None,
                 MainViewMsg::TreeSelected { item } => {
                     if !self.open_file(item.clone()) {
                         error!("failed open_file");
@@ -448,7 +431,11 @@ impl Widget for MainView {
                 }
                 MainViewMsg::FuzzyBuffersHit { pos } => {
                     if *pos >= self.displays.len() {
-                        error!("received FuzzyBufferHit for an index {} and len is {}, ignoring", pos, self.displays.len());
+                        error!(
+                            "received FuzzyBufferHit for an index {} and len is {}, ignoring",
+                            pos,
+                            self.displays.len()
+                        );
                     } else {
                         self.display_idx = *pos;
                     }
@@ -460,9 +447,7 @@ impl Widget for MainView {
                 }
                 MainViewMsg::FindReferences { ref mut promise_op } => {
                     if let Some(promise) = promise_op.take() {
-                        match self.create_new_display_for_code_results(
-                            Box::new(promise)
-                        ) {
+                        match self.create_new_display_for_code_results(Box::new(promise)) {
                             Ok(idx) => {
                                 self.display_idx = idx;
                                 self.set_focus_to_default();
@@ -527,34 +512,23 @@ impl ComplexWidget for MainView {
         let right_column = LeafLayout::new(self.get_curr_display_ptr()).boxed();
 
         let bg_layout = SplitLayout::new(SplitDirection::Horizontal)
-            .with(SplitRule::Proportional(1.0),
-                  left_column)
-            .with(SplitRule::Proportional(5.0),
-                  right_column,
-            );
+            .with(SplitRule::Proportional(1.0), left_column)
+            .with(SplitRule::Proportional(5.0), right_column);
 
         let res = if let Some(hover) = &self.hover {
             match hover {
                 HoverItem::FuzzySearch(_fuzzy) => {
                     let hover = LeafLayout::new(SubwidgetPointer::new(
-                        Box::new(|s: &Self| {
-                            match s.hover.as_ref().unwrap() {
-                                HoverItem::FuzzySearch(fs) => fs,
-                            }
+                        Box::new(|s: &Self| match s.hover.as_ref().unwrap() {
+                            HoverItem::FuzzySearch(fs) => fs,
                         }),
-                        Box::new(|s: &mut Self| {
-                            match s.hover.as_mut().unwrap() {
-                                HoverItem::FuzzySearch(fs) => fs,
-                            }
+                        Box::new(|s: &mut Self| match s.hover.as_mut().unwrap() {
+                            HoverItem::FuzzySearch(fs) => fs,
                         }),
-                    )).boxed();
+                    ))
+                    .boxed();
 
-                    HoverLayout::new(
-                        bg_layout.boxed(),
-                        hover,
-                        Box::new(Self::get_hover_rect),
-                        true,
-                    ).boxed()
+                    HoverLayout::new(bg_layout.boxed(), hover, Box::new(Self::get_hover_rect), true).boxed()
                 }
             }
         } else {

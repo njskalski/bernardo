@@ -1,5 +1,5 @@
-use crate::io::crossterm_output::CrosstermOutput;
 use crate::io::crossterm_input::CrosstermInput;
+use crate::io::crossterm_output::CrosstermOutput;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crossterm::terminal;
@@ -58,10 +58,7 @@ impl App {
         let output = CrosstermOutput::new(stdout());
 
         if output.size() == XY::ZERO {
-            return Err(Box::new(Error::new(
-                ErrorKind::Other,
-                "it seems like the screen has zero size",
-            )));
+            return Err(Box::new(Error::new(ErrorKind::Other, "it seems like the screen has zero size")));
         }
 
         f(input, output);

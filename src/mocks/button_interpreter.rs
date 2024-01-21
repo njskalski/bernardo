@@ -12,10 +12,7 @@ impl<'a> ButtonWidgetInterpreter<'a> {
     pub fn new(meta: &'a Metadata, output: &'a MetaOutputFrame) -> Self {
         debug_assert!(meta.typename == ButtonWidget::TYPENAME);
 
-        Self {
-            meta,
-            output,
-        }
+        Self { meta, output }
     }
 
     pub fn is_focused(&self) -> bool {
@@ -23,6 +20,14 @@ impl<'a> ButtonWidgetInterpreter<'a> {
     }
 
     pub fn contents(&self) -> String {
-        self.output.buffer.lines_iter().with_rect(self.meta.rect).next().unwrap().text.trim().to_string()
+        self.output
+            .buffer
+            .lines_iter()
+            .with_rect(self.meta.rect)
+            .next()
+            .unwrap()
+            .text
+            .trim()
+            .to_string()
     }
 }

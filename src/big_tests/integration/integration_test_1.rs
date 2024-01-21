@@ -10,9 +10,7 @@ fn integration_test_with_rust_analyzer() {
     //     .spawn()
     //     .expect("Failed to start rust-analyzer process");
 
-    let mut full_setup: FullSetup = FullSetup::new("./test_envs/integration_test_1")
-        .with_files(["src/main.rs"])
-        .build();
+    let mut full_setup: FullSetup = FullSetup::new("./test_envs/integration_test_1").with_files(["src/main.rs"]).build();
 
     assert!(full_setup.wait_for(|f| f.is_editor_opened()), "Editor not opened");
 
@@ -26,12 +24,10 @@ fn integration_test_with_rust_analyzer() {
     assert!(typing_result, "Failed to type in");
 
     // Make sure we have an editor, then proceed
-    let first_editor = full_setup.get_first_editor()
-        .expect("Failed to get first editor");
+    let first_editor = full_setup.get_first_editor().expect("Failed to get first editor");
 
     // Use iterator for visible_cursor_lines
-    let visible_cursor_lines: Vec<_> = first_editor.get_visible_cursor_lines()
-        .collect();
+    let visible_cursor_lines: Vec<_> = first_editor.get_visible_cursor_lines().collect();
 
     // Make sure we have a visible cursor line
     assert!(!visible_cursor_lines.is_empty(), "No visible cursor lines");
