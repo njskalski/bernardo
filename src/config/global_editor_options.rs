@@ -29,7 +29,7 @@ impl GlobalEditorOptions {
     }
 
     pub fn get_clangd_lsp_path(&self) -> Option<PathBuf> {
-        self.rust_lsp_path.as_ref().map(|c| c.clone()).or_else(|| {
+        self.rust_lsp_path.clone().or_else(|| {
             debug!("discovering location of clangd");
 
             if let Ok(path) = which::which("clangd") {

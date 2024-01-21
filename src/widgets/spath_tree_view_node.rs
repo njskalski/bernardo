@@ -51,7 +51,7 @@ impl TreeViewNode<SPath> for FileTreeNode {
 
     fn child_iter(&self) -> Box<dyn Iterator<Item = Self>> {
         match self.sp.blocking_list() {
-            Ok(items) => Box::new(items.into_iter().map(|item| FileTreeNode::new(item))) as Box<dyn Iterator<Item = Self>>,
+            Ok(items) => Box::new(items.into_iter().map(FileTreeNode::new)) as Box<dyn Iterator<Item = Self>>,
             Err(e) => {
                 error!("fail to call blocking_list {:?}", e);
                 Box::new(std::iter::empty()) as Box<dyn Iterator<Item = Self>>
@@ -79,9 +79,7 @@ impl TreeViewNode<SPath> for DirTreeNode {
 
     fn child_iter(&self) -> Box<dyn Iterator<Item = Self>> {
         match self.sp.blocking_list() {
-            Ok(items) => {
-                Box::new(items.into_iter().filter(|c| c.is_dir()).map(|item| DirTreeNode::new(item))) as Box<dyn Iterator<Item = Self>>
-            }
+            Ok(items) => Box::new(items.into_iter().filter(|c| c.is_dir()).map(DirTreeNode::new)) as Box<dyn Iterator<Item = Self>>,
             Err(e) => {
                 error!("fail to call blocking_list {:?}", e);
                 Box::new(std::iter::empty()) as Box<dyn Iterator<Item = Self>>

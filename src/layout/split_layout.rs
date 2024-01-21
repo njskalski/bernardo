@@ -190,13 +190,12 @@ impl<W: Widget> SplitLayout<W> {
         }
 
         if let Some(idx) = biggest_prop_idx {
-            let sum_ = amounts.iter().fold(0 as usize, |a, b| a + *b);
+            let sum_ = amounts.iter().fold(0, |a, b| a + *b);
             let difference = free_axis - sum_;
             amounts[idx] += difference;
         }
 
-        let mut res: Vec<Rect> = Vec::new();
-        res.reserve(amounts.len());
+        let mut res: Vec<Rect> = Vec::with_capacity(amounts.len());
 
         let mut upper_left = XY::new(0, 0);
 
@@ -209,12 +208,11 @@ impl<W: Widget> SplitLayout<W> {
 
             res.push(Rect::new(upper_left, new_size));
 
-            upper_left = upper_left
-                + if self.split_direction == SplitDirection::Vertical {
-                    XY::new(0, *s as u16)
-                } else {
-                    XY::new(*s as u16, 0).into()
-                };
+            upper_left += if self.split_direction == SplitDirection::Vertical {
+                XY::new(0, *s as u16)
+            } else {
+                XY::new(*s as u16, 0)
+            };
         }
 
         debug!("split {:?} size {} rects {:?}", self.split_direction, output_size, res);
@@ -239,7 +237,7 @@ impl<W: Widget> Layout<W> for SplitLayout<W> {
             let exact_size = child.layout.exact_size(root, output_size);
             match child.split_rule {
                 SplitRule::Fixed(iusize) => {
-                    let i = iusize as u16;
+                    let i = iusize ;
                     if self.split_direction == SplitDirection::Vertical {
                         if exact_size.y > i {
                             error!("SplitRule::Fixed limits y below exact_size.y");

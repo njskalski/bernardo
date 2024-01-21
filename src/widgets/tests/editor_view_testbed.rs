@@ -27,7 +27,7 @@ pub struct EditorViewTestbed {
 
 impl EditorViewTestbed {
     pub fn editor(&self) -> Option<EditorInterpreter> {
-        self.last_frame.as_ref().map(|frame| frame.get_editors().next()).flatten()
+        self.last_frame.as_ref().and_then(|frame| frame.get_editors().next())
     }
 
     pub fn next_frame(&mut self) {
@@ -49,8 +49,7 @@ impl EditorViewTestbed {
 
     pub fn interpreter(&self) -> Option<EditorInterpreter<'_>> {
         self.frame_op()
-            .map(|frame| EditorInterpreter::new(frame, frame.metadata.first().unwrap()))
-            .flatten()
+            .and_then(|frame| EditorInterpreter::new(frame, frame.metadata.first().unwrap()))
     }
 
     pub fn screenshot(&self) -> bool {

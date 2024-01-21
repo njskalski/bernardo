@@ -91,7 +91,7 @@ impl Widget for TextWidget {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let text = theme.default_text(focused);
 
-        let mut line_idx = 0 as u16;
+        let mut line_idx = 0;
         let mut line_it = self.text.lines();
 
         while let Some(line) = line_it.next() {

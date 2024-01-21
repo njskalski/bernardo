@@ -390,7 +390,7 @@ impl Widget for SaveFileDialogWidget {
                 self.set_focused(subwidget!(Self.ok_button));
                 None
             }
-            SaveFileDialogMsg::Cancel => self.on_cancel.map(|action| action(self)).flatten(),
+            SaveFileDialogMsg::Cancel => self.on_cancel.and_then(|action| action(self)),
             SaveFileDialogMsg::Save => self.save_or_ask_for_override(),
             SaveFileDialogMsg::CancelOverride => {
                 self.hover_dialog = None;
