@@ -106,11 +106,10 @@ fn actual_find() {
             .get_first_editor()
             .unwrap()
             .get_visible_cursor_lines_with_coded_cursors()
-            .find(|line| {
+            .any(|line| {
                 debug!("line [{}]", line.contents.text);
                 line.contents.text.contains("::(path]")
             })
-            .is_some()
     }));
 
     full_setup.send_key(Keycode::Enter.to_key());
@@ -120,11 +119,10 @@ fn actual_find() {
             .get_first_editor()
             .unwrap()
             .get_visible_cursor_lines_with_coded_cursors()
-            .find(|line| {
+            .any(|line| {
                 debug!("line [{}]", line.contents.text);
                 line.contents.text.contains("let (path] =")
             })
-            .is_some()
     }));
 
     full_setup.finish();
@@ -174,8 +172,7 @@ fn actual_replace() {
             .get_first_editor()
             .unwrap()
             .get_all_visible_lines()
-            .find(|line| line.contents.text.contains("use std::wrath::PathBuf;"))
-            .is_some()
+            .any(|line| line.contents.text.contains("use std::wrath::PathBuf;"))
     }));
 
     assert!(full_setup.wait_for(|full_setup| {
@@ -183,11 +180,10 @@ fn actual_replace() {
             .get_first_editor()
             .unwrap()
             .get_visible_cursor_lines_with_coded_cursors()
-            .find(|line| {
+            .any(|line| {
                 debug!("line [{}]", line.contents.text);
                 line.contents.text.contains("let (path] =")
             })
-            .is_some()
     }));
 
     full_setup.send_key(Keycode::Enter.to_key());
@@ -197,8 +193,7 @@ fn actual_replace() {
             .get_first_editor()
             .unwrap()
             .get_all_visible_lines()
-            .find(|line| line.contents.text.contains("let wrath = PathBuf"))
-            .is_some()
+            .any(|line| line.contents.text.contains("let wrath = PathBuf"))
     }));
 
     full_setup.finish();

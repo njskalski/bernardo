@@ -95,10 +95,10 @@ pub type ForwardWordDeterminant = dyn Fn(&dyn TextBuffer, usize, usize) -> bool;
 pub type BackwardWordDeterminant = dyn Fn(&dyn TextBuffer, usize, usize) -> bool;
 
 pub fn default_word_determinant(buffer: &dyn TextBuffer, first_idx: usize, current_idx: usize) -> bool {
-    let return_value = match (buffer.char_at(first_idx), buffer.char_at(current_idx)) {
+    match (buffer.char_at(first_idx), buffer.char_at(current_idx)) {
         (Some(first_char), Some(current_char)) => first_char.is_whitespace() == current_char.is_whitespace(),
         _ => false,
-    };
+    }
 
     // warn!("word {} first char {:?} curr_char {:?} wd {:?}",
     //             buffer.to_string(),
@@ -106,8 +106,6 @@ pub fn default_word_determinant(buffer: &dyn TextBuffer, first_idx: usize, curre
     //             buffer.char_at(current_idx),
     //             return_value,
     //         );
-
-    return_value
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -285,7 +283,7 @@ impl Cursor {
 
         debug_assert!(new_pos <= old_pos);
 
-        let res = if new_pos == self.a {
+        if new_pos == self.a {
             // in this variant we are just clearing the preferred column. Any selection is not
             // important.
             if self.preferred_column.is_some() {
@@ -306,9 +304,7 @@ impl Cursor {
             self.preferred_column = None;
 
             true
-        };
-
-        res
+        }
     }
 
     // Returns FALSE if noop.
