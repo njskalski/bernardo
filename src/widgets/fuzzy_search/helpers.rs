@@ -4,7 +4,7 @@ pub fn is_subsequence(item: &str, query: &str) -> bool {
     let mut query_it = query.graphemes(true).peekable();
 
     for g in item.graphemes(true) {
-        if query_it.peek() == None {
+        if query_it.peek().is_none() {
             break;
         }
 
@@ -18,8 +18,8 @@ pub fn is_subsequence(item: &str, query: &str) -> bool {
 
 #[test]
 fn test_is_subsequence() {
-    assert_eq!(is_subsequence("abba", "c"), false);
-    assert_eq!(is_subsequence("abba", "bbb"), false);
-    assert_eq!(is_subsequence("abba", "aba"), true);
-    assert_eq!(is_subsequence("abba", "aa"), true);
+    assert!(!is_subsequence("abba", "c"));
+    assert!(!is_subsequence("abba", "bbb"));
+    assert!(is_subsequence("abba", "aba"));
+    assert!(is_subsequence("abba", "aa"));
 }
