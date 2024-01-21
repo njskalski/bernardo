@@ -54,11 +54,11 @@ mod tests {
 
         let mut widget = TreeViewWidget::<SPath, DirTreeNode>::new(DirTreeNode::new(spath!(mockfs, "folder1").unwrap()));
 
-        assert_eq!(widget.is_expanded(&spath!(mockfs, "folder1", "folder2").unwrap()), false);
+        assert!(!widget.is_expanded(&spath!(mockfs, "folder1", "folder2").unwrap()));
 
-        assert_eq!(widget.expand_path(&spath!(mockfs, "folder1", "folder2").unwrap()), true);
-        assert_eq!(widget.is_expanded(&spath!(mockfs, "folder1").unwrap()), true);
-        assert_eq!(widget.is_expanded(&spath!(mockfs, "folder1", "folder2").unwrap()), true);
-        assert_eq!(widget.is_expanded(&spath!(mockfs, "folder1", "folder3").unwrap()), false);
+        assert!(widget.expand_path(&spath!(mockfs, "folder1", "folder2").unwrap()));
+        assert!(widget.is_expanded(&spath!(mockfs, "folder1").unwrap()));
+        assert!(widget.is_expanded(&spath!(mockfs, "folder1", "folder2").unwrap()));
+        assert!(!widget.is_expanded(&spath!(mockfs, "folder1", "folder3").unwrap()));
     }
 }
