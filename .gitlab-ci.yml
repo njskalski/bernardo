@@ -17,6 +17,7 @@ debian:
   script:
     - cargo build
     - cargo test
+    - cargo fmt --check
   artifacts:
     paths:
       - "clang*"
