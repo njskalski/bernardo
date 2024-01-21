@@ -22,7 +22,8 @@ Generated with chat-gpt:
 const warning_pattern_str: &'static str = r"warning:.+[\r\n]+\s+-->\s+([^:]+?):([0-9]+):([0-9]+)[\r\n]+";
 const error_pattern_str: &'static str = r"error[^:]*:[^:]*[\r\n]+\s+-->\s+([^:]+?):([0-9]+):([0-9]+)[\r\n]+";
 
-// TODO I actually think this should be written in Python in a separate program, first of "plugins", to test out the idea.
+// TODO I actually think this should be written in Python in a separate program, first of "plugins",
+// to test out the idea.
 pub struct RustcOutputParserLabelProvider {
     warning_regex: Regex,
     error_regex: Regex,
@@ -140,8 +141,8 @@ impl RustcOutputParserLabelProvider {
 }
 
 // impl LabelsProvider for RustcOutputParserLabelProvider {
-//     fn query_for(&self, path_op: Option<SPath>, buffer: &dyn TextBuffer, char_range: Range<usize>) -> Box<dyn Iterator<Item=&'_ Label> + '_> {
-//         todo!()
+//     fn query_for(&self, path_op: Option<SPath>, buffer: &dyn TextBuffer, char_range:
+// Range<usize>) -> Box<dyn Iterator<Item=&'_ Label> + '_> {         todo!()
 //     }
 // }
 

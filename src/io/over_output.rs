@@ -10,6 +10,7 @@ use crate::io::style::TextStyle;
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
+use crate::{unpack_or, unpack_or_e};
 
 // Over output is an output that is bigger than original,
 // physical or in-memory display. All write operations targeting lines/columns beyond it's borders
@@ -113,8 +114,9 @@ impl Output for OverOutput<'_> {
         let my_rect = my_rect.capped_at(self.size()).unwrap();
 
         // debug_assert!(my_rect.lower_right() <= self.size());
-        // debug_assert!(my_rect.shifted(self.local_to_parent).lower_right() <= parent_vis_rect.lower_right());
-        // debug_assert!(parent_vis_rect.contains_rect(my_rect.shifted(self.local_to_parent)));
+        // debug_assert!(my_rect.shifted(self.local_to_parent).lower_right() <=
+        // parent_vis_rect.lower_right()); debug_assert!(parent_vis_rect.contains_rect(my_rect.
+        // shifted(self.local_to_parent)));
 
         my_rect
     }

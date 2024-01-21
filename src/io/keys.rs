@@ -6,8 +6,10 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::experiments::focus_group::FocusUpdate;
 
-// TODO (hardening) here potentially impossible combinations, like ALT+LeftAlt are deserializable, should be fixed someday
-// TODO (hardening) also, for some reason console does not support combinations like shift+ctrl+s, I need to warn users to not try that
+// TODO (hardening) here potentially impossible combinations, like ALT+LeftAlt are deserializable,
+// should be fixed someday
+// TODO (hardening) also, for some reason console does not support
+// combinations like shift+ctrl+s, I need to warn users to not try that
 const ALT_PLUS: &'static str = "ALT+";
 const CTRL_PLUS: &'static str = "CTRL+";
 const SHIFT_PLUS: &'static str = "SHIFT+";

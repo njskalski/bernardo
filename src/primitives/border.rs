@@ -62,8 +62,8 @@ fn draw_full_rect(style: TextStyle, border_style: &BorderStyle, output: &mut dyn
     }
 }
 //
-// pub fn draw_some(wirs: &Vec<WidgetIdRect>, text_style: TextStyle, border_style: &BorderStyle, output: &mut Output) {
-//     if output.size() > XY::new(2, 2) {
+// pub fn draw_some(wirs: &Vec<WidgetIdRect>, text_style: TextStyle, border_style: &BorderStyle,
+// output: &mut Output) {     if output.size() > XY::new(2, 2) {
 //         let mut corner_neighbours = HashSet::<XY>::new();
 //         let mut corners = HashSet::<XY>::new();
 //

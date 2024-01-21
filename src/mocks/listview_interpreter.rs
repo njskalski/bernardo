@@ -27,8 +27,8 @@ impl<'a> ListViewInterpreter<'a> {
     // pub fn items(&self) -> Vec<TreeViewInterpreterItem> {
     //     let mut res: Vec<TreeViewInterpreterItem> = Vec::new();
     //
-    //     for (line_idx, line) in self.output.buffer.lines_iter().with_rect(self.meta.rect).enumerate() {
-    //         if line.trim().is_empty() {
+    //     for (line_idx, line) in self.output.buffer.lines_iter().with_rect(self.meta.rect).enumerate()
+    // {         if line.trim().is_empty() {
     //             continue;
     //         }
     //
@@ -46,7 +46,8 @@ impl<'a> ListViewInterpreter<'a> {
     //         }
     //
     //         let pos_first = self.meta.rect.pos + XY::new(first_non_blank, line_idx as u16);
-    //         let highlighted = self.output.buffer[pos_first].style().unwrap().background == self.output.theme.highlighted(true).background;
+    //         let highlighted = self.output.buffer[pos_first].style().unwrap().background ==
+    // self.output.theme.highlighted(true).background;
     //
     //         res.push(TreeViewInterpreterItem {
     //             label: line_no_sham.trim().to_string(),

@@ -27,8 +27,8 @@ use crate::promise::promise::{Promise, PromiseState};
 use crate::tsw::lang_id::LangId;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 
-// I use ID == String, because i32 might be small, and i64 is safe, so I send i64 as string and so I store it.
-// LSP defines id integer as i32, while jsonrpc_core as u64.
+// I use ID == String, because i32 might be small, and i64 is safe, so I send i64 as string and so I
+// store it. LSP defines id integer as i32, while jsonrpc_core as u64.
 pub struct CallInfo {
     pub method: &'static str,
     pub sender: Sender<jsonrpc_core::Value>,

@@ -7,7 +7,8 @@ use std::io::{stdout, Error, ErrorKind, Stdout};
 
 pub type AppError = Box<dyn std::error::Error>;
 
-/// App is an application wrapper that ensures a bernardo app is correctly initialized and deinitialized.
+/// App is an application wrapper that ensures a bernardo app is correctly initialized and
+/// deinitialized.
 #[derive(Default)]
 pub struct App {
     /// Applications that use alt-screen mode will be rendered in a full window view, similarly to

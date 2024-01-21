@@ -62,9 +62,9 @@ impl Output for SubOutput<'_> {
         //                   "drawing outside (below) the sub-output: ({} to {}) of {}",
         //                   pos, end_pos, self.frame_in_parent_space.size);
         // } else {
-        //     if !(end_pos.x <= self.frame_in_parent_space.size.x && end_pos.y < self.frame_in_parent_space.size.y) {
-        //         error!("drawing outside the sub-output: ({} to {}) of {}",
-        //             pos, end_pos, self.frame_in_parent_space.size);
+        //     if !(end_pos.x <= self.frame_in_parent_space.size.x && end_pos.y <
+        // self.frame_in_parent_space.size.y) {         error!("drawing outside the sub-output: ({}
+        // to {}) of {}",             pos, end_pos, self.frame_in_parent_space.size);
         //     }
         // }
 

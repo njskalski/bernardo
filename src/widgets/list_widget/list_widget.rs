@@ -23,8 +23,10 @@ use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 use crate::widgets::list_widget::provider::ListItemProvider;
 
-// TODO there is an issue here. Theoretically between prelayout and render, the number of items in provider can SHORTEN making "highlighted" invalid.
-// This highlights very clearly the problem with "providers" - they are not guaranteed to be constant. I'd have to copy the data from them out, or introduce some new invariants.
+// TODO there is an issue here. Theoretically between prelayout and render, the number of items in
+// provider can SHORTEN making "highlighted" invalid. This highlights very clearly the problem with
+// "providers" - they are not guaranteed to be constant. I'd have to copy the data from them out, or
+// introduce some new invariants.
 
 pub const TYPENAME: &'static str = "list_widget";
 

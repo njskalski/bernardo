@@ -271,11 +271,14 @@ impl<W: Widget> Widget for WithScroll<W> {
 
         let child_visible_rect_pos_in_parent_space = XY::new(child_output.margin_width, 0);
 
-        // this is the maximum space (constraint) that we *can offer* to the child, so the output of parent - the margin.
+        // this is the maximum space (constraint) that we *can offer* to the child, so the output of parent
+        // - the margin.
         let parent_space_maximum_child_output_rect = /* output part that can be offered to child*/ Rect::new(child_visible_rect_pos_in_parent_space, screenspace.output_size() - child_visible_rect_pos_in_parent_space);
 
-        // this is tricky part: I take "child_size_in_its_output" which is "how much space child will 'see' as in it's output", but we move it to parent space.
-        // This has no logical meaning other than I want it in parent space, to intersect the it with "parent_space_maximum_child_output_rect" to get the final constraint.
+        // this is tricky part: I take "child_size_in_its_output" which is "how much space child will 'see'
+        // as in it's output", but we move it to parent space. This has no logical meaning other
+        // than I want it in parent space, to intersect the it with "parent_space_maximum_child_output_rect"
+        // to get the final constraint.
         let parent_space_child_internal_size = Rect::new(child_visible_rect_pos_in_parent_space, child_output.child_size_in_its_output);
 
         let parent_space_child_output_rect = parent_space_maximum_child_output_rect

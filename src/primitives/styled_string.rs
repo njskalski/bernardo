@@ -125,7 +125,8 @@
 //
 //     #[test]
 //     fn styled_string_size_test3() {
-//         let ss = simple_styled_string("hel").with("lo\nworld".to_string(), TEXT_STYLE_WHITE_ON_BLACK);
+//         let ss = simple_styled_string("hel").with("lo\nworld".to_string(),
+// TEXT_STYLE_WHITE_ON_BLACK);
 //
 //         assert_eq!(ss.is_flat(), true);
 //         assert_eq!(ss.len(), 11);

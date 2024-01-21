@@ -107,7 +107,7 @@ impl NavCompProvider for NavCompProviderLsp {
         let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url", path);
         let mut lock = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring lock");
 
-        match lock.text_document_completion(url, cursor, true /*TODO*/, None /*TODO*/) {
+        match lock.text_document_completion(url, cursor, true /* TODO */, None /* TODO */) {
             Ok(resp) => {
                 let new_promise = resp.map(|cop| {
                     match cop {
@@ -142,8 +142,9 @@ impl NavCompProvider for NavCompProviderLsp {
     }
 
     // fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
-    //     let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url", path);
-    //     let mut lock = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring lock");
+    //     let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url",
+    // path);     let mut lock = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring
+    // lock");
     //
     //     match lock.text_document_document_symbol(url) {
     //         Ok(resp) => {
@@ -156,8 +157,8 @@ impl NavCompProvider for NavCompProviderLsp {
     //                                 symbol_op = Some(NavCompSymbol {
     //                                     symbol_type: f.kind.into(),
     //                                     // range: f.location.range,
-    //                                     stupid_range: (f.location.range.start.into(), f.location.range.end.into()),
-    //                                 })
+    //                                     stupid_range: (f.location.range.start.into(),
+    // f.location.range.end.into()),                                 })
     //                             });
     //                         }
     //                         DocumentSymbolResponse::Nested(v) => {

@@ -74,7 +74,8 @@ fn dropping_cursor_test_1() {
             .map(|line| line.contents.text)
             .collect();
 
-        // TODO yeah, I am not sure if this is the semantics of next-prev I want, but for now I stick with it, no time to fix it.
+        // TODO yeah, I am not sure if this is the semantics of next-prev I want, but for now I stick with
+        // it, no time to fix it.
         lines == vec!["[some line )no1⏎", "[some line )no2⏎", "[some line )no3⏎", "[some line )no4⇱"]
     }));
 
@@ -90,7 +91,8 @@ fn dropping_cursor_test_1() {
             .map(|line| line.contents.text)
             .collect();
 
-        // TODO yeah, I am not sure if this is the semantics of next-prev I want, but for now I stick with it, no time to fix it.
+        // TODO yeah, I am not sure if this is the semantics of next-prev I want, but for now I stick with
+        // it, no time to fix it.
         lines == vec!["ugabuga!#no1⏎", "ugabuga!#no2⏎", "ugabuga!#no3⏎", "ugabuga!#no4⇱"]
     }));
 

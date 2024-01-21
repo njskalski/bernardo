@@ -42,7 +42,8 @@ pub struct FocusGraph<AdditionalData: Clone> {
 impl<AdditionalData: Clone> FocusGraph<AdditionalData> {
     pub fn new(nodes: HashMap<WID, FocusGraphNode<AdditionalData>>, selected: WID) -> Self {
         // TODO
-        // debug_assert!(nodes.keys().fold(false, |a, b| a || *b == selected), "selected node present TODO not sure if that is what that asertion does");
+        // debug_assert!(nodes.keys().fold(false, |a, b| a || *b == selected), "selected node present TODO
+        // not sure if that is what that asertion does");
 
         Self { nodes, selected }
     }

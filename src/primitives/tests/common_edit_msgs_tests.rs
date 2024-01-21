@@ -32,8 +32,12 @@ fn single_cursor_block_write() {
 
 #[test]
 fn single_cursor_block_replace() {
-    // assert_eq!(text_to_text("ab[ba)x", CommonEditMsg::Block("hello".to_string()), None), "abhello#x");
-    assert_eq!(text_to_text("ab(ba]x", CommonEditMsg::Block("hello".to_string()), None), "abhello#x");
+    // assert_eq!(text_to_text("ab[ba)x", CommonEditMsg::Block("hello".to_string()), None),
+    // "abhello#x");
+    assert_eq!(
+        text_to_text("ab(ba]x", CommonEditMsg::Block("hello".to_string()), None),
+        "abhello#x"
+    );
 }
 
 #[test]
@@ -53,23 +57,47 @@ fn single_cursor_delete() {
 #[test]
 fn multi_cursor_write() {
     assert_eq!(text_to_text("abc#abc#a", CommonEditMsg::Char('d'), None), "abcd#abcd#a");
-    assert_eq!(text_to_text("abc#abc#a", CommonEditMsg::Block("hello".to_string()), None), "abchello#abchello#a");
+    assert_eq!(
+        text_to_text("abc#abc#a", CommonEditMsg::Block("hello".to_string()), None),
+        "abchello#abchello#a"
+    );
 }
 
 #[test]
 fn multi_cursor_block_selection() {
-    assert_eq!(text_to_text("(ab]c(ab]c", CommonEditMsg::Block("hello".to_string()), None), "hello#chello#c");
-    assert_eq!(text_to_text("[ab)c[ab)c", CommonEditMsg::Block("hello".to_string()), None), "hello#chello#c");
+    assert_eq!(
+        text_to_text("(ab]c(ab]c", CommonEditMsg::Block("hello".to_string()), None),
+        "hello#chello#c"
+    );
+    assert_eq!(
+        text_to_text("[ab)c[ab)c", CommonEditMsg::Block("hello".to_string()), None),
+        "hello#chello#c"
+    );
 }
 
 #[test]
 fn scenario_1() {
     assert_eq!(text_to_text("#\n#\n#\n#\n", CommonEditMsg::Char('a'), None), "a#\na#\na#\na#\n");
-    assert_eq!(text_to_text("a#\na#\na#\na#\n", CommonEditMsg::Char('b'), None), "ab#\nab#\nab#\nab#\n");
-    assert_eq!(text_to_text("ab#\nab#\nab#\nab#\n", CommonEditMsg::CursorLeft { selecting: true }, None), "a[b)\na[b)\na[b)\na[b)\n");
-    assert_eq!(text_to_text("a[b)\na[b)\na[b)\na[b)\n", CommonEditMsg::Char('x'), None), "ax#\nax#\nax#\nax#\n");
-    assert_eq!(text_to_text("ax#\nax#\nax#\nax#\n", CommonEditMsg::WordBegin { selecting: true }, None), "[ax)\n[ax)\n[ax)\n[ax)\n");
-    assert_eq!(text_to_text("[ax)\n[ax)\n[ax)\n[ax)\n", CommonEditMsg::Char('u'), None), "u#\nu#\nu#\nu#\n");
+    assert_eq!(
+        text_to_text("a#\na#\na#\na#\n", CommonEditMsg::Char('b'), None),
+        "ab#\nab#\nab#\nab#\n"
+    );
+    assert_eq!(
+        text_to_text("ab#\nab#\nab#\nab#\n", CommonEditMsg::CursorLeft { selecting: true }, None),
+        "a[b)\na[b)\na[b)\na[b)\n"
+    );
+    assert_eq!(
+        text_to_text("a[b)\na[b)\na[b)\na[b)\n", CommonEditMsg::Char('x'), None),
+        "ax#\nax#\nax#\nax#\n"
+    );
+    assert_eq!(
+        text_to_text("ax#\nax#\nax#\nax#\n", CommonEditMsg::WordBegin { selecting: true }, None),
+        "[ax)\n[ax)\n[ax)\n[ax)\n"
+    );
+    assert_eq!(
+        text_to_text("[ax)\n[ax)\n[ax)\n[ax)\n", CommonEditMsg::Char('u'), None),
+        "u#\nu#\nu#\nu#\n"
+    );
     assert_eq!(text_to_text("u#\nu#\nu#\nu#\n", CommonEditMsg::Backspace, None), "#\n#\n#\n#\n");
     assert_eq!(text_to_text("#\n#\n#\n#\n", CommonEditMsg::Backspace, None), "#\n");
 }
@@ -90,23 +118,68 @@ fn multi_cursor_copy_paste() {
     let clipboard = get_me_fake_clipboard();
     let c = Some(&clipboard);
 
-    assert_eq!(text_to_text("#abba\n#abba\n#abba\n#abba\n", CommonEditMsg::CursorRight { selecting: true }, c), "(a]bba\n(a]bba\n(a]bba\n(a]bba\n");
-    assert_eq!(text_to_text("(a]bba\n(a]bba\n(a]bba\n(a]bba\n", CommonEditMsg::CursorRight { selecting: true }, c), "(ab]ba\n(ab]ba\n(ab]ba\n(ab]ba\n");
-    assert_eq!(text_to_text("(ab]ba\n(ab]ba\n(ab]ba\n(ab]ba\n", CommonEditMsg::Copy, c), "(ab]ba\n(ab]ba\n(ab]ba\n(ab]ba\n");
-    assert_eq!(text_to_text("(ab]ba\n(ab]ba\n(ab]ba\n(ab]ba\n", CommonEditMsg::LineEnd { selecting: false }, c), "abba#\nabba#\nabba#\nabba#\n");
-    assert_eq!(text_to_text("abba#\nabba#\nabba#\nabba#\n", CommonEditMsg::Paste, c), "abbaab#\nabbaab#\nabbaab#\nabbaab#\n");
+    assert_eq!(
+        text_to_text("#abba\n#abba\n#abba\n#abba\n", CommonEditMsg::CursorRight { selecting: true }, c),
+        "(a]bba\n(a]bba\n(a]bba\n(a]bba\n"
+    );
+    assert_eq!(
+        text_to_text(
+            "(a]bba\n(a]bba\n(a]bba\n(a]bba\n",
+            CommonEditMsg::CursorRight { selecting: true },
+            c
+        ),
+        "(ab]ba\n(ab]ba\n(ab]ba\n(ab]ba\n"
+    );
+    assert_eq!(
+        text_to_text("(ab]ba\n(ab]ba\n(ab]ba\n(ab]ba\n", CommonEditMsg::Copy, c),
+        "(ab]ba\n(ab]ba\n(ab]ba\n(ab]ba\n"
+    );
+    assert_eq!(
+        text_to_text("(ab]ba\n(ab]ba\n(ab]ba\n(ab]ba\n", CommonEditMsg::LineEnd { selecting: false }, c),
+        "abba#\nabba#\nabba#\nabba#\n"
+    );
+    assert_eq!(
+        text_to_text("abba#\nabba#\nabba#\nabba#\n", CommonEditMsg::Paste, c),
+        "abbaab#\nabbaab#\nabbaab#\nabbaab#\n"
+    );
 }
 
 #[test]
 fn delete_block() {
-    assert_eq!(text_to_text("#alamakota#kot#", CommonEditMsg::DeleteBlock { char_range: 1..4 }, None), "#aakota#kot#");
-    assert_eq!(text_to_text("alamakota[kot)", CommonEditMsg::DeleteBlock { char_range: 1..4 }, None), "aakota[kot)");
+    assert_eq!(
+        text_to_text("#alamakota#kot#", CommonEditMsg::DeleteBlock { char_range: 1..4 }, None),
+        "#aakota#kot#"
+    );
+    assert_eq!(
+        text_to_text("alamakota[kot)", CommonEditMsg::DeleteBlock { char_range: 1..4 }, None),
+        "aakota[kot)"
+    );
 }
 
 #[test]
 fn insert_block() {
-    assert_eq!(text_to_text("#alamakota#kot#", CommonEditMsg::InsertBlock { char_pos: 0, what: "dupa".to_string() }, None), "dupa#alamakota#kot#");
-    assert_eq!(text_to_text("dupa[kot)", CommonEditMsg::InsertBlock { char_pos: 5, what: "nic".to_string() }, None), "dupa[knicot)");
+    assert_eq!(
+        text_to_text(
+            "#alamakota#kot#",
+            CommonEditMsg::InsertBlock {
+                char_pos: 0,
+                what: "dupa".to_string()
+            },
+            None
+        ),
+        "dupa#alamakota#kot#"
+    );
+    assert_eq!(
+        text_to_text(
+            "dupa[kot)",
+            CommonEditMsg::InsertBlock {
+                char_pos: 5,
+                what: "nic".to_string()
+            },
+            None
+        ),
+        "dupa[knicot)"
+    );
 }
 
 #[test]
