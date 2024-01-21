@@ -67,8 +67,7 @@ impl<'a> Iterator for BufferStyleIter<'a> {
                 let mut result = String::new();
                 let mut begin: Option<XY> = None;
 
-                'sticking:
-                for x in self.pos.x..rect.lower_right().x {
+                'sticking: for x in self.pos.x..rect.lower_right().x {
                     let cell = &self.buffer[self.pos];
                     self.pos = XY::new(x + 1, self.pos.y);
                     debug_assert!(self.pos.x <= rect.lower_right().x);
@@ -154,9 +153,9 @@ mod tests {
         assert_eq!(iter.next(), None);
 
         // let's test the style is set all over the board if we use style for filtering
-        let all_styles_set = buffer.items_of_style(focused).fold(true, |prev, this| {
-            prev && this.text_style == Some(focused)
-        });
+        let all_styles_set = buffer
+            .items_of_style(focused)
+            .fold(true, |prev, this| prev && this.text_style == Some(focused));
 
         assert!(all_styles_set);
     }

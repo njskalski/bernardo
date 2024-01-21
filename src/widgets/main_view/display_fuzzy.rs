@@ -11,10 +11,7 @@ pub struct DisplayItem {
 
 impl DisplayItem {
     pub fn new(idx: usize, display: Rc<String>) -> DisplayItem {
-        DisplayItem {
-            idx,
-            display,
-        }
+        DisplayItem { idx, display }
     }
 }
 
@@ -33,10 +30,12 @@ impl ItemsProvider for Vec<DisplayItem> {
         Rc::new("displays".to_string())
     }
 
-    fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
+    fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item = Box<dyn Item + '_>> + '_> {
         Box::new(
-            self.iter().filter(move |f| f.display.contains(&query))
+            self.iter()
+                .filter(move |f| f.display.contains(&query))
                 .take(limit)
-                .map(|item| Box::new(item) as Box<dyn Item>))
+                .map(|item| Box::new(item) as Box<dyn Item>),
+        )
     }
 }

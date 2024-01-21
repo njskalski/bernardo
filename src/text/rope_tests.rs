@@ -1,9 +1,6 @@
 // This file exists for two reasons. First, so I am sure I understand rope. Second, that the
 // contracts will not change silently on some update.
 
-use crate::primitives::printable::Printable;
-use crate::text::text_buffer::TextBuffer;
-
 #[test]
 fn rope_last_line_newline() {
     let rope = ropey::Rope::from("aaa\nbbb\n");

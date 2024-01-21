@@ -1,4 +1,3 @@
-use std::{process, thread};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::io::BufRead;
@@ -8,6 +7,7 @@ use std::process::{ChildStderr, ChildStdout, Stdio};
 use std::sync::{Arc, RwLock};
 use std::thread::JoinHandle;
 use std::time::Duration;
+use std::{process, thread};
 
 use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error, warn};
@@ -68,11 +68,12 @@ impl LspWrapper {
 
      */
     // TODO make result
-    pub fn new(lsp_path: PathBuf,
-               workspace_root: PathBuf,
-               language: LangId,
-               tick_sender: NavCompTickSender,
-               error_sink: Sender<LspReadError>,
+    pub fn new(
+        lsp_path: PathBuf,
+        workspace_root: PathBuf,
+        language: LangId,
+        tick_sender: NavCompTickSender,
+        error_sink: Sender<LspReadError>,
     ) -> Option<LspWrapper> {
         debug!("starting LspWrapper for directory {:?}", &workspace_root);
         let mut child = process::Command::new(lsp_path.as_os_str())
@@ -88,7 +89,7 @@ impl LspWrapper {
                 error!("failed acquiring stdout");
                 return None;
             }
-            Some(o) => BufReader::new(o)
+            Some(o) => BufReader::new(o),
         };
 
         let stderr = match child.stderr.take() {
@@ -96,60 +97,45 @@ impl LspWrapper {
                 error!("failed acquiring stderr");
                 return None;
             }
-            Some(e) => BufReader::new(e)
+            Some(e) => BufReader::new(e),
         };
 
         let (notification_sender, notification_receiver) = crossbeam_channel::unbounded::<LspServerNotification>();
         let ids = Arc::new(RwLock::new(IdToCallInfo::default()));
         let file_versions = Arc::new(RwLock::new(HashMap::default()));
 
-        let reader_identifier: String = format!("{}-{}", lsp_path.file_name().map(|f| f.to_string_lossy().to_string())
-            .unwrap_or_else(|| {
+        let reader_identifier: String = format!(
+            "{}-{}",
+            lsp_path.file_name().map(|f| f.to_string_lossy().to_string()).unwrap_or_else(|| {
                 error!("failed to unwrap filename");
                 "noname".to_string()
-            }), process::id());
+            }),
+            process::id()
+        );
 
         let reader_identifier2 = reader_identifier.clone();
 
         let ids_clone = ids.clone();
-        let reader_handle: JoinHandle<Result<(), LspReadError>> = thread::spawn(move || {
-            Self::reader_thread(
-                reader_identifier,
-                ids_clone,
-                notification_sender,
-                stdout,
-                tick_sender,
-            )
-        });
+        let reader_handle: JoinHandle<Result<(), LspReadError>> =
+            thread::spawn(move || Self::reader_thread(reader_identifier, ids_clone, notification_sender, stdout, tick_sender));
 
-        let logger_handle: JoinHandle<Result<(), ()>> = thread::spawn(|| {
-            Self::logger_thread(
-                reader_identifier2,
-                stderr,
-            )
-        });
+        let logger_handle: JoinHandle<Result<(), ()>> = thread::spawn(|| Self::logger_thread(reader_identifier2, stderr));
 
-        let notification_reader_handle: JoinHandle<Result<(), ()>> = thread::spawn(|| {
-            Self::notification_thread(
-                notification_receiver
-            )
-        });
+        let notification_reader_handle: JoinHandle<Result<(), ()>> = thread::spawn(|| Self::notification_thread(notification_receiver));
 
-        Some(
-            LspWrapper {
-                server_path: lsp_path,
-                workspace_root_path: workspace_root,
-                language,
-                child,
-                ids,
-                file_versions,
-                curr_id: 1,
-                reader_handle,
-                logger_handle,
-                notification_reader_handle,
-                error_sink,
-            }
-        )
+        Some(LspWrapper {
+            server_path: lsp_path,
+            workspace_root_path: workspace_root,
+            language,
+            child,
+            ids,
+            file_versions,
+            curr_id: 1,
+            reader_handle,
+            logger_handle,
+            notification_reader_handle,
+            error_sink,
+        })
     }
 
     fn get_formatting_options(&self) -> lsp_types::FormattingOptions {
@@ -173,18 +159,28 @@ impl LspWrapper {
         }
     }
 
-    fn send_message<R: lsp_types::request::Request>(&mut self, params: R::Params) -> Result<LSPPromise<R>, LspWriteError> where <R as lsp_types::request::Request>::Result: std::marker::Send {
+    fn send_message<R: lsp_types::request::Request>(&mut self, params: R::Params) -> Result<LSPPromise<R>, LspWriteError>
+    where
+        <R as lsp_types::request::Request>::Result: std::marker::Send,
+    {
         let new_id = format!("{}", self.curr_id);
         self.curr_id += 1;
 
         let (sender, receiver) = crossbeam_channel::bounded::<jsonrpc_core::Value>(1);
 
-        if self.ids.write().map_err(|poison_error| {
-            LspWriteError::LockError(poison_error.to_string())
-        })?.insert(new_id.clone(), CallInfo {
-            method: R::METHOD,
-            sender: sender,
-        }).is_some() {
+        if self
+            .ids
+            .write()
+            .map_err(|poison_error| LspWriteError::LockError(poison_error.to_string()))?
+            .insert(
+                new_id.clone(),
+                CallInfo {
+                    method: R::METHOD,
+                    sender: sender,
+                },
+            )
+            .is_some()
+        {
             // TODO this is a reuse of id, super unlikely
             warn!("id reuse, not handled properly");
         }
@@ -314,39 +310,35 @@ impl LspWrapper {
             }
         }
 
-        self.send_notification::<lsp_types::notification::DidOpenTextDocument>(
-            lsp_types::DidOpenTextDocumentParams {
-                text_document: lsp_types::TextDocumentItem {
-                    uri: url,
-                    language_id: self.language.to_lsp_lang_id_string().to_owned(),
-                    version: 1,
-                    text,
-                }
-            }
-        )
+        self.send_notification::<lsp_types::notification::DidOpenTextDocument>(lsp_types::DidOpenTextDocumentParams {
+            text_document: lsp_types::TextDocumentItem {
+                uri: url,
+                language_id: self.language.to_lsp_lang_id_string().to_owned(),
+                version: 1,
+                text,
+            },
+        })
     }
 
     pub fn text_document_formatting(&mut self, url: Url) -> Result<LSPPromise<lsp_types::request::Formatting>, LspWriteError> {
-        self.send_message::<lsp_types::request::Formatting>(
-            lsp_types::DocumentFormattingParams {
-                text_document: lsp_types::TextDocumentIdentifier {
-                    uri: url
-                },
-                options: self.get_formatting_options(),
-                work_done_progress_params: Default::default(),
-            }
-        )
+        self.send_message::<lsp_types::request::Formatting>(lsp_types::DocumentFormattingParams {
+            text_document: lsp_types::TextDocumentIdentifier { uri: url },
+            options: self.get_formatting_options(),
+            work_done_progress_params: Default::default(),
+        })
     }
 
-    pub fn text_document_references(&mut self, url: Url, cursor: StupidCursor) -> Result<LSPPromise<lsp_types::request::References>, LspWriteError> {
-        self.send_message::<lsp_types::request::References>(
-            lsp_types::ReferenceParams {
-                text_document_position: Self::get_position_params(url, cursor),
-                work_done_progress_params: Default::default(),
-                partial_result_params: Default::default(),
-                context: lsp_types::ReferenceContext { include_declaration: true },
-            }
-        )
+    pub fn text_document_references(
+        &mut self,
+        url: Url,
+        cursor: StupidCursor,
+    ) -> Result<LSPPromise<lsp_types::request::References>, LspWriteError> {
+        self.send_message::<lsp_types::request::References>(lsp_types::ReferenceParams {
+            text_document_position: Self::get_position_params(url, cursor),
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+            context: lsp_types::ReferenceContext { include_declaration: true },
+        })
     }
 
     /*
@@ -366,69 +358,59 @@ impl LspWrapper {
             }
         };
 
-        self.send_notification::<lsp_types::notification::DidChangeTextDocument>(
-            lsp_types::DidChangeTextDocumentParams {
-                text_document: lsp_types::VersionedTextDocumentIdentifier { uri: url, version },
-                content_changes: vec![
-                    lsp_types::TextDocumentContentChangeEvent {
-                        range: None,
-                        range_length: None,
-                        text: full_text,
-                    }
-                ],
-            }
-        )
+        self.send_notification::<lsp_types::notification::DidChangeTextDocument>(lsp_types::DidChangeTextDocumentParams {
+            text_document: lsp_types::VersionedTextDocumentIdentifier { uri: url, version },
+            content_changes: vec![lsp_types::TextDocumentContentChangeEvent {
+                range: None,
+                range_length: None,
+                text: full_text,
+            }],
+        })
     }
 
     pub fn text_document_did_close(&mut self, url: Url) -> Result<(), LspWriteError> {
-        self.send_notification::<lsp_types::notification::DidCloseTextDocument>(
-            lsp_types::DidCloseTextDocumentParams {
-                text_document: lsp_types::TextDocumentIdentifier {
-                    uri: url
-                }
-            }
-        )
+        self.send_notification::<lsp_types::notification::DidCloseTextDocument>(lsp_types::DidCloseTextDocumentParams {
+            text_document: lsp_types::TextDocumentIdentifier { uri: url },
+        })
     }
 
-    pub fn text_document_completion(&mut self,
-                                    url: Url,
-                                    cursor: StupidCursor,
-                                    /*
-                                    just typing or ctrl-space?
-                                     */
-                                    automatic: bool,
-                                    /*
-                                    '.' or '::' or other thing like that
-                                     */
-                                    trigger_character: Option<String>,
+    pub fn text_document_completion(
+        &mut self,
+        url: Url,
+        cursor: StupidCursor,
+        /*
+        just typing or ctrl-space?
+         */
+        automatic: bool,
+        /*
+        '.' or '::' or other thing like that
+         */
+        trigger_character: Option<String>,
     ) -> Result<LSPPromise<lsp_types::request::Completion>, LspWriteError> {
-        self.send_message::<lsp_types::request::Completion>(
-            lsp_types::CompletionParams {
-                text_document_position: Self::get_position_params(url, cursor),
-                work_done_progress_params: Default::default(),
-                partial_result_params: Default::default(),
-                context: Some(lsp_types::CompletionContext {
-                    trigger_kind: if automatic {
-                        lsp_types::CompletionTriggerKind::TRIGGER_CHARACTER
-                    } else {
-                        lsp_types::CompletionTriggerKind::INVOKED
-                    },
-                    trigger_character,
-                }),
-            }
-        )
+        self.send_message::<lsp_types::request::Completion>(lsp_types::CompletionParams {
+            text_document_position: Self::get_position_params(url, cursor),
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+            context: Some(lsp_types::CompletionContext {
+                trigger_kind: if automatic {
+                    lsp_types::CompletionTriggerKind::TRIGGER_CHARACTER
+                } else {
+                    lsp_types::CompletionTriggerKind::INVOKED
+                },
+                trigger_character,
+            }),
+        })
     }
 
-    pub fn text_document_document_symbol(&mut self,
-                                         url: Url,
+    pub fn text_document_document_symbol(
+        &mut self,
+        url: Url,
     ) -> Result<LSPPromise<lsp_types::request::DocumentSymbolRequest>, LspWriteError> {
-        self.send_message::<lsp_types::request::DocumentSymbolRequest>(
-            lsp_types::DocumentSymbolParams {
-                text_document: lsp_types::TextDocumentIdentifier { uri: url },
-                work_done_progress_params: Default::default(),
-                partial_result_params: Default::default(),
-            }
-        )
+        self.send_message::<lsp_types::request::DocumentSymbolRequest>(lsp_types::DocumentSymbolParams {
+            text_document: lsp_types::TextDocumentIdentifier { uri: url },
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+        })
     }
 
     pub fn wait(&self) -> &JoinHandle<Result<(), LspReadError>> {
@@ -450,13 +432,7 @@ impl LspWrapper {
 
         loop {
             num += 1;
-            match read_lsp(
-                &identifier,
-                &mut num,
-                &mut stdout,
-                &id_to_name,
-                &notification_sender,
-            ) {
+            match read_lsp(&identifier, &mut num, &mut stdout, &id_to_name, &notification_sender) {
                 Ok(_) => {
                     // TODO Pass LangId and whatever usize is?
                     match tick_sender.try_send(NavCompTick::LspTick(LangId::RUST, 0)) {
@@ -483,10 +459,7 @@ impl LspWrapper {
     /*
     This thread just dries the stderr
      */
-    pub fn logger_thread(
-        identifier: String,
-        stderr_pipe: BufReader<ChildStderr>,
-    ) -> Result<(), ()> {
+    pub fn logger_thread(identifier: String, stderr_pipe: BufReader<ChildStderr>) -> Result<(), ()> {
         let mut stderr_lines = stderr_pipe.lines();
         let stderr_path = PathBuf::from(identifier).join("stderr.txt");
 
@@ -517,9 +490,7 @@ impl LspWrapper {
     /*
     This thread just dries the stderr
      */
-    pub fn notification_thread(
-        notification_receiver: Receiver<LspServerNotification>,
-    ) -> Result<(), ()> {
+    pub fn notification_thread(notification_receiver: Receiver<LspServerNotification>) -> Result<(), ()> {
         loop {
             let notification = notification_receiver.recv();
             match notification {

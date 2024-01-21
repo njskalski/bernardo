@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::io::style::{TEXT_STYLE_WHITE_ON_BLACK, TextStyle};
+use crate::io::style::{TextStyle, TEXT_STYLE_WHITE_ON_BLACK};
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Cell {
@@ -19,18 +19,14 @@ impl Cell {
 
     pub fn style(&self) -> Option<&TextStyle> {
         match self {
-            Cell::Begin { style, grapheme: _ } => {
-                Some(style)
-            }
+            Cell::Begin { style, grapheme: _ } => Some(style),
             Cell::Continuation => None,
         }
     }
 
     pub fn grapheme(&self) -> Option<&str> {
         match self {
-            Cell::Begin { style: _, grapheme } => {
-                Some(grapheme)
-            }
+            Cell::Begin { style: _, grapheme } => Some(grapheme),
             Cell::Continuation => None,
         }
     }

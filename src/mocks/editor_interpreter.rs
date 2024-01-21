@@ -75,7 +75,8 @@ impl<'a> EditorInterpreter<'a> {
             Some(CompletionInterpreter::new(comps[0], mock_output))
         };
 
-        let saveases: Vec<&Metadata> = mock_output.get_meta_by_type(SaveFileDialogWidget::TYPENAME)
+        let saveases: Vec<&Metadata> = mock_output
+            .get_meta_by_type(SaveFileDialogWidget::TYPENAME)
             .filter(|c| meta.rect.contains_rect(c.rect))
             .collect();
         debug_assert!(saveases.len() < 2);
@@ -85,35 +86,33 @@ impl<'a> EditorInterpreter<'a> {
             Some(SaveFileInterpreter::new(saveases[0], mock_output))
         };
 
-        let contextbars: Vec<&Metadata> = mock_output.get_meta_by_type(ContextBarWidget::TYPENAME)
+        let contextbars: Vec<&Metadata> = mock_output
+            .get_meta_by_type(ContextBarWidget::TYPENAME)
             .filter(|c| meta.rect.contains_rect(c.rect))
             .collect();
         debug_assert!(contextbars.len() < 2);
-        let contextbar_op: Option<ContextBarWidgetInterpreter> = contextbars.first().map(|c| {
-            ContextBarWidgetInterpreter::new(c, mock_output)
-        });
+        let contextbar_op: Option<ContextBarWidgetInterpreter> =
+            contextbars.first().map(|c| ContextBarWidgetInterpreter::new(c, mock_output));
 
-        let rect_without_scroll = mock_output
-            .get_meta_by_type(EditorWidget::TYPENAME)
-            .next().unwrap().rect;
+        let rect_without_scroll = mock_output.get_meta_by_type(EditorWidget::TYPENAME).next().unwrap().rect;
 
-        let edit_boxes: Vec<&Metadata> = mock_output.get_meta_by_type(EditBoxWidget::TYPENAME)
-            .filter(|eb|
+        let edit_boxes: Vec<&Metadata> = mock_output
+            .get_meta_by_type(EditBoxWidget::TYPENAME)
+            .filter(|eb| {
                 meta.rect.contains_rect(eb.rect)
                     // and is NOT contained by eventual save as
                     && saveas_op.as_ref().map(|s| !s.meta().rect.contains_rect(eb.rect)).unwrap_or(true)
-            )
+            })
             .collect();
 
         assert!(edit_boxes.len() <= 2);
 
         let (find_op, replace_op): (Option<EditWidgetInterpreter>, Option<EditWidgetInterpreter>) = match edit_boxes.len() {
-            1 => {
-                (Some(EditWidgetInterpreter::new(edit_boxes[0], mock_output)), None)
-            }
-            2 => {
-                (Some(EditWidgetInterpreter::new(edit_boxes[0], mock_output)), Some(EditWidgetInterpreter::new(edit_boxes[1], mock_output)))
-            }
+            1 => (Some(EditWidgetInterpreter::new(edit_boxes[0], mock_output)), None),
+            2 => (
+                Some(EditWidgetInterpreter::new(edit_boxes[0], mock_output)),
+                Some(EditWidgetInterpreter::new(edit_boxes[1], mock_output)),
+            ),
             _ => (None, None),
         };
 
@@ -131,32 +130,33 @@ impl<'a> EditorInterpreter<'a> {
     }
 
     // returns cursors in SCREEN SPACE
-    pub fn get_visible_cursor_cells(&self) -> impl Iterator<Item=(XY, &Cell)> + '_ {
-        self.mock_output.buffer.cells_iter().filter(|(_pos, cell)|
-            match cell {
-                Cell::Begin { style, grapheme: _ } => {
-                    let mut cursor_background = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
-                    if !self.is_editor_focused() {
-                        cursor_background = cursor_background.half();
-                    }
-
-                    style.background == cursor_background
+    pub fn get_visible_cursor_cells(&self) -> impl Iterator<Item = (XY, &Cell)> + '_ {
+        self.mock_output.buffer.cells_iter().filter(|(_pos, cell)| match cell {
+            Cell::Begin { style, grapheme: _ } => {
+                let mut cursor_background = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
+                if !self.is_editor_focused() {
+                    cursor_background = cursor_background.half();
                 }
-                Cell::Continuation => false,
+
+                style.background == cursor_background
             }
-        )
+            Cell::Continuation => false,
+        })
     }
 
-    pub fn get_visible_cursor_line_indices(&self) -> impl Iterator<Item=LineIdxPair> + '_ {
+    pub fn get_visible_cursor_line_indices(&self) -> impl Iterator<Item = LineIdxPair> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
-        self.get_visible_cursor_cells().map(move |(xy, _)| LineIdxPair { y: xy.y, visible_idx: xy.y as usize + offset })
+        self.get_visible_cursor_cells().map(move |(xy, _)| LineIdxPair {
+            y: xy.y,
+            visible_idx: xy.y as usize + offset,
+        })
     }
 
     /*
     Return visible items conforming to given style, enriched with information about line index they are displayed in
     TODO: not tested
      */
-    pub fn get_indexed_items_by_style(&self, style: TextStyle) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_indexed_items_by_style(&self, style: TextStyle) -> impl Iterator<Item = LineIdxTuple> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
 
         self.mock_output
@@ -174,16 +174,15 @@ impl<'a> EditorInterpreter<'a> {
             })
     }
 
-
-    pub fn get_warnings(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_warnings(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         self.get_indexed_items_by_style(self.mock_output.theme.editor_label_warning())
     }
 
-    pub fn get_errors(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_errors(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         self.get_indexed_items_by_style(self.mock_output.theme.editor_label_error())
     }
 
-    pub fn get_type_annotations(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_type_annotations(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         self.get_indexed_items_by_style(self.mock_output.theme.editor_label_type_annotation())
     }
 
@@ -192,40 +191,49 @@ impl<'a> EditorInterpreter<'a> {
     second item is usize 1-based display line idx
     third item is line contents
      */
-    pub fn get_visible_cursor_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_visible_cursor_lines(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
-        self.get_visible_cursor_cells().map(move |(xy, _)|
-            self.get_line_by_y(xy.y).map(|line| {
-                LineIdxTuple {
+        self.get_visible_cursor_cells()
+            .map(move |(xy, _)| {
+                self.get_line_by_y(xy.y).map(|line| LineIdxTuple {
                     y: xy.y,
                     visible_idx: xy.y as usize + offset,
                     contents: line,
-                }
+                })
             })
-        ).flatten()
+            .flatten()
     }
 
     pub fn get_line_by_y(&self, screen_pos_y: u16) -> Option<HorizontalIterItem> {
         debug_assert!(self.meta.rect.lower_right().y > screen_pos_y);
-        self.mock_output.buffer.lines_iter().with_rect(self.rect_without_scroll).skip(screen_pos_y as usize).next()
+        self.mock_output
+            .buffer
+            .lines_iter()
+            .with_rect(self.rect_without_scroll)
+            .skip(screen_pos_y as usize)
+            .next()
     }
 
-    pub fn get_all_visible_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_all_visible_lines(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
-        self.mock_output.buffer.lines_iter().with_rect(self.rect_without_scroll).map(move |line| {
-            LineIdxTuple {
+        self.mock_output
+            .buffer
+            .lines_iter()
+            .with_rect(self.rect_without_scroll)
+            .map(move |line| LineIdxTuple {
                 y: line.absolute_pos.y,
                 visible_idx: line.absolute_pos.y as usize + offset,
                 contents: line,
-            }
-        })
+            })
     }
 
     pub fn completions(&self) -> Option<&CompletionInterpreter<'a>> {
         self.compeltion_op.as_ref()
     }
 
-    pub fn save_file_dialog(&self) -> Option<&SaveFileInterpreter<'a>> { self.saveas_op.as_ref() }
+    pub fn save_file_dialog(&self) -> Option<&SaveFileInterpreter<'a>> {
+        self.saveas_op.as_ref()
+    }
 
     /*
     Returns "coded" cursor lines, where cursor is coded as in cursor tests, so:
@@ -236,7 +244,7 @@ impl<'a> EditorInterpreter<'a> {
     CURRENTLY DOES NOT SUPPORT MULTI LINE CURSORS
     also, this is not properly tested. It's Bullshit and Duct Tape™ quality.
      */
-    pub fn get_visible_cursor_lines_with_coded_cursors(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_visible_cursor_lines_with_coded_cursors(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         // Setting colors
         let mut under_cursor = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
         if !self.is_editor_focused() {
@@ -248,15 +256,13 @@ impl<'a> EditorInterpreter<'a> {
         }
         // let mut default = self.mock_output.theme.default_text(self.is_editor_focused()).background;
 
-
         // This does not support multi-column chars now
         self.get_visible_cursor_lines().map(move |mut line_idx| {
             let mut first: Option<u16> = None;
             let mut last: Option<u16> = None;
             let mut anchor: Option<u16> = None;
 
-            'line_loop_1:
-            for x in self.rect_without_scroll.pos.x..self.rect_without_scroll.lower_right().x {
+            'line_loop_1: for x in self.rect_without_scroll.pos.x..self.rect_without_scroll.lower_right().x {
                 let pos = XY::new(x, line_idx.y);
                 let cell = &self.mock_output.buffer[pos];
                 match cell {
@@ -283,8 +289,7 @@ impl<'a> EditorInterpreter<'a> {
             debug_assert!(anchor == first || anchor == last);
             let mut result = String::new();
 
-            'line_loop_2:
-            for x in self.rect_without_scroll.pos.x..self.rect_without_scroll.lower_right().x {
+            'line_loop_2: for x in self.rect_without_scroll.pos.x..self.rect_without_scroll.lower_right().x {
                 let pos = XY::new(x, line_idx.y);
                 let cell = &self.mock_output.buffer[pos];
                 match cell {
@@ -327,9 +332,12 @@ impl<'a> EditorInterpreter<'a> {
     }
 
     pub fn is_editor_focused(&self) -> bool {
-        self.mock_output.get_meta_by_type(EditorWidget::TYPENAME).filter(
-            |meta| self.meta.rect.contains_rect(meta.rect)
-        ).next().unwrap().focused
+        self.mock_output
+            .get_meta_by_type(EditorWidget::TYPENAME)
+            .filter(|meta| self.meta.rect.contains_rect(meta.rect))
+            .next()
+            .unwrap()
+            .focused
     }
 
     pub fn find_op(&self) -> Option<&EditWidgetInterpreter<'a>> {
@@ -340,5 +348,7 @@ impl<'a> EditorInterpreter<'a> {
         self.replace_op.as_ref()
     }
 
-    pub fn context_bar_op(&self) -> Option<&ContextBarWidgetInterpreter<'a>> { self.contextbar_op.as_ref() }
+    pub fn context_bar_op(&self) -> Option<&ContextBarWidgetInterpreter<'a>> {
+        self.contextbar_op.as_ref()
+    }
 }

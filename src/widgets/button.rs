@@ -6,13 +6,13 @@ use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
-use crate::io::output::{Metadata, Output};
+use crate::io::output::Output;
 use crate::primitives::printable::Printable;
-use crate::primitives::rect::Rect;
+
 use crate::primitives::xy::XY;
 use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 
 // TODO add fixed size and tests
 
@@ -31,7 +31,10 @@ impl Widget for ButtonWidget {
         self.id
     }
 
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         Self::TYPENAME
     }
 
@@ -55,9 +58,9 @@ impl Widget for ButtonWidget {
         return match input_event {
             KeyInput(key_event) => match key_event.keycode {
                 Keycode::Enter => Some(Box::new(ButtonWidgetMsg::Hit)),
-                _ => None
-            }
-            _ => None
+                _ => None,
+            },
+            _ => None,
         };
     }
 
@@ -80,25 +83,18 @@ impl Widget for ButtonWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let size = XY::new(unpack_or!(self.last_size_x, (), "render before layout"), 1);
+        let _size = XY::new(unpack_or!(self.last_size_x, (), "render before layout"), 1);
         #[cfg(test)]
-        output.emit_metadata(
-            Metadata {
-                id: self.id(),
-                typename: self.typename().to_string(),
-                rect: Rect::from_zero(size),
-                focused,
-            }
-        );
+        output.emit_metadata(Metadata {
+            id: self.id(),
+            typename: self.typename().to_string(),
+            rect: Rect::from_zero(size),
+            focused,
+        });
 
-        let style = if focused {
-            theme.highlighted(true)
-        } else {
-            theme.ui.non_focused
-        };
+        let style = if focused { theme.highlighted(true) } else { theme.ui.non_focused };
 
         let mut xy = XY::ZERO;
-
 
         output.print_at(xy, style, if focused { ">" } else { "[" });
         xy += XY::new(1, 0);
@@ -138,10 +134,7 @@ impl ButtonWidget {
     }
 
     pub fn with_enabled(self, enabled: bool) -> Self {
-        ButtonWidget {
-            enabled,
-            ..self
-        }
+        ButtonWidget { enabled, ..self }
     }
 
     pub fn set_enabled(&mut self, enabled: bool) {
@@ -153,10 +146,7 @@ impl ButtonWidget {
     }
 
     pub fn with_fill_x(self) -> Self {
-        Self {
-            fill_x: true,
-            ..self
-        }
+        Self { fill_x: true, ..self }
     }
 }
 

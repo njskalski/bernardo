@@ -44,15 +44,13 @@ impl DefaultClipboard {
 impl Clipboard for DefaultClipboard {
     fn get(&self) -> String {
         match self.clipboard.try_write() {
-            Ok(mut clipboard) => {
-                match clipboard.get_text() {
-                    Ok(text) => text,
-                    Err(e) => {
-                        error!("error getting text from clipboard: {:?}", e);
-                        EMPTY_STRING
-                    }
+            Ok(mut clipboard) => match clipboard.get_text() {
+                Ok(text) => text,
+                Err(e) => {
+                    error!("error getting text from clipboard: {:?}", e);
+                    EMPTY_STRING
                 }
-            }
+            },
             Err(e) => {
                 error!("failed acquiring clipboard lock: {:?}", e);
                 EMPTY_STRING
@@ -62,11 +60,10 @@ impl Clipboard for DefaultClipboard {
 
     fn set(&self, contents: String) -> bool {
         match self.clipboard.try_write() {
-            Ok(mut clipboard) => {
-                clipboard.set_text(contents).map_err(|e| {
-                    error!("error setting clipboard contents: {:?}", e)
-                }).is_ok()
-            }
+            Ok(mut clipboard) => clipboard
+                .set_text(contents)
+                .map_err(|e| error!("error setting clipboard contents: {:?}", e))
+                .is_ok(),
             Err(e) => {
                 error!("failed acquiring clipboard lock: {:?}", e);
                 false
@@ -90,9 +87,7 @@ impl Default for FakeClipboard {
 impl Clipboard for FakeClipboard {
     fn get(&self) -> String {
         match self.contents.try_read() {
-            Ok(clipboard) => {
-                clipboard.clone()
-            }
+            Ok(clipboard) => clipboard.clone(),
             Err(e) => {
                 error!("failed acquiring clipboard lock: {:?}", e);
                 EMPTY_STRING

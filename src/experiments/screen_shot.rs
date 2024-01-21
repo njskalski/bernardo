@@ -24,9 +24,7 @@ pub fn screenshot(dump: &BufferOutput) -> bool {
     debug!("writing screenshot to file {:?}", &filename);
 
     match dump.save_to_file(&filename) {
-        Ok(_) => {
-            true
-        }
+        Ok(_) => true,
         Err(e) => {
             error!("failed to write screenshot: {:?}", e);
             false

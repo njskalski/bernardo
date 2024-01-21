@@ -22,14 +22,14 @@ impl ListWidgetItem for Rc<String> {
     fn get_column_name(idx: usize) -> &'static str {
         match idx {
             0 => "name",
-            _ => ""
+            _ => "",
         }
     }
 
     fn get_min_column_width(idx: usize) -> u16 {
         match idx {
             0 => 8,
-            _ => 0
+            _ => 0,
         }
     }
 
@@ -40,7 +40,7 @@ impl ListWidgetItem for Rc<String> {
     fn get(&self, idx: usize) -> Option<Rc<String>> {
         match idx {
             0 => Some(self.clone()),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -67,7 +67,6 @@ impl WithScrollTestbed {
         }
     }
 
-
     pub fn next_frame(&mut self) {
         let (mut output, rcvr) = MockOutput::new(self.size, false, self.theme.clone());
 
@@ -87,18 +86,18 @@ impl WithScrollTestbed {
 
     pub fn interpreter(&self) -> Option<WithScrollWidgetInterpreter<'_, ListWidget<Rc<String>>>> {
         self.frame_op().map(|frame| {
-            let meta = frame.metadata.iter().find(|item| {
-                item.typename == ListWithScroll::static_typename()
-            }).unwrap();
+            let meta = frame
+                .metadata
+                .iter()
+                .find(|item| item.typename == ListWithScroll::static_typename())
+                .unwrap();
 
             WithScrollWidgetInterpreter::new(frame, meta)
         })
     }
 
     pub fn screenshot(&self) -> bool {
-        self.frame_op().map(|frame|
-            screenshot(&frame.buffer)
-        ).unwrap_or(false)
+        self.frame_op().map(|frame| screenshot(&frame.buffer)).unwrap_or(false)
     }
 
     pub fn send_input(&mut self, input: InputEvent) {

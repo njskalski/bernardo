@@ -35,10 +35,7 @@ impl Handler for CppHandler {
 /*
  */
 impl CppHandler {
-    pub fn load(_config: &ConfigRef,
-                ff: SPath,
-                navcomp_op: Option<NavCompRef>,
-    ) -> Result<CppHandler, HandlerLoadError> {
+    pub fn load(_config: &ConfigRef, ff: SPath, navcomp_op: Option<NavCompRef>) -> Result<CppHandler, HandlerLoadError> {
         if !ff.is_dir() {
             return Err(HandlerLoadError::NotAProject);
         }

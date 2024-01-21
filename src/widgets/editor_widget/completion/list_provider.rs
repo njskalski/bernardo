@@ -17,7 +17,9 @@ impl ListWidgetItem for Completion {
     }
 
     fn get_min_column_width(idx: usize) -> u16 {
-        if idx == 0 { 15 } else {
+        if idx == 0 {
+            15
+        } else {
             error!("requested size of non-existent column");
             0
         }
@@ -38,14 +40,10 @@ impl ListWidgetItem for Completion {
 }
 
 impl ListItemProvider<Completion> for CompletionsPromise {
-    fn items(&self) -> Box<dyn Iterator<Item=&Completion> + '_> {
+    fn items(&self) -> Box<dyn Iterator<Item = &Completion> + '_> {
         match self.read() {
-            None => {
-                Box::new(empty())
-            }
-            Some(vec) => {
-                Box::new(vec.into_iter())
-            }
+            None => Box::new(empty()),
+            Some(vec) => Box::new(vec.into_iter()),
         }
     }
 }

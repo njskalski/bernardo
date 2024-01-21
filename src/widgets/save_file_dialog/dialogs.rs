@@ -16,19 +16,8 @@ pub fn override_dialog<T: Printable>(filename: T) -> GenericDialog {
 
     text += "\"\n already exists.\n Do you wish to override?";
 
-    GenericDialog::new(Box::new(text)).with_border(
-        &SINGLE_BORDER_STYLE,
-    ).with_option(
-        ButtonWidget::new(Box::new(CANCEL_STRING)).with_on_hit(
-            |_| {
-                CancelOverride.someboxed()
-            }
-        )
-    ).with_option(
-        ButtonWidget::new(Box::new(OVERRIDE_STRING)).with_on_hit(
-            |_| {
-                ConfirmOverride.someboxed()
-            }
-        )
-    )
+    GenericDialog::new(Box::new(text))
+        .with_border(&SINGLE_BORDER_STYLE)
+        .with_option(ButtonWidget::new(Box::new(CANCEL_STRING)).with_on_hit(|_| CancelOverride.someboxed()))
+        .with_option(ButtonWidget::new(Box::new(OVERRIDE_STRING)).with_on_hit(|_| ConfirmOverride.someboxed()))
 }

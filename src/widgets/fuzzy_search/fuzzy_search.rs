@@ -10,20 +10,20 @@ use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::io::output::{Metadata, Output};
+use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::primitives::common_edit_msgs::key_to_edit_msg;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};
 
 /* TODO I am not sure if I want to keep this widget, or do I integrate it with context menu widget now brewing \
- slowly somewhere in editor */
+slowly somewhere in editor */
 
 // const DEFAULT_WIDTH: u16 = 16;
 
@@ -143,7 +143,13 @@ impl FuzzySearchWidget {
 
             let y = match self.draw_comment {
                 DrawComment::None => 1,
-                DrawComment::Highlighted => if self.highlighted == idx { 2 } else { 1 },
+                DrawComment::Highlighted => {
+                    if self.highlighted == idx {
+                        2
+                    } else {
+                        1
+                    }
+                }
                 DrawComment::All => 2,
             };
             let mut local_xy = XY::new(item.display_name().width() as u16, y);
@@ -170,9 +176,8 @@ struct ItemIter<'a> {
     query: String,
     rows_limit: usize,
     provider_idx: usize,
-    cur_iter: Option<Box<dyn Iterator<Item=Box<dyn Item + 'a>> + 'a>>,
+    cur_iter: Option<Box<dyn Iterator<Item = Box<dyn Item + 'a>> + 'a>>,
 }
-
 
 impl<'a> Iterator for ItemIter<'a> {
     type Item = Box<dyn Item + 'a>;
@@ -213,7 +218,10 @@ impl Widget for FuzzySearchWidget {
     fn typename(&self) -> &'static str {
         Self::TYPENAME
     }
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         Self::TYPENAME
     }
     fn full_size(&self) -> XY {
@@ -245,12 +253,10 @@ impl Widget for FuzzySearchWidget {
 
                 match nav_msg {
                     Some(msg) => Some(Box::new(msg)),
-                    None => {
-                        match key_to_edit_msg(ki) {
-                            Some(cem) => Some(Box::new(FuzzySearchMsg::EditMsg(cem))),
-                            None => None,
-                        }
-                    }
+                    None => match key_to_edit_msg(ki) {
+                        Some(cem) => Some(Box::new(FuzzySearchMsg::EditMsg(cem))),
+                        None => None,
+                    },
                 }
             }
             _ => None,
@@ -286,15 +292,11 @@ impl Widget for FuzzySearchWidget {
                 }
                 None //TODO
             }
-            FuzzySearchMsg::Close => {
-                (self.on_close)(self)
-            }
-            FuzzySearchMsg::Hit => {
-                match self.items().nth(self.highlighted) {
-                    Some(item) => Some(item.on_hit()),
-                    None => None
-                }
-            }
+            FuzzySearchMsg::Close => (self.on_close)(self),
+            FuzzySearchMsg::Hit => match self.items().nth(self.highlighted) {
+                Some(item) => Some(item.on_hit()),
+                None => None,
+            },
         }
     }
 
@@ -303,18 +305,15 @@ impl Widget for FuzzySearchWidget {
 
         #[cfg(test)]
         {
-            output.emit_metadata(
-                Metadata {
-                    id: self.id,
-                    typename: self.typename().to_string(),
-                    rect: Rect::from_zero(output.size()),
-                    focused,
-                }
-            );
+            output.emit_metadata(Metadata {
+                id: self.id,
+                typename: self.typename().to_string(),
+                rect: Rect::from_zero(output.size()),
+                focused,
+            });
         }
 
-        let mut suboutput = SubOutput::new(output,
-                                           Rect::new(XY::ZERO, XY::new(size.output_size().x, 1)));
+        let mut suboutput = SubOutput::new(output, Rect::new(XY::ZERO, XY::new(size.output_size().x, 1)));
 
         self.edit.render(theme, focused, &mut suboutput);
         let query = self.edit.get_buffer().to_string();
@@ -336,16 +335,15 @@ impl Widget for FuzzySearchWidget {
             for g in item.display_name().as_ref().graphemes(true) {
                 let selected_grapheme = query_it.peek().map(|f| *f == g).unwrap_or(false);
                 let grapheme_style = if selected_grapheme {
-                    theme.cursor_background(CursorStatus::WithinSelection).map(|bg| {
-                        style.with_background(bg)
-                    }).unwrap_or(style)
-                } else { style };
+                    theme
+                        .cursor_background(CursorStatus::WithinSelection)
+                        .map(|bg| style.with_background(bg))
+                        .unwrap_or(style)
+                } else {
+                    style
+                };
 
-                output.print_at(
-                    XY::new(x, y),
-                    grapheme_style,
-                    g,
-                );
+                output.print_at(XY::new(x, y), grapheme_style, g);
 
                 x += g.width() as u16;
                 if selected_grapheme {
@@ -359,33 +357,39 @@ impl Widget for FuzzySearchWidget {
 
             //TODO cast overflow
             for x in (item.display_name().as_ref().width() as u16)..size.output_size().x {
-                output.print_at(XY::new(x as u16, y),
-                                style,
-                                " ");
+                output.print_at(XY::new(x as u16, y), style, " ");
             }
 
             if self.draw_comment == DrawComment::All || (self.draw_comment == DrawComment::Highlighted && selected_line) {
                 if let Some(comment) = item.comment() {
                     let mut x = 0 as u16;
                     for g in comment.as_ref().graphemes(true) {
-                        output.print_at(XY::new(x, y + 1),
-                                        style,
-                                        g);
+                        output.print_at(XY::new(x, y + 1), style, g);
                         x += g.width() as u16; //TODO overflow
                     }
                     //TODO cast overflow
                     for x in (comment.as_ref().width() as u16)..size.output_size().x {
-                        output.print_at(XY::new(x as u16, y + 1),
-                                        style,
-                                        " ");
+                        output.print_at(XY::new(x as u16, y + 1), style, " ");
                     }
                 }
             }
 
             y += match self.draw_comment {
                 DrawComment::None => 1,
-                DrawComment::Highlighted => if selected_line && item.comment().is_some() { 2 } else { 1 },
-                DrawComment::All => if item.comment().is_some() { 2 } else { 1 },
+                DrawComment::Highlighted => {
+                    if selected_line && item.comment().is_some() {
+                        2
+                    } else {
+                        1
+                    }
+                }
+                DrawComment::All => {
+                    if item.comment().is_some() {
+                        2
+                    } else {
+                        1
+                    }
+                }
             };
 
             if y >= size.output_size().y {

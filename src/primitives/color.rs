@@ -1,7 +1,7 @@
 use std::fmt::Formatter;
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{Error, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Clone, Copy, Eq, PartialOrd, PartialEq, Hash, Debug)]
 pub struct Color {
@@ -16,7 +16,11 @@ impl Color {
     }
 
     pub fn half(&self) -> Self {
-        Color { r: self.r / 2, g: self.r / 2, b: self.b / 2 }
+        Color {
+            r: self.r / 2,
+            g: self.r / 2,
+            b: self.b / 2,
+        }
     }
 
     pub fn interpolate(a: Color, b: Color) -> Color {
@@ -32,7 +36,10 @@ impl Color {
 }
 
 impl Serialize for Color {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
         serializer.serialize_str(&format!("#{:02X}{:02X}{:02X}", self.r, self.g, self.b))
     }
 }
@@ -46,31 +53,38 @@ impl<'de> Visitor<'de> for ColorVisitor {
         formatter.write_str("a color written in \"#(r)(g)(b)\" format")
     }
 
-    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: Error {
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
         if v.len() != 7 {
             return Err(E::custom(format!("length should be 7 and is {}", v.len())));
         }
 
         if v.chars().next() != Some('#') {
-            return Err(E::custom(format!("expected first character to be \"#\", got \"{}\"", v.chars().next().unwrap())));
+            return Err(E::custom(format!(
+                "expected first character to be \"#\", got \"{}\"",
+                v.chars().next().unwrap()
+            )));
         }
 
         let mut decoded: [u8; 3] = [0; 3];
         match hex::decode_to_slice(&v[1..], &mut decoded) {
-            Ok(()) => {
-                Ok(Color {
-                    r: decoded[0],
-                    g: decoded[1],
-                    b: decoded[2],
-                })
-            }
+            Ok(()) => Ok(Color {
+                r: decoded[0],
+                g: decoded[1],
+                b: decoded[2],
+            }),
             Err(e) => Err(E::custom(format!("failed hex decoding: {:?}", e))),
         }
     }
 }
 
 impl<'a> Deserialize<'a> for Color {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'a>,
+    {
         deserializer.deserialize_str(ColorVisitor)
     }
 }

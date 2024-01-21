@@ -16,7 +16,15 @@ fn syntax_highlighting_test_1_not_all_of_one_color() {
 
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
-    assert_eq!(false, full_setup.get_first_editor().unwrap().get_all_visible_lines().map(|line| -> bool {
-        line.contents.text_style.is_some() // true iff style was uniform over the line
-    }).fold::<bool, fn(bool, bool) -> bool>(true, |all_uniform, current_uniform| -> bool { all_uniform && current_uniform }));
+    assert_eq!(
+        false,
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .get_all_visible_lines()
+            .map(|line| -> bool {
+                line.contents.text_style.is_some() // true iff style was uniform over the line
+            })
+            .fold::<bool, fn(bool, bool) -> bool>(true, |all_uniform, current_uniform| -> bool { all_uniform && current_uniform })
+    );
 }

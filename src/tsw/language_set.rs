@@ -8,7 +8,6 @@ pub struct LanguageSet {
     pub rust: bool,
 }
 
-
 impl LanguageSet {
     pub fn full() -> Self {
         LanguageSet {

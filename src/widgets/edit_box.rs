@@ -9,17 +9,17 @@ use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
-use crate::io::output::{Metadata, Output};
-use crate::primitives::common_edit_msgs::{CommonEditMsg, key_to_edit_msg};
+use crate::io::output::Output;
+use crate::primitives::common_edit_msgs::{key_to_edit_msg, CommonEditMsg};
 use crate::primitives::helpers;
-use crate::primitives::rect::Rect;
+
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
 use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 
 //TODO filter out the newlines on paste
 //TODO add layout tests (min size, max size etc)
@@ -44,7 +44,6 @@ pub struct EditBoxWidget {
 
     size_policy: SizePolicy,
 }
-
 
 impl EditBoxWidget {
     const MIN_WIDTH: u16 = 2;
@@ -73,10 +72,7 @@ impl EditBoxWidget {
     }
 
     pub fn with_size_policy(self, size_policy: SizePolicy) -> Self {
-        Self {
-            size_policy,
-            ..self
-        }
+        Self { size_policy, ..self }
     }
 
     pub fn with_clipboard(self, clipboard: ClipboardRef) -> Self {
@@ -133,10 +129,7 @@ impl EditBoxWidget {
     }
 
     pub fn with_fill_x(self) -> Self {
-        Self {
-            fill_x: true,
-            ..self
-        }
+        Self { fill_x: true, ..self }
     }
 
     pub fn get_buffer(&self) -> &BufferState {
@@ -192,13 +185,15 @@ impl EditBoxWidget {
     }
 }
 
-
 impl Widget for EditBoxWidget {
     fn id(&self) -> WID {
         self.id
     }
 
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         Self::TYPENAME
     }
 
@@ -219,10 +214,7 @@ impl Widget for EditBoxWidget {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        debug_assert!(
-            self.enabled,
-            "EditBoxWidgetMsg: received input to disabled component!"
-        );
+        debug_assert!(self.enabled, "EditBoxWidgetMsg: received input to disabled component!");
 
         let cursor_set_copy = unpack_or_e!(self.buffer.text().get_cursor_set(self.id), None, "failed to get cursor_set").clone();
 
@@ -234,13 +226,19 @@ impl Widget for EditBoxWidget {
                     match key_to_edit_msg(key_event) {
                         Some(cem) => match cem {
                             // the 4 cases below are designed to NOT consume the event in case it cannot be used.
-                            CommonEditMsg::CursorUp { selecting: _ } |
-                            CommonEditMsg::CursorDown { selecting: _ } => None,
-                            CommonEditMsg::CursorLeft { selecting: _ } if cursor_set_copy.as_single().map(|c| c.a == 0).unwrap_or(false) => None,
-                            CommonEditMsg::CursorRight { selecting: _ } if cursor_set_copy.as_single()
-                                .map(|c| c.a > self.buffer.len_chars()).unwrap_or(false) => None,
+                            CommonEditMsg::CursorUp { selecting: _ } | CommonEditMsg::CursorDown { selecting: _ } => None,
+                            CommonEditMsg::CursorLeft { selecting: _ }
+                                if cursor_set_copy.as_single().map(|c| c.a == 0).unwrap_or(false) =>
+                            {
+                                None
+                            }
+                            CommonEditMsg::CursorRight { selecting: _ }
+                                if cursor_set_copy.as_single().map(|c| c.a > self.buffer.len_chars()).unwrap_or(false) =>
+                            {
+                                None
+                            }
                             _ => Some(Box::new(EditBoxWidgetMsg::CommonEditMsg(cem))),
-                        }
+                        },
                         None => None,
                     }
                 }
@@ -260,11 +258,7 @@ impl Widget for EditBoxWidget {
         return match our_msg.unwrap() {
             EditBoxWidgetMsg::Hit => self.event_hit(),
             EditBoxWidgetMsg::CommonEditMsg(cem) => {
-                if self.buffer.apply_cem(cem.clone(),
-                                         self.id,
-                                         1,
-                                         self.clipboard_op.as_ref(),
-                ) {
+                if self.buffer.apply_cem(cem.clone(), self.id, 1, self.clipboard_op.as_ref()) {
                     self.event_changed()
                 } else {
                     None
@@ -276,14 +270,12 @@ impl Widget for EditBoxWidget {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let size = XY::new(unpack_or_e!(self.last_size_x, (), "render before layout"), 1);
         #[cfg(test)]
-        output.emit_metadata(
-            Metadata {
-                id: self.id(),
-                typename: self.typename().to_string(),
-                rect: Rect::from_zero(size),
-                focused,
-            }
-        );
+        output.emit_metadata(Metadata {
+            id: self.id(),
+            typename: self.typename().to_string(),
+            rect: Rect::from_zero(size),
+            focused,
+        });
 
         let primary_style = theme.highlighted(focused);
         helpers::fill_output(primary_style.background, output);
@@ -298,9 +290,7 @@ impl Widget for EditBoxWidget {
             }
 
             let style = match theme.cursor_background(cursor_set_copy.get_cursor_status_for_char(char_idx)) {
-                Some(bg) => {
-                    primary_style.with_background(if focused { bg } else { bg.half() })
-                }
+                Some(bg) => primary_style.with_background(if focused { bg } else { bg.half() }),
                 None => primary_style,
             };
             output.print_at(
@@ -313,16 +303,10 @@ impl Widget for EditBoxWidget {
         // one character after, but only if it fits.
         if x < size.x as usize {
             let style = match theme.cursor_background(cursor_set_copy.get_cursor_status_for_char(self.buffer.len_chars())) {
-                Some(bg) => {
-                    primary_style.with_background(if focused { bg } else { bg.half() })
-                }
+                Some(bg) => primary_style.with_background(if focused { bg } else { bg.half() }),
                 None => primary_style,
             };
-            output.print_at(
-                XY::new(x as u16, 0),
-                style,
-                " ",
-            );
+            output.print_at(XY::new(x as u16, 0), style, " ");
         }
 
         // if cursor is after the text, we need to add an offset, so the background does not
@@ -337,11 +321,7 @@ impl Widget for EditBoxWidget {
             for i in 0..background_length {
                 let pos = XY::new(end_of_text + i as u16, 0);
 
-                output.print_at(
-                    pos,
-                    primary_style,
-                    " ",
-                );
+                output.print_at(pos, primary_style, " ");
             }
         }
     }
@@ -358,7 +338,6 @@ pub enum EditBoxWidgetMsg {
 }
 
 impl AnyMsg for EditBoxWidgetMsg {}
-
 
 impl Default for EditBoxWidget {
     fn default() -> Self {

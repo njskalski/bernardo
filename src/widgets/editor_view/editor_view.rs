@@ -1,14 +1,13 @@
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
-use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::path::SPath;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
-use crate::io::output::{Metadata, Output};
+use crate::io::output::Output;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
@@ -24,7 +23,7 @@ use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
@@ -32,6 +31,7 @@ use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
+use crate::{subwidget, unpack_or, unpack_or_e};
 
 const PATTERN: &'static str = "pattern: ";
 const REPLACE: &'static str = "replace: ";
@@ -72,27 +72,21 @@ impl EditorView {
     pub const TYPENAME: &'static str = "editor_view";
 
     pub fn new(
-        providers: Providers,// TODO(#17) now navcomp is language specific, and editor can be "recycled" from say yaml to rs, requiring change of navcomp.
+        providers: Providers, // TODO(#17) now navcomp is language specific, and editor can be "recycled" from say yaml to rs, requiring change of navcomp.
         buffer: BufferSharedRef,
     ) -> Self {
-        let editor = EditorWidget::new(providers.clone(),
-                                       buffer,
-        );
+        let editor = EditorWidget::new(providers.clone(), buffer);
 
         let find_label = TextWidget::new(Box::new(PATTERN));
         let replace_label = TextWidget::new(Box::new(REPLACE));
 
         let find_box = EditBoxWidget::new()
-            .with_on_hit(|_| {
-                EditorViewMsg::FindHit.someboxed()
-            })
+            .with_on_hit(|_| EditorViewMsg::FindHit.someboxed())
             .with_fill_x()
             .with_clipboard(providers.clipboard().clone())
             .with_size_policy(SizePolicy::MATCH_LAYOUT);
         let replace_box = EditBoxWidget::new()
-            .with_on_hit(|_| {
-                EditorViewMsg::ReplaceHit.someboxed()
-            })
+            .with_on_hit(|_| EditorViewMsg::ReplaceHit.someboxed())
             .with_fill_x()
             .with_clipboard(providers.clipboard().clone())
             .with_size_policy(SizePolicy::MATCH_LAYOUT);
@@ -112,7 +106,7 @@ impl EditorView {
         }
     }
 
-    pub fn with_path(mut self, path: SPath) -> Self {
+    pub fn with_path(self, path: SPath) -> Self {
         let res = Self {
             start_path: Some(path),
 
@@ -122,7 +116,7 @@ impl EditorView {
         res
     }
 
-    pub fn with_path_op(mut self, path_op: Option<SPath>) -> Self {
+    pub fn with_path_op(self, path_op: Option<SPath>) -> Self {
         let res = Self {
             start_path: path_op,
             ..self
@@ -157,9 +151,7 @@ impl EditorView {
         let output_size = screenspace.output_size();
         if output_size >= XY::new(10, 8) {
             let margin = output_size / 10;
-            let res = Rect::new(margin,
-                                output_size - margin * 2,
-            );
+            let res = Rect::new(margin, output_size - margin * 2);
             Some(res)
         } else {
             None
@@ -185,13 +177,10 @@ impl EditorView {
             }
         }
 
-        let save_file_dialog = SaveFileDialogWidget::new(
-            self.providers.fsf().clone(),
-        ).with_on_cancel(|_| {
-            EditorViewMsg::OnSaveAsCancel.someboxed()
-        }).with_on_save(|_, ff| {
-            EditorViewMsg::OnSaveAsHit { ff }.someboxed()
-        }).with_path(self.get_save_file_dialog_path(buffer));
+        let save_file_dialog = SaveFileDialogWidget::new(self.providers.fsf().clone())
+            .with_on_cancel(|_| EditorViewMsg::OnSaveAsCancel.someboxed())
+            .with_on_save(|_, ff| EditorViewMsg::OnSaveAsHit { ff }.someboxed())
+            .with_path(self.get_save_file_dialog_path(buffer));
 
         self.hover_dialog = Some(save_file_dialog);
         self.set_focused(self.get_hover_subwidget());
@@ -202,16 +191,14 @@ impl EditorView {
         let set_path_result = self.set_file_name(buffer_mut, path);
 
         if set_path_result.path_changed {
-
             // updating the "save as dialog" starting position
-            path.parent().map(|_| {
-                self.start_path = Some(path.clone())
-            }).unwrap_or_else(|| {
+            path.parent().map(|_| self.start_path = Some(path.clone())).unwrap_or_else(|| {
                 error!("failed setting save_file_dialog starting position - most likely parent is outside fsf root");
             });
 
-
-            Some(MainViewMsg::BufferChangedName { updated_identifier: set_path_result.document_id })
+            Some(MainViewMsg::BufferChangedName {
+                updated_identifier: set_path_result.document_id,
+            })
         } else {
             None
         }
@@ -234,12 +221,13 @@ impl EditorView {
     }
 
     fn get_hover_subwidget(&self) -> SubwidgetPointer<Self> {
-        SubwidgetPointer::new(Box::new(|w: &Self| {
-            w.hover_dialog.as_ref().unwrap() // TODO
-        }),
-                              Box::new(|w: &mut Self| {
-                                  w.hover_dialog.as_mut().unwrap() // TODO
-                              }),
+        SubwidgetPointer::new(
+            Box::new(|w: &Self| {
+                w.hover_dialog.as_ref().unwrap() // TODO
+            }),
+            Box::new(|w: &mut Self| {
+                w.hover_dialog.as_mut().unwrap() // TODO
+            }),
         )
     }
 
@@ -260,7 +248,7 @@ impl EditorView {
     Just lookup otherwise.
      */
     fn hit_replace_once(&mut self, buffer_mut: &mut BufferState) -> bool {
-        let phrase = unpack_or!(self.get_pattern(), false ,"hit_replace_once with empty phrase - ignoring");
+        let phrase = unpack_or!(self.get_pattern(), false, "hit_replace_once with empty phrase - ignoring");
         let curr_text = buffer_mut.text();
         let editor_widget_id = self.editor.internal().id();
         let cursor_set = unpack_or!(curr_text.get_cursor_set(editor_widget_id), false, "no cursors for editor");
@@ -295,9 +283,12 @@ impl EditorView {
     }
 
     pub fn get_path(&self) -> Option<SPath> {
-        self.editor.internal().get_buffer().lock().map(|buffer_lock|
-            buffer_lock.get_path().map(|c| c.clone())
-        ).flatten()
+        self.editor
+            .internal()
+            .get_buffer()
+            .lock()
+            .map(|buffer_lock| buffer_lock.get_path().map(|c| c.clone()))
+            .flatten()
     }
 
     pub fn get_internal_widget(&self) -> &EditorWidget {
@@ -313,7 +304,10 @@ impl Widget for EditorView {
     fn typename(&self) -> &'static str {
         Self::TYPENAME
     }
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         Self::TYPENAME
     }
     fn prelayout(&mut self) {
@@ -342,24 +336,12 @@ impl Widget for EditorView {
                     None
                 }
             }
-            InputEvent::KeyInput(key) if key == c.save => {
-                EditorViewMsg::Save.someboxed()
-            }
-            InputEvent::KeyInput(key) if key == c.save_as => {
-                EditorViewMsg::SaveAs.someboxed()
-            }
-            InputEvent::KeyInput(key) if key == c.find => {
-                EditorViewMsg::ToFind.someboxed()
-            }
-            InputEvent::KeyInput(key) if key == c.replace => {
-                EditorViewMsg::ToFindReplace.someboxed()
-            }
-            InputEvent::KeyInput(key) if key == c.find => {
-                EditorViewMsg::ToFind.someboxed()
-            }
-            InputEvent::KeyInput(key) if key == c.close_find_replace => {
-                EditorViewMsg::ToSimple.someboxed()
-            }
+            InputEvent::KeyInput(key) if key == c.save => EditorViewMsg::Save.someboxed(),
+            InputEvent::KeyInput(key) if key == c.save_as => EditorViewMsg::SaveAs.someboxed(),
+            InputEvent::KeyInput(key) if key == c.find => EditorViewMsg::ToFind.someboxed(),
+            InputEvent::KeyInput(key) if key == c.replace => EditorViewMsg::ToFindReplace.someboxed(),
+            InputEvent::KeyInput(key) if key == c.find => EditorViewMsg::ToFind.someboxed(),
+            InputEvent::KeyInput(key) if key == c.close_find_replace => EditorViewMsg::ToSimple.someboxed(),
             _ => None,
         };
     }
@@ -450,20 +432,15 @@ impl Widget for EditorView {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let total_size = unpack_or_e!(
-            self.display_state.as_ref().map(|ds| ds.total_size),
-            (), "render before layout"
-        );
+        let _total_size = unpack_or_e!(self.display_state.as_ref().map(|ds| ds.total_size), (), "render before layout");
 
         #[cfg(test)]
-        output.emit_metadata(
-            Metadata {
-                id: self.wid,
-                typename: self.typename().to_string(),
-                rect: Rect::from_zero(total_size),
-                focused,
-            }
-        );
+        output.emit_metadata(Metadata {
+            id: self.wid,
+            typename: self.typename().to_string(),
+            rect: Rect::from_zero(total_size),
+            focused,
+        });
 
         self.complex_render(theme, focused, output)
     }
@@ -486,56 +463,42 @@ impl ComplexWidget for EditorView {
         let editor_layout = LeafLayout::new(subwidget!(Self.editor)).boxed();
         let find_text_layout = LeafLayout::new(subwidget!(Self.find_label)).boxed();
         let find_box_layout = LeafLayout::new(subwidget!(Self.find_box)).boxed();
-        let find_layout =
-            SplitLayout::new(SplitDirection::Horizontal)
-                .with(SplitRule::Fixed(PATTERN.width().try_into().unwrap()), find_text_layout)
-                .with(SplitRule::Proportional(1.0), find_box_layout)
-                .boxed();
+        let find_layout = SplitLayout::new(SplitDirection::Horizontal)
+            .with(SplitRule::Fixed(PATTERN.width().try_into().unwrap()), find_text_layout)
+            .with(SplitRule::Proportional(1.0), find_box_layout)
+            .boxed();
 
         let replace_text_layout = LeafLayout::new(subwidget!(Self.replace_label)).boxed();
         let replace_box_layout = LeafLayout::new(subwidget!(Self.replace_box)).boxed();
-        let replace_layout =
-            SplitLayout::new(SplitDirection::Horizontal)
-                .with(SplitRule::Fixed(REPLACE.width().try_into().unwrap()), replace_text_layout)
-                .with(SplitRule::Proportional(1.0), replace_box_layout)
-                .boxed();
+        let replace_layout = SplitLayout::new(SplitDirection::Horizontal)
+            .with(SplitRule::Fixed(REPLACE.width().try_into().unwrap()), replace_text_layout)
+            .with(SplitRule::Proportional(1.0), replace_box_layout)
+            .boxed();
 
         let background: Box<dyn Layout<Self>> = match &self.state {
-            EditorViewState::Simple => {
-                editor_layout
-            }
-            EditorViewState::Find => {
+            EditorViewState::Simple => editor_layout,
+            EditorViewState::Find => SplitLayout::new(SplitDirection::Vertical)
+                .with(SplitRule::Proportional(1.0), editor_layout)
+                .with(SplitRule::Fixed(1), find_layout)
+                .boxed(),
+            EditorViewState::FindReplace => Box::new(
                 SplitLayout::new(SplitDirection::Vertical)
                     .with(SplitRule::Proportional(1.0), editor_layout)
                     .with(SplitRule::Fixed(1), find_layout)
-                    .boxed()
-            }
-            EditorViewState::FindReplace => {
-                Box::new(SplitLayout::new(SplitDirection::Vertical)
-                    .with(SplitRule::Proportional(1.0), editor_layout)
-                    .with(SplitRule::Fixed(1), find_layout)
-                    .with(SplitRule::Fixed(1), replace_layout)
-                )
-            }
+                    .with(SplitRule::Fixed(1), replace_layout),
+            ),
         };
 
         if self.hover_dialog.is_none() {
             background
         } else {
             let hover = LeafLayout::new(SubwidgetPointer::new(
-                Box::new(|s: &Self| {
-                    s.hover_dialog.as_ref().unwrap()
-                }),
-                Box::new(|s: &mut Self| {
-                    s.hover_dialog.as_mut().unwrap()
-                }),
-            )).boxed();
+                Box::new(|s: &Self| s.hover_dialog.as_ref().unwrap()),
+                Box::new(|s: &mut Self| s.hover_dialog.as_mut().unwrap()),
+            ))
+            .boxed();
 
-            HoverLayout::new(background,
-                             hover,
-                             Box::new(Self::get_hover_rect),
-                             true,
-            ).boxed()
+            HoverLayout::new(background, hover, Box::new(Self::get_hover_rect), true).boxed()
         }
     }
 

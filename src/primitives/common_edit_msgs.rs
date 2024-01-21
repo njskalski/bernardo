@@ -132,20 +132,32 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
                 Keycode::Char('z') if modifiers.just_ctrl() => Some(CommonEditMsg::Undo),
                 Keycode::Char('x') if modifiers.just_ctrl() => Some(CommonEditMsg::Redo),
                 Keycode::Char(c) if modifiers.is_empty() || modifiers.just_shift() => Some(CommonEditMsg::Char(c)),
-                Keycode::ArrowUp => Some(CommonEditMsg::CursorUp { selecting: key.modifiers.shift }),
-                Keycode::ArrowDown => Some(CommonEditMsg::CursorDown { selecting: key.modifiers.shift }),
+                Keycode::ArrowUp => Some(CommonEditMsg::CursorUp {
+                    selecting: key.modifiers.shift,
+                }),
+                Keycode::ArrowDown => Some(CommonEditMsg::CursorDown {
+                    selecting: key.modifiers.shift,
+                }),
                 Keycode::ArrowLeft => {
                     if key.modifiers.ctrl {
-                        Some(CommonEditMsg::WordBegin { selecting: key.modifiers.shift })
+                        Some(CommonEditMsg::WordBegin {
+                            selecting: key.modifiers.shift,
+                        })
                     } else {
-                        Some(CommonEditMsg::CursorLeft { selecting: key.modifiers.shift })
+                        Some(CommonEditMsg::CursorLeft {
+                            selecting: key.modifiers.shift,
+                        })
                     }
                 }
                 Keycode::ArrowRight => {
                     if key.modifiers.ctrl {
-                        Some(CommonEditMsg::WordEnd { selecting: key.modifiers.shift })
+                        Some(CommonEditMsg::WordEnd {
+                            selecting: key.modifiers.shift,
+                        })
                     } else {
-                        Some(CommonEditMsg::CursorRight { selecting: key.modifiers.shift })
+                        Some(CommonEditMsg::CursorRight {
+                            selecting: key.modifiers.shift,
+                        })
                     }
                 }
                 Keycode::Enter => {
@@ -157,10 +169,18 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
                     Some(CommonEditMsg::Char(' '))
                 }
                 Keycode::Backspace => Some(CommonEditMsg::Backspace),
-                Keycode::Home => Some(CommonEditMsg::LineBegin { selecting: key.modifiers.shift }),
-                Keycode::End => Some(CommonEditMsg::LineEnd { selecting: key.modifiers.shift }),
-                Keycode::PageUp => Some(CommonEditMsg::PageUp { selecting: key.modifiers.shift }),
-                Keycode::PageDown => Some(CommonEditMsg::PageDown { selecting: key.modifiers.shift }),
+                Keycode::Home => Some(CommonEditMsg::LineBegin {
+                    selecting: key.modifiers.shift,
+                }),
+                Keycode::End => Some(CommonEditMsg::LineEnd {
+                    selecting: key.modifiers.shift,
+                }),
+                Keycode::PageUp => Some(CommonEditMsg::PageUp {
+                    selecting: key.modifiers.shift,
+                }),
+                Keycode::PageDown => Some(CommonEditMsg::PageDown {
+                    selecting: key.modifiers.shift,
+                }),
                 Keycode::Tab => {
                     if !key.modifiers.shift {
                         Some(CommonEditMsg::Tab)
@@ -169,7 +189,7 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
                     }
                 }
                 Keycode::Delete => Some(CommonEditMsg::Delete),
-                _ => None
+                _ => None,
             }
         }
     }
@@ -179,19 +199,23 @@ pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
 fn cursors_to_line_indices(rope: &dyn TextBuffer, cs: &CursorSet) -> Vec<usize> {
     let mut hs: HashSet<usize> = HashSet::new();
     for c in cs.iter() {
-        rope.char_to_line(c.a).map(|line_idx| {
-            hs.insert(line_idx);
-        }).unwrap_or_else(|| {
-            error!("failed finding line for anchor {}", c.a);
-        });
+        rope.char_to_line(c.a)
+            .map(|line_idx| {
+                hs.insert(line_idx);
+            })
+            .unwrap_or_else(|| {
+                error!("failed finding line for anchor {}", c.a);
+            });
 
         c.s.map(|sel| {
             for char_idx in sel.b..sel.e {
-                rope.char_to_line(char_idx).map(|line_idx| {
-                    hs.insert(line_idx);
-                }).unwrap_or_else(|| {
-                    error!("failed finding line for selected index {}", char_idx);
-                })
+                rope.char_to_line(char_idx)
+                    .map(|line_idx| {
+                        hs.insert(line_idx);
+                    })
+                    .unwrap_or_else(|| {
+                        error!("failed finding line for selected index {}", char_idx);
+                    })
             }
         });
     }
@@ -207,12 +231,14 @@ returns tuple
     whether any change happened (to text or cursors)
  */
 // TODO assumptions that filelen < usize all over the place, assumption that diff < usize
-fn insert_to_rope(cursor_set: &mut CursorSet,
-                  other_cursor_sets: &mut Vec<&mut CursorSet>,
-                  rope: &mut dyn TextBuffer,
-                  // if None, all cursors will input the same. If Some(idx) only this cursor will insert and rest will get updated.
-                  specific_cursor: Option<usize>,
-                  what: &str) -> (usize, bool) {
+fn insert_to_rope(
+    cursor_set: &mut CursorSet,
+    other_cursor_sets: &mut Vec<&mut CursorSet>,
+    rope: &mut dyn TextBuffer,
+    // if None, all cursors will input the same. If Some(idx) only this cursor will insert and rest will get updated.
+    specific_cursor: Option<usize>,
+    what: &str,
+) -> (usize, bool) {
     let mut res = false;
     let mut modifier: isize = 0;
     let mut diff_len: usize = 0;
@@ -276,17 +302,19 @@ fn insert_to_rope(cursor_set: &mut CursorSet,
 
             debug_assert!(c.check_invariant());
         }
-    };
+    }
     cursor_set.reduce_right();
     debug_assert!(cursor_set.check_invariant());
     (diff_len, res)
 }
 
-fn insert_to_rope_at_random_place(cursor_set: &mut CursorSet,
-                                  other_cursor_sets: &mut Vec<&mut CursorSet>,
-                                  rope: &mut dyn TextBuffer,
-                                  char_pos: usize,
-                                  what: &str) -> (usize, bool) {
+fn insert_to_rope_at_random_place(
+    cursor_set: &mut CursorSet,
+    other_cursor_sets: &mut Vec<&mut CursorSet>,
+    rope: &mut dyn TextBuffer,
+    char_pos: usize,
+    what: &str,
+) -> (usize, bool) {
     if !rope.insert_block(char_pos, &what) {
         (0, false)
     } else {
@@ -309,7 +337,7 @@ fn update_cursors_after_insertion(cs: &mut CursorSet, char_pos: usize, char_len:
         } else {
             // "dupa[kot)" + { char_pos: 5, what: "nic" } -> "dupa[knicot)"
             if char_pos < c.get_end() {
-                if let Some(mut sel) = c.s.as_mut() {
+                if let Some(sel) = c.s.as_mut() {
                     if c.a == sel.e {
                         c.a += char_len;
                         sel.e += char_len;
@@ -324,9 +352,7 @@ fn update_cursors_after_insertion(cs: &mut CursorSet, char_pos: usize, char_len:
     debug_assert!(cs.check_invariant());
 }
 
-fn update_cursors_after_removal(cs: &mut CursorSet,
-                                char_range: Range<usize>) {
-
+fn update_cursors_after_removal(cs: &mut CursorSet, char_range: Range<usize>) {
     // first, throwing away cursors inside the block
     {
         let mut to_remove: Vec<usize> = Vec::new();
@@ -408,10 +434,12 @@ fn update_cursors_after_removal(cs: &mut CursorSet,
     }
 }
 
-fn remove_from_rope_at_random_place(cursor_set: &mut CursorSet,
-                                    other_cursor_sets: &mut Vec<&mut CursorSet>,
-                                    rope: &mut dyn TextBuffer,
-                                    char_range: Range<usize>) -> (usize, bool) {
+fn remove_from_rope_at_random_place(
+    cursor_set: &mut CursorSet,
+    other_cursor_sets: &mut Vec<&mut CursorSet>,
+    rope: &mut dyn TextBuffer,
+    char_range: Range<usize>,
+) -> (usize, bool) {
     if char_range.is_empty() {
         error!("delete block with empty range, ignoring");
         (0, false)
@@ -432,10 +460,12 @@ fn remove_from_rope_at_random_place(cursor_set: &mut CursorSet,
     }
 }
 
-fn handle_backspace_and_delete(cursor_set: &mut CursorSet,
-                               other_cursor_sets: &mut Vec<&mut CursorSet>,
-                               backspace: bool,
-                               rope: &mut dyn TextBuffer) -> (usize, bool) {
+fn handle_backspace_and_delete(
+    cursor_set: &mut CursorSet,
+    other_cursor_sets: &mut Vec<&mut CursorSet>,
+    backspace: bool,
+    rope: &mut dyn TextBuffer,
+) -> (usize, bool) {
     let mut res = false;
     let mut modifier: isize = 0;
     let mut diff_len: usize = 0;
@@ -480,11 +510,7 @@ fn handle_backspace_and_delete(cursor_set: &mut CursorSet,
                 }
             }
 
-            let (b, e) = if backspace {
-                (c.a - 1, c.a)
-            } else {
-                (c.a, c.a + 1)
-            };
+            let (b, e) = if backspace { (c.a - 1, c.a) } else { (c.a, c.a + 1) };
 
             if rope.remove(b, e) {
                 res |= true;
@@ -504,7 +530,7 @@ fn handle_backspace_and_delete(cursor_set: &mut CursorSet,
         }
         c.clear_both();
         debug_assert!(c.check_invariant());
-    };
+    }
 
     cursor_set.reduce_left();
     debug_assert!(cursor_set.check_invariant());
@@ -514,51 +540,29 @@ fn handle_backspace_and_delete(cursor_set: &mut CursorSet,
 // Returns tuple:
 //      first is number of chars that changed (inserted, removed, changed), or 0 in case of UNDO/REDO
 //      FALSE iff the command results in no-op.
-pub fn _apply_cem(cem: CommonEditMsg,
-                  cursor_set: &mut CursorSet,
-                  observer_cursor_sets: &mut Vec<&mut CursorSet>,
-                  rope: &mut dyn TextBuffer,
-                  page_height: usize,
-                  clipboard: Option<&ClipboardRef>) -> (usize, bool) {
+pub fn _apply_cem(
+    cem: CommonEditMsg,
+    cursor_set: &mut CursorSet,
+    observer_cursor_sets: &mut Vec<&mut CursorSet>,
+    rope: &mut dyn TextBuffer,
+    page_height: usize,
+    clipboard: Option<&ClipboardRef>,
+) -> (usize, bool) {
     let res = match cem {
         CommonEditMsg::Char(char) => {
             // TODO optimise
             insert_to_rope(cursor_set, observer_cursor_sets, rope, None, char.to_string().as_str())
         }
-        CommonEditMsg::Block(s) => {
-            insert_to_rope(cursor_set, observer_cursor_sets, rope, None, &s)
-        }
-        CommonEditMsg::CursorUp { selecting } => {
-            (0, cursor_set.move_vertically_by(rope, -1, selecting))
-        }
-        CommonEditMsg::CursorDown { selecting } => {
-            (0, cursor_set.move_vertically_by(rope, 1, selecting))
-        }
-        CommonEditMsg::CursorLeft { selecting } => {
-            (0, cursor_set.move_left(selecting))
-        }
-        CommonEditMsg::CursorRight { selecting } => {
-            (0, cursor_set.move_right(rope, selecting))
-        }
-        CommonEditMsg::Backspace => {
-            handle_backspace_and_delete(cursor_set,
-                                        observer_cursor_sets,
-                                        true,
-                                        rope,
-            )
-        }
-        CommonEditMsg::LineBegin { selecting } => {
-            (0, cursor_set.move_home(rope, selecting))
-        }
-        CommonEditMsg::LineEnd { selecting } => {
-            (0, cursor_set.move_end(rope, selecting))
-        }
-        CommonEditMsg::WordBegin { selecting } => {
-            (0, cursor_set.word_begin_default(rope, selecting))
-        }
-        CommonEditMsg::WordEnd { selecting } => {
-            (0, cursor_set.word_end_default(rope, selecting))
-        }
+        CommonEditMsg::Block(s) => insert_to_rope(cursor_set, observer_cursor_sets, rope, None, &s),
+        CommonEditMsg::CursorUp { selecting } => (0, cursor_set.move_vertically_by(rope, -1, selecting)),
+        CommonEditMsg::CursorDown { selecting } => (0, cursor_set.move_vertically_by(rope, 1, selecting)),
+        CommonEditMsg::CursorLeft { selecting } => (0, cursor_set.move_left(selecting)),
+        CommonEditMsg::CursorRight { selecting } => (0, cursor_set.move_right(rope, selecting)),
+        CommonEditMsg::Backspace => handle_backspace_and_delete(cursor_set, observer_cursor_sets, true, rope),
+        CommonEditMsg::LineBegin { selecting } => (0, cursor_set.move_home(rope, selecting)),
+        CommonEditMsg::LineEnd { selecting } => (0, cursor_set.move_end(rope, selecting)),
+        CommonEditMsg::WordBegin { selecting } => (0, cursor_set.word_begin_default(rope, selecting)),
+        CommonEditMsg::WordEnd { selecting } => (0, cursor_set.word_end_default(rope, selecting)),
         CommonEditMsg::PageUp { selecting } => {
             if page_height > PAGE_HEIGHT_LIMIT {
                 error!("received PageUp of page_height {}, ignoring.", page_height);
@@ -575,13 +579,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
                 (0, cursor_set.move_vertically_by(rope, page_height as isize, selecting))
             }
         }
-        CommonEditMsg::Delete => {
-            handle_backspace_and_delete(cursor_set,
-                                        observer_cursor_sets,
-                                        false,
-                                        rope,
-            )
-        }
+        CommonEditMsg::Delete => handle_backspace_and_delete(cursor_set, observer_cursor_sets, false, rope),
         CommonEditMsg::Copy => {
             if let Some(clipboard) = clipboard {
                 let mut contents = String::new();
@@ -635,15 +633,9 @@ pub fn _apply_cem(cem: CommonEditMsg,
                 (0, false)
             }
         }
-        CommonEditMsg::Undo => {
-            (0, rope.undo())
-        }
-        CommonEditMsg::Redo => {
-            (0, rope.redo())
-        }
-        CommonEditMsg::DeleteBlock { char_range } => {
-            remove_from_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_range)
-        }
+        CommonEditMsg::Undo => (0, rope.undo()),
+        CommonEditMsg::Redo => (0, rope.redo()),
+        CommonEditMsg::DeleteBlock { char_range } => remove_from_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_range),
         CommonEditMsg::InsertBlock { char_pos, what } => {
             insert_to_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_pos, &what)
         }
@@ -700,8 +692,7 @@ pub fn _apply_cem(cem: CommonEditMsg,
                     if charat == '\t' {
                         how_many_chars_to_eat = 1;
                     } else {
-                        'dig_prefix:
-                        for offset in 0..rope.tab_width() {
+                        'dig_prefix: for offset in 0..rope.tab_width() {
                             // I ignore the '\t' characters.
                             let new_charat = match rope.char_at(char_begin_idx + offset) {
                                 Some(c) => c,
@@ -724,7 +715,12 @@ pub fn _apply_cem(cem: CommonEditMsg,
                     }
 
                     // debug!("ordering to remove from line {} [{}] chars", line_idx, how_many_chars_to_eat);
-                    let partial_res = remove_from_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_begin_idx..char_begin_idx + how_many_chars_to_eat);
+                    let partial_res = remove_from_rope_at_random_place(
+                        cursor_set,
+                        observer_cursor_sets,
+                        rope,
+                        char_begin_idx..char_begin_idx + how_many_chars_to_eat,
+                    );
 
                     chars_removed += partial_res.0;
                     modified |= partial_res.1;
@@ -738,7 +734,9 @@ pub fn _apply_cem(cem: CommonEditMsg,
         CommonEditMsg::SubstituteBlock { char_range, with_what } => {
             let removal_result = if !char_range.is_empty() {
                 remove_from_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_range.clone())
-            } else { (0, true) };
+            } else {
+                (0, true)
+            };
 
             if removal_result.1 {
                 let insertion_result = insert_to_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_range.start, &with_what);

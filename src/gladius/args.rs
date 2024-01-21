@@ -1,6 +1,6 @@
-use std::{env, fs};
 use std::path::PathBuf;
 use std::process::exit;
+use std::{env, fs};
 
 use clap::Parser;
 use log::error;
@@ -16,7 +16,7 @@ pub struct Args {
 
     #[clap(long = "record")]
     pub recording: bool,
-    
+
     pub paths: Vec<PathBuf>,
 }
 

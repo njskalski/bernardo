@@ -5,10 +5,6 @@ Only some widgets will accept it, some will accept only one of the dimensions.
 Also, if there is no limit on dimension (scrolling) widget will fall back to "constrained" setup.
  */
 
-use log::debug;
-
-use crate::primitives::xy::XY;
-
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum DeterminedBy {
     Widget,

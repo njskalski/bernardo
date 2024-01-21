@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use std::sync::{Arc, RwLock, TryLockResult};
 
 use log::debug;
 use serde::{Deserialize, Serialize};
@@ -10,7 +9,7 @@ use crate::fs::path::SPath;
 use crate::fs::write_error::WriteOrSerError;
 use crate::gladius::providers::Providers;
 use crate::w7e::handler_load_error::HandlerLoadError;
-use crate::w7e::navcomp_group::{NavCompGroup, NavCompGroupRef};
+
 use crate::w7e::project_scope;
 use crate::w7e::project_scope::{ProjectScope, SerializableProjectScope};
 
@@ -55,14 +54,13 @@ impl From<fs::read_error::ReadError> for LoadError {
 
 impl Workspace {
     pub fn new(root_path: SPath, scopes: Vec<ProjectScope>) -> Workspace {
-        Workspace {
-            root_path,
-            scopes,
-        }
+        Workspace { root_path, scopes }
     }
 
     pub fn try_load(root_path: SPath) -> Result<(Workspace, ScopeLoadErrors), LoadError> {
-        let workspace_file = root_path.descendant_checked(WORKSPACE_FILE_NAME).ok_or(LoadError::WorkspaceFileNotFound)?;
+        let workspace_file = root_path
+            .descendant_checked(WORKSPACE_FILE_NAME)
+            .ok_or(LoadError::WorkspaceFileNotFound)?;
         debug!("loading workspace file from {:?}", workspace_file.absolute_path());
         let serialized_workspace = workspace_file.read_entire_file_to_item::<SerializableWorkspace>()?;
         Self::from(serialized_workspace, root_path)
@@ -85,16 +83,13 @@ impl Workspace {
             }
         }
 
-        Ok((Workspace {
-            root_path,
-            scopes,
-        }, scope_errors))
+        Ok((Workspace { root_path, scopes }, scope_errors))
     }
 
     pub fn serializable(&self) -> SerializableWorkspace {
         let serializable_scopes: Vec<_> = self.scopes.iter().map(|scope| scope.serializable()).collect();
         SerializableWorkspace {
-            scopes: serializable_scopes
+            scopes: serializable_scopes,
         }
     }
 
@@ -103,11 +98,10 @@ impl Workspace {
         let mut nav_comp_group = providers.navcomp_group().try_write().map_err(|_| ())?;
 
         for scope in self.scopes.iter_mut() {
-            match providers.navcomp_loader().load_handler(
-                providers.config(),
-                &scope,
-                nav_comp_group.todo_sender().clone(),
-            ) {
+            match providers
+                .navcomp_loader()
+                .load_handler(providers.config(), &scope, nav_comp_group.todo_sender().clone())
+            {
                 Ok(handler) => {
                     scope.handler = Some(handler);
 
@@ -119,7 +113,11 @@ impl Workspace {
                         }
                     });
 
-                    debug!("loaded handler for scope {:?}, has_navcomp: {}", scope.path.absolute_path(), has_navcomp);
+                    debug!(
+                        "loaded handler for scope {:?}, has_navcomp: {}",
+                        scope.path.absolute_path(),
+                        has_navcomp
+                    );
                 }
                 Err(e) => {
                     errors.push(e);

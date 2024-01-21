@@ -1,10 +1,9 @@
 use std::fmt::{Debug, Formatter};
 
-use log::debug;
 use unicode_width::UnicodeWidthStr;
 
-use crate::io::output::{Metadata, Output};
-use crate::io::style::{TEXT_STYLE_WHITE_ON_BLACK, TextStyle};
+use crate::io::output::Output;
+use crate::io::style::{TextStyle, TEXT_STYLE_WHITE_ON_BLACK};
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
@@ -16,10 +15,23 @@ pub struct SubOutput<'a> {
 
 impl<'a> SubOutput<'a> {
     pub fn new(output: &'a mut dyn Output, frame: Rect) -> Self {
-        debug_assert!(frame.lower_right() <= output.size(), "{} <?= {}", frame.lower_right(), output.size());
-        debug_assert!(output.visible_rect().intersect(frame).is_some(), "no intersection between output.visible_rect() {} and frame of sub-output {}", output.visible_rect(), frame);
+        debug_assert!(
+            frame.lower_right() <= output.size(),
+            "{} <?= {}",
+            frame.lower_right(),
+            output.size()
+        );
+        debug_assert!(
+            output.visible_rect().intersect(frame).is_some(),
+            "no intersection between output.visible_rect() {} and frame of sub-output {}",
+            output.visible_rect(),
+            frame
+        );
 
-        SubOutput { output, frame_in_parent_space: frame }
+        SubOutput {
+            output,
+            frame_in_parent_space: frame,
+        }
     }
 }
 
@@ -37,9 +49,9 @@ impl Output for SubOutput<'_> {
     So we compare for "drawing beyond border" against *size* of the frame, not it's position.
      */
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
-        let end_pos = pos + (text.width() as u16, 0);
+        let _end_pos = pos + (text.width() as u16, 0);
 
-        let visible_rect = self.visible_rect();
+        let _visible_rect = self.visible_rect();
 
         // if cfg!(debug_assertions) {
         //     // this <= is not an error, grapheme END can meet with frame END.
@@ -67,8 +79,7 @@ impl Output for SubOutput<'_> {
 
         for x in 0..self.frame_in_parent_space.size.x {
             for y in 0..self.frame_in_parent_space.size.y {
-                self.output
-                    .print_at(self.frame_in_parent_space.pos + XY::new(x, y), style, " ")
+                self.output.print_at(self.frame_in_parent_space.pos + XY::new(x, y), style, " ")
             }
         }
         Ok(())
@@ -80,7 +91,7 @@ impl Output for SubOutput<'_> {
 
         let my_visible_rect_in_parent_space = parent_visible_rect.intersect(self.frame_in_parent_space).unwrap(); // TODO unwrap
 
-        let mut my_visible_space_in_my_space = my_visible_rect_in_parent_space.minus_shift(self.frame_in_parent_space.pos).unwrap();
+        let my_visible_space_in_my_space = my_visible_rect_in_parent_space.minus_shift(self.frame_in_parent_space.pos).unwrap();
         // my_visible_space_in_my_space.pos -= self.frame_in_parent_space.pos;
 
         let res = my_visible_space_in_my_space;
@@ -89,7 +100,6 @@ impl Output for SubOutput<'_> {
 
         res
     }
-
 
     // #[cfg(test)]
     // fn get_final_position(&self, local_pos: XY) -> Option<XY> {

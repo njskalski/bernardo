@@ -49,4 +49,3 @@ fn basic_with_scroll_testbed_test_page_down_and_page_up_works() {
     setup.send_input(InputEvent::KeyInput(Keycode::PageUp.to_key()));
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "1name");
 }
-

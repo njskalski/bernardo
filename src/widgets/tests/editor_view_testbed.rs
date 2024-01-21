@@ -25,12 +25,9 @@ pub struct EditorViewTestbed {
     pub mock_navcomp_pilot: MockNavCompProviderPilot,
 }
 
-
 impl EditorViewTestbed {
     pub fn editor(&self) -> Option<EditorInterpreter> {
-        self.last_frame.as_ref().map(
-            |frame| frame.get_editors().next()
-        ).flatten()
+        self.last_frame.as_ref().map(|frame| frame.get_editors().next()).flatten()
     }
 
     pub fn next_frame(&mut self) {
@@ -51,15 +48,13 @@ impl EditorViewTestbed {
     }
 
     pub fn interpreter(&self) -> Option<EditorInterpreter<'_>> {
-        self.frame_op().map(|frame| {
-            EditorInterpreter::new(frame, frame.metadata.first().unwrap())
-        }).flatten()
+        self.frame_op()
+            .map(|frame| EditorInterpreter::new(frame, frame.metadata.first().unwrap()))
+            .flatten()
     }
 
     pub fn screenshot(&self) -> bool {
-        self.frame_op().map(|frame|
-            screenshot(&frame.buffer)
-        ).unwrap_or(false)
+        self.frame_op().map(|frame| screenshot(&frame.buffer)).unwrap_or(false)
     }
 
     pub fn push_input(&mut self, input: InputEvent) {

@@ -81,23 +81,19 @@ impl<T: Send + 'static> MockNavCompPromise<T> {
                     has_changed: true,
                 }
             }
-            Err(e) => {
-                match e {
-                    TryRecvError::Empty => {
-                        UpdateResult {
-                            state: PromiseState::Unresolved,
-                            has_changed: false,
-                        }
-                    }
-                    TryRecvError::Disconnected => {
-                        self.done = true;
-                        UpdateResult {
-                            state: PromiseState::Broken,
-                            has_changed: true,
-                        }
+            Err(e) => match e {
+                TryRecvError::Empty => UpdateResult {
+                    state: PromiseState::Unresolved,
+                    has_changed: false,
+                },
+                TryRecvError::Disconnected => {
+                    self.done = true;
+                    UpdateResult {
+                        state: PromiseState::Broken,
+                        has_changed: true,
                     }
                 }
-            }
+            },
         };
     }
 }

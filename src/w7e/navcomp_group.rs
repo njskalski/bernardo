@@ -10,7 +10,7 @@ use crate::w7e::handler::NavCompRef;
 
 #[derive(Debug, Copy, Clone)]
 pub enum NavCompTick {
-    LspTick(LangId, usize)
+    LspTick(LangId, usize),
 }
 
 pub type NavCompTickSender = crossbeam_channel::Sender<NavCompTick>;
@@ -51,7 +51,9 @@ impl NavCompGroup {
         // TODO(never) theoretically for the same language we can have multiple navcomps. I do not
         // intend to handle this case any time soon, but I prefer to use spath whenever possible.
 
-        filename_to_language(spath).map(|lang_id| self.get_navcomp_for_lang(lang_id)).flatten()
+        filename_to_language(spath)
+            .map(|lang_id| self.get_navcomp_for_lang(lang_id))
+            .flatten()
     }
 
     pub fn get_navcomp_for_lang(&self, lang: LangId) -> Option<NavCompRef> {

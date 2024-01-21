@@ -9,9 +9,9 @@ use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 impl ListWidgetItem for SPath {
     fn get_column_name(idx: usize) -> &'static str {
         match idx {
-            0 => { "filename" }
-            1 => { "size" }
-            2 => { "type" }
+            0 => "filename",
+            1 => "size",
+            2 => "type",
             _ => {
                 warn!("requested index > 2 for SPath in ListWidgetItem");
                 "N/A"
@@ -32,7 +32,7 @@ impl ListWidgetItem for SPath {
             0 => Some(self.display_name()), // TODO,
             1 => Some(Rc::new("N/A".to_string())),
             2 => Some(Rc::new("N/A".to_string())),
-            _ => None
+            _ => None,
         }
     }
 }

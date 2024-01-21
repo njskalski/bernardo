@@ -52,14 +52,13 @@ mod tests {
             .with_file("folder1/folder3/moulder.txt", "truth is out there")
             .to_fsf();
 
-        let mut widget = TreeViewWidget::<SPath, DirTreeNode>::new(
-            DirTreeNode::new(spath!(mockfs, "folder1").unwrap()));
+        let mut widget = TreeViewWidget::<SPath, DirTreeNode>::new(DirTreeNode::new(spath!(mockfs, "folder1").unwrap()));
 
-        assert_eq!(widget.is_expanded(&spath!(mockfs, "folder1","folder2").unwrap()), false);
+        assert_eq!(widget.is_expanded(&spath!(mockfs, "folder1", "folder2").unwrap()), false);
 
         assert_eq!(widget.expand_path(&spath!(mockfs, "folder1", "folder2").unwrap()), true);
         assert_eq!(widget.is_expanded(&spath!(mockfs, "folder1").unwrap()), true);
-        assert_eq!(widget.is_expanded(&spath!(mockfs, "folder1","folder2").unwrap()), true);
+        assert_eq!(widget.is_expanded(&spath!(mockfs, "folder1", "folder2").unwrap()), true);
         assert_eq!(widget.is_expanded(&spath!(mockfs, "folder1", "folder3").unwrap()), false);
     }
 }

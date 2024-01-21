@@ -1,8 +1,7 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::ops::Range;
-use std::rc::Rc;
+
 use std::sync::{Arc, RwLock};
 
 use log::{error, warn};
@@ -44,8 +43,10 @@ pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point
             None => return &EMPTY_SLICE,
         };
         if point != point_from_offset {
-            error!("byte offset diverted from point. Point is {},{} and offset {}:{},{}",
-                point.column, point.row, offset, point_from_offset.column, point_from_offset.row);
+            error!(
+                "byte offset diverted from point. Point is {},{} and offset {}:{},{}",
+                point.column, point.row, offset, point_from_offset.column, point_from_offset.row
+            );
         }
         // end of sanity check
 
@@ -63,7 +64,6 @@ pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point
         result
     });
 }
-
 
 extern "C" {
     fn tree_sitter_c() -> Language;
@@ -113,9 +113,7 @@ impl TreeSitterWrapper {
             languages.insert(LangId::RUST, language_rust);
         }
 
-        TreeSitterWrapper {
-            languages
-        }
+        TreeSitterWrapper { languages }
     }
 
     pub fn highlight_query(&self, lang_id: LangId) -> Option<&'static str> {
@@ -127,7 +125,7 @@ impl TreeSitterWrapper {
             LangId::ELM => Some(tree_sitter_elm::HIGHLIGHTS_QUERY),
             LangId::GO => Some(tree_sitter_go::HIGHLIGHT_QUERY),
             LangId::RUST => Some(tree_sitter_rust::HIGHLIGHT_QUERY),
-            _ => None
+            _ => None,
         }
     }
 
@@ -144,9 +142,7 @@ impl TreeSitterWrapper {
             }
         };
 
-        let query = match Query::new(
-            *language,
-            highlight_query) {
+        let query = match Query::new(*language, highlight_query) {
             Ok(query) => query,
             Err(e) => {
                 error!("failed to compile query {}", e);
@@ -154,20 +150,16 @@ impl TreeSitterWrapper {
             }
         };
 
-        let id_to_name: Vec<Arc<String>> = query.capture_names().iter().map(|cn| {
-            Arc::new(cn.to_owned())
-        }).collect();
+        let id_to_name: Vec<Arc<String>> = query.capture_names().iter().map(|cn| Arc::new(cn.to_owned())).collect();
 
-        Some(
-            ParsingTuple {
-                tree: None,
-                lang_id,
-                parser: Arc::new(RwLock::new(parser)),
-                language: language.clone(),
-                highlight_query: Arc::new(query),
-                id_to_name: Arc::new(id_to_name),
-            }
-        )
+        Some(ParsingTuple {
+            tree: None,
+            lang_id,
+            parser: Arc::new(RwLock::new(parser)),
+            language: language.clone(),
+            highlight_query: Arc::new(query),
+            id_to_name: Arc::new(id_to_name),
+        })
     }
 }
 
@@ -194,11 +186,7 @@ impl ParsingTuple {
             cursor.set_byte_range(begin_byte..end_byte);
         };
 
-        let query_matches = cursor.matches(
-            &self.highlight_query,
-            self.tree.as_ref()?.root_node(),
-            RopeWrapper(&rope),
-        );
+        let query_matches = cursor.matches(&self.highlight_query, self.tree.as_ref()?.root_node(), RopeWrapper(&rope));
 
         let mut results: Vec<HighlightItem> = vec![];
         for m in query_matches {
@@ -226,7 +214,7 @@ impl ParsingTuple {
     pub fn try_reparse(&mut self, rope: &ropey::Rope) -> bool {
         let mut callback = rope.callback_for_parser();
         let mut parser = unpack_or_e!(self.parser.try_write().ok(), false, "failed to lock parser");
-        let tree = unpack_or_e!(parser.parse_with(&mut callback, self.tree.as_ref()), false , "failed parse");
+        let tree = unpack_or_e!(parser.parse_with(&mut callback, self.tree.as_ref()), false, "failed parse");
 
         self.tree = Some(tree);
 
@@ -283,7 +271,6 @@ impl ParsingTuple {
             old_end_position: start_point,
             new_end_position: new_end_point,
         };
-
 
         self.tree.as_mut().map(|tree| tree.edit(&input_edit));
         self.try_reparse(rope)

@@ -30,10 +30,7 @@ impl Rect {
         let miny = std::cmp::min(y1, y2);
         let maxy = std::cmp::max(y1, y2);
 
-        Rect::new(
-            XY::new(minx, miny),
-            XY::new(maxx - minx, maxy - miny),
-        )
+        Rect::new(XY::new(minx, miny), XY::new(maxx - minx, maxy - miny))
     }
 
     pub fn lower_right(&self) -> XY {
@@ -152,7 +149,6 @@ impl Rect {
             return None;
         }
 
-
         let new_lower_right = self.lower_right().min_both_axis(xy);
 
         if self.upper_left() < new_lower_right {
@@ -208,10 +204,7 @@ pub struct CornersIterator {
 
 impl CornersIterator {
     pub fn new(of: Rect) -> Self {
-        CornersIterator {
-            of,
-            item: 0,
-        }
+        CornersIterator { of, item: 0 }
     }
 }
 
@@ -247,13 +240,9 @@ impl Iterator for CornersIterator {
     }
 }
 
-
 impl From<(XY, XY)> for Rect {
     fn from(pair: (XY, XY)) -> Self {
-        Rect {
-            pos: pair.0,
-            size: pair.1,
-        }
+        Rect { pos: pair.0, size: pair.1 }
     }
 }
 
@@ -281,73 +270,60 @@ pub mod tests {
 
     #[test]
     fn rect_intersect_test() {
-        assert_eq!(Rect::new(XY::new(48, 36), XY::new(25, 1)).intersect(
-            Rect::new(XY::ZERO, XY::new(49, 1))
-        ), None);
+        assert_eq!(
+            Rect::new(XY::new(48, 36), XY::new(25, 1)).intersect(Rect::new(XY::ZERO, XY::new(49, 1))),
+            None
+        );
 
         assert_eq!(
-            Rect::new(XY::ZERO, XY::new(10, 10),
-            ).intersect(
-                Rect::new(XY::ZERO, XY::new(4, 4))
-            ),
+            Rect::new(XY::ZERO, XY::new(10, 10),).intersect(Rect::new(XY::ZERO, XY::new(4, 4))),
             Some(Rect::new(XY::ZERO, XY::new(4, 4)))
         );
 
         assert_eq!(
-            Rect::new(XY::ZERO, XY::new(10, 10),
-            ).intersect(
-                Rect::new(XY::new(10, 10), XY::new(4, 4))
-            ),
+            Rect::new(XY::ZERO, XY::new(10, 10),).intersect(Rect::new(XY::new(10, 10), XY::new(4, 4))),
             None,
         );
 
         assert_eq!(
-            Rect::new(XY::ZERO, XY::new(10, 10),
-            ).intersect(
-                Rect::new(XY::new(9, 9), XY::new(4, 4))
-            ),
+            Rect::new(XY::ZERO, XY::new(10, 10),).intersect(Rect::new(XY::new(9, 9), XY::new(4, 4))),
             Some(Rect::new(XY::new(9, 9), XY::new(1, 1))),
         );
 
         assert_eq!(
-            Rect::new(XY::new(9, 9), XY::new(4, 4)).intersect(
-                Rect::new(XY::ZERO, XY::new(10, 10))),
+            Rect::new(XY::new(9, 9), XY::new(4, 4)).intersect(Rect::new(XY::ZERO, XY::new(10, 10))),
             Some(Rect::new(XY::new(9, 9), XY::new(1, 1))),
         );
 
         /*
-           0 1 2 3 4 5 6 7 8 9 0 1 2 3
-         0                     |
-         1                     |
-         2                     |
-         3 .............       |
-         4             |       |
-         5             |       |
-         6 ------------+-------.
-         7             |
-         8 ............|
-         9
-         */
+          0 1 2 3 4 5 6 7 8 9 0 1 2 3
+        0                     |
+        1                     |
+        2                     |
+        3 .............       |
+        4             |       |
+        5             |       |
+        6 ------------+-------.
+        7             |
+        8 ............|
+        9
+        */
 
         assert_eq!(
-            Rect::new(XY::ZERO, XY::new(10, 6)).intersect(
-                Rect::new(XY::new(0, 3), XY::new(6, 5))),
+            Rect::new(XY::ZERO, XY::new(10, 6)).intersect(Rect::new(XY::new(0, 3), XY::new(6, 5))),
             Some(Rect::new(XY::new(0, 3), XY::new(6, 3))),
         );
     }
 
     #[test]
     fn minus_shift_test() {
-        assert_eq!(Rect::new(XY::new(3, 3), XY::new(3, 3)).minus_shift(
-            XY::new(7, 7)
-        ), None);
+        assert_eq!(Rect::new(XY::new(3, 3), XY::new(3, 3)).minus_shift(XY::new(7, 7)), None);
 
-        assert_eq!(Rect::new(XY::new(3, 4), XY::new(3, 4)).minus_shift(
-            XY::new(7, 7)
-        ), None);
+        assert_eq!(Rect::new(XY::new(3, 4), XY::new(3, 4)).minus_shift(XY::new(7, 7)), None);
 
-        assert_eq!(Rect::new(XY::new(3, 4), XY::new(3, 4)).minus_shift(
-            XY::new(5, 5)
-        ), Some(Rect::new(XY::new(0, 0), XY::new(1, 3))));
+        assert_eq!(
+            Rect::new(XY::new(3, 4), XY::new(3, 4)).minus_shift(XY::new(5, 5)),
+            Some(Rect::new(XY::new(0, 0), XY::new(1, 3)))
+        );
     }
 }

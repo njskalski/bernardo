@@ -1,15 +1,15 @@
 use std::fmt::{Debug, Formatter};
 use std::io::Write;
 
-use crossterm::{cursor, QueueableCommand, style, terminal};
 use crossterm::style::{Attribute, Color, Print, SetAttribute, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::{Clear, ClearType};
+use crossterm::{cursor, style, terminal, QueueableCommand};
 use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
-use crate::io::output::{FinalOutput, Metadata, Output};
+use crate::io::output::{FinalOutput, Output};
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
@@ -103,7 +103,6 @@ impl<W: Write> Output for CrosstermOutput<W> {
         buffer.clear()
     }
 
-
     fn visible_rect(&self) -> Rect {
         let res = Rect::from_zero(self.size());
 
@@ -111,7 +110,6 @@ impl<W: Write> Output for CrosstermOutput<W> {
 
         res
     }
-
 
     #[cfg(test)]
     fn emit_metadata(&mut self, _meta: Metadata) {
@@ -127,10 +125,7 @@ impl<W: Write> FinalOutput for CrosstermOutput<W> {
     fn end_frame(&mut self) -> Result<(), std::io::Error> {
         if log::log_enabled!(log::Level::Debug) {
             let size: XY = terminal::size().unwrap().into();
-            debug_assert!(
-                self.size == size,
-                "output size different that crossterm size!"
-            );
+            debug_assert!(self.size == size, "output size different that crossterm size!");
         }
 
         let (buffer, _other_buffer) = if self.current_buffer == false {
@@ -201,7 +196,6 @@ impl<W: Write> FinalOutput for CrosstermOutput<W> {
                                 // TODO setting attributes breaks things colors.
                                 // self.stdout.queue(SetAttribute(Attribute::Reset))?;
                                 // self.stdout.queue(SetAttributes(attributes))?;
-
 
                                 last_style = Some(*style);
                             }

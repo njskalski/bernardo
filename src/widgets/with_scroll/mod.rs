@@ -1,3 +1,3 @@
-pub mod with_scroll;
 #[cfg(test)]
 mod tests;
+pub mod with_scroll;

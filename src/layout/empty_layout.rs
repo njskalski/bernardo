@@ -13,27 +13,22 @@ pub struct EmptyLayout {
 
 impl EmptyLayout {
     pub fn new() -> Self {
-        Self {
-            size: None,
-        }
+        Self { size: None }
     }
 
     pub fn with_size(self, size: XY) -> Self {
-        Self {
-            size: Some(size),
-            ..self
-        }
+        Self { size: Some(size), ..self }
     }
 }
 
 impl<W: Widget> Layout<W> for EmptyLayout {
     fn prelayout(&self, _root: &mut W) {}
 
-    fn exact_size(&self, _root: &W, output_size: XY) -> XY {
+    fn exact_size(&self, _root: &W, _output_size: XY) -> XY {
         self.size.unwrap_or(XY::ZERO)
     }
 
-    fn layout(&self, root: &mut W, screenspace: Screenspace) -> LayoutResult<W> {
+    fn layout(&self, _root: &mut W, screenspace: Screenspace) -> LayoutResult<W> {
         if let Some(requested_size) = self.size {
             if !(requested_size < screenspace.output_size()) {
                 error!("requested size {} !< output_size {:?}", requested_size, screenspace);

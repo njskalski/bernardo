@@ -31,8 +31,7 @@ impl CrosstermInput {
                                 let key: Key = ckey.into();
                                 Some(InputEvent::KeyInput(key))
                             }
-                            Event::Mouse(_) =>
-                                None,
+                            Event::Mouse(_) => None,
                             Event::Resize(_, _) => {
                                 None // TODO
                             }
@@ -46,24 +45,20 @@ impl CrosstermInput {
 
                         match processed_event {
                             None => continue,
-                            Some(event) => {
-                                match send.send(event) {
-                                    Ok(_) => continue,
-                                    Err(err) => {
-                                        warn!("failed sending event {:?} because {}", event, err);
-                                        break;
-                                    }
+                            Some(event) => match send.send(event) {
+                                Ok(_) => continue,
+                                Err(err) => {
+                                    warn!("failed sending event {:?} because {}", event, err);
+                                    break;
                                 }
-                            }
+                            },
                         }
                     }
                 };
             }
         });
 
-        CrosstermInput {
-            receiver: recv
-        }
+        CrosstermInput { receiver: recv }
     }
 }
 

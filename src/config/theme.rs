@@ -28,7 +28,6 @@ impl Theme {
             return Some(color);
         }
 
-
         warn!("not matched code identifier \"{}\"", s);
         None
     }
@@ -53,7 +52,7 @@ impl Theme {
         match cs {
             CursorStatus::None => None,
             CursorStatus::WithinSelection => Some(self.ui.cursors.background),
-            CursorStatus::UnderCursor => Some(self.ui.cursors.secondary_anchor_background)
+            CursorStatus::UnderCursor => Some(self.ui.cursors.secondary_anchor_background),
         }
     }
 
@@ -102,34 +101,27 @@ pub struct UiTheme {
     pub label_type_annotation: TextStyle,
 }
 
-lazy_static!(
-    static ref DEFAULT_FOCUSED_BACKGROUND : Color = ron::from_str("\"#282828\"").unwrap();
-    static ref DEFAULT_FOCUSED_FOREGROUND : Color = ron::from_str("\"#928374\"").unwrap();
-
-    static ref DEFAULT_NON_FOCUSED_BACKGROUND : Color = ron::from_str("\"#181818\"").unwrap();
-    static ref DEFAULT_NON_FOCUSED_FOREGROUND : Color = ron::from_str("\"#928374\"").unwrap();
-
-    static ref HIGHLIGHTED_FOCUSED_BACKGROUND : Color = ron::from_str("\"#383433\"").unwrap();
-    static ref HIGHLIGHTED_FOCUSED_FOREGROUND : Color = ron::from_str("\"#928374\"").unwrap();
-
-    static ref HIGHLIGHTED_NON_FOCUSED_BACKGROUND : Color = ron::from_str("\"#181818\"").unwrap();
-    static ref HIGHLIGHTED_NON_FOCUSED_FOREGROUND : Color = ron::from_str("\"#928374\"").unwrap();
-
-    static ref PRIMARY_CURSOR_ANCHOR_BACKGROUND : Color = ron::from_str("\"#FFB81C\"").unwrap();
-    static ref SECONDARY_CURSORS_ANCHOR_BACKGROUND : Color = ron::from_str("\"#ED7737\"").unwrap();
-    static ref CURSORS_BACKGROUND : Color = ron::from_str("\"#852F00\"").unwrap();
-    static ref CURSORS_FOREGROUND : Color = ron::from_str("\"#FFC4A3\"").unwrap();
-
-    static ref HEADER_BACKGROUND : Color = *HIGHLIGHTED_FOCUSED_BACKGROUND;
-    static ref HEADER_FOREGROUND : Color = ron::from_str("\"#AC5894\"").unwrap();
-
-    static ref MODE2_BACKGROUND : Color = ron::from_str("\"#122322\"").unwrap();
-
-    static ref MUSTARD_COLOR : Color = ron::from_str("\"#EABE38\"").unwrap();
-    static ref KETCHUP_COLOR : Color = ron::from_str("\"#B10B0B\"").unwrap();
-    static ref BLACK_COLOR : Color = ron::from_str("\"#000000\"").unwrap();
-    static ref GREY_COLOR : Color = ron::from_str("\"#999999\"").unwrap();
-);
+lazy_static! {
+    static ref DEFAULT_FOCUSED_BACKGROUND: Color = ron::from_str("\"#282828\"").unwrap();
+    static ref DEFAULT_FOCUSED_FOREGROUND: Color = ron::from_str("\"#928374\"").unwrap();
+    static ref DEFAULT_NON_FOCUSED_BACKGROUND: Color = ron::from_str("\"#181818\"").unwrap();
+    static ref DEFAULT_NON_FOCUSED_FOREGROUND: Color = ron::from_str("\"#928374\"").unwrap();
+    static ref HIGHLIGHTED_FOCUSED_BACKGROUND: Color = ron::from_str("\"#383433\"").unwrap();
+    static ref HIGHLIGHTED_FOCUSED_FOREGROUND: Color = ron::from_str("\"#928374\"").unwrap();
+    static ref HIGHLIGHTED_NON_FOCUSED_BACKGROUND: Color = ron::from_str("\"#181818\"").unwrap();
+    static ref HIGHLIGHTED_NON_FOCUSED_FOREGROUND: Color = ron::from_str("\"#928374\"").unwrap();
+    static ref PRIMARY_CURSOR_ANCHOR_BACKGROUND: Color = ron::from_str("\"#FFB81C\"").unwrap();
+    static ref SECONDARY_CURSORS_ANCHOR_BACKGROUND: Color = ron::from_str("\"#ED7737\"").unwrap();
+    static ref CURSORS_BACKGROUND: Color = ron::from_str("\"#852F00\"").unwrap();
+    static ref CURSORS_FOREGROUND: Color = ron::from_str("\"#FFC4A3\"").unwrap();
+    static ref HEADER_BACKGROUND: Color = *HIGHLIGHTED_FOCUSED_BACKGROUND;
+    static ref HEADER_FOREGROUND: Color = ron::from_str("\"#AC5894\"").unwrap();
+    static ref MODE2_BACKGROUND: Color = ron::from_str("\"#122322\"").unwrap();
+    static ref MUSTARD_COLOR: Color = ron::from_str("\"#EABE38\"").unwrap();
+    static ref KETCHUP_COLOR: Color = ron::from_str("\"#B10B0B\"").unwrap();
+    static ref BLACK_COLOR: Color = ron::from_str("\"#000000\"").unwrap();
+    static ref GREY_COLOR: Color = ron::from_str("\"#999999\"").unwrap();
+};
 
 impl Default for UiTheme {
     fn default() -> Self {
@@ -210,11 +202,11 @@ impl Theme {
 
     pub fn save_to_file(&self, path: &Path) -> Result<(), SaveError> {
         let item_s = ron::ser::to_string_pretty(self, ron::ser::PrettyConfig::new())?;
-        path.parent().map(|p|
+        path.parent().map(|p| {
             fs::create_dir_all(p).map_err(|e| {
                 error!("failed creating dir {:?}: {}", p, e);
             })
-        );
+        });
 
         fs::write(path, item_s)?;
 
@@ -227,9 +219,12 @@ impl Theme {
             Self::load_from_file(&full_path)
         } else {
             let theme = Self::default();
-            theme.save_to_file(&full_path).map_err(|e| {
-                error!("failed saving theme to {:?}: {}", &full_path, e);
-            }).unwrap();
+            theme
+                .save_to_file(&full_path)
+                .map_err(|e| {
+                    error!("failed saving theme to {:?}: {}", &full_path, e);
+                })
+                .unwrap();
             Ok(theme)
         }
     }

@@ -2,12 +2,12 @@ use std::cmp::Ordering;
 
 use log::debug;
 use log::error;
-use unicode_segmentation::UnicodeSegmentation;
+
 use unicode_width::UnicodeWidthStr;
 
 use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor::Selection;
-use crate::primitives::printable::Printable;
+
 use crate::primitives::xy::XY;
 use crate::text::text_buffer::TextBuffer;
 use crate::unpack_or;
@@ -78,10 +78,14 @@ impl StupidCursor {
 
         if let Some(line) = rope.get_line(self.line_0b as usize) {
             if self.char_idx_0b as usize > line.width() {
-                debug!("line #{} (0b) is too short ({} wide, {} requested)", self.line_0b, line.width(), self.char_idx_0b);
+                debug!(
+                    "line #{} (0b) is too short ({} wide, {} requested)",
+                    self.line_0b,
+                    line.width(),
+                    self.char_idx_0b
+                );
                 None
             } else {
-
                 //I could support "wide characters" here, but I kinda expect the "stupid cursor" to be stupid.
                 Some(XY::new(self.char_idx_0b as u16, self.line_0b as u16))
             }
@@ -92,7 +96,11 @@ impl StupidCursor {
     }
 
     pub fn to_real_cursor(&self, buffer: &dyn TextBuffer) -> Option<Cursor> {
-        let line_begin_char = unpack_or!(buffer.line_to_char(self.line_0b as usize), None, "can't cast stupid cursor to real cursor: not enough lines");
+        let line_begin_char = unpack_or!(
+            buffer.line_to_char(self.line_0b as usize),
+            None,
+            "can't cast stupid cursor to real cursor: not enough lines"
+        );
         let candidate = line_begin_char + self.char_idx_0b as usize;
         if let Some(next_line_begin_char) = buffer.line_to_char((self.line_0b + 1) as usize) {
             // I don't know why it works, but it works. So maybe test it, but sharp inequality was failing.
@@ -117,7 +125,10 @@ impl StupidCursor {
         let first = range.0.to_real_cursor(buffer)?;
         let second = range.1.to_real_cursor(buffer)?;
         if first >= second {
-            error!("failed to convert stupid cursor range to real cursor - first = {:?} >= {:?} = second", first, second);
+            error!(
+                "failed to convert stupid cursor range to real cursor - first = {:?} >= {:?} = second",
+                first, second
+            );
             return None;
         }
 
@@ -126,7 +137,10 @@ impl StupidCursor {
 
     pub fn is_between(&self, left_inclusive: StupidCursor, right_exclusive: StupidCursor) -> bool {
         if left_inclusive >= right_exclusive {
-            error!("stupid cursor {:?} can't be within deformed range {:?} {:?}", self, left_inclusive, right_exclusive);
+            error!(
+                "stupid cursor {:?} can't be within deformed range {:?} {:?}",
+                self, left_inclusive, right_exclusive
+            );
             return false;
         }
 
@@ -150,4 +164,3 @@ impl Ord for StupidCursor {
         }
     }
 }
-

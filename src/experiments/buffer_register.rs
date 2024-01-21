@@ -28,28 +28,26 @@ pub struct OpenResult {
 
 impl BufferRegister {
     pub fn new() -> BufferRegister {
-        BufferRegister {
-            buffers: HashMap::new(),
-        }
+        BufferRegister { buffers: HashMap::new() }
     }
 
     pub fn get_id_from_path(&self, path: &SPath) -> Option<DocumentIdentifier> {
-        self.buffers.keys().find(|di| di.file_path.as_ref().map(|sp| sp == path).unwrap_or(false)).map(|c| c.clone())
+        self.buffers
+            .keys()
+            .find(|di| di.file_path.as_ref().map(|sp| sp == path).unwrap_or(false))
+            .map(|c| c.clone())
     }
 
     pub fn get_buffer_ref_from_path(&self, path: &SPath) -> Option<BufferSharedRef> {
-        self.get_id_from_path(path).map(|id| {
-            self.buffers.get(&id).map(|r| r.clone())
-        }).flatten()
+        self.get_id_from_path(path)
+            .map(|id| self.buffers.get(&id).map(|r| r.clone()))
+            .flatten()
     }
 
     pub fn open_new_file(&mut self, providers: &Providers) -> BufferSharedRef {
         let doc_id = DocumentIdentifier::new_unique();
 
-        let buffer_state = BufferState::full(
-            Some(providers.tree_sitter().clone()),
-            doc_id.clone(),
-        );
+        let buffer_state = BufferState::full(Some(providers.tree_sitter().clone()), doc_id.clone());
 
         let bsr = BufferSharedRef::new_from_buffer(buffer_state);
 
@@ -91,10 +89,7 @@ impl BufferRegister {
 
             let doc_id = DocumentIdentifier::new_unique().with_file_path(path.clone());
 
-            let buffer_state = BufferState::full(
-                Some(providers.tree_sitter().clone()),
-                doc_id.clone(),
-            ).with_text(buffer_str);
+            let buffer_state = BufferState::full(Some(providers.tree_sitter().clone()), doc_id.clone()).with_text(buffer_str);
 
             let bsr = BufferSharedRef::new_from_buffer(buffer_state);
 
@@ -114,7 +109,7 @@ impl HasInvariant for BufferRegister {
     fn check_invariant(&self) -> bool {
         // no two references to the same file
 
-        let mut seen_refs: HashSet<SPath> = HashSet::new();
+        let seen_refs: HashSet<SPath> = HashSet::new();
 
         for document_identifier in self.buffers.keys() {
             if let Some(path) = &document_identifier.file_path {

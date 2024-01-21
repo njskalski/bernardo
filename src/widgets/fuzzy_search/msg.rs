@@ -20,5 +20,4 @@ pub enum FuzzySearchMsg {
     Close,
 }
 
-
 impl AnyMsg for FuzzySearchMsg {}

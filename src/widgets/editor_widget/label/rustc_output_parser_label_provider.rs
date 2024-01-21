@@ -1,20 +1,15 @@
-use std::ops::Range;
-
 use log::warn;
 use regex::Regex;
 
-use crate::fs::path::SPath;
 use crate::primitives::printable::Printable;
-use crate::text::text_buffer::TextBuffer;
+
 use crate::widgets::editor_widget::label::label::{Label, LabelPos, LabelStyle};
-use crate::widgets::editor_widget::label::labels_provider::LabelsProvider;
 
 /*
- TODO this is a very incomplete implementation.
- - it does not handle errors
- - it does not use settings at all, so no way to fine tune the display behavior
- */
-
+TODO this is a very incomplete implementation.
+- it does not handle errors
+- it does not use settings at all, so no way to fine tune the display behavior
+*/
 
 /*
 Generated with chat-gpt:
@@ -47,11 +42,11 @@ impl RustcOutputParserLabelProvider {
         }
     }
 
-    pub fn errors_iter(&self) -> impl Iterator<Item=&Label> {
+    pub fn errors_iter(&self) -> impl Iterator<Item = &Label> {
         self.labels.iter().filter(|label| label.style == LabelStyle::Error)
     }
 
-    pub fn warnings_iter(&self) -> impl Iterator<Item=&Label> {
+    pub fn warnings_iter(&self) -> impl Iterator<Item = &Label> {
         self.labels.iter().filter(|label| label.style == LabelStyle::Warning)
     }
 
@@ -67,7 +62,7 @@ impl RustcOutputParserLabelProvider {
                 }
             };
 
-            let filename = match capture.get(1).map(|m| m.as_str()) {
+            let _filename = match capture.get(1).map(|m| m.as_str()) {
                 Some(msg) => msg,
                 None => {
                     warn!("skipping warning: no filename");
@@ -83,7 +78,7 @@ impl RustcOutputParserLabelProvider {
                 }
             };
 
-            let col_number: usize = match capture.get(3).map(|m| m.as_str()).map(|s| s.parse::<usize>().ok()).flatten() {
+            let _col_number: usize = match capture.get(3).map(|m| m.as_str()).map(|s| s.parse::<usize>().ok()).flatten() {
                 Some(idx) => idx,
                 None => {
                     warn!("skipping warning: no column number");
@@ -107,7 +102,7 @@ impl RustcOutputParserLabelProvider {
                 }
             };
 
-            let filename = match capture.get(1).map(|m| m.as_str()) {
+            let _filename = match capture.get(1).map(|m| m.as_str()) {
                 Some(msg) => msg,
                 None => {
                     warn!("skipping error: no filename");
@@ -123,7 +118,7 @@ impl RustcOutputParserLabelProvider {
                 }
             };
 
-            let col_number: usize = match capture.get(3).map(|m| m.as_str()).map(|s| s.parse::<usize>().ok()).flatten() {
+            let _col_number: usize = match capture.get(3).map(|m| m.as_str()).map(|s| s.parse::<usize>().ok()).flatten() {
                 Some(idx) => idx,
                 None => {
                     warn!("skipping error: no column number");

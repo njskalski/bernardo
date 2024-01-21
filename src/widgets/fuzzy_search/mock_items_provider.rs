@@ -38,10 +38,7 @@ pub mod mock {
                 items.push(item);
             }
 
-            MockItemProvider {
-                num_items,
-                items,
-            }
+            MockItemProvider { num_items, items }
         }
     }
 
@@ -60,8 +57,14 @@ pub mod mock {
             Rc::new("mock".to_string())
         }
 
-        fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item=Box<dyn Item + '_>> + '_> {
-            Box::new(self.items.iter().filter(move |t| is_subsequence(t, &query)).take(limit).map(|f| Box::new(f.to_string()) as Box<dyn Item>))
+        fn items(&self, query: String, limit: usize) -> Box<dyn Iterator<Item = Box<dyn Item + '_>> + '_> {
+            Box::new(
+                self.items
+                    .iter()
+                    .filter(move |t| is_subsequence(t, &query))
+                    .take(limit)
+                    .map(|f| Box::new(f.to_string()) as Box<dyn Item>),
+            )
         }
     }
 }

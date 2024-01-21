@@ -30,7 +30,5 @@ fn basic_editor_testbed_test() {
         // let interpreter = setup.interpreter()?;
     }
 
-
     // screenshot(i);
 }
-

@@ -10,15 +10,15 @@ use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::io::output::{Metadata, Output};
+use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
-use crate::primitives::rect::Rect;
+
 use crate::primitives::xy::XY;
 use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::tree_view::tree_it::TreeIt;
 use crate::widgets::tree_view::tree_view_node::{TreeItFilter, TreeViewNode};
 
@@ -101,10 +101,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
     }
 
     pub fn with_size_policy(self, size_policy: SizePolicy) -> Self {
-        Self {
-            size_policy,
-            ..self
-        }
+        Self { size_policy, ..self }
     }
 
     pub fn set_highlighter(&mut self, highlighter_op: Option<LabelHighlighter>) {
@@ -157,9 +154,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
         for item in self.items() {
             size = XY::new(
                 // depth * 2 + 2 + label_length. The +2 comes from the fact, that even at 0 depth, we add a triangle AND a space before the label.
-                size
-                    .x
-                    .max(item.0 * 2 + 2 + item.1.label().width() as u16), // TODO fight overflow here.
+                size.x.max(item.0 * 2 + 2 + item.1.label().width() as u16), // TODO fight overflow here.
                 size.y + 1,
             );
         }
@@ -237,7 +232,10 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
         self.id
     }
 
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         TYPENAME
     }
 
@@ -261,14 +259,12 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
         // debug!("tree_view.on_input {:?}", input_event);
 
         return match input_event {
-            InputEvent::KeyInput(key) => {
-                match key.keycode {
-                    Keycode::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
-                    Keycode::ArrowDown => Some(Box::new(TreeViewMsg::Arrow(Arrow::Down))),
-                    Keycode::Enter => { Some(Box::new(TreeViewMsg::HitEnter)) }
-                    _ => None,
-                }
-            }
+            InputEvent::KeyInput(key) => match key.keycode {
+                Keycode::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
+                Keycode::ArrowDown => Some(Box::new(TreeViewMsg::Arrow(Arrow::Down))),
+                Keycode::Enter => Some(Box::new(TreeViewMsg::HitEnter)),
+                _ => None,
+            },
             _ => None,
         };
     }
@@ -305,11 +301,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
                     let highlighted_pair = self.items().skip(self.highlighted).next();
 
                     if highlighted_pair.is_none() {
-                        warn!(
-                            "TreeViewWidget #{} highlighted non-existent node {}!",
-                            self.id(),
-                            self.highlighted
-                        );
+                        warn!("TreeViewWidget #{} highlighted non-existent node {}!", self.id(), self.highlighted);
                         return None;
                     }
                     let (_, highlighted_node) = highlighted_pair.unwrap();
@@ -327,17 +319,15 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let size = unpack_or_e!(self.last_size, (), "render before layout");
+        let _size = unpack_or_e!(self.last_size, (), "render before layout");
 
         #[cfg(test)]
-        output.emit_metadata(
-            Metadata {
-                id: self.id(),
-                typename: self.typename().to_string(),
-                rect: Rect::from_zero(size.output_size()),
-                focused,
-            }
-        );
+        output.emit_metadata(Metadata {
+            id: self.id(),
+            typename: self.typename().to_string(),
+            rect: Rect::from_zero(size.output_size()),
+            focused,
+        });
 
         let visible_rect = output.visible_rect();
 
@@ -345,17 +335,23 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
         helpers::fill_output(primary_style.background, output);
         let cursor_style = theme.highlighted(focused);
 
-        for (item_idx, (depth, node)) in self.items().enumerate()
+        for (item_idx, (depth, node)) in self
+            .items()
+            .enumerate()
             // skipping lines that cannot be visible, because they are before hint()
-            .skip(visible_rect.upper_left().y as usize) {
-
+            .skip(visible_rect.upper_left().y as usize)
+        {
             // skipping lines that cannot be visible, because larger than the hint()
             if item_idx >= visible_rect.lower_right().y as usize {
                 break;
             }
 
             if item_idx >= output.visible_rect().lower_right().y as usize {
-                debug!("idx {}, output.visible_rect().y {}", item_idx, output.visible_rect().lower_right().y);
+                debug!(
+                    "idx {}, output.visible_rect().y {}",
+                    item_idx,
+                    output.visible_rect().lower_right().y
+                );
                 break;
             }
 
@@ -376,9 +372,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
             };
 
             let text = format!("{} {}", prefix, node.label());
-            let higlighted: Vec<usize> = self.highlighter_op.map(
-                |h| h(&text)
-            ).unwrap_or(vec![]);
+            let higlighted: Vec<usize> = self.highlighter_op.map(|h| h(&text)).unwrap_or(vec![]);
             let highlighted_idx: usize = 0;
 
             let mut x_offset: usize = 0;
@@ -405,11 +399,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
                     }
                 }
 
-                output.print_at(
-                    XY::new(x, y),
-                    local_style,
-                    g,
-                );
+                output.print_at(XY::new(x, y), local_style, g);
 
                 x_offset += g.width();
             }

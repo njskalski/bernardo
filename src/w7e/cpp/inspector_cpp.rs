@@ -10,7 +10,11 @@ impl LangInspector for CppLangInspector {
     }
 
     fn is_project_dir(&self, ff: &SPath) -> bool {
-        ff.is_dir() && ff.descendant_checked("compile_commands.json").map(|desc| desc.is_file()).unwrap_or(false)
+        ff.is_dir()
+            && ff
+                .descendant_checked("compile_commands.json")
+                .map(|desc| desc.is_file())
+                .unwrap_or(false)
     }
 }
 

@@ -3,7 +3,6 @@ use std::collections::HashSet;
 
 use log::{debug, error, warn};
 
-use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::screenspace::Screenspace;
@@ -11,17 +10,18 @@ use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::io::output::{Metadata, Output};
+use crate::io::output::Output;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
-use crate::primitives::rect::Rect;
+use crate::{subwidget, unpack_or, unpack_or_e};
+
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::big_list::big_list_widget::BigList;
 use crate::widgets::code_results_view::code_results_msg::CodeResultsMsg;
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
@@ -51,16 +51,13 @@ impl CodeResultsView {
     pub const TYPENAME: &'static str = "code_results";
     pub const MIN_WIDTH: u16 = 20;
 
-    pub fn new(
-        providers: Providers,
-        data_provider: Box<dyn CodeResultsProvider>,
-    ) -> Self {
+    pub fn new(providers: Providers, data_provider: Box<dyn CodeResultsProvider>) -> Self {
         Self {
             wid: get_new_widget_id(),
             label: TextWidget::new(Box::new("no description")).with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH),
-            item_list: WithScroll::new(ScrollDirection::Horizontal,
-                                       BigList::new(vec![])
-                                           .with_size_policy(SizePolicy::MATCH_LAYOUT),
+            item_list: WithScroll::new(
+                ScrollDirection::Horizontal,
+                BigList::new(vec![]).with_size_policy(SizePolicy::MATCH_LAYOUT),
             ),
             data_provider,
             failed_ids: HashSet::new(),
@@ -83,19 +80,29 @@ impl CodeResultsView {
 
     pub fn get_selected_doc_id(&self) -> DocumentIdentifier {
         // TODO unwrap
-        self.get_selected_item().get_buffer().lock().unwrap().get_document_identifier().clone()
+        self.get_selected_item()
+            .get_buffer()
+            .lock()
+            .unwrap()
+            .get_document_identifier()
+            .clone()
     }
 
     fn on_hit(&self) -> Option<Box<dyn AnyMsg>> {
         let editor = self.get_selected_item();
         let editor_widget_id = editor.id();
         let buffer = unpack_or_e!(editor.get_buffer().lock(), None, "can't lock buffer");
-        let single_cursor = unpack_or!(buffer.cursors(editor_widget_id).map(|cs| cs.as_single()).flatten(), None, "can't single the cursor");
+        let single_cursor = unpack_or!(
+            buffer.cursors(editor_widget_id).map(|cs| cs.as_single()).flatten(),
+            None,
+            "can't single the cursor"
+        );
 
         MainViewMsg::OpenFile {
             file: buffer.get_document_identifier().clone(),
             position_op: single_cursor,
-        }.someboxed()
+        }
+        .someboxed()
     }
 }
 
@@ -108,7 +115,10 @@ impl Widget for CodeResultsView {
         Self::TYPENAME
     }
 
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         Self::TYPENAME
     }
     fn prelayout(&mut self) {
@@ -118,9 +128,18 @@ impl Widget for CodeResultsView {
         self.label.set_text(self.data_provider.description());
 
         {
-            let mut buffer_register_lock = unpack_or_e!(self.providers.buffer_register().try_write().ok(), (), "failed to acquire buffer register");
+            let mut buffer_register_lock = unpack_or_e!(
+                self.providers.buffer_register().try_write().ok(),
+                (),
+                "failed to acquire buffer register"
+            );
 
-            for (idx, symbol) in self.data_provider.items().enumerate().skip(self.item_list.internal().items().count()) {
+            for (idx, symbol) in self
+                .data_provider
+                .items()
+                .enumerate()
+                .skip(self.item_list.internal().items().count())
+            {
                 // TODO URGENT loading files should be moved out from here to some common place between this and Editor
 
                 // this just skips failed loads. TODO add a "load error widget?"
@@ -163,7 +182,11 @@ impl Widget for CodeResultsView {
                 let open_result = buffer_register_lock.open_file(&self.providers, &spath);
 
                 if open_result.buffer_shared_ref.is_err() {
-                    error!("failed to load buffer {} because {}", spath, open_result.buffer_shared_ref.err().unwrap());
+                    error!(
+                        "failed to load buffer {} because {}",
+                        spath,
+                        open_result.buffer_shared_ref.err().unwrap()
+                    );
                     self.failed_ids.insert(idx);
                     continue;
                 }
@@ -176,30 +199,26 @@ impl Widget for CodeResultsView {
                         self.failed_ids.insert(idx);
                         continue;
                     }
-                    Some(mut buffer) => {
-                        match symbol.stupid_range.0.to_real_cursor(&*buffer) {
-                            None => {
-                                error!("failed to cast StupidCursor to a real one");
-                                self.failed_ids.insert(idx);
-                                continue;
-                            }
-                            Some(first_cursor) => {
-                                if open_result.opened {
-                                    warn!("I will destroy cursor data, because issue #23 - we don't have multiple views properly implemented, sorry");
-                                }
-
-                                buffer.remove_history();
-
-                                CursorSet::singleton(first_cursor)
-                            }
+                    Some(mut buffer) => match symbol.stupid_range.0.to_real_cursor(&*buffer) {
+                        None => {
+                            error!("failed to cast StupidCursor to a real one");
+                            self.failed_ids.insert(idx);
+                            continue;
                         }
-                    }
+                        Some(first_cursor) => {
+                            if open_result.opened {
+                                warn!("I will destroy cursor data, because issue #23 - we don't have multiple views properly implemented, sorry");
+                            }
+
+                            buffer.remove_history();
+
+                            CursorSet::singleton(first_cursor)
+                        }
+                    },
                 };
 
-                let mut edit_widget = EditorWidget::new(
-                    self.providers.clone(),
-                    buffer_state_ref,
-                ).with_readonly()
+                let mut edit_widget = EditorWidget::new(self.providers.clone(), buffer_state_ref)
+                    .with_readonly()
                     .with_ignore_input_altogether();
 
                 if edit_widget.set_cursors(cursor_set) == false {
@@ -208,10 +227,7 @@ impl Widget for CodeResultsView {
                     continue;
                 }
 
-                self.item_list.internal_mut().add_item(
-                    SplitRule::Fixed(5),
-                    edit_widget,
-                )
+                self.item_list.internal_mut().add_item(SplitRule::Fixed(5), edit_widget)
             }
         } // to drop buffer_register_lock
 
@@ -241,10 +257,8 @@ impl Widget for CodeResultsView {
         debug!("{} input {:?}", self.typename(), input_event);
 
         match input_event {
-            InputEvent::KeyInput(key) if key == Keycode::Enter.to_key() => {
-                CodeResultsMsg::Hit.someboxed()
-            }
-            _ => None
+            InputEvent::KeyInput(key) if key == Keycode::Enter.to_key() => CodeResultsMsg::Hit.someboxed(),
+            _ => None,
         }
     }
 
@@ -257,9 +271,7 @@ impl Widget for CodeResultsView {
 
         #[allow(unreachable_patterns)]
         return match our_msg.unwrap() {
-            CodeResultsMsg::Hit => {
-                self.on_hit()
-            }
+            CodeResultsMsg::Hit => self.on_hit(),
         };
     }
 
@@ -274,14 +286,12 @@ impl Widget for CodeResultsView {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         #[cfg(test)]
         {
-            output.emit_metadata(
-                Metadata {
-                    id: self.wid,
-                    typename: self.typename().to_string(),
-                    rect: Rect::from_zero(output.size()),
-                    focused,
-                }
-            );
+            output.emit_metadata(Metadata {
+                id: self.wid,
+                typename: self.typename().to_string(),
+                rect: Rect::from_zero(output.size()),
+                focused,
+            });
         }
 
         self.complex_render(theme, focused, output)
@@ -291,14 +301,8 @@ impl Widget for CodeResultsView {
 impl ComplexWidget for CodeResultsView {
     fn get_layout(&self) -> Box<dyn Layout<Self>> {
         SplitLayout::new(SplitDirection::Vertical)
-            .with(
-                SplitRule::Fixed(1),
-                LeafLayout::new(subwidget!(Self.label)).boxed(),
-            )
-            .with(
-                SplitRule::Proportional(1.0f32),
-                LeafLayout::new(subwidget!(Self.item_list)).boxed(),
-            )
+            .with(SplitRule::Fixed(1), LeafLayout::new(subwidget!(Self.label)).boxed())
+            .with(SplitRule::Proportional(1.0f32), LeafLayout::new(subwidget!(Self.item_list)).boxed())
             .boxed()
     }
 

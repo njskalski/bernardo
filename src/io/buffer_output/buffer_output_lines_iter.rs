@@ -47,8 +47,7 @@ impl<'a> Iterator for BufferLinesIter<'a> {
     type Item = HorizontalIterItem;
 
     fn next(&mut self) -> Option<Self::Item> {
-        'primary:
-        while self.pos.y < self.rect.lower_right().y {
+        'primary: while self.pos.y < self.rect.lower_right().y {
             let mut result = String::new();
             let mut style: Option<TextStyle> = None;
             let mut style_never_set = true;
@@ -60,7 +59,10 @@ impl<'a> Iterator for BufferLinesIter<'a> {
                 let pos = XY::new(x, self.pos.y);
                 let cell = &self.buffer[pos];
                 match cell {
-                    Cell::Begin { style: cell_style, grapheme } => {
+                    Cell::Begin {
+                        style: cell_style,
+                        grapheme,
+                    } => {
                         if let Some(set_style) = self.style_op {
                             if set_style != *cell_style {
                                 self.pos.y += 1;
@@ -242,7 +244,8 @@ mod tests {
         3
          */
 
-        let mut iter = buffer.lines_iter()
+        let mut iter = buffer
+            .lines_iter()
             .with_rect(Rect::new(XY::new(3, 0), XY::new(4, 3)))
             .with_style(*a.style().unwrap());
 
