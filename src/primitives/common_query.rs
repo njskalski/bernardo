@@ -17,9 +17,9 @@ impl CommonQuery {
             CommonQuery::String(substr) => label.contains(substr),
             CommonQuery::Fuzzy(subsequence) => {
                 let mut subsequence_grapheme_it = subsequence.graphemes(true).peekable();
-                let mut label_grapheme_it = label.graphemes(true);
+                let label_grapheme_it = label.graphemes(true);
 
-                while let Some(l) = label_grapheme_it.next() {
+                for l in label_grapheme_it {
                     match subsequence_grapheme_it.peek() {
                         None => {
                             return true;
@@ -49,15 +49,15 @@ impl CommonQuery {
             CommonQuery::Epsilon => Box::new(empty()),
             CommonQuery::String(substr) => match label.find(substr) {
                 None => Box::new(empty()),
-                Some(pos) => Box::new((pos..pos + substr.graphemes(true).count()).into_iter()),
+                Some(pos) => Box::new(pos..pos + substr.graphemes(true).count()),
             },
             CommonQuery::Fuzzy(subsequence) => {
                 let mut subsequence_grapheme_it = subsequence.graphemes(true).peekable();
-                let mut label_grapheme_it = label.graphemes(true).enumerate();
+                let label_grapheme_it = label.graphemes(true).enumerate();
 
                 let mut indices: Vec<usize> = Vec::new();
 
-                while let Some((idx, l)) = label_grapheme_it.next() {
+                for (idx, l) in label_grapheme_it {
                     match subsequence_grapheme_it.peek() {
                         None => {
                             return Box::new(indices.into_iter());
@@ -93,13 +93,13 @@ mod tests {
 
     #[test]
     fn test_fuzzy() {
-        assert_eq!(CommonQuery::Fuzzy("hell".to_string()).matches("hello"), true);
+        assert!(CommonQuery::Fuzzy("hell".to_string()).matches("hello"));
         assert_eq!(
             CommonQuery::Fuzzy("hell".to_string())
                 .matches_highlights("hello")
                 .collect::<Vec<usize>>(),
             vec![0, 1, 2, 3]
         );
-        assert_eq!(CommonQuery::Fuzzy("hell".to_string()).matches("helo"), false);
+        assert!(!CommonQuery::Fuzzy("hell".to_string()).matches("helo"));
     }
 }
