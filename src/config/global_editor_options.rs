@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use log::{debug, warn};
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use which;
 
@@ -38,19 +37,19 @@ impl GlobalEditorOptions {
                 return Some(path);
             }
 
-            let re = Regex::new(r"/usr/lib/llvm-\d/bin/clangd$").unwrap();
-            let mut binaries: Vec<PathBuf> = which::which_re(re).unwrap().collect();
-
-            if binaries.is_empty() {
-                debug!("couldn't find clangd neither on path nor in /usr/lib/llvm-*/bin/clangd");
-                return None;
+            for idx in (10..20).rev() {
+                let path: PathBuf = PathBuf::from(format!("/usr/lib/llvm-{}/bin/clangd", idx));
+                debug!("checking at {}", path.to_str().unwrap());
+                if let Ok(meta) = std::fs::metadata(&path) {
+                    if meta.is_file() {
+                        debug!("found clang at {}", path.to_str().unwrap_or("[failed to unwrap as str]"));
+                        return Some(path);
+                    }
+                }
             }
 
-            binaries.sort();
-
-            debug!("found {} binaries at /usr/lib/llvm-*/bin/clangd, picking highest number", binaries.len());
-
-            binaries.last().map(|item| item.clone())
+            debug!("couldn't find clangd neither on path nor in /usr/lib/llvm-*/bin/clangd");
+            None
         })
     }
 }
