@@ -2,7 +2,7 @@ use crate::widgets::tests::editor_view_testbed::EditorViewTestbed;
 use crate::widgets::tests::widget_testbed_builder::WidgetTestbedBuilder;
 
 pub fn get_setup() -> EditorViewTestbed {
-    let mut editor_view_testbed = WidgetTestbedBuilder::new().build_editor();
+    let editor_view_testbed = WidgetTestbedBuilder::new().build_editor();
 
     {
         let some_text = r#"use std::path::PathBuf;

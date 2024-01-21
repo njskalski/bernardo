@@ -50,7 +50,7 @@ pub mod tests {
         fn full_size(&self) -> XY {
             self.full_size
         }
-        fn layout(&mut self, screenspace: Screenspace) {}
+        fn layout(&mut self, _screenspace: Screenspace) {}
         fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
             todo!()
         }
@@ -136,13 +136,13 @@ pub mod tests {
         fn layout(&mut self, screenspace: Screenspace) {
             self.complex_layout(screenspace)
         }
-        fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
             todo!()
         }
-        fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+        fn update(&mut self, _msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
             todo!()
         }
-        fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        fn render(&self, _theme: &Theme, _focused: bool, _output: &mut dyn Output) {
             todo!()
         }
     }
@@ -160,7 +160,7 @@ pub mod tests {
         fn get_default_focused(&self) -> SubwidgetPointer<Self> {
             todo!()
         }
-        fn set_display_state(&mut self, display_state: DisplayState<Self>) {
+        fn set_display_state(&mut self, _display_state: DisplayState<Self>) {
             todo!()
         }
         fn get_display_state_op(&self) -> Option<&DisplayState<Self>> {
@@ -210,8 +210,7 @@ pub mod tests {
 
     #[test]
     fn test_split_3() {
-        let mut items: Vec<(SplitRule, MockWidget)> =
-            vec![(SplitRule::Fixed(5), MockWidget::new()), (SplitRule::Fixed(5), MockWidget::new())];
+        let items: Vec<(SplitRule, MockWidget)> = vec![(SplitRule::Fixed(5), MockWidget::new()), (SplitRule::Fixed(5), MockWidget::new())];
 
         let mut mcw = MockComplexWidget::new(items);
 
@@ -226,7 +225,7 @@ pub mod tests {
         let mut items: Vec<(SplitRule, MockWidget)> =
             vec![(SplitRule::Fixed(2), /*XY::new(1, 1), Some(XY::new(10, 2))*/ MockWidget::new())];
 
-        for idx in 0..10 {
+        for _idx in 0..10 {
             items.push((SplitRule::Proportional(2.0 as f32), MockWidget::new()));
         }
 

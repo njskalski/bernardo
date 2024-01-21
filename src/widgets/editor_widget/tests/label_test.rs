@@ -31,7 +31,7 @@ fn get_setup() -> EditorViewTestbed {
         Box::new("random error annotation".to_string()),
     ));
 
-    let mut editor_view_testbed = WidgetTestbedBuilder::new()
+    let editor_view_testbed = WidgetTestbedBuilder::new()
         .with_label_provider(mock_labels_provider.into_ref())
         .build_editor();
 

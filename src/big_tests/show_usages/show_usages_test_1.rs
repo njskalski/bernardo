@@ -9,7 +9,7 @@ use crate::spath;
 use crate::w7e::navcomp_provider::{NavCompSymbol, SymbolType, SymbolUsage};
 
 fn get_full_setup() -> FullSetup {
-    let mut full_setup: FullSetup = FullSetup::new("./test_envs/show_usages_test_1")
+    let full_setup: FullSetup = FullSetup::new("./test_envs/show_usages_test_1")
         .with_files(["src/main.rs"])
         // .with_frame_based_wait()
         .build();

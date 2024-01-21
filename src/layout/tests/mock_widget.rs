@@ -57,13 +57,13 @@ impl Widget for MockWidget {
         self.last_layout = Some(screenspace)
     }
 
-    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+    fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         None
     }
 
-    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+    fn update(&mut self, _msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         None
     }
 
-    fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {}
+    fn render(&self, _theme: &Theme, _focused: bool, _output: &mut dyn Output) {}
 }

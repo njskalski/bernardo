@@ -1,6 +1,6 @@
 use crate::io::output::Metadata;
 use crate::mocks::meta_frame::MetaOutputFrame;
-use crate::widgets::edit_box::EditBoxWidget;
+
 use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 
 pub struct ContextBarWidgetInterpreter<'a> {
