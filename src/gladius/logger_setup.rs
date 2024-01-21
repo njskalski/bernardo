@@ -13,7 +13,6 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("bernardo::fs::local_filesystem_front", log::LevelFilter::Error),
     ("bernardo::gladius::run_gladius", log::LevelFilter::Info),
     ("bernardo::io::over_output", log::LevelFilter::Info),
-    ("bernardo::io::subZ_output", log::LevelFilter::Debug),
     ("bernardo::text::buffer_state", log::LevelFilter::Warn),
     ("bernardo::tsw::tree_sitter_wrapper", log::LevelFilter::Error),
     ("bernardo::widgets", log::LevelFilter::Debug),
@@ -33,12 +32,12 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
 
     // This guy leaves a lot of data in trace, it seems like it spawns a new thread. I think it deserves profiling.
     ("arboard::x11_clipboard", log::LevelFilter::Warn),
-    ("bernardo::lsp_client", log::LevelFilter::Debug),
-    ("bernardo::w7e", log::LevelFilter::Debug),
-    ("bernardo::config", log::LevelFilter::Debug),
-    ("bernardo::lsp_client", log::LevelFilter::Debug),
-    ("bernardo::lsp_client::lsp_read", log::LevelFilter::Debug),
-    ("bernardo::lsp_client::lsp_write", log::LevelFilter::Debug),
+    ("bernardo::lsp_client", log::LevelFilter::Info),
+    ("bernardo::w7e", log::LevelFilter::Info),
+    ("bernardo::config", log::LevelFilter::Info),
+    ("bernardo::lsp_client", log::LevelFilter::Info),
+    ("bernardo::lsp_client::lsp_read", log::LevelFilter::Info),
+    ("bernardo::lsp_client::lsp_write", log::LevelFilter::Info),
     ("bernardo::mocks::full_setup", log::LevelFilter::Warn),
     ("bernardo::mocks", log::LevelFilter::Warn),
 ];
