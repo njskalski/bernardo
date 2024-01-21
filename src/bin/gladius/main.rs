@@ -39,11 +39,10 @@ fn main() {
     // Parsing arguments
     debug!("{:?}", args.paths());
     let (start_dir, files) = args.paths();
-    let fsf = RealFS::new(start_dir).to_fsf();
+    let fsf = RealFS::new(start_dir).unwrap().to_fsf(); // TODO unwrap
 
     // Initializing Bernardo TUI
     App::init().with_alt_screen_mode().run_with(move |input, output| {
-
         let tree_sitter = Arc::new(TreeSitterWrapper::new(LanguageSet::full()));
         let navcomp_loader = Arc::new(Box::new(RealNavCompLoader::new()) as Box<dyn NavCompLoader>);
 

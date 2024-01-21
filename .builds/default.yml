@@ -11,6 +11,9 @@ tasks:
       chmod +x ~/.local/bin/rust-analyzer
       source "$HOME/.cargo/env"
       rustup component add rust-src
+      
+      sudo apt update
+      sudo apt install -y clangd clang
   - build: |
       source "$HOME/.cargo/env"
       cd bernardo

@@ -28,7 +28,7 @@ fn completion_test_1() {
     assert!(full_setup.type_in("path."));
     assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().get_visible_cursor_lines().next().unwrap().contents.text.contains("path.")));
 
-    full_setup.navcomp_pilot().completions().unwrap().push(
+    full_setup.navcomp_pilot().unwrap().completions().unwrap().push(
         MockCompletionMatcher {
             path: None,
             answer: Some(vec![

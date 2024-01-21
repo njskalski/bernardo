@@ -2,10 +2,12 @@ use std::ffi::OsStr;
 use std::option::Option;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
+use std::sync::mpsc::channel;
 use std::thread::JoinHandle;
 use std::time::Duration;
 
 use crossbeam_channel::{Receiver, select, Sender};
+use env_logger::Target;
 use log::{debug, error, LevelFilter, warn};
 
 use crate::config::config::{Config, ConfigRef};
@@ -18,12 +20,14 @@ use crate::fs::mock_fs::MockFS;
 use crate::gladius::logger_setup::logger_setup;
 use crate::gladius::navcomp_loader::NavCompLoader;
 use crate::gladius::providers::Providers;
+use crate::gladius::real_navcomp_loader::RealNavCompLoader;
 use crate::gladius::run_gladius::run_gladius;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::{Key, Keycode};
 use crate::mocks::code_results_interpreter::CodeResultsViewInterpreter;
 use crate::mocks::editor_interpreter::EditorInterpreter;
 use crate::mocks::fuzzy_search_interpreter::FuzzySearchInterpreter;
+use crate::mocks::log_capture::CapturingLogger;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_clipboard::MockClipboard;
 use crate::mocks::mock_input::MockInput;
@@ -45,6 +49,9 @@ pub struct FullSetupBuilder {
     recording: bool,
     step_frame: bool,
     frame_based_wait: bool,
+    mock_navcomp: bool,
+    // capture logs
+    should_capture_logs : bool,
 }
 
 impl FullSetupBuilder {
@@ -53,6 +60,13 @@ impl FullSetupBuilder {
     pub fn with_config(self, config: Config) -> Self {
         FullSetupBuilder {
             config: Some(config),
+            ..self
+        }
+    }
+
+    pub fn with_mock_navcomp(self, mock_navcomp: bool) -> Self {
+        FullSetupBuilder {
+            mock_navcomp,
             ..self
         }
     }
@@ -94,7 +108,16 @@ impl FullSetupBuilder {
             ..self
         }
     }
+
+    pub fn with_capture_logs(self) -> Self {
+        FullSetupBuilder {
+            should_capture_logs : true,
+            ..self
+        }
+    }
 }
+
+
 
 pub struct FullSetup {
     fsf: FsfRef,
@@ -106,12 +129,30 @@ pub struct FullSetup {
     gladius_thread_handle: JoinHandle<()>,
     last_frame: Option<MetaOutputFrame>,
     frame_based_wait: bool,
-    mock_navcomp_pilot: MockNavCompProviderPilot,
+    // we have navcomp pilot only if navcomp is mocked.
+    mock_navcomp_pilot: Option<MockNavCompProviderPilot>,
+    // receiver of logs
+    logs_receiver_op : Option<Receiver<String>>,
 }
 
 impl FullSetupBuilder {
     pub fn build(self) -> FullSetup {
         logger_setup(LevelFilter::Debug);
+
+        let mut logs_receiver_op : Option<Receiver<String>> = None;
+
+        if self.should_capture_logs {
+            let (sender, receiver) = crossbeam_channel::unbounded::<String>();
+
+            env_logger::Builder::default()
+                .is_test(true)
+                // .target(Target::Pipe(Box::new(CapturingLogger { sender })))
+                .init();
+
+            log::set_boxed_logger(Box::new(CapturingLogger { sender })).unwrap();
+
+            logs_receiver_op = Some(receiver);
+        }
 
         let theme = Theme::default();
 
@@ -130,24 +171,29 @@ impl FullSetupBuilder {
 
         let tree_sitter = Arc::new(TreeSitterWrapper::new(LanguageSet::full()));
 
-        let (mock_navcomp_event_sender, mock_navcomp_event_recvr) = crossbeam_channel::unbounded::<MockNavCompEvent>();
-        let comp_matcher: Arc<RwLock<Vec<MockCompletionMatcher>>> = Arc::new(RwLock::new(Vec::new()));
-        let symbol_matcher: Arc<RwLock<Vec<MockSymbolMatcher>>> = Arc::new(RwLock::new(Vec::new()));
+        let mut mock_navcomp_pilot : Option<MockNavCompProviderPilot> = None;
+        let mut navcomp_loader = Arc::new(Box::new(RealNavCompLoader::new()) as Box<dyn NavCompLoader>);
 
-        let mock_navcomp_pilot = MockNavCompProviderPilot::new(
-            mock_navcomp_event_recvr,
-            comp_matcher.clone(),
-            symbol_matcher.clone(),
-        );
+        if self.mock_navcomp {
+            let (mock_navcomp_event_sender, mock_navcomp_event_recvr) = crossbeam_channel::unbounded::<MockNavCompEvent>();
+            let comp_matcher: Arc<RwLock<Vec<MockCompletionMatcher>>> = Arc::new(RwLock::new(Vec::new()));
+            let symbol_matcher: Arc<RwLock<Vec<MockSymbolMatcher>>> = Arc::new(RwLock::new(Vec::new()));
 
-        let mock_navcomp_loader = Arc::new(Box::new(
-            MockNavcompLoader::new(
-                mock_navcomp_event_sender,
-                comp_matcher,
-                symbol_matcher,
-            )
-        ) as Box<dyn NavCompLoader>
-        );
+            mock_navcomp_pilot = Some(MockNavCompProviderPilot::new(
+                mock_navcomp_event_recvr,
+                comp_matcher.clone(),
+                symbol_matcher.clone(),
+            ));
+
+            navcomp_loader = Arc::new(Box::new(
+                MockNavcompLoader::new(
+                    mock_navcomp_event_sender,
+                    comp_matcher,
+                    symbol_matcher,
+                )
+            ) as Box<dyn NavCompLoader>
+            );
+        }
 
         let providers = Providers::new(
             local_config,
@@ -155,7 +201,7 @@ impl FullSetupBuilder {
             local_clipboard,
             local_theme,
             tree_sitter,
-            mock_navcomp_loader,
+            navcomp_loader,
             vec![],
         );
 
@@ -180,6 +226,7 @@ impl FullSetupBuilder {
             last_frame: None,
             frame_based_wait: self.frame_based_wait,
             mock_navcomp_pilot,
+            logs_receiver_op,
         }
     }
 }
@@ -201,6 +248,8 @@ impl FullSetup {
             recording: false,
             step_frame: false,
             frame_based_wait: false,
+            mock_navcomp : true,
+            should_capture_logs: false,
         }
     }
 
@@ -232,8 +281,8 @@ impl FullSetup {
         res
     }
 
-    pub fn navcomp_pilot(&self) -> &MockNavCompProviderPilot {
-        &self.mock_navcomp_pilot
+    pub fn navcomp_pilot(&self) -> Option<&MockNavCompProviderPilot> {
+        self.mock_navcomp_pilot.as_ref()
     }
 
     pub fn get_frame(&self) -> Option<&MetaOutputFrame> {

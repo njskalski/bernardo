@@ -1,6 +1,6 @@
+use std::{fs, io};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::sync::RwLock;
 
@@ -138,6 +138,8 @@ impl Record {
     }
 
     fn from_real(path: &Path) -> std::io::Result<Record> {
+        debug_assert!(path.is_absolute());
+
         if path.is_file() {
             fs::read(path).map(|contents| Record::File(contents))
         } else {
@@ -174,8 +176,15 @@ pub struct MockFS {
 
 impl MockFS {
     pub fn new<T: Into<PathBuf>>(root_path: T) -> Self {
+        let root_path: PathBuf = root_path.into();
+        let root_path = if root_path.is_absolute() {
+            root_path
+        } else {
+            root_path.canonicalize().unwrap() // TODO unwrap
+        };
+
         MockFS {
-            root_path: root_path.into(),
+            root_path,
             root_dir: RwLock::new(Record::Dir(HashMap::default())),
         }
     }
@@ -222,15 +231,22 @@ impl MockFS {
         Ok(len_bytes)
     }
 
-    pub fn generate_from_real<P: AsRef<Path>>(path: P) -> Result<Self, ()> {
-        let root = Record::from_real(path.as_ref()).map_err(|_| ())?;
+    pub fn generate_from_real<P: AsRef<Path>>(path: P) -> io::Result<Self> {
+        let path: &Path = path.as_ref();
+        let path = if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            path.canonicalize()?
+        };
+
+        let root = Record::from_real(path.as_ref())?;
 
         if !root.is_dir() {
-            return Err(());
+            return Err(io::ErrorKind::InvalidInput.into());
         }
 
         Ok(MockFS {
-            root_path: path.as_ref().to_path_buf(),
+            root_path: path,
             root_dir: RwLock::new(root),
         })
     }
@@ -245,6 +261,7 @@ impl Debug for MockFS {
 
 impl FilesystemFront for MockFS {
     fn root_path(&self) -> &PathBuf {
+        debug_assert!(self.root_path.is_absolute());
         &self.root_path
     }
 
