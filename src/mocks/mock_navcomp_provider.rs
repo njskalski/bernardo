@@ -199,7 +199,8 @@ impl NavCompProvider for MockNavCompProvider {
     }
 
     // fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
-    //     let symbols = unpack_or_e!(self.symbols.read().ok(), None, "failed acquiring lock on symbols");
+    //     let symbols = unpack_or_e!(self.symbols.read().ok(), None, "failed acquiring lock on
+    // symbols");
     //
     //     let res = symbols
     //         .iter()
@@ -209,14 +210,14 @@ impl NavCompProvider for MockNavCompProvider {
     //                 None => {
     //                     debug!("returning broken symbol promise");
     //                     Box::new(
-    //                         MockNavCompPromise::<Option<NavCompSymbol>>::new_broken(self.navcomp_tick_server.clone())
+    // MockNavCompPromise::<Option<NavCompSymbol>>::new_broken(self.navcomp_tick_server.clone())
     //                     ) as SymbolPromise
     //                 }
     //                 Some(_) => {
     //                     debug!("returning successful symbol promise");
     //                     Box::new(
-    //                         MockNavCompPromise::new_succ(self.navcomp_tick_server.clone(), Some(c.symbol.clone()))
-    //                     ) as SymbolPromise
+    //                         MockNavCompPromise::new_succ(self.navcomp_tick_server.clone(),
+    // Some(c.symbol.clone()))                     ) as SymbolPromise
     //                 }
     //             }
     //         });

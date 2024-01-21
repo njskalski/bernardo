@@ -11,10 +11,10 @@ use crate::primitives::has_invariant::HasInvariant;
 use crate::text::text_buffer::TextBuffer;
 
 // INVARIANTS:
-// - non-empty
-//      this is so I can use cursor for anchoring and call "supercursor" easily
+// - non-empty this is so I can use cursor for anchoring and call "supercursor" easily
 // - cursors are distinct
-// - cursors have their anchors either on begin or on end, and they all have the anchor on the same side
+// - cursors have their anchors either on begin or on end, and they all have the anchor on the same
+//   side
 // - cursors DO NOT OVERLAP
 // - cursors are SORTED by their anchor
 
@@ -280,7 +280,8 @@ impl CursorSet {
 
             // This is actually right. Ropey counts '\n' as last character of current line.
             let last_char_in_new_line_idx = if new_line_idx == last_line_idx {
-                //this corresponds to a notion of "potential new character" beyond the buffer. It's a valid cursor position.
+                //this corresponds to a notion of "potential new character" beyond the buffer. It's a valid cursor
+                // position.
                 rope.len_chars()
             } else {
                 match rope.line_to_char(new_line_idx + 1) {
@@ -667,7 +668,8 @@ impl CursorSet {
     }
 
     pub fn supercursor(&self) -> &Cursor {
-        //TODO this should vary, depending on which direction cursors were moved last. Now it just points to first one.
+        //TODO this should vary, depending on which direction cursors were moved last. Now it just points
+        // to first one.
 
         // this succeeds, because of invariants
         self.set.first().unwrap_or_else(|| {
@@ -726,7 +728,8 @@ impl HasInvariant for CursorSet {
             return false;
         }
 
-        // at this point I know they are sorted and anchor-aligned. All I need to do is to check if begin is after previous end.
+        // at this point I know they are sorted and anchor-aligned. All I need to do is to check if begin is
+        // after previous end.
         for idx in 1..self.set.len() {
             if self.set[idx - 1].get_end() > self.set[idx].get_begin() {
                 error!(

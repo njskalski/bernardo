@@ -6,8 +6,8 @@ use crate::cursor::cursor::{Cursor, Selection};
 use crate::cursor::cursor_set::CursorSet;
 use crate::text::text_buffer::TextBuffer;
 
-// In this variant, a cursor is represented by # or a pair [ ) or ( ], with [ or ] marking the anchor.
-// No overlaps allowed.
+// In this variant, a cursor is represented by # or a pair [ ) or ( ], with [ or ] marking the
+// anchor. No overlaps allowed.
 // I SKIP character '.' for offsetting of multiple cursor sets.
 pub fn common_text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSet) {
     let mut text = String::new();

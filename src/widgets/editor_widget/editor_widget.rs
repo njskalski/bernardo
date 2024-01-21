@@ -624,7 +624,8 @@ impl EditorWidget {
         let mut line_idx = lines_to_skip;
 
         // preparing labels
-        // Right now labels "chain" one after another. Provided priority does not change, they should not glitter.
+        // Right now labels "chain" one after another. Provided priority does not change, they should not
+        // glitter.
         let mut labels: BTreeMap<XY, &Label> = BTreeMap::new();
 
         // if we don't have a char_range, that means the "visible rect" is empty, so we don't draw anything
@@ -1061,7 +1062,8 @@ impl EditorWidget {
             let maxy = if above {
                 hover_settings.anchor.y - visible_rect.pos.y
             } else {
-                visible_rect.lower_right().y - hover_settings.anchor.y - 1 // there was a drawing, it should be OK.
+                visible_rect.lower_right().y - hover_settings.anchor.y - 1 // there was a drawing,
+                                                                           // it should be OK.
             };
 
             let hover_size = XY::new(maxx, maxy);

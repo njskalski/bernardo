@@ -18,7 +18,8 @@ use crate::text::text_buffer::TextBuffer;
 So I don't have to reimplement basic edit properties for multiple widgets, I moved all (cursor, content) related code here.
  */
 
-// this is a completely arbitrary number against which I compare Page length, to avoid under/overflow while casting to isize safely.
+// this is a completely arbitrary number against which I compare Page length, to avoid
+// under/overflow while casting to isize safely.
 const PAGE_HEIGHT_LIMIT: usize = 2000;
 
 // TODO remove the integer result, it's not binding nor used anyways
@@ -273,7 +274,8 @@ fn insert_to_rope(
                     update_cursors_after_removal(other_cursor_set, sel.b..sel.e);
                 }
 
-                // this is necessary, because otherwise shift below may fail. I copy out, since later there is no anchor.
+                // this is necessary, because otherwise shift below may fail. I copy out, since later there is no
+                // anchor.
                 let was_anchor_right = c.anchor_right();
                 c.clear_selection();
 
@@ -357,7 +359,8 @@ fn update_cursors_after_removal(cs: &mut CursorSet, char_range: Range<usize>) {
     {
         let mut to_remove: Vec<usize> = Vec::new();
         for c in cs.iter() {
-            // the first ineq must be sharp - removing char that would have been *replaced* by cursor, does not invalidate the cursor
+            // the first ineq must be sharp - removing char that would have been *replaced* by cursor, does not
+            // invalidate the cursor
             if char_range.start < c.get_begin() && c.get_end() <= char_range.end {
                 to_remove.push(c.a);
             }

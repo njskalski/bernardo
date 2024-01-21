@@ -16,8 +16,10 @@
 
 // Newline is always an end of previous line, not a beginning of new.
 
-// TODO change the selection to Option<usize> to ENFORCE the invariant by reducing the volume of data.
-// TODO add "invariant protectors" to cursor set and warnings/errors, maybe add tests.
+// TODO change the selection to Option<usize> to ENFORCE the invariant by reducing the volume of
+// data.
+
+//TODO add "invariant protectors" to cursor set and warnings/errors, maybe add tests.
 
 use std::cmp::Ordering;
 
