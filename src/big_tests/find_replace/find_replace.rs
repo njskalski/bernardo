@@ -50,7 +50,7 @@ fn opening_replace_moves_focus() {
     assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().replace_op().is_some()));
 
     assert!(full_setup.get_first_editor().unwrap().replace_op().unwrap().is_focused());
-    assert_eq!(full_setup.get_first_editor().unwrap().find_op().unwrap().is_focused(), false);
+    assert!(!full_setup.get_first_editor().unwrap().find_op().unwrap().is_focused());
     full_setup.finish();
 }
 
