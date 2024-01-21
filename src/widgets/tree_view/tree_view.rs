@@ -13,7 +13,7 @@ use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
-use crate::primitives::rect::Rect;
+
 use crate::primitives::xy::XY;
 use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
@@ -320,15 +320,17 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let _size = unpack_or_e!(self.last_size, (), "render before layout");
-
         #[cfg(test)]
-        output.emit_metadata(crate::io::output::Metadata {
-            id: self.id(),
-            typename: self.typename().to_string(),
-            rect: Rect::from_zero(_size.output_size()),
-            focused,
-        });
+        {
+            let _size = unpack_or_e!(self.last_size, (), "render before layout");
+
+            output.emit_metadata(crate::io::output::Metadata {
+                id: self.id(),
+                typename: self.typename().to_string(),
+                rect: crate::primitives::rect::Rect::from_zero(_size.output_size()),
+                focused,
+            });
+        }
 
         let visible_rect = output.visible_rect();
 
