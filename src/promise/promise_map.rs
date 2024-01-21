@@ -45,7 +45,7 @@ impl<A, P: Promise<A> + Sized, B, F: FnOnce(A) -> B> MappedPromise<A, P, B, F> {
             self.break_promise();
             return PromiseState::Broken;
         }
-        if !self.mapper.is_some() {
+        if self.mapper.is_none() {
             self.break_promise();
             return PromiseState::Broken;
         }
@@ -230,7 +230,7 @@ mod tests {
         let done = ResolvedPromise::new(Some(1));
         let mut mapped = MappedPromise::new(done, |a| a + 1);
 
-        assert_eq!(mapped.state().is_broken(), false);
+        assert!(!mapped.state().is_broken());
         assert_eq!(mapped.state(), PromiseState::Unresolved);
         assert_eq!(mapped.read(), None);
         assert_eq!(
@@ -260,7 +260,7 @@ mod tests {
         };
         let mut mapped = MappedPromise::new(mock, |a| a + 1);
 
-        assert_eq!(mapped.state().is_broken(), false);
+        assert!(!mapped.state().is_broken());
         assert_eq!(mapped.read(), None);
         assert_eq!(mapped.read(), None);
         assert_eq!(
@@ -293,7 +293,7 @@ mod tests {
         };
         let mut mapped = MappedPromise::new(mock, |a| a + 1);
 
-        assert_eq!(mapped.state().is_broken(), false);
+        assert!(!mapped.state().is_broken());
         assert_eq!(mapped.state(), PromiseState::Unresolved);
         assert_eq!(mapped.read(), None);
         assert_eq!(
@@ -314,7 +314,7 @@ mod tests {
         assert_eq!(mapped.wait(None), PromiseState::Ready);
         assert_eq!(mapped.read(), Some(&4));
         assert_eq!(mapped.read(), Some(&4));
-        assert_eq!(mapped.state().is_broken(), false);
+        assert!(!mapped.state().is_broken());
         assert_eq!(mapped.take(), Some(4));
     }
 
@@ -328,19 +328,19 @@ mod tests {
         };
         let mut mapped = MappedPromise::new(mock, |a| a + 1);
 
-        assert_eq!(mapped.state().is_broken(), false);
+        assert!(!mapped.state().is_broken());
         assert_eq!(mapped.read(), None);
-        assert_eq!(mapped.update().has_changed, false);
-        assert_eq!(mapped.update().has_changed, false);
+        assert!(!mapped.update().has_changed);
+        assert!(!mapped.update().has_changed);
         assert_eq!(mapped.read(), None);
-        assert_eq!(mapped.update().has_changed, true);
-        assert_eq!(mapped.update().has_changed, false);
+        assert!(mapped.update().has_changed);
+        assert!(!mapped.update().has_changed);
         assert_eq!(mapped.read(), Some(&4));
         assert_eq!(mapped.wait(None), PromiseState::Ready);
         assert_eq!(mapped.wait(None), PromiseState::Ready);
         assert_eq!(mapped.read(), Some(&4));
         assert_eq!(mapped.read(), Some(&4));
-        assert_eq!(mapped.state().is_broken(), false);
+        assert!(!mapped.state().is_broken());
         assert_eq!(mapped.state(), PromiseState::Ready);
         assert_eq!(mapped.take(), Some(4));
     }
@@ -355,17 +355,17 @@ mod tests {
         };
         let mut mapped = MappedPromise::new(mock, |a| a + 1);
 
-        assert_eq!(mapped.state().is_broken(), false);
+        assert!(!mapped.state().is_broken());
         assert_eq!(mapped.read(), None);
-        assert_eq!(mapped.update().has_changed, false);
-        assert_eq!(mapped.update().has_changed, false);
+        assert!(!mapped.update().has_changed);
+        assert!(!mapped.update().has_changed);
         assert_eq!(mapped.read(), None);
-        assert_eq!(mapped.update().has_changed, true);
+        assert!(mapped.update().has_changed,);
         assert_eq!(mapped.read(), None);
         assert_eq!(mapped.wait(None), PromiseState::Broken);
         assert_eq!(mapped.read(), None);
         assert_eq!(mapped.read(), None);
-        assert_eq!(mapped.state().is_broken(), true);
+        assert!(mapped.state().is_broken());
         assert_eq!(mapped.state(), PromiseState::Broken);
         assert_eq!(mapped.take(), None);
     }
