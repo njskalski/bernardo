@@ -172,13 +172,7 @@ impl LspWrapper {
             .ids
             .write()
             .map_err(|poison_error| LspWriteError::LockError(poison_error.to_string()))?
-            .insert(
-                new_id.clone(),
-                CallInfo {
-                    method: R::METHOD,
-                    sender: sender,
-                },
-            )
+            .insert(new_id.clone(), CallInfo { method: R::METHOD, sender })
             .is_some()
         {
             // TODO this is a reuse of id, super unlikely
