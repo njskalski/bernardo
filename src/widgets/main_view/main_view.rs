@@ -554,3 +554,13 @@ impl ComplexWidget for MainView {
         self.display_state.as_mut()
     }
 }
+
+#[cfg(feature = "arbitrary")]
+impl<'a> arbitrary::Arbitrary<'a> for DocumentIdentifier {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self {
+            buffer_id: arbitrary::Arbitrary::arbitrary(u)?,
+            file_path: None,
+        })
+    }
+}
