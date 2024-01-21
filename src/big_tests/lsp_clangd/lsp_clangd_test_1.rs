@@ -53,15 +53,6 @@ fn completions_clangd_integ_test_1() {
 
     assert!(full_setup.wait_for(|f| { f.get_first_editor().unwrap().completions().map(|comp| comp.is_loading()) == Some(false) }));
 
-    let _items: Vec<String> = full_setup
-        .get_first_editor()
-        .unwrap()
-        .completions()
-        .unwrap()
-        .items()
-        .map(|item| item.text)
-        .collect();
-
     // each infix should appear at least once
     let expected_infixes: Vec<&'static str> = vec!["assign(", "at(size_type n)", "back()", "begin()"];
 
