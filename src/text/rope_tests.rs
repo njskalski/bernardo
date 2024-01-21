@@ -1,8 +1,6 @@
 // This file exists for two reasons. First, so I am sure I understand rope. Second, that the
 // contracts will not change silently on some update.
 
-use crate::text::text_buffer::TextBuffer;
-
 #[test]
 fn rope_last_line_newline() {
     let rope = ropey::Rope::from("aaa\nbbb\n");
@@ -18,7 +16,7 @@ fn rope_last_line_newline() {
 
 #[test]
 fn test_get_line_1() {
-    let rope: Box<dyn TextBuffer> = Box::new(ropey::Rope::from("aaa\nbbb\n\\ccc"));
+    let rope: Box<dyn crate::text::text_buffer::TextBuffer> = Box::new(ropey::Rope::from("aaa\nbbb\n\\ccc"));
 
     assert_eq!(rope.get_line(0), Some("aaa".to_string()));
     assert_eq!(rope.get_line(1), Some("bbb".to_string()));
@@ -28,7 +26,7 @@ fn test_get_line_1() {
 
 #[test]
 fn test_get_line_2() {
-    let rope: Box<dyn TextBuffer> = Box::new(ropey::Rope::from("aaa\nbbb\n\\ccc\n"));
+    let rope: Box<dyn crate::text::text_buffer::TextBuffer> = Box::new(ropey::Rope::from("aaa\nbbb\n\\ccc\n"));
 
     assert_eq!(rope.get_line(0), Some("aaa".to_string()));
     assert_eq!(rope.get_line(1), Some("bbb".to_string()));

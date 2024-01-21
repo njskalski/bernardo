@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use ropey::Rope;
 
 use crate::cursor::cursor::Cursor;

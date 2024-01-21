@@ -2,7 +2,7 @@ use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 
 fn get_full_setup() -> FullSetup {
-    let mut full_setup: FullSetup = FullSetup::new("./test_envs/lsp_clangd_1")
+    let full_setup: FullSetup = FullSetup::new("./test_envs/lsp_clangd_1")
         .with_files(["src/main.cpp"])
         .with_mock_navcomp(false)
         // .with_frame_based_wait()

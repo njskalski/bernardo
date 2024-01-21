@@ -9,12 +9,8 @@
 
 #![allow(dead_code)]
 
-use std::borrow::Borrow;
-
 use ropey::Rope;
 
-use crate::cursor::cursor::Cursor;
-use crate::cursor::cursor::Selection;
 use crate::cursor::cursor_set::CursorSet;
 use crate::cursor::tests::cursor_tests_common::{
     common_assert_pair_makes_sense, common_buffer_cursors_sel_to_text, common_text_to_buffer_cursors_with_selections,

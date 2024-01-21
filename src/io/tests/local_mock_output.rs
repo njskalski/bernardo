@@ -1,10 +1,9 @@
 use std::fmt::{Debug, Formatter};
 use std::io::Error;
 
-use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::io::output::{Metadata, Output};
 use crate::io::style::TextStyle;
-use crate::io::sub_output::SubOutput;
+
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
@@ -27,7 +26,7 @@ impl Debug for LocalMockOutput {
 }
 
 impl Output for LocalMockOutput {
-    fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
+    fn print_at(&mut self, _pos: XY, _style: TextStyle, _text: &str) {
         unimplemented!()
     }
 
@@ -39,7 +38,7 @@ impl Output for LocalMockOutput {
         self.visible_rect
     }
 
-    fn emit_metadata(&mut self, meta: Metadata) {
+    fn emit_metadata(&mut self, _meta: Metadata) {
         unimplemented!()
     }
 }
