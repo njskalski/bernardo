@@ -366,12 +366,10 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
 
             let prefix = if node.is_leaf() {
                 " "
+            } else if self.expanded.contains(node.id()) {
+                "▶"
             } else {
-                if self.expanded.contains(node.id()) {
-                    "▶"
-                } else {
-                    "▼"
-                }
+                "▼"
             };
 
             let text = format!("{} {}", prefix, node.label());
@@ -396,10 +394,8 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
 
                 let mut local_style = style;
 
-                if highlighted_idx < higlighted.len() {
-                    if higlighted[highlighted_idx] == grapheme_idx {
-                        local_style = local_style.with_background(theme.ui.focused_highlighted.background);
-                    }
+                if highlighted_idx < higlighted.len() && higlighted[highlighted_idx] == grapheme_idx {
+                    local_style = local_style.with_background(theme.ui.focused_highlighted.background);
                 }
 
                 output.print_at(XY::new(x, y), local_style, g);

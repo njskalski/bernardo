@@ -341,12 +341,10 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                         let count = self.items().take(preferred_idx + 1).count();
                         if count > preferred_idx {
                             self.highlighted = Some(preferred_idx);
+                        } else if count > 0 {
+                            self.highlighted = Some(count - 1);
                         } else {
-                            if count > 0 {
-                                self.highlighted = Some(count - 1);
-                            } else {
-                                self.highlighted = None;
-                            }
+                            self.highlighted = None;
                         }
                         self.on_change()
                     } else {

@@ -79,10 +79,8 @@ impl<'a> Iterator for BufferStyleIter<'a> {
                             }
 
                             result += grapheme;
-                        } else {
-                            if !result.is_empty() {
-                                break 'sticking;
-                            }
+                        } else if !result.is_empty() {
+                            break 'sticking;
                         }
                     }
                 }

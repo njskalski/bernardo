@@ -58,21 +58,19 @@ impl<W: Widget> Layout<W> for HoverLayout<W> {
         if let Some(child_rect) = child_rect_op {
             if !(screenspace.output_size() >= child_rect.lower_right()) {
                 error!("not enough space to draw child {} within ss {:?}", child_rect, screenspace);
-            } else {
-                if let Some(child_visible_rect) = screenspace.visible_rect().intersect(child_rect) {
-                    let mut child_visible_rect_in_child_space = child_visible_rect;
-                    child_visible_rect_in_child_space.pos -= child_rect.pos;
+            } else if let Some(child_visible_rect) = screenspace.visible_rect().intersect(child_rect) {
+                let mut child_visible_rect_in_child_space = child_visible_rect;
+                child_visible_rect_in_child_space.pos -= child_rect.pos;
 
-                    let mut partial: Vec<WidgetWithRect<W>> = self
-                        .child
-                        .layout(root, Screenspace::new(child_rect.size, child_visible_rect_in_child_space))
-                        .wwrs
-                        .into_iter()
-                        .map(|wir| wir.shifted(child_rect.pos))
-                        .collect();
+                let mut partial: Vec<WidgetWithRect<W>> = self
+                    .child
+                    .layout(root, Screenspace::new(child_rect.size, child_visible_rect_in_child_space))
+                    .wwrs
+                    .into_iter()
+                    .map(|wir| wir.shifted(child_rect.pos))
+                    .collect();
 
-                    result.wwrs.append(&mut partial);
-                }
+                result.wwrs.append(&mut partial);
             }
         } else {
             warn!("no child rec in hover layout");

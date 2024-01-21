@@ -94,13 +94,11 @@ impl<R: Request> Promise<R::Result> for LSPPromise<R> {
 
         if timeout {
             PromiseState::Unresolved
+        } else if let Some(value) = value_op {
+            self.set_from_value(value)
         } else {
-            if let Some(value) = value_op {
-                self.set_from_value(value)
-            } else {
-                self.err = Some(LspReadError::BrokenChannel);
-                PromiseState::Broken
-            }
+            self.err = Some(LspReadError::BrokenChannel);
+            PromiseState::Broken
         }
     }
 
