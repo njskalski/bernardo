@@ -31,7 +31,7 @@ use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
-use crate::{subwidget, unpack_or, unpack_or_e};
+use crate::{subwidget, unpack_or};
 
 const PATTERN: &str = "pattern: ";
 const REPLACE: &str = "replace: ";
@@ -432,15 +432,16 @@ impl Widget for EditorView {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let _total_size = unpack_or_e!(self.display_state.as_ref().map(|ds| ds.total_size), (), "render before layout");
-
         #[cfg(test)]
-        output.emit_metadata(crate::io::output::Metadata {
-            id: self.wid,
-            typename: self.typename().to_string(),
-            rect: Rect::from_zero(_total_size),
-            focused,
-        });
+        {
+            let total_size = crate::unpack_unit_e!(self.display_state.as_ref().map(|ds| ds.total_size), "render before layout",);
+            output.emit_metadata(crate::io::output::Metadata {
+                id: self.wid,
+                typename: self.typename().to_string(),
+                rect: Rect::from_zero(total_size),
+                focused,
+            });
+        }
 
         self.complex_render(theme, focused, output)
     }

@@ -376,14 +376,17 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let _size = unpack_or_e!(self.last_size, (), "render before layout");
         #[cfg(test)]
-        output.emit_metadata(crate::io::output::Metadata {
-            id: self.id(),
-            typename: self.typename().to_string(),
-            rect: crate::primitives::rect::Rect::from_zero(_size.output_size()),
-            focused,
-        });
+        {
+            let size = crate::unpack_unit_e!(self.last_size, "render before layout",);
+
+            output.emit_metadata(crate::io::output::Metadata {
+                id: self.id(),
+                typename: self.typename().to_string(),
+                rect: crate::primitives::rect::Rect::from_zero(size.output_size()),
+                focused,
+            });
+        }
 
         let size = if self.last_size.is_none() {
             error!("request to draw before layout, skipping.");

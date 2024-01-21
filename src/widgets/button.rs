@@ -9,7 +9,6 @@ use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::printable::Printable;
 use crate::primitives::xy::XY;
-use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 
@@ -82,14 +81,17 @@ impl Widget for ButtonWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let _size = XY::new(unpack_or!(self.last_size_x, (), "render before layout"), 1);
         #[cfg(test)]
-        output.emit_metadata(crate::io::output::Metadata {
-            id: self.id(),
-            typename: self.typename().to_string(),
-            rect: crate::primitives::rect::Rect::from_zero(_size),
-            focused,
-        });
+        {
+            let size = XY::new(crate::unpack_unit!(self.last_size_x, "render before layout",), 1);
+
+            output.emit_metadata(crate::io::output::Metadata {
+                id: self.id(),
+                typename: self.typename().to_string(),
+                rect: crate::primitives::rect::Rect::from_zero(size),
+                focused,
+            });
+        }
 
         let style = if focused { theme.highlighted(true) } else { theme.ui.non_focused };
 

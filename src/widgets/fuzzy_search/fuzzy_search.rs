@@ -15,7 +15,7 @@ use crate::io::sub_output::SubOutput;
 use crate::primitives::common_edit_msgs::key_to_edit_msg;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
-use crate::unpack_or_e;
+use crate::unpack_unit_e;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
@@ -301,7 +301,7 @@ impl Widget for FuzzySearchWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let size = unpack_or_e!(self.last_size, (), "render before layout");
+        let size = unpack_unit_e!(self.last_size, "render before layout",);
 
         #[cfg(test)]
         {

@@ -322,7 +322,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         #[cfg(test)]
         {
-            let size = crate::unpack_or_e!(self.last_size, (), "render before layout");
+            let size = crate::unpack_unit_e!(self.last_size, "render before layout",);
 
             output.emit_metadata(crate::io::output::Metadata {
                 id: self.id(),

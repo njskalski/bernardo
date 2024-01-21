@@ -12,7 +12,7 @@ use crate::io::sub_output::SubOutput;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::{Scroll, ScrollDirection};
 use crate::primitives::xy::XY;
-use crate::unpack_or;
+use crate::unpack_unit;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::{DeterminedBy, SizePolicy};
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
@@ -86,7 +86,7 @@ impl<W: Widget> WithScroll<W> {
     }
 
     fn render_line_no(&self, margin_width: u16, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let _layout_res = unpack_or!(self.layout_res.as_ref(), (), "render before layout");
+        let _layout_res = unpack_unit!(self.layout_res.as_ref(), "render before layout",);
         #[cfg(test)]
         {
             output.emit_metadata(crate::io::output::Metadata {
@@ -353,7 +353,7 @@ impl<W: Widget> Widget for WithScroll<W> {
             });
         }
 
-        let layout_res = unpack_or!(self.layout_res.as_ref(), (), "render before layout");
+        let layout_res = unpack_unit!(self.layout_res.as_ref(), "render before layout",);
 
         if layout_res.margin_width > 0 {
             self.render_line_no(layout_res.margin_width, theme, focused, output);
