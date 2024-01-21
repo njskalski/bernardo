@@ -270,10 +270,8 @@ impl Cursor {
             return CursorStatus::UnderCursor;
         }
 
-        if self.s.is_some() {
-            if self.s.unwrap().within(char_idx) {
-                return CursorStatus::WithinSelection;
-            }
+        if self.s.is_some() && self.s.unwrap().within(char_idx) {
+            return CursorStatus::WithinSelection;
         }
 
         CursorStatus::None

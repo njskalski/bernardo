@@ -91,10 +91,8 @@ impl FilesystemFront for RealFS {
         stream: &mut dyn StreamingIterator<Item = [u8]>,
         must_exist: bool,
     ) -> Result<usize, WriteError> {
-        if must_exist {
-            if path.exists() {
-                return Err(WriteError::FileNotFound);
-            }
+        if must_exist && path.exists() {
+            return Err(WriteError::FileNotFound);
         }
 
         let mut file = std::fs::File::open(path)?;

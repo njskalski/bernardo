@@ -242,12 +242,10 @@ impl EditorWidget {
 
             let navcomp = if let Some(path) = buffer.get_path() {
                 navcomp_group.get_navcomp_for(path)
+            } else if let Some(lang) = buffer.get_lang_id() {
+                navcomp_group.get_navcomp_for_lang(lang)
             } else {
-                if let Some(lang) = buffer.get_lang_id() {
-                    navcomp_group.get_navcomp_for_lang(lang)
-                } else {
-                    None
-                }
+                None
             };
 
             self.navcomp = navcomp;
@@ -1305,10 +1303,8 @@ impl Widget for EditorWidget {
                                 } else {
                                     debug!("Not removing a single cursor at {}", special_cursor.a);
                                 }
-                            } else {
-                                if !cursor_set.add_cursor(*cursor) {
-                                    warn!("Failed to add cursor {:?} to set", cursor);
-                                }
+                            } else if !cursor_set.add_cursor(*cursor) {
+                                warn!("Failed to add cursor {:?} to set", cursor);
                             }
 
                             debug_assert!(cursor_set.check_invariant());
