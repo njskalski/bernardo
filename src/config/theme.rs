@@ -121,7 +121,7 @@ lazy_static! {
     static ref KETCHUP_COLOR: Color = ron::from_str("\"#B10B0B\"").unwrap();
     static ref BLACK_COLOR: Color = ron::from_str("\"#000000\"").unwrap();
     static ref GREY_COLOR: Color = ron::from_str("\"#999999\"").unwrap();
-};
+}
 
 impl Default for UiTheme {
     fn default() -> Self {

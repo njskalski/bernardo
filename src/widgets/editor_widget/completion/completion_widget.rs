@@ -13,7 +13,6 @@ use crate::io::output::Output;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::common_query::CommonQuery;
-
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::xy::XY;
 use crate::promise::promise::PromiseState;
@@ -216,10 +215,10 @@ impl Widget for CompletionWidget {
         #[cfg(test)]
         {
             if let Some(ds) = self.get_display_state_op() {
-                output.emit_metadata(Metadata {
+                output.emit_metadata(crate::io::output::Metadata {
                     id: self.wid,
                     typename: self.typename().to_string(),
-                    rect: Rect::new(XY::ZERO, ds.total_size),
+                    rect: crate::primitives::rect::Rect::new(XY::ZERO, ds.total_size),
                     focused,
                 });
             }

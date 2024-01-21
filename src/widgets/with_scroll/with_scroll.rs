@@ -89,7 +89,7 @@ impl<W: Widget> WithScroll<W> {
         let _layout_res = unpack_or!(self.layout_res.as_ref(), (), "render before layout");
         #[cfg(test)]
         {
-            output.emit_metadata(Metadata {
+            output.emit_metadata(crate::io::output::Metadata {
                 id: self.id(),
                 typename: Self::TYPENAME_FOR_MARGIN.to_string(),
                 rect: Rect::from_zero(XY::new(margin_width, output.size().y)),
@@ -342,7 +342,7 @@ impl<W: Widget> Widget for WithScroll<W> {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         #[cfg(test)]
         {
-            output.emit_metadata(Metadata {
+            output.emit_metadata(crate::io::output::Metadata {
                 id: self.id,
                 typename: self.typename().to_string(),
                 rect: Rect::from_zero(output.size()),

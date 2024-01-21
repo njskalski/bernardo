@@ -120,7 +120,7 @@ impl Output for OverOutput<'_> {
     }
 
     #[cfg(test)]
-    fn emit_metadata(&mut self, mut meta: Metadata) {
+    fn emit_metadata(&mut self, mut meta: crate::io::output::Metadata) {
         let upper_left = self.visible_rect().upper_left();
 
         if let Some(intersect_rect) = meta.rect.intersect(self.visible_rect()) {

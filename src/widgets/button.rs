@@ -8,7 +8,6 @@ use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::printable::Printable;
-
 use crate::primitives::xy::XY;
 use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
@@ -85,10 +84,10 @@ impl Widget for ButtonWidget {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let _size = XY::new(unpack_or!(self.last_size_x, (), "render before layout"), 1);
         #[cfg(test)]
-        output.emit_metadata(Metadata {
+        output.emit_metadata(crate::io::output::Metadata {
             id: self.id(),
             typename: self.typename().to_string(),
-            rect: Rect::from_zero(size),
+            rect: crate::primitives::rect::Rect::from_zero(_size),
             focused,
         });
 

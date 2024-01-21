@@ -2,9 +2,7 @@ use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
-
 use crate::primitives::xy::XY;
-
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 
@@ -73,11 +71,11 @@ impl Widget for NoEditorWidget {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         #[cfg(test)]
         {
-            let size = unpack_or!(self.last_size, (), "render before layout");
-            output.emit_metadata(Metadata {
+            let size = crate::unpack_or!(self.last_size, (), "render before layout");
+            output.emit_metadata(crate::io::output::Metadata {
                 id: self.wid,
                 typename: self.typename().to_string(),
-                rect: Rect::from_zero(size),
+                rect: crate::primitives::rect::Rect::from_zero(size),
                 focused,
             });
         }

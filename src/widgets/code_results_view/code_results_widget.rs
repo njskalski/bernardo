@@ -14,8 +14,6 @@ use crate::io::output::Output;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
-use crate::{subwidget, unpack_or, unpack_or_e};
-
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
@@ -30,6 +28,7 @@ use crate::widgets::main_view::main_view::DocumentIdentifier;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
+use crate::{subwidget, unpack_or, unpack_or_e};
 
 pub struct CodeResultsView {
     wid: WID,
@@ -286,10 +285,10 @@ impl Widget for CodeResultsView {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         #[cfg(test)]
         {
-            output.emit_metadata(Metadata {
+            output.emit_metadata(crate::io::output::Metadata {
                 id: self.wid,
                 typename: self.typename().to_string(),
-                rect: Rect::from_zero(output.size()),
+                rect: crate::primitives::rect::Rect::from_zero(output.size()),
                 focused,
             });
         }

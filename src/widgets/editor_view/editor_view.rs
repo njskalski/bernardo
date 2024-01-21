@@ -435,10 +435,10 @@ impl Widget for EditorView {
         let _total_size = unpack_or_e!(self.display_state.as_ref().map(|ds| ds.total_size), (), "render before layout");
 
         #[cfg(test)]
-        output.emit_metadata(Metadata {
+        output.emit_metadata(crate::io::output::Metadata {
             id: self.wid,
             typename: self.typename().to_string(),
-            rect: Rect::from_zero(total_size),
+            rect: Rect::from_zero(_total_size),
             focused,
         });
 

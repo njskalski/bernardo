@@ -12,7 +12,6 @@ use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::common_edit_msgs::{key_to_edit_msg, CommonEditMsg};
 use crate::primitives::helpers;
-
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
@@ -270,10 +269,10 @@ impl Widget for EditBoxWidget {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let size = XY::new(unpack_or_e!(self.last_size_x, (), "render before layout"), 1);
         #[cfg(test)]
-        output.emit_metadata(Metadata {
+        output.emit_metadata(crate::io::output::Metadata {
             id: self.id(),
             typename: self.typename().to_string(),
-            rect: Rect::from_zero(size),
+            rect: crate::primitives::rect::Rect::from_zero(size),
             focused,
         });
 

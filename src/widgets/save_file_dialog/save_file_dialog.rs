@@ -424,10 +424,10 @@ impl Widget for SaveFileDialogWidget {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let _size = unpack_or_e!(self.display_state.as_ref(), (), "render before layout").total_size;
         #[cfg(test)]
-        output.emit_metadata(Metadata {
+        output.emit_metadata(crate::io::output::Metadata {
             id: self.id(),
             typename: self.typename().to_string(),
-            rect: Rect::from_zero(size),
+            rect: Rect::from_zero(_size),
             focused,
         });
 

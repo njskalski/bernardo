@@ -112,12 +112,12 @@ impl Output for SubOutput<'_> {
     // }
 
     #[cfg(test)]
-    fn emit_metadata(&mut self, mut meta: Metadata) {
+    fn emit_metadata(&mut self, mut meta: crate::io::output::Metadata) {
         meta.rect.pos = meta.rect.pos + self.frame_in_parent_space.pos;
         if meta.rect.lower_right() <= self.frame_in_parent_space.lower_right() {
             self.output.emit_metadata(meta)
         } else {
-            debug!("suppressing metadata: {:?} - out of view", meta)
+            log::debug!("suppressing metadata: {:?} - out of view", meta)
         }
     }
 }

@@ -305,7 +305,7 @@ impl Widget for FuzzySearchWidget {
 
         #[cfg(test)]
         {
-            output.emit_metadata(Metadata {
+            output.emit_metadata(crate::io::output::Metadata {
                 id: self.id,
                 typename: self.typename().to_string(),
                 rect: Rect::from_zero(output.size()),

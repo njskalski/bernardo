@@ -77,7 +77,7 @@ impl Output for BufferOutput {
     }
 
     #[cfg(test)]
-    fn emit_metadata(&mut self, _meta: Metadata) {}
+    fn emit_metadata(&mut self, _meta: crate::io::output::Metadata) {}
 }
 
 impl Debug for BufferOutput {

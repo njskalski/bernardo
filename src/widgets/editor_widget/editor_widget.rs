@@ -1385,7 +1385,7 @@ impl Widget for EditorWidget {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         #[cfg(test)]
         {
-            output.emit_metadata(Metadata {
+            output.emit_metadata(crate::io::output::Metadata {
                 id: self.wid,
                 typename: self.typename().to_string(),
                 // TODO I am not sure of that

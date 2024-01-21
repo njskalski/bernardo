@@ -300,7 +300,7 @@ impl<T: Widget> Widget for BigList<T> {
         #[cfg(test)]
         {
             let total_size = self.display_state.as_ref().unwrap().total_size;
-            output.emit_metadata(Metadata {
+            output.emit_metadata(crate::io::output::Metadata {
                 id: self.wid,
                 typename: self.typename().to_string(),
                 rect: Rect::from_zero(total_size),

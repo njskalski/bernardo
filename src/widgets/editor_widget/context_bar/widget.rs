@@ -10,7 +10,7 @@ use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::common_edit_msgs::{key_to_edit_msg, CommonEditMsg};
 use crate::primitives::common_query::CommonQuery;
-
+use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::subwidget;
 use crate::text::buffer_state::BufferState;
@@ -160,7 +160,7 @@ impl Widget for ContextBarWidget {
         #[cfg(test)]
         {
             if let Some(ds) = self.get_display_state_op() {
-                output.emit_metadata(Metadata {
+                output.emit_metadata(crate::io::output::Metadata {
                     id: self.id,
                     typename: self.typename().to_string(),
                     rect: Rect::new(XY::ZERO, ds.total_size),
