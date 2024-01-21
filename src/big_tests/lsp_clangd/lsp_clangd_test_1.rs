@@ -2,7 +2,7 @@ use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 
 fn get_full_setup() -> FullSetup {
-    let mut full_setup: FullSetup = FullSetup::new("./test_envs/lsp_clangd_1")
+    let full_setup: FullSetup = FullSetup::new("./test_envs/lsp_clangd_1")
         .with_files(["src/main.cpp"])
         .with_mock_navcomp(false)
         // .with_frame_based_wait()
@@ -53,7 +53,7 @@ fn completions_clangd_integ_test_1() {
 
     assert!(full_setup.wait_for(|f| { f.get_first_editor().unwrap().completions().map(|comp| comp.is_loading()) == Some(false) }));
 
-    let items: Vec<String> = full_setup
+    let _items: Vec<String> = full_setup
         .get_first_editor()
         .unwrap()
         .completions()

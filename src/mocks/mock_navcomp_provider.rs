@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Formatter};
-use std::ops::Range;
+
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use std::time::Duration;
 
@@ -13,10 +13,10 @@ use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 use crate::w7e::navcomp_provider::{
-    Completion, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, SymbolContextActionsPromise, SymbolPromise,
+    Completion, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, SymbolContextActionsPromise,
     SymbolType, SymbolUsage, SymbolUsagesPromise,
 };
-use crate::{unpack_or, unpack_or_e};
+use crate::{unpack_or_e};
 
 pub struct MockCompletionMatcher {
     // None matches all
