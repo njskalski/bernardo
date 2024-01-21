@@ -5,10 +5,7 @@ use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
 
 // returns (consumed, message_to_parent)
-pub fn recursive_treat_views(
-    view: &mut dyn Widget,
-    ie: InputEvent,
-) -> (bool, Option<Box<dyn AnyMsg>>) {
+pub fn recursive_treat_views(view: &mut dyn Widget, ie: InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
     let my_desc = format!("{:?}", &view).clone();
     let my_id = view.id();
 
@@ -20,14 +17,15 @@ pub fn recursive_treat_views(
     // first, dig as deep as possible.
     let (child_have_consumed, message_from_child_op) = match focused_child_op {
         Some(focused_child) => {
-            debug_assert!(focused_child.id() != my_id,
-                          "widget {:?} pointed to itself as it's own child, causing stack overflow", view
+            debug_assert!(
+                focused_child.id() != my_id,
+                "widget {:?} pointed to itself as it's own child, causing stack overflow",
+                view
             );
-
 
             recursive_treat_views(focused_child, ie)
         }
-        None => (false, None)
+        None => (false, None),
     };
     debug!(target: "recursive_treat_views", "{:?}: event {:?}, active_child: {:?}, child_consumed: {}, message_from_child: {:?}",
             my_desc, ie, child_desc, child_have_consumed, &message_from_child_op);

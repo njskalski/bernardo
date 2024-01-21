@@ -13,7 +13,6 @@ use crate::w7e::navcomp_provider::NavCompProvider;
 // over LSP thread, so NOT SURE.
 pub type NavCompRef = Arc<Box<dyn NavCompProvider>>;
 
-
 pub trait Handler {
     fn lang_id(&self) -> LangId;
     fn handler_id(&self) -> &'static str;

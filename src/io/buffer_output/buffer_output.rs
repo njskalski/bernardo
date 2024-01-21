@@ -10,7 +10,7 @@ use crate::io::buffer_output::buffer_output_cells_iter::BufferOutputCellsIter;
 use crate::io::buffer_output::buffer_output_lines_iter::BufferLinesIter;
 use crate::io::buffer_output::buffer_output_styles_iter::BufferStyleIter;
 use crate::io::cell::Cell;
-use crate::io::output::{Metadata, Output};
+use crate::io::output::Output;
 use crate::io::style::TextStyle;
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
@@ -22,11 +22,7 @@ impl Output for BufferOutput {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
         // if !self.size_constraint().strictly_bigger_than(pos) {
         if pos >= self.size() {
-            warn!(
-                "early exit on drawing beyond border (req {}, border {:?})",
-                pos,
-                self.size()
-            );
+            warn!("early exit on drawing beyond border (req {}, border {:?})", pos, self.size());
             return;
         }
 
@@ -81,7 +77,7 @@ impl Output for BufferOutput {
     }
 
     #[cfg(test)]
-    fn emit_metadata(&mut self, _meta: Metadata) {}
+    fn emit_metadata(&mut self, _meta: crate::io::output::Metadata) {}
 }
 
 impl Debug for BufferOutput {
@@ -99,7 +95,9 @@ impl BufferOutput {
         BufferOutputCellsIter::new(self)
     }
 
-    pub fn lines_iter(&self) -> BufferLinesIter { BufferLinesIter::new(self) }
+    pub fn lines_iter(&self) -> BufferLinesIter {
+        BufferLinesIter::new(self)
+    }
 
     pub fn get_line(&self, line_idx: u16) -> Option<String> {
         if line_idx >= self.size().y {
@@ -147,4 +145,3 @@ impl ToString for BufferOutput {
         wchujdlugistring
     }
 }
-

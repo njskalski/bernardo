@@ -2,6 +2,7 @@ extern crate core;
 
 pub mod app;
 pub mod config;
+pub mod cursor;
 pub mod experiments;
 pub mod fs;
 pub mod gladius;
@@ -15,7 +16,6 @@ pub mod tsw;
 pub mod w7e;
 pub mod widget;
 pub mod widgets;
-pub mod cursor;
 
 #[cfg(test)]
 pub mod big_tests;

@@ -2,8 +2,8 @@ use std::ops::{Index, IndexMut};
 use std::path::Path;
 
 use log::error;
-use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
@@ -70,7 +70,10 @@ impl<T: Default + Clone> IndexMut<XY> for Buffer<T> {
 }
 
 // TODO these are debug helpers, I will not invest in them much
-impl<T: Default + Clone> Buffer<T> where T: Serialize + DeserializeOwned + ?Sized {
+impl<T: Default + Clone> Buffer<T>
+where
+    T: Serialize + DeserializeOwned + ?Sized,
+{
     pub fn save_to_file(&self, filename: &Path) -> Result<(), ()> {
         let s: String = ron::to_string(&self).map_err(|e| {
             error!("failed to serialize: {:?}", e);

@@ -3,7 +3,7 @@ use std::ops::Add;
 use std::time;
 use std::time::Duration;
 
-use crossbeam_channel::{Receiver, RecvError, RecvTimeoutError, Sender, TryRecvError};
+use crossbeam_channel::{Receiver, RecvTimeoutError, Sender, TryRecvError};
 use log::{debug, error, warn};
 use lsp_types::request::Request;
 use serde_json::Value;
@@ -77,18 +77,14 @@ impl<R: Request> Promise<R::Result> for LSPPromise<R> {
             return PromiseState::Ready;
         }
 
-        let mut timeout = false;
+        let _timeout = false;
         let (timeout, value_op): (bool, Option<Value>) = if let Some(duration) = how_long {
             match self.receiver.recv_deadline(time::Instant::now().add(duration)) {
                 Ok(value) => (false, Some(value)),
                 Err(e) => match e {
-                    RecvTimeoutError::Timeout => {
-                        (true, None)
-                    }
-                    RecvTimeoutError::Disconnected => {
-                        (false, None)
-                    }
-                }
+                    RecvTimeoutError::Timeout => (true, None),
+                    RecvTimeoutError::Disconnected => (false, None),
+                },
             }
         } else {
             (false, self.receiver.recv().ok())
@@ -126,28 +122,24 @@ impl<R: Request> Promise<R::Result> for LSPPromise<R> {
                         has_changed: true,
                     }
                 }
-                Err(e) => {
-                    match e {
-                        TryRecvError::Empty => {
-                            UpdateResult {
-                                state: PromiseState::Unresolved,
-                                has_changed: false,
-                            }
+                Err(e) => match e {
+                    TryRecvError::Empty => UpdateResult {
+                        state: PromiseState::Unresolved,
+                        has_changed: false,
+                    },
+                    TryRecvError::Disconnected => {
+                        warn!("promise {:?} broken", self);
+                        self.err = Some(LspReadError::BrokenChannel);
+                        if let Err(e) = self.error_sink.try_send(self.err.as_ref().unwrap().clone()) {
+                            error!("failed sending LSP Error [{:?}] to sink, due [{:?}]", self.err, e);
                         }
-                        TryRecvError::Disconnected => {
-                            warn!("promise {:?} broken", self);
-                            self.err = Some(LspReadError::BrokenChannel);
-                            if let Err(e) = self.error_sink.try_send(self.err.as_ref().unwrap().clone()) {
-                                error!("failed sending LSP Error [{:?}] to sink, due [{:?}]", self.err, e);
-                            }
 
-                            UpdateResult {
-                                state: PromiseState::Unresolved,
-                                has_changed: true,
-                            }
+                        UpdateResult {
+                            state: PromiseState::Unresolved,
+                            has_changed: true,
                         }
                     }
-                }
+                },
             }
         } else {
             UpdateResult {

@@ -113,10 +113,8 @@ impl<A, P: Promise<A>, B, F: FnOnce(A) -> B> Promise<B> for MappedPromise<A, P, 
         }
 
         match self.parent.as_mut().unwrap().wait(how_long) {
-            PromiseState::Unresolved => {
-                PromiseState::Unresolved
-            }
-            _ => self.execute_mapping()
+            PromiseState::Unresolved => PromiseState::Unresolved,
+            _ => self.execute_mapping(),
         }
     }
 
@@ -139,10 +137,7 @@ impl<A, P: Promise<A>, B, F: FnOnce(A) -> B> Promise<B> for MappedPromise<A, P, 
             PromiseState::Unresolved => {
                 if self.parent.as_mut().unwrap().update().state.is_resolved() {
                     let state = self.execute_mapping();
-                    UpdateResult {
-                        state,
-                        has_changed: true,
-                    }
+                    UpdateResult { state, has_changed: true }
                 } else {
                     UpdateResult {
                         state: PromiseState::Unresolved,
@@ -156,7 +151,6 @@ impl<A, P: Promise<A>, B, F: FnOnce(A) -> B> Promise<B> for MappedPromise<A, P, 
     fn read(&self) -> Option<&B> {
         self.value.as_ref()
     }
-
 
     fn take(self) -> Option<B> {
         self.value
@@ -211,7 +205,10 @@ mod tests {
             } else {
                 // this is stupid but it's a mock.
                 self.wait(None);
-                UpdateResult { state: self.state(), has_changed: true }
+                UpdateResult {
+                    state: self.state(),
+                    has_changed: true,
+                }
             }
         }
 
@@ -236,14 +233,20 @@ mod tests {
         assert_eq!(mapped.state().is_broken(), false);
         assert_eq!(mapped.state(), PromiseState::Unresolved);
         assert_eq!(mapped.read(), None);
-        assert_eq!(mapped.update(), UpdateResult {
-            state: PromiseState::Ready,
-            has_changed: true,
-        });
-        assert_eq!(mapped.update(), UpdateResult {
-            state: PromiseState::Ready,
-            has_changed: false,
-        });
+        assert_eq!(
+            mapped.update(),
+            UpdateResult {
+                state: PromiseState::Ready,
+                has_changed: true,
+            }
+        );
+        assert_eq!(
+            mapped.update(),
+            UpdateResult {
+                state: PromiseState::Ready,
+                has_changed: false,
+            }
+        );
         assert_eq!(mapped.read(), Some(&2));
     }
 
@@ -260,14 +263,20 @@ mod tests {
         assert_eq!(mapped.state().is_broken(), false);
         assert_eq!(mapped.read(), None);
         assert_eq!(mapped.read(), None);
-        assert_eq!(mapped.update(), UpdateResult {
-            state: PromiseState::Unresolved,
-            has_changed: false,
-        });
-        assert_eq!(mapped.update(), UpdateResult {
-            state: PromiseState::Unresolved,
-            has_changed: false,
-        });
+        assert_eq!(
+            mapped.update(),
+            UpdateResult {
+                state: PromiseState::Unresolved,
+                has_changed: false,
+            }
+        );
+        assert_eq!(
+            mapped.update(),
+            UpdateResult {
+                state: PromiseState::Unresolved,
+                has_changed: false,
+            }
+        );
         assert_eq!(mapped.wait(None), PromiseState::Broken);
         assert_eq!(mapped.wait(None), PromiseState::Broken);
         assert_eq!(mapped.read(), None);
@@ -287,14 +296,20 @@ mod tests {
         assert_eq!(mapped.state().is_broken(), false);
         assert_eq!(mapped.state(), PromiseState::Unresolved);
         assert_eq!(mapped.read(), None);
-        assert_eq!(mapped.update(), UpdateResult {
-            state: PromiseState::Unresolved,
-            has_changed: false,
-        });
-        assert_eq!(mapped.update(), UpdateResult {
-            state: PromiseState::Unresolved,
-            has_changed: false,
-        });
+        assert_eq!(
+            mapped.update(),
+            UpdateResult {
+                state: PromiseState::Unresolved,
+                has_changed: false,
+            }
+        );
+        assert_eq!(
+            mapped.update(),
+            UpdateResult {
+                state: PromiseState::Unresolved,
+                has_changed: false,
+            }
+        );
         assert_eq!(mapped.wait(None), PromiseState::Ready);
         assert_eq!(mapped.wait(None), PromiseState::Ready);
         assert_eq!(mapped.read(), Some(&4));

@@ -13,18 +13,18 @@ mod tests {
     #[test]
     fn test_write_rust_workspace() {
         let workspace_pill = SerializableWorkspace {
-            scopes: vec![
-                SerializableProjectScope {
-                    lang_id: LangId::RUST,
-                    path: PathBuf::from("rust_repo"),
-                    handler_id_op: Some("rust".to_string()),
-                }
-            ]
+            scopes: vec![SerializableProjectScope {
+                lang_id: LangId::RUST,
+                path: PathBuf::from("rust_repo"),
+                handler_id_op: Some("rust".to_string()),
+            }],
         };
 
         let item = workspace_pill.to_pretty_ron_string().unwrap();
 
-        assert_eq!(item, r#"(
+        assert_eq!(
+            item,
+            r#"(
     scopes: [
         (
             lang_id: RUST,
@@ -32,7 +32,8 @@ mod tests {
             handler_id_op: Some("rust"),
         ),
     ],
-)"#);
+)"#
+        );
     }
 
     #[test]
@@ -56,12 +57,12 @@ mod tests {
         assert_eq!(workspace_pill.scopes[0].handler_id_op, Some("rust".to_string()));
     }
 
-
     fn test_read_workspace() {
         let repo_folder = Path::new("workspace");
-        let mock_fs = MockFS::new("/tmp").with_file(
-            "workspace/.gladius_workspace.ron",
-            r#"(
+        let mock_fs = MockFS::new("/tmp")
+            .with_file(
+                "workspace/.gladius_workspace.ron",
+                r#"(
     scopes: [
         (
             lang_id: RUST,
@@ -69,14 +70,18 @@ mod tests {
             handler_id_op: Some("rust"),
         ),
     ],
-)"#).with_file(
-            "workspace/rust_project/Cargo.toml",
-            r#"
+)"#,
+            )
+            .with_file(
+                "workspace/rust_project/Cargo.toml",
+                r#"
 [package]
 name = "hello_world" # the name of the package
 version = "0.1.0"    # the current version, obeying semver
 authors = ["Alice <a@example.com>", "Bob <b@example.com>"]
-            "#).to_fsf();
+            "#,
+            )
+            .to_fsf();
 
         assert_eq!(spath!(mock_fs, "workspace").unwrap().exists(), true);
         assert_eq!(spath!(mock_fs, "workspace", ".gladius_workspace.ron").unwrap().exists(), true);

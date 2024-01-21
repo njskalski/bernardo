@@ -2,13 +2,13 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct DirEntry {
-    file_name : PathBuf,
+    file_name: PathBuf,
 }
 
 impl DirEntry {
-    pub fn new<P : Into<PathBuf>>(file_name: P) -> DirEntry {
+    pub fn new<P: Into<PathBuf>>(file_name: P) -> DirEntry {
         DirEntry {
-            file_name : file_name.into()
+            file_name: file_name.into(),
         }
     }
 
@@ -23,9 +23,7 @@ impl DirEntry {
 
 #[macro_export]
 macro_rules! de {
-    ( $name:expr ) => {
-        {
-            crate::fs::dir_entry::DirEntry::new($name)
-        }
-    };
+    ( $name:expr ) => {{
+        crate::fs::dir_entry::DirEntry::new($name)
+    }};
 }

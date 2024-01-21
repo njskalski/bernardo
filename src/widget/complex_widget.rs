@@ -12,7 +12,7 @@ use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::helpers::fill_output;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
-use crate::widget::widget::{WID, Widget};
+use crate::widget::widget::{Widget, WID};
 
 // here one could merge focus_group.focused with ds.focused, but not it's not important.
 
@@ -93,25 +93,34 @@ pub trait ComplexWidget: Widget + Sized {
 
         for wwr in layout_res.wwrs.iter() {
             debug_assert!(screenspace.output_size() >= wwr.rect().lower_right());
-            debug_assert!(layout_res.total_size >= wwr.rect().lower_right(), "total_size = {}, rect = {}", layout_res.total_size, wwr.rect());
+            debug_assert!(
+                layout_res.total_size >= wwr.rect().lower_right(),
+                "total_size = {}, rect = {}",
+                layout_res.total_size,
+                wwr.rect()
+            );
         }
 
-        let widgets_and_positions: Vec<(WID, SubwidgetPointer<Self>, Rect)> = layout_res.wwrs.iter().filter(
-            |wwr| wwr.focusable()
-        ).map(|w| {
-            let rect = w.rect().clone();
-            let wid = w.widget().get(self).id();
-            (wid, w.widget().clone(), rect)
-        }).collect();
+        let widgets_and_positions: Vec<(WID, SubwidgetPointer<Self>, Rect)> = layout_res
+            .wwrs
+            .iter()
+            .filter(|wwr| wwr.focusable())
+            .map(|w| {
+                let rect = w.rect().clone();
+                let wid = w.widget().get(self).id();
+                (wid, w.widget().clone(), rect)
+            })
+            .collect();
 
-        let focused = self.get_display_state_op()
+        let focused = self
+            .get_display_state_op()
             .as_ref()
             .map(|s| s.focused.clone())
             .unwrap_or(self.get_default_focused());
 
         let selected = focused.get(self).id();
 
-        let focus_group = from_geometry::<>(&widgets_and_positions, selected, layout_res.total_size);
+        let focus_group = from_geometry(&widgets_and_positions, selected, layout_res.total_size);
 
         let new_state = DisplayState {
             focused,
@@ -139,10 +148,11 @@ pub trait ComplexWidget: Widget + Sized {
 
                 for wwr in &ds.wwrs {
                     let widget = wwr.widget().get(self);
-                    let child_widget_desc = format!("{}", widget);
+                    let _child_widget_desc = format!("{}", widget);
 
                     if visible_rect.intersect(wwr.rect()).is_none() {
-                        debug!("culling child widget {} of {}, no intersection between visible rect {} and wwr.rect {}",
+                        debug!(
+                            "culling child widget {} of {}, no intersection between visible rect {} and wwr.rect {}",
                             widget,
                             self.typename(),
                             visible_rect,
@@ -156,9 +166,7 @@ pub trait ComplexWidget: Widget + Sized {
                     let subwidget_focused = focused && widget.id() == focused_subwidget.id();
 
                     if widget.id() != self_id {
-                        widget.render(theme,
-                                      subwidget_focused,
-                                      sub_output);
+                        widget.render(theme, subwidget_focused, sub_output);
                     } else {
                         self.internal_render(theme, subwidget_focused, sub_output);
                     }
@@ -166,7 +174,12 @@ pub trait ComplexWidget: Widget + Sized {
                 }
 
                 if !my_focused_drawn {
-                    error!("a focused widget {} is not drawn in {} #{}!", focused_desc, self.typename(), self.id())
+                    error!(
+                        "a focused widget {} is not drawn in {} #{}!",
+                        focused_desc,
+                        self.typename(),
+                        self.id()
+                    )
                 }
             }
         }
@@ -176,7 +189,10 @@ pub trait ComplexWidget: Widget + Sized {
         if let Some(ds) = self.get_display_state_mut_op() {
             ds.focused = subwidget_pointer;
         } else {
-            error!("failed setting focused before layout on {}. Use get_default_focused instead?", self.typename());
+            error!(
+                "failed setting focused before layout on {}. Use get_default_focused instead?",
+                self.typename()
+            );
         }
     }
 
@@ -185,14 +201,17 @@ pub trait ComplexWidget: Widget + Sized {
             error!("requested complex_get_focused before layout");
         }
 
-        self.get_display_state_op().as_ref().map(|ds| {
-            let w = ds.focused.get(self);
-            if w.id() == self.id() {
-                None
-            } else {
-                Some(w)
-            }
-        }).flatten()
+        self.get_display_state_op()
+            .as_ref()
+            .map(|ds| {
+                let w = ds.focused.get(self);
+                if w.id() == self.id() {
+                    None
+                } else {
+                    Some(w)
+                }
+            })
+            .flatten()
     }
 
     fn complex_get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
@@ -200,20 +219,18 @@ pub trait ComplexWidget: Widget + Sized {
             error!("requested complex_get_focused_mut before layout");
         }
 
-        let focused_ptr =
+        let focused_ptr = self.get_display_state_op().as_ref().map(|ds| ds.focused.clone());
 
-            self.get_display_state_op().as_ref().map(|ds| {
-                ds.focused.clone()
-            });
-
-        focused_ptr.map(|p| {
-            let self_id = self.id();
-            let w = p.get_mut(self);
-            if w.id() == self_id {
-                None
-            } else {
-                Some(w)
-            }
-        }).flatten()
+        focused_ptr
+            .map(|p| {
+                let self_id = self.id();
+                let w = p.get_mut(self);
+                if w.id() == self_id {
+                    None
+                } else {
+                    Some(w)
+                }
+            })
+            .flatten()
     }
 }

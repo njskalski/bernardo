@@ -11,7 +11,7 @@ use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::unpack_or;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 
 pub struct DumpVisualizerWidget {
     wid: WID,
@@ -52,7 +52,10 @@ impl Widget for DumpVisualizerWidget {
     fn typename(&self) -> &'static str {
         Self::TYPENAME
     }
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         Self::TYPENAME
     }
 
@@ -85,13 +88,7 @@ impl Widget for DumpVisualizerWidget {
                     let cell = &dump[xy];
                     match cell {
                         Cell::Continuation => {}
-                        Cell::Begin { style, grapheme } => {
-                            output.print_at(
-                                XY::new(x, y),
-                                *style,
-                                grapheme,
-                            )
-                        }
+                        Cell::Begin { style, grapheme } => output.print_at(XY::new(x, y), *style, grapheme),
                     }
                 }
             }

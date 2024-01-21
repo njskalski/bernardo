@@ -8,7 +8,7 @@ use bernardo::io::output::Output;
 use bernardo::primitives::scroll::ScrollDirection;
 use bernardo::primitives::xy::XY;
 use bernardo::widget::any_msg::AnyMsg;
-use bernardo::widget::widget::{get_new_widget_id, WID, Widget};
+use bernardo::widget::widget::{get_new_widget_id, Widget, WID};
 use bernardo::widgets::dump_visualizer_widget::DumpVisualizerWidget;
 use bernardo::widgets::with_scroll::with_scroll::WithScroll;
 
@@ -23,12 +23,7 @@ impl ReaderMainWidget {
     pub fn new(dump: BufferOutput) -> Self {
         Self {
             wid: get_new_widget_id(),
-            main_display: WithScroll::new(
-                ScrollDirection::Both,
-                DumpVisualizerWidget::new()
-                    .with_dump(dump)
-                ,
-            ),
+            main_display: WithScroll::new(ScrollDirection::Both, DumpVisualizerWidget::new().with_dump(dump)),
         }
     }
 }
@@ -45,7 +40,10 @@ impl Widget for ReaderMainWidget {
         self.wid
     }
 
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         Self::TYPENAME
     }
 
@@ -61,11 +59,11 @@ impl Widget for ReaderMainWidget {
         self.main_display.layout(screenspace)
     }
 
-    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+    fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         None
     }
 
-    fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+    fn update(&mut self, _msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         None
     }
 

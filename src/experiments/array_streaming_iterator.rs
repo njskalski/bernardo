@@ -7,10 +7,7 @@ pub struct ArrayStreamingIt<'a, T> {
 
 impl<'a, T> ArrayStreamingIt<'a, T> {
     pub fn new(array: &'a [T]) -> Self {
-        Self {
-            array,
-            pos: 0,
-        }
+        Self { array, pos: 0 }
     }
 }
 

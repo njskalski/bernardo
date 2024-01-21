@@ -30,5 +30,4 @@ pub enum EditorWidgetMsg {
     ShowUsages,
 }
 
-
 impl AnyMsg for EditorWidgetMsg {}

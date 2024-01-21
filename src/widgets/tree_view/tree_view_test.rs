@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
     use crate::widget::stupid_tree::get_stupid_tree;
     use crate::widgets::tree_view::tree_it::TreeIt;
     use crate::widgets::tree_view::tree_view_node::TreeViewNode;
+    use std::collections::HashSet;
 
     #[test]
     fn tree_it_test_1() {
@@ -17,10 +17,9 @@ mod test {
             let items: Vec<(u16, String)> = TreeIt::new(&root, expanded_ref, None, None)
                 .map(|(d, f)| (d, format!("{:?}", f.id())))
                 .collect();
-            let max_len = items.iter().fold(
-                0,
-                |acc, (_, item)| if acc > item.len() { acc } else { item.len() },
-            );
+            let max_len = items
+                .iter()
+                .fold(0, |acc, (_, item)| if acc > item.len() { acc } else { item.len() });
             (items, max_len)
         };
 
@@ -28,15 +27,15 @@ mod test {
             let (items, max_len) = try_out(&expanded);
             assert_eq!(items.len(), 7);
             /*
-        0: 0 -
-        1:  1 -
-        2:    10001
-        3:    10002
-        4:   2 *
-        5:   3
-        6:  4 *
-        len 7.
-         */
+            0: 0 -
+            1:  1 -
+            2:    10001
+            3:    10002
+            4:   2 *
+            5:   3
+            6:  4 *
+            len 7.
+             */
 
             assert_eq!(max_len, 5);
         }
@@ -46,18 +45,18 @@ mod test {
         {
             let (items, max_len) = try_out(&expanded);
             /*
-        0: 0 -
-        1:  1 -
-        2:    10001
-        3:    10002
-        4:  2 -
-        5:    20001
-        6:    20002
-        7:    20003 *
-        8:  3
-        9:  4 *
-        len 10.
-         */
+            0: 0 -
+            1:  1 -
+            2:    10001
+            3:    10002
+            4:  2 -
+            5:    20001
+            6:    20002
+            7:    20003 *
+            8:  3
+            9:  4 *
+            len 10.
+             */
 
             assert_eq!(items.len(), 10);
             assert_eq!(max_len, 5);
@@ -67,19 +66,19 @@ mod test {
 
         {
             /*
-        0: 0 -
-        1:  1 -
-        2:    10001
-        3:    10002
-        4:  2 -
-        5:    20001
-        6:    20002
-        7:    20003 -
-        8:          2000301
-        9:  3
-       10:  4 *
-        len 11.
-         */
+             0: 0 -
+             1:  1 -
+             2:    10001
+             3:    10002
+             4:  2 -
+             5:    20001
+             6:    20002
+             7:    20003 -
+             8:          2000301
+             9:  3
+            10:  4 *
+             len 11.
+              */
 
             let (items, max_len) = try_out(&expanded);
             assert_eq!(items.len(), 11);

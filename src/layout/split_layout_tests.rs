@@ -15,7 +15,7 @@ pub mod tests {
     use crate::widget::any_msg::AnyMsg;
     use crate::widget::complex_widget::{ComplexWidget, DisplayState};
     use crate::widget::fill_policy::SizePolicy;
-    use crate::widget::widget::{get_new_widget_id, WID, Widget};
+    use crate::widget::widget::{get_new_widget_id, Widget, WID};
 
     struct MockWidget {
         pub wid: WID,
@@ -33,10 +33,7 @@ pub mod tests {
         }
 
         fn with_size_policy(self, size_policy: SizePolicy) -> Self {
-            MockWidget {
-                size_policy,
-                ..self
-            }
+            MockWidget { size_policy, ..self }
         }
     }
 
@@ -65,8 +62,8 @@ pub mod tests {
         }
 
         fn static_typename() -> &'static str
-            where
-                Self: Sized,
+        where
+            Self: Sized,
         {
             "mock_widget"
         }
@@ -90,12 +87,8 @@ pub mod tests {
         fn get_widget_pointer(idx: usize) -> SubwidgetPointer<MockComplexWidget> {
             let idx2 = idx;
             SubwidgetPointer::new(
-                Box::new(move |root: &MockComplexWidget| {
-                    &root.items.get(idx).unwrap().1 as &dyn Widget
-                }),
-                Box::new(move |root: &mut MockComplexWidget| {
-                    &mut root.items.get_mut(idx2).unwrap().1 as &mut dyn Widget
-                }),
+                Box::new(move |root: &MockComplexWidget| &root.items.get(idx).unwrap().1 as &dyn Widget),
+                Box::new(move |root: &mut MockComplexWidget| &mut root.items.get_mut(idx2).unwrap().1 as &mut dyn Widget),
             )
         }
 
@@ -125,7 +118,10 @@ pub mod tests {
             self.wid
         }
 
-        fn static_typename() -> &'static str where Self: Sized {
+        fn static_typename() -> &'static str
+        where
+            Self: Sized,
+        {
             "mock_complex_widget"
         }
 
@@ -155,10 +151,7 @@ pub mod tests {
         fn get_layout(&self) -> Box<dyn Layout<Self>> {
             let mut layout = SplitLayout::new(SplitDirection::Vertical);
             for (idx, (split_rule, _)) in self.items.iter().enumerate() {
-                layout = layout.with(
-                    *split_rule,
-                    Box::new(LeafLayout::new(Self::get_widget_pointer(idx))),
-                );
+                layout = layout.with(*split_rule, Box::new(LeafLayout::new(Self::get_widget_pointer(idx))));
             }
 
             Box::new(layout)
@@ -217,10 +210,8 @@ pub mod tests {
 
     #[test]
     fn test_split_3() {
-        let mut items: Vec<(SplitRule, MockWidget)> = vec![
-            (SplitRule::Fixed(5), MockWidget::new()),
-            (SplitRule::Fixed(5), MockWidget::new()),
-        ];
+        let mut items: Vec<(SplitRule, MockWidget)> =
+            vec![(SplitRule::Fixed(5), MockWidget::new()), (SplitRule::Fixed(5), MockWidget::new())];
 
         let mut mcw = MockComplexWidget::new(items);
 
@@ -232,10 +223,8 @@ pub mod tests {
 
     #[test]
     fn test_split_4() {
-        let mut items: Vec<(SplitRule, MockWidget)> = vec![(
-            SplitRule::Fixed(2),
-            /*XY::new(1, 1), Some(XY::new(10, 2))*/ MockWidget::new(),
-        )];
+        let mut items: Vec<(SplitRule, MockWidget)> =
+            vec![(SplitRule::Fixed(2), /*XY::new(1, 1), Some(XY::new(10, 2))*/ MockWidget::new())];
 
         for idx in 0..10 {
             items.push((SplitRule::Proportional(2.0 as f32), MockWidget::new()));

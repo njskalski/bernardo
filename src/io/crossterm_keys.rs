@@ -1,5 +1,5 @@
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use crossterm::event::KeyEvent as CKey;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use log::error;
 
 use crate::io::keys::{Key, Keycode, Modifiers};
@@ -7,7 +7,12 @@ use crate::io::keys::{Key, Keycode, Modifiers};
 impl From<CKey> for Key {
     fn from(ckey: CKey) -> Self {
         return match ckey {
-            KeyEvent { code, modifiers, kind: _, state: _ } => {
+            KeyEvent {
+                code,
+                modifiers,
+                kind: _,
+                state: _,
+            } => {
                 let kc: Keycode = match code {
                     KeyCode::Backspace => Keycode::Backspace,
                     KeyCode::Enter => Keycode::Enter,

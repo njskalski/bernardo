@@ -13,12 +13,8 @@ pub enum CommonQuery {
 impl CommonQuery {
     pub fn matches(&self, label: &str) -> bool {
         match self {
-            CommonQuery::Epsilon => {
-                true
-            }
-            CommonQuery::String(substr) => {
-                label.contains(substr)
-            }
+            CommonQuery::Epsilon => true,
+            CommonQuery::String(substr) => label.contains(substr),
             CommonQuery::Fuzzy(subsequence) => {
                 let mut subsequence_grapheme_it = subsequence.graphemes(true).peekable();
                 let mut label_grapheme_it = label.graphemes(true);
@@ -44,25 +40,17 @@ impl CommonQuery {
                 // if I exhausted the label, no match
                 false
             }
-            CommonQuery::Regex(r) => {
-                r.find(label).is_some()
-            }
+            CommonQuery::Regex(r) => r.find(label).is_some(),
         }
     }
 
-    pub fn matches_highlights(&self, label: &str) -> Box<dyn Iterator<Item=usize>> {
+    pub fn matches_highlights(&self, label: &str) -> Box<dyn Iterator<Item = usize>> {
         match self {
-            CommonQuery::Epsilon => {
-                Box::new(empty())
-            }
-            CommonQuery::String(substr) => {
-                match label.find(substr) {
-                    None => Box::new(empty()),
-                    Some(pos) => {
-                        Box::new((pos..pos + substr.graphemes(true).count()).into_iter())
-                    }
-                }
-            }
+            CommonQuery::Epsilon => Box::new(empty()),
+            CommonQuery::String(substr) => match label.find(substr) {
+                None => Box::new(empty()),
+                Some(pos) => Box::new((pos..pos + substr.graphemes(true).count()).into_iter()),
+            },
             CommonQuery::Fuzzy(subsequence) => {
                 let mut subsequence_grapheme_it = subsequence.graphemes(true).peekable();
                 let mut label_grapheme_it = label.graphemes(true).enumerate();
@@ -106,7 +94,12 @@ mod tests {
     #[test]
     fn test_fuzzy() {
         assert_eq!(CommonQuery::Fuzzy("hell".to_string()).matches("hello"), true);
-        assert_eq!(CommonQuery::Fuzzy("hell".to_string()).matches_highlights("hello").collect::<Vec<usize>>(), vec![0, 1, 2, 3]);
+        assert_eq!(
+            CommonQuery::Fuzzy("hell".to_string())
+                .matches_highlights("hello")
+                .collect::<Vec<usize>>(),
+            vec![0, 1, 2, 3]
+        );
         assert_eq!(CommonQuery::Fuzzy("hell".to_string()).matches("helo"), false);
     }
 }

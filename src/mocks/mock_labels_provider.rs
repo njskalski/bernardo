@@ -11,15 +11,12 @@ pub struct MockLabelsProvider {
 
 impl MockLabelsProvider {
     pub fn new() -> Self {
-        MockLabelsProvider {
-            labels: vec![]
-        }
+        MockLabelsProvider { labels: vec![] }
     }
 }
 
 impl LabelsProvider for MockLabelsProvider {
-    fn query_for(&self, path_op: Option<&SPath>) -> Box<dyn Iterator<Item=&'_ Label> + '_> {
+    fn query_for(&self, path_op: Option<&SPath>) -> Box<dyn Iterator<Item = &'_ Label> + '_> {
         Box::new(self.labels.iter())
     }
 }
-

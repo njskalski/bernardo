@@ -16,7 +16,10 @@ use crate::promise::promise::Promise;
 use crate::tsw::lang_id::LangId;
 use crate::unpack_or_e;
 use crate::w7e::navcomp_group::NavCompTickSender;
-use crate::w7e::navcomp_provider::{Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, StupidSubstituteMessage, SymbolContextActionsPromise, SymbolType, SymbolUsage, SymbolUsagesPromise};
+use crate::w7e::navcomp_provider::{
+    Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, StupidSubstituteMessage,
+    SymbolContextActionsPromise, SymbolType, SymbolUsage, SymbolUsagesPromise,
+};
 
 /*
 TODO I am silently ignoring errors here. I guess that if NavComp fails it should get re-started.
@@ -50,19 +53,10 @@ pub struct NavCompProviderLsp {
 
 impl NavCompProviderLsp {
     // TODO add errors
-    pub fn new(
-        lsp_path: PathBuf,
-        workspace_root: PathBuf,
-        language: LangId,
-        tick_sender: NavCompTickSender,
-    ) -> Option<Self> {
+    pub fn new(lsp_path: PathBuf, workspace_root: PathBuf, language: LangId, tick_sender: NavCompTickSender) -> Option<Self> {
         let error_channel = crossbeam_channel::unbounded::<LspReadError>();
 
-        if let Some(mut lsp) = LspWrapper::new(lsp_path,
-                                               workspace_root,
-                                               language,
-                                               tick_sender.clone(),
-                                               error_channel.0.clone()) {
+        if let Some(mut lsp) = LspWrapper::new(lsp_path, workspace_root, language, tick_sender.clone(), error_channel.0.clone()) {
             match lsp.initialize() {
                 Ok(lsp_answer) => {
                     debug!("lsp initialization success: {:?}", lsp_answer);
@@ -94,7 +88,6 @@ impl NavCompProviderLsp {
     }
 }
 
-
 impl NavCompProvider for NavCompProviderLsp {
     fn file_open_for_edition(&self, path: &SPath, file_contents: ropey::Rope) {
         let url = unpack_or_e!(path.to_url().ok(), (), "failed to convert spath [{}] to url", path);
@@ -121,9 +114,7 @@ impl NavCompProvider for NavCompProviderLsp {
                         None => vec![],
                         Some(comps) => {
                             match comps {
-                                CompletionResponse::Array(arr) => {
-                                    arr.into_iter().map(translate_completion_item).collect()
-                                }
+                                CompletionResponse::Array(arr) => arr.into_iter().map(translate_completion_item).collect(),
                                 CompletionResponse::List(list) => {
                                     // TODO is complete ignored
                                     list.items.into_iter().map(translate_completion_item).collect()
@@ -197,24 +188,24 @@ impl NavCompProvider for NavCompProviderLsp {
 
         match lock.text_document_references(url, cursor) {
             Ok(resp) => {
-                let new_promise = resp.map(|response| {
-                    match response {
-                        None => Vec::new(),
-                        Some(items) => {
-                            items.into_iter().map(|loc| {
-                                SymbolUsage {
-                                    path: loc.uri.to_string(),
-                                    stupid_range: (StupidCursor {
-                                        char_idx_0b: loc.range.start.character,
-                                        line_0b: loc.range.start.line,
-                                    }, StupidCursor {
-                                        char_idx_0b: loc.range.end.character,
-                                        line_0b: loc.range.end.line,
-                                    }),
-                                }
-                            }).collect()
-                        }
-                    }
+                let new_promise = resp.map(|response| match response {
+                    None => Vec::new(),
+                    Some(items) => items
+                        .into_iter()
+                        .map(|loc| SymbolUsage {
+                            path: loc.uri.to_string(),
+                            stupid_range: (
+                                StupidCursor {
+                                    char_idx_0b: loc.range.start.character,
+                                    line_0b: loc.range.start.line,
+                                },
+                                StupidCursor {
+                                    char_idx_0b: loc.range.end.character,
+                                    line_0b: loc.range.end.line,
+                                },
+                            ),
+                        })
+                        .collect(),
                 });
 
                 Some(Box::new(new_promise))
@@ -232,27 +223,27 @@ impl NavCompProvider for NavCompProviderLsp {
 
         match lock.text_document_formatting(url) {
             Ok(resp) => {
-                let new_promise = resp.map(|response| {
-                    match response {
-                        None => {
-                            None
-                        }
-                        Some(vte) => {
-                            let stupid_edits: Vec<StupidSubstituteMessage> = vte.into_iter().map(|te| {
-                                StupidSubstituteMessage {
-                                    substitute: te.new_text,
-                                    stupid_range: (StupidCursor {
+                let new_promise = resp.map(|response| match response {
+                    None => None,
+                    Some(vte) => {
+                        let stupid_edits: Vec<StupidSubstituteMessage> = vte
+                            .into_iter()
+                            .map(|te| StupidSubstituteMessage {
+                                substitute: te.new_text,
+                                stupid_range: (
+                                    StupidCursor {
                                         char_idx_0b: te.range.start.character,
                                         line_0b: te.range.start.line,
-                                    }, StupidCursor {
+                                    },
+                                    StupidCursor {
                                         char_idx_0b: te.range.end.character,
                                         line_0b: te.range.end.line,
-                                    }),
-                                }
-                            }).collect();
+                                    },
+                                ),
+                            })
+                            .collect();
 
-                            Some(stupid_edits)
-                        }
+                        Some(stupid_edits)
                     }
                 });
 
@@ -294,16 +285,14 @@ fn translate_completion_item(i: lsp_types::CompletionItem) -> Completion {
     Completion {
         key: i.label,
         desc: i.detail,
-        action: CompletionAction::Insert(i.text_edit.map(|c|
-            match c {
-                CompletionTextEdit::Edit(e) => {
-                    e.new_text
-                }
-                CompletionTextEdit::InsertAndReplace(e) => {
-                    e.new_text
-                }
-            }
-        ).unwrap_or("".to_string())),
+        action: CompletionAction::Insert(
+            i.text_edit
+                .map(|c| match c {
+                    CompletionTextEdit::Edit(e) => e.new_text,
+                    CompletionTextEdit::InsertAndReplace(e) => e.new_text,
+                })
+                .unwrap_or("".to_string()),
+        ),
     }
 }
 

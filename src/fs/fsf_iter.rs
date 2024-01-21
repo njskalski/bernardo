@@ -8,12 +8,12 @@ use crate::fs::path::SPath;
 Recursively iterates over all items under root, in DFS pattern, siblings sorted lexicographically
  */
 pub struct RecursiveFsIter {
-    stack: VecDeque<Box<dyn Iterator<Item=SPath>>>,
+    stack: VecDeque<Box<dyn Iterator<Item = SPath>>>,
 }
 
 impl RecursiveFsIter {
     pub fn new(root: SPath) -> Self {
-        let first_iter: Box<dyn Iterator<Item=SPath>> = match root.blocking_list() {
+        let first_iter: Box<dyn Iterator<Item = SPath>> = match root.blocking_list() {
             Ok(mut items) => {
                 items.sort();
                 Box::new(items.into_iter())
@@ -25,7 +25,7 @@ impl RecursiveFsIter {
         };
 
         RecursiveFsIter {
-            stack: VecDeque::from([first_iter])
+            stack: VecDeque::from([first_iter]),
         }
     }
 }
@@ -37,7 +37,6 @@ impl Iterator for RecursiveFsIter {
         if self.stack.is_empty() {
             return None;
         }
-
 
         while let Some(iter) = self.stack.front_mut() {
             if let Some(item) = iter.next() {

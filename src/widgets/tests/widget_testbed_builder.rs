@@ -63,10 +63,7 @@ impl WidgetTestbedBuilder {
     }
 
     pub fn with_size(self, size: XY) -> Self {
-        Self {
-            size,
-            ..self
-        }
+        Self { size, ..self }
     }
 
     pub fn with_theme(self, theme: Theme) -> Self {
@@ -77,10 +74,7 @@ impl WidgetTestbedBuilder {
     }
 
     pub fn with_step_frame(self, step_frame: bool) -> Self {
-        Self {
-            step_frame,
-            ..self
-        }
+        Self { step_frame, ..self }
     }
 
     pub fn with_label_provider(mut self, provider: LabelsProviderRef) -> Self {
@@ -99,9 +93,7 @@ impl WidgetTestbedBuilder {
         let comp_matcher: Arc<RwLock<Vec<MockCompletionMatcher>>> = Arc::new(RwLock::new(Vec::new()));
         let symbol_matcher: Arc<RwLock<Vec<MockSymbolMatcher>>> = Arc::new(RwLock::new(Vec::new()));
 
-        let navcomp_loader = MockNavcompLoader::new(mock_navcomp_event_sender,
-                                                    comp_matcher.clone(),
-                                                    symbol_matcher.clone());
+        let navcomp_loader = MockNavcompLoader::new(mock_navcomp_event_sender, comp_matcher.clone(), symbol_matcher.clone());
 
         let todo_labels_providers = self.label_providers.clone();
 
@@ -116,11 +108,7 @@ impl WidgetTestbedBuilder {
                 todo_labels_providers,
             ),
             SideChannels {
-                navcomp_pilot: MockNavCompProviderPilot::new(
-                    mock_navcomp_event_recvr,
-                    comp_matcher,
-                    symbol_matcher,
-                ),
+                navcomp_pilot: MockNavCompProviderPilot::new(mock_navcomp_event_recvr, comp_matcher, symbol_matcher),
             },
         )
     }
@@ -131,14 +119,17 @@ impl WidgetTestbedBuilder {
 
         let docid = DocumentIdentifier::new_unique();
         let buffer = BufferState::full(Some(providers.tree_sitter().clone()), docid)
-            .with_lang(LangId::RUST).into_bsr();
+            .with_lang(LangId::RUST)
+            .into_bsr();
 
-        let editor_view = EditorView::new(
-            providers.clone(),
-            buffer.clone(),
-        );
+        let editor_view = EditorView::new(providers.clone(), buffer.clone());
 
-        assert!(buffer.lock_rw().unwrap().text().get_cursor_set(editor_view.get_internal_widget().id()).is_some());
+        assert!(buffer
+            .lock_rw()
+            .unwrap()
+            .text()
+            .get_cursor_set(editor_view.get_internal_widget().id())
+            .is_some());
 
         EditorViewTestbed {
             editor_view,
@@ -162,7 +153,3 @@ pub struct WidgetTestbed {
     last_frame: Option<MetaOutputFrame>,
     mock_navcomp_pilot: MockNavCompProviderPilot,
 }
-
-
-
-

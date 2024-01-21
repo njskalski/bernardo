@@ -63,9 +63,13 @@ impl<W: Widget> Layout<W> for HoverLayout<W> {
                     let mut child_visible_rect_in_child_space = child_visible_rect;
                     child_visible_rect_in_child_space.pos -= child_rect.pos;
 
-                    let mut partial: Vec<WidgetWithRect<W>> = self.child.layout(root, Screenspace::new(child_rect.size, child_visible_rect_in_child_space)).wwrs.into_iter().map(
-                        |wir| wir.shifted(child_rect.pos)
-                    ).collect();
+                    let mut partial: Vec<WidgetWithRect<W>> = self
+                        .child
+                        .layout(root, Screenspace::new(child_rect.size, child_visible_rect_in_child_space))
+                        .wwrs
+                        .into_iter()
+                        .map(|wir| wir.shifted(child_rect.pos))
+                        .collect();
 
                     result.wwrs.append(&mut partial);
                 }

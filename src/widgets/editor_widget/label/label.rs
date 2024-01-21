@@ -2,13 +2,12 @@ use std::ops::Range;
 
 use log::warn;
 
-use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
-use crate::cursor::cursor::{Cursor, NEWLINE_WIDTH, Selection};
+use crate::cursor::cursor::NEWLINE_WIDTH;
 use crate::io::style::TextStyle;
 use crate::primitives::printable::Printable;
 use crate::primitives::stupid_cursor::StupidCursor;
-use crate::primitives::styled_printable::{StyleBorrowedPrintable, StyledPrintable, StyleWrappedPrintable};
+use crate::primitives::styled_printable::{StyleBorrowedPrintable, StyledPrintable};
 use crate::primitives::xy::XY;
 use crate::text::text_buffer::TextBuffer;
 use crate::unpack_or;
@@ -19,8 +18,8 @@ pub enum LabelPos {
      */
     Inline { char_idx: usize },
     /*
-        both line and column are 1-based
-     */
+       both line and column are 1-based
+    */
     InlineStupid { stupid_cursor: StupidCursor },
 
     /*
@@ -44,15 +43,9 @@ impl LabelPos {
      */
     pub fn maybe_should_draw(&self, cursor_range: Range<usize>, line_range: Range<usize>) -> bool {
         match self {
-            LabelPos::Inline { char_idx } => {
-                cursor_range.contains(char_idx)
-            }
-            LabelPos::InlineStupid { stupid_cursor } => {
-                line_range.contains(&(stupid_cursor.line_0b as usize))
-            }
-            LabelPos::LineAfter { line_no_1b } => {
-                line_range.contains(line_no_1b)
-            }
+            LabelPos::Inline { char_idx } => cursor_range.contains(char_idx),
+            LabelPos::InlineStupid { stupid_cursor } => line_range.contains(&(stupid_cursor.line_0b as usize)),
+            LabelPos::LineAfter { line_no_1b } => line_range.contains(line_no_1b),
         }
     }
 
@@ -72,9 +65,7 @@ impl LabelPos {
                     None
                 }
             }
-            LabelPos::InlineStupid { stupid_cursor } => {
-                stupid_cursor.to_xy(text_buffer)
-            }
+            LabelPos::InlineStupid { stupid_cursor } => stupid_cursor.to_xy(text_buffer),
             LabelPos::LineAfter { line_no_1b } => {
                 debug_assert!(*line_no_1b >= 1);
                 if text_buffer.len_lines() + 1 > *line_no_1b {
@@ -126,22 +117,12 @@ impl Label {
 
     pub fn contents(&self, theme: &Theme) -> impl StyledPrintable + '_ {
         let computed_style = match self.style {
-            LabelStyle::Warning => {
-                theme.ui.label_warning.clone()
-            }
-            LabelStyle::Error => {
-                theme.ui.label_error.clone()
-            }
-            LabelStyle::TypeAnnotation => {
-                theme.ui.label_type_annotation.clone()
-            }
-            LabelStyle::Random(style) => {
-                style
-            }
+            LabelStyle::Warning => theme.ui.label_warning.clone(),
+            LabelStyle::Error => theme.ui.label_error.clone(),
+            LabelStyle::TypeAnnotation => theme.ui.label_type_annotation.clone(),
+            LabelStyle::Random(style) => style,
         };
 
         StyleBorrowedPrintable::new(computed_style, self.contents.as_ref())
     }
 }
-
-

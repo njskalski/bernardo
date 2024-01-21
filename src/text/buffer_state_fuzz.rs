@@ -7,7 +7,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use crate::cursor::cursor::Cursor;
 #[allow(unused_imports)]
 use crate::cursor::cursor::Selection;
-use crate::cursor::cursor_set::CursorSet;
+
 #[allow(unused_imports)]
 use crate::text::buffer_state::{BufferState, BufferType};
 
@@ -18,9 +18,7 @@ impl<'a> Arbitrary<'a> for BufferState {
 
         let mut text = u.arbitrary::<String>()?;
         let mut bf = match subtype {
-            BufferType::Full => {
-                BufferState::full(None).with_text(text.clone())
-            }
+            BufferType::Full => BufferState::full(None).with_text(text.clone()),
             BufferType::SingleLine => {
                 text = text.replace("\n", "");
                 BufferState::simplified_single_line().with_text(text.clone())
@@ -49,9 +47,7 @@ impl<'a> Arbitrary<'a> for BufferState {
 
         let simple = u.arbitrary::<bool>()?;
         let cursors: Vec<Cursor> = if simple {
-            poses.into_iter().map(|p| {
-                Cursor::new(p)
-            }).collect()
+            poses.into_iter().map(|p| Cursor::new(p)).collect()
         } else {
             let mut i: usize = 0;
             let mut cursors: Vec<Cursor> = Vec::new();

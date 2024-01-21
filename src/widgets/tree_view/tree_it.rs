@@ -9,7 +9,7 @@ Also, now it supports filtering and recursive filtering: if filter is present, t
         - it passes filter test
         - one of it's descendants up to "filter_depth_op" deep (None = infinity)
  */
-use std::borrow::Borrow;
+
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -57,20 +57,18 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> Iterator for T
 
             // If it's expanded, I have to throw all children on the stack.
             if self.expanded.contains(node_ref.id()) {
-                let idx_and_items : Vec<(usize, Item)> = node_ref.child_iter().enumerate().collect();
+                let idx_and_items: Vec<(usize, Item)> = node_ref.child_iter().enumerate().collect();
                 for (_idx, item) in idx_and_items.into_iter().rev() {
                     match self.filter_op {
                         Some(filter) => {
-                            if item.matching_self_or_children(filter.borrow(), self.filter_depth_op) == MaybeBool::False {
+                            if item.matching_self_or_children(filter, self.filter_depth_op) == MaybeBool::False {
                                 continue;
                             }
                         }
                         None => {}
                     }
 
-                    self.queue.push(
-                        (depth + 1, item)
-                    );
+                    self.queue.push((depth + 1, item));
                 }
             }
 

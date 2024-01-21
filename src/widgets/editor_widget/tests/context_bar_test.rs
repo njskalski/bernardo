@@ -75,4 +75,3 @@ fn editor_view_context() {
 
     screenshot(&setup.frame_op().unwrap().buffer);
 }
-

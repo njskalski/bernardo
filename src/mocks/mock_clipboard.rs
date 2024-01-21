@@ -13,9 +13,7 @@ pub struct MockClipboard {
 impl Clipboard for MockClipboard {
     fn get(&self) -> String {
         match self.contents.read() {
-            Ok(c) => {
-                c.deref().to_string()
-            }
+            Ok(c) => c.deref().to_string(),
             Err(e) => {
                 error!("failed acquiring lock: {:?}", e);
                 String::new()

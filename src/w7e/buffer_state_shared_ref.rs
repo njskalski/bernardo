@@ -21,9 +21,7 @@ impl BufferSharedRef {
 
     pub fn lock(&self) -> Option<RwLockReadGuard<BufferState>> {
         match self.0.try_read() {
-            Ok(lock) => {
-                Some(lock)
-            }
+            Ok(lock) => Some(lock),
             Err(e) => {
                 error!("failed to lock buffer for read! : {}", e);
                 None

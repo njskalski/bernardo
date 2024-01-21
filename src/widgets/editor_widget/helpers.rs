@@ -18,7 +18,11 @@ pub struct CursorScreenPosition {
 }
 
 //TODO tests
-pub fn find_trigger_and_substring<'a>(triggers: &'a Vec<String>, buffer: &'a dyn TextBuffer, cursor_pos: &'a CursorScreenPosition) -> Option<(&'a String, String)> {
+pub fn find_trigger_and_substring<'a>(
+    triggers: &'a Vec<String>,
+    buffer: &'a dyn TextBuffer,
+    cursor_pos: &'a CursorScreenPosition,
+) -> Option<(&'a String, String)> {
     let cursor_screen_pos = match cursor_pos.widget_space {
         None => {
             debug!("cursor not visible");
@@ -44,7 +48,10 @@ pub fn find_trigger_and_substring<'a>(triggers: &'a Vec<String>, buffer: &'a dyn
         Some(line_contents) => line_contents.trim().to_string(),
     };
 
-    debug!("read [{}] from begin of {} (drawn as +1) line", entire_line, cursor_pos.text_space.y);
+    debug!(
+        "read [{}] from begin of {} (drawn as +1) line",
+        entire_line, cursor_pos.text_space.y
+    );
 
     let cut_line = match copy_last_n_columns(&entire_line, how_many_columns_visible as usize, true) {
         None => {
@@ -64,9 +71,7 @@ pub fn find_trigger_and_substring<'a>(triggers: &'a Vec<String>, buffer: &'a dyn
         }
     }
 
-    let substring = position_of_first_char_after_last_char_of_trigger_within_cut_line.map(|p| {
-        cut_line[p..].to_string()
-    });
+    let substring = position_of_first_char_after_last_char_of_trigger_within_cut_line.map(|p| cut_line[p..].to_string());
 
     if substring.is_some() {
         Some((selected_trigger.unwrap(), substring.unwrap()))

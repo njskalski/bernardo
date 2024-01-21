@@ -40,10 +40,7 @@ impl Hash for PathCell {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PathCell {
     Head(FsfRef),
-    Segment {
-        prev: SPath,
-        cell: PathBuf,
-    },
+    Segment { prev: SPath, cell: PathBuf },
 }
 
 impl PathCell {
@@ -80,9 +77,7 @@ pub struct SPath(pub Arc<PathCell>);
 
 impl SPath {
     pub fn head(fzf: FsfRef) -> SPath {
-        SPath(
-            Arc::new(PathCell::Head(fzf))
-        )
+        SPath(Arc::new(PathCell::Head(fzf)))
     }
 
     pub fn append<P: AsRef<Path>>(prev: SPath, segment: P) -> SPath {
@@ -91,9 +86,7 @@ impl SPath {
         debug_assert!(cell.to_string_lossy() != "..");
         debug_assert!(cell.components().count() == 1);
 
-        SPath(
-            Arc::new(PathCell::Segment { prev, cell })
-        )
+        SPath(Arc::new(PathCell::Segment { prev, cell }))
     }
 
     pub fn fsf(&self) -> &FsfRef {
@@ -186,12 +179,10 @@ impl SPath {
     pub fn file_name_str(&self) -> Option<&str> {
         match self.0.as_ref() {
             PathCell::Head(_) => None,
-            PathCell::Segment { prev: _, cell } => {
-                cell.to_str().or_else(|| {
-                    warn!("failed casting last item of path {:?}", self);
-                    None
-                })
-            }
+            PathCell::Segment { prev: _, cell } => cell.to_str().or_else(|| {
+                warn!("failed casting last item of path {:?}", self);
+                None
+            }),
         }
     }
 
@@ -200,17 +191,15 @@ impl SPath {
      */
     pub fn label(&self) -> Cow<str> {
         match self.0.as_ref() {
-            PathCell::Head(fs) => {
-                fs.root_path_buf().file_name()
-                    .map(|oss| oss.to_string_lossy().into())
-                    .unwrap_or_else(|| {
-                        warn!("failed casting last item of pathbuf. Using hardcoded default.");
-                        "<root>".into()
-                    })
-            }
-            PathCell::Segment { prev: _, cell } => {
-                cell.to_string_lossy().into()
-            }
+            PathCell::Head(fs) => fs
+                .root_path_buf()
+                .file_name()
+                .map(|oss| oss.to_string_lossy().into())
+                .unwrap_or_else(|| {
+                    warn!("failed casting last item of pathbuf. Using hardcoded default.");
+                    "<root>".into()
+                }),
+            PathCell::Segment { prev: _, cell } => cell.to_string_lossy().into(),
         }
     }
 
@@ -252,7 +241,7 @@ impl SPath {
         fsf.exists(self)
     }
 
-    pub fn overwrite_with_stream(&self, stream: &mut dyn StreamingIterator<Item=[u8]>, must_exist: bool) -> Result<usize, WriteError> {
+    pub fn overwrite_with_stream(&self, stream: &mut dyn StreamingIterator<Item = [u8]>, must_exist: bool) -> Result<usize, WriteError> {
         let fsf = self.fsf();
         fsf.overwrite_with_stream(self, stream, must_exist)
     }
@@ -372,7 +361,6 @@ impl Debug for SPath {
     }
 }
 
-
 impl PartialOrd<Self> for SPath {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if self.0 == other.0 {
@@ -417,27 +405,25 @@ mod tests {
     #[test]
     fn parent_ref() {
         let mockfs = MockFS::new("/tmp").to_fsf();
-        let sp = spath!(mockfs, "folder1","folder2", "file1.txt").unwrap();
+        let sp = spath!(mockfs, "folder1", "folder2", "file1.txt").unwrap();
 
-        assert_eq!(sp.parent_ref().unwrap(), &spath!(mockfs, "folder1","folder2").unwrap());
-        assert_eq!(sp.parent_ref().unwrap()
-                       .parent_ref().unwrap(),
-                   &spath!(mockfs, "folder1").unwrap());
-        assert_eq!(sp.parent_ref().unwrap()
-                       .parent_ref().unwrap()
-                       .parent_ref().unwrap(),
-                   &spath!(mockfs).unwrap());
+        assert_eq!(sp.parent_ref().unwrap(), &spath!(mockfs, "folder1", "folder2").unwrap());
+        assert_eq!(sp.parent_ref().unwrap().parent_ref().unwrap(), &spath!(mockfs, "folder1").unwrap());
+        assert_eq!(
+            sp.parent_ref().unwrap().parent_ref().unwrap().parent_ref().unwrap(),
+            &spath!(mockfs).unwrap()
+        );
     }
 
     #[test]
     fn parent_and_self_ref_it() {
         let mockfs = MockFS::new("/tmp").to_fsf();
-        let sp = spath!(mockfs, "folder1","folder2","folder3", "file1.txt").unwrap();
+        let sp = spath!(mockfs, "folder1", "folder2", "folder3", "file1.txt").unwrap();
 
         let mut it = sp.ancestors_and_self_ref();
         assert_eq!(it.next(), Some(&sp));
-        assert_eq!(it.next(), Some(&spath!(mockfs, "folder1","folder2","folder3").unwrap()));
-        assert_eq!(it.next(), Some(&spath!(mockfs, "folder1","folder2").unwrap()));
+        assert_eq!(it.next(), Some(&spath!(mockfs, "folder1", "folder2", "folder3").unwrap()));
+        assert_eq!(it.next(), Some(&spath!(mockfs, "folder1", "folder2").unwrap()));
         assert_eq!(it.next(), Some(&spath!(mockfs, "folder1").unwrap()));
         assert_eq!(it.next(), Some(&spath!(mockfs).unwrap()));
         assert_eq!(it.next(), None);
@@ -446,12 +432,12 @@ mod tests {
     #[test]
     fn parent() {
         let mockfs = MockFS::new("/tmp").to_fsf();
-        let sp = spath!(mockfs, "folder1","folder2", "file1.txt").unwrap();
+        let sp = spath!(mockfs, "folder1", "folder2", "file1.txt").unwrap();
 
         assert_eq!(sp, sp);
 
         let sparent1 = sp.parent().unwrap();
-        assert_eq!(sparent1, spath!(mockfs, "folder1","folder2").unwrap());
+        assert_eq!(sparent1, spath!(mockfs, "folder1", "folder2").unwrap());
         let sparent2 = sparent1.parent().unwrap();
         assert_eq!(sparent2, spath!(mockfs, "folder1").unwrap());
         let sparent3 = sparent2.parent().unwrap();
@@ -462,12 +448,12 @@ mod tests {
     #[test]
     fn parent_and_self_it() {
         let mockfs = MockFS::new("/tmp").to_fsf();
-        let sp = spath!(mockfs, "folder1","folder2","folder3", "file1.txt").unwrap();
+        let sp = spath!(mockfs, "folder1", "folder2", "folder3", "file1.txt").unwrap();
 
         let mut it = sp.ancestors_and_self();
         assert_eq!(it.next(), Some(sp));
-        assert_eq!(it.next(), spath!(mockfs, "folder1","folder2","folder3"));
-        assert_eq!(it.next(), spath!(mockfs, "folder1","folder2"));
+        assert_eq!(it.next(), spath!(mockfs, "folder1", "folder2", "folder3"));
+        assert_eq!(it.next(), spath!(mockfs, "folder1", "folder2"));
         assert_eq!(it.next(), spath!(mockfs, "folder1"));
         assert_eq!(it.next(), spath!(mockfs));
         assert_eq!(it.next(), None);

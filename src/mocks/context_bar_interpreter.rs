@@ -12,10 +12,7 @@ impl<'a> ContextBarWidgetInterpreter<'a> {
     pub fn new(meta: &'a Metadata, output: &'a MetaOutputFrame) -> Self {
         debug_assert!(meta.typename == ContextBarWidget::TYPENAME);
 
-        Self {
-            meta,
-            output,
-        }
+        Self { meta, output }
     }
 
     pub fn is_focused(&self) -> bool {
@@ -23,11 +20,16 @@ impl<'a> ContextBarWidgetInterpreter<'a> {
     }
 
     pub fn selected_option(&self) -> Option<String> {
-        self.output.buffer.lines_iter().with_rect(self.meta.rect).find(
-            |line| line.text_style.map(|style| style.background == self.output.theme.highlighted(self.meta.focused).background).unwrap_or(false)
-        ).map(|line| {
-            line.text
-        })
+        self.output
+            .buffer
+            .lines_iter()
+            .with_rect(self.meta.rect)
+            .find(|line| {
+                line.text_style
+                    .map(|style| style.background == self.output.theme.highlighted(self.meta.focused).background)
+                    .unwrap_or(false)
+            })
+            .map(|line| line.text)
     }
 
     // pub fn contents(&self) -> String {

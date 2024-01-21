@@ -12,12 +12,13 @@ fn cursor_to_xy(c: &Cursor, buffer: &dyn TextBuffer) -> XY {
         0
     });
 
-    let x = buffer.line_to_char(y)
-        .map(|line_begin| c.a - line_begin)
-        .unwrap_or_else(|| {
-            error!("failed translating cursor to XY (2), most likely wrong buffer provided. c: {:?} y: {}", c, y);
-            0
-        });
+    let x = buffer.line_to_char(y).map(|line_begin| c.a - line_begin).unwrap_or_else(|| {
+        error!(
+            "failed translating cursor to XY (2), most likely wrong buffer provided. c: {:?} y: {}",
+            c, y
+        );
+        0
+    });
 
     if x > u16::MAX as usize || y > u16::MAX as usize {
         error!("failed translating cursor to XY (3), x/y too big. c: {:?} x: {} y: {}", c, x, y);

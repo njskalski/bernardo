@@ -18,12 +18,7 @@ pub fn lsp_debug_save(file: PathBuf, contents: String) {
 
     // debug!("writing to file {:?}", &file);
 
-    let file_res = fs::OpenOptions::new()
-        .create(true)
-        .write(true)
-        .append(true)
-        .read(false)
-        .open(file);
+    let file_res = fs::OpenOptions::new().create(true).write(true).append(true).read(false).open(file);
 
     let mut file = match file_res {
         Ok(f) => f,
@@ -42,5 +37,9 @@ pub fn lsp_debug_save(file: PathBuf, contents: String) {
 }
 
 pub fn format_or_noop(s: String) -> String {
-    serde_json::from_str::<serde_json::Value>(&s).ok().map(|v| serde_json::to_string_pretty(&v).ok()).flatten().unwrap_or(s)
+    serde_json::from_str::<serde_json::Value>(&s)
+        .ok()
+        .map(|v| serde_json::to_string_pretty(&v).ok())
+        .flatten()
+        .unwrap_or(s)
 }

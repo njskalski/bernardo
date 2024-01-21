@@ -54,12 +54,18 @@ impl<'a> SaveFileInterpreter<'a> {
             .collect();
 
         debug_assert!(button_metas.len() == 2);
-        let buttons: Vec<ButtonWidgetInterpreter> = button_metas.into_iter().map(|c| {
-            ButtonWidgetInterpreter::new(c, output)
-        }).collect();
+        let buttons: Vec<ButtonWidgetInterpreter> = button_metas.into_iter().map(|c| ButtonWidgetInterpreter::new(c, output)).collect();
 
-        let ok_button = buttons.iter().find(|b| b.contents().contains(SaveFileDialogWidget::OK_LABEL)).unwrap().clone();
-        let cancel_button = buttons.iter().find(|b| b.contents().contains(SaveFileDialogWidget::CANCEL_LABEL)).unwrap().clone();
+        let ok_button = buttons
+            .iter()
+            .find(|b| b.contents().contains(SaveFileDialogWidget::OK_LABEL))
+            .unwrap()
+            .clone();
+        let cancel_button = buttons
+            .iter()
+            .find(|b| b.contents().contains(SaveFileDialogWidget::CANCEL_LABEL))
+            .unwrap()
+            .clone();
 
         Self {
             meta,
@@ -76,13 +82,21 @@ impl<'a> SaveFileInterpreter<'a> {
         &self.tree_view
     }
 
-    pub fn list_view(&self) -> &ListViewInterpreter<'a> { &self.list_view }
+    pub fn list_view(&self) -> &ListViewInterpreter<'a> {
+        &self.list_view
+    }
 
-    pub fn edit_widget(&self) -> &EditWidgetInterpreter<'a> { &self.edit_widget }
+    pub fn edit_widget(&self) -> &EditWidgetInterpreter<'a> {
+        &self.edit_widget
+    }
 
-    pub fn ok_button(&self) -> &ButtonWidgetInterpreter<'a> { &self.ok_button }
+    pub fn ok_button(&self) -> &ButtonWidgetInterpreter<'a> {
+        &self.ok_button
+    }
 
-    pub fn cancel_button(&self) -> &ButtonWidgetInterpreter<'a> { &self.cancel_button }
+    pub fn cancel_button(&self) -> &ButtonWidgetInterpreter<'a> {
+        &self.cancel_button
+    }
 
     pub fn is_focused(&self) -> bool {
         self.meta.focused

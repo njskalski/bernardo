@@ -1,3 +1,2 @@
-pub mod open_buffers_list;
 mod msg;
-
+pub mod open_buffers_list;

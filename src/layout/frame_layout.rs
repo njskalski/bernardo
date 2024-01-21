@@ -14,10 +14,7 @@ pub struct FrameLayout<W: Widget> {
 
 impl<W: Widget> FrameLayout<W> {
     pub fn new(layout: Box<dyn Layout<W>>, margins: XY) -> Self {
-        Self {
-            layout,
-            margins,
-        }
+        Self { layout, margins }
     }
 
     pub fn sub_rect(&self, size: XY) -> Option<Rect> {
@@ -57,9 +54,7 @@ impl<W: Widget> Layout<W> for FrameLayout<W> {
             let new_output_size = sub_rect.size;
             let subresp = self.layout.layout(root, Screenspace::new(new_output_size, new_visible_rect));
 
-            let wwrs: Vec<WidgetWithRect<W>> = subresp.wwrs.into_iter().map(|wir| {
-                wir.shifted(sub_rect.pos)
-            }).collect();
+            let wwrs: Vec<WidgetWithRect<W>> = subresp.wwrs.into_iter().map(|wir| wir.shifted(sub_rect.pos)).collect();
 
             LayoutResult::new(wwrs, subresp.total_size + self.margins * 2)
         } else {

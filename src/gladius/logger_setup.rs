@@ -1,9 +1,8 @@
-use log::{LevelFilter, warn};
+use log::{warn, LevelFilter};
 
 const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     // this is for git ignore
     ("globset", log::LevelFilter::Error),
-
     // I have no clue where it comes from, and I don't care so I suppress it
     ("mio::poll", log::LevelFilter::Error),
     // this is for "recursive_treat_views", which is the heart and backbone of Bernardo.
@@ -41,7 +40,6 @@ const DEBUG_PARAMS: &'static [(&'static str, log::LevelFilter)] = &[
     ("bernardo::mocks::full_setup", log::LevelFilter::Warn),
     ("bernardo::mocks", log::LevelFilter::Warn),
 ];
-
 
 pub fn logger_setup(level_filter: LevelFilter) {
     // global logger setting

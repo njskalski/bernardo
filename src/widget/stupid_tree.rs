@@ -31,7 +31,7 @@ impl TreeViewNode<usize> for Rc<StupidTree> {
         self.children.is_empty()
     }
 
-    fn child_iter(&self) -> Box<dyn Iterator<Item=Self>> {
+    fn child_iter(&self) -> Box<dyn Iterator<Item = Self>> {
         Box::new(self.children.clone().into_iter())
     }
 
@@ -44,21 +44,13 @@ pub fn get_stupid_tree() -> Rc<StupidTree> {
     let mut stupid_subtree: Vec<StupidTree> = vec![];
 
     for i in 0..100 {
-        stupid_subtree.push(
-            StupidTree::new(40000 + i, vec![])
-        );
+        stupid_subtree.push(StupidTree::new(40000 + i, vec![]));
     }
 
     let res = StupidTree::new(
         0,
         vec![
-            StupidTree::new(
-                1,
-                vec![
-                    StupidTree::new(10001, vec![]),
-                    StupidTree::new(10002, vec![]),
-                ],
-            ),
+            StupidTree::new(1, vec![StupidTree::new(10001, vec![]), StupidTree::new(10002, vec![])]),
             StupidTree::new(
                 2,
                 vec![

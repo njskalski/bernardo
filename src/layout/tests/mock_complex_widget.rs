@@ -7,7 +7,7 @@ use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::tests::mock_widget::MockWidget;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 
 pub type LayoutMaker = Box<dyn Fn(&MockComplexWidget) -> Box<dyn Layout<MockComplexWidget>>>;
 
@@ -31,12 +31,8 @@ impl MockComplexWidget {
     pub fn get_subwidget_ptr(&self, idx: usize) -> SubwidgetPointer<Self> {
         debug_assert!(idx < self.subwidgets.len());
         SubwidgetPointer::new(
-            Box::new(move |mcw: &MockComplexWidget| {
-                &mcw.subwidgets[idx]
-            }),
-            Box::new(move |mcw: &mut MockComplexWidget| {
-                &mut mcw.subwidgets[idx]
-            }),
+            Box::new(move |mcw: &MockComplexWidget| &mcw.subwidgets[idx]),
+            Box::new(move |mcw: &mut MockComplexWidget| &mut mcw.subwidgets[idx]),
         )
     }
 
@@ -54,7 +50,10 @@ impl Widget for MockComplexWidget {
         self.id
     }
 
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         "MockComplexWidget"
     }
 

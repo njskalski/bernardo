@@ -15,7 +15,7 @@ fn common_start() -> FullSetup {
 
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
     assert!(full_setup.send_key(full_setup.config().keyboard_config.editor.save_as));
-    
+
     screenshot(&full_setup.get_frame().unwrap().buffer);
 
     assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().save_file_dialog().is_some()));
@@ -26,9 +26,13 @@ fn common_start() -> FullSetup {
 }
 
 fn tree_items(full_setup: &FullSetup) -> Vec<TreeViewInterpreterItem> {
-    full_setup.get_first_editor().unwrap()
-        .save_file_dialog().unwrap()
-        .tree_view().items()
+    full_setup
+        .get_first_editor()
+        .unwrap()
+        .save_file_dialog()
+        .unwrap()
+        .tree_view()
+        .items()
 }
 
 #[test]
@@ -36,15 +40,18 @@ fn path_expanded() {
     let full_setup = common_start();
 
     let expanded: Vec<String> = full_setup
-        .get_first_editor().unwrap()
-        .save_file_dialog().unwrap()
-        .tree_view().items().into_iter().filter(|item| item.expanded)
+        .get_first_editor()
+        .unwrap()
+        .save_file_dialog()
+        .unwrap()
+        .tree_view()
+        .items()
+        .into_iter()
+        .filter(|item| item.expanded)
         .map(|item| item.label)
         .collect();
 
-    assert_eq!(expanded, vec![
-        "save_file_dialog_test_1".to_string(),
-    ]);
+    assert_eq!(expanded, vec!["save_file_dialog_test_1".to_string(),]);
 
     full_setup.finish();
 }
@@ -61,9 +68,7 @@ fn no_leak_focus() {
 
     assert_eq!(full_setup.get_first_editor().unwrap().is_editor_focused(), false);
 
-    assert!(full_setup.wait_for(|f| {
-        f.get_file_tree_view().unwrap().is_focused()
-    }));
+    assert!(full_setup.wait_for(|f| { f.get_file_tree_view().unwrap().is_focused() }));
 
     full_setup.finish();
 }
@@ -72,11 +77,14 @@ fn no_leak_focus() {
 fn expanded_and_highlighted_path() {
     let full_setup = common_start();
 
-
-    assert_eq!(tree_items(&full_setup).iter()
-                   .filter(|i| i.expanded)
-                   .map(|i| i.label.clone())
-                   .collect::<Vec<_>>(), vec!["save_file_dialog_test_1"]);
+    assert_eq!(
+        tree_items(&full_setup)
+            .iter()
+            .filter(|i| i.expanded)
+            .map(|i| i.label.clone())
+            .collect::<Vec<_>>(),
+        vec!["save_file_dialog_test_1"]
+    );
 
     let src = tree_items(&full_setup).iter().find(|i| i.label == "src").unwrap().clone();
 
@@ -91,18 +99,26 @@ fn expanded_and_highlighted_path() {
 fn hit_on_dir_expands_it() {
     let mut full_setup = common_start();
 
-    assert_eq!(full_setup.get_first_editor().unwrap()
-                   .save_file_dialog().unwrap()
-                   .tree_view().is_focused(), true
+    assert_eq!(
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .tree_view()
+            .is_focused(),
+        true
     );
 
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        tree_items(&full_setup).iter()
+        tree_items(&full_setup)
+            .iter()
             .filter(|i| i.expanded)
             .map(|i| i.label.clone())
-            .collect::<Vec<_>>() == vec!["save_file_dialog_test_1".to_string(), "src".to_string()]
+            .collect::<Vec<_>>()
+            == vec!["save_file_dialog_test_1".to_string(), "src".to_string()]
     }));
 
     full_setup.finish();
@@ -112,9 +128,15 @@ fn hit_on_dir_expands_it() {
 fn hit_on_leaf_dir_moves_focus() {
     let mut full_setup = common_start();
 
-    assert_eq!(full_setup.get_first_editor().unwrap()
-                   .save_file_dialog().unwrap()
-                   .tree_view().is_focused(), true
+    assert_eq!(
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .tree_view()
+            .is_focused(),
+        true
     );
 
     full_setup.send_key(Keycode::Enter.to_key());
@@ -122,11 +144,24 @@ fn hit_on_leaf_dir_moves_focus() {
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().tree_view().is_focused() == false
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .tree_view()
+            .is_focused()
+            == false
     }));
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().list_view().is_focused()
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .list_view()
+            .is_focused()
     }));
 
     full_setup.finish();
@@ -136,21 +171,41 @@ fn hit_on_leaf_dir_moves_focus() {
 fn hit_on_list_item_moves_to_edit() {
     let mut full_setup = common_start();
 
-    assert_eq!(full_setup.get_first_editor().unwrap()
-                   .save_file_dialog().unwrap()
-                   .tree_view().is_focused(), true
+    assert_eq!(
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .tree_view()
+            .is_focused(),
+        true
     );
 
     full_setup.send_key(Keycode::ArrowRight.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().list_view().is_focused() == true
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .list_view()
+            .is_focused()
+            == true
     }));
 
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().edit_widget().is_focused() == true
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .edit_widget()
+            .is_focused()
+            == true
     }));
 
     full_setup.finish();
@@ -159,24 +214,53 @@ fn hit_on_list_item_moves_to_edit() {
 fn over_ok() -> FullSetup {
     let mut full_setup = common_start();
 
-    assert_eq!(full_setup.get_first_editor().unwrap()
-                   .save_file_dialog().unwrap()
-                   .tree_view().is_focused(), true
+    assert_eq!(
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .tree_view()
+            .is_focused(),
+        true
     );
 
     full_setup.send_key(Keycode::ArrowRight.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().list_view().is_focused() == true
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .list_view()
+            .is_focused()
+            == true
     }));
 
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().edit_widget().is_focused() == true
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .edit_widget()
+            .is_focused()
+            == true
     }));
 
-    assert_eq!(full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().edit_widget().contents(), "main.rs");
+    assert_eq!(
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .edit_widget()
+            .contents(),
+        "main.rs"
+    );
 
     full_setup.send_key(Keycode::ArrowLeft.to_key());
     full_setup.send_key(Keycode::ArrowLeft.to_key());
@@ -184,13 +268,26 @@ fn over_ok() -> FullSetup {
     full_setup.send_key(Keycode::Char('2').to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().edit_widget().contents() == "main2.rs"
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .edit_widget()
+            .contents()
+            == "main2.rs"
     }));
 
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().ok_button().is_focused()
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .ok_button()
+            .is_focused()
     }));
 
     full_setup
@@ -207,7 +304,9 @@ fn happy_path() {
             debug!("print {:?}", i);
         }
 
-        spath!(full_setup.fsf(), "src", "main2.rs").map(|path| path.is_file()).unwrap_or(false)
+        spath!(full_setup.fsf(), "src", "main2.rs")
+            .map(|path| path.is_file())
+            .unwrap_or(false)
     }));
 
     full_setup.finish();
@@ -219,9 +318,7 @@ fn esc_cancels_path() {
 
     full_setup.send_key(Keycode::Esc.to_key());
 
-    assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().save_file_dialog().is_none()
-    }));
+    assert!(full_setup.wait_for(|full_setup| { full_setup.get_first_editor().unwrap().save_file_dialog().is_none() }));
 
     full_setup.finish();
 }
@@ -233,22 +330,25 @@ fn cancel_cancels() {
     full_setup.send_key(Keycode::ArrowLeft.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().cancel_button().is_focused()
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .cancel_button()
+            .is_focused()
     }));
 
     full_setup.send_key(Keycode::Enter.to_key());
 
-    assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().save_file_dialog().is_none()
-    }));
+    assert!(full_setup.wait_for(|full_setup| { full_setup.get_first_editor().unwrap().save_file_dialog().is_none() }));
 
     full_setup.finish();
 }
 
 #[test]
 fn save_empty_file_doesnt_leak_focus() {
-    let mut full_setup: FullSetup = FullSetup::new("./test_envs/save_file_dialog_test_1")
-        .build();
+    let mut full_setup: FullSetup = FullSetup::new("./test_envs/save_file_dialog_test_1").build();
 
     assert!(full_setup.send_key(full_setup.config().keyboard_config.global.new_buffer));
     assert!(full_setup.wait_for(|full_setup| full_setup.get_first_editor().is_some()));

@@ -10,17 +10,16 @@ use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::io::output::{Metadata, Output};
+use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::common_query::CommonQuery;
 use crate::primitives::helpers;
 use crate::primitives::helpers::copy_first_n_columns;
-use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 use crate::widgets::list_widget::provider::ListItemProvider;
 
@@ -78,17 +77,16 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
     }
 
     pub fn with_provider(self, provider: Box<dyn ListItemProvider<Item>>) -> Self {
-        ListWidget {
-            provider,
-            ..self
-        }
+        ListWidget { provider, ..self }
     }
 
-    pub fn items(&self) -> Box<dyn Iterator<Item=&Item> + '_> {
+    pub fn items(&self) -> Box<dyn Iterator<Item = &Item> + '_> {
         if let Some(query) = self.query.as_ref() {
-            Box::new(self.provider.items().filter(|item| {
-                item.get(0).map(|value| query.matches(&value)).unwrap_or(false)
-            }))
+            Box::new(
+                self.provider
+                    .items()
+                    .filter(|item| item.get(0).map(|value| query.matches(&value)).unwrap_or(false)),
+            )
         } else {
             Box::new(self.provider.items())
         }
@@ -159,9 +157,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
     }
 
     pub fn get_highlighted(&self) -> Option<&Item> {
-        self.highlighted.map(
-            |idx| self.provider.items().nth(idx)
-        ).flatten()
+        self.highlighted.map(|idx| self.provider.items().nth(idx)).flatten()
     }
 
     pub fn set_show_column_names(&mut self, show_column_names: bool) {
@@ -169,10 +165,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
     }
 
     pub fn with_show_column_names(self, show_column_names: bool) -> Self {
-        ListWidget {
-            show_column_names,
-            ..self
-        }
+        ListWidget { show_column_names, ..self }
     }
 
     pub fn set_highlighted(&mut self, highlighted: usize) -> bool {
@@ -185,10 +178,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
     }
 
     pub fn with_size_policy(self, fill_policy: SizePolicy) -> Self {
-        Self {
-            fill_policy,
-            ..self
-        }
+        Self { fill_policy, ..self }
     }
 
     pub fn set_fill_policy(&mut self, fill_policy: SizePolicy) {
@@ -215,9 +205,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
     }
 
     pub fn get_highlighted_item(&self) -> Option<&Item> {
-        self.highlighted.map(|idx| {
-            self.provider.items().nth(idx)
-        }).flatten()
+        self.highlighted.map(|idx| self.provider.items().nth(idx)).flatten()
     }
 
     pub fn full_size_from_items(&self) -> XY {
@@ -233,7 +221,6 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
     }
 }
 
-
 impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     fn id(&self) -> WID {
         self.id
@@ -242,7 +229,10 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     fn typename(&self) -> &'static str {
         TYPENAME
     }
-    fn static_typename() -> &'static str where Self: Sized {
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
         TYPENAME
     }
     fn full_size(&self) -> XY {
@@ -264,54 +254,40 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         return match input_event {
-            InputEvent::KeyInput(key) => {
-                match key.keycode {
-                    Keycode::ArrowUp => {
-                        if self.highlighted.map(|f| f > 0).unwrap_or(false) {
-                            Some(ListWidgetMsg::Arrow(Arrow::Up))
-                        } else {
-                            None
-                        }
-                    }
-                    Keycode::ArrowDown => {
-                        if self.highlighted.map(|f| f + 1 < self.provider.items().count()).unwrap_or(false) {
-                            Some(ListWidgetMsg::Arrow(Arrow::Down))
-                        } else {
-                            None
-                        }
-                    }
-                    Keycode::ArrowLeft => {
+            InputEvent::KeyInput(key) => match key.keycode {
+                Keycode::ArrowUp => {
+                    if self.highlighted.map(|f| f > 0).unwrap_or(false) {
+                        Some(ListWidgetMsg::Arrow(Arrow::Up))
+                    } else {
                         None
                     }
-                    Keycode::ArrowRight => {
-                        None
-                    }
-                    Keycode::Enter => {
-                        if self.on_hit.is_some() {
-                            Some(ListWidgetMsg::Hit)
-                        } else {
-                            None
-                        }
-                    }
-                    Keycode::Home => {
-                        Some(ListWidgetMsg::Home)
-                    }
-                    Keycode::End => {
-                        Some(ListWidgetMsg::End)
-                    }
-                    Keycode::PageUp => {
-                        Some(ListWidgetMsg::PageUp)
-                    }
-                    Keycode::PageDown => {
-                        Some(ListWidgetMsg::PageDown)
-                    }
-                    _ => None
                 }
-            }
-            _ => None
-        }.map(|m| Box::new(m) as Box<dyn AnyMsg>);
+                Keycode::ArrowDown => {
+                    if self.highlighted.map(|f| f + 1 < self.provider.items().count()).unwrap_or(false) {
+                        Some(ListWidgetMsg::Arrow(Arrow::Down))
+                    } else {
+                        None
+                    }
+                }
+                Keycode::ArrowLeft => None,
+                Keycode::ArrowRight => None,
+                Keycode::Enter => {
+                    if self.on_hit.is_some() {
+                        Some(ListWidgetMsg::Hit)
+                    } else {
+                        None
+                    }
+                }
+                Keycode::Home => Some(ListWidgetMsg::Home),
+                Keycode::End => Some(ListWidgetMsg::End),
+                Keycode::PageUp => Some(ListWidgetMsg::PageUp),
+                Keycode::PageDown => Some(ListWidgetMsg::PageDown),
+                _ => None,
+            },
+            _ => None,
+        }
+        .map(|m| Box::new(m) as Box<dyn AnyMsg>);
     }
-
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         let our_msg = msg.as_msg::<ListWidgetMsg>();
@@ -321,46 +297,44 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
         }
 
         return match our_msg.unwrap() {
-            ListWidgetMsg::Arrow(arrow) => {
-                match self.highlighted {
-                    None => None,
-                    Some(old_highlighted) => {
-                        match arrow {
-                            Arrow::Up => {
-                                if old_highlighted > 0 {
-                                    self.highlighted = Some(old_highlighted - 1);
-                                    self.on_change()
-                                } else {
-                                    self.on_miss()
-                                }
-                            }
-                            Arrow::Down => {
-                                let provider_len = self.provider.items().count();
-                                debug!("items {}, old_high {}", provider_len, old_highlighted);
-                                if old_highlighted + 1 < provider_len {
-                                    self.highlighted = Some(old_highlighted + 1);
-                                    self.on_change()
-                                } else {
-                                    self.on_miss()
-                                }
-                            }
-                            Arrow::Left => { None }
-                            Arrow::Right => { None }
+            ListWidgetMsg::Arrow(arrow) => match self.highlighted {
+                None => None,
+                Some(old_highlighted) => match arrow {
+                    Arrow::Up => {
+                        if old_highlighted > 0 {
+                            self.highlighted = Some(old_highlighted - 1);
+                            self.on_change()
+                        } else {
+                            self.on_miss()
                         }
                     }
-                }
-            }
-            ListWidgetMsg::Hit => {
-                self.on_hit()
-            }
-            ListWidgetMsg::Home => { None }
-            ListWidgetMsg::End => { None }
+                    Arrow::Down => {
+                        let provider_len = self.provider.items().count();
+                        debug!("items {}, old_high {}", provider_len, old_highlighted);
+                        if old_highlighted + 1 < provider_len {
+                            self.highlighted = Some(old_highlighted + 1);
+                            self.on_change()
+                        } else {
+                            self.on_miss()
+                        }
+                    }
+                    Arrow::Left => None,
+                    Arrow::Right => None,
+                },
+            },
+            ListWidgetMsg::Hit => self.on_hit(),
+            ListWidgetMsg::Home => None,
+            ListWidgetMsg::End => None,
             ListWidgetMsg::PageUp => {
                 if let Some(highlighted) = self.highlighted {
                     if highlighted > 0 {
                         let last_size = unpack_or_e!(self.last_size, None, "page_up before layout");
                         let page_height = last_size.page_height();
-                        let preferred_idx = if highlighted > page_height as usize { highlighted - page_height as usize } else { 0 };
+                        let preferred_idx = if highlighted > page_height as usize {
+                            highlighted - page_height as usize
+                        } else {
+                            0
+                        };
 
                         let count = self.items().take(preferred_idx + 1).count();
                         if count > preferred_idx {
@@ -402,16 +376,14 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let size = unpack_or_e!(self.last_size, (), "render before layout");
+        let _size = unpack_or_e!(self.last_size, (), "render before layout");
         #[cfg(test)]
-        output.emit_metadata(
-            Metadata {
-                id: self.id(),
-                typename: self.typename().to_string(),
-                rect: Rect::from_zero(size.output_size()),
-                focused,
-            }
-        );
+        output.emit_metadata(crate::io::output::Metadata {
+            id: self.id(),
+            typename: self.typename().to_string(),
+            rect: crate::primitives::rect::Rect::from_zero(_size.output_size()),
+            focused,
+        });
 
         let size = if self.last_size.is_none() {
             error!("request to draw before layout, skipping.");
@@ -444,7 +416,12 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
         }
 
         for (line_idx, item) in self.items().enumerate() {
-            debug!("y+idx = {}, osy = {:?}, item = {:?}", y_offset as usize + line_idx, output.size().y, item);
+            debug!(
+                "y+idx = {}, osy = {:?}, item = {:?}",
+                y_offset as usize + line_idx,
+                output.size().y,
+                item
+            );
 
             if y_offset as usize + line_idx >= size.output_size().y as usize {
                 break;
@@ -460,7 +437,10 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
 
             for column_idx in 0..Item::len_columns() {
                 if x_offset >= size.output_size().x {
-                    warn!("completely skipping drawing a column {} and consecutive, because it's offset is beyond output", column_idx);
+                    warn!(
+                        "completely skipping drawing a column {} and consecutive, because it's offset is beyond output",
+                        column_idx
+                    );
                     break;
                 }
 
@@ -508,17 +488,9 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                                 highlight_iter.next();
                             }
 
-                            let style = if !highlight {
-                                style
-                            } else {
-                                theme.highlighted(focused)
-                            };
+                            let style = if !highlight { style } else { theme.highlighted(focused) };
 
-                            output.print_at(
-                                XY::new(x_offset + (x_stride as u16), y_offset + line_idx as u16),
-                                style,
-                                grapheme,
-                            );
+                            output.print_at(XY::new(x_offset + (x_stride as u16), y_offset + line_idx as u16), style, grapheme);
 
                             x_stride += grapheme.width();
                         }
@@ -532,9 +504,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                         // debug!("printing at pos {} size {}", pos, output.size());
                         output.print_at(
                             // TODO possible u16 oveflow
-                            pos,
-                            style,
-                            " ",
+                            pos, style, " ",
                         );
                     }
                 }
@@ -544,4 +514,3 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
         }
     }
 }
-

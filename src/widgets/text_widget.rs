@@ -9,7 +9,7 @@ use crate::primitives::printable::Printable;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 
 pub struct TextWidget {
     wid: WID,
@@ -30,16 +30,13 @@ impl TextWidget {
     }
 
     pub fn with_size_policy(self, size_policy: SizePolicy) -> Self {
-        Self {
-            size_policy,
-            ..self
-        }
+        Self { size_policy, ..self }
     }
 
     pub fn text_size(&self) -> XY {
         let mut size = XY::ZERO;
 
-        let debug_text = self.text.to_string();
+        let _debug_text = self.text.to_string();
 
         let mut line_it = self.text.lines();
         while let Some(line) = line_it.next() {
@@ -67,7 +64,12 @@ impl Widget for TextWidget {
     fn typename(&self) -> &'static str {
         Self::TYPENAME
     }
-    fn static_typename() -> &'static str where Self: Sized { Self::TYPENAME }
+    fn static_typename() -> &'static str
+    where
+        Self: Sized,
+    {
+        Self::TYPENAME
+    }
     fn size_policy(&self) -> SizePolicy {
         self.size_policy
     }
@@ -76,7 +78,7 @@ impl Widget for TextWidget {
         self.text_size()
     }
 
-    fn layout(&mut self, screenspace: Screenspace) {}
+    fn layout(&mut self, _screenspace: Screenspace) {}
 
     fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         None
