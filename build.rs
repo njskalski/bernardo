@@ -25,7 +25,7 @@ fn build_cpp() {
     let dir: PathBuf = ["third-party", "tree-sitter-cpp", "src"].iter().collect();
 
     println!("cargo:rerun-if-changed=third-party/tree-sitter-cpp/src/parser.c");
-    println!("cargo:rerun-if-changed=third-party/tree-sitter-cpp/src/scanner.cc");
+    println!("cargo:rerun-if-changed=third-party/tree-sitter-cpp/src/scanner.c");
 
     cc::Build::new()
         .include(&dir)
@@ -36,7 +36,7 @@ fn build_cpp() {
     cc::Build::new()
         .cpp(true)
         .include(&dir)
-        .file(dir.join("scanner.cc"))
+        .file(dir.join("scanner.c"))
         .warnings(false)
         .compile("tree-sitter-cpp-scanner");
 }

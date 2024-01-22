@@ -78,7 +78,13 @@ fn completions_clangd_integ_test_1() {
             .find(|item| item.text.contains(infix))
             .is_some());
     }
+}
 
-    // full_setup.wait_frame();
-    // full_setup.screenshot();
+#[test]
+fn clangd_syntax_highlighting_integ_test_1() {
+    let mut full_setup = get_full_setup();
+    assert!(full_setup.wait_for(|f| f.is_editor_opened()));
+
+    full_setup.wait_frame();
+    full_setup.screenshot();
 }
