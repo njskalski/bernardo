@@ -1,3 +1,5 @@
+use crate::cursor::cursor::CursorStatus;
+use crate::io::cell::Cell;
 use crate::io::output::Metadata;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::widgets::edit_box::EditBoxWidget;
@@ -28,5 +30,19 @@ impl<'a> EditWidgetInterpreter<'a> {
             .text
             .trim()
             .to_string()
+    }
+
+    pub fn cursor_pos(&self) -> usize {
+        let cursor_bg = self.output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
+
+        self.output
+            .buffer
+            .cells_iter()
+            .find(|(_pos, cell)| match cell {
+                Cell::Begin { style, .. } => style.background == cursor_bg,
+                Cell::Continuation => false,
+            })
+            .map(|(pos, _cell)| pos.x as usize)
+            .unwrap()
     }
 }
