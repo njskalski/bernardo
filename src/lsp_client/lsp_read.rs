@@ -33,7 +33,7 @@ pub fn read_lsp<R: Read>(
 
     loop {
         let mut buf: [u8; 1] = [0];
-        input.read(&mut buf)?;
+        input.read_exact(&mut buf)?;
         headers.push(buf[0]);
 
         if headers.len() > 3 {
@@ -54,7 +54,7 @@ pub fn read_lsp<R: Read>(
     let mut body: Vec<u8> = Vec::with_capacity(body_len);
     while body.len() < body_len {
         let mut buf: [u8; 1] = [0];
-        input.read(&mut buf)?;
+        input.read_exact(&mut buf)?;
         body.push(buf[0]);
     }
 
@@ -71,12 +71,12 @@ pub fn read_lsp<R: Read>(
         lsp_debug_save(file, pretty_string);
     }
 
-    if let Ok(call) = jsonrpc_core::serde_from_str::<jsonrpc_core::Call>(&s) {
+    if let Ok(call) = jsonrpc_core::serde_from_str::<jsonrpc_core::Call>(s) {
         match call {
             Call::MethodCall(call) => {
                 debug!("deserialized call->method_call");
                 let value: Value = call.params.into();
-                internal_send_to_promise(&id_to_method, call.id.clone(), value, Some(&call.method))
+                internal_send_to_promise(id_to_method, call.id.clone(), value, Some(&call.method))
             }
             Call::Notification(notification) => {
                 debug!("deserialized call->notification");
@@ -100,7 +100,7 @@ pub fn read_lsp<R: Read>(
 
                 // the fact that failed to
 
-                if let Ok(resp) = jsonrpc_core::serde_from_str::<jsonrpc_core::Response>(&s) {
+                if let Ok(resp) = jsonrpc_core::serde_from_str::<jsonrpc_core::Response>(s) {
                     debug!("deserialized response");
                     if let jsonrpc_core::Response::Single(single) = resp {
                         match single {
@@ -110,13 +110,13 @@ pub fn read_lsp<R: Read>(
                             }
                             Output::Success(succ) => {
                                 debug!("call info id {:?}", &succ.id);
-                                internal_send_to_promise(&id_to_method, succ.id, succ.result, None)
+                                internal_send_to_promise(id_to_method, succ.id, succ.result, None)
                             }
                         }
                     } else {
                         Err(LspReadError::NotSingleResponse)
                     }
-                } else if let Ok(notification) = jsonrpc_core::serde_from_str::<jsonrpc_core::Notification>(&s) {
+                } else if let Ok(notification) = jsonrpc_core::serde_from_str::<jsonrpc_core::Notification>(s) {
                     debug!("deserialized notification");
                     match parse_notification(notification) {
                         Ok(no) => {
@@ -167,9 +167,9 @@ fn internal_send_to_promise(
 
 static CONTENT_LENGTH_HEADER: &str = "Content-Length:";
 
-pub fn get_len_from_headers(headers: &String) -> Option<usize> {
+pub fn get_len_from_headers(headers: &str) -> Option<usize> {
     for line in headers.lines() {
-        if line.trim().starts_with(&CONTENT_LENGTH_HEADER) {
+        if line.trim().starts_with(CONTENT_LENGTH_HEADER) {
             let bytes_num_str = &line[CONTENT_LENGTH_HEADER.len() + 1..];
             let bytes_num = bytes_num_str.parse::<usize>().ok();
             return bytes_num;
@@ -195,9 +195,9 @@ mod tests {
         // assert_eq!(jsonrpc_core::serde_from_str::<jsonrpc_core::Success>(&s).is_ok(), true);
 
         //Call, MethodCall, Notification, Request
-        assert_eq!(jsonrpc_core::serde_from_str::<jsonrpc_core::Call>(&s).is_ok(), true);
-        assert_eq!(jsonrpc_core::serde_from_str::<jsonrpc_core::MethodCall>(&s).is_ok(), true);
+        assert!(jsonrpc_core::serde_from_str::<jsonrpc_core::Call>(s).is_ok());
+        assert!(jsonrpc_core::serde_from_str::<jsonrpc_core::MethodCall>(s).is_ok());
         // assert_eq!(jsonrpc_core::serde_from_str::<jsonrpc_core::Notification>(&s).is_ok(), true);
-        assert_eq!(jsonrpc_core::serde_from_str::<jsonrpc_core::Request>(&s).is_ok(), true);
+        assert!(jsonrpc_core::serde_from_str::<jsonrpc_core::Request>(s).is_ok());
     }
 }

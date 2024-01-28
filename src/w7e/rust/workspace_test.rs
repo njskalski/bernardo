@@ -83,12 +83,12 @@ authors = ["Alice <a@example.com>", "Bob <b@example.com>"]
             )
             .to_fsf();
 
-        assert_eq!(spath!(mock_fs, "workspace").unwrap().exists(), true);
-        assert_eq!(spath!(mock_fs, "workspace", ".gladius_workspace.ron").unwrap().exists(), true);
-        assert_eq!(spath!(mock_fs, "workspace", "rust_project").unwrap().exists(), true);
-        assert_eq!(spath!(mock_fs, "workspace", "rust_project", "Cargo.toml").unwrap().exists(), true);
+        assert!(spath!(mock_fs, "workspace").unwrap().exists());
+        assert!(spath!(mock_fs, "workspace", ".gladius_workspace.ron").unwrap().exists());
+        assert!(spath!(mock_fs, "workspace", "rust_project").unwrap().exists());
+        assert!(spath!(mock_fs, "workspace", "rust_project", "Cargo.toml").unwrap().exists());
 
-        let path = mock_fs.descendant_checked(&repo_folder).unwrap();
+        let path = mock_fs.descendant_checked(repo_folder).unwrap();
         let (_workspace, errors) = Workspace::try_load(path).unwrap();
 
         assert_eq!(errors, ScopeLoadErrors::default());

@@ -83,10 +83,10 @@ impl WidgetTestbedBuilder {
     }
 
     pub fn providers(self) -> (Providers, SideChannels) {
-        let config: ConfigRef = Arc::new(self.config.unwrap_or(Config::default()));
+        let config: ConfigRef = Arc::new(self.config.unwrap_or_default());
         let fsfref: FsfRef = FsfRef::new(MockFS::new("/"));
         let clipboard: ClipboardRef = MockClipboard::default().into_clipboardref();
-        let theme = self.theme.unwrap_or(Theme::default());
+        let theme = self.theme.unwrap_or_default();
         let tree_sitter = Arc::new(TreeSitterWrapper::new(LanguageSet::full()));
 
         let (mock_navcomp_event_sender, mock_navcomp_event_recvr) = crossbeam_channel::unbounded::<MockNavCompEvent>();

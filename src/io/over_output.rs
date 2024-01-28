@@ -76,7 +76,7 @@ impl Output for OverOutput<'_> {
         }
 
         let mut x_offset: i32 = 0;
-        for grapheme in text.graphemes(true).into_iter() {
+        for grapheme in text.graphemes(true) {
             let x = pos.x as i32 + x_offset - local_visible_rect.upper_left().x as i32;
             if x < 0 {
                 continue;
@@ -94,7 +94,7 @@ impl Output for OverOutput<'_> {
             }
 
             let y = pos.y - local_visible_rect.upper_left().y; // >= 0, tested above and < u16::MAX since no addition.
-            let local_pos = XY::new(x as u16, y);
+            let local_pos = XY::new(x, y);
 
             self.output.print_at(local_pos, style, grapheme);
             x_offset += grapheme.width() as i32; //TODO
@@ -110,14 +110,13 @@ impl Output for OverOutput<'_> {
         let parent_vis_rect = self.output.visible_rect();
 
         let my_rect = parent_vis_rect.shifted(self.local_to_parent);
-        let my_rect = my_rect.capped_at(self.size()).unwrap();
+
+        my_rect.capped_at(self.size()).unwrap()
 
         // debug_assert!(my_rect.lower_right() <= self.size());
         // debug_assert!(my_rect.shifted(self.local_to_parent).lower_right() <=
         // parent_vis_rect.lower_right()); debug_assert!(parent_vis_rect.contains_rect(my_rect.
         // shifted(self.local_to_parent)));
-
-        my_rect
     }
 
     #[cfg(test)]
