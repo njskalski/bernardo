@@ -19,8 +19,8 @@ Generated with chat-gpt:
         let line_number = capture.get(3).map_or("", |m| m.as_str());
         let column_number = capture.get(4).map_or("", |m| m.as_str());
  */
-const warning_pattern_str: &'static str = r"warning:.+[\r\n]+\s+-->\s+([^:]+?):([0-9]+):([0-9]+)[\r\n]+";
-const error_pattern_str: &'static str = r"error[^:]*:[^:]*[\r\n]+\s+-->\s+([^:]+?):([0-9]+):([0-9]+)[\r\n]+";
+const WARNING_PATTERN_STR: &str = r"warning:.+[\r\n]+\s+-->\s+([^:]+?):([0-9]+):([0-9]+)[\r\n]+";
+const ERROR_PATTERN_STR: &str = r"error[^:]*:[^:]*[\r\n]+\s+-->\s+([^:]+?):([0-9]+):([0-9]+)[\r\n]+";
 
 // TODO I actually think this should be written in Python in a separate program, first of "plugins",
 // to test out the idea.
@@ -33,8 +33,8 @@ pub struct RustcOutputParserLabelProvider {
 
 impl RustcOutputParserLabelProvider {
     pub fn new() -> Self {
-        let warning_regex = Regex::new(warning_pattern_str).expect("Failed to compile regex pattern"); //TODO?
-        let error_regex = Regex::new(error_pattern_str).expect("Failed to compile regex pattern"); //TODO?
+        let warning_regex = Regex::new(WARNING_PATTERN_STR).expect("Failed to compile regex pattern"); //TODO?
+        let error_regex = Regex::new(ERROR_PATTERN_STR).expect("Failed to compile regex pattern"); //TODO?
 
         RustcOutputParserLabelProvider {
             warning_regex,
@@ -153,7 +153,7 @@ pub mod test {
     #[test]
     fn rustc_warnings_test() {
         let mut rustc_output_parser = RustcOutputParserLabelProvider::new();
-        assert!(rustc_output_parser.ingest(some_output_1));
+        assert!(rustc_output_parser.ingest(SOME_OUTPUT_1));
         assert_eq!(rustc_output_parser.warnings_iter().count(), 132);
         assert_eq!(rustc_output_parser.errors_iter().count(), 0);
     }
@@ -161,12 +161,12 @@ pub mod test {
     #[test]
     fn rustc_warnings_and_error_test() {
         let mut rustc_output_parser = RustcOutputParserLabelProvider::new();
-        assert!(rustc_output_parser.ingest(some_output_2));
+        assert!(rustc_output_parser.ingest(SOME_OUTPUT_2));
         assert_eq!(rustc_output_parser.warnings_iter().count(), 79);
         assert_eq!(rustc_output_parser.errors_iter().count(), 1);
     }
 
-    const some_output_1: &'static str = r###"
+    const SOME_OUTPUT_1: &str = r###"
 warning: unused import: `Metadata`
   --> src/io/buffer_output/buffer_output.rs:13:25
    |
@@ -1055,7 +1055,7 @@ warning: `bernardo` (bin "reader") generated 11 warnings (run `cargo fix --bin "
     Finished dev [unoptimized + debuginfo] target(s) in 0.05s
 "###;
 
-    const some_output_2: &'static str = r###"error[E0425]: cannot find value `line_no_1b` in this scope
+    const SOME_OUTPUT_2: &str = r###"error[E0425]: cannot find value `line_no_1b` in this scope
   --> src/widgets/editor_widget/label/rustc_output_parser_label_provider.rs:89:44
    |
 89 |                 pos: LabelPos::LineAfter { line_no_1b },

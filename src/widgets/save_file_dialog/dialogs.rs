@@ -5,8 +5,8 @@ use crate::widgets::button::ButtonWidget;
 use crate::widgets::generic_dialog::generic_dialog::GenericDialog;
 use crate::widgets::save_file_dialog::save_file_dialog_msg::SaveFileDialogMsg::{CancelOverride, ConfirmOverride};
 
-const CANCEL_STRING: &'static str = "Cancel";
-const OVERRIDE_STRING: &'static str = "Override";
+const CANCEL_STRING: &str = "Cancel";
+const OVERRIDE_STRING: &str = "Override";
 
 pub fn override_dialog<T: Printable>(filename: T) -> GenericDialog {
     let mut text = "File \n\"".to_string();

@@ -33,8 +33,8 @@ use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
 use crate::{subwidget, unpack_or, unpack_or_e};
 
-const PATTERN: &'static str = "pattern: ";
-const REPLACE: &'static str = "replace: ";
+const PATTERN: &str = "pattern: ";
+const REPLACE: &str = "replace: ";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum EditorViewState {

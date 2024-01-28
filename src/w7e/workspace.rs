@@ -22,7 +22,7 @@ to receive.
 In a way these two not obviously related structures seem to be intertwined.
  */
 
-pub const WORKSPACE_FILE_NAME: &'static str = ".gladius_workspace.ron";
+pub const WORKSPACE_FILE_NAME: &str = ".gladius_workspace.ron";
 
 pub struct Scopes(Vec<ProjectScope>);
 

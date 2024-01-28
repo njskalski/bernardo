@@ -10,7 +10,6 @@ use crate::io::style::TextStyle;
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
-use crate::{unpack_or, unpack_or_e};
 
 // Over output is an output that is bigger than original,
 // physical or in-memory display. All write operations targeting lines/columns beyond it's borders

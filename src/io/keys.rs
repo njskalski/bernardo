@@ -10,12 +10,12 @@ use crate::experiments::focus_group::FocusUpdate;
 // should be fixed someday
 // TODO (hardening) also, for some reason console does not support
 // combinations like shift+ctrl+s, I need to warn users to not try that
-const ALT_PLUS: &'static str = "ALT+";
-const CTRL_PLUS: &'static str = "CTRL+";
-const SHIFT_PLUS: &'static str = "SHIFT+";
-const ALT: &'static str = "ALT";
-const CTRL: &'static str = "CTRL";
-const SHIFT: &'static str = "SHIFT";
+const ALT_PLUS: &str = "ALT+";
+const CTRL_PLUS: &str = "CTRL+";
+const SHIFT_PLUS: &str = "SHIFT+";
+const ALT: &str = "ALT";
+const CTRL: &str = "CTRL";
+const SHIFT: &str = "SHIFT";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Keycode {

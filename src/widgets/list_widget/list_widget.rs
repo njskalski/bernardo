@@ -28,7 +28,7 @@ use crate::widgets::list_widget::provider::ListItemProvider;
 // "providers" - they are not guaranteed to be constant. I'd have to copy the data from them out, or
 // introduce some new invariants.
 
-pub const TYPENAME: &'static str = "list_widget";
+pub const TYPENAME: &str = "list_widget";
 
 pub struct ListWidget<Item: ListWidgetItem> {
     id: WID,

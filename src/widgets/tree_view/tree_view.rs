@@ -13,15 +13,16 @@ use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
+
 use crate::primitives::xy::XY;
-use crate::unpack_or_e;
+
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::tree_view::tree_it::TreeIt;
 use crate::widgets::tree_view::tree_view_node::{TreeItFilter, TreeViewNode};
 
-pub const TYPENAME: &'static str = "tree_view";
+pub const TYPENAME: &str = "tree_view";
 
 // expectation is that these are sorted
 pub type LabelHighlighter = fn(&str) -> Vec<usize>;
@@ -319,15 +320,17 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let _size = unpack_or_e!(self.last_size, (), "render before layout");
-
         #[cfg(test)]
-        output.emit_metadata(crate::io::output::Metadata {
-            id: self.id(),
-            typename: self.typename().to_string(),
-            rect: crate::primitives::rect::Rect::from_zero(_size.output_size()),
-            focused,
-        });
+        {
+            let size = crate::unpack_or_e!(self.last_size, (), "render before layout");
+
+            output.emit_metadata(crate::io::output::Metadata {
+                id: self.id(),
+                typename: self.typename().to_string(),
+                rect: crate::primitives::rect::Rect::from_zero(size.output_size()),
+                focused,
+            });
+        }
 
         let visible_rect = output.visible_rect();
 
