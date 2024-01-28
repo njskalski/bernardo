@@ -1,7 +1,7 @@
 // TODO call Fizyk and golf this code
 
 #[macro_export]
-macro_rules! unpack_or {
+macro_rules! unpack_unit {
     ($ee: expr) => {
         match $ee {
             Some(item) => item,
@@ -10,6 +10,32 @@ macro_rules! unpack_or {
             }
         }
     };
+    ($ee: expr, $msg:literal, $($arg:tt)*) => {
+        match $ee {
+            Some(item) => item,
+            None => {
+                log::log!(log::Level::Debug, $msg, $($arg)*);
+                return;
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! unpack_unit_e {
+    ($ee: expr, $msg:literal, $($arg:tt)*) => {
+        match $ee {
+            Some(item) => item,
+            None => {
+                log::log!(log::Level::Error, $msg, $($arg)*);
+                return;
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! unpack_quiet {
     ($ee: expr, $ret_val: expr) => {
         match $ee {
             Some(item) => item,
@@ -18,6 +44,10 @@ macro_rules! unpack_or {
             }
         }
     };
+}
+
+#[macro_export]
+macro_rules! unpack_or {
     ($ee: expr, $ret_val: expr, $msg:literal) => {
         match $ee {
             Some(item) => item,
@@ -36,35 +66,10 @@ macro_rules! unpack_or {
             }
         }
     };
-    ($ee: expr, $msg:literal, $($arg:tt)*) => {
-        match $ee {
-            Some(item) => item,
-            None => {
-                log::log!(log::Level::Debug, $msg, $($arg)*);
-                return;
-            }
-        }
-    };
 }
 
 #[macro_export]
 macro_rules! unpack_or_e {
-    ($ee: expr) => {
-        match $ee {
-            Some(item) => item,
-            None => {
-                return;
-            }
-        }
-    };
-    ($ee: expr, $ret_val: expr) => {
-        match $ee {
-            Some(item) => item,
-            None => {
-                return $ret_val;
-            }
-        }
-    };
     ($ee: expr, $ret_val: expr, $msg:literal) => {
         match $ee {
             Some(item) => item,
@@ -96,22 +101,6 @@ macro_rules! unpack_or_e {
 
 #[macro_export]
 macro_rules! unpack_or_w {
-    ($ee: expr) => {
-        match $ee {
-            Some(item) => item,
-            None => {
-                return;
-            }
-        }
-    };
-    ($ee: expr, $ret_val: expr) => {
-        match $ee {
-            Some(item) => item,
-            None => {
-                return $ret_val;
-            }
-        }
-    };
     ($ee: expr, $ret_val: expr, $msg:literal) => {
         match $ee {
             Some(item) => item,
@@ -146,13 +135,13 @@ mod tests {
     #[test]
     fn test_interface_1() {
         let x = || -> Option<i32> {
-            let x = unpack_or!(Some(3), None);
+            let x = unpack_quiet!(Some(3), None);
             Some(x + 1)
         };
 
         let none: Option<i32> = None;
         let y = || -> Option<i32> {
-            let x = unpack_or!(none, None);
+            let x = unpack_quiet!(none, None);
             Some(x + 1)
         };
 
@@ -162,7 +151,7 @@ mod tests {
         };
 
         let q = || {
-            let _x = unpack_or!(none, "log this shit {:?}", none);
+            let _x = unpack_unit!(none, "log this shit {:?}", none);
         };
 
         assert_eq!(x(), Some(4));

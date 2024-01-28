@@ -344,7 +344,7 @@ impl BufferState {
             return None;
         };
 
-        let parsing = unpack_or!(text.parsing(), None);
+        let parsing = text.parsing()?;
         let items = parsing.highlight_iter(text.rope(), Some(char_idx..char_idx + 1))?;
 
         let mut best: Option<HighlightItem> = None;

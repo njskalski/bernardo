@@ -10,7 +10,6 @@ use crate::primitives::stupid_cursor::StupidCursor;
 use crate::primitives::styled_printable::{StyleBorrowedPrintable, StyledPrintable};
 use crate::primitives::xy::XY;
 use crate::text::text_buffer::TextBuffer;
-use crate::unpack_or;
 
 pub enum LabelPos {
     /*
@@ -75,7 +74,7 @@ impl LabelPos {
                         return None;
                     }
 
-                    let line = unpack_or!(text_buffer.get_line(line_no_0b), None);
+                    let line = text_buffer.get_line(line_no_0b)?;
 
                     // I add NEWLINE_WIDTH to cover the "⏎" char
                     Some(XY::new(line.screen_width() + NEWLINE_WIDTH, line_no_0b as u16))

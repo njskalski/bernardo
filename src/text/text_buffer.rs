@@ -7,7 +7,6 @@ use streaming_iterator::StreamingIterator;
 use crate::cursor::cursor::Selection;
 use crate::primitives::xy::XY;
 use crate::tsw::lang_id::LangId;
-use crate::unpack_or;
 
 //TODO create tests for undo/redo/set milestone
 
@@ -100,7 +99,7 @@ pub trait TextBuffer: ToString {
             return None;
         }
 
-        let line_begin_char_idx_0b = unpack_or!(self.line_to_char(line_idx_0b), None);
+        let line_begin_char_idx_0b = self.line_to_char(line_idx_0b)?;
         let mut result = String::new();
         for char in self.chars().skip(line_begin_char_idx_0b) {
             if char != '\n' {

@@ -28,6 +28,7 @@ use crate::primitives::border::SINGLE_BORDER_STYLE;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::xy::XY;
+use crate::subwidget;
 use crate::text::text_buffer::TextBuffer;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
@@ -42,7 +43,6 @@ use crate::widgets::save_file_dialog::save_file_dialog_msg::SaveFileDialogMsg;
 use crate::widgets::spath_tree_view_node::DirTreeNode;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
-use crate::{subwidget, unpack_or_e};
 
 // TODO now it displays both files and directories in tree view, it should only directories
 
@@ -422,14 +422,17 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        let _size = unpack_or_e!(self.display_state.as_ref(), (), "render before layout").total_size;
         #[cfg(test)]
-        output.emit_metadata(crate::io::output::Metadata {
-            id: self.id(),
-            typename: self.typename().to_string(),
-            rect: Rect::from_zero(_size),
-            focused,
-        });
+        {
+            let size = crate::unpack_unit_e!(self.display_state.as_ref(), "render before layout",).total_size;
+
+            output.emit_metadata(crate::io::output::Metadata {
+                id: self.id(),
+                typename: self.typename().to_string(),
+                rect: Rect::from_zero(size),
+                focused,
+            });
+        }
 
         self.complex_render(theme, focused, output);
         SINGLE_BORDER_STYLE.draw_edges(theme.default_text(focused), output);
