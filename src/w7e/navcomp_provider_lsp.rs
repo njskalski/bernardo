@@ -14,12 +14,12 @@ use crate::lsp_client::lsp_write_error::LspWriteError;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
 use crate::tsw::lang_id::LangId;
-use crate::unpack_or_e;
 use crate::w7e::navcomp_group::NavCompTickSender;
 use crate::w7e::navcomp_provider::{
     Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, StupidSubstituteMessage,
     SymbolContextActionsPromise, SymbolType, SymbolUsage, SymbolUsagesPromise,
 };
+use crate::{unpack_or_e, unpack_unit_e};
 
 /*
 TODO I am silently ignoring errors here. I guess that if NavComp fails it should get re-started.
@@ -90,15 +90,15 @@ impl NavCompProviderLsp {
 
 impl NavCompProvider for NavCompProviderLsp {
     fn file_open_for_edition(&self, path: &SPath, file_contents: ropey::Rope) {
-        let url = unpack_or_e!(path.to_url().ok(), (), "failed to convert spath [{}] to url", path);
-        let mut lock = unpack_or_e!(self.lsp.try_write().ok(), (), "failed acquiring lock");
+        let url = unpack_unit_e!(path.to_url().ok(), "failed to convert spath [{}] to url", path);
+        let mut lock = unpack_unit_e!(self.lsp.try_write().ok(), "failed acquiring lock",);
 
         lock.text_document_did_open(url, file_contents.to_string());
     }
 
     fn submit_edit_event(&self, path: &SPath, file_contents: ropey::Rope) {
-        let url = unpack_or_e!(path.to_url().ok(), (), "failed to convert spath [{}] to url", path);
-        let mut lock = unpack_or_e!(self.lsp.try_write().ok(), (), "failed acquiring lock");
+        let url = unpack_unit_e!(path.to_url().ok(), "failed to convert spath [{}] to url", path);
+        let mut lock = unpack_unit_e!(self.lsp.try_write().ok(), "failed acquiring lock",);
 
         lock.text_document_did_change(url, file_contents.to_string());
     }
@@ -258,8 +258,8 @@ impl NavCompProvider for NavCompProviderLsp {
     }
 
     fn file_closed(&self, path: &SPath) {
-        let url = unpack_or_e!(path.to_url().ok(), (), "failed to convert spath [{}] to url", path);
-        let mut lock = unpack_or_e!(self.lsp.try_write().ok(), (), "failed acquiring lock");
+        let url = unpack_unit_e!(path.to_url().ok(), "failed to convert spath [{}] to url", path);
+        let mut lock = unpack_unit_e!(self.lsp.try_write().ok(), "failed acquiring lock",);
         lock.text_document_did_close(url);
     }
 

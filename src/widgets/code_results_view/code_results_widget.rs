@@ -28,7 +28,7 @@ use crate::widgets::main_view::main_view::DocumentIdentifier;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
-use crate::{subwidget, unpack_or, unpack_or_e};
+use crate::{subwidget, unpack_or, unpack_or_e, unpack_unit_e};
 
 pub struct CodeResultsView {
     wid: WID,
@@ -127,10 +127,9 @@ impl Widget for CodeResultsView {
         self.label.set_text(self.data_provider.description());
 
         {
-            let mut buffer_register_lock = unpack_or_e!(
+            let mut buffer_register_lock = unpack_unit_e!(
                 self.providers.buffer_register().try_write().ok(),
-                (),
-                "failed to acquire buffer register"
+                "failed to acquire buffer register",
             );
 
             for (idx, symbol) in self

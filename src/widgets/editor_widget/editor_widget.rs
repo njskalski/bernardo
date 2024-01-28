@@ -47,7 +47,7 @@ use crate::widgets::editor_widget::helpers::{find_trigger_and_substring, CursorS
 use crate::widgets::editor_widget::label::label::Label;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::main_view::msg::MainViewMsg;
-use crate::{unpack_or, unpack_or_e};
+use crate::{unpack_or, unpack_or_e, unpack_unit, unpack_unit_e};
 
 const MIN_EDITOR_SIZE: XY = XY::new(10, 3);
 // const MAX_HOVER_SIZE: XY = XY::new(64, 20);
@@ -235,10 +235,10 @@ impl EditorWidget {
     }
 
     fn update_navcomp(&mut self) {
-        let buffer = unpack_or_e!(self.buffer.lock(), (), "failed locking buffer");
+        let buffer = unpack_unit_e!(self.buffer.lock(), "failed locking buffer",);
 
         if self.navcomp.is_none() {
-            let navcomp_group = unpack_or_e!(self.providers.navcomp_group().try_read().ok(), (), "failed to lock navcompgroup");
+            let navcomp_group = unpack_unit_e!(self.providers.navcomp_group().try_read().ok(), "failed to lock navcompgroup",);
 
             let navcomp = if let Some(path) = buffer.get_path() {
                 navcomp_group.get_navcomp_for(path)
@@ -274,7 +274,7 @@ impl EditorWidget {
         // TODO test
         // TODO cleanup - now cursor_set is part of buffer, we can move cursor_set_to_rect method there
 
-        let cursor_set = unpack_or_e!(buffer.text().get_cursor_set(self.wid), (), "failed to get cursor_set");
+        let cursor_set = unpack_unit_e!(buffer.text().get_cursor_set(self.wid), "failed to get cursor_set",);
 
         let cursor_rect = cursor_set_to_rect(cursor_set, &*buffer);
         match last_move_direction {
@@ -305,7 +305,7 @@ impl EditorWidget {
         debug_assert_matches!(self.state, EditorState::Editing);
 
         // TODO there was something called "supercursor" that seems to be useful here
-        let cursors = unpack_or_e!(buffer.text().get_cursor_set(self.wid), (), "failed getting cursor set");
+        let cursors = unpack_unit_e!(buffer.text().get_cursor_set(self.wid), "failed getting cursor set",);
         self.state = EditorState::DroppingCursor {
             special_cursor: cursors.iter().next().map(|c| *c).unwrap_or_else(|| {
                 warn!("empty cursor set!");
@@ -414,7 +414,7 @@ impl EditorWidget {
         //     navcomp_symbol.update();
         // };
 
-        let cursor_set = unpack_or!(buffer.cursors(self.wid), (), "no cursor for wid").clone();
+        let cursor_set = unpack_unit!(buffer.cursors(self.wid), "no cursor for wid",).clone();
 
         let single_cursor = cursor_set.as_single();
         let stupid_cursor_op = single_cursor.map(|c| StupidCursor::from_real_cursor(buffer, c).ok()).flatten();
@@ -602,7 +602,7 @@ impl EditorWidget {
 
         helpers::fill_output(default.background, output);
 
-        let buffer = unpack_or!(self.buffer.lock(), (), "failed to lock buffer for rendering");
+        let buffer = unpack_unit!(self.buffer.lock(), "failed to lock buffer for rendering",);
         let cursor_set_copy = match buffer.cursors(self.wid) {
             None => CursorSet::single(),
             Some(cs) => cs.clone(),
@@ -807,7 +807,7 @@ impl EditorWidget {
 
     fn render_hover(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         if let Some((_, hover)) = self.requested_hover.as_ref() {
-            let rect = unpack_or_e!(self.last_hover_rect, (), "render hover before layout");
+            let rect = unpack_unit_e!(self.last_hover_rect, "render hover before layout",);
             let mut sub_output = SubOutput::new(output, rect);
             match hover {
                 EditorHover::Completion(completion) => completion.render(theme, focused, &mut sub_output),
@@ -850,18 +850,16 @@ impl EditorWidget {
     }
 
     pub fn request_completions(&mut self, buffer: &BufferState) {
-        let cursor = unpack_or!(
+        let cursor = unpack_unit!(
             buffer.cursors(self.wid).map(|c| c.as_single()).flatten(),
-            (),
-            "not opening completions - cursor not single."
+            "not opening completions - cursor not single.",
         );
-        let navcomp = unpack_or!(self.navcomp.clone(), (), "not opening completions - navcomp not available.");
-        let stupid_cursor = unpack_or_e!(
+        let navcomp = unpack_unit!(self.navcomp.clone(), "not opening completions - navcomp not available.",);
+        let stupid_cursor = unpack_unit_e!(
             StupidCursor::from_real_cursor(buffer, cursor).ok(),
-            (),
-            "failed converting cursor to lsp_cursor"
+            "failed converting cursor to lsp_cursor",
         );
-        let path = unpack_or_e!(buffer.get_path(), (), "path not available");
+        let path = unpack_unit_e!(buffer.get_path(), "path not available",);
 
         let trigger_op = {
             let nt = navcomp.completion_triggers(&path);
@@ -894,10 +892,9 @@ impl EditorWidget {
 
     // TODO merge with function above
     pub fn update_completions(&mut self, buffer: &BufferState) {
-        let cursor = unpack_or!(
+        let cursor = unpack_unit!(
             buffer.cursors(self.wid).map(|c| c.as_single()).flatten(),
-            (),
-            "not opening completions - cursor not single."
+            "not opening completions - cursor not single.",
         );
 
         let cursor_pos = match self.get_single_cursor_screen_pos(buffer, cursor).clone() {
@@ -997,17 +994,15 @@ impl EditorWidget {
 
     // This is supposed to be called each time cursor is moved
     fn todo_after_cursor_moved(&mut self, buffer: &BufferState) {
-        let cursor = unpack_or!(
+        let cursor = unpack_unit!(
             buffer.cursors(self.wid).map(|c| c.as_single()).flatten(),
-            (),
-            "not opening completions - cursor not single."
+            "not opening completions - cursor not single.",
         );
 
-        let _path = unpack_or!(buffer.get_path(), (), "no path set");
-        let _stupid_cursor = unpack_or!(
+        let _path = unpack_unit!(buffer.get_path(), "no path set",);
+        let _stupid_cursor = unpack_unit!(
             StupidCursor::from_real_cursor(buffer, cursor).ok(),
-            (),
-            "failed conversion to stupid cursor"
+            "failed conversion to stupid cursor",
         );
 
         // TODO add support for scrachpad (path == None)
@@ -1028,7 +1023,7 @@ impl EditorWidget {
     }
 
     fn layout_hover(&mut self, visible_rect: Rect) {
-        let (hover_settings, hover) = unpack_or!(self.requested_hover.as_mut(), ());
+        let (hover_settings, hover) = unpack_unit!(self.requested_hover.as_mut());
 
         let mid_line = (visible_rect.pos.y + visible_rect.size.y) / 2;
         debug_assert!(hover_settings.anchor.y >= visible_rect.pos.y, "anchored above visible space");

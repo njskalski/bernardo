@@ -9,7 +9,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
-use crate::unpack_or;
+use crate::unpack_unit;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 
@@ -76,7 +76,7 @@ impl Widget for DumpVisualizerWidget {
     }
 
     fn render(&self, _theme: &Theme, _focused: bool, output: &mut dyn Output) {
-        let size = unpack_or!(self.last_size, (), "render before layout");
+        let size = unpack_unit!(self.last_size, "render before layout",);
 
         if let Some(dump) = self.dump_op.as_ref() {
             let max_x = min(dump.size().x, size.output_size().x);
