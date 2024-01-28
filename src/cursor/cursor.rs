@@ -95,10 +95,10 @@ pub type ForwardWordDeterminant = dyn Fn(&dyn TextBuffer, usize, usize) -> bool;
 pub type BackwardWordDeterminant = dyn Fn(&dyn TextBuffer, usize, usize) -> bool;
 
 pub fn default_word_determinant(buffer: &dyn TextBuffer, first_idx: usize, current_idx: usize) -> bool {
-    let return_value = match (buffer.char_at(first_idx), buffer.char_at(current_idx)) {
+    match (buffer.char_at(first_idx), buffer.char_at(current_idx)) {
         (Some(first_char), Some(current_char)) => first_char.is_whitespace() == current_char.is_whitespace(),
         _ => false,
-    };
+    }
 
     // warn!("word {} first char {:?} curr_char {:?} wd {:?}",
     //             buffer.to_string(),
@@ -106,8 +106,6 @@ pub fn default_word_determinant(buffer: &dyn TextBuffer, first_idx: usize, curre
     //             buffer.char_at(current_idx),
     //             return_value,
     //         );
-
-    return_value
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -285,7 +283,7 @@ impl Cursor {
 
         debug_assert!(new_pos <= old_pos);
 
-        let res = if new_pos == self.a {
+        if new_pos == self.a {
             // in this variant we are just clearing the preferred column. Any selection is not
             // important.
             if self.preferred_column.is_some() {
@@ -306,9 +304,7 @@ impl Cursor {
             self.preferred_column = None;
 
             true
-        };
-
-        res
+        }
     }
 
     // Returns FALSE if noop.
@@ -464,12 +460,12 @@ impl Cursor {
 
         // I will use simple "bracket" evaluation: true opens bracket, false closes bracket
         //  (because in case of idx collision we want to first close and then open)
-        let mut brackets: Vec<(usize, bool)> = Vec::new();
-
-        brackets.push((char_range.start, true));
-        brackets.push((char_range.end, false));
-        brackets.push((self.get_begin(), true));
-        brackets.push((self.get_end(), false));
+        let mut brackets = vec![
+            (char_range.start, true),
+            (char_range.end, false),
+            (self.get_begin(), true),
+            (self.get_end(), false),
+        ];
 
         brackets.sort();
 
@@ -484,7 +480,7 @@ impl Cursor {
                 return true;
             }
         }
-        return false;
+        false
     }
 }
 
@@ -510,21 +506,21 @@ impl Ord for Cursor {
     }
 }
 
-impl Into<Cursor> for (usize, usize, usize) {
-    fn into(self) -> Cursor {
+impl From<(usize, usize, usize)> for Cursor {
+    fn from(val: (usize, usize, usize)) -> Self {
         Cursor {
-            s: Some(Selection { b: self.0, e: self.1 }),
-            a: self.2,
+            s: Some(Selection { b: val.0, e: val.1 }),
+            a: val.2,
             preferred_column: None,
         }
     }
 }
 
-impl Into<Cursor> for usize {
-    fn into(self) -> Cursor {
+impl From<usize> for Cursor {
+    fn from(val: usize) -> Self {
         Cursor {
             s: None,
-            a: self,
+            a: val,
             preferred_column: None,
         }
     }

@@ -34,8 +34,7 @@ fn completions_clangd_integ_test_1() {
         .get_first_editor()
         .unwrap()
         .get_visible_cursor_lines()
-        .find(|line| line.visible_idx == 10)
-        .is_some()));
+        .any(|line| line.visible_idx == 10)));
 
     assert!(full_setup.send_key(Keycode::Tab.to_key()));
 
@@ -45,8 +44,7 @@ fn completions_clangd_integ_test_1() {
         f.get_first_editor()
             .unwrap()
             .get_visible_cursor_lines()
-            .find(|line| line.contents.text.trim() == "some.⏎")
-            .is_some()
+            .any(|line| line.contents.text.trim() == "some.⏎")
     }));
 
     assert!(full_setup.send_key(Keycode::Space.to_key().with_ctrl()));
@@ -75,8 +73,7 @@ fn completions_clangd_integ_test_1() {
             .completions()
             .unwrap()
             .items()
-            .find(|item| item.text.contains(infix))
-            .is_some());
+            .any(|item| item.text.contains(infix)));
     }
 
     // full_setup.wait_frame();

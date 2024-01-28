@@ -22,7 +22,7 @@ pub fn find_trigger_and_substring<'a>(
     triggers: &'a Vec<String>,
     buffer: &'a dyn TextBuffer,
     cursor_pos: &'a CursorScreenPosition,
-) -> Option<(&'a String, String)> {
+) -> Option<(&'a str, String)> {
     let cursor_screen_pos = match cursor_pos.widget_space {
         None => {
             debug!("cursor not visible");

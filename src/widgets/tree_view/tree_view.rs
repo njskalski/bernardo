@@ -134,13 +134,11 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
     }
 
     pub fn set_selected(&mut self, k: &Key) -> bool {
-        let mut pos = 0 as usize;
-        for (_, item) in self.items() {
+        for (pos, (_, item)) in self.items().enumerate() {
             if item.id() == k {
                 self.highlighted = pos;
                 return true;
             }
-            pos += 1;
         }
 
         error!("failed to find item with key {:?}", k);
@@ -182,7 +180,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
     }
 
     fn event_highlighted_changed(&self) -> Option<Box<dyn AnyMsg>> {
-        self.on_highlighted_changed.map(|f| f(self)).flatten()
+        self.on_highlighted_changed.and_then(|f| f(self))
     }
 
     pub fn with_on_select_hightlighted(self, on_select_highlighted: WidgetAction<TreeViewWidget<Key, Item>>) -> Self {
@@ -193,15 +191,15 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
     }
 
     fn event_select_highlighted(&self) -> Option<Box<dyn AnyMsg>> {
-        self.on_select_highlighted.map(|f| f(self)).flatten()
+        self.on_select_highlighted.and_then(|f| f(self))
     }
 
     fn event_miss(&self) -> Option<Box<dyn AnyMsg>> {
-        self.on_miss.map(|f| f(self)).flatten()
+        self.on_miss.and_then(|f| f(self))
     }
 
     fn event_flip_expand(&self) -> Option<Box<dyn AnyMsg>> {
-        self.on_flip_expand.map(|f| f(self)).flatten()
+        self.on_flip_expand.and_then(|f| f(self))
     }
 
     // returns new value
@@ -259,7 +257,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         // debug!("tree_view.on_input {:?}", input_event);
 
-        return match input_event {
+        match input_event {
             InputEvent::KeyInput(key) => match key.keycode {
                 Keycode::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
                 Keycode::ArrowDown => Some(Box::new(TreeViewMsg::Arrow(Arrow::Down))),
@@ -267,7 +265,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
                 _ => None,
             },
             _ => None,
-        };
+        }
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
@@ -299,7 +297,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
             },
             TreeViewMsg::HitEnter => {
                 let node = {
-                    let highlighted_pair = self.items().skip(self.highlighted).next();
+                    let highlighted_pair = self.items().nth(self.highlighted);
 
                     if highlighted_pair.is_none() {
                         warn!("TreeViewWidget #{} highlighted non-existent node {}!", self.id(), self.highlighted);
@@ -373,11 +371,11 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widge
             };
 
             let text = format!("{} {}", prefix, node.label());
-            let higlighted: Vec<usize> = self.highlighter_op.map(|h| h(&text)).unwrap_or(vec![]);
+            let higlighted: Vec<usize> = self.highlighter_op.map(|h| h(&text)).unwrap_or_default();
             let highlighted_idx: usize = 0;
 
             let mut x_offset: usize = 0;
-            for (grapheme_idx, g) in text.graphemes(true).into_iter().enumerate() {
+            for (grapheme_idx, g) in text.graphemes(true).enumerate() {
                 let desired_pos_x: usize = depth as usize * 2 + x_offset;
                 if desired_pos_x > u16::MAX as usize {
                     error!("skipping drawing beyond x = u16::MAX");

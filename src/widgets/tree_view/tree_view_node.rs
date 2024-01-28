@@ -23,7 +23,7 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
     the answer is true, false, or "we don't know yet"
      */
     fn matching_self_or_children(&self, filter: &TreeItFilter<Self>, max_depth: Option<usize>) -> MaybeBool {
-        if filter(&self) {
+        if filter(self) {
             return MaybeBool::True;
         }
 
@@ -36,7 +36,7 @@ pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
         }
 
         let mut any_chance = self.is_complete();
-        for (_idx, i) in self.child_iter().enumerate() {
+        for i in self.child_iter() {
             match i.matching_self_or_children(filter, max_depth.map(|i| if i > 0 { i - 1 } else { 0 })) {
                 MaybeBool::True => return MaybeBool::True,
                 MaybeBool::Maybe => {

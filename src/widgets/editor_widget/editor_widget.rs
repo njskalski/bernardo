@@ -276,7 +276,7 @@ impl EditorWidget {
 
         let cursor_set = unpack_unit_e!(buffer.text().get_cursor_set(self.wid), "failed to get cursor_set",);
 
-        let cursor_rect = cursor_set_to_rect(cursor_set, &*buffer);
+        let cursor_rect = cursor_set_to_rect(cursor_set, buffer);
         match last_move_direction {
             Arrow::Up => {
                 if self.kite.y > cursor_rect.upper_left().y {
@@ -307,7 +307,7 @@ impl EditorWidget {
         // TODO there was something called "supercursor" that seems to be useful here
         let cursors = unpack_unit_e!(buffer.text().get_cursor_set(self.wid), "failed getting cursor set",);
         self.state = EditorState::DroppingCursor {
-            special_cursor: cursors.iter().next().map(|c| *c).unwrap_or_else(|| {
+            special_cursor: cursors.iter().next().copied().unwrap_or_else(|| {
                 warn!("empty cursor set!");
                 Cursor::single()
             }),
@@ -368,7 +368,7 @@ impl EditorWidget {
     pub fn get_cursor_related_hover_settings(&self, buffer: &BufferState, triggers: Option<&Vec<String>>) -> Option<HoverSettings> {
         // let last_size = unpack_or!(self.last_size, None, "requested hover before layout");
         let cursor: Cursor = unpack_or!(
-            buffer.cursors(self.wid).map(|co| co.as_single()).flatten().map(|c| c.clone()),
+            buffer.cursors(self.wid).and_then(|co| co.as_single()),
             None,
             "multiple cursors or none, not doing hover"
         );
@@ -381,9 +381,8 @@ impl EditorWidget {
         // let buffer_r: BufferR = unpack_or!(self.buffer.lock(), None, "failed to lock buffer");
         // let visible_rect = unpack_or!(last_size.visible_hint(), None, "no visible rect - no hover");
 
-        let trigger_and_substring: Option<(&String, String)> = triggers
-            .map(|triggers| find_trigger_and_substring(triggers, &*buffer, &cursor_pos))
-            .flatten();
+        let trigger_and_substring: Option<(&str, String)> =
+            triggers.and_then(|triggers| find_trigger_and_substring(triggers, buffer, &cursor_pos));
 
         let anchor = trigger_and_substring
             .as_ref()
@@ -398,11 +397,14 @@ impl EditorWidget {
             })
             .unwrap_or(cursor_screen_pos);
 
+        let (substring, trigger) = trigger_and_substring
+            .map(|tas| (Some(tas.1), Some(tas.0.to_string())))
+            .unwrap_or((None, None));
         Some(HoverSettings {
             anchor,
             cursor_screen_position: cursor_pos,
-            substring: trigger_and_substring.as_ref().map(|tas| tas.1.clone()),
-            trigger: trigger_and_substring.as_ref().map(|tas| tas.0.clone()),
+            substring,
+            trigger,
         })
     }
 
@@ -417,7 +419,7 @@ impl EditorWidget {
         let cursor_set = unpack_unit!(buffer.cursors(self.wid), "no cursor for wid",).clone();
 
         let single_cursor = cursor_set.as_single();
-        let stupid_cursor_op = single_cursor.map(|c| StupidCursor::from_real_cursor(buffer, c).ok()).flatten();
+        let stupid_cursor_op = single_cursor.and_then(|c| StupidCursor::from_real_cursor(buffer, c).ok());
 
         // let lsp_symbol_op = self.navcomp_symbol.as_ref().map(|ncsp| {
         //     ncsp.read().map(|c| c.as_ref())
@@ -431,12 +433,11 @@ impl EditorWidget {
         // The reason I unpack and pack char_range_op, because I'm not interested in "all highlights"
         let tree_sitter_highlight = char_range_op
             .map(|range| buffer.highlight(Some(range)))
-            .map(|highlight_items| {
+            .and_then(|highlight_items| {
                 // TODO I assume here that "first" is the smallest, it probably is not true
                 // debug!("highlight items: [{:?}]", &highlight_items);
                 highlight_items.first().map(|c| (*c).clone())
             })
-            .flatten()
             .map(|highlight_item| highlight_item.identifier);
 
         let items = get_context_options(
@@ -495,15 +496,11 @@ impl EditorWidget {
     }
 
     fn pos_to_cursor(&self, cursors: &CursorSet, theme: &Theme, char_idx: usize) -> Option<Color> {
-        match &self.state {
-            EditorState::DroppingCursor { special_cursor } => match special_cursor.get_cursor_status_for_char(char_idx) {
-                CursorStatus::UnderCursor => {
-                    return Some(theme.ui.cursors.primary_anchor_background);
-                }
-                _ => {}
-            },
-            _ => {}
-        };
+        if let EditorState::DroppingCursor { special_cursor } = &self.state {
+            if special_cursor.get_cursor_status_for_char(char_idx) == CursorStatus::UnderCursor {
+                return Some(theme.ui.cursors.primary_anchor_background);
+            }
+        }
 
         theme.cursor_background(cursors.get_cursor_status_for_char(char_idx))
     }
@@ -546,19 +543,17 @@ impl EditorWidget {
         true
     }
 
-    pub fn find_once(&mut self, buffer_mut: &mut BufferState, phrase: &String) -> Result<bool, FindError> {
+    pub fn find_once(&mut self, buffer_mut: &mut BufferState, phrase: &str) -> Result<bool, FindError> {
         let res = buffer_mut.find_once(self.wid, phrase);
         if res == Ok(true) {
             // TODO handle "restart from the top"
-            self.update_kite(&buffer_mut, Arrow::Down);
+            self.update_kite(buffer_mut, Arrow::Down);
         }
         res
     }
 
     fn get_hover_subwidget(&self) -> Option<SubwidgetPointer<Self>> {
-        if self.requested_hover.is_none() {
-            return None;
-        }
+        self.requested_hover.as_ref()?;
 
         Some(SubwidgetPointer::<Self>::new(
             Box::new(|s: &EditorWidget| match s.requested_hover.as_ref().unwrap() {
@@ -687,7 +682,7 @@ impl EditorWidget {
                 let mut label_it = filtered_labels.iter().peekable();
                 let mut x_offset: usize = 0;
 
-                for (c_idx, c) in line.graphemes().into_iter().enumerate() {
+                for (c_idx, c) in line.graphemes().enumerate() {
                     let text_pos = XY::new(x_offset as u16, line_idx as u16);
 
                     while let Some((label_pos, label)) = label_it.peek() {
@@ -728,12 +723,12 @@ impl EditorWidget {
                         }
                     }
 
-                    self.pos_to_cursor(&cursor_set_copy, theme, char_idx).map(|mut bg| {
+                    if let Some(mut bg) = self.pos_to_cursor(&cursor_set_copy, theme, char_idx) {
                         if !focused {
                             bg = bg.half();
                         }
                         style = style.with_background(bg);
-                    });
+                    };
 
                     if !focused {
                         style.foreground = style.foreground.half();
@@ -754,7 +749,7 @@ impl EditorWidget {
                 }
 
                 // I follow up on not drawn labels
-                while let Some((label_pos, label)) = label_it.next() {
+                for (label_pos, label) in label_it {
                     // moving cursor to right place
                     while x_offset < label_pos.x as usize {
                         combined_line.push((local_style, " ".to_string()));
@@ -794,12 +789,12 @@ impl EditorWidget {
         if one_beyond_last_pos < visible_rect.lower_right() {
             let mut style = default;
 
-            self.pos_to_cursor(&cursor_set_copy, theme, one_beyond_limit).map(|mut bg| {
+            if let Some(mut bg) = self.pos_to_cursor(&cursor_set_copy, theme, one_beyond_limit) {
                 if !focused {
                     bg = bg.half();
                 }
                 style = style.with_background(bg);
-            });
+            };
 
             output.print_at(one_beyond_last_pos, style, BEYOND);
         }
@@ -830,17 +825,14 @@ impl EditorWidget {
 
     pub fn has_completions(&self) -> bool {
         if let Some((_, hover)) = self.requested_hover.as_ref() {
-            match hover {
-                EditorHover::Completion(_) => true,
-                _ => false,
-            }
+            matches!(hover, EditorHover::Completion(_))
         } else {
             false
         }
     }
 
     pub fn close_completions(&mut self) -> bool {
-        if self.has_completions() == false {
+        if !self.has_completions() {
             error!("not closing completions - they are not open");
             return false;
         }
@@ -851,7 +843,7 @@ impl EditorWidget {
 
     pub fn request_completions(&mut self, buffer: &BufferState) {
         let cursor = unpack_unit!(
-            buffer.cursors(self.wid).map(|c| c.as_single()).flatten(),
+            buffer.cursors(self.wid).and_then(|c| c.as_single()),
             "not opening completions - cursor not single.",
         );
         let navcomp = unpack_unit!(self.navcomp.clone(), "not opening completions - navcomp not available.",);
@@ -862,7 +854,7 @@ impl EditorWidget {
         let path = unpack_unit_e!(buffer.get_path(), "path not available",);
 
         let trigger_op = {
-            let nt = navcomp.completion_triggers(&path);
+            let nt = navcomp.completion_triggers(path);
             if nt.is_empty() {
                 None
             } else {
@@ -872,11 +864,7 @@ impl EditorWidget {
 
         let hover_settings = self.get_cursor_related_hover_settings(buffer, trigger_op);
         // let tick_sender = navcomp.todo_navcomp_sender().clone();
-        let promise_op = navcomp.completions(
-            path.clone(),
-            stupid_cursor,
-            hover_settings.as_ref().map(|c| c.trigger.clone()).flatten(),
-        );
+        let promise_op = navcomp.completions(path.clone(), stupid_cursor, hover_settings.as_ref().and_then(|c| c.trigger.clone()));
 
         match (promise_op, hover_settings) {
             (Some(promise), Some(hover_settings)) => {
@@ -893,11 +881,11 @@ impl EditorWidget {
     // TODO merge with function above
     pub fn update_completions(&mut self, buffer: &BufferState) {
         let cursor = unpack_unit!(
-            buffer.cursors(self.wid).map(|c| c.as_single()).flatten(),
+            buffer.cursors(self.wid).and_then(|c| c.as_single()),
             "not opening completions - cursor not single.",
         );
 
-        let cursor_pos = match self.get_single_cursor_screen_pos(buffer, cursor).clone() {
+        let cursor_pos = match self.get_single_cursor_screen_pos(buffer, cursor) {
             Some(c) => c,
             None => {
                 debug!("cursor not single or not on screen");
@@ -924,7 +912,7 @@ impl EditorWidget {
         };
 
         let trigger_op = {
-            let nt = navcomp.completion_triggers(&path);
+            let nt = navcomp.completion_triggers(path);
             if nt.is_empty() {
                 None
             } else {
@@ -974,9 +962,7 @@ impl EditorWidget {
                 }
             }
 
-            let to_insert = match completion_action {
-                CompletionAction::Insert(what) => what,
-            };
+            let CompletionAction::Insert(to_insert) = completion_action;
             buffer.apply_cem(
                 CommonEditMsg::Block(to_insert.clone()),
                 self.wid,
@@ -995,7 +981,7 @@ impl EditorWidget {
     // This is supposed to be called each time cursor is moved
     fn todo_after_cursor_moved(&mut self, buffer: &BufferState) {
         let cursor = unpack_unit!(
-            buffer.cursors(self.wid).map(|c| c.as_single()).flatten(),
+            buffer.cursors(self.wid).and_then(|c| c.as_single()),
             "not opening completions - cursor not single.",
         );
 
@@ -1013,12 +999,9 @@ impl EditorWidget {
     }
 
     fn after_content_changed(&self, buffer: &BufferState) {
-        match (&self.navcomp, buffer.get_path()) {
-            (Some(navcomp), Some(path)) => {
-                let contents = buffer.text().rope().clone();
-                navcomp.submit_edit_event(path, contents);
-            }
-            _ => {}
+        if let (Some(navcomp), Some(path)) = (&self.navcomp, buffer.get_path()) {
+            let contents = buffer.text().rope().clone();
+            navcomp.submit_edit_event(path, contents);
         }
     }
 
@@ -1033,15 +1016,12 @@ impl EditorWidget {
         );
         let above = hover_settings.anchor.y > mid_line;
 
-        match hover {
-            EditorHover::Completion(cw) => {
-                if cw.poll_results_should_draw() == false {
-                    debug!("withdrawing completion widget");
-                    self.requested_hover = None;
-                    return;
-                }
+        if let EditorHover::Completion(cw) = hover {
+            if !cw.poll_results_should_draw() {
+                debug!("withdrawing completion widget");
+                self.requested_hover = None;
+                return;
             }
-            _ => {}
         }
 
         if visible_rect.size.x < Self::MIN_HOVER_WIDTH {
@@ -1103,7 +1083,7 @@ impl EditorWidget {
     pub fn show_usages(&self, buffer: &BufferState) -> Option<Box<dyn AnyMsg>> {
         let navcomp = unpack_or_e!(&self.navcomp, None, "can't show usages without navcomp");
         let cursor = unpack_or!(
-            buffer.cursors(self.wid).map(|c| c.as_single()).flatten(),
+            buffer.cursors(self.wid).and_then(|c| c.as_single()),
             None,
             "not opening completions - cursor not single."
         );
@@ -1117,16 +1097,13 @@ impl EditorWidget {
         let highlight = buffer.smallest_highlight(cursor.a);
         let symbol_op: Option<String> = highlight
             .as_ref()
-            .map(|item| buffer.get_selected_chars(Selection::new(item.char_begin, item.char_end)).0)
-            .flatten();
+            .and_then(|item| buffer.get_selected_chars(Selection::new(item.char_begin, item.char_end)).0);
 
         let symbol_desc: String = match (highlight, symbol_op) {
             (Some(type_), Some(item)) => {
                 format!("Usages of {} \"{}\"", type_.identifier.as_ref(), item)
             }
-            _ => {
-                format!("Usages of symbol:")
-            }
+            _ => "Usages of symbol:".to_string(),
         };
 
         let promise = unpack_or!(
@@ -1190,7 +1167,7 @@ impl Widget for EditorWidget {
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         let c = &self.providers.config().keyboard_config.editor;
 
-        return match (&self.state, input_event) {
+        match (&self.state, input_event) {
             (_, _) if self.ignore_input_altogether => {
                 debug!("ignoring input because ignore_input_altogether = true");
                 None
@@ -1206,10 +1183,10 @@ impl Widget for EditorWidget {
 
                 EditorWidgetMsg::DropCursorFlip { cursor: special_cursor }.someboxed()
             }
-            (&EditorState::Editing, InputEvent::KeyInput(key)) if self.readonly == false && key == c.request_completions => {
+            (&EditorState::Editing, InputEvent::KeyInput(key)) if !self.readonly && key == c.request_completions => {
                 EditorWidgetMsg::RequestCompletions.someboxed()
             }
-            (&EditorState::Editing, InputEvent::KeyInput(key)) if self.readonly == false && key == c.reformat => {
+            (&EditorState::Editing, InputEvent::KeyInput(key)) if !self.readonly && key == c.reformat => {
                 EditorWidgetMsg::Reformat.someboxed()
             }
             // TODO change to if let Some() when it's stabilized
@@ -1231,7 +1208,7 @@ impl Widget for EditorWidget {
                 }
             }
             _ => None,
-        };
+        }
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
@@ -1340,7 +1317,7 @@ impl Widget for EditorWidget {
                             None
                         }
                         (&EditorState::Editing, EditorWidgetMsg::Reformat) => {
-                            self.reformat(&mut *buffer);
+                            self.reformat(&mut buffer);
                             None
                         }
                         (&EditorState::Editing, EditorWidgetMsg::ShowUsages) => {

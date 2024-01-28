@@ -25,7 +25,7 @@ impl Record {
     // If creating == true, it creates a Dir, but since it returns a mut ref you can immediately
     // override it with File.
     fn get_mut(&mut self, path: &[Component], creating: bool) -> Option<&mut Record> {
-        if path.len() == 0 {
+        if path.is_empty() {
             Some(self)
         } else {
             let first = PathBuf::new().join(path[0]);
@@ -48,13 +48,13 @@ impl Record {
     }
 
     fn get(&self, path: &[Component]) -> Option<&Record> {
-        if path.len() == 0 {
+        if path.is_empty() {
             Some(self)
         } else {
             let first = PathBuf::new().join(path[0]);
             match self {
                 Record::File(_) => None,
-                Record::Dir(ref items) => items.get(&first).map(|r| r.get(&path[1..])).flatten(),
+                Record::Dir(ref items) => items.get(&first).and_then(|r| r.get(&path[1..])),
             }
         }
     }
@@ -125,7 +125,7 @@ impl Record {
         match self {
             Record::File(_) => None,
             Record::Dir(e) => {
-                let files: Vec<_> = e.keys().map(|c| c.clone()).collect();
+                let files: Vec<_> = e.keys().cloned().collect();
                 Some(files)
             }
         }
@@ -135,7 +135,7 @@ impl Record {
         debug_assert!(path.is_absolute());
 
         if path.is_file() {
-            fs::read(path).map(|contents| Record::File(contents))
+            fs::read(path).map(Record::File)
         } else {
             let read_dir = fs::read_dir(path)?;
             let mut dir_contents: HashMap<PathBuf, Record> = Default::default();
@@ -319,7 +319,7 @@ impl FilesystemFront for MockFS {
             }
             Some(mut items) => {
                 items.sort();
-                Ok(items.into_iter().map(|i| DirEntry::new(i)).collect())
+                Ok(items.into_iter().map(DirEntry::new).collect())
             }
         }
     }
@@ -380,34 +380,31 @@ mod tests {
             .with_file("folder1/file1.txt", "some text")
             .with_file("folder2/file2.txt", "some text2");
 
-        assert_eq!(mockfs.is_dir(&Path::new("folder1")), true);
-        assert_eq!(mockfs.is_dir(&Path::new("folder2")), true);
-        assert_eq!(mockfs.is_dir(&Path::new("folder3")), false);
-        assert_eq!(mockfs.is_dir(&Path::new("")), true);
+        assert!(mockfs.is_dir(Path::new("folder1")));
+        assert!(mockfs.is_dir(Path::new("folder2")));
+        assert!(!mockfs.is_dir(Path::new("folder3")));
+        assert!(mockfs.is_dir(Path::new("")));
 
-        assert_eq!(mockfs.is_file(&Path::new("folder1/file1.txt")), true);
-        assert_eq!(mockfs.is_file(&Path::new("folder2/file2.txt")), true);
-        assert_eq!(mockfs.is_file(&Path::new("folder1")), false);
-        assert_eq!(mockfs.is_file(&Path::new("folder2")), false);
-        assert_eq!(mockfs.is_file(&Path::new("")), false);
+        assert!(mockfs.is_file(Path::new("folder1/file1.txt")));
+        assert!(mockfs.is_file(Path::new("folder2/file2.txt")));
+        assert!(!mockfs.is_file(Path::new("folder1")));
+        assert!(!mockfs.is_file(Path::new("folder2")));
+        assert!(!mockfs.is_file(Path::new("")));
 
-        assert_eq!(mockfs.blocking_list(&Path::new("")).unwrap(), vec![de!("folder1"), de!("folder2")]);
+        assert_eq!(mockfs.blocking_list(Path::new("")).unwrap(), vec![de!("folder1"), de!("folder2")]);
 
-        assert_eq!(mockfs.blocking_read_entire_file(&Path::new("")), Err(ReadError::NotAFilePath));
+        assert_eq!(mockfs.blocking_read_entire_file(Path::new("")), Err(ReadError::NotAFilePath));
         assert_eq!(
-            mockfs.blocking_read_entire_file(&Path::new("/folder3")),
+            mockfs.blocking_read_entire_file(Path::new("/folder3")),
             Err(ReadError::FileNotFound)
         );
+        assert_eq!(mockfs.blocking_read_entire_file(Path::new("folder2")), Err(ReadError::NotAFilePath));
         assert_eq!(
-            mockfs.blocking_read_entire_file(&Path::new("folder2")),
-            Err(ReadError::NotAFilePath)
-        );
-        assert_eq!(
-            mockfs.blocking_read_entire_file(&Path::new("folder1/file1.txt")),
+            mockfs.blocking_read_entire_file(Path::new("folder1/file1.txt")),
             Ok("some text".as_bytes().to_vec())
         );
         assert_eq!(
-            mockfs.blocking_read_entire_file(&Path::new("folder1/file3.txt")),
+            mockfs.blocking_read_entire_file(Path::new("folder1/file3.txt")),
             Err(ReadError::FileNotFound)
         );
     }

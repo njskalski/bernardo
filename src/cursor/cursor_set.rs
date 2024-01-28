@@ -61,7 +61,7 @@ impl CursorSet {
         if self.set.len() != 1 {
             None
         } else {
-            self.set.first().map(|c| c.clone())
+            self.set.first().copied()
         }
     }
 
@@ -79,10 +79,10 @@ impl CursorSet {
         for c in self.set.iter() {
             max = usize::max(max, c.a);
 
-            c.s.map(|sel| {
+            if let Some(sel) = c.s {
                 debug_assert!(sel.b < sel.e);
                 max = usize::max(max, usize::max(sel.b, sel.e));
-            });
+            }
         }
 
         max
@@ -120,18 +120,15 @@ impl CursorSet {
                 let right = self.set[i + 1];
                 let left = &mut self.set[i];
 
-                match (&mut left.s, right.s) {
-                    (Some(left_s), Some(right_s)) => {
-                        // always remember: left index inclusive, right exclusive.
-                        if left_s.e > right_s.b {
-                            left_s.e = right_s.b;
+                if let (Some(left_s), Some(right_s)) = (&mut left.s, right.s) {
+                    // always remember: left index inclusive, right exclusive.
+                    if left_s.e > right_s.b {
+                        left_s.e = right_s.b;
 
-                            if left_s.b >= left_s.e {
-                                left.s = None;
-                            }
+                        if left_s.b >= left_s.e {
+                            left.s = None;
                         }
                     }
-                    _ => {}
                 }
             }
         }
@@ -178,18 +175,15 @@ impl CursorSet {
                 let left = self.set[i];
                 let right = &mut self.set[i + 1];
 
-                match (left.s, &mut right.s) {
-                    (Some(left_s), Some(right_s)) => {
-                        // always remember: left index inclusive, right exclusive.
-                        if left_s.e > right_s.b {
-                            right_s.b = left_s.e;
+                if let (Some(left_s), Some(right_s)) = (left.s, &mut right.s) {
+                    // always remember: left index inclusive, right exclusive.
+                    if left_s.e > right_s.b {
+                        right_s.b = left_s.e;
 
-                            if right_s.b >= right_s.e {
-                                right.s = None;
-                            }
+                        if right_s.b >= right_s.e {
+                            right.s = None;
                         }
                     }
-                    _ => {}
                 }
             }
         }
@@ -416,23 +410,20 @@ impl CursorSet {
     fn normalize_anchor(&mut self, right: bool) -> bool {
         let mut changed = false;
         for cursor in self.set.iter_mut() {
-            match cursor.s {
-                Some(s) => {
-                    debug_assert!(cursor.a == s.b || cursor.a == s.e);
+            if let Some(s) = cursor.s {
+                debug_assert!(cursor.a == s.b || cursor.a == s.e);
 
-                    if right {
-                        if cursor.a != s.e {
-                            changed = true;
-                        }
-                        cursor.a = s.e;
-                    } else {
-                        if cursor.a != s.b {
-                            changed = true;
-                        }
-                        cursor.a = s.b;
+                if right {
+                    if cursor.a != s.e {
+                        changed = true;
                     }
+                    cursor.a = s.e;
+                } else {
+                    if cursor.a != s.b {
+                        changed = true;
+                    }
+                    cursor.a = s.b;
                 }
-                None => {}
             }
         }
         changed
@@ -460,19 +451,19 @@ impl CursorSet {
         for c in self.set.iter() {
             match new_set.get(&c.a) {
                 None => {
-                    new_set.insert(c.a, c.clone());
+                    new_set.insert(c.a, *c);
                 }
                 Some(old_c) => {
                     // we replace only if old one has shorter selection than new one.
                     match (old_c.s, c.s) {
                         (Some(old_sel), Some(new_sel)) => {
                             if old_sel.e < new_sel.e {
-                                new_set.insert(c.a, c.clone());
+                                new_set.insert(c.a, *c);
                             }
                         }
                         // if previous one had no selection, we consider new selection longer.
                         (None, Some(_new_sel)) => {
-                            new_set.insert(c.a, c.clone());
+                            new_set.insert(c.a, *c);
                         }
                         _ => {}
                     }
@@ -483,7 +474,7 @@ impl CursorSet {
         if new_set.len() < self.set.len() {
             self.set.clear();
             for (_a, c) in new_set.iter() {
-                self.set.push(c.clone());
+                self.set.push(*c);
             }
             self.set.sort_by_key(|c| c.a);
         }
@@ -491,7 +482,7 @@ impl CursorSet {
         // now possibly shortening the selections.
         if self.set.len() > 1 {
             for i in 0..self.set.len() - 1 {
-                let next = self.set[i + 1].clone();
+                let next = self.set[i + 1];
                 let curr = &mut self.set[i];
 
                 match &mut curr.s {
@@ -531,19 +522,19 @@ impl CursorSet {
         for c in self.set.iter().rev() {
             match new_set.get(&c.a) {
                 None => {
-                    new_set.insert(c.a, c.clone());
+                    new_set.insert(c.a, *c);
                 }
                 Some(old_c) => {
                     // we replace only if old one has shorter selection than new one.
                     match (old_c.s, c.s) {
                         (Some(old_sel), Some(new_sel)) => {
                             if old_sel.b > new_sel.b {
-                                new_set.insert(c.a, c.clone());
+                                new_set.insert(c.a, *c);
                             }
                         }
                         // if previous one had no selection, we consider new selection longer.
                         (None, Some(_new_sel)) => {
-                            new_set.insert(c.a, c.clone());
+                            new_set.insert(c.a, *c);
                         }
                         _ => {}
                     }
@@ -554,25 +545,22 @@ impl CursorSet {
         if new_set.len() < self.set.len() {
             self.set.clear();
             for (_a, c) in new_set.iter() {
-                self.set.push(c.clone());
+                self.set.push(*c);
             }
             self.set.sort_by_key(|c| c.a);
         }
 
         // now possibly shortening the selections.
         for i in (1..self.set.len()).rev() {
-            let prev = self.set[i - 1].clone();
+            let prev = self.set[i - 1];
             let curr = &mut self.set[i];
 
-            match (&mut curr.s, prev.s) {
-                (Some(curr_s), Some(prev_s)) => {
-                    // it's a little easier because I know from above sorts, that curr.a < next.a
-                    if curr_s.b < prev_s.e {
-                        curr_s.b = prev_s.e;
-                        debug_assert!(curr.a == curr_s.e);
-                    }
+            if let (Some(curr_s), Some(prev_s)) = (&mut curr.s, prev.s) {
+                // it's a little easier because I know from above sorts, that curr.a < next.a
+                if curr_s.b < prev_s.e {
+                    curr_s.b = prev_s.e;
+                    debug_assert!(curr.a == curr_s.e);
                 }
-                _ => {}
             }
         }
 
@@ -684,7 +672,7 @@ impl CursorSet {
 
     pub fn first(&self) -> Cursor {
         // TODO unwrap
-        self.set.first().unwrap().clone()
+        *self.set.first().unwrap()
     }
 }
 

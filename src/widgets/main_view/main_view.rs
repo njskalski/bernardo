@@ -235,7 +235,7 @@ impl MainView {
     }
 
     fn open_empty_editor_and_focus(&mut self) {
-        let buffer = if let Some(mut buffer_register) = self.providers.buffer_register().try_write().ok() {
+        let buffer = if let Ok(mut buffer_register) = self.providers.buffer_register().try_write() {
             buffer_register.open_new_file(&self.providers)
         } else {
             error!("failed to acquire register lock");
@@ -368,7 +368,7 @@ impl Widget for MainView {
 
         let config = self.providers.config();
 
-        return match input_event {
+        match input_event {
             InputEvent::FocusUpdate(focus_update) if self.will_accept_focus_update(focus_update) => {
                 MainViewMsg::FocusUpdateMsg(focus_update).someboxed()
             }
@@ -386,7 +386,7 @@ impl Widget for MainView {
                 debug!("input {:?} NOT consumed", input_event);
                 None
             }
-        };
+        }
     }
 
     fn update(&mut self, mut msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
@@ -552,5 +552,15 @@ impl ComplexWidget for MainView {
 
     fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
         self.display_state.as_mut()
+    }
+}
+
+#[cfg(feature = "arbitrary")]
+impl<'a> arbitrary::Arbitrary<'a> for DocumentIdentifier {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self {
+            buffer_id: arbitrary::Arbitrary::arbitrary(u)?,
+            file_path: None,
+        })
     }
 }

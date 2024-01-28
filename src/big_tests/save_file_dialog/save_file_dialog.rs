@@ -62,11 +62,11 @@ fn no_leak_focus() {
 
     let mut full_setup = common_start();
 
-    assert_eq!(full_setup.get_first_editor().unwrap().is_editor_focused(), false);
+    assert!(!full_setup.get_first_editor().unwrap().is_editor_focused());
 
     full_setup.send_input(InputEvent::FocusUpdate(FocusUpdate::Left));
 
-    assert_eq!(full_setup.get_first_editor().unwrap().is_editor_focused(), false);
+    assert!(!full_setup.get_first_editor().unwrap().is_editor_focused());
 
     assert!(full_setup.wait_for(|f| { f.get_file_tree_view().unwrap().is_focused() }));
 
@@ -88,9 +88,9 @@ fn expanded_and_highlighted_path() {
 
     let src = tree_items(&full_setup).iter().find(|i| i.label == "src").unwrap().clone();
 
-    assert_eq!(src.expanded, false);
+    assert!(!src.expanded);
     assert_eq!(src.depth, 1);
-    assert_eq!(src.highlighted, true);
+    assert!(src.highlighted);
 
     full_setup.finish();
 }
@@ -99,21 +99,18 @@ fn expanded_and_highlighted_path() {
 fn hit_on_dir_expands_it() {
     let mut full_setup = common_start();
 
-    assert_eq!(
-        full_setup
-            .get_first_editor()
-            .unwrap()
-            .save_file_dialog()
-            .unwrap()
-            .tree_view()
-            .is_focused(),
-        true
-    );
+    assert!(full_setup
+        .get_first_editor()
+        .unwrap()
+        .save_file_dialog()
+        .unwrap()
+        .tree_view()
+        .is_focused());
 
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        tree_items(&full_setup)
+        tree_items(full_setup)
             .iter()
             .filter(|i| i.expanded)
             .map(|i| i.label.clone())
@@ -128,30 +125,26 @@ fn hit_on_dir_expands_it() {
 fn hit_on_leaf_dir_moves_focus() {
     let mut full_setup = common_start();
 
-    assert_eq!(
-        full_setup
-            .get_first_editor()
-            .unwrap()
-            .save_file_dialog()
-            .unwrap()
-            .tree_view()
-            .is_focused(),
-        true
-    );
+    assert!(full_setup
+        .get_first_editor()
+        .unwrap()
+        .save_file_dialog()
+        .unwrap()
+        .tree_view()
+        .is_focused());
 
     full_setup.send_key(Keycode::Enter.to_key());
     full_setup.send_key(Keycode::ArrowDown.to_key());
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup
+        !full_setup
             .get_first_editor()
             .unwrap()
             .save_file_dialog()
             .unwrap()
             .tree_view()
             .is_focused()
-            == false
     }));
 
     assert!(full_setup.wait_for(|full_setup| {
@@ -171,16 +164,13 @@ fn hit_on_leaf_dir_moves_focus() {
 fn hit_on_list_item_moves_to_edit() {
     let mut full_setup = common_start();
 
-    assert_eq!(
-        full_setup
-            .get_first_editor()
-            .unwrap()
-            .save_file_dialog()
-            .unwrap()
-            .tree_view()
-            .is_focused(),
-        true
-    );
+    assert!(full_setup
+        .get_first_editor()
+        .unwrap()
+        .save_file_dialog()
+        .unwrap()
+        .tree_view()
+        .is_focused());
 
     full_setup.send_key(Keycode::ArrowRight.to_key());
 
@@ -192,7 +182,6 @@ fn hit_on_list_item_moves_to_edit() {
             .unwrap()
             .list_view()
             .is_focused()
-            == true
     }));
 
     full_setup.send_key(Keycode::Enter.to_key());
@@ -205,7 +194,6 @@ fn hit_on_list_item_moves_to_edit() {
             .unwrap()
             .edit_widget()
             .is_focused()
-            == true
     }));
 
     full_setup.finish();
@@ -214,16 +202,13 @@ fn hit_on_list_item_moves_to_edit() {
 fn over_ok() -> FullSetup {
     let mut full_setup = common_start();
 
-    assert_eq!(
-        full_setup
-            .get_first_editor()
-            .unwrap()
-            .save_file_dialog()
-            .unwrap()
-            .tree_view()
-            .is_focused(),
-        true
-    );
+    assert!(full_setup
+        .get_first_editor()
+        .unwrap()
+        .save_file_dialog()
+        .unwrap()
+        .tree_view()
+        .is_focused());
 
     full_setup.send_key(Keycode::ArrowRight.to_key());
 
@@ -235,7 +220,6 @@ fn over_ok() -> FullSetup {
             .unwrap()
             .list_view()
             .is_focused()
-            == true
     }));
 
     full_setup.send_key(Keycode::Enter.to_key());
@@ -248,7 +232,6 @@ fn over_ok() -> FullSetup {
             .unwrap()
             .edit_widget()
             .is_focused()
-            == true
     }));
 
     assert_eq!(

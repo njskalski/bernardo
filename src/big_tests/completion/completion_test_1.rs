@@ -80,7 +80,7 @@ fn completion_test_1() {
             .get_first_editor()
             .unwrap()
             .completions()
-            .map(|comp| comp.items().fold(false, |acc, item| acc || item.text.contains("into")))
+            .map(|comp| comp.items().any(|item| item.text.contains("into")))
             .unwrap_or(false)
     }));
 
