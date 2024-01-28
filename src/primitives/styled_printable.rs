@@ -1,4 +1,3 @@
-use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::io::style::TextStyle;

@@ -115,10 +115,7 @@ impl<R: Request> Promise<R::Result> for LSPPromise<R> {
             match self.receiver.try_recv() {
                 Ok(value) => {
                     let state = self.set_from_value(value);
-                    UpdateResult {
-                        state: state,
-                        has_changed: true,
-                    }
+                    UpdateResult { state, has_changed: true }
                 }
                 Err(e) => match e {
                     TryRecvError::Empty => UpdateResult {
