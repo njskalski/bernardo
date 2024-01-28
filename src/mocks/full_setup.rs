@@ -341,10 +341,8 @@ impl FullSetup {
      */
     pub fn wait_for<F: Fn(&FullSetup) -> bool>(&mut self, condition: F) -> bool {
         // maybe it's already true?
-        if self.last_frame.as_ref().is_some() {
-            if condition(&self) {
-                return true;
-            }
+        if self.last_frame.as_ref().is_some() && condition(&self) {
+            return true;
         }
 
         let mut waited_frames: usize = 0;

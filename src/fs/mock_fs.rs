@@ -218,10 +218,8 @@ impl MockFS {
             if record.is_dir() {
                 return Err(WriteError::NotAFile);
             }
-        } else {
-            if must_exist {
-                return Err(WriteError::FileNotFound);
-            }
+        } else if must_exist {
+            return Err(WriteError::FileNotFound);
         }
 
         let len_bytes = bytes.len();

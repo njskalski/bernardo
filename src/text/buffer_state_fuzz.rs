@@ -67,12 +67,10 @@ impl<'a> Arbitrary<'a> for BufferState {
                         } else {
                             Cursor::new(smaller)
                         }
+                    } else if smaller != bigger {
+                        Cursor::new(bigger).with_selection(Selection::new(smaller, bigger))
                     } else {
-                        if smaller != bigger {
-                            Cursor::new(bigger).with_selection(Selection::new(smaller, bigger))
-                        } else {
-                            Cursor::new(bigger)
-                        }
+                        Cursor::new(bigger)
                     });
 
                     i += 2;

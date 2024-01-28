@@ -78,12 +78,10 @@ pub fn copy_first_n_columns(s: &str, n: usize, allow_shorter: bool) -> Option<St
 
     if res.width() == n {
         return Some(res);
+    } else if allow_shorter {
+        Some(res)
     } else {
-        if allow_shorter {
-            Some(res)
-        } else {
-            None
-        }
+        None
     }
 }
 
@@ -104,12 +102,10 @@ pub fn copy_last_n_columns(s: &str, n: usize, allow_shorter: bool) -> Option<Str
 
     if res.width() == n {
         return Some(res);
+    } else if allow_shorter {
+        Some(res)
     } else {
-        if allow_shorter {
-            Some(res)
-        } else {
-            None
-        }
+        None
     }
 }
 

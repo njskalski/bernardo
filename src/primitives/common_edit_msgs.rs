@@ -446,20 +446,18 @@ fn remove_from_rope_at_random_place(
     if char_range.is_empty() {
         error!("delete block with empty range, ignoring");
         (0, false)
+    } else if !rope.remove(char_range.start, char_range.end) {
+        error!("failed to remove block");
+        (0, false)
     } else {
-        if !rope.remove(char_range.start, char_range.end) {
-            error!("failed to remove block");
-            (0, false)
-        } else {
-            update_cursors_after_removal(cursor_set, char_range.clone());
+        update_cursors_after_removal(cursor_set, char_range.clone());
 
-            for other_cursor_set in other_cursor_sets.iter_mut() {
-                update_cursors_after_removal(other_cursor_set, char_range.clone());
-            }
-
-            let stride = char_range.len();
-            (stride, true)
+        for other_cursor_set in other_cursor_sets.iter_mut() {
+            update_cursors_after_removal(other_cursor_set, char_range.clone());
         }
+
+        let stride = char_range.len();
+        (stride, true)
     }
 }
 
@@ -507,10 +505,8 @@ fn handle_backspace_and_delete(
                 if c.a == 0 {
                     continue;
                 }
-            } else {
-                if c.a == rope.len_chars() {
-                    continue;
-                }
+            } else if c.a == rope.len_chars() {
+                continue;
             }
 
             let (b, e) = if backspace { (c.a - 1, c.a) } else { (c.a, c.a + 1) };
