@@ -90,7 +90,7 @@ impl CodeResultsView {
     fn on_hit(&self) -> Option<Box<dyn AnyMsg>> {
         let editor = self.get_selected_item();
         let editor_widget_id = editor.id();
-        let buffer = unpack_or_e!(editor.get_buffer().lock(), None, "can't lock buffer");
+        let buffer = editor.get_buffer().lock()?;
         let single_cursor = unpack_or!(
             buffer.cursors(editor_widget_id).map(|cs| cs.as_single()).flatten(),
             None,
