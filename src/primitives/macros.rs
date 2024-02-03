@@ -47,12 +47,12 @@ macro_rules! unpack {
 mod tests {
     use std::{cell::RefCell, sync::Once};
 
-    use log::Level;
+    use rusty_fork::rusty_fork_test;
 
     type TestLogs = Vec<(String, log::Level)>;
 
     thread_local! {
-        static TEST_LOGS: RefCell<TestLogs> = RefCell::new(Vec::new());
+    static TEST_LOGS: RefCell<TestLogs> = RefCell::new(Vec::new());
     }
     static TEST_INIT: Once = Once::new();
 
@@ -91,6 +91,7 @@ mod tests {
         fn flush(&self) {}
     }
 
+    rusty_fork_test! {
     #[test]
     fn test_interface_1() {
         let x = || -> Option<i32> {
@@ -121,7 +122,6 @@ mod tests {
     // assumption that the custom TestLogger is being used.
 
     #[test]
-    #[ignore]
     fn test_unpack_unit() {
         TestLogger::setup();
 
@@ -141,7 +141,7 @@ mod tests {
         assert_eq!(plain_return_and_literal_msg(Some(12), 12), ());
         assert_eq!(TestLogger::drain_logs(), vec![]);
         assert_eq!(plain_return_and_literal_msg(None, 42), ());
-        assert_eq!(TestLogger::drain_logs(), vec![("debug msg".to_string(), Level::Debug)]);
+        assert_eq!(TestLogger::drain_logs(), vec![("debug msg".to_string(), log::Level::Debug)]);
 
         fn plain_return_and_formatted_msg(expr: Option<usize>, inner: usize) {
             let some_val = unpack_unit!(expr, "debug msg {} {}", 10, true);
@@ -150,11 +150,10 @@ mod tests {
         assert_eq!(plain_return_and_formatted_msg(Some(12), 12), ());
         assert_eq!(TestLogger::drain_logs(), vec![]);
         assert_eq!(plain_return_and_formatted_msg(None, 42), ());
-        assert_eq!(TestLogger::drain_logs(), vec![("debug msg 10 true".to_string(), Level::Debug)]);
+        assert_eq!(TestLogger::drain_logs(), vec![("debug msg 10 true".to_string(), log::Level::Debug)]);
     }
 
     #[test]
-    #[ignore]
     fn test_unpack_unit_e() {
         TestLogger::setup();
 
@@ -165,7 +164,7 @@ mod tests {
         assert_eq!(plain_return_and_literal_msg(Some(12), 12), ());
         assert_eq!(TestLogger::drain_logs(), vec![]);
         assert_eq!(plain_return_and_literal_msg(None, 42), ());
-        assert_eq!(TestLogger::drain_logs(), vec![("error msg".to_string(), Level::Error)]);
+        assert_eq!(TestLogger::drain_logs(), vec![("error msg".to_string(), log::Level::Error)]);
 
         fn plain_return_and_formatted_msg(expr: Option<usize>, inner: usize) {
             let some_val = unpack_unit_e!(expr, "error msg {} {}", 10, true);
@@ -174,11 +173,10 @@ mod tests {
         assert_eq!(plain_return_and_formatted_msg(Some(12), 12), ());
         assert_eq!(TestLogger::drain_logs(), vec![]);
         assert_eq!(plain_return_and_formatted_msg(None, 42), ());
-        assert_eq!(TestLogger::drain_logs(), vec![("error msg 10 true".to_string(), Level::Error)]);
+        assert_eq!(TestLogger::drain_logs(), vec![("error msg 10 true".to_string(), log::Level::Error)]);
     }
 
     #[test]
-    #[ignore]
     fn test_unpack_quiet() {
         TestLogger::setup();
 
@@ -193,7 +191,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_unpack_or() {
         TestLogger::setup();
 
@@ -204,7 +201,7 @@ mod tests {
         assert_eq!(return_val_and_literal_msg(Some(1), 0), 2);
         assert_eq!(TestLogger::drain_logs(), vec![]);
         assert_eq!(return_val_and_literal_msg(None, 0), 0);
-        assert_eq!(TestLogger::drain_logs(), vec![("debug msg".to_string(), Level::Debug)]);
+        assert_eq!(TestLogger::drain_logs(), vec![("debug msg".to_string(), log::Level::Debug)]);
 
         fn return_val_and_formatted_msg(expr: Option<usize>, ret: usize) -> usize {
             let some_val = unpack_or!(expr, ret, "debug msg {} {}", 10, true);
@@ -213,11 +210,10 @@ mod tests {
         assert_eq!(return_val_and_formatted_msg(Some(1), 0), 2);
         assert_eq!(TestLogger::drain_logs(), vec![]);
         assert_eq!(return_val_and_formatted_msg(None, 0), 0);
-        assert_eq!(TestLogger::drain_logs(), vec![("debug msg 10 true".to_string(), Level::Debug)]);
+        assert_eq!(TestLogger::drain_logs(), vec![("debug msg 10 true".to_string(), log::Level::Debug)]);
     }
 
     #[test]
-    #[ignore]
     fn test_unpack_or_e() {
         TestLogger::setup();
 
@@ -228,7 +224,7 @@ mod tests {
         assert_eq!(return_val_and_literal_msg(Some(1), 0), 2);
         assert_eq!(TestLogger::drain_logs(), vec![]);
         assert_eq!(return_val_and_literal_msg(None, 0), 0);
-        assert_eq!(TestLogger::drain_logs(), vec![("error msg".to_string(), Level::Error)]);
+        assert_eq!(TestLogger::drain_logs(), vec![("error msg".to_string(), log::Level::Error)]);
 
         fn return_val_and_formatted_msg(expr: Option<usize>, ret: usize) -> usize {
             let some_val = unpack_or_e!(expr, ret, "error msg {} {}", 10, true);
@@ -237,6 +233,7 @@ mod tests {
         assert_eq!(return_val_and_formatted_msg(Some(1), 0), 2);
         assert_eq!(TestLogger::drain_logs(), vec![]);
         assert_eq!(return_val_and_formatted_msg(None, 0), 0);
-        assert_eq!(TestLogger::drain_logs(), vec![("error msg 10 true".to_string(), Level::Error)]);
+        assert_eq!(TestLogger::drain_logs(), vec![("error msg 10 true".to_string(), log::Level::Error)]);
+    }
     }
 }
