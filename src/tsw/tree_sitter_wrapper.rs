@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::ops::Range;
-
 use std::sync::{Arc, RwLock};
 
 use log::{error, warn};
@@ -121,7 +120,7 @@ impl TreeSitterWrapper {
         match lang_id {
             LangId::C => Some(tree_sitter_c::HIGHLIGHT_QUERY),
             LangId::CPP => Some(tree_sitter_cpp::HIGHLIGHT_QUERY),
-            LangId::HTML => Some(tree_sitter_html::HIGHLIGHT_QUERY),
+            LangId::HTML => Some(tree_sitter_html::HIGHLIGHTS_QUERY),
             LangId::ELM => Some(tree_sitter_elm::HIGHLIGHTS_QUERY),
             LangId::GO => Some(tree_sitter_go::HIGHLIGHT_QUERY),
             LangId::RUST => Some(tree_sitter_rust::HIGHLIGHT_QUERY),
