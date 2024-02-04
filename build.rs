@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 
 fn main() {
-    build_c();
-    build_cpp();
-    build_elm();
-    build_go();
-    build_html();
-    build_rust();
+    // build_c();
+    // build_cpp();
+    // build_elm();
+    // build_go();
+    // build_html();
+    // build_rust();
 }
 
 fn build_c() {
