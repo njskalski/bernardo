@@ -85,4 +85,20 @@ mod tests {
         assert_eq!(iter.next(), Some(spath!(m, "folder1", "folder3", "moulder.txt").unwrap()));
         assert_eq!(iter.next(), None);
     }
+
+    #[test]
+    #[should_panic]
+    fn test_hidden_dir_is_ignored() {
+        let m = MockFS::new("/tmp")
+            .with_file("folder1/folder2/file1.txt", "some text")
+            .with_file("folder1/.git/moulder.txt", "truth is out there")
+            .to_fsf();
+
+        let mut iter = RecursiveFsIter::new(m.root());
+
+        assert_eq!(iter.next(), Some(spath!(m, "folder1").unwrap()));
+        assert_eq!(iter.next(), Some(spath!(m, "folder1", "folder2").unwrap()));
+        assert_eq!(iter.next(), Some(spath!(m, "folder1", "folder2", "file1.txt").unwrap()));
+        assert_eq!(iter.next(), None);
+    }
 }
