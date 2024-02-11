@@ -34,28 +34,23 @@ impl Iterator for RecursiveFsIter {
     type Item = SPath;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.stack.is_empty() {
-            return None;
-        }
-
         while let Some(iter) = self.stack.front_mut() {
-            if let Some(item) = iter.next() {
-                if item.is_dir() {
-                    match item.blocking_list() {
-                        Ok(mut children) => {
-                            children.sort();
-                            self.stack.push_front(Box::new(children.into_iter()));
-                        }
-                        Err(le) => {
-                            error!("swallowed list error 2 : {:?}", le);
-                        }
-                    };
-                }
-
-                return Some(item);
-            } else {
+            let Some(item) = iter.next() else {
                 self.stack.pop_front();
+                continue;
+            };
+
+            if item.is_dir() {
+                match item.blocking_list() {
+                    Ok(mut children) => {
+                        children.sort();
+                        self.stack.push_front(Box::new(children.into_iter()));
+                    }
+                    Err(le) => error!("swallowed list error 2 : {:?}", le),
+                };
             }
+
+            return Some(item);
         }
 
         None
