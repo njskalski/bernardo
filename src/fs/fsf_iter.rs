@@ -40,6 +40,10 @@ impl Iterator for RecursiveFsIter {
                 continue;
             };
 
+            if item.is_hidden() {
+                continue;
+            }
+
             if item.is_dir() {
                 match item.blocking_list() {
                     Ok(mut children) => {
@@ -82,7 +86,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_hidden_dir_is_ignored() {
         let m = MockFS::new("/tmp")
             .with_file("folder1/folder2/file1.txt", "some text")

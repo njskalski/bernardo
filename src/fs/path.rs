@@ -151,6 +151,13 @@ impl SPath {
         fsf.is_file(self)
     }
 
+    pub fn is_hidden(&self) -> bool {
+        match self.file_name_str() {
+            Some(fname) => fname.starts_with('.'),
+            None => false,
+        }
+    }
+
     // returns owned PathBuf relative to FS root.
     pub fn relative_path(&self) -> PathBuf {
         self.0.relative_path()
