@@ -458,6 +458,7 @@ impl BufferState {
         if let Some(tree_sitter_clone) = self.tree_sitter_op.as_ref().map(|r| r.clone()) {
             let parse_success: bool = self.text_mut().parse(tree_sitter_clone, lang_id);
 
+            // TODO I honestly don't remember why I reparse here
             if parse_success {
                 self.text_mut().parsing_mut().map(|parsing| {
                     if !parsing.try_reparse(&copy_rope) {

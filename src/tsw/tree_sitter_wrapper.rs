@@ -3,10 +3,13 @@ use std::fmt::Debug;
 use std::ops::Range;
 use std::sync::{Arc, RwLock};
 
-use log::{error, warn};
+use lazy_static::lazy_static;
+use log::{debug, error, info, warn};
 use ropey::Rope;
-use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor};
+use tree_sitter::{InputEdit, Language, LogType, Parser, Point, Query, QueryCursor};
+use tree_sitter_cpp::*;
 
+use crate::primitives::printable::Printable;
 use crate::text::text_buffer::TextBuffer;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::language_set::LanguageSet;
@@ -15,6 +18,12 @@ use crate::tsw::rope_wrappers::RopeWrapper;
 use crate::unpack_or_e;
 
 static EMPTY_SLICE: [u8; 0] = [0; 0];
+
+lazy_static! {
+    static ref tree_sitter_cpp_highlight_query: String = include_str!("../../third-party/nvim-treesitter/queries/c/highlights.scm")
+        .to_owned()
+        + include_str!("../../third-party/nvim-treesitter/queries/cpp/highlights.scm");
+}
 
 pub fn byte_offset_to_point(rope: &Rope, byte_offset: usize) -> Option<Point> {
     let char_idx = rope.try_byte_to_char(byte_offset).ok()?;
@@ -32,6 +41,8 @@ pub fn byte_offset_to_point(rope: &Rope, byte_offset: usize) -> Option<Point> {
 
 pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {
     return Box::new(move |offset: usize, point: Point| {
+        debug!("request to parse point {:?}, offset {:?}", point, offset);
+
         if offset >= rope.len_bytes() {
             // debug!("byte offset beyond rope length: {} >= {}", offset, rope.len_bytes());
             return &EMPTY_SLICE;
@@ -58,7 +69,7 @@ pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point
         let cut_from_beginning = offset - chunk_byte_idx;
         let result = &chunk_as_bytes[cut_from_beginning..];
 
-        // debug!("parser reading bytes [{}-{}) |{}|", offset, offset + result.len(), result.len());
+        info!("parser reading bytes [{}-{}) |{}|", offset, offset + result.len(), result.len());
 
         result
     });
@@ -115,11 +126,11 @@ impl TreeSitterWrapper {
         TreeSitterWrapper { languages }
     }
 
-    pub fn highlight_query(&self, lang_id: LangId) -> Option<&'static str> {
+    pub fn highlight_query(&self, lang_id: LangId) -> Option<&str> {
         #[allow(unreachable_patterns)]
         match lang_id {
             LangId::C => Some(tree_sitter_c::HIGHLIGHT_QUERY),
-            LangId::CPP => Some(tree_sitter_cpp::HIGHLIGHT_QUERY),
+            LangId::CPP => Some(tree_sitter_cpp_highlight_query.as_str()),
             LangId::HTML => Some(tree_sitter_html::HIGHLIGHTS_QUERY),
             LangId::ELM => Some(tree_sitter_elm::HIGHLIGHTS_QUERY),
             LangId::GO => Some(tree_sitter_go::HIGHLIGHT_QUERY),
@@ -185,6 +196,9 @@ impl ParsingTuple {
             cursor.set_byte_range(begin_byte..end_byte);
         };
 
+        let query_captures: Vec<_> = cursor
+            .captures(&self.highlight_query, self.tree.as_ref()?.root_node(), RopeWrapper(&rope))
+            .collect();
         let query_matches = cursor.matches(&self.highlight_query, self.tree.as_ref()?.root_node(), RopeWrapper(&rope));
 
         let mut results: Vec<HighlightItem> = vec![];
@@ -207,31 +221,40 @@ impl ParsingTuple {
             }
         }
 
+        debug!("highlight result size = {}", results.len());
+
         Some(results)
     }
 
     pub fn try_reparse(&mut self, rope: &ropey::Rope) -> bool {
         let mut callback = rope.callback_for_parser();
         let mut parser = unpack_or_e!(self.parser.try_write().ok(), false, "failed to lock parser");
+
+        debug!("doing reparse, tree = {:?}", self.tree);
         let tree = unpack_or_e!(parser.parse_with(&mut callback, self.tree.as_ref()), false, "failed parse");
 
         self.tree = Some(tree);
 
-        // for (_idx, m) in QueryCursor::new().matches(
-        //     &self.highlight_query,
-        //     self.tree.as_ref().unwrap().root_node(),
-        //     RopeWrapper(&rope),
-        // ).enumerate() {
-        //     for (_cidx, c) in m.captures.iter().enumerate() {
-        //         // let name = &self.id_to_name[c.index as usize];
-        //         // debug!("m[{}]c[{}] : [{}:{}) = {}",
-        //         //     _idx, _cidx,
-        //         //     c.node.start_byte(),
-        //         //     c.node.end_byte(),
-        //         //     name,
-        //         //     );
-        //     }
-        // }
+        let query_captures: Vec<_> = QueryCursor::new()
+            .captures(&self.highlight_query, self.tree.as_ref().unwrap().root_node(), RopeWrapper(&rope))
+            .collect();
+
+        for (_idx, m) in QueryCursor::new()
+            .matches(&self.highlight_query, self.tree.as_ref().unwrap().root_node(), RopeWrapper(&rope))
+            .enumerate()
+        {
+            for (_cidx, c) in m.captures.iter().enumerate() {
+                let name = &self.id_to_name[c.index as usize];
+                debug!(
+                    "m[{}]c[{}] : [{}:{}) = {}",
+                    _idx,
+                    _cidx,
+                    c.node.start_byte(),
+                    c.node.end_byte(),
+                    name,
+                );
+            }
+        }
 
         true
     }
