@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 use log::error;
 
 use crate::fs::path::SPath;
@@ -8,7 +6,7 @@ use crate::fs::path::SPath;
 Recursively iterates over all items under root, in DFS pattern, siblings sorted lexicographically
  */
 pub struct RecursiveFsIter {
-    stack: VecDeque<Box<dyn Iterator<Item = SPath>>>,
+    stack: Vec<Box<dyn Iterator<Item = SPath>>>,
 }
 
 impl RecursiveFsIter {
@@ -25,7 +23,7 @@ impl RecursiveFsIter {
         };
 
         RecursiveFsIter {
-            stack: VecDeque::from([first_iter]),
+            stack: Vec::from([first_iter]),
         }
     }
 }
@@ -34,9 +32,9 @@ impl Iterator for RecursiveFsIter {
     type Item = SPath;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(iter) = self.stack.front_mut() {
+        while let Some(iter) = self.stack.last_mut() {
             let Some(item) = iter.next() else {
-                self.stack.pop_front();
+                self.stack.pop();
                 continue;
             };
 
@@ -48,7 +46,7 @@ impl Iterator for RecursiveFsIter {
                 match item.blocking_list() {
                     Ok(mut children) => {
                         children.sort();
-                        self.stack.push_front(Box::new(children.into_iter()));
+                        self.stack.push(Box::new(children.into_iter()));
                     }
                     Err(le) => error!("swallowed list error 2 : {:?}", le),
                 };
