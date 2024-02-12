@@ -262,7 +262,7 @@ impl BufferState {
         let beyond_last_lane = visible_rect.lower_right().y as usize + 1;
 
         let first_char_idx = rope.try_line_to_char(first_line).ok()?;
-        let beyond_last_char_idx = rope.try_line_to_char(beyond_last_lane).unwrap_or(rope.len_chars() + 1);
+        let beyond_last_char_idx = rope.try_line_to_char(beyond_last_lane).unwrap_or(rope.len_chars()); // if you do add +1 here, treesitter fails.
 
         Some(first_char_idx..beyond_last_char_idx)
     }
@@ -458,6 +458,7 @@ impl BufferState {
         if let Some(tree_sitter_clone) = self.tree_sitter_op.as_ref().map(|r| r.clone()) {
             let parse_success: bool = self.text_mut().parse(tree_sitter_clone, lang_id);
 
+            // TODO I honestly don't remember why I reparse here
             if parse_success {
                 self.text_mut().parsing_mut().map(|parsing| {
                     if !parsing.try_reparse(&copy_rope) {

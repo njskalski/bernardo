@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <vector>
 
-#include "hello.h"
+#include "hello.hpp"
 
 int main() {
     printf("get some number: %d", get_some_number());
