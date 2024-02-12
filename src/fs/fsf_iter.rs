@@ -1,29 +1,55 @@
+use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use log::error;
 
 use crate::fs::path::SPath;
+
+fn parse_gitignore(ignore_path: SPath) -> Option<Gitignore> {
+    let absolute_path = ignore_path.absolute_path();
+    let contents = ignore_path.read_entire_file_to_string().ok()?;
+
+    let mut builder = GitignoreBuilder::new(ignore_path.parent()?.absolute_path());
+    for line in contents.lines() {
+        // GitignoreBuilder::add() can't be used because it uses an File::open()
+        // call on the filepath, but we use our own FS layer
+        let _ = builder.add_line(Some(absolute_path.clone()), line);
+    }
+    builder.build().ok()
+}
+
+const GITIGNORE_FILE: &str = ".gitignore";
 
 /*
 Recursively iterates over all items under root, in DFS pattern, siblings sorted lexicographically
  */
 pub struct RecursiveFsIter {
+    ignore: Option<Gitignore>,
     stack: Vec<Box<dyn Iterator<Item = SPath>>>,
 }
 
 impl RecursiveFsIter {
     pub fn new(root: SPath) -> Self {
-        let first_iter: Box<dyn Iterator<Item = SPath>> = match root.blocking_list() {
+        let (first_iter, ignore): (Box<dyn Iterator<Item = SPath>>, _) = match root.blocking_list() {
             Ok(mut items) => {
                 items.sort();
-                Box::new(items.into_iter())
+                let ignore = items
+                    // It should be fine to compare by the basename since items only contains
+                    // files from a single directory
+                    .binary_search_by(|path| path.file_name_str().cmp(&Some(GITIGNORE_FILE)))
+                    .ok()
+                    .map(|idx| items[idx].clone())
+                    .and_then(parse_gitignore);
+
+                (Box::new(items.into_iter()), ignore)
             }
             Err(le) => {
                 error!("swallowed list error : {:?}", le);
-                Box::new(std::iter::empty())
+                (Box::new(std::iter::empty()), None)
             }
         };
 
         RecursiveFsIter {
             stack: Vec::from([first_iter]),
+            ignore,
         }
     }
 }
@@ -41,6 +67,12 @@ impl Iterator for RecursiveFsIter {
 
             if item.is_hidden() {
                 continue;
+            }
+
+            if let Some(ref ignore) = self.ignore {
+                if ignore.matched(item.absolute_path(), item.is_dir()).is_ignore() {
+                    continue;
+                }
             }
 
             if item.is_dir() {
@@ -100,7 +132,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_root_gitignore_is_respected() {
         let m = MockFS::new("/tmp")
             .with_file(".gitignore", "file1.txt")
