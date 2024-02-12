@@ -1,9 +1,9 @@
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 
-fn get_full_setup() -> FullSetup {
-    let full_setup: FullSetup = FullSetup::new("./test_envs/lsp_clangd_1")
-        .with_files(["src/main.cpp"])
+fn get_full_setup(file: &str) -> FullSetup {
+    let full_setup: FullSetup = FullSetup::new("./test_envs/lsp_clangd_cpp_1")
+        .with_files([file])
         .with_mock_navcomp(false)
         // .with_frame_based_wait()
         .build();
@@ -12,8 +12,8 @@ fn get_full_setup() -> FullSetup {
 }
 
 #[test]
-fn completions_clangd_integ_test_1() {
-    let mut full_setup = get_full_setup();
+fn completions_clangd_cpp_completion() {
+    let mut full_setup = get_full_setup("src/main.cpp");
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
     assert_eq!(
@@ -78,4 +78,13 @@ fn completions_clangd_integ_test_1() {
 
     // full_setup.wait_frame();
     // full_setup.screenshot();
+}
+
+#[test]
+fn completions_clangd_cpp_header() {
+    let mut full_setup = get_full_setup("src/hello.hpp");
+    assert!(full_setup.wait_for(|f| f.is_editor_opened()));
+
+    full_setup.wait_frame();
+    full_setup.screenshot();
 }
