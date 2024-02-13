@@ -15,7 +15,11 @@ fn parse_gitignore(ignore_path: SPath) -> Option<Gitignore> {
         // call on the filepath, but we use our own FS layer
         let _ = builder.add_line(Some(absolute_path.clone()), line);
     }
-    builder.build().ok()
+
+    builder
+        .build()
+        .inspect_err(|err| error!("could not build Gitignore for path {ignore_path}: {err}"))
+        .ok()
 }
 
 const GITIGNORE_FILE: &str = ".gitignore";
@@ -73,9 +77,7 @@ impl RecursiveFsIter {
             .inspect_err(|le| error!("swallowed list error : {:?}", le))
             .unwrap_or_default();
 
-        RecursiveFsIter {
-            stack: Vec::from([contents]),
-        }
+        RecursiveFsIter { stack: vec![contents] }
     }
 
     /// Checks whether a path is ignored by comparing against all gitignore files
@@ -92,25 +94,25 @@ impl Iterator for RecursiveFsIter {
     type Item = SPath;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(iter) = self.stack.last_mut() {
-            let Some(item) = iter.files.next() else {
+        while let Some(dir) = self.stack.last_mut() {
+            let Some(file) = dir.files.next() else {
                 // The dir has been completely iterated over; remove it
                 self.stack.pop();
                 continue;
             };
 
-            if item.is_hidden() || self.is_ignored(&item) {
+            if file.is_hidden() || self.is_ignored(&file) {
                 continue;
             }
 
-            if item.is_dir() {
-                match DirContents::from_dir(item.clone()) {
+            if file.is_dir() {
+                match DirContents::from_dir(file.clone()) {
                     Ok(contents) => self.stack.push(contents),
                     Err(le) => error!("swallowed list error 2 : {:?}", le),
                 };
             }
 
-            return Some(item);
+            return Some(file);
         }
 
         None
