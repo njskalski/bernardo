@@ -3,6 +3,8 @@ use log::error;
 
 use crate::fs::path::SPath;
 
+use super::read_error::ListError;
+
 fn parse_gitignore(ignore_path: SPath) -> Option<Gitignore> {
     let absolute_path = ignore_path.absolute_path();
     let contents = ignore_path.read_entire_file_to_string().ok()?;
@@ -18,39 +20,71 @@ fn parse_gitignore(ignore_path: SPath) -> Option<Gitignore> {
 
 const GITIGNORE_FILE: &str = ".gitignore";
 
+/// Contents of a directory, sorted lexicographically. Also identifies a .gitignore
+/// file if it exists in the directory.
+struct DirContents {
+    files: Box<dyn Iterator<Item = SPath>>,
+    ignore: Option<Gitignore>,
+}
+
+impl DirContents {
+    pub fn from_dir(dir: SPath) -> Result<Self, ListError> {
+        let mut files = dir.blocking_list()?;
+        files.sort();
+
+        let ignore = files
+            // It should be fine to compare by the basename since items only contains
+            // files from a single directory
+            .binary_search_by(|path| path.file_name_str().cmp(&Some(GITIGNORE_FILE)))
+            .ok()
+            .map(|idx| files[idx].clone())
+            .and_then(parse_gitignore);
+
+        Ok(DirContents {
+            files: Box::new(files.into_iter()),
+            ignore,
+        })
+    }
+
+    pub fn empty() -> Self {
+        DirContents {
+            files: Box::new(std::iter::empty()),
+            ignore: None,
+        }
+    }
+}
+
+impl Default for DirContents {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
 /*
 Recursively iterates over all items under root, in DFS pattern, siblings sorted lexicographically
  */
 pub struct RecursiveFsIter {
-    ignore: Option<Gitignore>,
-    stack: Vec<Box<dyn Iterator<Item = SPath>>>,
+    stack: Vec<DirContents>,
 }
 
 impl RecursiveFsIter {
     pub fn new(root: SPath) -> Self {
-        let (first_iter, ignore): (Box<dyn Iterator<Item = SPath>>, _) = match root.blocking_list() {
-            Ok(mut items) => {
-                items.sort();
-                let ignore = items
-                    // It should be fine to compare by the basename since items only contains
-                    // files from a single directory
-                    .binary_search_by(|path| path.file_name_str().cmp(&Some(GITIGNORE_FILE)))
-                    .ok()
-                    .map(|idx| items[idx].clone())
-                    .and_then(parse_gitignore);
-
-                (Box::new(items.into_iter()), ignore)
-            }
-            Err(le) => {
-                error!("swallowed list error : {:?}", le);
-                (Box::new(std::iter::empty()), None)
-            }
-        };
+        let contents = DirContents::from_dir(root)
+            .inspect_err(|le| error!("swallowed list error : {:?}", le))
+            .unwrap_or_default();
 
         RecursiveFsIter {
-            stack: Vec::from([first_iter]),
-            ignore,
+            stack: Vec::from([contents]),
         }
+    }
+
+    /// Checks whether a path is ignored by comparing against all gitignore files
+    /// in ancestor directories till the root directory.
+    fn is_ignored(&mut self, path: &SPath) -> bool {
+        self.stack
+            .iter()
+            .filter_map(|dir| dir.ignore.as_ref())
+            .any(|ig| ig.matched(path.absolute_path(), path.is_dir()).is_ignore())
     }
 }
 
@@ -59,28 +93,19 @@ impl Iterator for RecursiveFsIter {
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(iter) = self.stack.last_mut() {
-            let Some(item) = iter.next() else {
-                // The iter is empty; remove it
+            let Some(item) = iter.files.next() else {
+                // The dir has been completely iterated over; remove it
                 self.stack.pop();
                 continue;
             };
 
-            if item.is_hidden() {
+            if item.is_hidden() || self.is_ignored(&item) {
                 continue;
             }
 
-            if let Some(ref ignore) = self.ignore {
-                if ignore.matched(item.absolute_path(), item.is_dir()).is_ignore() {
-                    continue;
-                }
-            }
-
             if item.is_dir() {
-                match item.blocking_list() {
-                    Ok(mut children) => {
-                        children.sort();
-                        self.stack.push(Box::new(children.into_iter()));
-                    }
+                match DirContents::from_dir(item.clone()) {
+                    Ok(contents) => self.stack.push(contents),
                     Err(le) => error!("swallowed list error 2 : {:?}", le),
                 };
             }
@@ -149,7 +174,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_nested_gitignore_is_respected() {
         let m = MockFS::new("/tmp")
             .with_file("folder1/folder2/.gitignore", "file1.txt")
@@ -167,7 +191,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_nested_gitignore_does_not_affect_other_files() {
         let m = MockFS::new("/tmp")
             .with_file("folder1/folder2/.gitignore", "file1.txt")
@@ -185,16 +208,15 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_multiple_gitignores_are_respected() {
         let m = MockFS::new("/tmp")
             .with_file(".gitignore", "file1.txt")
             .with_file("folder1/folder2/.gitignore", "file2.txt")
             .with_file("folder1/folder2/file1.txt", "not matched")
             .with_file("folder1/folder2/file2.txt", "not matched")
-            .with_file("folder1/folder3/moulder.txt", "truth is out there")
             .with_file("folder1/folder3/file1.txt", "not matched")
             .with_file("folder1/folder3/file2.txt", "matched")
+            .with_file("folder1/folder3/moulder.txt", "truth is out there")
             .to_fsf();
 
         let mut iter = RecursiveFsIter::new(m.root());
@@ -202,8 +224,8 @@ mod tests {
         assert_eq!(iter.next(), Some(spath!(m, "folder1").unwrap()));
         assert_eq!(iter.next(), Some(spath!(m, "folder1", "folder2").unwrap()));
         assert_eq!(iter.next(), Some(spath!(m, "folder1", "folder3").unwrap()));
-        assert_eq!(iter.next(), Some(spath!(m, "folder1", "folder3", "moulder.txt").unwrap()));
         assert_eq!(iter.next(), Some(spath!(m, "folder1", "folder3", "file2.txt").unwrap()));
+        assert_eq!(iter.next(), Some(spath!(m, "folder1", "folder3", "moulder.txt").unwrap()));
         assert_eq!(iter.next(), None);
     }
 }
