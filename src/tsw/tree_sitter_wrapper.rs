@@ -69,7 +69,7 @@ pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point
         let cut_from_beginning = offset - chunk_byte_idx;
         let result = &chunk_as_bytes[cut_from_beginning..];
 
-        info!("parser reading bytes [{}-{}) |{}|", offset, offset + result.len(), result.len());
+        debug!("parser reading bytes [{}-{}) |{}|", offset, offset + result.len(), result.len());
 
         result
     });
