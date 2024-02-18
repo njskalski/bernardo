@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use std::sync::RwLock;
+use std::iter::empty;
+use std::sync::{RwLock, TryLockResult};
 
 use log::{debug, error};
 use syntect::highlighting::{Highlighter, ThemeSet};
@@ -20,7 +21,7 @@ pub struct TmTheme {
 }
 
 impl TmTheme {
-    pub fn color_for_name(&self, name: &str) -> Option<Color> {
+    pub fn name_to_color(&self, name: &str) -> Option<Color> {
         match self.cache.try_read() {
             Ok(cache) => {
                 if let Some(color) = cache.get(&*name) {

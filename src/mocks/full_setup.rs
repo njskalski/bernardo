@@ -1,13 +1,11 @@
 use std::ffi::OsStr;
 use std::option::Option;
 use std::path::PathBuf;
-
 use std::sync::{Arc, RwLock};
 use std::thread::JoinHandle;
 use std::time::Duration;
 
 use crossbeam_channel::{select, Receiver, Sender};
-
 use log::{debug, error, warn, LevelFilter};
 
 use crate::config::config::{Config, ConfigRef};
@@ -38,7 +36,6 @@ use crate::mocks::treeview_interpreter::TreeViewInterpreter;
 use crate::primitives::xy::XY;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
-
 use crate::widgets::tree_view;
 
 pub struct FullSetupBuilder {
@@ -409,6 +406,10 @@ impl FullSetup {
 
     pub fn screenshot(&self) -> bool {
         self.last_frame.as_ref().map(|frame| screenshot(&frame.buffer)).unwrap_or(false)
+    }
+
+    pub fn get_theme(&self) -> &Theme {
+        &self.theme
     }
 }
 

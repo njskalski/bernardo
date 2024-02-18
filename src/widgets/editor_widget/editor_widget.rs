@@ -717,7 +717,7 @@ impl EditorWidget {
                     if tr != NEWLINE {
                         // TODO cleanup
                         if let Some(item) = highlight_iter.peek() {
-                            if let Some(color) = theme.name_to_theme(&item.identifier) {
+                            if let Some(color) = theme.name_to_color(&item.identifier) {
                                 style = style.with_foreground(color);
                             }
                         }
