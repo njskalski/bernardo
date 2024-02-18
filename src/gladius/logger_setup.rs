@@ -13,7 +13,7 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     ("bernardo::gladius::run_gladius", log::LevelFilter::Info),
     ("bernardo::io::over_output", log::LevelFilter::Info),
     ("bernardo::text::buffer_state", log::LevelFilter::Warn),
-    ("bernardo::tsw::tree_sitter_wrapper", log::LevelFilter::Info),
+    ("bernardo::tsw::tree_sitter_wrapper", log::LevelFilter::Error),
     ("bernardo::widgets", log::LevelFilter::Info),
     ("bernardo::widgets::code_results_widget", log::LevelFilter::Info),
     ("bernardo::widgets::completion_widget", log::LevelFilter::Info),

@@ -98,8 +98,6 @@ pub fn read_lsp<R: Read>(
             Call::Invalid { id } => {
                 debug!("deserialized invalid id: {:?}", id);
 
-                // the fact that failed to
-
                 if let Ok(resp) = jsonrpc_core::serde_from_str::<jsonrpc_core::Response>(s) {
                     debug!("deserialized response");
                     if let jsonrpc_core::Response::Single(single) = resp {
@@ -109,7 +107,7 @@ pub fn read_lsp<R: Read>(
                                 Err(LspReadError::JsonRpcError(fail.error.to_string()))
                             }
                             Output::Success(succ) => {
-                                debug!("call info id {:?}", &succ.id);
+                                debug!("succ call info id {:?}", &succ.id);
                                 internal_send_to_promise(id_to_method, succ.id, succ.result, None)
                             }
                         }

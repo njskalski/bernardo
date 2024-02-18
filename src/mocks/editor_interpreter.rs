@@ -132,17 +132,21 @@ impl<'a> EditorInterpreter<'a> {
 
     // returns cursors in SCREEN SPACE
     pub fn get_visible_cursor_cells(&self) -> impl Iterator<Item = (XY, &Cell)> + '_ {
-        self.mock_output.buffer.cells_iter().filter(|(_pos, cell)| match cell {
-            Cell::Begin { style, grapheme: _ } => {
-                let mut cursor_background = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
-                if !self.is_editor_focused() {
-                    cursor_background = cursor_background.half();
-                }
+        self.mock_output
+            .buffer
+            .cells_iter()
+            .with_rect(self.rect_without_scroll)
+            .filter(|(_pos, cell)| match cell {
+                Cell::Begin { style, grapheme: _ } => {
+                    let mut cursor_background = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
+                    if !self.is_editor_focused() {
+                        cursor_background = cursor_background.half();
+                    }
 
-                style.background == cursor_background
-            }
-            Cell::Continuation => false,
-        })
+                    style.background == cursor_background
+                }
+                Cell::Continuation => false,
+            })
     }
 
     pub fn consistent_items_iter(&self) -> BufferConsistentItemsIter {

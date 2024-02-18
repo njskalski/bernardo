@@ -1,6 +1,5 @@
 use crate::io::output::Metadata;
 use crate::mocks::meta_frame::MetaOutputFrame;
-
 use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 
 pub struct ContextBarWidgetInterpreter<'a> {
@@ -29,7 +28,7 @@ impl<'a> ContextBarWidgetInterpreter<'a> {
                     .map(|style| style.background == self.output.theme.highlighted(self.meta.focused).background)
                     .unwrap_or(false)
             })
-            .map(|line| line.text)
+            .map(|line| line.text.trim().to_owned())
     }
 
     // pub fn contents(&self) -> String {
