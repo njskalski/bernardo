@@ -81,10 +81,80 @@ fn completions_clangd_cpp_completion() {
 }
 
 #[test]
-fn completions_clangd_cpp_header() {
+fn highlighting_clangd_cpp_header() {
     let mut full_setup = get_full_setup("src/hello.hpp");
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
-    full_setup.wait_frame();
-    full_setup.screenshot();
+    // moving cursor to empty line so it does not interfere with highlighting
+    for _ in 0..1 {
+        assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
+    }
+
+    assert!(full_setup.wait_for(|f| f
+        .get_first_editor()
+        .unwrap()
+        .get_visible_cursor_lines()
+        .any(|line| line.visible_idx == 2)));
+
+    let vec: Vec<_> = full_setup.get_first_editor().unwrap().consistent_items_iter().collect();
+
+    // let x =
+
+    assert_eq!(vec[0].text.as_str(), "#include");
+    assert_eq!(
+        vec[0].text_style.foreground,
+        full_setup.get_theme().name_to_color("keyword.import").unwrap()
+    );
+
+    assert_eq!(vec[1].text.as_str(), " <vector>");
+    assert_eq!(
+        vec[1].text_style.foreground,
+        full_setup.get_theme().name_to_color("string").unwrap()
+    );
+
+    // TODO this test is incomplete, it's here because it tests "something", which is better than nothing
+}
+
+#[test]
+fn highlighting_clangd_cpp_file() {
+    let mut full_setup = get_full_setup("src/main.cpp");
+    assert!(full_setup.wait_for(|f| f.is_editor_opened()));
+
+    // moving cursor to empty line so it does not interfere with highlighting
+    for _ in 0..2 {
+        assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
+    }
+
+    assert!(full_setup.wait_for(|f| f
+        .get_first_editor()
+        .unwrap()
+        .get_visible_cursor_lines()
+        .any(|line| line.visible_idx == 2)));
+
+    let vec: Vec<_> = full_setup.get_first_editor().unwrap().consistent_items_iter().collect();
+
+    assert_eq!(
+        vec.iter()
+            .find(|item| item.text.contains("#include"))
+            .expect("no includes found")
+            .text_style
+            .foreground,
+        full_setup.get_theme().name_to_color("keyword.import").unwrap()
+    );
+
+    assert_eq!(
+        vec.iter()
+            .find(|item| item.text.contains("<cstdio>"))
+            .expect("no <cstdio> found")
+            .text_style
+            .foreground,
+        full_setup.get_theme().name_to_color("string").unwrap()
+    );
+
+    assert_eq!(
+        vec.iter().find(|item| item.text.contains("return")).unwrap().text_style.foreground,
+        full_setup.get_theme().name_to_color("keyword.return").unwrap()
+    );
+
+    // TODO this test is incomplete, it's here because it tests "something", which is better than nothing
 }

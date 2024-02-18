@@ -23,8 +23,8 @@ pub struct Theme {
 }
 
 impl Theme {
-    pub fn name_to_theme(&self, s: &str) -> Option<Color> {
-        if let Some(color) = self.tm.color_for_name(s) {
+    pub fn name_to_color(&self, s: &str) -> Option<Color> {
+        if let Some(color) = self.tm.name_to_color(s) {
             return Some(color);
         }
 
