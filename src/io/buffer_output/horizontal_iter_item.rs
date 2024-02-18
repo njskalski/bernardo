@@ -12,3 +12,10 @@ pub struct HorizontalIterItem {
     pub text_style: Option<TextStyle>,
     pub text: String,
 }
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ConsistentHorizontalItem {
+    pub absolute_pos: XY,
+    pub text_style: TextStyle,
+    pub text: String,
+}

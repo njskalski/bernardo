@@ -1,7 +1,8 @@
 use log::error;
 
 use crate::cursor::cursor::CursorStatus;
-use crate::io::buffer_output::horizontal_iter_item::HorizontalIterItem;
+use crate::io::buffer_output::buffer_output_consistent_items_iter::BufferConsistentItemsIter;
+use crate::io::buffer_output::horizontal_iter_item::{ConsistentHorizontalItem, HorizontalIterItem};
 use crate::io::cell::Cell;
 use crate::io::output::Metadata;
 use crate::io::style::TextStyle;
@@ -142,6 +143,10 @@ impl<'a> EditorInterpreter<'a> {
             }
             Cell::Continuation => false,
         })
+    }
+
+    pub fn consistent_items_iter(&self) -> BufferConsistentItemsIter {
+        self.mock_output.buffer.consistent_items_iter().with_rect(self.rect_without_scroll)
     }
 
     pub fn get_visible_cursor_line_indices(&self) -> impl Iterator<Item = LineIdxPair> + '_ {
