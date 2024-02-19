@@ -36,6 +36,10 @@ pub fn get_context_options(
             results.push(ContextBarItem::GO_TO_DEFINITION);
             results.push(ContextBarItem::SHOW_USAGES);
         }
+        (_, Some(_), _, _, _, Some("function.builtin")) => {
+            results.push(ContextBarItem::GO_TO_DEFINITION);
+            results.push(ContextBarItem::SHOW_USAGES);
+        }
         _ => {}
     }
 

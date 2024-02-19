@@ -1,17 +1,31 @@
 use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::io::cell::Cell;
-
+use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 
 pub struct BufferOutputCellsIter<'a> {
     buffer: &'a BufferOutput,
     pos: XY,
+
+    rect: Rect,
 }
 
 impl<'a> BufferOutputCellsIter<'a> {
     pub fn new(buffer: &'a BufferOutput) -> Self {
-        BufferOutputCellsIter { buffer, pos: XY::ZERO }
+        BufferOutputCellsIter {
+            buffer,
+            pos: XY::ZERO,
+            rect: Rect::from_zero(buffer.size()),
+        }
+    }
+
+    pub fn with_rect(self, rect: Rect) -> Self {
+        Self {
+            rect,
+            pos: rect.pos,
+            ..self
+        }
     }
 }
 
@@ -19,22 +33,24 @@ impl<'a> Iterator for BufferOutputCellsIter<'a> {
     type Item = (XY, &'a Cell);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.pos >= self.buffer.size() {
+        if self.pos >= self.rect.lower_right() {
             None
         } else {
-            let res: (XY, &'a Cell) = (self.pos.clone(), &self.buffer[self.pos]);
+            let mut res: (XY, &'a Cell) = (self.pos.clone(), &self.buffer[self.pos]);
 
             self.pos.x += 1;
 
-            if self.pos.x == self.buffer.size().x {
-                if self.pos.y + 1 < self.buffer.size().y {
-                    self.pos.x = 0;
+            if self.pos.x == self.rect.lower_right().x {
+                if self.pos.y + 1 < self.rect.lower_right().y {
+                    self.pos.x = self.rect.min_x();
                     self.pos.y += 1;
-                    debug_assert!(self.pos.y <= self.buffer.size().y);
+                    debug_assert!(self.pos.y <= self.rect.lower_right().y);
                 } else {
-                    self.pos = self.buffer.size();
+                    self.pos = self.rect.lower_right();
                 }
             }
+
+            res.0 -= self.rect.pos;
 
             Some(res)
         }
