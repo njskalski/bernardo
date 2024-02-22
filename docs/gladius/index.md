@@ -8,7 +8,7 @@ Intermediate knowledge of Rust is therefore assumed.
 
 ## Subjects
 
-- [Default keybindings](./default_keymap.md)
+- [Config and default keybindings](./default_keymap.md)
 - [High level project descrition](mission.md)
 - [Workspace](./workspace.md)
 
