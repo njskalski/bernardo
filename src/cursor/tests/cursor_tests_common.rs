@@ -6,10 +6,26 @@ use crate::cursor::cursor::{Cursor, Selection};
 use crate::cursor::cursor_set::CursorSet;
 use crate::text::text_buffer::TextBuffer;
 
-// In this variant, a cursor is represented by # or a pair [ ) or ( ], with [ or ] marking the
-// anchor. No overlaps allowed.
-// I SKIP character '.' for offsetting of multiple cursor sets.
-pub fn common_text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSet) {
+/*
+This method takes a string encoding a text with some cursors, and returns solid types representing
+them.
+
+Legend:
+- '.' is an empty character that will be skipped.
+- # is a cursor with no selection
+- [ ) is a cursor with selection, anchored on the left
+- ( ] is a cursor with selection, anchored on the right.
+
+Of course lower index is inclusive, higher index is exclusive.
+
+Examples:
+
+1) "ala#" is text "ala" and single cursor behind letter a, at index 3, no selection.
+2) "a[la)" is text "ala", single cursor that encompasses "la", with anchor at element 1 and
+    selection of length 2.
+3) "a.la ma# ko#ta" is "ala ma kota" with two cursors, one at 6 and one at 9, no selections.
+ */
+pub fn decode_text_and_cursors(s: &str) -> (Rope, CursorSet) {
     let mut text = String::new();
     let mut cursors: Vec<Cursor> = vec![];
     let mut other_part: Option<usize> = None;
@@ -57,12 +73,12 @@ pub fn common_text_to_buffer_cursors_with_selections(s: &str) -> (Rope, CursorSe
     let cs = CursorSet::new(cursors);
 
     //sanity check
-    common_assert_pair_makes_sense(&rope, &cs);
+    assert_cursors_are_within_text(&rope, &cs);
 
     (rope, cs)
 }
 
-pub fn common_assert_pair_makes_sense(b: &dyn TextBuffer, cs: &CursorSet) {
+pub fn assert_cursors_are_within_text(b: &dyn TextBuffer, cs: &CursorSet) {
     let b_len_chars = b.len_chars();
     for c in cs.iter() {
         debug_assert!(c.a <= b_len_chars);
@@ -76,14 +92,14 @@ pub fn common_assert_pair_makes_sense(b: &dyn TextBuffer, cs: &CursorSet) {
 }
 
 pub fn common_apply(input: &str, f: fn(&mut CursorSet, &dyn TextBuffer) -> ()) -> String {
-    let (bs, mut cs) = common_text_to_buffer_cursors_with_selections(input);
+    let (bs, mut cs) = decode_text_and_cursors(input);
     f(&mut cs, &bs);
-    common_buffer_cursors_sel_to_text(&bs, &cs)
+    encode_cursors_and_text(&bs, &cs)
 }
 
-pub fn common_buffer_cursors_sel_to_text(b: &dyn TextBuffer, cs: &CursorSet) -> String {
+pub fn encode_cursors_and_text(b: &dyn TextBuffer, cs: &CursorSet) -> String {
     // first let's check there's no impossible orders
-    common_assert_pair_makes_sense(b, cs);
+    assert_cursors_are_within_text(b, cs);
 
     // first we validate there is no overlaps. I initially wanted to sort beginnings and ends, but
     // since ends are exclusive, the false-positives could appear this way. So I'll just color
@@ -198,8 +214,8 @@ pub fn common_buffer_cursors_sel_to_text(b: &dyn TextBuffer, cs: &CursorSet) -> 
 // these are the tests of testing framework. It's complicated.
 
 #[test]
-fn test_text_to_buffer_cursors_1() {
-    let (text, cursors) = common_text_to_buffer_cursors_with_selections("te[xt)");
+fn decode_text_and_cursors_1() {
+    let (text, cursors) = decode_text_and_cursors("te[xt)");
     assert_eq!(text, "text");
     assert_eq!(cursors.set().len(), 1);
     assert_eq!(cursors.set()[0].a, 2);
@@ -207,8 +223,8 @@ fn test_text_to_buffer_cursors_1() {
 }
 
 #[test]
-fn test_common_text_to_buffer_cursors_2() {
-    let (text, cursors) = common_text_to_buffer_cursors_with_selections("te(xt]");
+fn decode_text_and_cursors_2() {
+    let (text, cursors) = decode_text_and_cursors("te(xt]");
     assert_eq!(text, "text");
     assert_eq!(cursors.set().len(), 1);
     assert_eq!(cursors.set()[0].a, 4);
@@ -216,8 +232,8 @@ fn test_common_text_to_buffer_cursors_2() {
 }
 
 #[test]
-fn test_common_text_to_buffer_cursors_3() {
-    let (text, cursors) = common_text_to_buffer_cursors_with_selections("(t]e(xt]");
+fn decode_text_and_cursors_3() {
+    let (text, cursors) = decode_text_and_cursors("(t]e(xt]");
     assert_eq!(text, "text");
     assert_eq!(cursors.set().len(), 2);
     assert_eq!(cursors.set()[0].a, 1);
@@ -227,8 +243,8 @@ fn test_common_text_to_buffer_cursors_3() {
 }
 
 #[test]
-fn test_common_text_to_buffer_cursors_4() {
-    let (text, cursors) = common_text_to_buffer_cursors_with_selections("(te](xt]");
+fn decode_text_and_cursors_4() {
+    let (text, cursors) = decode_text_and_cursors("(te](xt]");
     assert_eq!(text, "text");
     assert_eq!(cursors.set().len(), 2);
     assert_eq!(cursors.set()[0].a, 2);
@@ -238,8 +254,8 @@ fn test_common_text_to_buffer_cursors_4() {
 }
 
 #[test]
-fn test_common_text_to_buffer_cursors_5() {
-    let (text, cursors) = common_text_to_buffer_cursors_with_selections("text#");
+fn decode_text_and_cursors_5() {
+    let (text, cursors) = decode_text_and_cursors("text#");
     assert_eq!(text, "text");
     assert_eq!(cursors.set().len(), 1);
     assert_eq!(cursors.set()[0].a, 4);
@@ -247,15 +263,15 @@ fn test_common_text_to_buffer_cursors_5() {
 }
 
 #[test]
-fn test_buffer_cursors_sel_to_text_0() {
-    let text = common_buffer_cursors_sel_to_text(&Rope::from("text"), &CursorSet::new(vec![]));
+fn encode_text_and_cursors_0() {
+    let text = encode_cursors_and_text(&Rope::from("text"), &CursorSet::new(vec![]));
 
     assert_eq!(text, "text");
 }
 
 #[test]
-fn test_buffer_cursors_sel_to_text_1() {
-    let text = common_buffer_cursors_sel_to_text(
+fn encode_text_and_cursors_1() {
+    let text = encode_cursors_and_text(
         &Rope::from("text"),
         &CursorSet::new(vec![Cursor::new(0).with_selection(Selection::new(0, 2))]),
     );
@@ -264,8 +280,8 @@ fn test_buffer_cursors_sel_to_text_1() {
 }
 
 #[test]
-fn test_buffer_cursors_sel_to_text_2() {
-    let text = common_buffer_cursors_sel_to_text(
+fn encode_text_and_cursors_2() {
+    let text = encode_cursors_and_text(
         &Rope::from("text"),
         &CursorSet::new(vec![
             Cursor::new(0).with_selection(Selection::new(0, 2)),
@@ -277,14 +293,14 @@ fn test_buffer_cursors_sel_to_text_2() {
 }
 
 #[test]
-fn test_buffer_cursors_sel_to_text_3() {
-    let text = common_buffer_cursors_sel_to_text(&Rope::from("text\n"), &CursorSet::new(vec![Cursor::new(5)]));
+fn encode_text_and_cursors_3() {
+    let text = encode_cursors_and_text(&Rope::from("text\n"), &CursorSet::new(vec![Cursor::new(5)]));
 
     assert_eq!(text, "text\n#");
 }
 
 #[test]
-fn apply_sel_works() {
+fn verify_encode_decode_identity() {
     let f: fn(&mut CursorSet, &dyn TextBuffer) = |_c: &mut CursorSet, _b: &dyn TextBuffer| {};
 
     assert_eq!(common_apply("text", f), "text");

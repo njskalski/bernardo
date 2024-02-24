@@ -8,7 +8,7 @@ pub mod styled_string;
 pub mod xy;
 
 pub mod alphabet;
-mod rope_buffer_state;
+
 pub mod scroll;
 
 pub mod common_edit_msgs;
@@ -25,5 +25,6 @@ pub mod printable;
 pub mod scroll_enum;
 pub mod styled_printable;
 
+mod rope_as_buffer_state;
 #[cfg(test)]
 mod tests;

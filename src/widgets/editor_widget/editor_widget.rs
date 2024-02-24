@@ -22,7 +22,7 @@ use crate::io::style::TextStyle;
 use crate::io::sub_output::SubOutput;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
-use crate::primitives::common_edit_msgs::{_apply_cem, cme_to_direction, key_to_edit_msg, CommonEditMsg};
+use crate::primitives::common_edit_msgs::{apply_common_edit_message, cme_to_direction, key_to_edit_msg, CommonEditMsg};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::helpers;
 use crate::primitives::printable::Printable;
@@ -1287,7 +1287,7 @@ impl Widget for EditorWidget {
                             let mut set = CursorSet::singleton(special_cursor);
                             // TODO make sure this had no changing effect?
                             let height = self.page_height();
-                            _apply_cem(
+                            apply_common_edit_message(
                                 cem.clone(),
                                 &mut set,
                                 &mut vec![],

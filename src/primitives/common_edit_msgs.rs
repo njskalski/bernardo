@@ -528,14 +528,10 @@ fn handle_backspace_and_delete(
     res
 }
 
-// Returns tuple:
-//      first is number of chars that changed (inserted, removed, changed), or 0 in case of UNDO/REDO
-//      FALSE iff the command results in no-op.
-
 /*
-I will be reworking _apply_cem. Here are some updates:
-1) we remove number of changed characters. Nothing uses that and it's buggy.
-2) cursor_set - undo/redo has to update it (aka restore the valid version)
+Returns whether an underlying buffer got modified
+
+
 3) observer_cursor_sets - these will be forcibly updated by primary cursor set. Why?
     - because i) we don't really care that much, it's a rare use case
               ii) we can't really "store them" for undo/redo, because observer (as name suggests)
@@ -543,7 +539,7 @@ I will be reworking _apply_cem. Here are some updates:
                   undo/redo, we would "interrupt flow" of observer. Destroying an invalid cursor
                   is... less destructive than destroying flow.
  */
-pub fn _apply_cem(
+pub fn apply_common_edit_message(
     cem: CommonEditMsg,
     cursor_set: &mut CursorSet,
     observer_cursor_sets: &mut Vec<&mut CursorSet>,

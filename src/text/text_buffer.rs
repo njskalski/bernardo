@@ -5,6 +5,7 @@ use ropey::iter::{Chars, Chunks};
 use streaming_iterator::StreamingIterator;
 
 use crate::cursor::cursor::Selection;
+use crate::cursor::cursor_set::CursorSet;
 use crate::primitives::xy::XY;
 use crate::tsw::lang_id::LangId;
 
@@ -13,13 +14,6 @@ use crate::tsw::lang_id::LangId;
 pub trait TextBuffer: ToString {
     fn byte_to_char(&self, byte_idx: usize) -> Option<usize>;
 
-    fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, tree_sitter::Point) -> &'a [u8] + 'a>;
-    fn can_redo(&self) -> bool {
-        false
-    }
-    fn can_undo(&self) -> bool {
-        false
-    }
     fn char_at(&self, char_idx: usize) -> Option<char>;
     fn char_to_byte(&self, char_idx: usize) -> Option<usize>;
     /*

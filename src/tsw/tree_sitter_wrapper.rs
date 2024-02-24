@@ -227,7 +227,7 @@ impl ParsingTuple {
     }
 
     pub fn try_reparse(&mut self, rope: &ropey::Rope) -> bool {
-        let mut callback = rope.callback_for_parser();
+        let mut callback = pack_rope_with_callback(rope);
         let mut parser = unpack_or_e!(self.parser.try_write().ok(), false, "failed to lock parser");
 
         debug!("doing reparse, tree = {:?}", self.tree);

@@ -3,31 +3,29 @@ use ropey::Rope;
 use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor::Selection;
 use crate::cursor::cursor_set::CursorSet;
-use crate::cursor::tests::cursor_tests_common::{
-    common_assert_pair_makes_sense, common_buffer_cursors_sel_to_text, common_text_to_buffer_cursors_with_selections,
-};
+use crate::cursor::tests::cursor_tests_common::{assert_cursors_are_within_text, decode_text_and_cursors, encode_cursors_and_text};
 use crate::text::text_buffer::TextBuffer;
 
 fn text_to_buffer_cursors(text: &str) -> (Rope, CursorSet) {
-    let res = common_text_to_buffer_cursors_with_selections(text);
-    common_assert_pair_makes_sense(&res.0, &res.1);
+    let res = decode_text_and_cursors(text);
+    assert_cursors_are_within_text(&res.0, &res.1);
     res
 }
 
 pub fn apply_sel(input: &str, f: fn(&mut CursorSet, &dyn TextBuffer) -> ()) -> String {
-    let (bs, mut cs) = common_text_to_buffer_cursors_with_selections(input);
+    let (bs, mut cs) = decode_text_and_cursors(input);
     f(&mut cs, &bs);
     buffer_cursors_sel_to_text(&bs, &cs)
 }
 
 pub fn buffer_cursors_sel_to_text(b: &dyn TextBuffer, cs: &CursorSet) -> String {
-    let res = common_buffer_cursors_sel_to_text(b, cs);
+    let res = encode_cursors_and_text(b, cs);
     res
 }
 
 #[test]
 fn test_common_text_to_buffer_cursors_with_selections_1() {
-    let (text, cursors) = common_text_to_buffer_cursors_with_selections("te[xt)");
+    let (text, cursors) = decode_text_and_cursors("te[xt)");
     assert_eq!(text, "text");
     assert_eq!(cursors.set().len(), 1);
     assert_eq!(cursors.set()[0].a, 2);
@@ -36,7 +34,7 @@ fn test_common_text_to_buffer_cursors_with_selections_1() {
 
 #[test]
 fn test_common_text_to_buffer_cursors_with_selections_2() {
-    let (text, cursors) = common_text_to_buffer_cursors_with_selections("te(xt]");
+    let (text, cursors) = decode_text_and_cursors("te(xt]");
     assert_eq!(text, "text");
     assert_eq!(cursors.set().len(), 1);
     assert_eq!(cursors.set()[0].a, 4);
@@ -45,7 +43,7 @@ fn test_common_text_to_buffer_cursors_with_selections_2() {
 
 #[test]
 fn test_common_text_to_buffer_cursors_with_selections_3() {
-    let (text, cursors) = common_text_to_buffer_cursors_with_selections("(t]e(xt]");
+    let (text, cursors) = decode_text_and_cursors("(t]e(xt]");
     assert_eq!(text, "text");
     assert_eq!(cursors.set().len(), 2);
     assert_eq!(cursors.set()[0].a, 1);
@@ -56,7 +54,7 @@ fn test_common_text_to_buffer_cursors_with_selections_3() {
 
 #[test]
 fn test_common_text_to_buffer_cursors_with_selections_4() {
-    let (text, cursors) = common_text_to_buffer_cursors_with_selections("(te](xt]");
+    let (text, cursors) = decode_text_and_cursors("(te](xt]");
     assert_eq!(text, "text");
     assert_eq!(cursors.set().len(), 2);
     assert_eq!(cursors.set()[0].a, 2);
