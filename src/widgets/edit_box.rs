@@ -257,7 +257,10 @@ impl Widget for EditBoxWidget {
         return match our_msg.unwrap() {
             EditBoxWidgetMsg::Hit => self.event_hit(),
             EditBoxWidgetMsg::CommonEditMsg(cem) => {
-                if self.buffer.apply_cem(cem.clone(), self.id, 1, self.clipboard_op.as_ref()) {
+                if self
+                    .buffer
+                    .apply_common_edit_message(cem.clone(), self.id, 1, self.clipboard_op.as_ref())
+                {
                     self.event_changed()
                 } else {
                     None

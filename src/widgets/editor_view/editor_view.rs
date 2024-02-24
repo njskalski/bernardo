@@ -256,7 +256,7 @@ impl EditorView {
         if cursor_set.is_single() && curr_text.do_cursors_match_regex(editor_widget_id, &phrase) {
             let with_what = self.replace_box.get_buffer().to_string();
             let page_height = self.editor.internal().page_height() as usize;
-            buffer_mut.apply_cem(
+            buffer_mut.apply_common_edit_message(
                 CommonEditMsg::Block(with_what),
                 editor_widget_id,
                 page_height,

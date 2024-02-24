@@ -10,7 +10,6 @@ use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::primitives::common_edit_msgs::{key_to_edit_msg, CommonEditMsg};
 use crate::primitives::common_query::CommonQuery;
-
 use crate::primitives::xy::XY;
 use crate::subwidget;
 use crate::text::buffer_state::BufferState;
@@ -142,7 +141,7 @@ impl Widget for ContextBarWidget {
             Some(msg) => match msg {
                 ContextBarWidgetMsg::Close => EditorWidgetMsg::HoverClose.someboxed(),
                 ContextBarWidgetMsg::Edit(cem) => {
-                    if self.query.apply_cem(cem.clone(), self.id, 1, None) {
+                    if self.query.apply_common_edit_message(cem.clone(), self.id, 1, None) {
                         self.on_query_change();
                     }
                     None
