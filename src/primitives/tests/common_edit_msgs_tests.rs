@@ -1,21 +1,8 @@
 #![cfg_attr(rustfmt, rustfmt_skip)]
 
-use crate::cursor::tests::cursor_tests_common::{
-    assert_cursors_are_within_text, decode_text_and_cursors, encode_cursors_and_text,
-};
-use crate::experiments::clipboard::{ClipboardRef, get_me_fake_clipboard};
-use crate::primitives::common_edit_msgs::{apply_common_edit_message, CommonEditMsg};
-use crate::primitives::has_invariant::HasInvariant;
-
-fn decode_apply_and_encode_back(text: &str, cem: CommonEditMsg, clipboard: Option<&ClipboardRef>) -> String {
-    let (mut buffer, mut cs) = decode_text_and_cursors(text);
-    debug_assert!(cs.check_invariant());
-    assert_cursors_are_within_text(&buffer, &cs);
-    apply_common_edit_message(cem, &mut cs, &mut vec![], &mut buffer, 4, clipboard);
-    debug_assert!(cs.check_invariant());
-    assert_cursors_are_within_text(&buffer, &cs);
-    encode_cursors_and_text(&buffer, &cs)
-}
+use crate::experiments::clipboard::get_me_fake_clipboard;
+use crate::primitives::common_edit_msgs::CommonEditMsg;
+use crate::primitives::tests::test_helpers::decode_apply_and_encode_back;
 
 #[test]
 fn single_cursor_write() {

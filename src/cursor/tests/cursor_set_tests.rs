@@ -12,7 +12,7 @@
 use ropey::Rope;
 
 use crate::cursor::cursor_set::CursorSet;
-use crate::cursor::tests::cursor_tests_common::{assert_cursors_are_within_text, decode_text_and_cursors, encode_cursors_and_text};
+use crate::cursor::tests::test_helpers::{assert_cursors_are_within_text, decode_text_and_cursors, encode_cursors_and_text};
 use crate::text::text_buffer::TextBuffer;
 
 fn text_to_buffer_cursors(text: &str) -> (Rope, CursorSet) {
