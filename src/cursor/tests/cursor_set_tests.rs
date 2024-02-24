@@ -12,20 +12,18 @@
 use ropey::Rope;
 
 use crate::cursor::cursor_set::CursorSet;
-use crate::cursor::tests::cursor_tests_common::{
-    common_assert_pair_makes_sense, common_buffer_cursors_sel_to_text, common_text_to_buffer_cursors_with_selections,
-};
+use crate::cursor::tests::test_helpers::{assert_cursors_are_within_text, decode_text_and_cursors, encode_cursors_and_text};
 use crate::text::text_buffer::TextBuffer;
 
 fn text_to_buffer_cursors(text: &str) -> (Rope, CursorSet) {
-    let res = common_text_to_buffer_cursors_with_selections(text);
+    let res = decode_text_and_cursors(text);
     assert!(res.1.are_simple());
     res
 }
 
 fn buffer_cursors_to_text(rope: &dyn TextBuffer, cs: &CursorSet) -> String {
     assert!(cs.are_simple());
-    common_buffer_cursors_sel_to_text(rope, cs)
+    encode_cursors_and_text(rope, cs)
 }
 
 #[test]
@@ -49,9 +47,9 @@ fn text_to_buffer_cursors_and_back() {
 fn apply(input: &str, f: fn(&mut CursorSet, &Rope) -> ()) -> String {
     let (bs, mut cs) = text_to_buffer_cursors(input);
 
-    common_assert_pair_makes_sense(&bs, &cs);
+    assert_cursors_are_within_text(&bs, &cs);
     f(&mut cs, &bs);
-    common_assert_pair_makes_sense(&bs, &cs);
+    assert_cursors_are_within_text(&bs, &cs);
 
     buffer_cursors_to_text(&bs, &cs)
 }

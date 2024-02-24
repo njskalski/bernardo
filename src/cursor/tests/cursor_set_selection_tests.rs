@@ -3,31 +3,18 @@ use ropey::Rope;
 use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor::Selection;
 use crate::cursor::cursor_set::CursorSet;
-use crate::cursor::tests::cursor_tests_common::{
-    common_assert_pair_makes_sense, common_buffer_cursors_sel_to_text, common_text_to_buffer_cursors_with_selections,
-};
+use crate::cursor::tests::test_helpers::{decode_text_and_cursors, encode_cursors_and_text};
 use crate::text::text_buffer::TextBuffer;
 
-fn text_to_buffer_cursors(text: &str) -> (Rope, CursorSet) {
-    let res = common_text_to_buffer_cursors_with_selections(text);
-    common_assert_pair_makes_sense(&res.0, &res.1);
-    res
-}
-
-pub fn apply_sel(input: &str, f: fn(&mut CursorSet, &dyn TextBuffer) -> ()) -> String {
-    let (bs, mut cs) = common_text_to_buffer_cursors_with_selections(input);
+pub fn apply_on_encoded_text_and_cursors(input: &str, f: fn(&mut CursorSet, &dyn TextBuffer) -> ()) -> String {
+    let (bs, mut cs) = decode_text_and_cursors(input);
     f(&mut cs, &bs);
-    buffer_cursors_sel_to_text(&bs, &cs)
-}
-
-pub fn buffer_cursors_sel_to_text(b: &dyn TextBuffer, cs: &CursorSet) -> String {
-    let res = common_buffer_cursors_sel_to_text(b, cs);
-    res
+    encode_cursors_and_text(&bs, &cs)
 }
 
 #[test]
-fn test_common_text_to_buffer_cursors_with_selections_1() {
-    let (text, cursors) = common_text_to_buffer_cursors_with_selections("te[xt)");
+fn test_decode_text_and_cursors_1() {
+    let (text, cursors) = decode_text_and_cursors("te[xt)");
     assert_eq!(text, "text");
     assert_eq!(cursors.set().len(), 1);
     assert_eq!(cursors.set()[0].a, 2);
@@ -35,8 +22,8 @@ fn test_common_text_to_buffer_cursors_with_selections_1() {
 }
 
 #[test]
-fn test_common_text_to_buffer_cursors_with_selections_2() {
-    let (text, cursors) = common_text_to_buffer_cursors_with_selections("te(xt]");
+fn test_decode_text_and_cursors_2() {
+    let (text, cursors) = decode_text_and_cursors("te(xt]");
     assert_eq!(text, "text");
     assert_eq!(cursors.set().len(), 1);
     assert_eq!(cursors.set()[0].a, 4);
@@ -44,8 +31,8 @@ fn test_common_text_to_buffer_cursors_with_selections_2() {
 }
 
 #[test]
-fn test_common_text_to_buffer_cursors_with_selections_3() {
-    let (text, cursors) = common_text_to_buffer_cursors_with_selections("(t]e(xt]");
+fn test_decode_text_and_cursors_3() {
+    let (text, cursors) = decode_text_and_cursors("(t]e(xt]");
     assert_eq!(text, "text");
     assert_eq!(cursors.set().len(), 2);
     assert_eq!(cursors.set()[0].a, 1);
@@ -55,8 +42,8 @@ fn test_common_text_to_buffer_cursors_with_selections_3() {
 }
 
 #[test]
-fn test_common_text_to_buffer_cursors_with_selections_4() {
-    let (text, cursors) = common_text_to_buffer_cursors_with_selections("(te](xt]");
+fn test_decode_text_and_cursors_4() {
+    let (text, cursors) = decode_text_and_cursors("(te](xt]");
     assert_eq!(text, "text");
     assert_eq!(cursors.set().len(), 2);
     assert_eq!(cursors.set()[0].a, 2);
@@ -66,15 +53,15 @@ fn test_common_text_to_buffer_cursors_with_selections_4() {
 }
 
 #[test]
-fn test_buffer_cursors_sel_to_text_0() {
-    let text = buffer_cursors_sel_to_text(&Rope::from("text"), &CursorSet::new(vec![]));
+fn test_encode_cursors_and_text_0() {
+    let text = encode_cursors_and_text(&Rope::from("text"), &CursorSet::new(vec![]));
 
     assert_eq!(text, "text");
 }
 
 #[test]
-fn test_buffer_cursors_sel_to_text_1() {
-    let text = buffer_cursors_sel_to_text(
+fn test_encode_cursors_and_text_1() {
+    let text = encode_cursors_and_text(
         &Rope::from("text"),
         &CursorSet::new(vec![Cursor::new(0).with_selection(Selection::new(0, 2))]),
     );
@@ -83,8 +70,8 @@ fn test_buffer_cursors_sel_to_text_1() {
 }
 
 #[test]
-fn test_buffer_cursors_sel_to_text_2() {
-    let text = buffer_cursors_sel_to_text(
+fn test_encode_cursors_and_text_2() {
+    let text = encode_cursors_and_text(
         &Rope::from("text"),
         &CursorSet::new(vec![
             Cursor::new(0).with_selection(Selection::new(0, 2)),
@@ -99,9 +86,9 @@ fn test_buffer_cursors_sel_to_text_2() {
 fn apply_sel_works() {
     let f: fn(&mut CursorSet, &dyn TextBuffer) = |_c: &mut CursorSet, _b: &dyn TextBuffer| {};
 
-    assert_eq!(apply_sel("text", f), "text");
-    assert_eq!(apply_sel("te[xt)", f), "te[xt)");
-    assert_eq!(apply_sel("[t)(ext]", f), "[t)(ext]");
+    assert_eq!(apply_on_encoded_text_and_cursors("text", f), "text");
+    assert_eq!(apply_on_encoded_text_and_cursors("te[xt)", f), "te[xt)");
+    assert_eq!(apply_on_encoded_text_and_cursors("[t)(ext]", f), "[t)(ext]");
 }
 
 // these are actual tests of CursorSet with the selection.
@@ -127,7 +114,7 @@ fn walking_over_selection_begin() {
     ];
 
     for i in 0..expected_process.len() - 1 {
-        assert_eq!(apply_sel(expected_process[i], f), expected_process[i + 1]);
+        assert_eq!(apply_on_encoded_text_and_cursors(expected_process[i], f), expected_process[i + 1]);
     }
 }
 
@@ -138,11 +125,20 @@ fn home() {
     };
 
     // assert_eq!(apply_sel("text", f), "text");
-    assert_eq!(apply_sel("text#", f), "[text)");
-    assert_eq!(apply_sel("te#xt", f), "[te)xt");
-    assert_eq!(apply_sel("a#aa\nbb#b\nccc#\n#", f), "[a)aa\n[bb)b\n[ccc)\n#");
-    assert_eq!(apply_sel("a#aa\nb#b#b\nccc#\n#", f), "[a)aa\n[bb)b\n[ccc)\n#");
-    assert_eq!(apply_sel("a#aa\nb#b#b\n#ccc#\n##", f), "[a)aa\n[bb)b\n[ccc)\n#");
+    assert_eq!(apply_on_encoded_text_and_cursors("text#", f), "[text)");
+    assert_eq!(apply_on_encoded_text_and_cursors("te#xt", f), "[te)xt");
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("a#aa\nbb#b\nccc#\n#", f),
+        "[a)aa\n[bb)b\n[ccc)\n#"
+    );
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("a#aa\nb#b#b\nccc#\n#", f),
+        "[a)aa\n[bb)b\n[ccc)\n#"
+    );
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("a#aa\nb#b#b\n#ccc#\n##", f),
+        "[a)aa\n[bb)b\n[ccc)\n#"
+    );
 }
 
 #[test]
@@ -152,11 +148,17 @@ fn end() {
     };
 
     // assert_eq!(apply_sel("text", f), "text");
-    assert_eq!(apply_sel("text#", f), "text#");
-    assert_eq!(apply_sel("te#xt", f), "te(xt]");
-    assert_eq!(apply_sel("a#aa\nbb#b\nccc#\n#", f), "a(aa]\nbb(b]\nccc#\n#");
-    assert_eq!(apply_sel("a#aa\nb#b#b\nccc#\n#", f), "a(aa]\nb(bb]\nccc#\n#");
-    assert_eq!(apply_sel("a#aa\nb#b#b\n#ccc#\n##", f), "a(aa]\nb(bb]\n(ccc]\n#");
+    assert_eq!(apply_on_encoded_text_and_cursors("text#", f), "text#");
+    assert_eq!(apply_on_encoded_text_and_cursors("te#xt", f), "te(xt]");
+    assert_eq!(apply_on_encoded_text_and_cursors("a#aa\nbb#b\nccc#\n#", f), "a(aa]\nbb(b]\nccc#\n#");
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("a#aa\nb#b#b\nccc#\n#", f),
+        "a(aa]\nb(bb]\nccc#\n#"
+    );
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("a#aa\nb#b#b\n#ccc#\n##", f),
+        "a(aa]\nb(bb]\n(ccc]\n#"
+    );
 }
 
 #[test]
@@ -166,11 +168,17 @@ fn arrow_up_1() {
     };
 
     // assert_eq!(apply_sel("text", f), "text");
-    assert_eq!(apply_sel("text#", f), "[text)");
-    assert_eq!(apply_sel("te#xt", f), "[te)xt");
+    assert_eq!(apply_on_encoded_text_and_cursors("text#", f), "[text)");
+    assert_eq!(apply_on_encoded_text_and_cursors("te#xt", f), "[te)xt");
 
-    assert_eq!(apply_sel("lin#e1\nline2\nli#ne3", f), "[lin)e1\nli[ne2\nli)ne3");
-    assert_eq!(apply_sel("lin#e1\nline2\nli#ne3\n#", f), "[lin)e1\nli[ne2\n)[line3\n)");
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("lin#e1\nline2\nli#ne3", f),
+        "[lin)e1\nli[ne2\nli)ne3"
+    );
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("lin#e1\nline2\nli#ne3\n#", f),
+        "[lin)e1\nli[ne2\n)[line3\n)"
+    );
 }
 
 #[test]
@@ -179,9 +187,18 @@ fn arrow_up_2() {
         c.move_vertically_by(b, -1, true);
     };
 
-    assert_eq!(apply_sel("line1\nline2\nli#ne3", f), "line1\nli[ne2\nli)ne3");
-    assert_eq!(apply_sel("line1\nli[ne2\nli)ne3", f), "li[ne1\nline2\nli)ne3");
-    assert_eq!(apply_sel("li[ne1\nline2\nli)ne3", f), "[line1\nline2\nli)ne3");
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("line1\nline2\nli#ne3", f),
+        "line1\nli[ne2\nli)ne3"
+    );
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("line1\nli[ne2\nli)ne3", f),
+        "li[ne1\nline2\nli)ne3"
+    );
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("li[ne1\nline2\nli)ne3", f),
+        "[line1\nline2\nli)ne3"
+    );
 }
 
 #[test]
@@ -191,11 +208,17 @@ fn arrow_down_1() {
     };
 
     // assert_eq!(apply_sel("text", f), "text");
-    assert_eq!(apply_sel("#text", f), "(text]");
-    assert_eq!(apply_sel("te#xt", f), "te(xt]");
+    assert_eq!(apply_on_encoded_text_and_cursors("#text", f), "(text]");
+    assert_eq!(apply_on_encoded_text_and_cursors("te#xt", f), "te(xt]");
 
-    assert_eq!(apply_sel("lin#e1\nline2\nli#ne3", f), "lin(e1\nlin]e2\nli(ne3]");
-    assert_eq!(apply_sel("lin#e1\nline2\nli#ne3\n#", f), "lin(e1\nlin]e2\nli(ne3\n]");
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("lin#e1\nline2\nli#ne3", f),
+        "lin(e1\nlin]e2\nli(ne3]"
+    );
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("lin#e1\nline2\nli#ne3\n#", f),
+        "lin(e1\nlin]e2\nli(ne3\n]"
+    );
 }
 
 #[test]
@@ -204,9 +227,18 @@ fn arrow_down_2() {
         c.move_vertically_by(b, 1, true);
     };
 
-    assert_eq!(apply_sel("li#ne1\nline2\nline3", f), "li(ne1\nli]ne2\nline3");
-    assert_eq!(apply_sel("li(ne1\nli]ne2\nline3", f), "li(ne1\nline2\nli]ne3");
-    assert_eq!(apply_sel("li(ne1\nline2\nli]ne3", f), "li(ne1\nline2\nline3]");
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("li#ne1\nline2\nline3", f),
+        "li(ne1\nli]ne2\nline3"
+    );
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("li(ne1\nli]ne2\nline3", f),
+        "li(ne1\nline2\nli]ne3"
+    );
+    assert_eq!(
+        apply_on_encoded_text_and_cursors("li(ne1\nline2\nli]ne3", f),
+        "li(ne1\nline2\nline3]"
+    );
 }
 
 #[test]
@@ -226,7 +258,7 @@ fn single_cursor_word_begin_with_selection() {
     ];
 
     for i in 0..progress.len() - 1 {
-        assert_eq!(apply_sel(progress[i], f), progress[i + 1], "i: {}", i);
+        assert_eq!(apply_on_encoded_text_and_cursors(progress[i], f), progress[i + 1], "i: {}", i);
     }
 }
 
@@ -247,7 +279,7 @@ fn single_cursor_word_end_with_selection() {
     ];
 
     for i in 0..progress.len() - 1 {
-        assert_eq!(apply_sel(progress[i], f), progress[i + 1], "i: {}", i);
+        assert_eq!(apply_on_encoded_text_and_cursors(progress[i], f), progress[i + 1], "i: {}", i);
     }
 }
 
@@ -274,7 +306,7 @@ fn multiple_cursors_word_end_with_selection() {
     ];
 
     for i in 0..progress.len() - 1 {
-        assert_eq!(apply_sel(progress[i], f), progress[i + 1], "i: {}", i);
+        assert_eq!(apply_on_encoded_text_and_cursors(progress[i], f), progress[i + 1], "i: {}", i);
     }
 }
 
@@ -305,6 +337,6 @@ fn multiple_cursors_word_begin_with_selection() {
     ];
 
     for i in 0..progress.len() - 1 {
-        assert_eq!(apply_sel(progress[i], f), progress[i + 1], "i: {}", i);
+        assert_eq!(apply_on_encoded_text_and_cursors(progress[i], f), progress[i + 1], "i: {}", i);
     }
 }

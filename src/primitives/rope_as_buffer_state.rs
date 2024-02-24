@@ -1,20 +1,19 @@
-// this is for test only
+/*
+This is a simplified BufferState used for tests.
+ */
 
 use log::error;
 use ropey::iter::{Chars, Chunks};
 use ropey::Rope;
 use tree_sitter::Point;
 
+use crate::cursor::cursor_set::CursorSet;
 use crate::text::text_buffer::{LinesIter, TextBuffer};
 use crate::tsw::tree_sitter_wrapper::pack_rope_with_callback;
 
 impl TextBuffer for Rope {
     fn byte_to_char(&self, byte_idx: usize) -> Option<usize> {
         self.try_byte_to_char(byte_idx).ok()
-    }
-
-    fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {
-        pack_rope_with_callback(self)
     }
 
     fn char_at(&self, char_idx: usize) -> Option<char> {

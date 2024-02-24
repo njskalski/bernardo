@@ -22,7 +22,7 @@ use crate::io::style::TextStyle;
 use crate::io::sub_output::SubOutput;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
-use crate::primitives::common_edit_msgs::{_apply_cem, cme_to_direction, key_to_edit_msg, CommonEditMsg};
+use crate::primitives::common_edit_msgs::{apply_common_edit_message, cme_to_direction, key_to_edit_msg, CommonEditMsg};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::helpers;
 use crate::primitives::printable::Printable;
@@ -963,7 +963,7 @@ impl EditorWidget {
             }
 
             let CompletionAction::Insert(to_insert) = completion_action;
-            buffer.apply_cem(
+            buffer.apply_common_edit_message(
                 CommonEditMsg::Block(to_insert.clone()),
                 self.wid,
                 self.page_height() as usize,
@@ -1224,7 +1224,12 @@ impl Widget for EditorWidget {
                         (&EditorState::Editing, EditorWidgetMsg::EditMsg(cem)) => {
                             let page_height = self.page_height();
                             // page_height as usize is safe, since page_height is u16 and usize is larger.
-                            let changed = buffer.apply_cem(cem.clone(), self.wid, page_height as usize, Some(self.providers.clipboard()));
+                            let changed = buffer.apply_common_edit_message(
+                                cem.clone(),
+                                self.wid,
+                                page_height as usize,
+                                Some(self.providers.clipboard()),
+                            );
 
                             // TODO this needs to happen only if CONTENTS changed, not if cursor positions changed
                             if changed {
@@ -1287,7 +1292,7 @@ impl Widget for EditorWidget {
                             let mut set = CursorSet::singleton(special_cursor);
                             // TODO make sure this had no changing effect?
                             let height = self.page_height();
-                            _apply_cem(
+                            apply_common_edit_message(
                                 cem.clone(),
                                 &mut set,
                                 &mut vec![],

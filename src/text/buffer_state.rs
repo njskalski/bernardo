@@ -17,13 +17,13 @@ use crate::experiments::filename_to_language::filename_to_language;
 use crate::experiments::regex_search::FindError;
 use crate::fs::path::SPath;
 use crate::io::output::Output;
-use crate::primitives::common_edit_msgs::{CommonEditMsg, _apply_cem};
+use crate::primitives::common_edit_msgs::{apply_common_edit_message, CommonEditMsg};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::xy::XY;
 use crate::text::contents_and_cursors::ContentsAndCursors;
 use crate::text::text_buffer::{LinesIter, TextBuffer};
 use crate::tsw::lang_id::LangId;
-use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
+use crate::tsw::tree_sitter_wrapper::{pack_rope_with_callback, HighlightItem, TreeSitterWrapper};
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 use crate::widget::widget::WID;
@@ -76,7 +76,13 @@ impl BufferState {
         BufferSharedRef::new_from_buffer(self)
     }
 
-    pub fn apply_cem(&mut self, mut cem: CommonEditMsg, widget_id: WID, page_height: usize, clipboard: Option<&ClipboardRef>) -> bool {
+    pub fn apply_common_edit_message(
+        &mut self,
+        mut cem: CommonEditMsg,
+        widget_id: WID,
+        page_height: usize,
+        clipboard: Option<&ClipboardRef>,
+    ) -> bool {
         if self.subtype == BufferType::SingleLine {
             if page_height != 1 {
                 error!("page_height required to be 1 on SingleLine buffers!");
@@ -111,7 +117,7 @@ impl BufferState {
             }
         }
 
-        let (_diff_len_chars, any_change) = _apply_cem(cem.clone(), &mut cursors_copy, &mut vec![], self, page_height as usize, clipboard);
+        let any_change = apply_common_edit_message(cem.clone(), &mut cursors_copy, &mut vec![], self, page_height as usize, clipboard);
 
         //undo/redo invalidates cursors copy, so I need to watch for those
         match cem {
@@ -200,7 +206,7 @@ impl BufferState {
 
         // removing old item
         if stupid_message.stupid_range.0 != stupid_message.stupid_range.1 {
-            if self.apply_cem(
+            if self.apply_common_edit_message(
                 CommonEditMsg::DeleteBlock {
                     char_range: begin.a..end.a,
                 },
@@ -227,7 +233,7 @@ impl BufferState {
         if !stupid_message.substitute.is_empty() {
             let what = stupid_message.substitute.clone();
             let char_len = what.graphemes(true).count();
-            if self.apply_cem(
+            if self.apply_common_edit_message(
                 // TODO unnecessary clone
                 CommonEditMsg::InsertBlock { char_pos: begin.a, what },
                 widget_id,
@@ -585,6 +591,14 @@ impl BufferState {
 
         res
     }
+
+    pub fn can_redo(&self) -> bool {
+        self.history_pos + 1 < self.history.len()
+    }
+
+    pub fn can_undo(&self) -> bool {
+        self.history_pos > 0
+    }
 }
 
 impl HasInvariant for BufferState {
@@ -615,20 +629,8 @@ impl TextBuffer for BufferState {
         self.text().rope().try_byte_to_char(byte_idx).ok()
     }
 
-    fn callback_for_parser<'a>(&'a self) -> Box<dyn FnMut(usize, Point) -> &'a [u8] + 'a> {
-        self.text().rope().callback_for_parser()
-    }
-
-    fn can_redo(&self) -> bool {
-        self.history_pos + 1 < self.history.len()
-    }
-
-    fn can_undo(&self) -> bool {
-        self.history_pos > 0
-    }
-
     fn char_at(&self, char_idx: usize) -> Option<char> {
-        self.text().rope().char_at(char_idx)
+        self.text().rope().get_chars_at(char_idx).map(|mut chars| chars.next()).flatten()
     }
 
     fn char_to_byte(&self, char_idx: usize) -> Option<usize> {

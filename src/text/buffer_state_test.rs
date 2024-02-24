@@ -9,6 +9,6 @@ pub mod tests {
     fn fuzz_1() {
         let mut bf = BufferState::full(None, DocumentIdentifier::new_unique());
 
-        bf.apply_cem(CommonEditMsg::Char('䄀'), get_new_widget_id(), 10, None);
+        bf.apply_common_edit_message(CommonEditMsg::Char('䄀'), get_new_widget_id(), 10, None);
     }
 }
