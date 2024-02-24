@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::ops::Range;
 
-use log::{error, warn};
+use log::{debug, error, warn};
 use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -227,9 +227,7 @@ fn cursors_to_line_indices(rope: &dyn TextBuffer, cs: &CursorSet) -> Vec<usize> 
 }
 
 /*
-returns tuple
-    char changed (I aim at "Levenstein distance", but I have not tested that)
-    whether any change happened (to text or cursors)
+returns whether any change happened (to text or cursors)
  */
 // TODO assumptions that filelen < usize all over the place, assumption that diff < usize
 fn insert_to_rope(
@@ -239,13 +237,10 @@ fn insert_to_rope(
     // if None, all cursors will input the same. If Some(idx) only this cursor will insert and rest will get updated.
     specific_cursor: Option<usize>,
     what: &str,
-) -> (usize, bool) {
+) -> bool {
     let mut res = false;
     let mut modifier: isize = 0;
-    let mut diff_len: usize = 0;
     for (cursor_idx, c) in cursor_set.iter_mut().enumerate() {
-        let mut cursor_specific_diff_len: usize = 0;
-
         c.shift_by(modifier);
 
         if cfg!(debug_assertions) {
@@ -261,7 +256,6 @@ fn insert_to_rope(
             if let Some(sel) = c.s {
                 if rope.remove(sel.b, sel.e) {
                     res |= true;
-                    cursor_specific_diff_len = std::cmp::max(cursor_specific_diff_len, sel.len());
                 } else {
                     warn!("expected to remove non-empty item substring but failed");
                 }
@@ -288,7 +282,6 @@ fn insert_to_rope(
             let what_len = what.graphemes(true).count();
             if rope.insert_block(c.a, what) {
                 res |= true;
-                cursor_specific_diff_len = std::cmp::max(cursor_specific_diff_len, what_len);
 
                 let stride = what.graphemes(true).count();
                 for other_cursor_set in other_cursor_sets.iter_mut() {
@@ -300,25 +293,26 @@ fn insert_to_rope(
 
             c.shift_by(what_len as isize);
             modifier += what_len as isize;
-            diff_len += cursor_specific_diff_len;
 
             debug_assert!(c.check_invariant());
         }
     }
     cursor_set.reduce_right();
     debug_assert!(cursor_set.check_invariant());
-    (diff_len, res)
+    res
 }
 
+// returns whether rope has changed
 fn insert_to_rope_at_random_place(
     cursor_set: &mut CursorSet,
     other_cursor_sets: &mut Vec<&mut CursorSet>,
     rope: &mut dyn TextBuffer,
     char_pos: usize,
     what: &str,
-) -> (usize, bool) {
+) -> bool {
     if !rope.insert_block(char_pos, &what) {
-        (0, false)
+        error!("did not insert to rope at {}", char_pos);
+        false
     } else {
         let stride = what.graphemes(true).count();
 
@@ -328,7 +322,7 @@ fn insert_to_rope_at_random_place(
             update_cursors_after_insertion(other_cursor_set, char_pos, stride);
         }
 
-        (stride, true)
+        true
     }
 }
 
@@ -437,18 +431,19 @@ fn update_cursors_after_removal(cs: &mut CursorSet, char_range: Range<usize>) {
     }
 }
 
+// returns whether a change occurred
 fn remove_from_rope_at_random_place(
     cursor_set: &mut CursorSet,
     other_cursor_sets: &mut Vec<&mut CursorSet>,
     rope: &mut dyn TextBuffer,
     char_range: Range<usize>,
-) -> (usize, bool) {
+) -> bool {
     if char_range.is_empty() {
         error!("delete block with empty range, ignoring");
-        (0, false)
+        false
     } else if !rope.remove(char_range.start, char_range.end) {
         error!("failed to remove block");
-        (0, false)
+        false
     } else {
         update_cursors_after_removal(cursor_set, char_range.clone());
 
@@ -456,20 +451,19 @@ fn remove_from_rope_at_random_place(
             update_cursors_after_removal(other_cursor_set, char_range.clone());
         }
 
-        let stride = char_range.len();
-        (stride, true)
+        true
     }
 }
 
+// returns whether change occured
 fn handle_backspace_and_delete(
     cursor_set: &mut CursorSet,
     other_cursor_sets: &mut Vec<&mut CursorSet>,
     backspace: bool,
     rope: &mut dyn TextBuffer,
-) -> (usize, bool) {
+) -> bool {
     let mut res = false;
     let mut modifier: isize = 0;
-    let mut diff_len: usize = 0;
     for c in cursor_set.iter_mut() {
         c.shift_by(modifier);
 
@@ -484,7 +478,6 @@ fn handle_backspace_and_delete(
         if let Some(sel) = c.s {
             if rope.remove(sel.b, sel.e) {
                 res |= true;
-                diff_len += sel.len();
 
                 for other_cursor_set in other_cursor_sets.iter_mut() {
                     update_cursors_after_removal(other_cursor_set, sel.b..sel.e);
@@ -513,13 +506,12 @@ fn handle_backspace_and_delete(
 
             if rope.remove(b, e) {
                 res |= true;
-                diff_len += 1;
 
                 for other_cursor_set in other_cursor_sets.iter_mut() {
                     update_cursors_after_removal(other_cursor_set, b..e);
                 }
             } else {
-                warn!("expected to remove char but failed");
+                error!("expected to remove char but failed");
             }
             modifier -= 1;
 
@@ -533,12 +525,24 @@ fn handle_backspace_and_delete(
 
     cursor_set.reduce_left();
     debug_assert!(cursor_set.check_invariant());
-    (diff_len, res)
+    res
 }
 
 // Returns tuple:
 //      first is number of chars that changed (inserted, removed, changed), or 0 in case of UNDO/REDO
 //      FALSE iff the command results in no-op.
+
+/*
+I will be reworking _apply_cem. Here are some updates:
+1) we remove number of changed characters. Nothing uses that and it's buggy.
+2) cursor_set - undo/redo has to update it (aka restore the valid version)
+3) observer_cursor_sets - these will be forcibly updated by primary cursor set. Why?
+    - because i) we don't really care that much, it's a rare use case
+              ii) we can't really "store them" for undo/redo, because observer (as name suggests)
+                  is not the same entity as primary editor. If we "jumped" observer cursors on
+                  undo/redo, we would "interrupt flow" of observer. Destroying an invalid cursor
+                  is... less destructive than destroying flow.
+ */
 pub fn _apply_cem(
     cem: CommonEditMsg,
     cursor_set: &mut CursorSet,
@@ -546,36 +550,36 @@ pub fn _apply_cem(
     rope: &mut dyn TextBuffer,
     page_height: usize,
     clipboard: Option<&ClipboardRef>,
-) -> (usize, bool) {
+) -> bool {
     let res = match cem {
         CommonEditMsg::Char(char) => {
             // TODO optimise
             insert_to_rope(cursor_set, observer_cursor_sets, rope, None, char.to_string().as_str())
         }
         CommonEditMsg::Block(s) => insert_to_rope(cursor_set, observer_cursor_sets, rope, None, &s),
-        CommonEditMsg::CursorUp { selecting } => (0, cursor_set.move_vertically_by(rope, -1, selecting)),
-        CommonEditMsg::CursorDown { selecting } => (0, cursor_set.move_vertically_by(rope, 1, selecting)),
-        CommonEditMsg::CursorLeft { selecting } => (0, cursor_set.move_left(selecting)),
-        CommonEditMsg::CursorRight { selecting } => (0, cursor_set.move_right(rope, selecting)),
+        CommonEditMsg::CursorUp { selecting } => cursor_set.move_vertically_by(rope, -1, selecting),
+        CommonEditMsg::CursorDown { selecting } => cursor_set.move_vertically_by(rope, 1, selecting),
+        CommonEditMsg::CursorLeft { selecting } => cursor_set.move_left(selecting),
+        CommonEditMsg::CursorRight { selecting } => cursor_set.move_right(rope, selecting),
         CommonEditMsg::Backspace => handle_backspace_and_delete(cursor_set, observer_cursor_sets, true, rope),
-        CommonEditMsg::LineBegin { selecting } => (0, cursor_set.move_home(rope, selecting)),
-        CommonEditMsg::LineEnd { selecting } => (0, cursor_set.move_end(rope, selecting)),
-        CommonEditMsg::WordBegin { selecting } => (0, cursor_set.word_begin_default(rope, selecting)),
-        CommonEditMsg::WordEnd { selecting } => (0, cursor_set.word_end_default(rope, selecting)),
+        CommonEditMsg::LineBegin { selecting } => cursor_set.move_home(rope, selecting),
+        CommonEditMsg::LineEnd { selecting } => cursor_set.move_end(rope, selecting),
+        CommonEditMsg::WordBegin { selecting } => cursor_set.word_begin_default(rope, selecting),
+        CommonEditMsg::WordEnd { selecting } => cursor_set.word_end_default(rope, selecting),
         CommonEditMsg::PageUp { selecting } => {
             if page_height > PAGE_HEIGHT_LIMIT {
                 error!("received PageUp of page_height {}, ignoring.", page_height);
-                (0, false)
+                false
             } else {
-                (0, cursor_set.move_vertically_by(rope, -(page_height as isize), selecting))
+                cursor_set.move_vertically_by(rope, -(page_height as isize), selecting)
             }
         }
         CommonEditMsg::PageDown { selecting } => {
             if page_height > PAGE_HEIGHT_LIMIT {
                 error!("received PageDown of page_height {}, ignoring.", page_height);
-                (0, false)
+                false
             } else {
-                (0, cursor_set.move_vertically_by(rope, page_height as isize, selecting))
+                cursor_set.move_vertically_by(rope, page_height as isize, selecting)
             }
         }
         CommonEditMsg::Delete => handle_backspace_and_delete(cursor_set, observer_cursor_sets, false, rope),
@@ -594,10 +598,10 @@ pub fn _apply_cem(
                     }
                 }
 
-                (0, clipboard.set(contents))
+                clipboard.set(contents)
             } else {
                 warn!("copy without a clipboard, ignoring");
-                (0, false)
+                false
             }
         }
         CommonEditMsg::Paste => {
@@ -606,7 +610,7 @@ pub fn _apply_cem(
                 let contents = clipboard.get();
                 if contents.is_empty() {
                     warn!("not pasting empty contents");
-                    (0, false)
+                    false
                 } else {
                     let split_lines = contents.lines().count() == cursor_count;
                     // easy, each cursor gets full copy
@@ -616,24 +620,21 @@ pub fn _apply_cem(
                         let mut res = false;
                         let mut it = contents.lines();
                         let mut common_idx: usize = 0;
-                        let mut diff_len: usize = 0;
                         while let Some(line) = it.next() {
-                            let (dl, r) = insert_to_rope(cursor_set, observer_cursor_sets, rope, Some(common_idx), line);
-                            res |= r;
-                            diff_len += dl;
+                            res |= insert_to_rope(cursor_set, observer_cursor_sets, rope, Some(common_idx), line);
                             common_idx += 1;
                         }
 
-                        (diff_len, res)
+                        res
                     }
                 }
             } else {
                 warn!("paste without a clipboard, ignoring");
-                (0, false)
+                false
             }
         }
-        CommonEditMsg::Undo => (0, rope.undo()),
-        CommonEditMsg::Redo => (0, rope.redo()),
+        CommonEditMsg::Undo => rope.undo(),
+        CommonEditMsg::Redo => rope.redo(),
         CommonEditMsg::DeleteBlock { char_range } => remove_from_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_range),
         CommonEditMsg::InsertBlock { char_pos, what } => {
             insert_to_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_pos, &what)
@@ -652,28 +653,24 @@ pub fn _apply_cem(
                 let all_complex = cursor_set.iter().fold(true, |acc, c| acc && !c.is_simple());
                 if !all_complex {
                     error!("ignoring tab on mixed cursor set");
-                    (0, false)
+                    false
                 } else {
-                    let mut num_chars: usize = 0;
                     let mut modified = false;
 
                     let indices = cursors_to_line_indices(rope, cursor_set);
                     for line_idx in indices.into_iter() {
                         if let Some(char_begin_idx) = rope.line_to_char(line_idx) {
-                            let res = insert_to_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_begin_idx, &tab);
-                            num_chars += res.0;
-                            modified |= res.1;
+                            modified |= insert_to_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_begin_idx, &tab);
                         } else {
                             error!("failed casting line_idx to begin char (1)");
                         }
                     }
-                    (num_chars, modified)
+                    modified
                 }
             }
         }
         CommonEditMsg::ShiftTab => {
             let indices = cursors_to_line_indices(rope, cursor_set);
-            let mut chars_removed: usize = 0;
             let mut modified = false;
 
             for line_idx in indices.iter().rev() {
@@ -721,27 +718,27 @@ pub fn _apply_cem(
                         char_begin_idx..char_begin_idx + how_many_chars_to_eat,
                     );
 
-                    chars_removed += partial_res.0;
-                    modified |= partial_res.1;
+                    modified |= partial_res;
                 } else {
                     error!("failed casting line_idx to begin char (2)");
                 }
             }
 
-            (chars_removed, modified)
+            modified
         }
         CommonEditMsg::SubstituteBlock { char_range, with_what } => {
             let removal_result = if !char_range.is_empty() {
                 remove_from_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_range.clone())
             } else {
-                (0, true)
+                true
             };
 
-            if removal_result.1 {
-                let insertion_result = insert_to_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_range.start, &with_what);
-                (removal_result.0 + insertion_result.0, true)
+            if removal_result {
+                let _insertion_result =
+                    insert_to_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_range.start, &with_what);
+                true
             } else {
-                (0, false)
+                false
             }
         }
     };
