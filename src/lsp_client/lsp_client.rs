@@ -244,6 +244,10 @@ impl LspWrapper {
                     semantic_tokens: None,
                     code_lens: None,
                     file_operations: None,
+
+                    inline_value: None,
+                    inlay_hint: None,
+                    diagnostic: None,
                 }),
                 text_document: Some(lsp_types::TextDocumentClientCapabilities {
                     synchronization: None,
@@ -272,6 +276,11 @@ impl LspWrapper {
                     call_hierarchy: None,
                     semantic_tokens: None,
                     moniker: None,
+
+                    type_hierarchy: None,
+                    inline_value: None,
+                    inlay_hint: None,
+                    diagnostic: None,
                 }),
                 window: None,
                 general: None,
@@ -282,6 +291,7 @@ impl LspWrapper {
             client_info: None,
             // I specifically refuse to support any locale other than US English. Not sorry.
             locale: None,
+            work_done_progress_params: Default::default(),
         })?;
 
         //before returning I will send syn-ack as protocol demands.

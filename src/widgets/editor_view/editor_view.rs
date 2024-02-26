@@ -138,28 +138,28 @@ impl EditorView {
         if let Some(buffer_state) = self.get_buffer_ref().lock() {
             let path_op = buffer_state.get_path().cloned();
             let (idx_op, of) = buffer_state.get_wid_position(self.wid);
-            let idx = idx_op.unwrap_or_else({
+            let idx = idx_op.unwrap_or_else(|| {
                 error!("failed to translate widget id to viewer index, even though we're clearly a viewer. Returning safe default.");
                 0
             });
 
             if let Some(path) = path_op {
-                let path_str = path.file_name_str().unwrap_or_else({
+                let path_str = path.file_name_str().map(|c| c.to_owned()).unwrap_or_else(|| {
                     error!("buffer name pointing to directory");
-                    ("<error: dir at #{}>", self.wid)
+                    format!("<error: dir at #{}>", self.wid).to_string_2()
                 });
 
                 if of == 1 {
-                    format!("{}", path_str).to_string()
+                    format!("{}", path_str).to_string_2()
                 } else {
-                    format!("{} #{}", path_str, idx).to_string()
+                    format!("{} #{}", path_str, idx).to_string_2()
                 }
             } else {
-                format!("").to_string()
+                format!("").to_string_2()
             }
         } else {
             error!("failed to lock buffer to get the name of file at widget #{}", self.wid);
-            format!("<error: no lock at #{}>", self.wid).to_string()
+            format!("<error: no lock at #{}>", self.wid).to_string_2()
         }
     }
 

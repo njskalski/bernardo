@@ -26,7 +26,7 @@ pub trait Printable {
         GraphemeLinesStreamingIterator::new(self.graphemes())
     }
 
-    fn to_string(&self) -> String {
+    fn to_string_2(&self) -> String {
         let mut s = String::new();
 
         for g in self.graphemes() {

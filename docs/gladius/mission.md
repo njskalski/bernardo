@@ -2,9 +2,17 @@
 
 Gladius is editor that "just works" and "fucks off".
 
-"Just works" means: you don't need to troubleshoot to figure out why code navigation doesn't work. It should "just work"
-with majority (say 80%) of projects found in the wild with **zero config**. That's a ambitious goal, but by no means
-impossible. Just far out.
+## "Just works" means:
+
+### You don't need to configure it
+
+No configuration means no troubleshooting.
+
+### Supports typical setups out-of-box
+
+Most projects in-the-wild use some kind of standarized setup. Like Makefile or Cargo.
+
+Support for these "defaults" will be built in directly into Gladius.
 
 ## "Fucks off" means:
 
@@ -40,8 +48,11 @@ that shit right away and warn all your friends "this manufacturer went mad".
 
 ### No mouse
 
-Mouse is a tool for graphics designers, radar operators and architects. Not for coders. If your IDE requires mouse,
-you're not doing it right.
+Mouse is a tool for graphics designers, radar operators and architects. It was successfully adapted to shooters. It's
+also useful with WYSIWYG editors, but these disappeared some time ago.
+
+If any IDE function requires use of mouse - it's a hindrance. Gladius solves this problem rather radically - the TUI
+library does not support mouse by design.
 
 ### No setup
 

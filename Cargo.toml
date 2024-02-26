@@ -14,14 +14,14 @@ name = "bernardo"
 #async-trait = "0.1.57"
 arbitrary = { version = "1", optional = true, features = ["derive"] }
 arboard = "3.1.1"
-cargo_toml = "0.15.1" # we need to go deeper.
+cargo_toml = "0.19.1" # we need to go deeper.
 clap = { version = "4.1.4", features = ["derive"] }
 clap-verbosity-flag = "2.0.0"
 crossterm = "0.26.0"
 crossbeam-channel = "0.5.1"
-dirs = "4.0.0"
+dirs = "5.0.1"
 either = "1.8.1"
-env_logger = "0.10.0"
+env_logger = "0.11.2"
 filesystem = "0.4.4"
 hex = "0.4.3"
 ignore = "0.4.18"
@@ -30,7 +30,7 @@ jsonrpc-core = "18.0.0"
 jsonrpc-core-client = "18.0.0"
 lazy_static = "1.4.0"
 libfuzzer-sys = { version = "0.4.0", features = ["arbitrary-derive"] }
-lsp-types = "0.93.0"
+lsp-types = "0.95.0"
 log = "0.4.14"
 maplit = "1.0.2"
 matches = "0.1.9"

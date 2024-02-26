@@ -160,7 +160,7 @@ impl TreeSitterWrapper {
             }
         };
 
-        let id_to_name: Vec<Arc<String>> = query.capture_names().iter().map(|cn| Arc::new(cn.to_owned())).collect();
+        let id_to_name: Vec<Arc<String>> = query.capture_names().iter().map(|cn| Arc::new(cn.clone())).collect();
 
         Some(ParsingTuple {
             tree: None,

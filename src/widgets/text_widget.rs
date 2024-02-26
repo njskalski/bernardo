@@ -36,7 +36,7 @@ impl TextWidget {
     pub fn text_size(&self) -> XY {
         let mut size = XY::ZERO;
 
-        let _debug_text = self.text.to_string();
+        let _debug_text = Printable::to_string_2(self.text.as_ref());
 
         let mut line_it = self.text.lines();
         while let Some(line) = line_it.next() {
@@ -48,7 +48,7 @@ impl TextWidget {
     }
 
     pub fn get_text(&self) -> String {
-        self.text.to_string()
+        Printable::to_string_2(self.text.as_ref())
     }
 
     pub fn set_text(&mut self, text: Box<dyn Printable>) {
