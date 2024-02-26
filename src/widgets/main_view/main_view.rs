@@ -147,6 +147,9 @@ impl MainView {
         }
     }
 
+    /*
+    Returns items displayed under "browse buffers" menu.
+     */
     pub fn get_display_list_provider(&self) -> Box<dyn ItemsProvider> {
         Box::new(
             self.displays
@@ -155,14 +158,10 @@ impl MainView {
                 .map(|(idx, display)| {
                     match display {
                         MainViewDisplay::Editor(editor) => {
-                            let text = match editor.get_path() {
-                                None => {
-                                    format!("unnamed file #{}", idx)
-                                }
-                                Some(path) => path.label().to_string(),
-                            };
+                            let text = editor.get_name_desc();
 
                             // TODO unnecessary Rc over new
+                            // TODO see todo of get_name_desc
                             DisplayItem::new(idx, Rc::new(text))
                         }
                         MainViewDisplay::ResultsView(result) => {
@@ -376,7 +375,7 @@ impl Widget for MainView {
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.fuzzy_file => MainViewMsg::OpenFuzzyFiles.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.browse_buffers => {
                 if self.displays.is_empty() {
-                    debug!("ignoring browse_buffers request - no displays open.");
+                    warn!("ignoring browse_buffers request - no displays open.");
                     None
                 } else {
                     MainViewMsg::OpenFuzzyBuffers.someboxed()

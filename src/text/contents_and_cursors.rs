@@ -208,6 +208,16 @@ impl ContentsAndCursors {
     pub fn with_rope(self, rope: Rope) -> Self {
         Self { rope, ..self }
     }
+
+    /*
+    Returns tuple like "first of 3 in total" or "none of 2 in total"
+     */
+    pub fn get_wid_position(&self, wid: WID) -> (Option<usize>, usize) {
+        (
+            self.cursor_sets.iter().enumerate().find(|item| item.1 .0 == wid).map(|pair| pair.0),
+            self.cursor_sets.len(),
+        )
+    }
 }
 
 impl ToString for ContentsAndCursors {

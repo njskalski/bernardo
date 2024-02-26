@@ -1,4 +1,5 @@
 use log::{debug, error, warn};
+use ron::to_string;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
@@ -14,6 +15,7 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::common_edit_msgs::CommonEditMsg;
 use crate::primitives::has_invariant::HasInvariant;
+use crate::primitives::printable::Printable;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::search_pattern::SearchPattern;
@@ -125,22 +127,41 @@ impl EditorView {
         res
     }
 
-    // pub fn with_buffer(self, buffer: BufferSharedRef) -> Self {
-    //     let navcomp_op: Option<NavCompRef> = if let Some(buffer_lock) = buffer.lock() {
-    //         buffer_lock.get_path().map(|path| self.nav_comp_group.get_navcomp_for(path)).flatten()
-    //     } else {
-    //         error!("can't set navcomp - buffer lock aquisition failed");
-    //         None
-    //     };
-    //
-    //     let mut editor = self.editor;
-    //     editor.internal_mut().set_buffer(buffer, navcomp_op);
-    //
-    //     EditorView {
-    //         editor,
-    //         ..self
-    //     }
-    // }
+    /*
+    Returns SPath and index of "which viewer of this file am I", in most cases 0.
+
+    TODO eventually this method should be pushed down to buffer registry, where it can be aggregated
+    with others. Why? Because if we have two files with identical names, we have to distinguish
+    between them by adding difrerentiating prefixes.
+     */
+    pub fn get_name_desc(&self) -> String {
+        if let Some(buffer_state) = self.get_buffer_ref().lock() {
+            let path_op = buffer_state.get_path().cloned();
+            let (idx_op, of) = buffer_state.get_wid_position(self.wid);
+            let idx = idx_op.unwrap_or_else({
+                error!("failed to translate widget id to viewer index, even though we're clearly a viewer. Returning safe default.");
+                0
+            });
+
+            if let Some(path) = path_op {
+                let path_str = path.file_name_str().unwrap_or_else({
+                    error!("buffer name pointing to directory");
+                    ("<error: dir at #{}>", self.wid)
+                });
+
+                if of == 1 {
+                    format!("{}", path_str).to_string()
+                } else {
+                    format!("{} #{}", path_str, idx).to_string()
+                }
+            } else {
+                format!("").to_string()
+            }
+        } else {
+            error!("failed to lock buffer to get the name of file at widget #{}", self.wid);
+            format!("<error: no lock at #{}>", self.wid).to_string()
+        }
+    }
 
     pub fn get_buffer_ref(&self) -> &BufferSharedRef {
         self.editor.internal().get_buffer()

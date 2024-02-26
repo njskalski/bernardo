@@ -599,6 +599,14 @@ impl BufferState {
     pub fn can_undo(&self) -> bool {
         self.history_pos > 0
     }
+
+    /*
+    Tells "which of the viewers this widget id is".
+    Returns tuple like "first of 3 in total" or "none of 2 in total"
+    */
+    pub fn get_wid_position(&self, wid: WID) -> (Option<usize>, usize) {
+        self.text().get_wid_position(wid)
+    }
 }
 
 impl HasInvariant for BufferState {
