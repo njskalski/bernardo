@@ -1,4 +1,6 @@
-use log::{warn, LevelFilter};
+use std::process::exit;
+
+use log::LevelFilter;
 
 const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     // this is for git ignore
@@ -43,21 +45,27 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
 
 pub fn logger_setup(level_filter: LevelFilter) {
     // global logger setting
-    let mut logger_builder = env_logger::builder();
+    // let mut logger_builder = env_logger::builder();
+
+    let mut logger_builder = flexi_logger::LogSpecification::builder();
+    logger_builder.default(level_filter);
 
     #[cfg(not(debug_assertions))]
     logger_builder.filter_level(LevelFilter::Off);
 
     #[cfg(debug_assertions)]
-    logger_builder.filter_level(level_filter);
+    // logger_builder.filter_level(level_filter);
+
     // specific logger settings
     for item in DEBUG_PARAMS {
-        logger_builder.filter(Some(item.0), item.1);
+        logger_builder.module(item.0, item.1);
     }
-    match logger_builder.try_init() {
+
+    match flexi_logger::Logger::with(logger_builder.build()).start() {
         Ok(_) => {}
         Err(e) => {
-            warn!("failed initializing log: {:?}", e);
+            eprintln!("failed to initialize logger: {:?}", e);
+            exit(1);
         }
     }
 }
