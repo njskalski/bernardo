@@ -1,4 +1,5 @@
 use std::ffi::OsStr;
+use std::io::stdout;
 use std::option::Option;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
@@ -6,6 +7,7 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 use crossbeam_channel::{select, Receiver, Sender};
+use flexi_logger::Duplicate;
 use log::{debug, error, warn, LevelFilter};
 
 use crate::config::config::{Config, ConfigRef};
@@ -124,12 +126,19 @@ impl FullSetupBuilder {
         if self.should_capture_logs {
             let (sender, receiver) = crossbeam_channel::unbounded::<String>();
 
-            env_logger::Builder::default()
-                .is_test(true)
-                // .target(Target::Pipe(Box::new(CapturingLogger { sender })))
-                .init();
+            let spec = flexi_logger::LogSpecification::builder().build();
+            flexi_logger::Logger::with(spec)
+                .add_writer("capturing_logger", Box::new(CapturingLogger { sender }))
+                .duplicate_to_stderr(Duplicate::All)
+                .start()
+                .expect("failed to init logging");
 
-            log::set_boxed_logger(Box::new(CapturingLogger { sender })).unwrap();
+            // env_logger::Builder::default()
+            //     .is_test(true)
+            //     // .target(Target::Pipe(Box::new(CapturingLogger { sender })))
+            //     .init();
+
+            // log::set_boxed_logger(Box::new(CapturingLogger { sender })).unwrap();
 
             logs_receiver_op = Some(receiver);
         }

@@ -31,7 +31,10 @@ struct Args {
 }
 
 fn main() {
-    env_logger::builder().init();
+    // env_logger::builder().init();
+    flexi_logger::Logger::with(flexi_logger::LogSpecification::default())
+        .start()
+        .expect("failed to init logger");
 
     let args = Args::parse();
 

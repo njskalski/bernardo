@@ -1,3 +1,4 @@
+use flexi_logger::DeferredNow;
 use log::{Log, Metadata, Record};
 
 pub struct CapturingLogger {
@@ -17,4 +18,15 @@ impl Log for CapturingLogger {
     }
 
     fn flush(&self) {}
+}
+
+impl flexi_logger::writers::LogWriter for CapturingLogger {
+    fn write(&self, now: &mut DeferredNow, record: &Record) -> std::io::Result<()> {
+        self.log(record);
+        std::io::Result::Ok(())
+    }
+
+    fn flush(&self) -> std::io::Result<()> {
+        std::io::Result::Ok(())
+    }
 }
