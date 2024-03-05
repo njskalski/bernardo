@@ -13,10 +13,11 @@ use crate::mocks::mock_output::MockOutput;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
+use crate::widgets::nested_menu::tests::mock_provider::MockNestedMenuItem;
 use crate::widgets::nested_menu::widget::NestedMenuWidget;
 
 pub struct NestedMenuTestbed {
-    pub nested_menu: NestedMenuWidget,
+    pub nested_menu: NestedMenuWidget<String, MockNestedMenuItem>,
     pub size: XY,
     pub config: ConfigRef,
     pub clipboard: ClipboardRef,

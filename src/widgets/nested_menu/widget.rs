@@ -1,25 +1,56 @@
+use std::collections::HashSet;
+use std::fmt::Debug;
+use std::hash::Hash;
+use std::marker::PhantomData;
+use log::warn;
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
+use crate::io::input_event::InputEvent::KeyInput;
+use crate::io::keys::{Key, Keycode};
 use crate::io::output::Output;
+use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::widget::{WID, Widget};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widgets::button::ButtonWidgetMsg;
+use crate::widgets::nested_menu;
+use crate::widgets::nested_menu::msg::Msg;
 
 /*
 This describes a simple context menu.
 For first version, options remain fixed (no adding/deleting)
  */
 
-pub struct NestedMenuWidget {
+pub struct NestedMenuWidget<Key: Hash + Eq + Debug, Item : TreeNode<Key>> {
     wid : WID,
+
+    max_size : XY,
+
+    layout_size : Option<XY>,
+    selected_nodes : Vec<String>,
+
+    selected_row_idx : usize,
+
+    root : Item,
+    _phantom : PhantomData<Key>
 }
 
-impl NestedMenuWidget {
-
+impl<Key: Hash + Eq + Debug, Item : TreeNode<Key>> NestedMenuWidget<Key, Item> {
+    pub fn new(root_node : Item, max_size : XY) -> Self {
+        NestedMenuWidget {
+            wid: get_new_widget_id(),
+            max_size,
+            layout_size: None,
+            selected_nodes: Default::default(),
+            selected_row_idx: 0,
+            root: root_node,
+            _phantom: Default::default(),
+        }
+    }
 }
 
-impl Widget for NestedMenuWidget {
+impl<Key: Hash + Eq + Debug + 'static, Item : TreeNode<Key> + 'static> Widget for NestedMenuWidget<Key, Item> {
     fn id(&self) -> WID {
         self.wid
     }
@@ -33,22 +64,46 @@ impl Widget for NestedMenuWidget {
     }
 
     fn full_size(&self) -> XY {
-        todo!()
+        self.max_size
     }
 
     fn layout(&mut self, screenspace: Screenspace) {
-        todo!()
+        let actual_size = screenspace.output_size();
+        self.layout_size = Some(actual_size);
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        todo!()
+        return match input_event {
+            KeyInput(key_event) => match key_event.keycode {
+                Keycode::Enter => Some(Box::new(nested_menu::msg::Msg::Hit)),
+                _ => None,
+            },
+            _ => None,
+        }
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        todo!()
+        let our_msg = msg.as_msg::<nested_menu::msg::Msg>();
+        if our_msg.is_none() {
+            warn!("expecetd nested_menu Msg, got {:?}", msg);
+            return None;
+        }
+
+        match our_msg.unwrap() {
+            Msg::Hit => {
+
+            }
+        }
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        todo!()
+        let item_expanded : u16 = 0;
+
+        let mut expanded_items : u16 = 0;
+
+        // TODO overflow
+        for y in 0..std::cmp::min(self.selected_nodes.len() as u16, output.size().y) {
+            
+        }
     }
 }

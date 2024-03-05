@@ -1,40 +1,33 @@
+use std::borrow::Cow;
 use crate::primitives::printable::Printable;
-use crate::widgets::nested_menu::provider::{NestedMenuItem, NestedMenuProvider, NodeType};
+use crate::primitives::tree::tree_node::TreeNode;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MockNestedMenuItem {
     pub name : String,
     pub children : Vec<MockNestedMenuItem>
 }
 
-impl NestedMenuItem for MockNestedMenuItem {
-    fn display_name(&self) -> impl Printable {
-        self.name.as_str()
+impl TreeNode<String> for MockNestedMenuItem {
+    fn id(&self) -> &String {
+        &self.name
     }
 
-    fn node_type(&self) -> NodeType {
-        if self.children.is_empty() {
-            NodeType::Leaf
-        } else {
-            NodeType::Branch
-        }
+    fn label(&self) -> Cow<str> {
+        self.name.as_str().into()
     }
 
-    fn children(&self) -> impl Iterator<Item=&Self> {
-        self.children.iter()
+    fn is_leaf(&self) -> bool {
+        self.children.is_empty()
     }
-}
 
-struct MockNestedMenuProvider {
+    fn child_iter(&self) -> Box<dyn Iterator<Item=Self>> {
+        Box::new(self.children.clone().into_iter())
+    }
 
-}
-
-impl MockNestedMenuProvider {
-
-}
-
-impl NestedMenuProvider<MockNestedMenuItem> for MockNestedMenuProvider {
-
+    fn is_complete(&self) -> bool {
+        true
+    }
 }
 
 pub fn get_mock_data() -> MockNestedMenuItem {
