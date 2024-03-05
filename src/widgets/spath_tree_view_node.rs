@@ -4,7 +4,8 @@ use std::fmt::Debug;
 use log::error;
 
 use crate::fs::path::SPath;
-use crate::widgets::tree_view::tree_view_node::TreeViewNode;
+use crate::primitives::tree::tree_node::TreeNode;
+
 
 #[derive(Debug, Clone)]
 pub struct DirTreeNode {
@@ -36,7 +37,7 @@ impl FileTreeNode {
     }
 }
 
-impl TreeViewNode<SPath> for FileTreeNode {
+impl TreeNode<SPath> for FileTreeNode {
     fn id(&self) -> &SPath {
         &self.sp
     }
@@ -64,7 +65,7 @@ impl TreeViewNode<SPath> for FileTreeNode {
     }
 }
 
-impl TreeViewNode<SPath> for DirTreeNode {
+impl TreeNode<SPath> for DirTreeNode {
     fn id(&self) -> &SPath {
         &self.sp
     }

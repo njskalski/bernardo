@@ -28,3 +28,5 @@ pub mod styled_printable;
 mod rope_as_buffer_state;
 #[cfg(test)]
 mod tests;
+pub mod tree;
+mod maybe_bool;

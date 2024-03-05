@@ -36,3 +36,32 @@ impl MockNestedMenuProvider {
 impl NestedMenuProvider<MockNestedMenuItem> for MockNestedMenuProvider {
 
 }
+
+pub fn get_mock_data() -> MockNestedMenuItem {
+    MockNestedMenuItem {
+        name: "menu1".to_string(),
+        children: vec![
+            MockNestedMenuItem {
+                name: "option1".to_string(),
+                children: vec![],
+            },
+            MockNestedMenuItem {
+                name: "option2".to_string(),
+                children: vec![],
+            },
+            MockNestedMenuItem {
+                name: "submenu".to_string(),
+                children: vec![
+                    MockNestedMenuItem {
+                        name: "child1".to_string(),
+                        children: vec![],
+                    },
+                    MockNestedMenuItem {
+                        name: "child2".to_string(),
+                        children: vec![],
+                    }
+                ],
+            }
+        ],
+    }
+}

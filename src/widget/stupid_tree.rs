@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::rc::Rc;
+use crate::primitives::tree::tree_node::TreeNode;
 
-use crate::widgets::tree_view::tree_view_node::TreeViewNode;
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone)]
 pub struct StupidTree {
@@ -18,7 +18,7 @@ impl StupidTree {
     }
 }
 
-impl TreeViewNode<usize> for Rc<StupidTree> {
+impl TreeNode<usize> for Rc<StupidTree> {
     fn id(&self) -> &usize {
         &self.id
     }
