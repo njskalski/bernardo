@@ -12,6 +12,7 @@ fn nested_menu_1() {
     let mut testbed = NestedMenuTestbed::new();
 
     testbed.next_frame();
+    assert_eq!(testbed.frame_op().unwrap().get_nested_menus().count(), 1);
 
     screenshot(&testbed.frame_op().unwrap().buffer);
 }

@@ -12,6 +12,8 @@ use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::{Key, Keycode};
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
+use crate::primitives::arrow::Arrow;
+use crate::primitives::printable::Printable;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
@@ -27,7 +29,9 @@ For first version, options remain fixed (no adding/deleting)
 There is no optimisation here whatsoever. First let it work, second write the test, then optimise.
  */
 
-pub struct NestedMenuWidget<Key: Hash + Eq + Debug, Item: TreeNode<Key>> {
+pub const NESTED_MENU_TYPENAME: &'static str = "nested_menu";
+
+pub struct NestedMenuWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
     wid: WID,
 
     max_size: XY,
@@ -44,7 +48,7 @@ pub struct NestedMenuWidget<Key: Hash + Eq + Debug, Item: TreeNode<Key>> {
     _phantom: PhantomData<Key>,
 }
 
-impl<Key: Hash + Eq + Debug, Item: TreeNode<Key>> NestedMenuWidget<Key, Item> {
+impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> NestedMenuWidget<Key, Item> {
 
     pub const EXPANSION_WIDTH : u16 = 2;
     pub fn new(root_node: Item, max_size: XY) -> Self {
@@ -75,9 +79,20 @@ impl<Key: Hash + Eq + Debug, Item: TreeNode<Key>> NestedMenuWidget<Key, Item> {
 
         Some(item)
     }
+
+    fn get_selected_item(&self) -> Option<Item> {
+        self.get_subtree().map(|subtree| {
+            subtree.child_iter().skip(self.selected_row_idx as usize).next()
+        }).flatten()
+    }
+
+    fn get_subtree_height(&self) -> u16 {
+        // TODO overflow
+        self.get_subtree().map(|item| item.child_iter().count()).unwrap_or(0) as u16
+    }
 }
 
-impl<Key: Hash + Eq + Debug + 'static, Item: TreeNode<Key> + 'static> Widget for NestedMenuWidget<Key, Item> {
+impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Widget for NestedMenuWidget<Key, Item> {
     fn id(&self) -> WID {
         self.wid
     }
@@ -105,9 +120,24 @@ impl<Key: Hash + Eq + Debug + 'static, Item: TreeNode<Key> + 'static> Widget for
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         return match input_event {
             KeyInput(key_event) => match key_event.keycode {
-                Keycode::Enter => Some(Box::new(nested_menu::msg::Msg::Hit)),
+                Keycode::Enter => Some(Box::new(Msg::Hit)),
+                Keycode::ArrowUp => {
+                    if self.selected_row_idx > 0 {
+                        Some(Box::new(Msg::Arrow(Arrow::Up)))
+                    } else {
+                        None
+                    }
+                },
+                Keycode::ArrowDown => {
+                    if self.get_subtree_height() > self.selected_row_idx + 1 {
+                        Some(Box::new(Msg::Arrow(Arrow::Down)))
+                    } else {
+                        None
+                    }
+                },
                 _ => None,
             },
+
             _ => None,
         };
     }
@@ -119,13 +149,40 @@ impl<Key: Hash + Eq + Debug + 'static, Item: TreeNode<Key> + 'static> Widget for
             return None;
         }
 
-        match our_msg.unwrap() {
-            Msg::Hit => None,
+        return match our_msg.unwrap() {
+            Msg::Hit => {
+                if let Some(item) = self.get_selected_item() {
+                    if item.is_leaf() {
+                        // TODO action
+                        None
+                    } else {
+                        self.selected_nodes.push(
+                            (item.id().clone(), item.label().to_string())
+                        );
+                        None
+                    }
+                } else {
+                    warn!("did not get selected item!");
+                    None
+                }
+            }
             _ => None,
-        }
+        };
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(test)]
+        {
+            let size = crate::unpack_unit_e!(self.layout_size, "render before layout",);
+
+            output.emit_metadata(crate::io::output::Metadata {
+                id: self.id(),
+                typename: NESTED_MENU_TYPENAME.to_string(),
+                rect: crate::primitives::rect::Rect::from_zero(size),
+                focused,
+            });
+        }
+
         let item_expanded: u16 = 0;
         let mut expanded_items: u16 = 0;
 

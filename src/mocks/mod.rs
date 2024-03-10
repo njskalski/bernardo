@@ -28,3 +28,4 @@ pub mod savefile_interpreter;
 pub mod scroll_interpreter;
 pub mod treeview_interpreter;
 pub mod with_scroll_interpreter;
+pub mod nested_menu_interpreter;

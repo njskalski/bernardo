@@ -1,6 +1,5 @@
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
-use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::screen_shot::screenshot;
 use crate::experiments::screenspace::Screenspace;
 use crate::gladius::paradigm::recursive_treat_views;
@@ -8,8 +7,8 @@ use crate::io::input_event::InputEvent;
 use crate::io::output::FinalOutput;
 use crate::mocks::editor_interpreter::EditorInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
-use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
 use crate::mocks::mock_output::MockOutput;
+use crate::mocks::nested_menu_interpreter::NestedMenuInterpreter;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
@@ -38,8 +37,10 @@ impl NestedMenuTestbed {
         }
 
     }
-    pub fn editor(&self) -> Option<EditorInterpreter> {
-        self.last_frame.as_ref().and_then(|frame| frame.get_editors().next())
+    pub fn editor(&self) -> Option<NestedMenuInterpreter>{
+        self.last_frame.as_ref().map(|frame| {
+            frame.get_nested_menus().next()
+        }).flatten()
     }
 
     pub fn next_frame(&mut self) {
