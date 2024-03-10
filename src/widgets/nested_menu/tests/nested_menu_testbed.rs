@@ -13,26 +13,31 @@ use crate::mocks::mock_output::MockOutput;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
-use crate::widgets::nested_menu::tests::mock_provider::MockNestedMenuItem;
+use crate::widgets::nested_menu::tests::mock_provider::{get_mock_data, MockNestedMenuItem};
 use crate::widgets::nested_menu::widget::NestedMenuWidget;
 
 pub struct NestedMenuTestbed {
     pub nested_menu: NestedMenuWidget<String, MockNestedMenuItem>,
     pub size: XY,
     pub config: ConfigRef,
-    pub clipboard: ClipboardRef,
     pub theme: Theme,
     pub last_frame: Option<MetaOutputFrame>,
-    pub mock_navcomp_pilot: MockNavCompProviderPilot,
 }
-
 
 
 impl NestedMenuTestbed {
     pub fn new() -> Self {
-        todo!()
-    }
+        let size = XY::new(30,  20);
 
+        NestedMenuTestbed {
+            nested_menu: NestedMenuWidget::new(get_mock_data(), size),
+            size,
+            config: Default::default(),
+            theme: Default::default(),
+            last_frame: None,
+        }
+
+    }
     pub fn editor(&self) -> Option<EditorInterpreter> {
         self.last_frame.as_ref().and_then(|frame| frame.get_editors().next())
     }
