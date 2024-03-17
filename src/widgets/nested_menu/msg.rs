@@ -1,14 +1,13 @@
-use std::fmt::{Debug, Formatter};
-use crate::primitives::arrow::Arrow;
+use std::fmt::Debug;
+
+use crate::primitives::arrow::VerticalArrow;
 use crate::widget::any_msg::AnyMsg;
 
 #[derive(Debug)]
 pub enum Msg {
     Hit,
-    Arrow(Arrow),
-    Backspace
+    Arrow(VerticalArrow),
+    UnwrapOneLevel,
 }
 
-
-impl AnyMsg for Msg {
-}
+impl AnyMsg for Msg {}

@@ -12,14 +12,15 @@ use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::{Key, Keycode};
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
-use crate::primitives::arrow::Arrow;
+use crate::primitives::arrow::{Arrow, HorizontalArrow, VerticalArrow};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::printable::Printable;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
-use crate::widget::any_msg::AnyMsg;
+use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::button::ButtonWidgetMsg;
+use crate::widgets::list_widget::provider::ListItemProvider;
 use crate::widgets::nested_menu;
 use crate::widgets::nested_menu::msg::Msg;
 
@@ -140,14 +141,28 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Wi
                 Keycode::Enter => Some(Box::new(Msg::Hit)),
                 Keycode::ArrowUp => {
                     if self.selected_row_idx > 0 {
-                        Some(Box::new(Msg::Arrow(Arrow::Up)))
+                        Msg::Arrow(VerticalArrow::Up).someboxed()
                     } else {
                         None
                     }
                 }
                 Keycode::ArrowDown => {
                     if self.get_subtree_height() > self.selected_row_idx + 1 {
-                        Some(Box::new(Msg::Arrow(Arrow::Down)))
+                        Msg::Arrow(VerticalArrow::Down).someboxed()
+                    } else {
+                        None
+                    }
+                }
+                Keycode::ArrowRight => {
+                    if self.get_selected_item().map(|item| item.is_leaf() == false).unwrap_or(false) {
+                        Msg::Hit.someboxed()
+                    } else {
+                        None
+                    }
+                }
+                Keycode::ArrowLeft => {
+                    if self.selected_nodes.is_empty() == false {
+                        Msg::UnwrapOneLevel.someboxed()
                     } else {
                         None
                     }
@@ -174,10 +189,53 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Wi
                         None
                     } else {
                         self.selected_nodes.push((item.id().clone(), item.label().to_string()));
+                        self.selected_row_idx = 0;
                         None
                     }
                 } else {
                     warn!("did not get selected item!");
+                    None
+                }
+            }
+            Msg::Arrow(arrow) => match arrow {
+                VerticalArrow::Up => {
+                    if self.selected_row_idx > 0 {
+                        self.selected_row_idx -= 1;
+                    } else {
+                        error!("can't arrow up");
+                    }
+                    None
+                }
+                VerticalArrow::Down => {
+                    if self.selected_row_idx + 1 < self.get_subtree_height() {
+                        self.selected_row_idx += 1;
+                    } else {
+                        error!("can't arrow down");
+                    }
+                    None
+                }
+            },
+            Msg::UnwrapOneLevel => {
+                if self.selected_nodes.is_empty() {
+                    error!("can't unwrap one level");
+                    None
+                } else {
+                    let last_item = self.selected_nodes.pop().unwrap().0;
+                    let idx = if let Some(subtree) = self.get_subtree() {
+                        let mut idx: u16 = 0;
+                        for item in subtree.child_iter() {
+                            if *item.id() == last_item {
+                                break;
+                            }
+                            idx += 1;
+                        }
+                        idx
+                    } else {
+                        error!("can't figure out selected index from ");
+                        0
+                    };
+
+                    self.selected_row_idx = idx;
                     None
                 }
             }
@@ -238,6 +296,10 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Wi
                     output.print_at(XY::new(x_offset, y_offset + idx), style, "> ");
                 } else {
                     output.print_at(XY::new(x_offset, y_offset + idx), style, "  ");
+                }
+
+                for x in 0..x_offset {
+                    output.print_at(XY::new(x, y_offset + idx), style, " ");
                 }
 
                 output.print_at(

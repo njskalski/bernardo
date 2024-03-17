@@ -35,6 +35,7 @@ impl<'a> NestedMenuInterpreter<'a> {
         }
     }
 
+    // Returns only *drawn* items, and we skip drawing a lot of nodes that are not of user's interest.
     // TODO will silently fail with folders starting with "v"
     pub fn get_items(&self) -> impl Iterator<Item = Item> {
         let rect = self.meta.rect;
@@ -99,6 +100,7 @@ impl<'a> NestedMenuInterpreter<'a> {
             if first_letter_style == crate::widgets::nested_menu::widget::get_expanded_style(&self.mock_output.theme, true) {
                 debug_assert!(style_found == false);
                 item.status = Status::Expanded;
+                item.leaf = false;
                 style_found = true;
             }
             debug_assert!(style_found);
@@ -109,7 +111,7 @@ impl<'a> NestedMenuInterpreter<'a> {
         result.into_iter()
     }
 
-    pub fn get_selected_item(&self) -> Item {
-        self.get_items().filter(|item| item.status == Status::Highlight).next().unwrap()
+    pub fn get_selected_item(&self) -> Option<Item> {
+        self.get_items().filter(|item| item.status == Status::Highlight).next()
     }
 }
