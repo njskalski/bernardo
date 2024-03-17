@@ -1,5 +1,6 @@
 use std::default::Default;
 use std::fmt::{Debug, Formatter};
+use std::ops::Range;
 
 use log::{debug, warn};
 use unicode_segmentation::UnicodeSegmentation;
@@ -125,6 +126,17 @@ impl BufferOutput {
         }
 
         Some(res)
+    }
+
+    pub fn get_horizontal_piece(&self, x: Range<u16>, y: u16) -> Option<BufferConsistentItemsIter> {
+        if x.end > self.size().x {
+            return None;
+        }
+        if y >= self.size().y {
+            return None;
+        }
+
+        Some(BufferConsistentItemsIter::new(&self).with_rect(Rect::new(XY::new(x.start, y), XY::new(x.end, y + 1))))
     }
 }
 

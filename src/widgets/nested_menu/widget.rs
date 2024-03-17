@@ -13,6 +13,7 @@ use crate::io::keys::{Key, Keycode};
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::arrow::Arrow;
+use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::printable::Printable;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
@@ -30,6 +31,9 @@ There is no optimisation here whatsoever. First let it work, second write the te
  */
 
 pub const NESTED_MENU_TYPENAME: &'static str = "nested_menu";
+pub const NESTED_MENU_FOLDER_CLOSED: char = '>';
+pub const NESTED_MENU_FOLDER_OPENED: char = 'v';
+pub const NESTED_MENU_FOLDER_WIDHT: u16 = 2;
 
 pub struct NestedMenuWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
     wid: WID,
@@ -48,9 +52,22 @@ pub struct NestedMenuWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>
     _phantom: PhantomData<Key>,
 }
 
-impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> NestedMenuWidget<Key, Item> {
+pub fn get_highlighted_style(theme: &Theme, focused: bool) -> TextStyle {
+    theme.highlighted(focused)
+}
 
-    pub const EXPANSION_WIDTH : u16 = 2;
+pub fn get_expanded_style(theme: &Theme, focused: bool) -> TextStyle {
+    let highlighted = theme.highlighted(focused);
+    let default = theme.default_text(focused);
+
+    TextStyle::new(highlighted.foreground, default.background, Effect::None)
+}
+
+pub fn get_default_style(theme: &Theme, focused: bool) -> TextStyle {
+    theme.default_text(focused)
+}
+
+impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> NestedMenuWidget<Key, Item> {
     pub fn new(root_node: Item, max_size: XY) -> Self {
         NestedMenuWidget {
             wid: get_new_widget_id(),
@@ -81,9 +98,9 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> NestedMenuWidget<Key, 
     }
 
     fn get_selected_item(&self) -> Option<Item> {
-        self.get_subtree().map(|subtree| {
-            subtree.child_iter().skip(self.selected_row_idx as usize).next()
-        }).flatten()
+        self.get_subtree()
+            .map(|subtree| subtree.child_iter().skip(self.selected_row_idx as usize).next())
+            .flatten()
     }
 
     fn get_subtree_height(&self) -> u16 {
@@ -127,14 +144,14 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Wi
                     } else {
                         None
                     }
-                },
+                }
                 Keycode::ArrowDown => {
                     if self.get_subtree_height() > self.selected_row_idx + 1 {
                         Some(Box::new(Msg::Arrow(Arrow::Down)))
                     } else {
                         None
                     }
-                },
+                }
                 _ => None,
             },
 
@@ -156,9 +173,7 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Wi
                         // TODO action
                         None
                     } else {
-                        self.selected_nodes.push(
-                            (item.id().clone(), item.label().to_string())
-                        );
+                        self.selected_nodes.push((item.id().clone(), item.label().to_string()));
                         None
                     }
                 } else {
@@ -186,27 +201,27 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Wi
         let item_expanded: u16 = 0;
         let mut expanded_items: u16 = 0;
 
-        let base = theme.default_text(focused);
-        let cursor = theme.highlighted(true);
-        let selected_nodes = TextStyle::new(cursor.foreground, base.background, Effect::None);
+        let base_style = get_default_style(theme, focused);
+        let cursor_style = get_highlighted_style(theme, focused);
+        let expanded_nodes_style = get_expanded_style(theme, focused);
 
         // TODO overflow
         for y in 0..std::cmp::min(self.selected_nodes.len() as u16, output.size().y) {
-            let begin_pos = XY::new(y * Self::EXPANSION_WIDTH, y);
-            output.print_at(begin_pos, selected_nodes, self.selected_nodes[y as usize].1.as_str())
+            let begin_pos = XY::new(y * NESTED_MENU_FOLDER_WIDHT, y);
+            output.print_at(begin_pos, expanded_nodes_style, self.selected_nodes[y as usize].1.as_str())
         }
 
-        let left_height : u16 = if output.size().y as usize > self.selected_nodes.len() {
+        let left_height: u16 = if output.size().y as usize > self.selected_nodes.len() {
             output.size().y - (self.selected_nodes.len() as u16)
         } else {
             0
         };
 
-        let x_offset: u16 = Self::EXPANSION_WIDTH * (self.selected_nodes.len() as u16);
+        let x_offset: u16 = NESTED_MENU_FOLDER_WIDHT * (self.selected_nodes.len() as u16);
         let y_offset: u16 = self.selected_nodes.len() as u16; // TODO overflow
 
         if let Some(subtree) = self.get_subtree() {
-            let mut idx : u16 = 0;
+            let mut idx: u16 = 0;
             for item in subtree.child_iter() {
                 if idx >= left_height {
                     break;
@@ -220,21 +235,16 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Wi
                 };
 
                 if item.is_leaf() == false {
-                    output.print_at(XY::new(x_offset, y_offset + idx),
-                                    style,
-                                    "> ");
+                    output.print_at(XY::new(x_offset, y_offset + idx), style, "> ");
                 } else {
-                    output.print_at(XY::new(x_offset, y_offset + idx),
-                                    style,
-                                    "  ");
+                    output.print_at(XY::new(x_offset, y_offset + idx), style, "  ");
                 }
 
                 output.print_at(
-                    XY::new(x_offset + Self::EXPANSION_WIDTH, y_offset + idx),
+                    XY::new(x_offset + 1 * NESTED_MENU_FOLDER_WIDHT, y_offset + idx),
                     style,
-                    item.label().as_ref()
+                    item.label().as_ref(),
                 );
-
 
                 idx += 1;
             }

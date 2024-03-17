@@ -14,5 +14,7 @@ fn nested_menu_1() {
     testbed.next_frame();
     assert_eq!(testbed.frame_op().unwrap().get_nested_menus().count(), 1);
 
+    assert_eq!(testbed.nested_menu().unwrap().get_selected_item().label, "option1".to_string());
+
     screenshot(&testbed.frame_op().unwrap().buffer);
 }

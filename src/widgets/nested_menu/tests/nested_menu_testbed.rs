@@ -5,7 +5,6 @@ use crate::experiments::screenspace::Screenspace;
 use crate::gladius::paradigm::recursive_treat_views;
 use crate::io::input_event::InputEvent;
 use crate::io::output::FinalOutput;
-use crate::mocks::editor_interpreter::EditorInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_output::MockOutput;
 use crate::mocks::nested_menu_interpreter::NestedMenuInterpreter;
@@ -23,10 +22,9 @@ pub struct NestedMenuTestbed {
     pub last_frame: Option<MetaOutputFrame>,
 }
 
-
 impl NestedMenuTestbed {
     pub fn new() -> Self {
-        let size = XY::new(30,  20);
+        let size = XY::new(30, 20);
 
         NestedMenuTestbed {
             nested_menu: NestedMenuWidget::new(get_mock_data(), size),
@@ -35,12 +33,9 @@ impl NestedMenuTestbed {
             theme: Default::default(),
             last_frame: None,
         }
-
     }
-    pub fn editor(&self) -> Option<NestedMenuInterpreter>{
-        self.last_frame.as_ref().map(|frame| {
-            frame.get_nested_menus().next()
-        }).flatten()
+    pub fn nested_menu(&self) -> Option<NestedMenuInterpreter> {
+        self.last_frame.as_ref().map(|frame| frame.get_nested_menus().next()).flatten()
     }
 
     pub fn next_frame(&mut self) {
