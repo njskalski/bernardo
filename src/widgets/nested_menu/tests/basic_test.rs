@@ -177,3 +177,54 @@ fn nested_menu_6_arrow_right_expands() {
         "child1".to_string()
     );
 }
+
+#[test]
+fn nested_menu_7_arrow_left_collapses() {
+    let mut testbed = NestedMenuTestbed::new();
+
+    testbed.next_frame();
+
+    assert_eq!(
+        testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
+        "option1".to_string()
+    );
+
+    for _ in 0..2 {
+        testbed.push_input(Keycode::ArrowDown.to_key().to_input_event());
+    }
+
+    assert_eq!(
+        testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
+        "submenu".to_string()
+    );
+
+    testbed.push_input(Keycode::ArrowRight.to_key().to_input_event());
+
+    {
+        let items = testbed.nested_menu().unwrap().get_items().collect::<Vec<_>>();
+
+        assert_eq!(items[0].label, "submenu".to_string());
+        assert_eq!(items[1].label, "child1".to_string());
+        assert_eq!(items[2].label, "child2".to_string());
+
+        assert_eq!(items[0].leaf, false);
+        assert_eq!(items[1].leaf, true);
+        assert_eq!(items[2].leaf, true);
+    }
+
+    testbed.push_input(Keycode::ArrowLeft.to_key().to_input_event());
+
+    testbed.next_frame();
+
+    {
+        let items = testbed.nested_menu().unwrap().get_items().collect::<Vec<_>>();
+
+        assert_eq!(items[0].label, "option1".to_string());
+        assert_eq!(items[1].label, "option2".to_string());
+        assert_eq!(items[2].label, "submenu".to_string());
+
+        assert_eq!(items[0].leaf, true);
+        assert_eq!(items[1].leaf, true);
+        assert_eq!(items[2].leaf, false);
+    }
+}
