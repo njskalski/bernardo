@@ -23,6 +23,7 @@ pub mod mock_navcomp_loader;
 pub mod mock_navcomp_promise;
 pub mod mock_navcomp_provider;
 pub mod mock_output;
+pub mod nested_menu_interpreter;
 pub mod no_editor_interpreter;
 pub mod savefile_interpreter;
 pub mod scroll_interpreter;

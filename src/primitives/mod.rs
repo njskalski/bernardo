@@ -25,6 +25,8 @@ pub mod printable;
 pub mod scroll_enum;
 pub mod styled_printable;
 
+mod maybe_bool;
 mod rope_as_buffer_state;
 #[cfg(test)]
 mod tests;
+pub mod tree;

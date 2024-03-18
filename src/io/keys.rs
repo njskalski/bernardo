@@ -5,6 +5,7 @@ use serde::de::Visitor;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::experiments::focus_group::FocusUpdate;
+use crate::io::input_event::InputEvent;
 
 // TODO (hardening) here potentially impossible combinations, like ALT+LeftAlt are deserializable,
 // should be fixed someday
@@ -135,6 +136,10 @@ impl Key {
             },
             ..self
         }
+    }
+
+    pub fn to_input_event(self) -> InputEvent {
+        InputEvent::KeyInput(self)
     }
 }
 

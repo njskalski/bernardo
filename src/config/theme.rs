@@ -102,14 +102,17 @@ pub struct UiTheme {
 }
 
 lazy_static! {
+
+    // Some tests will start failing if default (focused, unfocused) x (higlight, non-highlight) matrix has non-unique cells.
+    // (like one in nested menu interpreter, that relies on these colors to tell apart what's what)
     static ref DEFAULT_FOCUSED_BACKGROUND: Color = ron::from_str("\"#282828\"").unwrap();
     static ref DEFAULT_FOCUSED_FOREGROUND: Color = ron::from_str("\"#928374\"").unwrap();
     static ref DEFAULT_NON_FOCUSED_BACKGROUND: Color = ron::from_str("\"#181818\"").unwrap();
     static ref DEFAULT_NON_FOCUSED_FOREGROUND: Color = ron::from_str("\"#928374\"").unwrap();
     static ref HIGHLIGHTED_FOCUSED_BACKGROUND: Color = ron::from_str("\"#383433\"").unwrap();
-    static ref HIGHLIGHTED_FOCUSED_FOREGROUND: Color = ron::from_str("\"#928374\"").unwrap();
+    static ref HIGHLIGHTED_FOCUSED_FOREGROUND: Color = ron::from_str("\"#928384\"").unwrap();
     static ref HIGHLIGHTED_NON_FOCUSED_BACKGROUND: Color = ron::from_str("\"#181818\"").unwrap();
-    static ref HIGHLIGHTED_NON_FOCUSED_FOREGROUND: Color = ron::from_str("\"#928374\"").unwrap();
+    static ref HIGHLIGHTED_NON_FOCUSED_FOREGROUND: Color = ron::from_str("\"#928384\"").unwrap();
     static ref PRIMARY_CURSOR_ANCHOR_BACKGROUND: Color = ron::from_str("\"#FFB81C\"").unwrap();
     static ref SECONDARY_CURSORS_ANCHOR_BACKGROUND: Color = ron::from_str("\"#ED7737\"").unwrap();
     static ref CURSORS_BACKGROUND: Color = ron::from_str("\"#852F00\"").unwrap();

@@ -1,16 +1,10 @@
+use crate::primitives::maybe_bool::MaybeBool;
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum MaybeBool {
-    False,
-    True,
-    Maybe,
-}
-
 // Keep it lightweight. It is expected to be implemented by Rc<some type>
-pub trait TreeViewNode<Key: Hash + Eq + Debug>: Clone + Debug {
+pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {
     fn id(&self) -> &Key;
     fn label(&self) -> Cow<str>;
     fn is_leaf(&self) -> bool;
