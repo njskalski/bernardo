@@ -4,6 +4,7 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use log::{error, warn};
+use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
@@ -32,8 +33,8 @@ There is no optimisation here whatsoever. First let it work, second write the te
  */
 
 pub const NESTED_MENU_TYPENAME: &'static str = "nested_menu";
-pub const NESTED_MENU_FOLDER_CLOSED: char = '>';
-pub const NESTED_MENU_FOLDER_OPENED: char = 'v';
+pub const NESTED_MENU_FOLDER_CLOSED: &'static str = ">";
+pub const NESTED_MENU_FOLDER_OPENED: &'static str = "v";
 pub const NESTED_MENU_FOLDER_WIDHT: u16 = 2;
 
 pub struct NestedMenuWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
@@ -244,10 +245,10 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Wi
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        let size = crate::unpack_unit_e!(self.layout_size, "render before layout",);
+
         #[cfg(test)]
         {
-            let size = crate::unpack_unit_e!(self.layout_size, "render before layout",);
-
             output.emit_metadata(crate::io::output::Metadata {
                 id: self.id(),
                 typename: NESTED_MENU_TYPENAME.to_string(),
@@ -263,10 +264,31 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Wi
         let cursor_style = get_highlighted_style(theme, focused);
         let expanded_nodes_style = get_expanded_style(theme, focused);
 
+        // drawing the expanded nodes
         // TODO overflow
         for y in 0..std::cmp::min(self.selected_nodes.len() as u16, output.size().y) {
-            let begin_pos = XY::new(y * NESTED_MENU_FOLDER_WIDHT, y);
-            output.print_at(begin_pos, expanded_nodes_style, self.selected_nodes[y as usize].1.as_str())
+            // ticker
+            {
+                let begin_pos = XY::new(y * NESTED_MENU_FOLDER_WIDHT, y);
+                output.print_at(begin_pos, expanded_nodes_style, NESTED_MENU_FOLDER_OPENED);
+
+                // TODO do a limited write
+                output.print_at(begin_pos + (1, 0), expanded_nodes_style, " ");
+            }
+
+            // the label
+            {
+                let begin_pos = XY::new((y + 1) * NESTED_MENU_FOLDER_WIDHT, y);
+                let text = self.selected_nodes[y as usize].1.as_str();
+                // TODO do a limited write
+                output.print_at(begin_pos, expanded_nodes_style, text);
+
+                // TODO overflow
+                // drawing rest of whitespace
+                for x in (begin_pos.x + text.width() as u16)..size.x {
+                    output.print_at(XY::new(x, begin_pos.y), expanded_nodes_style, " ");
+                }
+            }
         }
 
         let left_height: u16 = if output.size().y as usize > self.selected_nodes.len() {
@@ -302,11 +324,16 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Wi
                     output.print_at(XY::new(x, y_offset + idx), style, " ");
                 }
 
-                output.print_at(
-                    XY::new(x_offset + 1 * NESTED_MENU_FOLDER_WIDHT, y_offset + idx),
-                    style,
-                    item.label().as_ref(),
-                );
+                let begin_x = x_offset + 1 * NESTED_MENU_FOLDER_WIDHT;
+                let text_pos = XY::new(begin_x, y_offset + idx);
+
+                output.print_at(text_pos, style, item.label().as_ref());
+
+                // coloring until end of size
+                // TODO overflow
+                for x in (begin_x + item.label().width() as u16)..size.x {
+                    output.print_at(XY::new(x, text_pos.y), style, " ");
+                }
 
                 idx += 1;
             }

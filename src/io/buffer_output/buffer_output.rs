@@ -136,7 +136,7 @@ impl BufferOutput {
             return None;
         }
 
-        Some(BufferConsistentItemsIter::new(&self).with_rect(Rect::new(XY::new(x.start, y), XY::new(x.end, y + 1))))
+        Some(BufferConsistentItemsIter::new(&self).with_rect(Rect::new(XY::new(x.start, y), XY::new(x.end - x.start, y + 1))))
     }
 }
 

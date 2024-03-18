@@ -2,7 +2,7 @@ use crate::io::cell::Cell;
 use crate::io::output::Metadata;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::primitives::xy::XY;
-use crate::widgets::nested_menu::widget::{NESTED_MENU_FOLDER_CLOSED, NESTED_MENU_FOLDER_WIDHT};
+use crate::widgets::nested_menu::widget::{NESTED_MENU_FOLDER_CLOSED, NESTED_MENU_FOLDER_OPENED, NESTED_MENU_FOLDER_WIDHT};
 
 pub struct NestedMenuInterpreter<'a> {
     meta: &'a Metadata,
@@ -36,7 +36,7 @@ impl<'a> NestedMenuInterpreter<'a> {
     }
 
     // Returns only *drawn* items, and we skip drawing a lot of nodes that are not of user's interest.
-    // TODO will silently fail with folders starting with "v"
+    // TODO will silently fail with folders starting with "v "
     pub fn get_items(&self) -> impl Iterator<Item = Item> {
         let rect = self.meta.rect;
         let mut result: Vec<Item> = Default::default();
@@ -83,7 +83,16 @@ impl<'a> NestedMenuInterpreter<'a> {
                 break;
             }
 
-            item.label = iter_item.text;
+            item.label = iter_item.text.trim().to_string();
+
+            {
+                // stripping "v " from the beginning of dir
+                let format_prefix = format!("{} ", NESTED_MENU_FOLDER_OPENED);
+                if let Some(no_prefix) = item.label.strip_prefix(&format_prefix) {
+                    item.label = no_prefix.to_string();
+                    item.leaf = false;
+                }
+            }
 
             let first_letter_style = *self.mock_output.buffer[XY::new(first_letter_x, y)].style().unwrap();
 

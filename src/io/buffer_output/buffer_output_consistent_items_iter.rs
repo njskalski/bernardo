@@ -30,6 +30,8 @@ impl<'a> BufferConsistentItemsIter<'a> {
     }
 
     pub fn with_rect(self, rect: Rect) -> Self {
+        debug_assert!(self.rect.contains_rect(rect));
+
         Self {
             rect,
             pos: rect.pos,

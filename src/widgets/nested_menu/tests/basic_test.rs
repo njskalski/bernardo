@@ -102,6 +102,8 @@ fn nested_menu_5_enter_expands() {
 
     testbed.next_frame();
 
+    let x = testbed.nested_menu().unwrap().get_selected_item().unwrap().label;
+
     assert_eq!(
         testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
         "option1".to_string()
@@ -115,6 +117,8 @@ fn nested_menu_5_enter_expands() {
         testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
         "submenu".to_string()
     );
+
+    // screenshot(&testbed.last_frame.clone().unwrap().buffer);
 
     testbed.push_input(Keycode::Enter.to_key().to_input_event());
 
