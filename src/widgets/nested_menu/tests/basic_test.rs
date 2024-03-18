@@ -1,6 +1,6 @@
 use crate::experiments::screen_shot::screenshot;
 use crate::io::keys::Keycode;
-use crate::widgets::nested_menu::tests::nested_menu_testbed::NestedMenuTestbed;
+use crate::widgets::nested_menu::tests::nested_menu_testbed::{NestedMenuTestMsg, NestedMenuTestbed};
 
 pub fn get_setup() -> NestedMenuTestbed {
     let nested_menu_testbed = NestedMenuTestbed::new();
@@ -227,4 +227,68 @@ fn nested_menu_7_arrow_left_collapses() {
         assert_eq!(items[1].leaf, true);
         assert_eq!(items[2].leaf, false);
     }
+}
+
+#[test]
+fn nested_menu_8_msgs() {
+    let mut testbed = NestedMenuTestbed::new();
+
+    testbed.next_frame();
+
+    assert_eq!(
+        testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
+        "option1".to_string()
+    );
+
+    testbed.push_input(Keycode::Enter.to_key().to_input_event());
+
+    assert_eq!(
+        testbed.last_msg.take().unwrap().as_msg::<NestedMenuTestMsg>(),
+        Some(NestedMenuTestMsg::Text("option1".to_string())).as_ref()
+    );
+
+    for _ in 0..2 {
+        testbed.push_input(Keycode::ArrowDown.to_key().to_input_event());
+    }
+
+    assert_eq!(
+        testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
+        "submenu".to_string()
+    );
+
+    testbed.push_input(Keycode::Enter.to_key().to_input_event());
+    assert!(testbed.last_msg.is_none());
+
+    assert_eq!(
+        testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
+        "child1".to_string()
+    );
+
+    testbed.push_input(Keycode::Enter.to_key().to_input_event());
+
+    assert_eq!(
+        testbed.last_msg.take().unwrap().as_msg::<NestedMenuTestMsg>(),
+        Some(NestedMenuTestMsg::Text("child1".to_string())).as_ref()
+    );
+
+    testbed.push_input(Keycode::ArrowDown.to_key().to_input_event());
+
+    assert_eq!(
+        testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
+        "child2".to_string()
+    );
+
+    testbed.push_input(Keycode::Enter.to_key().to_input_event());
+
+    assert_eq!(
+        testbed.last_msg.take().unwrap().as_msg::<NestedMenuTestMsg>(),
+        Some(NestedMenuTestMsg::Text("child2".to_string())).as_ref()
+    );
+
+    testbed.push_input(Keycode::ArrowLeft.to_key().to_input_event());
+
+    assert_eq!(
+        testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
+        "submenu".to_string()
+    );
 }

@@ -39,9 +39,9 @@ pub const NESTED_MENU_FOLDER_WIDHT: u16 = 2;
 
 pub struct NestedMenuWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
     wid: WID,
+    mapper: Option<Box<dyn Fn(&Item) -> Option<Box<dyn AnyMsg>> + 'static>>,
 
     max_size: XY,
-
     layout_size: Option<XY>,
     // key, label
     selected_nodes: Vec<(Key, String)>,
@@ -73,12 +73,20 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> NestedMenuWidget<Key, 
     pub fn new(root_node: Item, max_size: XY) -> Self {
         NestedMenuWidget {
             wid: get_new_widget_id(),
+            mapper: None,
             max_size,
             layout_size: None,
             selected_nodes: Default::default(),
             selected_row_idx: 0,
             root: root_node,
             _phantom: Default::default(),
+        }
+    }
+
+    pub fn with_mapper<M: Fn(&Item) -> Option<Box<dyn AnyMsg>> + 'static>(self, m: M) -> Self {
+        Self {
+            mapper: Some(Box::new(m)),
+            ..self
         }
     }
 
@@ -186,8 +194,12 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Wi
             Msg::Hit => {
                 if let Some(item) = self.get_selected_item() {
                     if item.is_leaf() {
-                        // TODO action
-                        None
+                        if let Some(mapper) = &self.mapper {
+                            (*mapper)(&item)
+                        } else {
+                            error!("selection mapper not set");
+                            None
+                        }
                     } else {
                         self.selected_nodes.push((item.id().clone(), item.label().to_string()));
                         self.selected_row_idx = 0;

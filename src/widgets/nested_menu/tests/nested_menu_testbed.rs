@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::screen_shot::screenshot;
@@ -9,10 +11,28 @@ use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_output::MockOutput;
 use crate::mocks::nested_menu_interpreter::NestedMenuInterpreter;
 use crate::primitives::sized_xy::SizedXY;
+use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
+use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::widget::Widget;
 use crate::widgets::nested_menu::tests::mock_provider::{get_mock_data, MockNestedMenuItem};
 use crate::widgets::nested_menu::widget::NestedMenuWidget;
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum NestedMenuTestMsg {
+    Text(String),
+}
+
+impl AnyMsg for NestedMenuTestMsg {}
+
+fn item_to_msg(item: &MockNestedMenuItem) -> Option<Box<dyn AnyMsg>> {
+    if item.is_leaf() {
+        Some(NestedMenuTestMsg::Text(item.name.clone()).boxed())
+    } else {
+        assert!(false);
+        None
+    }
+}
 
 pub struct NestedMenuTestbed {
     pub nested_menu: NestedMenuWidget<String, MockNestedMenuItem>,
@@ -20,6 +40,7 @@ pub struct NestedMenuTestbed {
     pub config: ConfigRef,
     pub theme: Theme,
     pub last_frame: Option<MetaOutputFrame>,
+    pub last_msg: Option<Box<dyn AnyMsg>>,
 }
 
 impl NestedMenuTestbed {
@@ -27,11 +48,12 @@ impl NestedMenuTestbed {
         let size = XY::new(30, 20);
 
         NestedMenuTestbed {
-            nested_menu: NestedMenuWidget::new(get_mock_data(), size),
+            nested_menu: NestedMenuWidget::new(get_mock_data(), size).with_mapper(item_to_msg),
             size,
             config: Default::default(),
             theme: Default::default(),
             last_frame: None,
+            last_msg: None,
         }
     }
     pub fn nested_menu(&self) -> Option<NestedMenuInterpreter> {
@@ -65,7 +87,8 @@ impl NestedMenuTestbed {
     }
 
     pub fn push_input(&mut self, input: InputEvent) {
-        recursive_treat_views(&mut self.nested_menu, input);
+        let (_, last_msg) = recursive_treat_views(&mut self.nested_menu, input);
+        self.last_msg = last_msg;
         self.next_frame();
     }
 }
