@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod test {
-    use crate::widget::stupid_tree::get_stupid_tree;
-    use std::collections::HashSet;
     use crate::primitives::tree::tree_it::TreeIt;
     use crate::primitives::tree::tree_node::TreeNode;
+    use crate::widget::stupid_tree::get_stupid_tree;
+    use std::collections::HashSet;
 
     #[test]
     fn tree_it_test_1() {

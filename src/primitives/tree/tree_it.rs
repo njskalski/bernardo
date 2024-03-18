@@ -10,11 +10,11 @@ Also, now it supports filtering and recursive filtering: if filter is present, t
         - one of it's descendants up to "filter_depth_op" deep (None = infinity)
  */
 
+use crate::primitives::maybe_bool::MaybeBool;
+use crate::primitives::tree::tree_node::{TreeItFilter, TreeNode};
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
-use crate::primitives::maybe_bool::MaybeBool;
-use crate::primitives::tree::tree_node::{TreeItFilter, TreeNode};
 
 type QueueType<Item> = Item;
 

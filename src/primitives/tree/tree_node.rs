@@ -1,7 +1,7 @@
+use crate::primitives::maybe_bool::MaybeBool;
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::Hash;
-use crate::primitives::maybe_bool::MaybeBool;
 
 // Keep it lightweight. It is expected to be implemented by Rc<some type>
 pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {

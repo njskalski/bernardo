@@ -26,4 +26,3 @@ pub mod nested_menu;
 
 #[cfg(test)]
 mod tests;
-

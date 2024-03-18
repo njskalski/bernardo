@@ -1,7 +1,6 @@
+use crate::primitives::tree::tree_node::TreeNode;
 use std::borrow::Cow;
 use std::rc::Rc;
-use crate::primitives::tree::tree_node::TreeNode;
-
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone)]
 pub struct StupidTree {

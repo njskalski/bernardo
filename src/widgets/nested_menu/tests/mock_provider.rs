@@ -1,11 +1,11 @@
-use std::borrow::Cow;
 use crate::primitives::printable::Printable;
 use crate::primitives::tree::tree_node::TreeNode;
+use std::borrow::Cow;
 
 #[derive(Debug, Clone)]
 pub struct MockNestedMenuItem {
-    pub name : String,
-    pub children : Vec<MockNestedMenuItem>
+    pub name: String,
+    pub children: Vec<MockNestedMenuItem>,
 }
 
 impl TreeNode<String> for MockNestedMenuItem {
@@ -21,7 +21,7 @@ impl TreeNode<String> for MockNestedMenuItem {
         self.children.is_empty()
     }
 
-    fn child_iter(&self) -> Box<dyn Iterator<Item=Self>> {
+    fn child_iter(&self) -> Box<dyn Iterator<Item = Self>> {
         Box::new(self.children.clone().into_iter())
     }
 
@@ -52,9 +52,9 @@ pub fn get_mock_data() -> MockNestedMenuItem {
                     MockNestedMenuItem {
                         name: "child2".to_string(),
                         children: vec![],
-                    }
+                    },
                 ],
-            }
+            },
         ],
     }
 }

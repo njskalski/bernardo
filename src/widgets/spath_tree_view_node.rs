@@ -6,7 +6,6 @@ use log::error;
 use crate::fs::path::SPath;
 use crate::primitives::tree::tree_node::TreeNode;
 
-
 #[derive(Debug, Clone)]
 pub struct DirTreeNode {
     sp: SPath,
