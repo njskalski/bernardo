@@ -13,14 +13,14 @@ use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
+use crate::primitives::tree::tree_it::TreeIt;
+use crate::primitives::tree::tree_node::{TreeItFilter, TreeNode};
 
 use crate::primitives::xy::XY;
 
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
-use crate::widgets::tree_view::tree_it::TreeIt;
-use crate::widgets::tree_view::tree_view_node::{TreeItFilter, TreeViewNode};
 
 pub const TYPENAME: &str = "tree_view";
 
@@ -29,7 +29,7 @@ pub type LabelHighlighter = fn(&str) -> Vec<usize>;
 
 // Keys are unique
 
-pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> {
+pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
     id: WID,
     root_node: Item,
     expanded: HashSet<Key>,
@@ -74,7 +74,7 @@ Warranties:
 - TODO change highlighted to Rc<Key>, because now with lazy loading and filtering, items can
     disappear...
  */
-impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key, Item> {
+impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, Item> {
     pub fn new(root_node: Item) -> Self {
         Self {
             id: get_new_widget_id(),
@@ -226,7 +226,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeViewWidget<Key
     }
 }
 
-impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeViewNode<K> + 'static> Widget for TreeViewWidget<K, I> {
+impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget for TreeViewWidget<K, I> {
     fn id(&self) -> WID {
         self.id
     }

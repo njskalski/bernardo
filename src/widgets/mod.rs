@@ -22,5 +22,7 @@ pub mod text_widget;
 pub mod tree_view;
 pub mod with_scroll;
 
+pub mod nested_menu;
+
 #[cfg(test)]
 mod tests;

@@ -10,24 +10,24 @@ Also, now it supports filtering and recursive filtering: if filter is present, t
         - one of it's descendants up to "filter_depth_op" deep (None = infinity)
  */
 
+use crate::primitives::maybe_bool::MaybeBool;
+use crate::primitives::tree::tree_node::{TreeItFilter, TreeNode};
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
-
-use crate::widgets::tree_view::tree_view_node::{MaybeBool, TreeItFilter, TreeViewNode};
 
 type QueueType<Item> = Item;
 
 // tu nie trzeba pogrzebacza, tu trzeba pogrzebu.
 
-pub struct TreeIt<'a, Key: Hash + Eq + Debug, Item: TreeViewNode<Key>> {
+pub struct TreeIt<'a, Key: Hash + Eq + Debug, Item: TreeNode<Key>> {
     queue: Vec<(u16, QueueType<Item>)>,
     expanded: &'a HashSet<Key>,
     filter_op: Option<&'a TreeItFilter<Item>>,
     filter_depth_op: Option<usize>,
 }
 
-impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeIt<'a, Key, Item> {
+impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeIt<'a, Key, Item> {
     pub fn new(
         root: &Item,
         expanded: &'a HashSet<Key>,
@@ -43,7 +43,7 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> TreeIt<'a, Key
     }
 }
 
-impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeViewNode<Key>> Iterator for TreeIt<'a, Key, Item> {
+impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Iterator for TreeIt<'a, Key, Item> {
     type Item = (u16, Item);
 
     fn next(&mut self) -> Option<Self::Item> {
