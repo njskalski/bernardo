@@ -16,7 +16,7 @@ use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::widget::Widget;
-use crate::widgets::nested_menu::tests::mock_provider::{get_mock_data, MockNestedMenuItem};
+use crate::widgets::nested_menu::tests::mock_provider::MockNestedMenuItem;
 use crate::widgets::nested_menu::widget::NestedMenuWidget;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -45,12 +45,14 @@ pub struct NestedMenuTestbed {
 }
 
 impl NestedMenuTestbed {
-    pub fn new() -> Self {
+    pub fn new(mock_data_set: MockNestedMenuItem, with_query_widget: bool) -> Self {
         let size = XY::new(30, 20);
         let providers = MockProvidersBuilder::new().build().providers;
 
         NestedMenuTestbed {
-            nested_menu: NestedMenuWidget::new(providers, get_mock_data(), size).with_mapper(item_to_msg),
+            nested_menu: NestedMenuWidget::new(providers, mock_data_set, size)
+                .with_mapper(item_to_msg)
+                .with_query_widget(with_query_widget),
             size,
             config: Default::default(),
             theme: Default::default(),
@@ -78,11 +80,6 @@ impl NestedMenuTestbed {
     pub fn frame_op(&self) -> Option<&MetaOutputFrame> {
         self.last_frame.as_ref()
     }
-
-    // pub fn interpreter(&self) -> Option<EditorInterpreter<'_>> {
-    //     self.frame_op()
-    //         .and_then(|frame| EditorInterpreter::new(frame, frame.metadata.first().unwrap()))
-    // }
 
     pub fn screenshot(&self) -> bool {
         self.frame_op().map(|frame| screenshot(&frame.buffer)).unwrap_or(false)

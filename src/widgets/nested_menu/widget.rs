@@ -57,6 +57,7 @@ pub struct NestedMenuWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>
     root: Item,
 
     query: BufferSharedRef,
+    query_widget_visible: bool,
     query_widget: EditorWidget,
 }
 
@@ -88,7 +89,15 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> NestedMenuWidget<Key, 
             selected_row_idx: 0,
             root: root_node,
             query: query_buffer.clone(),
+            query_widget_visible: false,
             query_widget: EditorWidget::new(providers, query_buffer),
+        }
+    }
+
+    pub fn with_query_widget(self, query_widget_visible: bool) -> Self {
+        Self {
+            query_widget_visible,
+            ..self
         }
     }
 
