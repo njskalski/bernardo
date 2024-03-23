@@ -19,6 +19,7 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     ("bernardo::widgets::completion_widget", log::LevelFilter::Info),
     ("bernardo::widgets::dir_tree_view", log::LevelFilter::Warn),
     ("bernardo::widgets::edit_box", log::LevelFilter::Warn),
+    ("bernardo::widgets::editor_widget::context_options_matrix", log::LevelFilter::Debug),
     ("bernardo::widgets::editor_widget::editor_widget", log::LevelFilter::Warn),
     ("bernardo::widgets::fuzzy_search::fuzzy_search", log::LevelFilter::Warn),
     ("bernardo::widgets::list_widget::list_widget", log::LevelFilter::Warn),

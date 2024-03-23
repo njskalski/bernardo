@@ -8,6 +8,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
+use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::{Key, Keycode};
@@ -18,9 +19,12 @@ use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::printable::Printable;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
+use crate::text::buffer_state::BufferState;
+use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::button::ButtonWidgetMsg;
+use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::list_widget::provider::ListItemProvider;
 use crate::widgets::nested_menu;
 use crate::widgets::nested_menu::msg::Msg;
@@ -51,7 +55,9 @@ pub struct NestedMenuWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>
     selected_row_idx: u16,
 
     root: Item,
-    _phantom: PhantomData<Key>,
+
+    query: BufferSharedRef,
+    query_widget: EditorWidget,
 }
 
 pub fn get_highlighted_style(theme: &Theme, focused: bool) -> TextStyle {
@@ -70,7 +76,9 @@ pub fn get_default_style(theme: &Theme, focused: bool) -> TextStyle {
 }
 
 impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> NestedMenuWidget<Key, Item> {
-    pub fn new(root_node: Item, max_size: XY) -> Self {
+    pub fn new(providers: Providers, root_node: Item, max_size: XY) -> Self {
+        let query_buffer = BufferState::simplified_single_line().into_bsr();
+
         NestedMenuWidget {
             wid: get_new_widget_id(),
             mapper: None,
@@ -79,7 +87,8 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> NestedMenuWidget<Key, 
             selected_nodes: Default::default(),
             selected_row_idx: 0,
             root: root_node,
-            _phantom: Default::default(),
+            query: query_buffer.clone(),
+            query_widget: EditorWidget::new(providers, query_buffer),
         }
     }
 

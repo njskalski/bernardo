@@ -9,6 +9,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::output::FinalOutput;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_output::MockOutput;
+use crate::mocks::mock_providers_builder::MockProvidersBuilder;
 use crate::mocks::nested_menu_interpreter::NestedMenuInterpreter;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::tree::tree_node::TreeNode;
@@ -46,9 +47,10 @@ pub struct NestedMenuTestbed {
 impl NestedMenuTestbed {
     pub fn new() -> Self {
         let size = XY::new(30, 20);
+        let providers = MockProvidersBuilder::new().build().providers;
 
         NestedMenuTestbed {
-            nested_menu: NestedMenuWidget::new(get_mock_data(), size).with_mapper(item_to_msg),
+            nested_menu: NestedMenuWidget::new(providers, get_mock_data(), size).with_mapper(item_to_msg),
             size,
             config: Default::default(),
             theme: Default::default(),
