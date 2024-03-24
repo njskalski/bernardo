@@ -4,7 +4,7 @@ use crate::widgets::nested_menu::tests::mock_provider::get_mock_data_set_1;
 use crate::widgets::nested_menu::tests::nested_menu_testbed::{NestedMenuTestMsg, NestedMenuTestbed};
 
 pub fn get_setup_1() -> NestedMenuTestbed {
-    let nested_menu_testbed = NestedMenuTestbed::new(get_mock_data_set_1(), false);
+    let nested_menu_testbed = NestedMenuTestbed::new(get_mock_data_set_1());
 
     nested_menu_testbed
 }

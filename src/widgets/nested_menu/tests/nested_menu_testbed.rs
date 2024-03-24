@@ -45,14 +45,12 @@ pub struct NestedMenuTestbed {
 }
 
 impl NestedMenuTestbed {
-    pub fn new(mock_data_set: MockNestedMenuItem, with_query_widget: bool) -> Self {
+    pub fn new(mock_data_set: MockNestedMenuItem) -> Self {
         let size = XY::new(30, 20);
         let providers = MockProvidersBuilder::new().build().providers;
 
         NestedMenuTestbed {
-            nested_menu: NestedMenuWidget::new(providers, mock_data_set, size)
-                .with_mapper(item_to_msg)
-                .with_query_widget(with_query_widget),
+            nested_menu: NestedMenuWidget::new(providers, mock_data_set, size).with_mapper(item_to_msg),
             size,
             config: Default::default(),
             theme: Default::default(),

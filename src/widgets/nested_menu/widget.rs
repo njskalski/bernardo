@@ -8,13 +8,18 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::{Key, Keycode};
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
+use crate::layout::layout::Layout;
+use crate::layout::leaf_layout::LeafLayout;
+use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::arrow::{Arrow, HorizontalArrow, VerticalArrow};
+use crate::primitives::common_edit_msgs::{apply_common_edit_message, key_to_edit_msg, CommonEditMsg};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::printable::Printable;
 use crate::primitives::tree::tree_node::TreeNode;
@@ -22,12 +27,14 @@ use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
+use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::button::ButtonWidgetMsg;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::list_widget::provider::ListItemProvider;
 use crate::widgets::nested_menu;
 use crate::widgets::nested_menu::msg::Msg;
+use crate::{selfwidget, subwidget};
 
 /*
 This describes a simple context menu.
@@ -57,8 +64,6 @@ pub struct NestedMenuWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>
     root: Item,
 
     query: BufferSharedRef,
-    query_widget_visible: bool,
-    query_widget: EditorWidget,
 }
 
 pub fn get_highlighted_style(theme: &Theme, focused: bool) -> TextStyle {
@@ -88,15 +93,13 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> NestedMenuWidget<Key, 
             selected_nodes: Default::default(),
             selected_row_idx: 0,
             root: root_node,
-            query: query_buffer.clone(),
-            query_widget_visible: false,
-            query_widget: EditorWidget::new(providers, query_buffer),
+            query: query_buffer,
         }
     }
 
-    pub fn with_query_widget(self, query_widget_visible: bool) -> Self {
-        Self {
-            query_widget_visible,
+    pub fn with_query_buffer(self, query_buffer: BufferSharedRef) -> Self {
+        NestedMenuWidget {
+            query: query_buffer,
             ..self
         }
     }
@@ -164,39 +167,70 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Wi
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         return match input_event {
-            KeyInput(key_event) => match key_event.keycode {
-                Keycode::Enter => Some(Box::new(Msg::Hit)),
-                Keycode::ArrowUp => {
-                    if self.selected_row_idx > 0 {
-                        Msg::Arrow(VerticalArrow::Up).someboxed()
-                    } else {
-                        None
-                    }
+            KeyInput(key) if key == Keycode::Enter.to_key() => Some(Box::new(Msg::Hit)),
+            KeyInput(key) if key == Keycode::ArrowUp.to_key() => {
+                if self.selected_row_idx > 0 {
+                    Msg::Arrow(VerticalArrow::Up).someboxed()
+                } else {
+                    None
                 }
-                Keycode::ArrowDown => {
-                    if self.get_subtree_height() > self.selected_row_idx + 1 {
-                        Msg::Arrow(VerticalArrow::Down).someboxed()
-                    } else {
-                        None
-                    }
+            }
+            KeyInput(key) if key == Keycode::ArrowDown.to_key() => {
+                if self.get_subtree_height() > self.selected_row_idx + 1 {
+                    Msg::Arrow(VerticalArrow::Down).someboxed()
+                } else {
+                    None
                 }
-                Keycode::ArrowRight => {
-                    if self.get_selected_item().map(|item| item.is_leaf() == false).unwrap_or(false) {
-                        Msg::Hit.someboxed()
-                    } else {
-                        None
-                    }
+            }
+            KeyInput(key) if key == Keycode::ArrowRight.to_key() => {
+                if self.get_selected_item().map(|item| item.is_leaf() == false).unwrap_or(false) {
+                    Msg::Hit.someboxed()
+                } else {
+                    None
                 }
-                Keycode::ArrowLeft => {
-                    if self.selected_nodes.is_empty() == false {
-                        Msg::UnwrapOneLevel.someboxed()
-                    } else {
-                        None
-                    }
+            }
+            KeyInput(key) if key == Keycode::ArrowLeft.to_key() => {
+                if self.selected_nodes.is_empty() == false {
+                    Msg::UnwrapOneLevel.someboxed()
+                } else {
+                    None
                 }
-                _ => None,
-            },
-
+            }
+            // KeyInput(key) if key_to_edit_msg(key).is_some() => {
+            //     let msg = key_to_edit_msg(key).unwrap();
+            //
+            //     let ignore: bool = match msg {
+            //         CommonEditMsg::Char(_) => false,
+            //         CommonEditMsg::Block(_) => true,
+            //         CommonEditMsg::CursorUp { .. } => true,
+            //         CommonEditMsg::CursorDown { .. } => true,
+            //         CommonEditMsg::CursorLeft { .. } => true,
+            //         CommonEditMsg::CursorRight { .. } => true,
+            //         CommonEditMsg::Backspace => false,
+            //         CommonEditMsg::LineBegin { .. } => true,
+            //         CommonEditMsg::LineEnd { .. } => true,
+            //         CommonEditMsg::WordBegin { .. } => true,
+            //         CommonEditMsg::WordEnd { .. } => true,
+            //         CommonEditMsg::PageUp { .. } => true,
+            //         CommonEditMsg::PageDown { .. } => true,
+            //         CommonEditMsg::Delete => true,
+            //         CommonEditMsg::Copy => true,
+            //         CommonEditMsg::Paste => true,
+            //         CommonEditMsg::Undo => true,
+            //         CommonEditMsg::Redo => true,
+            //         CommonEditMsg::DeleteBlock { .. } => true,
+            //         CommonEditMsg::InsertBlock { .. } => true,
+            //         CommonEditMsg::SubstituteBlock { .. } => true,
+            //         CommonEditMsg::Tab => true,
+            //         CommonEditMsg::ShiftTab => true,
+            //     };
+            //
+            //     if !ignore {
+            //         Msg::QueryEdit(msg).someboxed()
+            //     } else {
+            //         None
+            //     }
+            // }
             _ => None,
         };
     }

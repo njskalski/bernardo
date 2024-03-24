@@ -2,7 +2,7 @@ use crate::widgets::nested_menu::tests::mock_provider::get_mock_data_set_2;
 use crate::widgets::nested_menu::tests::nested_menu_testbed::NestedMenuTestbed;
 
 pub fn get_setup_2() -> NestedMenuTestbed {
-    let nested_menu_testbed = NestedMenuTestbed::new(get_mock_data_set_2(), true);
+    let nested_menu_testbed = NestedMenuTestbed::new(get_mock_data_set_2());
 
     nested_menu_testbed
 }
