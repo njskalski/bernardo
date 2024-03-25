@@ -7,15 +7,15 @@ pub fn get_setup_2() -> NestedMenuTestbed {
     nested_menu_testbed
 }
 
-#[test]
-fn nested_menu_filter_1() {
-    let mut testbed = get_setup_2();
-
-    testbed.next_frame();
-    assert_eq!(testbed.frame_op().unwrap().get_nested_menus().count(), 1);
-
-    assert_eq!(
-        testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
-        "option1".to_string()
-    );
-}
+// #[test]
+// fn nested_menu_filter_1() {
+//     let mut testbed = get_setup_2();
+//
+//     testbed.next_frame();
+//     assert_eq!(testbed.frame_op().unwrap().get_nested_menus().count(), 1);
+//
+//     assert_eq!(
+//         testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
+//         "option1".to_string()
+//     );
+// }

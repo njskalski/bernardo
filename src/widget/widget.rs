@@ -87,6 +87,30 @@ pub trait Widget: 'static {
     {
         self as &mut dyn Widget
     }
+
+    fn act_on(&mut self, input_event: InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
+        // first offering message to a highlighted child (default behavior)
+        let (consumed, message_to_self) = if let Some(child) = self.get_focused_mut() {
+            child.act_on(input_event)
+        } else {
+            (false, None)
+        };
+
+        if message_to_self.is_some() {
+            debug_assert!(consumed, "one can't return a message without consuming input in Bernardo paradigm");
+
+            let message_to_parent = message_to_self.map(|msg| self.update(msg)).flatten();
+            return (true, message_to_parent);
+        }
+
+        if !consumed {
+            if let Some(msg) = self.on_input(input_event) {
+                return (true, self.update(msg));
+            }
+        }
+
+        (consumed, None)
+    }
 }
 
 impl<'a> Debug for dyn Widget + 'a {

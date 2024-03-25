@@ -4,7 +4,6 @@ use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::screen_shot::screenshot;
 use crate::experiments::screenspace::Screenspace;
-use crate::gladius::paradigm::recursive_treat_views;
 use crate::io::input_event::InputEvent;
 use crate::io::output::FinalOutput;
 use crate::mocks::meta_frame::MetaOutputFrame;
@@ -84,7 +83,7 @@ impl NestedMenuTestbed {
     }
 
     pub fn push_input(&mut self, input: InputEvent) {
-        let (_, last_msg) = recursive_treat_views(&mut self.nested_menu, input);
+        let (_, last_msg) = self.nested_menu.act_on(input);
         self.last_msg = last_msg;
         self.next_frame();
     }

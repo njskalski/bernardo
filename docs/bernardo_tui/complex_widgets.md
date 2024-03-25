@@ -81,7 +81,7 @@ This can be solved in two ways:
    I cannot "change the order of consideration contract" mid-journey. It seems like I DO WANT to be able to route input
    from widget, just like path, **perhaps with filtering**.
 
-   Wait, I think I can get rid of filtering, if focus path is DFS of subwidgets. Just change
+   Wait, I think I can get rid of filtering, if focus path is DFS of subwidgets.
 
 ```rust
 fn get_focused_mut(&mut self) -> &mut dyn Widget;
@@ -94,6 +94,12 @@ fn get_focused(&self) -> Iterator<SubwidgetPointer<Self>>; // this can even be a
 ```
 
 and we're done.
+
+No, not really. I would have to add some filtering nevertheless, because I want in nested menu example the EditBox to
+ignore arrows. I guess question is: do we need a general solution to this or not?
+
+Because right now we could either "internalize the input" (simplifying the paradigm) or enrich
+get_focuesd_mut with InputFilter.
 
 ## Focus transfer (focus graph)
 
@@ -144,6 +150,56 @@ Top-down would require some kind of facility to drill-down-back, it would be the
 would become externalized.
 Also, we could end up in a situation where I do "go left", but between the frames widget to the left ceased to exist. So
 this chain would have to be "fallible". That's not a problem I guess.
+
+At any given moment we have a tree, where each node has it id, type, geometric shape, parent, and perhaps children.
+
+---
+Now *if focus path has filtering*, it can go up and down that tree in DFS order (Because of Nested menu precedent).
+
+If *focus path has no filtering*, then we need to internalize input routing.
+
+---
+
+Internalized input doesn't go well with returning message to parent. Unless we merge both with:
+
+```rust
+fn act_on(input: Input) -> (bool, Option<Box<dyn Message>>) {
+    for child in self.freely_chooses_the_children() {
+        let (consumed, msg) = child.act_on(input);
+
+        if result == true {
+            return (true, self.update(msg));
+        }
+    }
+
+    return false;
+}
+```
+
+Maybe common code should be externalized via composition? Like:
+
+```rust
+struct TreeNode<W: Widget> {
+    widget: W,
+    wid: WID,
+}
+
+impl<W: Widget> TreeNode<W> {
+    fn act_on() {
+        //as above
+    }
+
+    fn layout() {
+        ...
+    }
+
+    fn render() {
+        ...
+    }
+}
+
+
+```
 
 ---
 Right now the issue is that I have externalized Input, and internalized Focus.

@@ -6,7 +6,6 @@ use log::{debug, error};
 
 use crate::experiments::screen_shot::screenshot;
 use crate::experiments::screenspace::Screenspace;
-use crate::gladius::paradigm::recursive_treat_views;
 use crate::gladius::providers::Providers;
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
@@ -169,7 +168,7 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
                             _ => {}
                         }
 
-                        recursive_treat_views(&mut main_view, ie);
+                        main_view.act_on(ie);
                     },
                     Err(e) => {
                         error!("failed receiving input: {}", e);
