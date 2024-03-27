@@ -28,8 +28,10 @@ use crate::text::buffer_state::BufferState;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::button::ButtonWidgetMsg;
+use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::list_widget::provider::ListItemProvider;
 use crate::widgets::nested_menu;
@@ -38,9 +40,28 @@ use crate::{selfwidget, subwidget};
 
 /*
 This describes a simple context menu.
-For first version, options remain fixed (no adding/deleting)
+For first version, options remain fixed (no adding/deleting).
 
 There is no optimisation here whatsoever. First let it work, second write the test, then optimise.
+
+Let's describe how it should look like:
+
+v ExpandedSubtree1
+  v ExpandedSubSubtree1
+      SelectableItem1
+      SelectableItem2
+  > NotExpandedSubtree2
+    SelectableItem3
+
+Actions:
+- hitting enter on expanded tree collapses it
+- hitting enter on collapsed tree expands it
+- hitting enter on selectable item causes a message to be emmited
+- arrows navigate, they can jump between expanded subtrees
+
+- query. Query works as in...
+
+fuck this is just another tree_view.
  */
 
 pub const NESTED_MENU_TYPENAME: &'static str = "nested_menu";
@@ -93,14 +114,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> NestedMenuWidget<Key, 
             selected_nodes: Default::default(),
             selected_row_idx: 0,
             root: root_node,
-            query: query_buffer,
-        }
-    }
-
-    pub fn with_query_buffer(self, query_buffer: BufferSharedRef) -> Self {
-        NestedMenuWidget {
-            query: query_buffer,
-            ..self
+            query: BufferState::simplified_single_line().into_bsr(),
         }
     }
 
