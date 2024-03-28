@@ -4,18 +4,18 @@ use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::screen_shot::screenshot;
 use crate::experiments::screenspace::Screenspace;
-use crate::gladius::paradigm::recursive_treat_views;
 use crate::io::input_event::InputEvent;
 use crate::io::output::FinalOutput;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_output::MockOutput;
+use crate::mocks::mock_providers_builder::MockProvidersBuilder;
+use crate::mocks::mock_tree_item::MockTreeItem;
 use crate::mocks::nested_menu_interpreter::NestedMenuInterpreter;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::widget::Widget;
-use crate::widgets::nested_menu::tests::mock_provider::{get_mock_data, MockNestedMenuItem};
 use crate::widgets::nested_menu::widget::NestedMenuWidget;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -25,7 +25,7 @@ pub enum NestedMenuTestMsg {
 
 impl AnyMsg for NestedMenuTestMsg {}
 
-fn item_to_msg(item: &MockNestedMenuItem) -> Option<Box<dyn AnyMsg>> {
+fn item_to_msg(item: &MockTreeItem) -> Option<Box<dyn AnyMsg>> {
     if item.is_leaf() {
         Some(NestedMenuTestMsg::Text(item.name.clone()).boxed())
     } else {
@@ -35,7 +35,7 @@ fn item_to_msg(item: &MockNestedMenuItem) -> Option<Box<dyn AnyMsg>> {
 }
 
 pub struct NestedMenuTestbed {
-    pub nested_menu: NestedMenuWidget<String, MockNestedMenuItem>,
+    pub nested_menu: NestedMenuWidget<String, MockTreeItem>,
     pub size: XY,
     pub config: ConfigRef,
     pub theme: Theme,
@@ -44,11 +44,12 @@ pub struct NestedMenuTestbed {
 }
 
 impl NestedMenuTestbed {
-    pub fn new() -> Self {
+    pub fn new(mock_data_set: MockTreeItem) -> Self {
         let size = XY::new(30, 20);
+        let providers = MockProvidersBuilder::new().build().providers;
 
         NestedMenuTestbed {
-            nested_menu: NestedMenuWidget::new(get_mock_data(), size).with_mapper(item_to_msg),
+            nested_menu: NestedMenuWidget::new(providers, mock_data_set, size).with_mapper(item_to_msg),
             size,
             config: Default::default(),
             theme: Default::default(),
@@ -77,17 +78,12 @@ impl NestedMenuTestbed {
         self.last_frame.as_ref()
     }
 
-    // pub fn interpreter(&self) -> Option<EditorInterpreter<'_>> {
-    //     self.frame_op()
-    //         .and_then(|frame| EditorInterpreter::new(frame, frame.metadata.first().unwrap()))
-    // }
-
     pub fn screenshot(&self) -> bool {
         self.frame_op().map(|frame| screenshot(&frame.buffer)).unwrap_or(false)
     }
 
     pub fn push_input(&mut self, input: InputEvent) {
-        let (_, last_msg) = recursive_treat_views(&mut self.nested_menu, input);
+        let (_, last_msg) = self.nested_menu.act_on(input);
         self.last_msg = last_msg;
         self.next_frame();
     }

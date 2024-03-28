@@ -31,7 +31,7 @@ impl NavCompLoader for RealNavCompLoader {
         match &project_scope.handler_id {
             None => {
                 warn!(
-                    "project scope [{:?}] with no handler - what the point?",
+                    "project scope [{:?}] with no handler - what's the point?",
                     project_scope.path.relative_path()
                 );
                 Err(HandlerLoadError::NoHandlerId)

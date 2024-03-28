@@ -11,7 +11,6 @@ use crate::io::buffer_output::buffer_output_cells_iter::BufferOutputCellsIter;
 use crate::io::buffer_output::buffer_output_consistent_items_iter::BufferConsistentItemsIter;
 use crate::io::buffer_output::buffer_output_lines_iter::BufferLinesIter;
 use crate::io::buffer_output::buffer_output_styles_iter::BufferStyleIter;
-use crate::io::buffer_output::horizontal_iter_item::ConsistentHorizontalItem;
 use crate::io::cell::Cell;
 use crate::io::output::Output;
 use crate::io::style::TextStyle;

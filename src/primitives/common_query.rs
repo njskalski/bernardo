@@ -16,29 +16,25 @@ impl CommonQuery {
             CommonQuery::Epsilon => true,
             CommonQuery::String(substr) => label.contains(substr),
             CommonQuery::Fuzzy(subsequence) => {
-                let mut subsequence_grapheme_it = subsequence.graphemes(true).peekable();
-                let label_grapheme_it = label.graphemes(true);
+                let mut text_it = label.graphemes(false).peekable();
+                let mut pattern_it = subsequence.graphemes(false).peekable();
 
-                for l in label_grapheme_it {
-                    match subsequence_grapheme_it.peek() {
-                        None => {
-                            return true;
-                        }
-                        Some(s) => {
-                            if l == *s {
-                                subsequence_grapheme_it.next();
-                            }
-                        }
+                loop {
+                    if pattern_it.peek().is_none() {
+                        return true;
+                    }
+
+                    if text_it.peek().is_none() {
+                        return false;
+                    }
+
+                    if text_it.peek() == pattern_it.peek() {
+                        let _ = text_it.next();
+                        let _ = pattern_it.next();
+                    } else {
+                        text_it.next();
                     }
                 }
-
-                if subsequence_grapheme_it.peek().is_none() {
-                    // they ran out at the same time, match
-                    return true;
-                }
-
-                // if I exhausted the label, no match
-                false
             }
             CommonQuery::Regex(r) => r.find(label).is_some(),
         }

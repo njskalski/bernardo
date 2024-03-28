@@ -13,11 +13,9 @@ use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
-use crate::primitives::tree::tree_it::TreeIt;
+use crate::primitives::tree::tree_it::eager_iterator;
 use crate::primitives::tree::tree_node::{TreeItFilter, TreeNode};
-
 use crate::primitives::xy::XY;
-
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
@@ -58,6 +56,9 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
     filter_depth_op: Option<usize>,
 
     size_policy: SizePolicy,
+
+    // if set to true, all nodes which lead to non-empty subtrees will appear in view, even if not expanded.
+    filter_overrides_expanded: bool,
 }
 
 #[derive(Debug)]
@@ -90,12 +91,20 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
             filter_op: None,
             filter_depth_op: None,
             size_policy: SizePolicy::MATCH_LAYOUT,
+            filter_overrides_expanded: false,
         }
     }
 
     pub fn with_highlighter(self, highlighter: LabelHighlighter) -> Self {
         Self {
             highlighter_op: Some(highlighter),
+            ..self
+        }
+    }
+
+    pub fn with_filter_overrides_expanded(self) -> Self {
+        Self {
+            filter_overrides_expanded: true,
             ..self
         }
     }
@@ -153,7 +162,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
             size = XY::new(
                 // depth * 2 + 2 + label_length. The +2 comes from the fact, that even at 0 depth, we add a triangle AND a space before the
                 // label.
-                size.x.max(item.0 * 2 + 2 + item.1.label().width() as u16), // TODO fight overflow here.
+                size.x.max(item.0 as u16 * 2 + 2 + item.1.label().width() as u16), // TODO fight overflow here.
                 size.y + 1,
             );
         }
@@ -213,8 +222,13 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
         }
     }
 
-    pub fn items(&self) -> TreeIt<Key, Item> {
-        TreeIt::new(&self.root_node, &self.expanded, self.filter_op.as_ref(), self.filter_depth_op)
+    pub fn items(&self) -> impl Iterator<Item = (u16, Item)> {
+        // TreeIt::new(&self.root_node, Some(&self.expanded), self.filter_op.as_ref(), self.filter_depth_op)
+        if self.filter_overrides_expanded && self.filter_op.is_some() {
+            eager_iterator(&self.root_node, None, self.filter_op.as_ref())
+        } else {
+            eager_iterator(&self.root_node, Some(&self.expanded), self.filter_op.as_ref())
+        }
     }
 
     pub fn get_highlighted(&self) -> (u16, Item) {

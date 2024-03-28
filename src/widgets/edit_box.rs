@@ -38,7 +38,6 @@ pub struct EditBoxWidget {
 
     clipboard_op: Option<ClipboardRef>,
 
-    fill_x: bool,
     last_size_x: Option<u16>,
 
     size_policy: SizePolicy,
@@ -59,7 +58,6 @@ impl EditBoxWidget {
             on_miss: None,
             max_width_op: None,
             clipboard_op: None,
-            fill_x: false,
             last_size_x: None,
             min_width_op: None,
             size_policy: SizePolicy::SELF_DETERMINED,
@@ -125,10 +123,6 @@ impl EditBoxWidget {
             buffer: BufferState::simplified_single_line().with_text(text),
             ..self
         }
-    }
-
-    pub fn with_fill_x(self) -> Self {
-        Self { fill_x: true, ..self }
     }
 
     pub fn get_buffer(&self) -> &BufferState {

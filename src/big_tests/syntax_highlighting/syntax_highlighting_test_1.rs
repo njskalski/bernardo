@@ -1,4 +1,5 @@
 use crate::mocks::full_setup::FullSetup;
+use crate::mocks::with_wait_for::WithWaitFor;
 
 // This test is not super advanced, but I have bigger fish to fry than implementing yet another
 // parsed output iterator

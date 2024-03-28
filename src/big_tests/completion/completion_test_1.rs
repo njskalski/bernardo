@@ -3,6 +3,7 @@ use log::debug;
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::mock_navcomp_provider::MockCompletionMatcher;
+use crate::mocks::with_wait_for::WithWaitFor;
 use crate::w7e::navcomp_provider::Completion;
 use crate::w7e::navcomp_provider::CompletionAction::Insert;
 

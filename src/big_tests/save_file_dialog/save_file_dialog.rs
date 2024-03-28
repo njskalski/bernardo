@@ -6,6 +6,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::treeview_interpreter::TreeViewInterpreterItem;
+use crate::mocks::with_wait_for::WithWaitFor;
 use crate::spath;
 
 fn common_start() -> FullSetup {
@@ -51,7 +52,7 @@ fn path_expanded() {
         .map(|item| item.label)
         .collect();
 
-    assert_eq!(expanded, vec!["save_file_dialog_test_1".to_string(),]);
+    assert_eq!(expanded, vec!["save_file_dialog_test_1".to_string()]);
 
     full_setup.finish();
 }

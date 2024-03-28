@@ -1,16 +1,17 @@
 use crate::experiments::screen_shot::screenshot;
 use crate::io::keys::Keycode;
+use crate::mocks::mock_tree_item::get_mock_data_set_1;
 use crate::widgets::nested_menu::tests::nested_menu_testbed::{NestedMenuTestMsg, NestedMenuTestbed};
 
-pub fn get_setup() -> NestedMenuTestbed {
-    let nested_menu_testbed = NestedMenuTestbed::new();
+pub fn get_setup_1() -> NestedMenuTestbed {
+    let nested_menu_testbed = NestedMenuTestbed::new(get_mock_data_set_1());
 
     nested_menu_testbed
 }
 
 #[test]
 fn nested_menu_1() {
-    let mut testbed = NestedMenuTestbed::new();
+    let mut testbed = get_setup_1();
 
     testbed.next_frame();
     assert_eq!(testbed.frame_op().unwrap().get_nested_menus().count(), 1);
@@ -32,7 +33,7 @@ fn nested_menu_1() {
 
 #[test]
 fn nested_menu_2_arrows_up_noop() {
-    let mut testbed = NestedMenuTestbed::new();
+    let mut testbed = get_setup_1();
 
     testbed.next_frame();
 
@@ -51,7 +52,7 @@ fn nested_menu_2_arrows_up_noop() {
 
 #[test]
 fn nested_menu_3_arrow_down() {
-    let mut testbed = NestedMenuTestbed::new();
+    let mut testbed = get_setup_1();
 
     testbed.next_frame();
 
@@ -70,7 +71,7 @@ fn nested_menu_3_arrow_down() {
 
 #[test]
 fn nested_menu_4_arrow_down_noop() {
-    let mut testbed = NestedMenuTestbed::new();
+    let mut testbed = get_setup_1();
 
     testbed.next_frame();
 
@@ -98,7 +99,7 @@ fn nested_menu_4_arrow_down_noop() {
 
 #[test]
 fn nested_menu_5_enter_expands() {
-    let mut testbed = NestedMenuTestbed::new();
+    let mut testbed = get_setup_1();
 
     testbed.next_frame();
 
@@ -142,7 +143,7 @@ fn nested_menu_5_enter_expands() {
 
 #[test]
 fn nested_menu_6_arrow_right_expands() {
-    let mut testbed = NestedMenuTestbed::new();
+    let mut testbed = get_setup_1();
 
     testbed.next_frame();
 
@@ -180,7 +181,7 @@ fn nested_menu_6_arrow_right_expands() {
 
 #[test]
 fn nested_menu_7_arrow_left_collapses() {
-    let mut testbed = NestedMenuTestbed::new();
+    let mut testbed = get_setup_1();
 
     testbed.next_frame();
 
@@ -231,7 +232,7 @@ fn nested_menu_7_arrow_left_collapses() {
 
 #[test]
 fn nested_menu_8_msgs() {
-    let mut testbed = NestedMenuTestbed::new();
+    let mut testbed = get_setup_1();
 
     testbed.next_frame();
 

@@ -24,5 +24,6 @@ pub mod with_scroll;
 
 pub mod nested_menu;
 
+pub mod context_menu;
 #[cfg(test)]
 mod tests;

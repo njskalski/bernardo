@@ -1,7 +1,8 @@
-use crate::primitives::maybe_bool::MaybeBool;
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::Hash;
+
+use crate::primitives::maybe_bool::MaybeBool;
 
 // Keep it lightweight. It is expected to be implemented by Rc<some type>
 pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {
@@ -12,6 +13,10 @@ pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {
     fn child_iter(&self) -> Box<dyn Iterator<Item = Self>>;
 
     fn is_complete(&self) -> bool;
+
+    fn matching_self(&self, filter: &TreeItFilter<Self>) -> bool {
+        filter(self)
+    }
 
     /*
     the answer is true, false, or "we don't know yet"
@@ -35,6 +40,7 @@ pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {
                 MaybeBool::True => return MaybeBool::True,
                 MaybeBool::Maybe => {
                     any_chance = true;
+                    // do not add break, we're still hunting for true
                 }
                 _ => {}
             }
@@ -48,7 +54,7 @@ pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {
     }
 }
 
-pub type TreeItFilter<Node> = fn(&Node) -> bool;
+pub type TreeItFilter<Node> = Box<dyn Fn(&Node) -> bool>;
 
 // pub type TreeItFilter<Key: Hash, Node: TreeViewNode<Key>> = fn(&Node) -> bool;
 // pub trait TreeItFilter<Key: Hash + Eq + Debug, Node: TreeViewNode<Key>>: Fn(&Node) -> bool {}

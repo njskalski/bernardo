@@ -3,7 +3,6 @@ use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::screen_shot::screenshot;
 use crate::experiments::screenspace::Screenspace;
-use crate::gladius::paradigm::recursive_treat_views;
 use crate::io::input_event::InputEvent;
 use crate::io::output::FinalOutput;
 use crate::mocks::editor_interpreter::EditorInterpreter;
@@ -57,7 +56,7 @@ impl EditorViewTestbed {
     }
 
     pub fn push_input(&mut self, input: InputEvent) {
-        recursive_treat_views(&mut self.editor_view, input);
+        self.editor_view.act_on(input);
         self.next_frame();
     }
 }

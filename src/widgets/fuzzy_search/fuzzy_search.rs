@@ -56,7 +56,7 @@ impl FuzzySearchWidget {
     pub const TYPENAME: &'static str = "fuzzy_search";
 
     pub fn new(on_close: WidgetAction<Self>, clipboard_op: Option<ClipboardRef>) -> Self {
-        let mut edit = EditBoxWidget::new().with_fill_x();
+        let mut edit = EditBoxWidget::new();
 
         match clipboard_op {
             None => {}
