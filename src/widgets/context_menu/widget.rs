@@ -14,7 +14,6 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::common_query::CommonQuery;
 use crate::primitives::scroll::ScrollDirection;
-use crate::primitives::string_tools;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};

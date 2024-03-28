@@ -14,6 +14,10 @@ pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {
 
     fn is_complete(&self) -> bool;
 
+    fn matching_self(&self, filter: &TreeItFilter<Self>) -> bool {
+        filter(self)
+    }
+
     /*
     the answer is true, false, or "we don't know yet"
      */
