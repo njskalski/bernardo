@@ -30,7 +30,7 @@ jsonrpc-core = "18.0.0"
 jsonrpc-core-client = "18.0.0"
 lazy_static = "1.4.0"
 libfuzzer-sys = { version = "0.4.0", features = ["arbitrary-derive"] }
-lsp-types = "0.93.0"
+lsp-types = "0.95.1"
 log = "0.4.14"
 maplit = "1.0.2"
 matches = "0.1.9"

@@ -8,28 +8,60 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
+use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::{Key, Keycode};
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
+use crate::layout::layout::Layout;
+use crate::layout::leaf_layout::LeafLayout;
+use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::arrow::{Arrow, HorizontalArrow, VerticalArrow};
+use crate::primitives::common_edit_msgs::{apply_common_edit_message, key_to_edit_msg, CommonEditMsg};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::printable::Printable;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
+use crate::text::buffer_state::BufferState;
+use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
+use crate::widget::complex_widget::{ComplexWidget, DisplayState};
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::button::ButtonWidgetMsg;
+use crate::widgets::edit_box::EditBoxWidget;
+use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::list_widget::provider::ListItemProvider;
 use crate::widgets::nested_menu;
 use crate::widgets::nested_menu::msg::Msg;
+use crate::{selfwidget, subwidget};
 
 /*
 This describes a simple context menu.
-For first version, options remain fixed (no adding/deleting)
+For first version, options remain fixed (no adding/deleting).
 
 There is no optimisation here whatsoever. First let it work, second write the test, then optimise.
+
+Let's describe how it should look like:
+
+v ExpandedSubtree1
+  v ExpandedSubSubtree1
+      SelectableItem1
+      SelectableItem2
+  > NotExpandedSubtree2
+    SelectableItem3
+
+Actions:
+- hitting enter on expanded tree collapses it
+- hitting enter on collapsed tree expands it
+- hitting enter on selectable item causes a message to be emmited
+- arrows navigate, they can jump between expanded subtrees
+
+- query. Query works as in...
+
+fuck this is just another tree_view.
  */
 
 pub const NESTED_MENU_TYPENAME: &'static str = "nested_menu";
@@ -51,7 +83,8 @@ pub struct NestedMenuWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>
     selected_row_idx: u16,
 
     root: Item,
-    _phantom: PhantomData<Key>,
+
+    query: BufferSharedRef,
 }
 
 pub fn get_highlighted_style(theme: &Theme, focused: bool) -> TextStyle {
@@ -70,7 +103,9 @@ pub fn get_default_style(theme: &Theme, focused: bool) -> TextStyle {
 }
 
 impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> NestedMenuWidget<Key, Item> {
-    pub fn new(root_node: Item, max_size: XY) -> Self {
+    pub fn new(providers: Providers, root_node: Item, max_size: XY) -> Self {
+        let query_buffer = BufferState::simplified_single_line().into_bsr();
+
         NestedMenuWidget {
             wid: get_new_widget_id(),
             mapper: None,
@@ -79,7 +114,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> NestedMenuWidget<Key, 
             selected_nodes: Default::default(),
             selected_row_idx: 0,
             root: root_node,
-            _phantom: Default::default(),
+            query: BufferState::simplified_single_line().into_bsr(),
         }
     }
 
@@ -146,39 +181,70 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Wi
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         return match input_event {
-            KeyInput(key_event) => match key_event.keycode {
-                Keycode::Enter => Some(Box::new(Msg::Hit)),
-                Keycode::ArrowUp => {
-                    if self.selected_row_idx > 0 {
-                        Msg::Arrow(VerticalArrow::Up).someboxed()
-                    } else {
-                        None
-                    }
+            KeyInput(key) if key == Keycode::Enter.to_key() => Some(Box::new(Msg::Hit)),
+            KeyInput(key) if key == Keycode::ArrowUp.to_key() => {
+                if self.selected_row_idx > 0 {
+                    Msg::Arrow(VerticalArrow::Up).someboxed()
+                } else {
+                    None
                 }
-                Keycode::ArrowDown => {
-                    if self.get_subtree_height() > self.selected_row_idx + 1 {
-                        Msg::Arrow(VerticalArrow::Down).someboxed()
-                    } else {
-                        None
-                    }
+            }
+            KeyInput(key) if key == Keycode::ArrowDown.to_key() => {
+                if self.get_subtree_height() > self.selected_row_idx + 1 {
+                    Msg::Arrow(VerticalArrow::Down).someboxed()
+                } else {
+                    None
                 }
-                Keycode::ArrowRight => {
-                    if self.get_selected_item().map(|item| item.is_leaf() == false).unwrap_or(false) {
-                        Msg::Hit.someboxed()
-                    } else {
-                        None
-                    }
+            }
+            KeyInput(key) if key == Keycode::ArrowRight.to_key() => {
+                if self.get_selected_item().map(|item| item.is_leaf() == false).unwrap_or(false) {
+                    Msg::Hit.someboxed()
+                } else {
+                    None
                 }
-                Keycode::ArrowLeft => {
-                    if self.selected_nodes.is_empty() == false {
-                        Msg::UnwrapOneLevel.someboxed()
-                    } else {
-                        None
-                    }
+            }
+            KeyInput(key) if key == Keycode::ArrowLeft.to_key() => {
+                if self.selected_nodes.is_empty() == false {
+                    Msg::UnwrapOneLevel.someboxed()
+                } else {
+                    None
                 }
-                _ => None,
-            },
-
+            }
+            // KeyInput(key) if key_to_edit_msg(key).is_some() => {
+            //     let msg = key_to_edit_msg(key).unwrap();
+            //
+            //     let ignore: bool = match msg {
+            //         CommonEditMsg::Char(_) => false,
+            //         CommonEditMsg::Block(_) => true,
+            //         CommonEditMsg::CursorUp { .. } => true,
+            //         CommonEditMsg::CursorDown { .. } => true,
+            //         CommonEditMsg::CursorLeft { .. } => true,
+            //         CommonEditMsg::CursorRight { .. } => true,
+            //         CommonEditMsg::Backspace => false,
+            //         CommonEditMsg::LineBegin { .. } => true,
+            //         CommonEditMsg::LineEnd { .. } => true,
+            //         CommonEditMsg::WordBegin { .. } => true,
+            //         CommonEditMsg::WordEnd { .. } => true,
+            //         CommonEditMsg::PageUp { .. } => true,
+            //         CommonEditMsg::PageDown { .. } => true,
+            //         CommonEditMsg::Delete => true,
+            //         CommonEditMsg::Copy => true,
+            //         CommonEditMsg::Paste => true,
+            //         CommonEditMsg::Undo => true,
+            //         CommonEditMsg::Redo => true,
+            //         CommonEditMsg::DeleteBlock { .. } => true,
+            //         CommonEditMsg::InsertBlock { .. } => true,
+            //         CommonEditMsg::SubstituteBlock { .. } => true,
+            //         CommonEditMsg::Tab => true,
+            //         CommonEditMsg::ShiftTab => true,
+            //     };
+            //
+            //     if !ignore {
+            //         Msg::QueryEdit(msg).someboxed()
+            //     } else {
+            //         None
+            //     }
+            // }
             _ => None,
         };
     }

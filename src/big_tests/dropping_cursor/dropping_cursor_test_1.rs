@@ -1,5 +1,6 @@
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
+use crate::mocks::with_wait_for::WithWaitFor;
 
 #[test]
 fn dropping_cursor_test_1() {

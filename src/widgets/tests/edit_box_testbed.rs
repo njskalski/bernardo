@@ -1,6 +1,5 @@
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
-use crate::gladius::paradigm::recursive_treat_views;
 use crate::io::input_event::InputEvent;
 use crate::io::output::FinalOutput;
 use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
@@ -57,7 +56,7 @@ impl EditBoxTestbed {
     }
 
     pub fn send_input(&mut self, input: InputEvent) {
-        recursive_treat_views(&mut self.widget, input);
+        self.widget.act_on(input);
         self.next_frame();
     }
 }

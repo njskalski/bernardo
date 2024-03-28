@@ -9,7 +9,6 @@ use log::error;
 use bernardo::app::App;
 use bernardo::config::theme::Theme;
 use bernardo::experiments::screenspace::Screenspace;
-use bernardo::gladius::paradigm::recursive_treat_views;
 use bernardo::io::buffer_output::buffer_output::BufferOutput;
 use bernardo::io::input::Input;
 use bernardo::io::input_event::InputEvent;
@@ -113,7 +112,7 @@ fn main() {
                                     _ => {}
                                 }
 
-                                recursive_treat_views(&mut main_view, ie);
+                                main_view.act_on(ie);
                             },
                             Err(e) => {
                                 error!("failed receiving input: {}", e);

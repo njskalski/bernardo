@@ -1,9 +1,10 @@
 #[cfg(test)]
 mod test {
-    use crate::primitives::tree::tree_it::TreeIt;
+    use std::collections::HashSet;
+
+    use crate::primitives::tree::tree_it::eager_iterator;
     use crate::primitives::tree::tree_node::TreeNode;
     use crate::widget::stupid_tree::get_stupid_tree;
-    use std::collections::HashSet;
 
     #[test]
     fn tree_it_test_1() {
@@ -14,8 +15,8 @@ mod test {
         expanded.insert(1);
 
         let try_out = |expanded_ref: &HashSet<usize>| {
-            let items: Vec<(u16, String)> = TreeIt::new(&root, expanded_ref, None, None)
-                .map(|(d, f)| (d, format!("{:?}", f.id())))
+            let items: Vec<(u16, String)> = eager_iterator(&root, Some(expanded_ref), None)
+                .map(|(d, f)| (d as u16, format!("{:?}", f.id())))
                 .collect();
             let max_len = items
                 .iter()

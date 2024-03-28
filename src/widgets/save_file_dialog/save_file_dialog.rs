@@ -103,8 +103,7 @@ impl SaveFileDialogWidget {
         let edit_box = EditBoxWidget::new()
             .with_size_policy(SizePolicy::MATCH_LAYOUT)
             .with_enabled(true)
-            .with_on_hit(|_| SaveFileDialogMsg::EditBoxHit.someboxed())
-            .with_fill_x();
+            .with_on_hit(|_| SaveFileDialogMsg::EditBoxHit.someboxed());
         let ok_button = ButtonWidget::new(Box::new(Self::OK_LABEL)).with_on_hit(|_| SaveFileDialogMsg::Save.someboxed());
         let cancel_button = ButtonWidget::new(Box::new(Self::CANCEL_LABEL)).with_on_hit(|_| SaveFileDialogMsg::Cancel.someboxed());
 

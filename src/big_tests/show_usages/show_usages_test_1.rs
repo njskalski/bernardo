@@ -4,6 +4,7 @@ use std::time::Duration;
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::mock_navcomp_provider::MockSymbolMatcher;
+use crate::mocks::with_wait_for::WithWaitFor;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::spath;
 use crate::w7e::navcomp_provider::{NavCompSymbol, SymbolType, SymbolUsage};
