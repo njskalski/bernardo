@@ -110,6 +110,24 @@ impl ContextMenuTestbed {
 
         true
     }
+
+    pub fn has_none_of_items<'a, I: Iterator<Item = &'a str>>(&self, items: I) -> bool {
+        for item_label in items {
+            if self
+                .context_menu()
+                .unwrap()
+                .tree_view()
+                .items()
+                .iter()
+                .find(|item| item.label.as_str() == item_label)
+                .is_some()
+            {
+                return false;
+            }
+        }
+
+        true
+    }
 }
 
 impl WithWaitFor for ContextMenuTestbed {

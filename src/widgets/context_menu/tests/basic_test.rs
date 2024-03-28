@@ -30,15 +30,25 @@ fn context_menu_2_letters_filter() {
     testbed.next_frame();
 
     assert_eq!(testbed.context_menu().unwrap().tree_view().items().len(), 1);
-    assert_eq!(
-        testbed.context_menu().unwrap().tree_view().items().iter().next().unwrap().label,
-        "menu1"
-    );
+    assert!(testbed.has_items(["menu1"].into_iter()));
 
     testbed.push_input(Keycode::Enter.to_key().to_input_event());
     testbed.push_text("oo");
 
     assert_eq!(testbed.context_menu().unwrap().editbox().contents(), "oo".to_string());
 
-    testbed.screenshot();
+    assert!(testbed.has_items(["menu1", "option1", "option2"].into_iter()));
+    assert!(testbed.has_none_of_items(["submenu", "child1", "child2"].into_iter()));
+
+    testbed.push_input(Keycode::Backspace.to_key().to_input_event());
+    testbed.push_input(Keycode::Backspace.to_key().to_input_event());
+
+    assert_eq!(testbed.context_menu().unwrap().editbox().contents(), "".to_string());
+
+    testbed.push_text("cd");
+
+    assert_eq!(testbed.context_menu().unwrap().editbox().contents(), "cd".to_string());
+
+    assert!(testbed.has_items(["menu1", "submenu", "child1", "child2"].into_iter()));
+    assert!(testbed.has_none_of_items(["option1", "option2"].into_iter()));
 }

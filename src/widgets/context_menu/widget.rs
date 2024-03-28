@@ -50,7 +50,9 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key,
                 .with_on_change(|editbox| ContextMenuMsg::UpdateQuery(editbox.get_text()).someboxed()),
             tree_view: WithScroll::new(
                 ScrollDirection::Vertical,
-                TreeViewWidget::new(root_node).with_size_policy(SizePolicy::MATCH_LAYOUT),
+                TreeViewWidget::new(root_node)
+                    .with_size_policy(SizePolicy::MATCH_LAYOUT)
+                    .with_filter_overrides_expanded(),
             ),
             layout_res: None,
         }

@@ -56,6 +56,9 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
     filter_depth_op: Option<usize>,
 
     size_policy: SizePolicy,
+
+    // if set to true, all nodes which lead to non-empty subtrees will appear in view, even if not expanded.
+    filter_overrides_expanded: bool,
 }
 
 #[derive(Debug)]
@@ -88,12 +91,20 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
             filter_op: None,
             filter_depth_op: None,
             size_policy: SizePolicy::MATCH_LAYOUT,
+            filter_overrides_expanded: false,
         }
     }
 
     pub fn with_highlighter(self, highlighter: LabelHighlighter) -> Self {
         Self {
             highlighter_op: Some(highlighter),
+            ..self
+        }
+    }
+
+    pub fn with_filter_overrides_expanded(self) -> Self {
+        Self {
+            filter_overrides_expanded: true,
             ..self
         }
     }
@@ -213,7 +224,11 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
 
     pub fn items(&self) -> impl Iterator<Item = (u16, Item)> {
         // TreeIt::new(&self.root_node, Some(&self.expanded), self.filter_op.as_ref(), self.filter_depth_op)
-        eager_iterator(&self.root_node, Some(&self.expanded), self.filter_op.as_ref())
+        if self.filter_overrides_expanded && self.filter_op.is_some() {
+            eager_iterator(&self.root_node, None, self.filter_op.as_ref())
+        } else {
+            eager_iterator(&self.root_node, Some(&self.expanded), self.filter_op.as_ref())
+        }
     }
 
     pub fn get_highlighted(&self) -> (u16, Item) {
