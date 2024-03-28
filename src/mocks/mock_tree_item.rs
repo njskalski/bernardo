@@ -3,12 +3,12 @@ use std::borrow::Cow;
 use crate::primitives::tree::tree_node::TreeNode;
 
 #[derive(Debug, Clone)]
-pub struct MockNestedMenuItem {
+pub struct MockTreeItem {
     pub name: String,
-    pub children: Vec<MockNestedMenuItem>,
+    pub children: Vec<MockTreeItem>,
 }
 
-impl TreeNode<String> for MockNestedMenuItem {
+impl TreeNode<String> for MockTreeItem {
     fn id(&self) -> &String {
         &self.name
     }
@@ -30,26 +30,26 @@ impl TreeNode<String> for MockNestedMenuItem {
     }
 }
 
-pub fn get_mock_data_set_1() -> MockNestedMenuItem {
-    MockNestedMenuItem {
+pub fn get_mock_data_set_1() -> MockTreeItem {
+    MockTreeItem {
         name: "menu1".to_string(),
         children: vec![
-            MockNestedMenuItem {
+            MockTreeItem {
                 name: "option1".to_string(),
                 children: vec![],
             },
-            MockNestedMenuItem {
+            MockTreeItem {
                 name: "option2".to_string(),
                 children: vec![],
             },
-            MockNestedMenuItem {
+            MockTreeItem {
                 name: "submenu".to_string(),
                 children: vec![
-                    MockNestedMenuItem {
+                    MockTreeItem {
                         name: "child1".to_string(),
                         children: vec![],
                     },
-                    MockNestedMenuItem {
+                    MockTreeItem {
                         name: "child2".to_string(),
                         children: vec![],
                     },
@@ -59,49 +59,49 @@ pub fn get_mock_data_set_1() -> MockNestedMenuItem {
     }
 }
 
-pub fn get_mock_data_set_2() -> MockNestedMenuItem {
-    MockNestedMenuItem {
+pub fn get_mock_data_set_2() -> MockTreeItem {
+    MockTreeItem {
         name: "root1".to_string(),
         children: vec![
-            MockNestedMenuItem {
+            MockTreeItem {
                 name: "option1".to_string(),
                 children: vec![],
             },
-            MockNestedMenuItem {
+            MockTreeItem {
                 name: "subtree1".to_string(),
-                children: vec![MockNestedMenuItem {
+                children: vec![MockTreeItem {
                     name: "subsubtree1".to_string(),
                     children: vec![
-                        MockNestedMenuItem {
+                        MockTreeItem {
                             name: "subsubtree1child1".to_string(),
                             children: vec![],
                         },
-                        MockNestedMenuItem {
+                        MockTreeItem {
                             name: "subsubtree1child2".to_string(),
                             children: vec![],
                         },
                     ],
                 }],
             },
-            MockNestedMenuItem {
+            MockTreeItem {
                 name: "option2".to_string(),
                 children: vec![],
             },
-            MockNestedMenuItem {
+            MockTreeItem {
                 name: "subtree2".to_string(),
                 children: vec![
-                    MockNestedMenuItem {
+                    MockTreeItem {
                         name: "subsubtree2".to_string(),
-                        children: vec![MockNestedMenuItem {
+                        children: vec![MockTreeItem {
                             name: "subsubtree2child1".to_string(),
                             children: vec![],
                         }],
                     },
-                    MockNestedMenuItem {
+                    MockTreeItem {
                         name: "subtree2child1".to_string(),
                         children: vec![],
                     },
-                    MockNestedMenuItem {
+                    MockTreeItem {
                         name: "subtree2child2".to_string(),
                         children: vec![],
                     },

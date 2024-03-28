@@ -1,6 +1,6 @@
 use crate::experiments::screen_shot::screenshot;
 use crate::io::keys::Keycode;
-use crate::widgets::nested_menu::tests::mock_provider::get_mock_data_set_1;
+use crate::mocks::mock_tree_item::get_mock_data_set_1;
 use crate::widgets::nested_menu::tests::nested_menu_testbed::{NestedMenuTestMsg, NestedMenuTestbed};
 
 pub fn get_setup_1() -> NestedMenuTestbed {

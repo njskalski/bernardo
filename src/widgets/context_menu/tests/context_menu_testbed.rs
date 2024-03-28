@@ -1,18 +1,21 @@
+use crossbeam_channel::Receiver;
+
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::screen_shot::screenshot;
 use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
-use crate::io::output::FinalOutput;
+use crate::io::keys::Keycode;
+use crate::io::output::{FinalOutput, Output};
 use crate::mocks::context_menu_interpreter::ContextMenuInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_output::MockOutput;
 use crate::mocks::mock_providers_builder::MockProvidersBuilder;
-use crate::primitives::sized_xy::SizedXY;
+use crate::mocks::mock_tree_item::MockTreeItem;
+use crate::mocks::with_wait_for::WithWaitFor;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
-use crate::widgets::context_menu::tests::mock_provider::MockNestedMenuItem;
 use crate::widgets::context_menu::widget::ContextMenuWidget;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -23,26 +26,35 @@ pub enum ContextMenuTestMsg {
 impl AnyMsg for ContextMenuTestMsg {}
 
 pub struct ContextMenuTestbed {
-    pub context_menu: ContextMenuWidget<String, MockNestedMenuItem>,
-    pub size: XY,
-    pub config: ConfigRef,
-    pub theme: Theme,
-    pub last_frame: Option<MetaOutputFrame>,
-    pub last_msg: Option<Box<dyn AnyMsg>>,
+    context_menu: ContextMenuWidget<String, MockTreeItem>,
+    size: XY,
+    config: ConfigRef,
+    theme: Theme,
+    last_frame: Option<MetaOutputFrame>,
+    last_msg: Option<Box<dyn AnyMsg>>,
+
+    output: MockOutput,
+    recv: Receiver<MetaOutputFrame>,
 }
 
 impl ContextMenuTestbed {
-    pub fn new(mock_data_set: MockNestedMenuItem) -> Self {
+    pub fn new(mock_data_set: MockTreeItem) -> Self {
         let size = XY::new(30, 20);
         let providers = MockProvidersBuilder::new().build().providers;
+
+        let theme: Theme = Default::default();
+
+        let (output, recv) = MockOutput::new(size, false, theme.clone());
 
         ContextMenuTestbed {
             context_menu: ContextMenuWidget::new(providers, mock_data_set),
             size,
             config: Default::default(),
-            theme: Default::default(),
+            theme,
             last_frame: None,
             last_msg: None,
+            output,
+            recv,
         }
     }
     pub fn context_menu(&self) -> Option<ContextMenuInterpreter<'_>> {
@@ -50,15 +62,14 @@ impl ContextMenuTestbed {
     }
 
     pub fn next_frame(&mut self) {
-        let (mut output, rcvr) = MockOutput::new(self.size, false, self.theme.clone());
-
+        self.output.clear().unwrap();
         self.context_menu.prelayout();
-        self.context_menu.layout(Screenspace::full_output(output.size()));
-        self.context_menu.render(&self.theme, true, &mut output);
+        self.context_menu.layout(Screenspace::full_output(self.size));
+        self.context_menu.render(&self.theme, true, &mut self.output);
 
-        output.end_frame().unwrap();
+        self.output.end_frame().unwrap();
 
-        let frame = rcvr.recv().unwrap();
+        let frame = self.recv.recv().unwrap();
         self.last_frame = Some(frame);
     }
 
@@ -74,5 +85,47 @@ impl ContextMenuTestbed {
         let (_, last_msg) = self.context_menu.act_on(input);
         self.last_msg = last_msg;
         self.next_frame();
+    }
+
+    pub fn push_text(&mut self, text: &str) {
+        for char in text.chars() {
+            self.push_input(Keycode::Char(char).to_key().to_input_event())
+        }
+    }
+
+    pub fn has_items<'a, I: Iterator<Item = &'a str>>(&self, items: I) -> bool {
+        for item_label in items {
+            if self
+                .context_menu()
+                .unwrap()
+                .tree_view()
+                .items()
+                .iter()
+                .find(|item| item.label.as_str() == item_label)
+                .is_none()
+            {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+impl WithWaitFor for ContextMenuTestbed {
+    fn is_frame_based_wait(&self) -> bool {
+        false
+    }
+
+    fn last_frame(&self) -> Option<&MetaOutputFrame> {
+        self.last_frame.as_ref()
+    }
+
+    fn set_last_frame(&mut self, meta_output_frame: MetaOutputFrame) {
+        self.last_frame = Some(meta_output_frame)
+    }
+
+    fn output_receiver(&self) -> &Receiver<MetaOutputFrame> {
+        &self.recv
     }
 }

@@ -1,4 +1,4 @@
-use crate::widgets::nested_menu::tests::mock_provider::get_mock_data_set_2;
+use crate::mocks::mock_tree_item::get_mock_data_set_2;
 use crate::widgets::nested_menu::tests::nested_menu_testbed::NestedMenuTestbed;
 
 pub fn get_setup_2() -> NestedMenuTestbed {

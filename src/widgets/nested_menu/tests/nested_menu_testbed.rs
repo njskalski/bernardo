@@ -9,13 +9,13 @@ use crate::io::output::FinalOutput;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_output::MockOutput;
 use crate::mocks::mock_providers_builder::MockProvidersBuilder;
+use crate::mocks::mock_tree_item::MockTreeItem;
 use crate::mocks::nested_menu_interpreter::NestedMenuInterpreter;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::widget::Widget;
-use crate::widgets::nested_menu::tests::mock_provider::MockNestedMenuItem;
 use crate::widgets::nested_menu::widget::NestedMenuWidget;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -25,7 +25,7 @@ pub enum NestedMenuTestMsg {
 
 impl AnyMsg for NestedMenuTestMsg {}
 
-fn item_to_msg(item: &MockNestedMenuItem) -> Option<Box<dyn AnyMsg>> {
+fn item_to_msg(item: &MockTreeItem) -> Option<Box<dyn AnyMsg>> {
     if item.is_leaf() {
         Some(NestedMenuTestMsg::Text(item.name.clone()).boxed())
     } else {
@@ -35,7 +35,7 @@ fn item_to_msg(item: &MockNestedMenuItem) -> Option<Box<dyn AnyMsg>> {
 }
 
 pub struct NestedMenuTestbed {
-    pub nested_menu: NestedMenuWidget<String, MockNestedMenuItem>,
+    pub nested_menu: NestedMenuWidget<String, MockTreeItem>,
     pub size: XY,
     pub config: ConfigRef,
     pub theme: Theme,
@@ -44,7 +44,7 @@ pub struct NestedMenuTestbed {
 }
 
 impl NestedMenuTestbed {
-    pub fn new(mock_data_set: MockNestedMenuItem) -> Self {
+    pub fn new(mock_data_set: MockTreeItem) -> Self {
         let size = XY::new(30, 20);
         let providers = MockProvidersBuilder::new().build().providers;
 

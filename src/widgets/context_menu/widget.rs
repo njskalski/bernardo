@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 
+use log::warn;
+
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::gladius::providers::Providers;
@@ -10,14 +12,18 @@ use crate::io::output::Output;
 use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::common_query::CommonQuery;
 use crate::primitives::scroll::ScrollDirection;
+use crate::primitives::string_tools;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
-use crate::widget::any_msg::AnyMsg;
+use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::combined_widget::CombinedWidget;
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::widgets::context_menu::msg::ContextMenuMsg;
 use crate::widgets::edit_box::EditBoxWidget;
+use crate::widgets::list_widget::list_widget::ListWidgetMsg;
 use crate::widgets::nested_menu::widget::NESTED_MENU_TYPENAME;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
@@ -40,7 +46,9 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key,
         Self {
             id: get_new_widget_id(),
             size: DEFAULT_SIZE,
-            query_box: EditBoxWidget::new().with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH),
+            query_box: EditBoxWidget::new()
+                .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
+                .with_on_change(|editbox| ContextMenuMsg::UpdateQuery(editbox.get_text()).someboxed()),
             tree_view: WithScroll::new(
                 ScrollDirection::Vertical,
                 TreeViewWidget::new(root_node).with_size_policy(SizePolicy::MATCH_LAYOUT),
@@ -56,6 +64,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key,
                 Keycode::ArrowDown => true,
                 Keycode::ArrowLeft => true,
                 Keycode::ArrowRight => true,
+                Keycode::Enter => true,
                 Keycode::PageUp => true,
                 Keycode::PageDown => true,
                 _ => false,
@@ -94,11 +103,27 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        todo!()
+        None
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        None
+        let our_msg = msg.as_msg::<ContextMenuMsg>();
+        if our_msg.is_none() {
+            warn!("expecetd ContextMenuMsg, got {:?}", msg);
+            return None;
+        }
+
+        return match our_msg.unwrap() {
+            ContextMenuMsg::UpdateQuery(query) => {
+                let query_fuzz = CommonQuery::Fuzzy(query.clone()); //TODO unnecessary copy
+
+                self.tree_view
+                    .internal_mut()
+                    .set_filter_op(Some(Box::new(move |item: &Item| query_fuzz.matches(item.label().as_ref()))), None);
+
+                None
+            }
+        };
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {

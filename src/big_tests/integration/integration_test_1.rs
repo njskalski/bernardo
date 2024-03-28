@@ -2,6 +2,7 @@ use log::debug;
 
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
+use crate::mocks::with_wait_for::WithWaitFor;
 
 #[test]
 fn integration_test_with_rust_analyzer() {

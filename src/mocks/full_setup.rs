@@ -33,6 +33,7 @@ use crate::mocks::mock_navcomp_loader::MockNavcompLoader;
 use crate::mocks::mock_navcomp_provider::{MockCompletionMatcher, MockNavCompEvent, MockNavCompProviderPilot, MockSymbolMatcher};
 use crate::mocks::mock_output::MockOutput;
 use crate::mocks::treeview_interpreter::TreeViewInterpreter;
+use crate::mocks::with_wait_for::WithWaitFor;
 use crate::primitives::xy::XY;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
@@ -333,83 +334,26 @@ impl FullSetup {
         res
     }
 
-    /*
-    waits with default timeout for condition F to be satisfied, returns whether that happened or not
-     */
-    pub fn wait_for<F: Fn(&FullSetup) -> bool>(&mut self, condition: F) -> bool {
-        // maybe it's already true?
-        if self.last_frame.as_ref().is_some() && condition(&self) {
-            return true;
-        }
-
-        let mut waited_frames: usize = 0;
-
-        /*
-        When self.frame_based_wait == false, we wait at most DEFAULT_TIMEOUT for matching frame.
-        Otherwise, we wait up to DEFAULT_TIMEOUT_IN_FRAMES frames, before returning false.
-        The latter setting is designed for debugging, in continous integration it should be off.
-         */
-
-        if !self.frame_based_wait {
-            loop {
-                select! {
-                    recv(self.output_receiver) -> frame_res => {
-                        match frame_res {
-                            Ok(frame) => {
-                                self.last_frame = Some(frame);
-                                if condition(&self) {
-                                    return true;
-                                }
-                                debug!("no hit on condition");
-                            }
-                            Err(e) => {
-                                error!("error receiving frame: {:?}", e);
-                                return false;
-                            }
-                        }
-                    },
-                    default(Self::DEFAULT_TIMEOUT) => {
-                        error!("timeout, making screenshot.");
-                        self.screenshot();
-                        return false;
-                    }
-                }
-            }
-        } else {
-            warn!("TEST WAIT-TIMEOUT IS DISABLED");
-            loop {
-                select! {
-                    recv(self.output_receiver) -> frame_res => {
-                        match frame_res {
-                            Ok(frame) => {
-                                self.last_frame = Some(frame);
-                                if condition(&self) {
-                                    return true;
-                                }
-                                debug!("no hit on condition");
-                            }
-                            Err(e) => {
-                                error!("error receiving frame: {:?}", e);
-                                return false;
-                            }
-                        }
-                    }
-                }
-                waited_frames += 1;
-                if waited_frames >= Self::DEFAULT_TIMEOUT_IN_FRAMES {
-                    error!("waited {} frames to no avail", waited_frames);
-                    return false;
-                }
-            }
-        }
-    }
-
-    pub fn screenshot(&self) -> bool {
-        self.last_frame.as_ref().map(|frame| screenshot(&frame.buffer)).unwrap_or(false)
-    }
-
     pub fn get_theme(&self) -> &Theme {
         &self.theme
+    }
+}
+
+impl WithWaitFor for FullSetup {
+    fn is_frame_based_wait(&self) -> bool {
+        self.frame_based_wait
+    }
+
+    fn last_frame(&self) -> Option<&MetaOutputFrame> {
+        self.last_frame.as_ref()
+    }
+
+    fn set_last_frame(&mut self, meta_output_frame: MetaOutputFrame) {
+        self.last_frame = Some(meta_output_frame)
+    }
+
+    fn output_receiver(&self) -> &Receiver<MetaOutputFrame> {
+        &self.output_receiver
     }
 }
 
