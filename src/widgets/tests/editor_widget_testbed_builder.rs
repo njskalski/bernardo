@@ -66,14 +66,14 @@ impl EditorWidgetTestbedBuilder {
 
     pub fn build_editor(self) -> EditorViewTestbed {
         let size = self.size;
-        let providers_res = self.provider_builder.build();
+        let build_result = self.provider_builder.build();
 
         let docid = DocumentIdentifier::new_unique();
-        let buffer = BufferState::full(Some(providers_res.providers.tree_sitter().clone()), docid)
+        let buffer = BufferState::full(Some(build_result.providers.tree_sitter().clone()), docid)
             .with_lang(LangId::RUST)
             .into_bsr();
 
-        let editor_view = EditorView::new(providers_res.providers.clone(), buffer.clone());
+        let editor_view = EditorView::new(build_result.providers.clone(), buffer.clone());
 
         assert!(buffer
             .lock_rw()
@@ -82,19 +82,18 @@ impl EditorWidgetTestbedBuilder {
             .get_cursor_set(editor_view.get_internal_widget().id())
             .is_some());
 
-        let (output, recv) = MockOutput::new(size, false, providers_res.providers.theme().clone());
+        let (output, recv) = MockOutput::new(size, false, build_result.providers.theme().clone());
 
         EditorViewTestbed {
-            editor_view,
-            size,
-            config: providers_res.providers.config().clone(),
-            clipboard: providers_res.providers.clipboard().clone(),
-            theme: providers_res.providers.theme().clone(),
-            last_frame: None,
-            mock_navcomp_pilot: providers_res.side_channels.navcomp_pilot,
+            widget: editor_view,
 
+            size,
+            providers: build_result.providers,
+            last_frame: None,
+            mock_navcomp_pilot: build_result.side_channels.navcomp_pilot,
             output,
             recv,
+            last_msg: None,
         }
     }
 }

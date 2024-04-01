@@ -1,4 +1,3 @@
-use crate::experiments::screen_shot::screenshot;
 use crate::io::keys::Keycode;
 use crate::mocks::mock_tree_item::get_mock_data_set_1;
 use crate::widgets::nested_menu::tests::nested_menu_testbed::{NestedMenuTestMsg, NestedMenuTestbed};
@@ -42,7 +41,7 @@ fn nested_menu_2_arrows_up_noop() {
         "option1".to_string()
     );
 
-    testbed.push_input(Keycode::ArrowUp.to_key().to_input_event());
+    testbed.send_input(Keycode::ArrowUp.to_key().to_input_event());
 
     assert_eq!(
         testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
@@ -61,7 +60,7 @@ fn nested_menu_3_arrow_down() {
         "option1".to_string()
     );
 
-    testbed.push_input(Keycode::ArrowDown.to_key().to_input_event());
+    testbed.send_input(Keycode::ArrowDown.to_key().to_input_event());
 
     assert_eq!(
         testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
@@ -81,7 +80,7 @@ fn nested_menu_4_arrow_down_noop() {
     );
 
     for _ in 0..2 {
-        testbed.push_input(Keycode::ArrowDown.to_key().to_input_event());
+        testbed.send_input(Keycode::ArrowDown.to_key().to_input_event());
     }
 
     assert_eq!(
@@ -89,7 +88,7 @@ fn nested_menu_4_arrow_down_noop() {
         "submenu".to_string()
     );
 
-    testbed.push_input(Keycode::ArrowDown.to_key().to_input_event());
+    testbed.send_input(Keycode::ArrowDown.to_key().to_input_event());
 
     assert_eq!(
         testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
@@ -111,7 +110,7 @@ fn nested_menu_5_enter_expands() {
     );
 
     for _ in 0..2 {
-        testbed.push_input(Keycode::ArrowDown.to_key().to_input_event());
+        testbed.send_input(Keycode::ArrowDown.to_key().to_input_event());
     }
 
     assert_eq!(
@@ -121,7 +120,7 @@ fn nested_menu_5_enter_expands() {
 
     // screenshot(&testbed.last_frame.clone().unwrap().buffer);
 
-    testbed.push_input(Keycode::Enter.to_key().to_input_event());
+    testbed.send_input(Keycode::Enter.to_key().to_input_event());
 
     let items = testbed.nested_menu().unwrap().get_items().collect::<Vec<_>>();
 
@@ -137,8 +136,6 @@ fn nested_menu_5_enter_expands() {
         testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
         "child1".to_string()
     );
-
-    screenshot(&testbed.last_frame.unwrap().buffer);
 }
 
 #[test]
@@ -153,7 +150,7 @@ fn nested_menu_6_arrow_right_expands() {
     );
 
     for _ in 0..2 {
-        testbed.push_input(Keycode::ArrowDown.to_key().to_input_event());
+        testbed.send_input(Keycode::ArrowDown.to_key().to_input_event());
     }
 
     assert_eq!(
@@ -161,7 +158,7 @@ fn nested_menu_6_arrow_right_expands() {
         "submenu".to_string()
     );
 
-    testbed.push_input(Keycode::ArrowRight.to_key().to_input_event());
+    testbed.send_input(Keycode::ArrowRight.to_key().to_input_event());
 
     let items = testbed.nested_menu().unwrap().get_items().collect::<Vec<_>>();
 
@@ -191,7 +188,7 @@ fn nested_menu_7_arrow_left_collapses() {
     );
 
     for _ in 0..2 {
-        testbed.push_input(Keycode::ArrowDown.to_key().to_input_event());
+        testbed.send_input(Keycode::ArrowDown.to_key().to_input_event());
     }
 
     assert_eq!(
@@ -199,7 +196,7 @@ fn nested_menu_7_arrow_left_collapses() {
         "submenu".to_string()
     );
 
-    testbed.push_input(Keycode::ArrowRight.to_key().to_input_event());
+    testbed.send_input(Keycode::ArrowRight.to_key().to_input_event());
 
     {
         let items = testbed.nested_menu().unwrap().get_items().collect::<Vec<_>>();
@@ -213,7 +210,7 @@ fn nested_menu_7_arrow_left_collapses() {
         assert_eq!(items[2].leaf, true);
     }
 
-    testbed.push_input(Keycode::ArrowLeft.to_key().to_input_event());
+    testbed.send_input(Keycode::ArrowLeft.to_key().to_input_event());
 
     testbed.next_frame();
 
@@ -241,7 +238,7 @@ fn nested_menu_8_msgs() {
         "option1".to_string()
     );
 
-    testbed.push_input(Keycode::Enter.to_key().to_input_event());
+    testbed.send_input(Keycode::Enter.to_key().to_input_event());
 
     assert_eq!(
         testbed.last_msg.take().unwrap().as_msg::<NestedMenuTestMsg>(),
@@ -249,7 +246,7 @@ fn nested_menu_8_msgs() {
     );
 
     for _ in 0..2 {
-        testbed.push_input(Keycode::ArrowDown.to_key().to_input_event());
+        testbed.send_input(Keycode::ArrowDown.to_key().to_input_event());
     }
 
     assert_eq!(
@@ -257,7 +254,7 @@ fn nested_menu_8_msgs() {
         "submenu".to_string()
     );
 
-    testbed.push_input(Keycode::Enter.to_key().to_input_event());
+    testbed.send_input(Keycode::Enter.to_key().to_input_event());
     assert!(testbed.last_msg.is_none());
 
     assert_eq!(
@@ -265,28 +262,28 @@ fn nested_menu_8_msgs() {
         "child1".to_string()
     );
 
-    testbed.push_input(Keycode::Enter.to_key().to_input_event());
+    testbed.send_input(Keycode::Enter.to_key().to_input_event());
 
     assert_eq!(
         testbed.last_msg.take().unwrap().as_msg::<NestedMenuTestMsg>(),
         Some(NestedMenuTestMsg::Text("child1".to_string())).as_ref()
     );
 
-    testbed.push_input(Keycode::ArrowDown.to_key().to_input_event());
+    testbed.send_input(Keycode::ArrowDown.to_key().to_input_event());
 
     assert_eq!(
         testbed.nested_menu().unwrap().get_selected_item().unwrap().label,
         "child2".to_string()
     );
 
-    testbed.push_input(Keycode::Enter.to_key().to_input_event());
+    testbed.send_input(Keycode::Enter.to_key().to_input_event());
 
     assert_eq!(
         testbed.last_msg.take().unwrap().as_msg::<NestedMenuTestMsg>(),
         Some(NestedMenuTestMsg::Text("child2".to_string())).as_ref()
     );
 
-    testbed.push_input(Keycode::ArrowLeft.to_key().to_input_event());
+    testbed.send_input(Keycode::ArrowLeft.to_key().to_input_event());
 
     assert_eq!(
         testbed.nested_menu().unwrap().get_selected_item().unwrap().label,

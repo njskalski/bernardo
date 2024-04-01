@@ -12,7 +12,7 @@ fn main() {
 
     // some comment to avoid formatting collapse
 }"#;
-        let mut buffer_lock = editor_view_testbed.editor_view.get_buffer_ref().lock_rw().unwrap();
+        let mut buffer_lock = editor_view_testbed.widget().get_buffer_ref().lock_rw().unwrap();
         buffer_lock.set_text(some_text);
     }
 

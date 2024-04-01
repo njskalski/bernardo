@@ -11,16 +11,17 @@ pub type EditBoxTestbed = GenericWidgetTestbed<EditBoxWidget>;
 impl EditBoxTestbed {
     pub fn new() -> Self {
         let size = XY::new(100, 1);
-        let providers = MockProvidersBuilder::new().build().providers;
-        let (output, recv) = MockOutput::new(size, false, providers.theme().clone());
+        let build_result = MockProvidersBuilder::new().build();
+        let (output, recv) = MockOutput::new(size, false, build_result.providers.theme().clone());
 
         Self {
             widget: EditBoxWidget::new(),
             size,
             last_frame: None,
+            mock_navcomp_pilot: build_result.side_channels.navcomp_pilot,
             output,
             recv,
-            providers,
+            providers: build_result.providers,
             last_msg: None,
         }
     }

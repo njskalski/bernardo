@@ -6,6 +6,7 @@ use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::output::{FinalOutput, Output};
 use crate::mocks::meta_frame::MetaOutputFrame;
+use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
 use crate::mocks::mock_output::MockOutput;
 use crate::mocks::with_wait_for::WithWaitFor;
 use crate::primitives::xy::XY;
@@ -17,6 +18,7 @@ pub struct GenericWidgetTestbed<W: Widget> {
     pub size: XY,
     pub providers: Providers,
     pub last_frame: Option<MetaOutputFrame>,
+    pub mock_navcomp_pilot: MockNavCompProviderPilot,
 
     pub output: MockOutput,
     pub recv: Receiver<MetaOutputFrame>,
@@ -47,6 +49,13 @@ impl<W: Widget> GenericWidgetTestbed<W> {
     pub fn send_input(&mut self, input: InputEvent) {
         self.last_msg = self.widget.act_on(input).1;
         self.next_frame();
+    }
+
+    pub fn widget(&self) -> &W {
+        &self.widget
+    }
+    pub fn widget_mut(&mut self) -> &mut W {
+        &mut self.widget
     }
 }
 
