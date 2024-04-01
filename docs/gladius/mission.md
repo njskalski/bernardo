@@ -28,7 +28,7 @@ option highlighted by default in TUI will be NO.
 
 Slow hard drive, network or LSP should **never** cause a slowdown in redraw. We will show you "working on it" icon and
 you can hit say "actually, don't bother" (ESC) button **always**. If you have to write 'kill -9 gladius', that's a bug
-and we need to fix it.
+that requires fixing.
 
 ### No stupid tutorials
 
@@ -40,16 +40,13 @@ that shit right away and warn all your friends "this manufacturer went mad".
 
 ### No mouse
 
-Mouse is a tool for graphics designers, radar operators and architects. Not for coders. If your IDE requires mouse,
-you're not doing it right.
+Mouse is a tool for graphics designers, radar operators and architects. Not for coders.
 
 ### No setup
 
 All keybindings should be as common and natural as possible.
 
 A setup should be disposable and easy to reproduce.
-
-No debugging of scripts.
 
 ### No flow-killers
 
@@ -77,7 +74,6 @@ Gladius will:
 ### No opening web browser
 
 If you have to go to StackOverflow or ChatGPT web page to ask for something like "how do I open file in Python", that's
-also killing the flow. Most websites make money trading your attention, so they are designed to get as much of that raw
-resource as possible.
+also killing the flow. Most websites make money trading your attention, so they are designed to steal it from you.
 
 Simple facts specific to context of your work should be available from within, without need for additional tools.
