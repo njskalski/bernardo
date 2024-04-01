@@ -1,8 +1,9 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use log::{debug, warn};
+use log::{debug, error, warn};
 
+use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::gladius::providers::Providers;
@@ -34,10 +35,14 @@ pub const CONTEXT_MENU_WIDGET_NAME: &'static str = "context_menu";
 pub struct ContextMenuWidget<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> {
     id: WID,
     size: XY,
+    config: ConfigRef,
+
     query_box: EditBoxWidget,
     tree_view: WithScroll<TreeViewWidget<Key, Item>>,
 
     layout_res: Option<LayoutResult<Self>>,
+
+    on_miss: Option<WidgetAction<ContextMenuWidget<Key, Item>>>,
 }
 
 impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key, Item> {
@@ -45,6 +50,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key,
         Self {
             id: get_new_widget_id(),
             size: DEFAULT_SIZE,
+            config: providers.config().clone(),
             query_box: EditBoxWidget::new()
                 .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
                 .with_on_change(|editbox| ContextMenuMsg::UpdateQuery(editbox.get_text()).someboxed()),
@@ -55,7 +61,19 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key,
                     .with_filter_overrides_expanded(),
             ),
             layout_res: None,
+            on_miss: None,
         }
+    }
+
+    pub fn with_on_miss(self, on_miss: WidgetAction<ContextMenuWidget<Key, Item>>) -> Self {
+        Self {
+            on_miss: Some(on_miss),
+            ..self
+        }
+    }
+
+    pub fn set_on_miss(&mut self, on_miss_op: Option<WidgetAction<ContextMenuWidget<Key, Item>>>) {
+        self.on_miss = on_miss_op;
     }
 
     pub fn with_on_hit(mut self, on_hit: WidgetAction<TreeViewWidget<Key, Item>>) -> Self {
@@ -117,7 +135,10 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        None
+        match input_event {
+            InputEvent::KeyInput(key) if key == self.config.keyboard_config.global.close_context_menu => ContextMenuMsg::Close.someboxed(),
+            _ => None,
+        }
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
@@ -136,6 +157,14 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
                     .set_filter_op(Some(Box::new(move |item: &Item| query_fuzz.matches(item.label().as_ref()))), None);
 
                 None
+            }
+            ContextMenuMsg::Close => {
+                if let Some(on_miss) = self.on_miss {
+                    on_miss(self)
+                } else {
+                    warn!("received close message, but no on-miss is defined");
+                    None
+                }
             }
         };
     }
@@ -156,16 +185,19 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
         self.combined_render(theme, focused, output)
     }
 
-    // fn kite(&self) -> XY {
-    //     todo!()
-    // }
-
     fn act_on(&mut self, input_event: InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
-        let act_result = if Self::input_to_treeview(&input_event) {
+        let mut act_result = if Self::input_to_treeview(&input_event) {
             self.tree_view.act_on(input_event)
         } else {
             self.query_box.act_on(input_event)
         };
+
+        if act_result.0 == false {
+            // not consumed
+            if let Some(msg_to_self) = self.on_input(input_event) {
+                act_result = (true, Some(msg_to_self));
+            }
+        }
 
         if let Some(msg_to_myself) = act_result.1 {
             debug_assert!(act_result.0);

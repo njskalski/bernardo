@@ -458,7 +458,8 @@ impl EditorWidget {
             self.requested_hover = hover_settings_op.map(|hs| {
                 let context_bar = ContextBarWidget::new(self.providers.clone(), items.unwrap())
                     .autoexpand_if_single_subtree()
-                    .with_on_hit(|widget| widget.get_highlighted().1.on_hit());
+                    .with_on_hit(|widget| widget.get_highlighted().1.on_hit())
+                    .with_on_miss(|_| EditorWidgetMsg::HoverClose.someboxed());
 
                 let hover = EditorHover::Context(context_bar);
                 (hs, hover)
@@ -1171,30 +1172,30 @@ impl Widget for EditorWidget {
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         let c = &self.providers.config().keyboard_config.editor;
 
-        match (&self.state, input_event) {
-            (_, _) if self.ignore_input_altogether => {
+        match (&self.state, &self.requested_hover, input_event) {
+            (_, _, _) if self.ignore_input_altogether => {
                 debug!("ignoring input because ignore_input_altogether = true");
                 None
             }
-            (&EditorState::Editing, InputEvent::KeyInput(key)) if key == c.enter_cursor_drop_mode => {
+            (&EditorState::Editing, None, InputEvent::KeyInput(key)) if key == c.enter_cursor_drop_mode => {
                 EditorWidgetMsg::ToCursorDropMode.someboxed()
             }
-            (&EditorState::DroppingCursor { .. }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Esc => {
+            (&EditorState::DroppingCursor { .. }, None, InputEvent::KeyInput(key)) if key.keycode == Keycode::Esc => {
                 EditorWidgetMsg::ToEditMode.someboxed()
             }
-            (&EditorState::DroppingCursor { special_cursor }, InputEvent::KeyInput(key)) if key.keycode == Keycode::Enter => {
+            (&EditorState::DroppingCursor { special_cursor }, None, InputEvent::KeyInput(key)) if key.keycode == Keycode::Enter => {
                 debug_assert!(special_cursor.is_simple());
 
                 EditorWidgetMsg::DropCursorFlip { cursor: special_cursor }.someboxed()
             }
-            (&EditorState::Editing, InputEvent::KeyInput(key)) if !self.readonly && key == c.request_completions => {
+            (&EditorState::Editing, None, InputEvent::KeyInput(key)) if !self.readonly && key == c.request_completions => {
                 EditorWidgetMsg::RequestCompletions.someboxed()
             }
-            (&EditorState::Editing, InputEvent::KeyInput(key)) if !self.readonly && key == c.reformat => {
+            (&EditorState::Editing, None, InputEvent::KeyInput(key)) if !self.readonly && key == c.reformat => {
                 EditorWidgetMsg::Reformat.someboxed()
             }
             // TODO change to if let Some() when it's stabilized
-            (&EditorState::DroppingCursor { .. }, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
+            (&EditorState::DroppingCursor { .. }, None, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
                 let cem = key_to_edit_msg(key).unwrap();
                 if !cem.is_editing() {
                     EditorWidgetMsg::DropCursorMove { cem }.someboxed()
@@ -1202,8 +1203,8 @@ impl Widget for EditorWidget {
                     None
                 }
             }
-            (&EditorState::Editing, InputEvent::EverythingBarTrigger) => EditorWidgetMsg::RequestContextBar.someboxed(),
-            (&EditorState::Editing, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
+            (&EditorState::Editing, None, InputEvent::EverythingBarTrigger) => EditorWidgetMsg::RequestContextBar.someboxed(),
+            (&EditorState::Editing, None, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
                 let cem = key_to_edit_msg(key).unwrap();
                 if cem.is_editing() && self.readonly {
                     None
@@ -1383,23 +1384,6 @@ impl Widget for EditorWidget {
         self.kite
     }
 }
-//
-// impl Drop for EditorWidget {
-//     fn drop(&mut self) {
-//         debug!("dropping editor widget for buffer : [{:?}]", self.buffer.get_path());
-//
-//         match (&self.navcomp, self.buffer.get_path()) {
-//             (Some(_navcomp), Some(_spath)) => {
-//                 debug!("shutting down navcomp.");
-//                 // navcomp.file_closed(spath);
-//             }
-//             _ => {
-//                 debug!("not stoping navigation, because navcomp is some: {}, ff is some: {}",
-//                     self.navcomp.is_some(), self.buffer.get_path().is_some() )
-//             }
-//         }
-//     }
-// }
 
 impl HasInvariant for EditorWidget {
     fn check_invariant(&self) -> bool {
