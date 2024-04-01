@@ -7,6 +7,7 @@ use crate::fs::fsf_ref::FsfRef;
 use crate::io::input_event::InputEvent;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
+use crate::mocks::mock_output::MockOutput;
 use crate::mocks::mock_providers_builder::MockProvidersBuilder;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
@@ -81,6 +82,8 @@ impl EditorWidgetTestbedBuilder {
             .get_cursor_set(editor_view.get_internal_widget().id())
             .is_some());
 
+        let (output, recv) = MockOutput::new(size, false, providers_res.providers.theme().clone());
+
         EditorViewTestbed {
             editor_view,
             size,
@@ -89,6 +92,9 @@ impl EditorWidgetTestbedBuilder {
             theme: providers_res.providers.theme().clone(),
             last_frame: None,
             mock_navcomp_pilot: providers_res.side_channels.navcomp_pilot,
+
+            output,
+            recv,
         }
     }
 }

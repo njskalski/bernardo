@@ -1,15 +1,17 @@
+use crossbeam_channel::Receiver;
+
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::screen_shot::screenshot;
 use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
-use crate::io::output::FinalOutput;
+use crate::io::output::{FinalOutput, Output};
 use crate::mocks::editor_interpreter::EditorInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
 use crate::mocks::mock_output::MockOutput;
-use crate::primitives::sized_xy::SizedXY;
+use crate::mocks::with_wait_for::WithWaitFor;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
 use crate::widgets::editor_view::editor_view::EditorView;
@@ -22,6 +24,9 @@ pub struct EditorViewTestbed {
     pub theme: Theme,
     pub last_frame: Option<MetaOutputFrame>,
     pub mock_navcomp_pilot: MockNavCompProviderPilot,
+
+    pub output: MockOutput,
+    pub recv: Receiver<MetaOutputFrame>,
 }
 
 impl EditorViewTestbed {
@@ -30,15 +35,14 @@ impl EditorViewTestbed {
     }
 
     pub fn next_frame(&mut self) {
-        let (mut output, rcvr) = MockOutput::new(self.size, false, self.theme.clone());
-
+        self.output.clear().unwrap();
         self.editor_view.prelayout();
-        self.editor_view.layout(Screenspace::full_output(output.size()));
-        self.editor_view.render(&self.theme, true, &mut output);
+        self.editor_view.layout(Screenspace::full_output(self.size));
+        self.editor_view.render(&self.theme, true, &mut self.output);
 
-        output.end_frame().unwrap();
+        self.output.end_frame().unwrap();
 
-        let frame = rcvr.recv().unwrap();
+        let frame = self.recv.recv().unwrap();
         self.last_frame = Some(frame);
     }
 
@@ -58,5 +62,23 @@ impl EditorViewTestbed {
     pub fn push_input(&mut self, input: InputEvent) {
         self.editor_view.act_on(input);
         self.next_frame();
+    }
+}
+
+impl WithWaitFor for EditorViewTestbed {
+    fn is_frame_based_wait(&self) -> bool {
+        false
+    }
+
+    fn last_frame(&self) -> Option<&MetaOutputFrame> {
+        self.last_frame.as_ref()
+    }
+
+    fn set_last_frame(&mut self, meta_output_frame: MetaOutputFrame) {
+        self.last_frame = Some(meta_output_frame);
+    }
+
+    fn output_receiver(&self) -> &Receiver<MetaOutputFrame> {
+        &self.recv
     }
 }
