@@ -12,7 +12,7 @@ fn main() {
 
     // some comment to avoid formatting collapse
 }"#;
-        let mut buffer_lock = editor_view_testbed.editor_view.get_buffer_ref().lock_rw().unwrap();
+        let mut buffer_lock = editor_view_testbed.widget().get_buffer_ref().lock_rw().unwrap();
         buffer_lock.set_text(some_text);
     }
 
@@ -26,9 +26,17 @@ fn basic_editor_testbed_test() {
 
     assert!(setup.interpreter().unwrap().is_editor_focused());
 
-    {
-        // let interpreter = setup.interpreter()?;
-    }
-
     // screenshot(i);
 }
+
+// #[test]
+// fn hover_opens_test() {
+//     let mut setup = get_setup();
+//     setup.next_frame();
+//
+//     assert!(setup.interpreter().unwrap().is_editor_focused());
+//
+//     setup.push_input(setup.config.keyboard_config.global.everything_bar.to_input_event());
+//
+//     assert!(setup.wait_for(|setup| { setup.interpreter().unwrap().context_bar_op().is_some() }))
+// }

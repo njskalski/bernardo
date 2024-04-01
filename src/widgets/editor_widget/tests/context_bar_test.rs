@@ -53,7 +53,7 @@ fn main() {
 
     // some comment to avoid formatting collapse
 }"#;
-        let mut buffer_lock = editor_view_testbed.editor_view.get_buffer_ref().lock_rw().unwrap();
+        let mut buffer_lock = editor_view_testbed.widget().get_buffer_ref().lock_rw().unwrap();
         buffer_lock.set_text(some_text);
     }
 
@@ -66,7 +66,7 @@ fn editor_view_context() {
     setup.next_frame();
 
     for _i in 0..5 {
-        setup.push_input(InputEvent::KeyInput(Keycode::ArrowDown.to_key()))
+        setup.send_input(InputEvent::KeyInput(Keycode::ArrowDown.to_key()))
     }
 
     // let interpreter = setup.interpreter().unwrap();
