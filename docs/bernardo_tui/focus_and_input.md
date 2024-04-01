@@ -59,6 +59,12 @@ the **Focus Path** will be offered any input.
 
    A **Message** produced by *update* method will be offered to the parent of **Widget** *A*.
 
+This default behavior is implemented in Widget trait, in method:
+
+```rust
+fn act_on(&mut self, input_event: InputEvent) -> (bool, Option<Box<dyn AnyMsg>>);
+```
+
 ## Why
 
 Primary driver behind development of Bernardo TUI was my dissatisfaction with how focus is handled by competitive
