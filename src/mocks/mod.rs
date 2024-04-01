@@ -8,7 +8,7 @@ be slow to a reasonable degree.
 pub mod button_interpreter;
 pub mod code_results_interpreter;
 pub mod completion_interpreter;
-pub mod context_bar_interpreter;
+
 pub mod context_menu_interpreter;
 pub mod editbox_interpreter;
 pub mod editor_interpreter;

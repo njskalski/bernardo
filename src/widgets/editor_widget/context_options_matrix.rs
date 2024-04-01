@@ -5,6 +5,7 @@ use crate::cursor::cursor_set::CursorSet;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::w7e::navcomp_provider::NavCompSymbol;
 use crate::widgets::editor_widget::context_bar::context_bar_item::ContextBarItem;
+
 use crate::widgets::editor_widget::editor_widget::EditorState;
 
 /*
@@ -18,8 +19,8 @@ pub fn get_context_options(
     single_stupid_cursor: Option<StupidCursor>,
     lsp_symbol: Option<&NavCompSymbol>,
     tree_sitter_symbol: Option<&str>,
-) -> Vec<ContextBarItem> {
-    let mut results: Vec<ContextBarItem> = Vec::new();
+) -> Option<ContextBarItem> {
+    let mut code_results: Vec<ContextBarItem> = Vec::new();
 
     debug!("hit lsp_symbol, tree_sitter_symbol: {:?} {:?}", &lsp_symbol, &tree_sitter_symbol);
 
@@ -33,12 +34,12 @@ pub fn get_context_options(
         tree_sitter_symbol,
     ) {
         (_, Some(_), _, _, _, Some("function")) => {
-            results.push(ContextBarItem::GO_TO_DEFINITION);
-            results.push(ContextBarItem::SHOW_USAGES);
+            code_results.push(ContextBarItem::GO_TO_DEFINITION);
+            code_results.push(ContextBarItem::SHOW_USAGES);
         }
         (_, Some(_), _, _, _, Some("function.builtin")) => {
-            results.push(ContextBarItem::GO_TO_DEFINITION);
-            results.push(ContextBarItem::SHOW_USAGES);
+            code_results.push(ContextBarItem::GO_TO_DEFINITION);
+            code_results.push(ContextBarItem::SHOW_USAGES);
         }
         _ => {}
     }
@@ -52,12 +53,16 @@ pub fn get_context_options(
         tree_sitter_symbol,
     ) {
         (_, _, _, _, Some(_), _) => {
-            results.push(ContextBarItem::REFORMAT_FILE);
+            code_results.push(ContextBarItem::REFORMAT_FILE);
         }
         _ => {}
     }
 
-    debug!("get_context_options: [{:?}]", &results);
+    debug!("get_context_options: [{:?}]", &code_results);
 
-    results
+    if code_results.is_empty() {
+        None
+    } else {
+        Some(ContextBarItem::new_internal_node("code".into(), code_results))
+    }
 }
