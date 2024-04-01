@@ -1,12 +1,9 @@
-use crate::primitives::tree::tree_node::TreeNode;
 use std::borrow::Cow;
 use std::fmt::Debug;
-use std::rc::Rc;
-use std::sync::Arc;
 
+use crate::primitives::tree::tree_node::TreeNode;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
-use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 
 pub type Action = fn() -> Box<dyn AnyMsg>;
 pub type Key = Cow<'static, str>;
@@ -43,11 +40,6 @@ impl ContextBarItem {
         title: Cow::Borrowed("show usages"),
         node_type: NodeType::Leaf(|| EditorWidgetMsg::ShowUsages.boxed()),
     };
-    // TODO add reformat selection
-    //
-    // pub fn msg(&self) -> Box<dyn AnyMsg> {
-    //     (self.action)()
-    // }
 }
 
 impl TreeNode<Key> for ContextBarItem {
@@ -75,5 +67,14 @@ impl TreeNode<Key> for ContextBarItem {
 
     fn is_complete(&self) -> bool {
         true
+    }
+}
+
+impl ContextBarItem {
+    pub fn on_hit(&self) -> Option<Box<dyn AnyMsg>> {
+        match self.node_type {
+            NodeType::Leaf(action) => Some(action()),
+            NodeType::InternalNode(_) => None,
+        }
     }
 }

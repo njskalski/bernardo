@@ -215,7 +215,7 @@ impl MainView {
                     item: item.spath().clone(),
                 }))
             })
-            .with_on_select_hightlighted(|widget| {
+            .with_on_hit(|widget| {
                 let (_, item) = widget.get_highlighted();
                 Some(Box::new(MainViewMsg::TreeSelected {
                     item: item.spath().clone(),

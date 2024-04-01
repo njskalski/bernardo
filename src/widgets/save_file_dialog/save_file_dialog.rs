@@ -85,7 +85,7 @@ impl SaveFileDialogWidget {
                 let (_, item) = widget.get_highlighted();
                 Some(Box::new(SaveFileDialogMsg::TreeHighlighted(item.spath().clone())))
             })
-            .with_on_select_hightlighted(|widget| {
+            .with_on_hit(|widget| {
                 let (_, item) = widget.get_highlighted();
                 SaveFileDialogMsg::TreeHit(item.spath().clone()).someboxed()
             });

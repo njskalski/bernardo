@@ -201,10 +201,11 @@ fn clangd_cpp_go_to_definition_INCOMPLETE() {
 
     assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().context_bar_op().is_some()));
 
-    assert_eq!(
-        full_setup.get_first_editor().unwrap().context_bar_op().unwrap().selected_option(),
-        Some("go to definition".to_string())
-    );
+    full_setup.send_key(Keycode::ArrowDown.to_key());
+
+    assert!(full_setup.wait_for(|f| {
+        f.get_first_editor().unwrap().context_bar_op().unwrap().selected_option() == Some("go to definition".to_string())
+    }));
 
     assert!(full_setup.send_key(Keycode::Enter.to_key()));
 
@@ -260,6 +261,7 @@ fn clangd_cpp_show_usages() {
 
     assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().context_bar_op().is_some()));
 
+    assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
     assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
 
     assert!(full_setup

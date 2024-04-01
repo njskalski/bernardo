@@ -52,6 +52,20 @@ pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {
             MaybeBool::False
         }
     }
+
+    fn is_single_subtree(&self) -> bool {
+        if self.is_leaf() {
+            return false;
+        }
+
+        for child in self.child_iter() {
+            if !child.is_leaf() {
+                return false;
+            }
+        }
+
+        true
+    }
 }
 
 pub type TreeItFilter<Node> = Box<dyn Fn(&Node) -> bool>;

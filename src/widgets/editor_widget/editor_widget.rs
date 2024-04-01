@@ -456,7 +456,11 @@ impl EditorWidget {
             let hover_settings_op = self.get_cursor_related_hover_settings(buffer, None);
 
             self.requested_hover = hover_settings_op.map(|hs| {
-                let hover = EditorHover::Context(ContextBarWidget::new(self.providers.clone(), items.unwrap()));
+                let context_bar = ContextBarWidget::new(self.providers.clone(), items.unwrap())
+                    .autoexpand_if_single_subtree()
+                    .with_on_hit(|widget| widget.get_highlighted().1.on_hit());
+
+                let hover = EditorHover::Context(context_bar);
                 (hs, hover)
             });
         }

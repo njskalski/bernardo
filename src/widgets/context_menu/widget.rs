@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use log::warn;
+use log::{debug, warn};
 
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
@@ -19,7 +19,7 @@ use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::combined_widget::CombinedWidget;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WidgetActionParam, WID};
 use crate::widgets::context_menu::msg::ContextMenuMsg;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::list_widget::list_widget::ListWidgetMsg;
@@ -56,6 +56,19 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key,
             ),
             layout_res: None,
         }
+    }
+
+    pub fn with_on_hit(mut self, on_hit: WidgetAction<TreeViewWidget<Key, Item>>) -> Self {
+        self.tree_view.internal_mut().set_on_hit_op(Some(on_hit));
+        self
+    }
+
+    pub fn autoexpand_if_single_subtree(mut self) -> Self {
+        if self.tree_view.internal().get_root_node().is_single_subtree() {
+            self.tree_view.internal_mut().expand_root();
+        }
+
+        self
     }
 
     fn input_to_treeview(input_event: &InputEvent) -> bool {
@@ -110,8 +123,8 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         let our_msg = msg.as_msg::<ContextMenuMsg>();
         if our_msg.is_none() {
-            warn!("expecetd ContextMenuMsg, got {:?}", msg);
-            return None;
+            debug!("expecetd ContextMenuMsg, got {:?}, passing through", msg);
+            return Some(msg);
         }
 
         return match our_msg.unwrap() {
