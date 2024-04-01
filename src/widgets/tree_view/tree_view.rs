@@ -18,7 +18,7 @@ use crate::primitives::tree::tree_node::{TreeItFilter, TreeNode};
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WidgetActionParam, WID};
 
 pub const TYPENAME: &str = "tree_view";
 
@@ -42,7 +42,7 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
     on_highlighted_changed: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
     on_flip_expand: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
     // called on hitting "enter" over a selection.
-    on_select_highlighted: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
+    on_hit: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
 
     // This will highlight letters given their indices. Use to do "fuzzy search" in tree.
     highlighter_op: Option<LabelHighlighter>,
@@ -86,7 +86,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
             on_miss: None,
             on_highlighted_changed: None,
             on_flip_expand: None,
-            on_select_highlighted: None,
+            on_hit: None,
             highlighter_op: None,
             filter_op: None,
             filter_depth_op: None,
@@ -142,6 +142,10 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
         &self.expanded
     }
 
+    pub fn expand_root(&mut self) {
+        self.expanded.insert(self.root_node.id().clone());
+    }
+
     pub fn set_selected(&mut self, k: &Key) -> bool {
         for (pos, (_, item)) in self.items().enumerate() {
             if item.id() == k {
@@ -192,15 +196,19 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
         self.on_highlighted_changed.and_then(|f| f(self))
     }
 
-    pub fn with_on_select_hightlighted(self, on_select_highlighted: WidgetAction<TreeViewWidget<Key, Item>>) -> Self {
+    pub fn with_on_hit(self, on_hit: WidgetAction<TreeViewWidget<Key, Item>>) -> Self {
         Self {
-            on_select_highlighted: Some(on_select_highlighted),
+            on_hit: Some(on_hit),
             ..self
         }
     }
 
-    fn event_select_highlighted(&self) -> Option<Box<dyn AnyMsg>> {
-        self.on_select_highlighted.and_then(|f| f(self))
+    pub fn set_on_hit_op(&mut self, on_hit_op: Option<WidgetAction<TreeViewWidget<Key, Item>>>) {
+        self.on_hit = on_hit_op;
+    }
+
+    fn event_hit(&self) -> Option<Box<dyn AnyMsg>> {
+        self.on_hit.and_then(|f| f(self))
     }
 
     fn event_miss(&self) -> Option<Box<dyn AnyMsg>> {
@@ -322,7 +330,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
                 };
 
                 if node.is_leaf() {
-                    self.event_select_highlighted()
+                    self.event_hit()
                 } else {
                     self.flip_expanded(node.id());
                     self.event_flip_expand()
