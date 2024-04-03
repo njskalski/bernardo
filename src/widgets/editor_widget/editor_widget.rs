@@ -226,6 +226,10 @@ impl EditorWidget {
         }
     }
 
+    pub fn set_ignore_input_altogether(&mut self, ignore_input_altogether: bool) {
+        self.ignore_input_altogether = ignore_input_altogether
+    }
+
     fn after_path_change(&mut self) {
         self.update_navcomp();
     }

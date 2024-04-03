@@ -66,6 +66,8 @@ pub struct EditorView {
     See get_save_file_dialog_path for details.
      */
     start_path: Option<SPath>,
+
+    ignore_input_altogether: bool,
 }
 
 impl EditorView {
@@ -101,6 +103,7 @@ impl EditorView {
             state: EditorViewState::Simple,
             hover_dialog: None,
             start_path: None,
+            ignore_input_altogether: false,
         }
     }
 
@@ -121,6 +124,11 @@ impl EditorView {
         };
 
         res
+    }
+
+    pub fn with_ignore_input_altogether(mut self) -> Self {
+        self.editor.internal_mut().set_ignore_input_altogether(true);
+        self
     }
 
     // pub fn with_buffer(self, buffer: BufferSharedRef) -> Self {

@@ -1,4 +1,3 @@
-use std::thread::sleep;
 use std::time::Duration;
 
 use crate::io::keys::Keycode;
@@ -77,9 +76,6 @@ fn show_usages_integ_test_1() {
     assert!(full_setup.send_key(Keycode::Enter.to_key()));
 
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().is_some() }));
-
-    sleep(Duration::from_secs(4));
-    full_setup.wait_frame();
 
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().unwrap().editors().len() > 0 }));
 
