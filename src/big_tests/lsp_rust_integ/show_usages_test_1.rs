@@ -1,11 +1,15 @@
+use std::thread::sleep;
+use std::time::Duration;
+
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::with_wait_for::WithWaitFor;
 
 fn get_full_setup() -> FullSetup {
     let full_setup: FullSetup = FullSetup::new("./test_envs/lsp_rust_integ_1")
-        .with_files(["src/main.rs"])
+        .with_files(["src/some_other_file.rs"])
         .with_mock_navcomp(false)
+        .with_timeout(Duration::from_secs(10))
         .build();
 
     full_setup
@@ -26,24 +30,32 @@ fn show_usages_integ_test_1() {
         vec![1]
     );
 
-    for _ in 0..7 {
-        assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
-    }
-
-    assert!(full_setup.wait_for(|f| f
+    assert!(full_setup
         .get_first_editor()
         .unwrap()
         .get_visible_cursor_lines()
-        .find(|line| line.visible_idx == 8)
-        .is_some()));
+        .find(|line| line.visible_idx == 1)
+        .is_some());
 
-    assert!(full_setup.send_key(Keycode::ArrowRight.to_key().with_ctrl()));
+    //pub fn some_function(x: &str) {
+    for _ in 0..7 {
+        assert!(full_setup.send_key(Keycode::ArrowRight.to_key()));
+    }
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .get_visible_cursor_cells()
+            .find(|(pos, cell)| cell.grapheme() == Some("s"))
+            .is_some()
+    }));
 
     assert!(full_setup.wait_for(|f| {
         f.get_first_editor()
             .unwrap()
             .get_visible_cursor_lines()
-            .find(|line| line.contents.text.trim() == "some_function(\"a\");⏎")
+            .find(|line| line.contents.text.contains("some_function(x"))
             .is_some()
     }));
 
@@ -65,6 +77,11 @@ fn show_usages_integ_test_1() {
     assert!(full_setup.send_key(Keycode::Enter.to_key()));
 
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().is_some() }));
+
+    sleep(Duration::from_secs(4));
+    full_setup.wait_frame();
+
+    assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().unwrap().editors().len() > 0 }));
 
     full_setup.screenshot();
 }

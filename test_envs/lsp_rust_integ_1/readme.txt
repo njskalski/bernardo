@@ -1,1 +1,1 @@
-This test env is a base for test "whether completion still works". It will use "MockNavComp provider".
+This test env is for an integration test with Rust LSP.

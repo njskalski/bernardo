@@ -79,7 +79,7 @@ pub fn read_lsp<R: Read>(
                 internal_send_to_promise(id_to_method, call.id.clone(), value, Some(&call.method))
             }
             Call::Notification(notification) => {
-                debug!("deserialized call->notification");
+                debug!("deserialized call->notification {:?}", &notification.method);
                 match parse_notification(notification) {
                     Ok(no) => {
                         match notification_sink.send(no) {

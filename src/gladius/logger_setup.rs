@@ -5,8 +5,6 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     ("globset", log::LevelFilter::Error),
     // I have no clue where it comes from, and I don't care so I suppress it
     ("mio::poll", log::LevelFilter::Error),
-    // this is for "recursive_treat_views", which is the heart and backbone of Bernardo.
-    ("recursive_treat_views", log::LevelFilter::Info),
     ("bernardo", log::LevelFilter::Info),
     ("bernardo::primitives::tmtheme", log::LevelFilter::Info),
     ("bernardo::fs::local_filesystem_front", log::LevelFilter::Error),
@@ -32,12 +30,12 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
 
     // This guy leaves a lot of data in trace, it seems like it spawns a new thread. I think it deserves profiling.
     ("arboard::x11_clipboard", log::LevelFilter::Warn),
-    ("bernardo::lsp_client", log::LevelFilter::Info),
+    ("bernardo::lsp_client", log::LevelFilter::Debug),
     ("bernardo::w7e", log::LevelFilter::Info),
     ("bernardo::config", log::LevelFilter::Info),
-    ("bernardo::lsp_client", log::LevelFilter::Info),
-    ("bernardo::lsp_client::lsp_read", log::LevelFilter::Info),
-    ("bernardo::lsp_client::lsp_write", log::LevelFilter::Info),
+    ("bernardo::lsp_client", log::LevelFilter::Debug),
+    ("bernardo::lsp_client::lsp_read", log::LevelFilter::Debug),
+    ("bernardo::lsp_client::lsp_write", log::LevelFilter::Debug),
     ("bernardo::mocks::full_setup", log::LevelFilter::Warn),
     ("bernardo::mocks", log::LevelFilter::Warn),
 ];

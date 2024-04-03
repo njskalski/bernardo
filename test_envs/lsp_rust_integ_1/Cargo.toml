@@ -1,5 +1,5 @@
 [package]
-name = "show_usages_test_1"
+name = "lsp_rust_integ_1"
 version = "0.1.0"
 edition = "2021"
 

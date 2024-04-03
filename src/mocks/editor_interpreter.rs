@@ -8,7 +8,6 @@ use crate::io::output::Metadata;
 use crate::io::style::TextStyle;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
 use crate::mocks::context_menu_interpreter::ContextMenuInterpreter;
-
 use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::savefile_interpreter::SaveFileInterpreter;
@@ -17,8 +16,8 @@ use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widgets::context_menu::widget::CONTEXT_MENU_WIDGET_NAME;
 use crate::widgets::edit_box::EditBoxWidget;
+use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
-
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
@@ -54,6 +53,14 @@ pub struct LineIdxTuple {
 
 impl<'a> EditorInterpreter<'a> {
     pub fn new(mock_output: &'a MetaOutputFrame, meta: &'a Metadata) -> Option<Self> {
+        debug_assert!(
+            meta.typename == EditorView::TYPENAME || meta.typename == EditorWidget::TYPENAME,
+            "expected TYPENAME {} or {}, got {}",
+            EditorView::TYPENAME,
+            EditorWidget::TYPENAME,
+            meta.typename
+        );
+
         let scrolls: Vec<&Metadata> = mock_output
             .get_meta_by_type(WithScroll::<EditorWidget>::TYPENAME_FOR_MARGIN)
             .filter(|c| meta.rect.contains_rect(c.rect))
