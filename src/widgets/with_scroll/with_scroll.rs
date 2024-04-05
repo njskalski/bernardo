@@ -104,10 +104,10 @@ impl<W: Widget> WithScroll<W> {
 
         for idx in output.visible_rect().pos.y..output.visible_rect().lower_right().y {
             let line_no_base_0 = start_idx + idx;
-            let item = format!("{}", line_no_base_0 + 1);
-            let num_digits = item.len() as u16;
-            let offset = if num_digits <= margin_width {
-                margin_width - num_digits
+            let item = format!("{} ", line_no_base_0 + 1);
+            let num_digits_plus_one = item.len() as u16;
+            let offset = if num_digits_plus_one <= margin_width {
+                margin_width - num_digits_plus_one
             } else {
                 error!("num_digits > margin_width, hardcoding safe fix");
                 0

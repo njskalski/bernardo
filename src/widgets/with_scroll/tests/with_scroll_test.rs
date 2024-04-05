@@ -28,24 +28,24 @@ fn basic_with_scroll_testbed_test_page_down_and_page_up_works() {
 
     assert!(setup.interpreter().is_some());
 
-    assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "20item19");
+    assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "20 item19");
     setup.send_input(InputEvent::KeyInput(Keycode::PageDown.to_key()));
 
-    assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "21item20");
+    assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "21 item20");
 
     setup.send_input(InputEvent::KeyInput(Keycode::PageDown.to_key()));
-    assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "41item40");
+    assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "41 item40");
 
     setup.send_input(InputEvent::KeyInput(Keycode::PageDown.to_key()));
-    assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "50item49");
-    assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "31item30");
+    assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "50 item49");
+    assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "31 item30");
 
     setup.send_input(InputEvent::KeyInput(Keycode::PageUp.to_key()));
-    assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "30item29");
+    assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "30 item29");
 
     setup.send_input(InputEvent::KeyInput(Keycode::PageUp.to_key()));
-    assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "10item9");
+    assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "10 item9");
 
     setup.send_input(InputEvent::KeyInput(Keycode::PageUp.to_key()));
-    assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "1name");
+    assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "1 name");
 }
