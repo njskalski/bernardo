@@ -126,6 +126,11 @@ impl EditorView {
         res
     }
 
+    pub fn with_readonly(mut self) -> Self {
+        self.editor.internal_mut().set_readonly(true);
+        self
+    }
+
     pub fn with_ignore_input_altogether(mut self) -> Self {
         self.editor.internal_mut().set_ignore_input_altogether(true);
         self
@@ -299,6 +304,10 @@ impl EditorView {
 
     pub fn get_internal_widget(&self) -> &EditorWidget {
         self.editor.internal()
+    }
+
+    pub fn get_internal_widget_mut(&mut self) -> &mut EditorWidget {
+        self.editor.internal_mut()
     }
 }
 

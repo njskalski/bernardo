@@ -78,6 +78,4 @@ fn show_usages_integ_test_1() {
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().is_some() }));
 
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().unwrap().editors().len() > 0 }));
-
-    full_setup.screenshot();
 }

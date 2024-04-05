@@ -23,6 +23,7 @@ use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::big_list::big_list_widget::BigList;
 use crate::widgets::code_results_view::code_results_msg::CodeResultsMsg;
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
+use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
 use crate::widgets::main_view::msg::MainViewMsg;
@@ -34,7 +35,7 @@ pub struct CodeResultsView {
     wid: WID,
 
     label: TextWidget,
-    item_list: WithScroll<BigList<EditorWidget>>,
+    item_list: WithScroll<BigList<EditorView>>,
 
     //providers
     data_provider: Box<dyn CodeResultsProvider>,
@@ -69,18 +70,18 @@ impl CodeResultsView {
         self.label.get_text()
     }
 
-    pub fn get_selected_item(&self) -> &EditorWidget {
+    pub fn get_selected_item(&self) -> &EditorView {
         self.item_list.internal().get_selected_item()
     }
 
-    pub fn get_selected_item_mut(&mut self) -> &mut EditorWidget {
+    pub fn get_selected_item_mut(&mut self) -> &mut EditorView {
         self.item_list.internal_mut().get_selected_item_mut()
     }
 
     pub fn get_selected_doc_id(&self) -> DocumentIdentifier {
         // TODO unwrap
         self.get_selected_item()
-            .get_buffer()
+            .get_buffer_ref()
             .lock()
             .unwrap()
             .get_document_identifier()
@@ -90,15 +91,15 @@ impl CodeResultsView {
     fn on_hit(&self) -> Option<Box<dyn AnyMsg>> {
         let editor = self.get_selected_item();
         let editor_widget_id = editor.id();
-        let buffer = editor.get_buffer().lock()?;
+        let buffer_lock = editor.get_buffer_ref().lock()?;
         let single_cursor = unpack_or!(
-            buffer.cursors(editor_widget_id).map(|cs| cs.as_single()).flatten(),
+            buffer_lock.cursors(editor_widget_id).map(|cs| cs.as_single()).flatten(),
             None,
             "can't single the cursor"
         );
 
         MainViewMsg::OpenFile {
-            file: buffer.get_document_identifier().clone(),
+            file: buffer_lock.get_document_identifier().clone(),
             position_op: single_cursor,
         }
         .someboxed()
@@ -215,17 +216,27 @@ impl Widget for CodeResultsView {
                     },
                 };
 
-                let mut edit_widget = EditorWidget::new(self.providers.clone(), buffer_state_ref)
+                // let mut edit_widget = EditorWidget::new(self.providers.clone(), buffer_state_ref)
+                //     .with_readonly()
+                //     .with_ignore_input_altogether();
+                //
+                // if edit_widget.set_cursors(cursor_set) == false {
+                //     error!("failed setting cursor set, will not add this editor to list {}", spath);
+                //     self.failed_ids.insert(idx);
+                //     continue;
+                // }
+
+                let mut edit_view = EditorView::new(self.providers.clone(), buffer_state_ref)
                     .with_readonly()
                     .with_ignore_input_altogether();
 
-                if edit_widget.set_cursors(cursor_set) == false {
+                if edit_view.get_internal_widget_mut().set_cursors(cursor_set) == false {
                     error!("failed setting cursor set, will not add this editor to list {}", spath);
                     self.failed_ids.insert(idx);
                     continue;
                 }
 
-                self.item_list.internal_mut().add_item(SplitRule::Fixed(5), edit_widget)
+                self.item_list.internal_mut().add_item(SplitRule::Fixed(5), edit_view)
             }
         } // to drop buffer_register_lock
 

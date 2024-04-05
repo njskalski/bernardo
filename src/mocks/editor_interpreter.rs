@@ -54,10 +54,14 @@ pub struct LineIdxTuple {
 impl<'a> EditorInterpreter<'a> {
     pub fn new(mock_output: &'a MetaOutputFrame, meta: &'a Metadata) -> Option<Self> {
         debug_assert!(
-            meta.typename == EditorView::TYPENAME || meta.typename == EditorWidget::TYPENAME,
-            "expected TYPENAME {} or {}, got {}",
+            meta.typename != EditorWidget::TYPENAME,
+            "this interpreter is NOT compatible with EditorWidget, please pass entire EditorView (I need scroll line numbers)."
+        );
+
+        debug_assert!(
+            meta.typename == EditorView::TYPENAME,
+            "expected TYPENAME {}, got {}",
             EditorView::TYPENAME,
-            EditorWidget::TYPENAME,
             meta.typename
         );
 

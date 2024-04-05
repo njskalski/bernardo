@@ -68,9 +68,14 @@ pub trait WithWaitFor {
                         }
                     },
                     default(self.timeout()) => {
-                        error!("timeout, making screenshot.");
-                        self.screenshot();
-                        return false;
+                        // last ditch attempt, because sometimes I run in debugger and this timeout happened all the time.
+                        if condition(&self) {
+                            return true;
+                        } else {
+                            error!("timeout, making screenshot.");
+                            self.screenshot();
+                            return false;
+                        }
                     }
                 }
             }

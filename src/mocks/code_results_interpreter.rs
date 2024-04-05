@@ -2,7 +2,7 @@ use crate::io::output::Metadata;
 use crate::mocks::editor_interpreter::EditorInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
-use crate::widgets::editor_widget::editor_widget::EditorWidget;
+use crate::widgets::editor_view::editor_view::EditorView;
 
 pub struct CodeResultsViewInterpreter<'a> {
     meta: &'a Metadata,
@@ -17,7 +17,7 @@ impl<'a> CodeResultsViewInterpreter<'a> {
 
         let editors_meta: Vec<&'a Metadata> = output
             // WIDGET not VIEW here
-            .get_meta_by_type(EditorWidget::TYPENAME)
+            .get_meta_by_type(EditorView::TYPENAME)
             .filter(|c| meta.rect.contains_rect(c.rect))
             .collect();
 

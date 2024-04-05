@@ -215,6 +215,10 @@ impl EditorWidget {
         res
     }
 
+    pub fn set_readonly(&mut self, readonly: bool) {
+        self.readonly = readonly;
+    }
+
     pub fn with_readonly(self) -> Self {
         Self { readonly: true, ..self }
     }

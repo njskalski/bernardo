@@ -22,7 +22,13 @@ impl GlobalEditorOptions {
                 }
                 Err(e) => {
                     warn!("did not find [rust-analyzer], because: {}", e);
-                    None
+
+                    // TODO this is a quick and dirty hack because "which" fails
+                    if std::fs::metadata("/home/andrzej/.cargo/bin/rust-analyzer").is_ok() {
+                        Some(PathBuf::from("/home/andrzej/.cargo/bin/rust-analyzer"))
+                    } else {
+                        None
+                    }
                 }
             }
         })
