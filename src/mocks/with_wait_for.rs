@@ -102,7 +102,7 @@ pub trait WithWaitFor {
                         }
                     }
                     default(HARD_DEADLINE) => {
-                        error!("frame-based wait hit a HARD DEADLINE, interrupting.")
+                        error!("frame-based wait hit a HARD DEADLINE, interrupting.");
                         return false;
                     }
                 }
