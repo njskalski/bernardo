@@ -144,19 +144,21 @@ impl<'a> EditorInterpreter<'a> {
 
     // returns cursors in SCREEN SPACE
     pub fn get_visible_cursor_cells(&self) -> impl Iterator<Item = (XY, &Cell)> + '_ {
+        let cursor_background = EditorWidget::get_cell_style(
+            &self.mock_output.theme,
+            CursorStatus::UnderCursor,
+            false,
+            false,
+            self.is_editor_focused(),
+        )
+        .background;
+
         self.mock_output
             .buffer
             .cells_iter()
             .with_rect(self.rect_without_scroll)
-            .filter(|(_pos, cell)| match cell {
-                Cell::Begin { style, grapheme: _ } => {
-                    let mut cursor_background = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
-                    // if !self.is_editor_focused() {
-                    //     cursor_background = self.mock_output.theme
-                    // }
-
-                    style.background == cursor_background
-                }
+            .filter(move |(_pos, cell)| match cell {
+                Cell::Begin { style, grapheme: _ } => style.background == cursor_background,
                 Cell::Continuation => false,
             })
     }
@@ -267,15 +269,21 @@ impl<'a> EditorInterpreter<'a> {
      */
     pub fn get_visible_cursor_lines_with_coded_cursors(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         // Setting colors
-        let mut under_cursor = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
-        if !self.is_editor_focused() {
-            under_cursor = under_cursor.half();
-        }
-        let mut within_selection = self.mock_output.theme.cursor_background(CursorStatus::WithinSelection).unwrap();
-        if !self.is_editor_focused() {
-            within_selection = within_selection.half();
-        }
-        // let mut default = self.mock_output.theme.default_text(self.is_editor_focused()).background;
+        let under_cursor = EditorWidget::get_cell_style(
+            &self.mock_output.theme,
+            CursorStatus::UnderCursor,
+            false,
+            false,
+            self.is_editor_focused(),
+        );
+
+        let within_selection = EditorWidget::get_cell_style(
+            &self.mock_output.theme,
+            CursorStatus::WithinSelection,
+            false,
+            false,
+            self.is_editor_focused(),
+        );
 
         // This does not support multi-column chars now
         self.get_visible_cursor_lines().map(move |mut line_idx| {
@@ -288,13 +296,13 @@ impl<'a> EditorInterpreter<'a> {
                 let cell = &self.mock_output.buffer[pos];
                 match cell {
                     Cell::Begin { style, grapheme } => {
-                        if style.background == under_cursor || style.background == within_selection {
+                        if style.background == under_cursor.background || style.background == within_selection.background {
                             if first.is_none() {
                                 first = Some(x);
                             }
                             last = Some(x);
                         }
-                        if style.background == under_cursor {
+                        if style.background == under_cursor.background {
                             debug_assert!(anchor.is_none());
                             anchor = Some(x);
                         }
@@ -353,6 +361,7 @@ impl<'a> EditorInterpreter<'a> {
     }
 
     pub fn is_editor_focused(&self) -> bool {
+        // THIS IS NOT THE SAME AS ABOVE
         self.mock_output
             .get_meta_by_type(EditorWidget::TYPENAME)
             .filter(|meta| self.meta.rect.contains_rect(meta.rect))
