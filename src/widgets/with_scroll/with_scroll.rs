@@ -328,9 +328,9 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        debug!(target: "recursive_treat_views", "in scroll, passing {:?} to {:?}", &msg, &self.child_widget as &dyn Widget);
-        // do NOT route the message down the tree again, that's the job of recursive_treat_views.
-        // Pass it down through.
+        debug!("in scroll, passing {:?} to {:?}", &msg, &self.child_widget as &dyn Widget);
+        // do NOT route the message down the tree again, that's the job of act_on() method.
+        // update bubbles results UP
         Some(msg)
     }
 

@@ -12,7 +12,7 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     ("bernardo::io::over_output", log::LevelFilter::Info),
     ("bernardo::text::buffer_state", log::LevelFilter::Warn),
     ("bernardo::tsw::tree_sitter_wrapper", log::LevelFilter::Error),
-    ("bernardo::widget", log::LevelFilter::Debug), // ComplexWidget lives here
+    ("bernardo::widget", log::LevelFilter::Error), // ComplexWidget lives here
     ("bernardo::widgets", log::LevelFilter::Info),
     ("bernardo::widgets::code_results_widget", log::LevelFilter::Info),
     ("bernardo::widgets::completion_widget", log::LevelFilter::Info),
@@ -31,12 +31,11 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
 
     // This guy leaves a lot of data in trace, it seems like it spawns a new thread. I think it deserves profiling.
     ("arboard::x11_clipboard", log::LevelFilter::Warn),
-    ("bernardo::lsp_client", log::LevelFilter::Debug),
     ("bernardo::w7e", log::LevelFilter::Info),
     ("bernardo::config", log::LevelFilter::Info),
-    ("bernardo::lsp_client", log::LevelFilter::Debug),
-    ("bernardo::lsp_client::lsp_read", log::LevelFilter::Debug),
-    ("bernardo::lsp_client::lsp_write", log::LevelFilter::Debug),
+    ("bernardo::lsp_client", log::LevelFilter::Warn),
+    ("bernardo::lsp_client::lsp_read", log::LevelFilter::Warn),
+    ("bernardo::lsp_client::lsp_write", log::LevelFilter::Warn),
     ("bernardo::mocks::full_setup", log::LevelFilter::Warn),
     ("bernardo::mocks", log::LevelFilter::Warn),
 ];

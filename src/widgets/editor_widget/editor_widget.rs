@@ -1257,10 +1257,10 @@ impl Widget for EditorWidget {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        debug!(target: "recursive_treat_views", "update {:?}, receives {:?}", self as &dyn Widget, &msg);
+        debug!("update {:?}, receives {:?}", self as &dyn Widget, &msg);
         return match msg.as_msg::<EditorWidgetMsg>() {
             None => {
-                debug!(target: "recursive_treat_views", "expected EditorWidgetMsg, got {:?}, passing through", msg);
+                debug!("expected EditorWidgetMsg, got {:?}, passing through", msg);
                 Some(msg)
             }
             Some(msg) => {
