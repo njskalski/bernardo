@@ -1,26 +1,19 @@
-image: debian/stable
+image: rust:bullseye
 packages:
   - git
 sources:
   - https://git.sr.ht/~njskalski/bernardo
 tasks:
   - setup: |
-      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-      source "$HOME/.cargo/env"
-      rustup component add rust-src
       rustup component add rust-analyzer
-      
       sudo apt update
       sudo apt install -y clangd clang
   - build: |
-      source "$HOME/.cargo/env"
       cd bernardo
       cargo build
   - test: |
-      source "$HOME/.cargo/env"
       cd bernardo
       cargo test
   - check_format: |
-      source "$HOME/.cargo/env"
       cd bernardo
       cargo fmt --check
