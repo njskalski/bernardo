@@ -80,7 +80,7 @@ fn show_usages_integ_test_1() {
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().unwrap().editors().len() == 4 }));
 
     {
-        full_setup.screenshot();
+        // full_setup.screenshot();
         let results_view = full_setup.get_code_results_view().unwrap();
         let editors = results_view.editors();
 
@@ -89,4 +89,16 @@ fn show_usages_integ_test_1() {
         assert_eq!(editors[2].get_visible_cursor_lines().map(|line| line.visible_idx).next(), Some(12));
         assert_eq!(editors[3].get_visible_cursor_lines().map(|line| line.visible_idx).next(), Some(1));
     }
+
+    // we pick a THIRD use
+
+    assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
+    assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
+
+    assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().unwrap().editors()[2].is_view_focused() }));
+
+    // we HIT ENTER (and expect we go open next EDITOR view)
+
+    assert!(full_setup.send_key(Keycode::Enter.to_key()));
+    assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().is_none() }))
 }

@@ -90,13 +90,10 @@ impl CodeResultsView {
 
     fn on_hit(&self) -> Option<Box<dyn AnyMsg>> {
         let editor = self.get_selected_item();
-        let editor_widget_id = editor.id();
+        let editor_widget_id = editor.get_internal_widget().id();
         let buffer_lock = editor.get_buffer_ref().lock()?;
-        let single_cursor = unpack_or!(
-            buffer_lock.cursors(editor_widget_id).map(|cs| cs.as_single()).flatten(),
-            None,
-            "can't single the cursor"
-        );
+        let cursors = buffer_lock.cursors(editor_widget_id);
+        let single_cursor = unpack_or_e!(cursors.map(|cs| cs.as_single()).flatten(), None, "can't single the cursor");
 
         MainViewMsg::OpenFile {
             file: buffer_lock.get_document_identifier().clone(),
@@ -278,10 +275,9 @@ impl Widget for CodeResultsView {
             return None;
         }
 
-        #[allow(unreachable_patterns)]
-        return match our_msg.unwrap() {
+        match our_msg.unwrap() {
             CodeResultsMsg::Hit => self.on_hit(),
-        };
+        }
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
