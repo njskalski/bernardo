@@ -15,6 +15,7 @@ debian:
     - source "$HOME/.cargo/env"
     - rustup component add rust-analyzer
     - echo $PATH | grep cargo
+    - which rust-analyzer
   script:
     - cargo build
     - cargo test
