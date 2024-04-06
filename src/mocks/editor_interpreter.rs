@@ -1,4 +1,4 @@
-use log::error;
+use log::{debug, error};
 
 use crate::cursor::cursor::CursorStatus;
 use crate::io::buffer_output::buffer_output_consistent_items_iter::BufferConsistentItemsIter;
@@ -25,6 +25,8 @@ use crate::widgets::with_scroll::with_scroll::WithScroll;
 pub struct EditorInterpreter<'a> {
     meta: &'a Metadata,
     mock_output: &'a MetaOutputFrame,
+
+    is_editor_widget_focused: bool,
 
     rect_without_scroll: Rect,
     scroll: ScrollInterpreter<'a>,
@@ -107,8 +109,6 @@ impl<'a> EditorInterpreter<'a> {
         debug_assert!(contextbars.len() < 2);
         let contextbar_op: Option<ContextMenuInterpreter> = contextbars.first().map(|c| ContextMenuInterpreter::new(mock_output, c));
 
-        let rect_without_scroll = mock_output.get_meta_by_type(EditorWidget::TYPENAME).next().unwrap().rect;
-
         let edit_boxes: Vec<&Metadata> = mock_output
             .get_meta_by_type(EditBoxWidget::TYPENAME)
             .filter(|eb| {
@@ -129,9 +129,21 @@ impl<'a> EditorInterpreter<'a> {
             _ => (None, None),
         };
 
+        // let all_editor_widgets: Vec<_> = mock_output.get_meta_by_type(EditorWidget::TYPENAME).collect();
+
+        let editor_widgets: Vec<_> = mock_output
+            .get_meta_by_type(EditorWidget::TYPENAME)
+            .filter(|child_meta| meta.rect.contains_rect(child_meta.rect))
+            .collect();
+
+        assert_eq!(editor_widgets.len(), 1);
+        let is_editor_widget_focused = editor_widgets.first().unwrap().focused;
+        let rect_without_scroll = editor_widgets.first().unwrap().rect;
+
         Some(Self {
             meta,
             mock_output,
+            is_editor_widget_focused,
             rect_without_scroll,
             scroll,
             compeltion_op,
@@ -153,7 +165,8 @@ impl<'a> EditorInterpreter<'a> {
         )
         .background;
 
-        self.mock_output
+        let result: Vec<_> = self
+            .mock_output
             .buffer
             .cells_iter()
             .with_rect(self.rect_without_scroll)
@@ -161,6 +174,9 @@ impl<'a> EditorInterpreter<'a> {
                 Cell::Begin { style, grapheme: _ } => style.background == cursor_background,
                 Cell::Continuation => false,
             })
+            .collect();
+
+        result.into_iter()
     }
 
     pub fn consistent_items_iter(&self) -> BufferConsistentItemsIter {
@@ -361,13 +377,7 @@ impl<'a> EditorInterpreter<'a> {
     }
 
     pub fn is_editor_focused(&self) -> bool {
-        // THIS IS NOT THE SAME AS ABOVE
-        self.mock_output
-            .get_meta_by_type(EditorWidget::TYPENAME)
-            .filter(|meta| self.meta.rect.contains_rect(meta.rect))
-            .next()
-            .unwrap()
-            .focused
+        self.is_editor_widget_focused
     }
 
     pub fn find_op(&self) -> Option<&EditWidgetInterpreter<'a>> {

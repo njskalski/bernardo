@@ -269,6 +269,13 @@ pub mod tests {
     use crate::primitives::xy::XY;
 
     #[test]
+    fn rect_contains_test() {
+        let rect1 = Rect::new(XY::new(23, 16), XY::new(97, 5));
+
+        assert_eq!(rect1.contains_rect(rect1), true);
+    }
+
+    #[test]
     fn rect_intersect_test() {
         assert_eq!(
             Rect::new(XY::new(48, 36), XY::new(25, 1)).intersect(Rect::new(XY::ZERO, XY::new(49, 1))),
@@ -276,7 +283,7 @@ pub mod tests {
         );
 
         assert_eq!(
-            Rect::new(XY::ZERO, XY::new(10, 10),).intersect(Rect::new(XY::ZERO, XY::new(4, 4))),
+            Rect::new(XY::ZERO, XY::new(10, 10)).intersect(Rect::new(XY::ZERO, XY::new(4, 4))),
             Some(Rect::new(XY::ZERO, XY::new(4, 4)))
         );
 
