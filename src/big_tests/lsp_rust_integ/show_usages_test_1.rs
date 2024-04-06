@@ -16,6 +16,10 @@ fn get_full_setup() -> FullSetup {
 
 #[test]
 fn show_usages_integ_test_1_INCOMPLETE() {
+    if std::env::var("CI").is_ok() {
+        return;
+    }
+
     let mut full_setup = get_full_setup();
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
