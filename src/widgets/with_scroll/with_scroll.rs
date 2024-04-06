@@ -104,10 +104,10 @@ impl<W: Widget> WithScroll<W> {
 
         for idx in output.visible_rect().pos.y..output.visible_rect().lower_right().y {
             let line_no_base_0 = start_idx + idx;
-            let item = format!("{}", line_no_base_0 + 1);
-            let num_digits = item.len() as u16;
-            let offset = if num_digits <= margin_width {
-                margin_width - num_digits
+            let item = format!("{} ", line_no_base_0 + 1);
+            let num_digits_plus_one = item.len() as u16;
+            let offset = if num_digits_plus_one <= margin_width {
+                margin_width - num_digits_plus_one
             } else {
                 error!("num_digits > margin_width, hardcoding safe fix");
                 0
@@ -328,9 +328,9 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        debug!(target: "recursive_treat_views", "in scroll, passing {:?} to {:?}", &msg, &self.child_widget as &dyn Widget);
-        // do NOT route the message down the tree again, that's the job of recursive_treat_views.
-        // Pass it down through.
+        debug!("in scroll, passing {:?} to {:?}", &msg, &self.child_widget as &dyn Widget);
+        // do NOT route the message down the tree again, that's the job of act_on() method.
+        // update bubbles results UP
         Some(msg)
     }
 

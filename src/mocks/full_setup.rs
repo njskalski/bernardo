@@ -50,6 +50,8 @@ pub struct FullSetupBuilder {
     mock_navcomp: bool,
     // capture logs
     should_capture_logs: bool,
+
+    timeout: Option<Duration>,
 }
 
 impl FullSetupBuilder {
@@ -98,6 +100,13 @@ impl FullSetupBuilder {
             ..self
         }
     }
+
+    pub fn with_timeout(self, timeout: Duration) -> Self {
+        Self {
+            timeout: Some(timeout),
+            ..self
+        }
+    }
 }
 
 pub struct FullSetup {
@@ -114,6 +123,8 @@ pub struct FullSetup {
     mock_navcomp_pilot: Option<MockNavCompProviderPilot>,
     // receiver of logs
     logs_receiver_op: Option<Receiver<String>>,
+
+    timeout: Duration,
 }
 
 impl FullSetupBuilder {
@@ -197,6 +208,7 @@ impl FullSetupBuilder {
             frame_based_wait: self.frame_based_wait,
             mock_navcomp_pilot,
             logs_receiver_op,
+            timeout: self.timeout.unwrap_or(crate::mocks::with_wait_for::DEFAULT_TIMEOUT),
         }
     }
 }
@@ -220,6 +232,7 @@ impl FullSetup {
             frame_based_wait: false,
             mock_navcomp: true,
             should_capture_logs: false,
+            timeout: None,
         }
     }
 
@@ -340,6 +353,9 @@ impl FullSetup {
 }
 
 impl WithWaitFor for FullSetup {
+    fn timeout(&self) -> Duration {
+        self.timeout
+    }
     fn is_frame_based_wait(&self) -> bool {
         self.frame_based_wait
     }

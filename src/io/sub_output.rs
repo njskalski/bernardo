@@ -113,11 +113,14 @@ impl Output for SubOutput<'_> {
 
     #[cfg(test)]
     fn emit_metadata(&mut self, mut meta: crate::io::output::Metadata) {
+        let original_rect = meta.rect;
         meta.rect.pos = meta.rect.pos + self.frame_in_parent_space.pos;
-        if meta.rect.lower_right() <= self.frame_in_parent_space.lower_right() {
+
+        if let Some(intersect_rect) = meta.rect.intersect(self.frame_in_parent_space) {
+            meta.rect = intersect_rect;
             self.output.emit_metadata(meta)
         } else {
-            log::debug!("suppressing metadata: {:?} - out of view", meta)
+            log::debug!("suppressing metadata: {:?} - out of view", meta);
         }
     }
 }

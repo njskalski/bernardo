@@ -8,9 +8,22 @@ use crate::mocks::full_setup::FullSetup;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::widget::widget::Widget;
 
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(3);
+
+// This is the HARD DEADLINE time, longest the test can hang before we consider it unsuccessful
+pub const HARD_DEADLINE: Duration = Duration::from_secs(30);
+pub const DEFAULT_TIMEOUT_IN_FRAMES: usize = 180;
+
 pub trait WithWaitFor {
-    const DEFAULT_TIMEOUT: Duration = Duration::from_secs(3);
-    const DEFAULT_TIMEOUT_IN_FRAMES: usize = 180; //60fps :D
+    // completely arbitrary values
+
+    fn timeout(&self) -> Duration {
+        DEFAULT_TIMEOUT
+    }
+
+    fn timeout_in_frames(&self) -> usize {
+        DEFAULT_TIMEOUT_IN_FRAMES
+    }
 
     fn is_frame_based_wait(&self) -> bool;
     fn screenshot(&self) -> bool {
@@ -57,10 +70,15 @@ pub trait WithWaitFor {
                             }
                         }
                     },
-                    default(Self::DEFAULT_TIMEOUT) => {
-                        error!("timeout, making screenshot.");
-                        self.screenshot();
-                        return false;
+                    default(self.timeout()) => {
+                        // last ditch attempt, because sometimes I run in debugger and this timeout happened all the time.
+                        if condition(&self) {
+                            return true;
+                        } else {
+                            error!("timeout, making screenshot.");
+                            self.screenshot();
+                            return false;
+                        }
                     }
                 }
             }
@@ -83,9 +101,14 @@ pub trait WithWaitFor {
                             }
                         }
                     }
+                    default(HARD_DEADLINE) => {
+                        error!("frame-based wait hit a HARD DEADLINE, interrupting.");
+                        return false;
+                    }
                 }
+
                 waited_frames += 1;
-                if waited_frames >= Self::DEFAULT_TIMEOUT_IN_FRAMES {
+                if waited_frames >= self.timeout_in_frames() {
                     error!("waited {} frames to no avail", waited_frames);
                     return false;
                 }

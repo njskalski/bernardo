@@ -7,13 +7,15 @@ stages:
 
 debian:
   stage: everything
-  image: debian:stable
+  image: rust:bullseye
   before_script:
     - apt-get update
     - apt-get install -y curl build-essential gcc make clangd clang
-    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    - source "$HOME/.cargo/env"
-    - rustup component add rust-analyzer
+    #    - rustup component add rust-analyzer
+    - rustup component add rustfmt
+    #    - echo $PATH | grep cargo
+    #    - which rust-analyzer
+    #    - rust-analyzer --help
   script:
     - cargo build
     - cargo test
@@ -22,3 +24,5 @@ debian:
     paths:
       - "clang*"
       - "screenshots"
+    when: always
+

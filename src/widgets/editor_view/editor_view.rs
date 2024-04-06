@@ -2,6 +2,7 @@ use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
+use crate::cursor::cursor::Cursor;
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::path::SPath;
@@ -31,7 +32,7 @@ use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
-use crate::{subwidget, unpack_or};
+use crate::{subwidget, unpack_or, unpack_or_e};
 
 const PATTERN: &str = "pattern: ";
 const REPLACE: &str = "replace: ";
@@ -66,6 +67,8 @@ pub struct EditorView {
     See get_save_file_dialog_path for details.
      */
     start_path: Option<SPath>,
+
+    ignore_input_altogether: bool,
 }
 
 impl EditorView {
@@ -101,6 +104,7 @@ impl EditorView {
             state: EditorViewState::Simple,
             hover_dialog: None,
             start_path: None,
+            ignore_input_altogether: false,
         }
     }
 
@@ -121,6 +125,16 @@ impl EditorView {
         };
 
         res
+    }
+
+    pub fn with_readonly(mut self) -> Self {
+        self.editor.internal_mut().set_readonly(true);
+        self
+    }
+
+    pub fn with_ignore_input_altogether(mut self) -> Self {
+        self.editor.internal_mut().set_ignore_input_altogether(true);
+        self
     }
 
     // pub fn with_buffer(self, buffer: BufferSharedRef) -> Self {
@@ -292,6 +306,10 @@ impl EditorView {
     pub fn get_internal_widget(&self) -> &EditorWidget {
         self.editor.internal()
     }
+
+    pub fn get_internal_widget_mut(&mut self) -> &mut EditorWidget {
+        self.editor.internal_mut()
+    }
 }
 
 impl Widget for EditorView {
@@ -347,7 +365,7 @@ impl Widget for EditorView {
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
         return match msg.as_msg::<EditorViewMsg>() {
             None => {
-                debug!(target: "recursive_treat_views", "expected EditorViewMsg, got {:?}, passing through", msg);
+                debug!("expected EditorViewMsg, got {:?}, passing through", msg);
                 Some(msg) //passthrough
             }
             Some(msg) => {

@@ -4,6 +4,7 @@ mod find_replace;
 mod fuzzy_file_open;
 mod integration;
 mod lsp_clangd_cpp;
+mod lsp_rust_integ;
 mod save;
 mod save_file_dialog;
 mod show_usages;

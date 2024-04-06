@@ -1,4 +1,4 @@
-use log::error;
+use log::{debug, error};
 
 use crate::cursor::cursor::CursorStatus;
 use crate::io::buffer_output::buffer_output_consistent_items_iter::BufferConsistentItemsIter;
@@ -8,7 +8,6 @@ use crate::io::output::Metadata;
 use crate::io::style::TextStyle;
 use crate::mocks::completion_interpreter::CompletionInterpreter;
 use crate::mocks::context_menu_interpreter::ContextMenuInterpreter;
-
 use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::savefile_interpreter::SaveFileInterpreter;
@@ -17,8 +16,8 @@ use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widgets::context_menu::widget::CONTEXT_MENU_WIDGET_NAME;
 use crate::widgets::edit_box::EditBoxWidget;
+use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
-
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
@@ -26,6 +25,8 @@ use crate::widgets::with_scroll::with_scroll::WithScroll;
 pub struct EditorInterpreter<'a> {
     meta: &'a Metadata,
     mock_output: &'a MetaOutputFrame,
+
+    is_editor_widget_focused: bool,
 
     rect_without_scroll: Rect,
     scroll: ScrollInterpreter<'a>,
@@ -54,6 +55,18 @@ pub struct LineIdxTuple {
 
 impl<'a> EditorInterpreter<'a> {
     pub fn new(mock_output: &'a MetaOutputFrame, meta: &'a Metadata) -> Option<Self> {
+        debug_assert!(
+            meta.typename != EditorWidget::TYPENAME,
+            "this interpreter is NOT compatible with EditorWidget, please pass entire EditorView (I need scroll line numbers)."
+        );
+
+        debug_assert!(
+            meta.typename == EditorView::TYPENAME,
+            "expected TYPENAME {}, got {}",
+            EditorView::TYPENAME,
+            meta.typename
+        );
+
         let scrolls: Vec<&Metadata> = mock_output
             .get_meta_by_type(WithScroll::<EditorWidget>::TYPENAME_FOR_MARGIN)
             .filter(|c| meta.rect.contains_rect(c.rect))
@@ -96,8 +109,6 @@ impl<'a> EditorInterpreter<'a> {
         debug_assert!(contextbars.len() < 2);
         let contextbar_op: Option<ContextMenuInterpreter> = contextbars.first().map(|c| ContextMenuInterpreter::new(mock_output, c));
 
-        let rect_without_scroll = mock_output.get_meta_by_type(EditorWidget::TYPENAME).next().unwrap().rect;
-
         let edit_boxes: Vec<&Metadata> = mock_output
             .get_meta_by_type(EditBoxWidget::TYPENAME)
             .filter(|eb| {
@@ -118,9 +129,21 @@ impl<'a> EditorInterpreter<'a> {
             _ => (None, None),
         };
 
+        // let all_editor_widgets: Vec<_> = mock_output.get_meta_by_type(EditorWidget::TYPENAME).collect();
+
+        let editor_widgets: Vec<_> = mock_output
+            .get_meta_by_type(EditorWidget::TYPENAME)
+            .filter(|child_meta| meta.rect.contains_rect(child_meta.rect))
+            .collect();
+
+        assert_eq!(editor_widgets.len(), 1);
+        let is_editor_widget_focused = editor_widgets.first().unwrap().focused;
+        let rect_without_scroll = editor_widgets.first().unwrap().rect;
+
         Some(Self {
             meta,
             mock_output,
+            is_editor_widget_focused,
             rect_without_scroll,
             scroll,
             compeltion_op,
@@ -133,21 +156,27 @@ impl<'a> EditorInterpreter<'a> {
 
     // returns cursors in SCREEN SPACE
     pub fn get_visible_cursor_cells(&self) -> impl Iterator<Item = (XY, &Cell)> + '_ {
-        self.mock_output
+        let cursor_background = EditorWidget::get_cell_style(
+            &self.mock_output.theme,
+            CursorStatus::UnderCursor,
+            false,
+            false,
+            self.is_editor_focused(),
+        )
+        .background;
+
+        let result: Vec<_> = self
+            .mock_output
             .buffer
             .cells_iter()
             .with_rect(self.rect_without_scroll)
-            .filter(|(_pos, cell)| match cell {
-                Cell::Begin { style, grapheme: _ } => {
-                    let mut cursor_background = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
-                    if !self.is_editor_focused() {
-                        cursor_background = cursor_background.half();
-                    }
-
-                    style.background == cursor_background
-                }
+            .filter(move |(_pos, cell)| match cell {
+                Cell::Begin { style, grapheme: _ } => style.background == cursor_background,
                 Cell::Continuation => false,
             })
+            .collect();
+
+        result.into_iter()
     }
 
     pub fn consistent_items_iter(&self) -> BufferConsistentItemsIter {
@@ -256,15 +285,21 @@ impl<'a> EditorInterpreter<'a> {
      */
     pub fn get_visible_cursor_lines_with_coded_cursors(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         // Setting colors
-        let mut under_cursor = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
-        if !self.is_editor_focused() {
-            under_cursor = under_cursor.half();
-        }
-        let mut within_selection = self.mock_output.theme.cursor_background(CursorStatus::WithinSelection).unwrap();
-        if !self.is_editor_focused() {
-            within_selection = within_selection.half();
-        }
-        // let mut default = self.mock_output.theme.default_text(self.is_editor_focused()).background;
+        let under_cursor = EditorWidget::get_cell_style(
+            &self.mock_output.theme,
+            CursorStatus::UnderCursor,
+            false,
+            false,
+            self.is_editor_focused(),
+        );
+
+        let within_selection = EditorWidget::get_cell_style(
+            &self.mock_output.theme,
+            CursorStatus::WithinSelection,
+            false,
+            false,
+            self.is_editor_focused(),
+        );
 
         // This does not support multi-column chars now
         self.get_visible_cursor_lines().map(move |mut line_idx| {
@@ -277,13 +312,13 @@ impl<'a> EditorInterpreter<'a> {
                 let cell = &self.mock_output.buffer[pos];
                 match cell {
                     Cell::Begin { style, grapheme } => {
-                        if style.background == under_cursor || style.background == within_selection {
+                        if style.background == under_cursor.background || style.background == within_selection.background {
                             if first.is_none() {
                                 first = Some(x);
                             }
                             last = Some(x);
                         }
-                        if style.background == under_cursor {
+                        if style.background == under_cursor.background {
                             debug_assert!(anchor.is_none());
                             anchor = Some(x);
                         }
@@ -342,12 +377,7 @@ impl<'a> EditorInterpreter<'a> {
     }
 
     pub fn is_editor_focused(&self) -> bool {
-        self.mock_output
-            .get_meta_by_type(EditorWidget::TYPENAME)
-            .filter(|meta| self.meta.rect.contains_rect(meta.rect))
-            .next()
-            .unwrap()
-            .focused
+        self.is_editor_widget_focused
     }
 
     pub fn find_op(&self) -> Option<&EditWidgetInterpreter<'a>> {

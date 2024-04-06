@@ -133,7 +133,7 @@ fn actual_find() {
 fn actual_replace() {
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/save_file_dialog_test_1")
         .with_files(["src/main.rs"])
-        .with_frame_based_wait()
+        // .with_frame_based_wait()
         .build();
 
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));

@@ -60,7 +60,7 @@ fn get_full_setup() -> FullSetup {
 }
 
 #[test]
-fn show_usages_integ_test_1() {
+fn show_usages_test_1() {
     let mut full_setup = get_full_setup();
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
@@ -116,7 +116,7 @@ fn show_usages_integ_test_1() {
 }
 
 #[test]
-fn show_usages_integ_test_2_escape_closes() {
+fn show_usages_test_2_escape_closes() {
     let mut full_setup = get_full_setup();
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 

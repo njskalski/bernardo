@@ -292,6 +292,15 @@ impl MainView {
         self.set_focus_to_hover();
     }
 
+    // fn open_editor_for(&mut self, document_identifier: DocumentIdentifier) -> bool {
+    //     let buffer_register = unpack_or_e!(
+    //         self.providers.buffer_register().try_write().ok(),
+    //         false,
+    //         "failed to lock buffer_register"
+    //     );
+    //     false
+    // }
+
     fn set_focus_to_default(&mut self) {
         let ptr = self.get_curr_display_ptr();
         self.set_focused(ptr);
@@ -459,6 +468,10 @@ impl Widget for MainView {
                     } else {
                         warn!("find reference with empty promise")
                     }
+                    None
+                }
+                MainViewMsg::OpenFile { file, position_op } => {
+                    error!("unimplemented");
                     None
                 }
                 _ => {
