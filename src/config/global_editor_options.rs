@@ -4,6 +4,8 @@ use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 use which;
 
+use crate::unpack_or_e;
+
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct GlobalEditorOptions {
     pub rust_lsp_path: Option<PathBuf>,
@@ -15,22 +17,20 @@ impl GlobalEditorOptions {
         self.rust_lsp_path.clone().or_else(|| {
             debug!("discovering location of rust_analyzer");
 
-            match which::which("rust-analyzer") {
-                Ok(item) => {
-                    debug!("got it at [{:?}]", &item);
-                    Some(item)
-                }
-                Err(e) => {
-                    warn!("did not find [rust-analyzer], because: {}", e);
+            let mut paths_iter = unpack_or_e!(which::which_all("rust-analyzer").ok(), None, "failed to query for rust-analyzer");
+            let mut paths: Vec<PathBuf> = paths_iter.collect();
 
-                    // TODO this is a quick and dirty hack because "which" fails
-                    if std::fs::metadata("/home/andrzej/.cargo/bin/rust-analyzer").is_ok() {
-                        Some(PathBuf::from("/home/andrzej/.cargo/bin/rust-analyzer"))
-                    } else {
-                        None
-                    }
-                }
+            if paths.len() > 1 {
+                warn!(
+                    "multiple paths to rust_analyzer found, will default to first one [{:?}] from [{:?}]",
+                    paths.first().unwrap(),
+                    paths
+                );
             }
+
+            let first_path = unpack_or_e!(paths.into_iter().next(), None, "failed to find any instance of rust-analyzer");
+
+            Some(first_path)
         })
     }
 
