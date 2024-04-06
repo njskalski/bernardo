@@ -9,6 +9,9 @@ use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::widget::widget::Widget;
 
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(3);
+
+// This is the HARD DEADLINE time, longest the test can hang before we consider it unsuccessful
+pub const HARD_DEADLINE: Duration = Duration::from_secs(30);
 pub const DEFAULT_TIMEOUT_IN_FRAMES: usize = 180;
 
 pub trait WithWaitFor {
@@ -98,7 +101,12 @@ pub trait WithWaitFor {
                             }
                         }
                     }
+                    default(HARD_DEADLINE) => {
+                        error!("frame-based wait hit a HARD DEADLINE, interrupting.")
+                        return false;
+                    }
                 }
+
                 waited_frames += 1;
                 if waited_frames >= self.timeout_in_frames() {
                     error!("waited {} frames to no avail", waited_frames);
