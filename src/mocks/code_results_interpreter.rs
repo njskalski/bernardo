@@ -33,8 +33,8 @@ impl<'a> CodeResultsViewInterpreter<'a> {
         self.meta.focused
     }
 
-    pub fn editors(&self) -> &Vec<EditorInterpreter<'a>> {
-        &self.editors
+    pub fn editors(&self) -> Vec<&EditorInterpreter<'a>> {
+        self.editors.iter().collect()
     }
 
     // pub fn contents(&self) -> String {

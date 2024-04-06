@@ -151,9 +151,9 @@ impl<'a> EditorInterpreter<'a> {
             .filter(|(_pos, cell)| match cell {
                 Cell::Begin { style, grapheme: _ } => {
                     let mut cursor_background = self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
-                    if !self.is_editor_focused() {
-                        cursor_background = cursor_background.half();
-                    }
+                    // if !self.is_editor_focused() {
+                    //     cursor_background = self.mock_output.theme
+                    // }
 
                     style.background == cursor_background
                 }

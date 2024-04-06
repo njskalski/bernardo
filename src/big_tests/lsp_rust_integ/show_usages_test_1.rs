@@ -78,4 +78,14 @@ fn show_usages_integ_test_1() {
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().is_some() }));
 
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().unwrap().editors().len() > 0 }));
+
+    {
+        let results_view = full_setup.get_code_results_view().unwrap();
+        let editors = results_view.editors();
+
+        assert_eq!(editors[0].get_visible_cursor_lines().map(|line| line.visible_idx).next(), Some(3));
+        assert_eq!(editors[1].get_visible_cursor_lines().map(|line| line.visible_idx).next(), Some(8));
+        assert_eq!(editors[2].get_visible_cursor_lines().map(|line| line.visible_idx).next(), Some(12));
+        assert_eq!(editors[3].get_visible_cursor_lines().map(|line| line.visible_idx).next(), Some(1));
+    }
 }
