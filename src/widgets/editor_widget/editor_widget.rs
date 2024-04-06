@@ -508,14 +508,42 @@ impl EditorWidget {
         }
     }
 
-    fn pos_to_cursor(&self, cursors: &CursorSet, theme: &Theme, char_idx: usize) -> Option<Color> {
-        if let EditorState::DroppingCursor { special_cursor } = &self.state {
-            if special_cursor.get_cursor_status_for_char(char_idx) == CursorStatus::UnderCursor {
-                return Some(theme.ui.cursors.primary_anchor_background);
+    pub fn get_cell_style(
+        theme: &Theme,
+        cursor_status: CursorStatus,
+        is_dropping_cursor: bool,
+        is_special_cursor: bool,
+        is_focused: bool,
+    ) -> TextStyle {
+        let mut style = if is_dropping_cursor {
+            // TODO move this line to theme
+            theme.default_text(is_focused).with_background(theme.ui.mode_2_background)
+        } else {
+            theme.default_text(is_focused)
+        };
+
+        if cursor_status != CursorStatus::None {
+            if !is_dropping_cursor {
+                debug_assert!(is_special_cursor == false, "can't be a special cursor in edit mode");
+
+                if let Some(cursor_background) = theme.cursor_background(cursor_status) {
+                    style.background = cursor_background
+                } else {
+                    debug_assert!(false, "cursor background None for non-None CursorStatus = {:?}", cursor_status)
+                }
+            } else {
+                // dropping cursor
+                if is_special_cursor {
+                    style.background = theme.ui.cursors.primary_anchor_background
+                }
             }
         }
 
-        theme.cursor_background(cursors.get_cursor_status_for_char(char_idx))
+        if !is_focused {
+            style.background = style.background.half();
+        }
+
+        style
     }
 
     pub fn page_height(&self) -> u16 {
@@ -603,16 +631,20 @@ impl EditorWidget {
         2) then optimise the function
          */
 
-        let default = match self.state {
-            EditorState::Editing => theme.default_text(focused),
-            EditorState::DroppingCursor { .. } => theme.default_text(focused).with_background(theme.ui.mode_2_background),
+        let is_dropping_cursor = match &self.state {
+            EditorState::Editing => false,
+            EditorState::DroppingCursor { .. } => true,
         };
 
+        let default = Self::get_cell_style(theme, CursorStatus::None, is_dropping_cursor, false, focused);
         helpers::fill_output(default.background, output);
 
         let buffer = unpack_unit!(self.buffer.lock(), "failed to lock buffer for rendering",);
         let cursor_set_copy = match buffer.cursors(self.wid) {
-            None => CursorSet::single(),
+            None => {
+                error!("failed to acquire cursor set for widget {}", self.wid);
+                CursorSet::single()
+            }
             Some(cs) => cs.clone(),
         };
 
@@ -725,26 +757,27 @@ impl EditorWidget {
                     // TODO optimise
                     let tr = if c == "\n" { NEWLINE.to_string() } else { c.to_string() };
 
-                    let mut style = default;
+                    let is_special_cursor: bool = if let EditorState::DroppingCursor { special_cursor } = &self.state {
+                        special_cursor.get_cursor_status_for_char(char_idx) == CursorStatus::UnderCursor
+                    } else {
+                        false
+                    };
+
+                    let mut style = Self::get_cell_style(
+                        theme,
+                        cursor_set_copy.get_cursor_status_for_char(char_idx),
+                        is_dropping_cursor,
+                        is_special_cursor,
+                        focused,
+                    );
 
                     if tr != NEWLINE {
                         // TODO cleanup
                         if let Some(item) = highlight_iter.peek() {
                             if let Some(color) = theme.name_to_color(&item.identifier) {
-                                style = style.with_foreground(color);
+                                style.set_foreground(color);
                             }
                         }
-                    }
-
-                    if let Some(mut bg) = self.pos_to_cursor(&cursor_set_copy, theme, char_idx) {
-                        if !focused {
-                            bg = bg.half();
-                        }
-                        style = style.with_background(bg);
-                    };
-
-                    if !focused {
-                        style.foreground = style.foreground.half();
                     }
 
                     x_offset += tr.width();
@@ -756,22 +789,28 @@ impl EditorWidget {
                     }
                 }
 
-                let mut local_style = default;
-                if !focused {
-                    local_style.foreground = local_style.foreground.half()
-                }
+                // DRAWING LABELS THAT ARE FOLLOWING THE LINE
+                {
+                    // coloring background between last character in line and begin of a label
+                    let is_dropping_cursor = match &self.state {
+                        EditorState::Editing => false,
+                        EditorState::DroppingCursor { .. } => true,
+                    };
 
-                // I follow up on not drawn labels
-                for (label_pos, label) in label_it {
-                    // moving cursor to right place
-                    while x_offset < label_pos.x as usize {
-                        combined_line.push((local_style, " ".to_string()));
-                        x_offset += 1;
-                    }
+                    let mut local_style = Self::get_cell_style(theme, CursorStatus::None, is_dropping_cursor, false, focused);
 
-                    for (style, grapheme) in label.contents(self.providers.theme()).styled_graphemes() {
-                        // TODO crazy unoptimization
-                        combined_line.push((*style, grapheme.to_string()));
+                    // I follow up on not drawn labels
+                    for (label_pos, label) in label_it {
+                        // moving cursor to right place
+                        while x_offset < label_pos.x as usize {
+                            combined_line.push((local_style, " ".to_string()));
+                            x_offset += 1;
+                        }
+
+                        for (style, grapheme) in label.contents(self.providers.theme()).styled_graphemes() {
+                            // TODO crazy unoptimization
+                            combined_line.push((*style, grapheme.to_string()));
+                        }
                     }
                 }
             }
@@ -800,14 +839,7 @@ impl EditorWidget {
         let one_beyond_last_pos = XY::new(x_beyond_last as u16, last_line as u16);
 
         if one_beyond_last_pos < visible_rect.lower_right() {
-            let mut style = default;
-
-            if let Some(mut bg) = self.pos_to_cursor(&cursor_set_copy, theme, one_beyond_limit) {
-                if !focused {
-                    bg = bg.half();
-                }
-                style = style.with_background(bg);
-            };
+            let style = Self::get_cell_style(&theme, CursorStatus::None, is_dropping_cursor, false, focused);
 
             output.print_at(one_beyond_last_pos, style, BEYOND);
         }
