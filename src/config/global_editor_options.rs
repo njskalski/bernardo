@@ -15,7 +15,7 @@ pub struct GlobalEditorOptions {
 impl GlobalEditorOptions {
     pub fn get_rust_lsp_path(&self) -> Option<PathBuf> {
         self.rust_lsp_path.clone().or_else(|| {
-            debug!("discovering location of rust_analyzer");
+            debug!("discovering location of rust-analyzer");
 
             let mut paths_iter = unpack_or_e!(which::which_all("rust-analyzer").ok(), None, "failed to query for rust-analyzer");
             let mut paths: Vec<PathBuf> = paths_iter.collect();
@@ -29,6 +29,8 @@ impl GlobalEditorOptions {
             }
 
             let first_path = unpack_or_e!(paths.into_iter().next(), None, "failed to find any instance of rust-analyzer");
+
+            warn!("using rust-analyzer from {:?}", &first_path);
 
             Some(first_path)
         })
