@@ -17,7 +17,6 @@ debian:
     - rust-analyzer --help
   script:
     - cargo build
-    - cargo test show_usages_integ_test_1_INCOMPLETE -- --nocapture
     - cargo test
     - cargo fmt --check
   artifacts:

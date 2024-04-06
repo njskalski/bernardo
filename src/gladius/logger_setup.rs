@@ -33,7 +33,7 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     ("arboard::x11_clipboard", log::LevelFilter::Warn),
     ("bernardo::w7e", log::LevelFilter::Info),
     ("bernardo::config", log::LevelFilter::Debug),
-    ("bernardo::lsp_client", log::LevelFilter::Debug),
+    ("bernardo::lsp_client", log::LevelFilter::Info),
     // ("bernardo::lsp_client::lsp_read", log::LevelFilter::Warn),
     // ("bernardo::lsp_client::lsp_write", log::LevelFilter::Warn),
     ("bernardo::mocks::full_setup", log::LevelFilter::Warn),
