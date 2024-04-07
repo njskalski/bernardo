@@ -10,7 +10,8 @@ Intermediate knowledge of Rust is therefore assumed.
 
 - [Config and default keybindings](./default_keymap.md)
 - [High level project descrition](mission.md)
-- [Workspace](./workspace.md)
+- [Workspace](./workspace.md) (WIP)
+- [Attention](./attention.md) (WIP)
 
 ## Types
 
