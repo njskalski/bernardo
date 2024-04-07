@@ -6,6 +6,8 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 use crossbeam_channel::{select, Receiver, Sender};
+use flexi_logger::writers::LogWriter;
+use flexi_logger::Logger;
 use log::{debug, error, warn, LevelFilter};
 
 use crate::config::config::{Config, ConfigRef};
@@ -129,22 +131,18 @@ pub struct FullSetup {
 
 impl FullSetupBuilder {
     pub fn build(self) -> FullSetup {
-        logger_setup(LevelFilter::Debug);
-
         let mut logs_receiver_op: Option<Receiver<String>> = None;
+        let mut log_writer_op: Option<Box<dyn LogWriter>> = None;
 
         if self.should_capture_logs {
             let (sender, receiver) = crossbeam_channel::unbounded::<String>();
 
-            env_logger::Builder::default()
-                .is_test(true)
-                // .target(Target::Pipe(Box::new(CapturingLogger { sender })))
-                .init();
-
-            log::set_boxed_logger(Box::new(CapturingLogger { sender })).unwrap();
+            log_writer_op = Some(Box::new(CapturingLogger { sender }));
 
             logs_receiver_op = Some(receiver);
         }
+
+        logger_setup(true, None, log_writer_op);
 
         let theme = Theme::default();
 

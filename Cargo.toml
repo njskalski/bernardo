@@ -16,13 +16,12 @@ arbitrary = { version = "1", optional = true, features = ["derive"] }
 arboard = "3.1.1"
 cargo_toml = "0.15.1" # we need to go deeper.
 clap = { version = "4.1.4", features = ["derive"] }
-clap-verbosity-flag = "2.0.0"
 crossterm = "0.26.0"
 crossbeam-channel = "0.5.1"
 dirs = "4.0.0"
 either = "1.8.1"
-env_logger = "0.10.0"
 filesystem = "0.4.4"
+flexi_logger = "0.28.0"
 hex = "0.4.3"
 ignore = "0.4.18"
 json = "0.12.4"

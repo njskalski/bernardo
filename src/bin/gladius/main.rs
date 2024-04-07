@@ -24,7 +24,7 @@ use bernardo::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 
 fn main() {
     let args = bernardo::gladius::args::Args::parse();
-    logger_setup(args.verbosity.log_level_filter());
+    logger_setup(args.stderr_log, args.file_log.clone(), None);
 
     #[cfg(debug_assertions)]
     {

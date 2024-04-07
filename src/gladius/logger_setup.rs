@@ -1,4 +1,10 @@
+use std::path::PathBuf;
+
+use flexi_logger::writers::LogWriter;
+use flexi_logger::FileSpec;
 use log::{warn, LevelFilter};
+
+const DEFAULT_LEVEL: log::LevelFilter = log::LevelFilter::Info;
 
 const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     // this is for git ignore
@@ -40,21 +46,31 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     ("bernardo::mocks", log::LevelFilter::Warn),
 ];
 
-pub fn logger_setup(level_filter: LevelFilter) {
+pub fn logger_setup(stderr_on: bool, file_to_log_to: Option<PathBuf>, log_writer_op: Option<Box<dyn LogWriter>>) {
     // global logger setting
-    let mut logger_builder = env_logger::builder();
+    let mut logger_builder = flexi_logger::LogSpecBuilder::new();
+    logger_builder.default(DEFAULT_LEVEL);
+    let log_spec = logger_builder.build();
 
-    #[cfg(not(debug_assertions))]
-    logger_builder.filter_level(LevelFilter::Off);
+    let mut logger = flexi_logger::Logger::with(log_spec);
 
-    #[cfg(debug_assertions)]
-    logger_builder.filter_level(level_filter);
-    // specific logger settings
-    for item in DEBUG_PARAMS {
-        logger_builder.filter(Some(item.0), item.1);
+    let do_not_log = !stderr_on && file_to_log_to.is_none() && log_writer_op.is_none();
+    if stderr_on {
+        logger = logger.log_to_stderr();
     }
-    match logger_builder.try_init() {
-        Ok(_) => {}
+    if let Some(filename) = file_to_log_to {
+        logger = logger.log_to_file(FileSpec::default().basename(filename.to_string_lossy()));
+    }
+    if let Some(log_writer) = log_writer_op {
+        logger = logger.log_to_writer(log_writer);
+    }
+
+    if do_not_log {
+        logger = logger.do_not_log();
+    }
+
+    match logger.start() {
+        Ok(logger) => {}
         Err(e) => {
             warn!("failed initializing log: {:?}", e);
         }

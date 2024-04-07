@@ -9,6 +9,7 @@ use log::error;
 use bernardo::app::App;
 use bernardo::config::theme::Theme;
 use bernardo::experiments::screenspace::Screenspace;
+use bernardo::gladius::logger_setup::logger_setup;
 use bernardo::io::buffer_output::buffer_output::BufferOutput;
 use bernardo::io::input::Input;
 use bernardo::io::input_event::InputEvent;
@@ -30,9 +31,8 @@ struct Args {
 }
 
 fn main() {
-    env_logger::builder().init();
-
     let args = Args::parse();
+    logger_setup(false, None, None);
 
     let filename = match args.file {
         Some(s) => s,
