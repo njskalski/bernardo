@@ -8,8 +8,13 @@ use log::error;
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
-    #[clap(flatten)]
-    pub verbosity: clap_verbosity_flag::Verbosity,
+    /// When turned on, logs are written to stderr. The verbosity of logs is hardcoded in logger_setup.rs
+    #[clap(short = 'e', long = "log_to_stderr", default_value = "false")]
+    pub stderr_log: bool,
+
+    /// When set, logs are written to FILE
+    #[clap(short = 'f', long = "log_to_file", default_value = "None", value_name = "FILE")]
+    pub file_log: Option<PathBuf>,
 
     #[clap(short = 'r', long = "reconfigure")]
     pub reconfigure: bool,
