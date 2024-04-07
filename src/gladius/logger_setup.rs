@@ -50,7 +50,6 @@ pub fn logger_setup(stderr_on: bool, file_to_log_to: Option<PathBuf>, log_writer
     // global logger setting
     let mut logger_builder = flexi_logger::LogSpecBuilder::new();
     logger_builder.default(DEFAULT_LEVEL);
-
     let log_spec = logger_builder.build();
 
     let mut logger = flexi_logger::Logger::with(log_spec);
@@ -65,6 +64,7 @@ pub fn logger_setup(stderr_on: bool, file_to_log_to: Option<PathBuf>, log_writer
     if let Some(log_writer) = log_writer_op {
         logger = logger.log_to_writer(log_writer);
     }
+
     if do_not_log {
         logger = logger.do_not_log();
     }
