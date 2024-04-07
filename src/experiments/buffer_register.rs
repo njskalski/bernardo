@@ -44,6 +44,10 @@ impl BufferRegister {
             .flatten()
     }
 
+    pub fn get_buffer_ref_from_id(&self, document_identifier: &DocumentIdentifier) -> Option<BufferSharedRef> {
+        self.buffers.get(document_identifier).cloned()
+    }
+
     pub fn open_new_file(&mut self, providers: &Providers) -> BufferSharedRef {
         let doc_id = DocumentIdentifier::new_unique();
 

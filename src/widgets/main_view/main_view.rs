@@ -21,6 +21,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
+use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
@@ -249,7 +250,7 @@ impl MainView {
         self.set_focus_to_default();
     }
 
-    pub fn open_file(&mut self, ff: SPath) -> bool {
+    pub fn open_file_with_path(&mut self, ff: SPath) -> bool {
         debug!("opening file {:?}", ff);
 
         if let Some(idx) = self.get_editor_idx_for(&ff) {
@@ -292,14 +293,44 @@ impl MainView {
         self.set_focus_to_hover();
     }
 
-    // fn open_editor_for(&mut self, document_identifier: DocumentIdentifier) -> bool {
-    //     let buffer_register = unpack_or_e!(
-    //         self.providers.buffer_register().try_write().ok(),
-    //         false,
-    //         "failed to lock buffer_register"
-    //     );
-    //     false
-    // }
+    fn get_opened_views_for_document_id(
+        &self,
+        document_identifier: DocumentIdentifier,
+    ) -> impl Iterator<Item = (usize, &MainViewDisplay)> + '_ {
+        self.displays.iter().enumerate().filter_map(move |(idx, item)| match item {
+            MainViewDisplay::ResultsView(_) => None,
+            MainViewDisplay::Editor(editor) => {
+                if editor.get_buffer_ref().document_identifier() == &document_identifier {
+                    Some((idx, item))
+                } else {
+                    None
+                }
+            }
+        })
+    }
+
+    // opens new document or brings old one to forefront (TODO this is temporary)
+    // this entire method should be remade, it's here just to facilitate test that "hitting enter on
+    // go to definition goes somewhere"
+    fn open_document_and_focus(&mut self, document_identifier: DocumentIdentifier) -> bool {
+        let idx_op = self
+            .get_opened_views_for_document_id(document_identifier.clone())
+            .next()
+            .map(|pair| pair.0);
+
+        if let Some(idx) = idx_op {
+            self.display_idx = idx;
+            self.set_focused(self.get_default_focused());
+            true
+        } else {
+            if let Some(path) = document_identifier.file_path {
+                self.open_file_with_path(path)
+            } else {
+                error!("no path for document {:?} provided - cannot open.", document_identifier);
+                false
+            }
+        }
+    }
 
     fn set_focus_to_default(&mut self) {
         let ptr = self.get_curr_display_ptr();
@@ -412,7 +443,7 @@ impl Widget for MainView {
                 }
                 MainViewMsg::TreeExpandedFlip { .. } => None,
                 MainViewMsg::TreeSelected { item } => {
-                    if !self.open_file(item.clone()) {
+                    if !self.open_file_with_path(item.clone()) {
                         error!("failed open_file");
                     }
 
@@ -471,7 +502,7 @@ impl Widget for MainView {
                     None
                 }
                 MainViewMsg::OpenFile { file, position_op } => {
-                    error!("unimplemented");
+                    self.open_document_and_focus(file.clone());
                     None
                 }
                 _ => {
@@ -485,7 +516,7 @@ impl Widget for MainView {
             return match fuzzy_file_msg {
                 SPathMsg::Hit(file_front) => {
                     if file_front.is_file() {
-                        self.open_file(file_front.clone());
+                        self.open_file_with_path(file_front.clone());
                         self.hover = None;
                         None
                     } else if file_front.is_dir() {

@@ -106,7 +106,7 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
         if !providers
             .fsf()
             .descendant_checked(f)
-            .map(|ff| main_view.open_file(ff))
+            .map(|ff| main_view.open_file_with_path(ff))
             .unwrap_or(false)
         {
             error!("failed opening file {:?}", f);
