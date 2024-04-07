@@ -105,6 +105,8 @@ fn show_usages_integ_test_1_INCOMPLETE() {
 
     assert!(full_setup.send_key(Keycode::Enter.to_key()));
 
-    // TODO
-    // assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().is_none() }))
+    assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().is_none() }));
+    assert!(full_setup.wait_for(|full_setup| { full_setup.get_first_editor().is_some() }));
+
+    // TODO still needed the part where we check that the right line is picked.
 }

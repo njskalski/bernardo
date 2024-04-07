@@ -7,20 +7,36 @@ use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
 
 #[derive(Clone, Debug)]
-pub struct BufferSharedRef(Arc<RwLock<BufferState>>);
+pub struct BufferSharedRef {
+    buffer: Arc<RwLock<BufferState>>,
+    identifier: DocumentIdentifier,
+}
 
 impl BufferSharedRef {
     pub fn new_empty(tree_sitter_op: Option<Arc<TreeSitterWrapper>>) -> BufferSharedRef {
-        let buffer_state = BufferState::full(tree_sitter_op, DocumentIdentifier::new_unique());
-        BufferSharedRef(Arc::new(RwLock::new(buffer_state)))
+        let id = DocumentIdentifier::new_unique();
+        let buffer_state = BufferState::full(tree_sitter_op, id.clone());
+        BufferSharedRef {
+            buffer: Arc::new(RwLock::new(buffer_state)),
+            identifier: id,
+        }
     }
 
     pub fn new_from_buffer(buffer_state: BufferState) -> BufferSharedRef {
-        BufferSharedRef(Arc::new(RwLock::new(buffer_state)))
+        let id = buffer_state.get_document_identifier().clone();
+
+        BufferSharedRef {
+            buffer: Arc::new(RwLock::new(buffer_state)),
+            identifier: id,
+        }
+    }
+
+    pub fn document_identifier(&self) -> &DocumentIdentifier {
+        &self.identifier
     }
 
     pub fn lock(&self) -> Option<RwLockReadGuard<BufferState>> {
-        match self.0.try_read() {
+        match self.buffer.try_read() {
             Ok(lock) => Some(lock),
             Err(e) => {
                 error!("failed to lock buffer for read! : {}", e);
@@ -30,7 +46,7 @@ impl BufferSharedRef {
     }
 
     pub fn lock_rw(&self) -> Option<RwLockWriteGuard<BufferState>> {
-        match self.0.try_write() {
+        match self.buffer.try_write() {
             Ok(lock) => Some(lock),
             Err(e) => {
                 error!("failed to lock buffer for write! : {}", e);
@@ -42,10 +58,7 @@ impl BufferSharedRef {
 
 impl PartialEq<Self> for BufferSharedRef {
     fn eq(&self, other: &Self) -> bool {
-        let my_ptr = Arc::as_ptr(&self.0);
-        let other_ptr = Arc::as_ptr(&other.0);
-
-        my_ptr == other_ptr
+        self.identifier == other.identifier
     }
 }
 
