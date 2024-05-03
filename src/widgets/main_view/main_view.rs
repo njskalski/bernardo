@@ -33,6 +33,7 @@ use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget}
 use crate::widgets::fuzzy_search::item_provider::ItemsProvider;
 use crate::widgets::main_view::display::MainViewDisplay;
 use crate::widgets::main_view::display_fuzzy::DisplayItem;
+use crate::widgets::main_view::fuzzy_file_search::FuzzyFileSearchWidget;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
@@ -44,6 +45,7 @@ pub type BufferId = Uuid;
 
 pub enum HoverItem {
     FuzzySearch(WithScroll<FuzzySearchWidget>),
+    FuzzySearch2(FuzzyFileSearchWidget),
 }
 
 // TODO start indexing documents with DocumentIdentifier as opposed to usize
@@ -281,14 +283,14 @@ impl MainView {
     }
 
     fn open_fuzzy_search_in_files_and_focus(&mut self) {
-        self.hover = Some(HoverItem::FuzzySearch(WithScroll::new(
-            ScrollDirection::Vertical,
-            FuzzySearchWidget::new(
-                |_| Some(Box::new(MainViewMsg::CloseHover)),
-                Some(self.providers.clipboard().clone()),
-            )
-            .with_provider(Box::new(FsfProvider::new(self.providers.fsf().clone()).with_ignores_filter()))
-            .with_draw_comment_setting(DrawComment::Highlighted),
+        let size = unpack_or_e!(self.display_state.as_ref(), (), "can't open fuzzy search before layout").total_size * 4 / 5;
+
+        let fsf_provider = Box::new(FsfProvider::new(self.providers.fsf().clone()).with_ignores_filter());
+
+        self.hover = Some(HoverItem::FuzzySearch2(FuzzyFileSearchWidget::new(
+            &self.providers,
+            size,
+            fsf_provider,
         )));
         self.set_focus_to_hover();
     }
@@ -344,6 +346,7 @@ impl MainView {
                 if hover_present {
                     match s.hover.as_ref().unwrap() {
                         HoverItem::FuzzySearch(fs) => fs as &dyn Widget,
+                        HoverItem::FuzzySearch2(fs) => fs as &dyn Widget,
                     }
                 } else {
                     error!("failed to unwrap hover widget!");
@@ -355,6 +358,7 @@ impl MainView {
                 if hover_present {
                     match s.hover.as_mut().unwrap() {
                         HoverItem::FuzzySearch(fs) => fs as &mut dyn Widget,
+                        HoverItem::FuzzySearch2(fs) => fs as &mut dyn Widget,
                     }
                 } else {
                     error!("failed to unwrap hover widget!");
@@ -565,12 +569,30 @@ impl ComplexWidget for MainView {
                     let hover = LeafLayout::new(SubwidgetPointer::new(
                         Box::new(|s: &Self| match s.hover.as_ref().unwrap() {
                             HoverItem::FuzzySearch(fs) => fs,
+                            _ => unimplemented!(),
                         }),
                         Box::new(|s: &mut Self| match s.hover.as_mut().unwrap() {
                             HoverItem::FuzzySearch(fs) => fs,
+                            _ => unimplemented!(),
                         }),
                     ))
                     .boxed();
+
+                    HoverLayout::new(bg_layout.boxed(), hover, Box::new(Self::get_hover_rect), true).boxed()
+                }
+                HoverItem::FuzzySearch2(fuzzy) => {
+                    let hover = LeafLayout::new(SubwidgetPointer::new(
+                        Box::new(|s: &Self| match s.hover.as_ref().unwrap() {
+                            HoverItem::FuzzySearch2(fs) => fs,
+                            _ => unimplemented!(),
+                        }),
+                        Box::new(|s: &mut Self| match s.hover.as_mut().unwrap() {
+                            HoverItem::FuzzySearch2(fs) => fs,
+                            _ => unimplemented!(),
+                        }),
+                    ))
+                    .boxed();
+                    let size = fuzzy.full_size();
 
                     HoverLayout::new(bg_layout.boxed(), hover, Box::new(Self::get_hover_rect), true).boxed()
                 }

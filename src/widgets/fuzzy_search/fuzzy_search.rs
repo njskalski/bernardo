@@ -17,6 +17,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::unpack_unit_e;
 use crate::widget::any_msg::AnyMsg;
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
@@ -36,6 +37,7 @@ pub enum DrawComment {
 
 pub struct FuzzySearchWidget {
     id: WID,
+    size_policy: SizePolicy,
     edit: EditBoxWidget,
     providers: Vec<Box<dyn ItemsProvider>>,
     context_shortcuts: Vec<String>,
@@ -67,6 +69,7 @@ impl FuzzySearchWidget {
 
         Self {
             id: get_new_widget_id(),
+            size_policy: SizePolicy::SELF_DETERMINED,
             edit,
             providers: Vec::default(),
             context_shortcuts: Vec::default(),
@@ -76,6 +79,10 @@ impl FuzzySearchWidget {
             on_miss: None,
             last_size: None,
         }
+    }
+
+    pub fn with_size_policy(self, size_policy: SizePolicy) -> Self {
+        Self { size_policy, ..self }
     }
 
     pub fn with_provider(self, provider: Box<dyn ItemsProvider>) -> Self {
