@@ -235,6 +235,10 @@ impl Widget for FuzzySearchWidget {
         self.size_from_items()
     }
 
+    fn size_policy(&self) -> SizePolicy {
+        self.size_policy
+    }
+
     fn layout(&mut self, screenspace: Screenspace) {
         self.last_size = Some(screenspace);
     }
