@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
-use flexi_logger::writers::LogWriter;
 use flexi_logger::FileSpec;
-use log::{warn, LevelFilter};
+use flexi_logger::writers::LogWriter;
+use log::{LevelFilter, warn};
 
 const DEFAULT_LEVEL: log::LevelFilter = log::LevelFilter::Info;
 
@@ -18,15 +18,15 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     ("bernardo::io::over_output", log::LevelFilter::Info),
     ("bernardo::text::buffer_state", log::LevelFilter::Warn),
     ("bernardo::tsw::tree_sitter_wrapper", log::LevelFilter::Error),
-    ("bernardo::widget", log::LevelFilter::Error), // ComplexWidget lives here
-    ("bernardo::widgets", log::LevelFilter::Info),
+    ("bernardo::widget", log::LevelFilter::Debug), // ComplexWidget lives here
+    ("bernardo::widgets", log::LevelFilter::Debug),
     ("bernardo::widgets::code_results_widget", log::LevelFilter::Info),
     ("bernardo::widgets::completion_widget", log::LevelFilter::Info),
     ("bernardo::widgets::dir_tree_view", log::LevelFilter::Warn),
     ("bernardo::widgets::edit_box", log::LevelFilter::Warn),
     ("bernardo::widgets::editor_widget::context_options_matrix", log::LevelFilter::Debug),
     ("bernardo::widgets::editor_widget::editor_widget", log::LevelFilter::Warn),
-    ("bernardo::widgets::fuzzy_search::fuzzy_search", log::LevelFilter::Warn),
+    ("bernardo::widgets::fuzzy_search::fuzzy_search", log::LevelFilter::Debug),
     ("bernardo::widgets::list_widget::list_widget", log::LevelFilter::Warn),
     ("bernardo::widgets::main_view::main_view", log::LevelFilter::Info),
     ("bernardo::widgets::save_file_dialog::save_file_dialog", log::LevelFilter::Warn),

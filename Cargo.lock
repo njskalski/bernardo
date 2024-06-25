@@ -155,6 +155,7 @@ dependencies = [
  "serde",
  "serde_json",
  "simsearch",
+ "sort",
  "streaming-iterator",
  "syntect",
  "test-log",
@@ -1802,6 +1803,12 @@ name = "smallvec"
 version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6ecd384b10a64542d77071bd64bd7b231f4ed5940fba55e98c3de13824cf3d7"
+
+[[package]]
+name = "sort"
+version = "0.8.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79b736394cbcbad245669dc12a0caff9b2570e9ad81ce9906f5d7831551cb0c5"
 
 [[package]]
 name = "str_indices"

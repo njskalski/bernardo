@@ -1,5 +1,8 @@
+use log::warn;
+
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
@@ -14,10 +17,11 @@ use crate::subwidget;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::combined_widget::CombinedWidget;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::fuzzy_search::fsf_provider::FsfProvider;
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
 use crate::widgets::fuzzy_search::item_provider::ItemsProvider;
+use crate::widgets::fuzzy_search::msg::FuzzySearchMsg;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
 
@@ -77,7 +81,7 @@ impl Widget for FuzzyFileSearchWidget {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        Some(msg)
+        None
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
@@ -96,6 +100,10 @@ impl Widget for FuzzyFileSearchWidget {
         self.combined_render(theme, focused, output);
         SINGLE_BORDER_STYLE.draw_edges(theme.default_text(focused), output);
     }
+
+    fn act_on(&mut self, input_event: InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
+        self.combined_act_on(input_event)
+    }
 }
 
 impl CombinedWidget for FuzzyFileSearchWidget {
@@ -109,5 +117,9 @@ impl CombinedWidget for FuzzyFileSearchWidget {
 
     fn get_layout_res(&self) -> Option<&LayoutResult<Self>> {
         self.layout_res.as_ref()
+    }
+
+    fn get_subwidgets_for_input(&self) -> impl Iterator<Item=SubwidgetPointer<Self>> {
+        [subwidget!(Self.search_widget), subwidget!(Self.search_widget)].into_iter()
     }
 }

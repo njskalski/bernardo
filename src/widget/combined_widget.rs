@@ -5,6 +5,7 @@ use crate::experiments::focus_group::{FocusGraph, FocusUpdate};
 use crate::experiments::from_geometry::from_geometry;
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
+use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::layout::{Layout, LayoutResult};
@@ -12,7 +13,8 @@ use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::helpers::fill_output;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
-use crate::widget::widget::{Widget, WID};
+use crate::widget::any_msg::AnyMsg;
+use crate::widget::widget::{WID, Widget};
 
 /*
 A combine widget is a widget that merges more than one widget using standard layout mechanisms,
@@ -40,6 +42,7 @@ pub trait CombinedWidget: Widget + Sized {
     fn save_layout_res(&mut self, result: LayoutResult<Self>);
     fn get_layout_res(&self) -> Option<&LayoutResult<Self>>;
 
+    fn get_subwidgets_for_input(&self) -> impl Iterator<Item=SubwidgetPointer<Self>>;
     fn combined_layout(&mut self, screenspace: Screenspace) {
         let layout = self.get_layout();
         let layout_res = layout.layout(self, screenspace);
@@ -80,5 +83,26 @@ pub trait CombinedWidget: Widget + Sized {
         } else {
             error!("render {} before layout", self.typename())
         }
+    }
+
+    fn combined_act_on(&mut self, input_event: InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
+        let children_ptrs: Vec<SubwidgetPointer<Self>> = self.get_subwidgets_for_input().collect();
+        for child_ptr in children_ptrs {
+            let child = child_ptr.get_mut(self);
+
+            let (consumed, message_to_child_self_op) = child.act_on(input_event);
+            if consumed {
+                if let Some(message_to_child_self) = message_to_child_self_op {
+                    let message_to_self = child.update(message_to_child_self);
+                    return (true, message_to_self.map(|msg| self.update(msg)).flatten());
+                } else {
+                    return (true, None);
+                }
+            } else {
+                continue;
+            }
+        }
+
+        (false, None)
     }
 }

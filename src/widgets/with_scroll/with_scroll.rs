@@ -15,7 +15,7 @@ use crate::primitives::xy::XY;
 use crate::unpack_unit;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::{DeterminedBy, SizePolicy};
-use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
 // const DEFAULT_MARGIN_WIDTH: u16 = 4;
 
@@ -323,12 +323,12 @@ impl<W: Widget> Widget for WithScroll<W> {
         });
     }
 
-    fn on_input(&self, _input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        None
+    fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        self.internal().on_input(input_event)
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        debug!("in scroll, passing {:?} to {:?}", &msg, &self.child_widget as &dyn Widget);
+        debug!("in scroll, NOT passing {:?} to {:?}", &msg, &self.child_widget as &dyn Widget);
         // do NOT route the message down the tree again, that's the job of act_on() method.
         // update bubbles results UP
         Some(msg)
