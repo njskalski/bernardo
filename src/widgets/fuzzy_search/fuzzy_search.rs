@@ -18,7 +18,7 @@ use crate::primitives::xy::XY;
 use crate::unpack_unit_e;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};
@@ -183,7 +183,7 @@ struct ItemIter<'a> {
     query: String,
     rows_limit: usize,
     provider_idx: usize,
-    cur_iter: Option<Box<dyn Iterator<Item = Box<dyn Item + 'a>> + 'a>>,
+    cur_iter: Option<Box<dyn Iterator<Item=Box<dyn Item + 'a>> + 'a>>,
 }
 
 impl<'a> Iterator for ItemIter<'a> {
@@ -241,6 +241,9 @@ impl Widget for FuzzySearchWidget {
 
     fn layout(&mut self, screenspace: Screenspace) {
         self.last_size = Some(screenspace);
+
+        let sub_screenspace = Screenspace::new(XY::new(screenspace.output_size().x, 1), screenspace.visible_rect().intersect(Rect::from_zero(XY::new(screenspace.output_size().x, 1))).unwrap());
+        self.edit.layout(sub_screenspace)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
