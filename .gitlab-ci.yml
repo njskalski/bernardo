@@ -7,7 +7,7 @@ stages:
 
 debian:
   stage: everything
-  image: rust:bullseye
+  image: rust:1.80.0-bookworm
   before_script:
     - apt-get update
     - apt-get install -y curl build-essential gcc make clangd clang
