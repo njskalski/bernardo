@@ -4,19 +4,24 @@ use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use crate::{subwidget, unpack_unit_e};
 use crate::config::theme::Theme;
 use crate::cursor::cursor::CursorStatus;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::screenspace::Screenspace;
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
+use crate::layout::empty_layout::EmptyLayout;
+use crate::layout::layout::Layout;
+use crate::layout::leaf_layout::LeafLayout;
+use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::common_edit_msgs::key_to_edit_msg;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
-use crate::unpack_unit_e;
-use crate::widget::any_msg::AnyMsg;
+use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
@@ -175,6 +180,17 @@ impl FuzzySearchWidget {
 
         res
     }
+
+    // fn get_layout(&self) -> Box<dyn Layout<Self>> {
+    //     SplitLayout::new(SplitDirection::Horizontal).with(
+    //         SplitRule::Fixed(1),
+    //         LeafLayout::new(subwidget!(Self.edit)).boxed(),
+    //     )
+    //         .with(
+    //             SplitRule::Proportional(1.0f32),
+    //             EmptyLayout::new().boxed(),
+    //         ).boxed()
+    // }
 }
 
 struct ItemIter<'a> {

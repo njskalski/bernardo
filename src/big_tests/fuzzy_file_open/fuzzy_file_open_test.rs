@@ -21,6 +21,9 @@ fn fuzzy_file_opens() {
     assert!(full_setup.get_fuzzy_search().unwrap().is_focused());
 
     full_setup.type_in("ain");
+
+    assert!(full_setup.wait_for(|f| f.get_fuzzy_search().unwrap().get_edit_box().contents().as_str() == "ain"));
+
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));

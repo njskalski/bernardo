@@ -1,6 +1,8 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use log::debug;
+
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
@@ -23,6 +25,10 @@ pub trait Widget: 'static {
         Self: Sized;
 
     fn typename(&self) -> &'static str;
+
+    fn desc(&self) -> String {
+        format!("{}{}", self.typename(), self.id())
+    }
 
     // This call is created to pull widget-independent data before size() call.
     // TODO replace with subscriptions?
@@ -89,23 +95,39 @@ pub trait Widget: 'static {
     }
 
     fn act_on(&mut self, input_event: InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
+        let self_desc = self.desc();
+        debug!(target: "act_on", "1: {} acting on input {:?}", &self_desc, &input_event);
+
         // first offering message to a highlighted child (default behavior)
         let (consumed, message_to_self_op) = if let Some(child) = self.get_focused_mut() {
-            child.act_on(input_event)
+            let result = child.act_on(input_event);
+            debug!(target: "act_on", "2: {}'s child {} consumed ({}), and returned message {:?}", &self_desc, child.desc(), result.0, result.1);
+            result
         } else {
+            debug!(target: "act_on", "2: {} has no focused child (end of focus path)", &self_desc);
             (false, None)
         };
 
+
         if let Some(message_to_self) = message_to_self_op {
             debug_assert!(consumed, "one can't return a message without consuming input in Bernardo paradigm");
+            debug!(target: "act_on", "3: {} will update on message {:?}", &self_desc, &message_to_self);
 
             let message_to_parent = self.update(message_to_self);
+            debug!(target: "act_on", "4: {} after update produced message {:?} to it's parent", &self_desc, &message_to_parent);
+
             return (true, message_to_parent);
+        } else {
+            debug!(target: "act_on", "3: {} has no message_to_self", &self_desc);
         }
 
         if !consumed {
+            debug!(target: "act_on", "5: {}'s children did not consume input, considering themselves", &self_desc);
             if let Some(msg) = self.on_input(input_event) {
-                return (true, self.update(msg));
+                debug!(target: "act_on", "6: {} consumed, produced {:?}", &self_desc, &msg);
+                let result = (true, self.update(msg));
+                debug!(target: "act_on", "7: {} produced {:?} message", &self_desc, &result.1);
+                return result;
             }
         }
 

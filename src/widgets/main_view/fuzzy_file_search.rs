@@ -82,7 +82,7 @@ impl Widget for FuzzyFileSearchWidget {
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        None
+        Some(msg)
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {

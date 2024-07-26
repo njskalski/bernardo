@@ -8,7 +8,7 @@ const DEFAULT_LEVEL: log::LevelFilter = log::LevelFilter::Info;
 
 const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     // this is for git ignore
-    ("globset", log::LevelFilter::Error),
+    ("globset", log::LevelFilter::Debug),
     // I have no clue where it comes from, and I don't care so I suppress it
     ("mio::poll", log::LevelFilter::Error),
     ("bernardo", log::LevelFilter::Info),
@@ -44,13 +44,20 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     // ("bernardo::lsp_client::lsp_write", log::LevelFilter::Warn),
     ("bernardo::mocks::full_setup", log::LevelFilter::Warn),
     ("bernardo::mocks", log::LevelFilter::Warn),
+    // ("act_on", log::LevelFilter::Debug),
 ];
 
 pub fn logger_setup(stderr_on: bool, file_to_log_to: Option<PathBuf>, log_writer_op: Option<Box<dyn LogWriter>>) {
     // global logger setting
     let mut logger_builder = flexi_logger::LogSpecBuilder::new();
     logger_builder.default(DEFAULT_LEVEL);
+
+    for (module, filter) in DEBUG_PARAMS {
+        logger_builder.module(module, filter.clone());
+    }
+
     let log_spec = logger_builder.build();
+
 
     let mut logger = flexi_logger::Logger::with(log_spec);
 
