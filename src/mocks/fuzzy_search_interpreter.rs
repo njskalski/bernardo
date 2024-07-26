@@ -16,18 +16,16 @@ impl<'a> FuzzySearchInterpreter<'a> {
     pub fn new(output: &'a MetaOutputFrame, meta: &'a Metadata) -> Self {
         debug_assert!(meta.typename == FuzzySearchWidget::TYPENAME);
 
-        let editbox : Vec<&Metadata> = output.get_meta_by_type(EditBoxWidget::TYPENAME)
+        let editbox: Vec<&Metadata> = output
+            .get_meta_by_type(EditBoxWidget::TYPENAME)
             .filter(|c| meta.rect.contains_rect(c.rect))
             .collect();
 
         assert_eq!(editbox.len(), 1);
 
-        let editbox = EditWidgetInterpreter::new( editbox[0], output);
+        let editbox = EditWidgetInterpreter::new(editbox[0], output);
 
-        Self { 
-            meta,
-             output,
-              editbox   }
+        Self { meta, output, editbox }
     }
 
     pub fn is_focused(&self) -> bool {

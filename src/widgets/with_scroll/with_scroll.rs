@@ -15,7 +15,7 @@ use crate::primitives::xy::XY;
 use crate::unpack_unit;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::{DeterminedBy, SizePolicy};
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 
 // const DEFAULT_MARGIN_WIDTH: u16 = 4;
 

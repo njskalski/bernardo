@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
-use flexi_logger::FileSpec;
 use flexi_logger::writers::LogWriter;
-use log::{LevelFilter, warn};
+use flexi_logger::FileSpec;
+use log::{warn, LevelFilter};
 
 const DEFAULT_LEVEL: log::LevelFilter = log::LevelFilter::Info;
 
@@ -57,7 +57,6 @@ pub fn logger_setup(stderr_on: bool, file_to_log_to: Option<PathBuf>, log_writer
     }
 
     let log_spec = logger_builder.build();
-
 
     let mut logger = flexi_logger::Logger::with(log_spec);
 

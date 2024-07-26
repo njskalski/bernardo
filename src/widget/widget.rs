@@ -108,7 +108,6 @@ pub trait Widget: 'static {
             (false, None)
         };
 
-
         if let Some(message_to_self) = message_to_self_op {
             debug_assert!(consumed, "one can't return a message without consuming input in Bernardo paradigm");
             debug!(target: "act_on", "3: {} will update on message {:?}", &self_desc, &message_to_self);
