@@ -8,19 +8,25 @@ use crate::config::theme::Theme;
 use crate::cursor::cursor::CursorStatus;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::screenspace::Screenspace;
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
+use crate::layout::empty_layout::EmptyLayout;
+use crate::layout::layout::Layout;
+use crate::layout::leaf_layout::LeafLayout;
+use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::common_edit_msgs::key_to_edit_msg;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
-use crate::unpack_unit_e;
-use crate::widget::any_msg::AnyMsg;
+use crate::widget::any_msg::{AnyMsg, AsAny};
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};
+use crate::{subwidget, unpack_unit_e};
 
 /* TODO I am not sure if I want to keep this widget, or do I integrate it with context menu widget now brewing \
 slowly somewhere in editor */
@@ -36,6 +42,7 @@ pub enum DrawComment {
 
 pub struct FuzzySearchWidget {
     id: WID,
+    size_policy: SizePolicy,
     edit: EditBoxWidget,
     providers: Vec<Box<dyn ItemsProvider>>,
     context_shortcuts: Vec<String>,
@@ -67,6 +74,7 @@ impl FuzzySearchWidget {
 
         Self {
             id: get_new_widget_id(),
+            size_policy: SizePolicy::SELF_DETERMINED,
             edit,
             providers: Vec::default(),
             context_shortcuts: Vec::default(),
@@ -76,6 +84,10 @@ impl FuzzySearchWidget {
             on_miss: None,
             last_size: None,
         }
+    }
+
+    pub fn with_size_policy(self, size_policy: SizePolicy) -> Self {
+        Self { size_policy, ..self }
     }
 
     pub fn with_provider(self, provider: Box<dyn ItemsProvider>) -> Self {
@@ -168,6 +180,17 @@ impl FuzzySearchWidget {
 
         res
     }
+
+    // fn get_layout(&self) -> Box<dyn Layout<Self>> {
+    //     SplitLayout::new(SplitDirection::Horizontal).with(
+    //         SplitRule::Fixed(1),
+    //         LeafLayout::new(subwidget!(Self.edit)).boxed(),
+    //     )
+    //         .with(
+    //             SplitRule::Proportional(1.0f32),
+    //             EmptyLayout::new().boxed(),
+    //         ).boxed()
+    // }
 }
 
 struct ItemIter<'a> {
@@ -228,8 +251,21 @@ impl Widget for FuzzySearchWidget {
         self.size_from_items()
     }
 
+    fn size_policy(&self) -> SizePolicy {
+        self.size_policy
+    }
+
     fn layout(&mut self, screenspace: Screenspace) {
         self.last_size = Some(screenspace);
+
+        let sub_screenspace = Screenspace::new(
+            XY::new(screenspace.output_size().x, 1),
+            screenspace
+                .visible_rect()
+                .intersect(Rect::from_zero(XY::new(screenspace.output_size().x, 1)))
+                .unwrap(),
+        );
+        self.edit.layout(sub_screenspace)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {

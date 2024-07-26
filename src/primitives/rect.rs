@@ -71,13 +71,14 @@ impl Rect {
         // true = beginning, false = end
         // why? So in case there's a draw on coordinate, I still DO NOT construct
         // a rect. Since upper limits are EXCLUSIVE, such rect would be empty anyway.
-        let mut xs: Vec<(u16, bool)> = vec![
+        let mut xs: [(u16, bool); 4] = [
             (self.upper_left().x, true),
             (self.lower_right().x, false),
             (other.upper_left().x, true),
             (other.lower_right().x, false),
         ];
-        let mut ys: Vec<(u16, bool)> = vec![
+
+        let mut ys: [(u16, bool); 4] = [
             (self.upper_left().y, true),
             (self.lower_right().y, false),
             (other.upper_left().y, true),

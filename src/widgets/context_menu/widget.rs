@@ -6,6 +6,7 @@ use log::{debug, error, warn};
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
@@ -223,5 +224,9 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> CombinedWidget for Con
 
     fn get_layout_res(&self) -> Option<&LayoutResult<Self>> {
         self.layout_res.as_ref()
+    }
+
+    fn get_subwidgets_for_input(&self) -> impl Iterator<Item = SubwidgetPointer<Self>> {
+        [subwidget!(Self.tree_view), subwidget!(Self.query_box)].into_iter()
     }
 }
