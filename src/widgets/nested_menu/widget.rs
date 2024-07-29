@@ -130,12 +130,18 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> NestedMenuWidget<Key, 
 
         for exp in self.selected_nodes.iter() {
             // TODO unwritten assumption that there is no duplicate keys
+            let mut next: Option<Item> = None;
             if let Some(subtree) = item.child_iter().find(|item| item.id() == &exp.0) {
-                item = subtree;
-                continue;
+                next = Some(subtree);
             } else {
                 error!("key {:?} not found", exp);
                 return None;
+            };
+
+            if let Some(next) = next {
+                item = next;
+            } else {
+                return None; // never reached
             }
         }
 

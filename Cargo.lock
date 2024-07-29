@@ -148,6 +148,7 @@ dependencies = [
  "maplit",
  "matches",
  "num",
+ "parking_lot 0.12.1",
  "regex",
  "ron",
  "ropey",

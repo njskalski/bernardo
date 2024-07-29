@@ -1,4 +1,5 @@
 use std::fmt::{Debug, Formatter};
+use std::fs::Metadata;
 use std::io;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -61,6 +62,7 @@ impl FilesystemFront for RealFS {
     fn blocking_list(&self, path: &Path) -> Result<Vec<DirEntry>, ListError> {
         let full_path = self.root_path.join(path);
         let readdir = std::fs::read_dir(&full_path)?;
+
         let mut items: Vec<DirEntry> = Vec::new();
         for item in readdir {
             match item {
@@ -79,6 +81,11 @@ impl FilesystemFront for RealFS {
             }
         }
         Ok(items)
+    }
+
+    fn metadata(&self, path: &Path) -> Result<Metadata, ()> {
+        // TODO more informative error
+        std::fs::metadata(&path).map_err(|_| ())
     }
 
     fn exists(&self, path: &Path) -> bool {

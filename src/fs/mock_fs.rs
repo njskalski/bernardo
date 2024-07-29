@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use std::fs::Metadata;
 use std::path::{Component, Path, PathBuf};
 use std::sync::RwLock;
 use std::{fs, io};
@@ -322,6 +323,10 @@ impl FilesystemFront for MockFS {
                 Ok(items.into_iter().map(DirEntry::new).collect())
             }
         }
+    }
+
+    fn metadata(&self, path: &Path) -> Result<Metadata, ()> {
+        Err(())
     }
 
     fn exists(&self, path: &Path) -> bool {
