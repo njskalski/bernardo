@@ -1,12 +1,13 @@
 use std::{fs, iter};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use std::fs::Metadata;
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use log::error;
+use log::{debug, error};
 use parking_lot::{RwLock, RwLockReadGuard};
 use parking_lot::MappedRwLockReadGuard;
 use streaming_iterator::{StreamingIterator, StreamingIteratorMut};
@@ -20,6 +21,7 @@ use crate::fs::write_error::WriteError;
 
 pub struct DirCache {
     vec: Vec<SPath>,
+    metadata: Option<Metadata>,
 }
 
 impl DirCache {
@@ -151,8 +153,30 @@ impl FsfRef {
 
     pub fn blocking_list(&self, spath: &SPath) -> Result<Arc<DirCache>, ListError> {
         let path = spath.relative_path();
-        let items = self.fs.fs.blocking_list(&path)?;
+        let metadata = self.fs.fs.metadata(&path).ok();
 
+        let mut cache_invalid = false;
+
+        if let Some(system_time) = metadata.as_ref().map(|data| data.modified().ok()).flatten() {
+            if let Some(rlock) = self.fs.caches.try_read() {
+                if let Some(cached) = rlock.get(spath) {
+                    if let Some(cached_time) = cached.metadata.as_ref().map(|m| m.modified().ok()).flatten() {
+                        if cached_time == system_time {
+                            debug!("cache hit.");
+
+                            // cache is valid
+                            return Ok(cached.clone());
+                        }
+
+                        if cached_time < system_time {
+                            cache_invalid = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        let items = self.fs.fs.blocking_list(&path)?;
         let mut dir_cache: Vec<SPath> = Vec::with_capacity(items.len());
         for item in items.into_iter() {
             let sp = SPath::append(spath.clone(), item.into_path_buf());
@@ -161,8 +185,7 @@ impl FsfRef {
 
         dir_cache.sort();
 
-        let dir_cache_arc = Arc::new(DirCache { vec: dir_cache });
-
+        let dir_cache_arc = Arc::new(DirCache { vec: dir_cache, metadata });
 
         match self.fs.caches.try_write() {
             Some(mut cache) => {

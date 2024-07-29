@@ -1,8 +1,9 @@
+use std::{fs, io};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use std::fs::Metadata;
 use std::path::{Component, Path, PathBuf};
 use std::sync::RwLock;
-use std::{fs, io};
 
 use log::{debug, error};
 use streaming_iterator::StreamingIterator;
@@ -324,6 +325,10 @@ impl FilesystemFront for MockFS {
         }
     }
 
+    fn metadata(&self, path: &Path) -> Result<Metadata, ()> {
+        Err(())
+    }
+
     fn exists(&self, path: &Path) -> bool {
         let comp: Vec<_> = path.components().collect();
         self.root_dir.read().unwrap().get(&comp).is_some()
@@ -332,7 +337,7 @@ impl FilesystemFront for MockFS {
     fn blocking_overwrite_with_stream(
         &self,
         path: &Path,
-        stream: &mut dyn StreamingIterator<Item = [u8]>,
+        stream: &mut dyn StreamingIterator<Item=[u8]>,
         must_exist: bool,
     ) -> Result<usize, WriteError> {
         debug!("writing to [{:?}]", path);

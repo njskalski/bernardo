@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::fs::Metadata;
 use std::path::{Path, PathBuf};
 
 use streaming_iterator::StreamingIterator;
@@ -33,12 +34,14 @@ pub trait FilesystemFront: Debug + Send + Sync {
 
     fn blocking_list(&self, path: &Path) -> Result<Vec<DirEntry>, ListError>;
 
+    fn metadata(&self, path: &Path) -> Result<Metadata, ()>;
+
     fn exists(&self, path: &Path) -> bool;
 
     fn blocking_overwrite_with_stream(
         &self,
         path: &Path,
-        stream: &mut dyn StreamingIterator<Item = [u8]>,
+        stream: &mut dyn StreamingIterator<Item=[u8]>,
         must_exist: bool,
     ) -> Result<usize, WriteError>;
 
