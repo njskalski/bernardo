@@ -27,13 +27,13 @@ const GITIGNORE_FILE: &str = ".gitignore";
 /// Contents of a directory, sorted lexicographically. Also identifies a .gitignore
 /// file if it exists in the directory.
 struct DirContents {
-    files: Box<dyn Iterator<Item = SPath>>,
+    files: Box<dyn Iterator<Item=SPath>>,
     ignore: Option<Gitignore>,
 }
 
 impl DirContents {
     pub fn from_dir(dir: SPath) -> Result<Self, ListError> {
-        let mut files = dir.blocking_list()?;
+        let mut files: Vec<_> = dir.blocking_list()?.map(|i| i.clone()).collect();
         files.sort();
 
         let ignore = files
