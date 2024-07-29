@@ -1,11 +1,16 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use std::fs::Metadata;
 use std::hash::{Hash, Hasher};
+use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use std::{fs, iter};
 
-use log::error;
-use streaming_iterator::StreamingIterator;
+use log::{debug, error};
+use parking_lot::MappedRwLockReadGuard;
+use parking_lot::{RwLock, RwLockReadGuard};
+use streaming_iterator::{StreamingIterator, StreamingIteratorMut};
 
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::path::SPath;
@@ -16,11 +21,42 @@ use crate::fs::write_error::WriteError;
 
 pub struct DirCache {
     vec: Vec<SPath>,
+    metadata: Option<Metadata>,
+}
+
+impl DirCache {
+    pub fn iter(&self) -> impl Iterator<Item = &SPath> {
+        self.vec.iter()
+    }
+}
+
+pub struct ArcIter {
+    arc: Arc<DirCache>,
+    idx: usize,
+}
+
+impl ArcIter {
+    pub fn new(arc: Arc<DirCache>) -> Self {
+        ArcIter { arc, idx: 0 }
+    }
+}
+
+impl Iterator for ArcIter {
+    type Item = SPath;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(item) = self.arc.vec.get(self.idx).map(|item| item.clone()) {
+            self.idx += 1;
+            Some(item)
+        } else {
+            None
+        }
+    }
 }
 
 pub struct FsAndCache {
     fs: Box<dyn FilesystemFront + Send + Sync>,
-    caches: RwLock<HashMap<SPath, DirCache>>,
+    caches: RwLock<HashMap<SPath, Arc<DirCache>>>,
 }
 
 #[derive(Clone)]
@@ -112,31 +148,52 @@ impl FsfRef {
         self.fs.fs.blocking_overwrite_with_bytes(&path, &bytes, must_exist)
     }
 
-    pub fn blocking_list(&self, spath: &SPath) -> Result<Vec<SPath>, ListError> {
-        // TODO unwrap - not necessary
-        if let Some(cache) = self.fs.caches.try_read().unwrap().get(spath) {
-            return Ok(cache.vec.clone());
+    pub fn blocking_list(&self, spath: &SPath) -> Result<Arc<DirCache>, ListError> {
+        let path = spath.relative_path();
+        let metadata = self.fs.fs.metadata(&path).ok();
+
+        let mut cache_invalid = false;
+
+        if let Some(system_time) = metadata.as_ref().map(|data| data.modified().ok()).flatten() {
+            if let Some(rlock) = self.fs.caches.try_read() {
+                if let Some(cached) = rlock.get(spath) {
+                    if let Some(cached_time) = cached.metadata.as_ref().map(|m| m.modified().ok()).flatten() {
+                        if cached_time == system_time {
+                            debug!("cache hit.");
+
+                            // cache is valid
+                            return Ok(cached.clone());
+                        }
+
+                        if cached_time < system_time {
+                            cache_invalid = true;
+                        }
+                    }
+                }
+            }
         }
 
-        let path = spath.relative_path();
         let items = self.fs.fs.blocking_list(&path)?;
-
         let mut dir_cache: Vec<SPath> = Vec::with_capacity(items.len());
         for item in items.into_iter() {
             let sp = SPath::append(spath.clone(), item.into_path_buf());
             dir_cache.push(sp);
         }
 
+        dir_cache.sort();
+
+        let dir_cache_arc = Arc::new(DirCache { vec: dir_cache, metadata });
+
         match self.fs.caches.try_write() {
-            Ok(mut cache) => {
-                cache.insert(spath.clone(), DirCache { vec: dir_cache.clone() });
+            Some(mut cache) => {
+                cache.insert(spath.clone(), dir_cache_arc.clone());
             }
-            Err(e) => {
-                error!("failed writing cache, because {:?}", e);
+            None => {
+                error!("failed to cache directory list for spath {}", spath)
             }
         }
 
-        Ok(dir_cache)
+        Ok(dir_cache_arc)
     }
 
     pub fn blocking_read_entire_file(&self, spath: &SPath) -> Result<Vec<u8>, ReadError> {

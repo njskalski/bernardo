@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::fs::Metadata;
 use std::path::{Path, PathBuf};
 
 use streaming_iterator::StreamingIterator;
@@ -32,6 +33,8 @@ pub trait FilesystemFront: Debug + Send + Sync {
     fn hash_seed(&self) -> usize;
 
     fn blocking_list(&self, path: &Path) -> Result<Vec<DirEntry>, ListError>;
+
+    fn metadata(&self, path: &Path) -> Result<Metadata, ()>;
 
     fn exists(&self, path: &Path) -> bool;
 

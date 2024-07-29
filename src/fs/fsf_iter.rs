@@ -33,7 +33,7 @@ struct DirContents {
 
 impl DirContents {
     pub fn from_dir(dir: SPath) -> Result<Self, ListError> {
-        let mut files = dir.blocking_list()?;
+        let mut files: Vec<_> = dir.blocking_list()?.map(|i| i.clone()).collect();
         files.sort();
 
         let ignore = files
