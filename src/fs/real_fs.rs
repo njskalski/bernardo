@@ -63,7 +63,6 @@ impl FilesystemFront for RealFS {
         let full_path = self.root_path.join(path);
         let readdir = std::fs::read_dir(&full_path)?;
 
-
         let mut items: Vec<DirEntry> = Vec::new();
         for item in readdir {
             match item {
@@ -96,7 +95,7 @@ impl FilesystemFront for RealFS {
     fn blocking_overwrite_with_stream(
         &self,
         path: &Path,
-        stream: &mut dyn StreamingIterator<Item=[u8]>,
+        stream: &mut dyn StreamingIterator<Item = [u8]>,
         must_exist: bool,
     ) -> Result<usize, WriteError> {
         if must_exist && path.exists() {

@@ -41,7 +41,7 @@ pub trait FilesystemFront: Debug + Send + Sync {
     fn blocking_overwrite_with_stream(
         &self,
         path: &Path,
-        stream: &mut dyn StreamingIterator<Item=[u8]>,
+        stream: &mut dyn StreamingIterator<Item = [u8]>,
         must_exist: bool,
     ) -> Result<usize, WriteError>;
 

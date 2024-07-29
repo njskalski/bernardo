@@ -1,4 +1,3 @@
-use std::{fs, iter};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::fs::Metadata;
@@ -6,10 +5,11 @@ use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::{fs, iter};
 
 use log::{debug, error};
-use parking_lot::{RwLock, RwLockReadGuard};
 use parking_lot::MappedRwLockReadGuard;
+use parking_lot::{RwLock, RwLockReadGuard};
 use streaming_iterator::{StreamingIterator, StreamingIteratorMut};
 
 use crate::fs::filesystem_front::FilesystemFront;
@@ -25,7 +25,7 @@ pub struct DirCache {
 }
 
 impl DirCache {
-    pub fn iter(&self) -> impl Iterator<Item=&SPath> {
+    pub fn iter(&self) -> impl Iterator<Item = &SPath> {
         self.vec.iter()
     }
 }
@@ -37,10 +37,7 @@ pub struct ArcIter {
 
 impl ArcIter {
     pub fn new(arc: Arc<DirCache>) -> Self {
-        ArcIter {
-            arc,
-            idx: 0,
-        }
+        ArcIter { arc, idx: 0 }
     }
 }
 
@@ -137,7 +134,7 @@ impl FsfRef {
     pub fn overwrite_with_stream(
         &self,
         spath: &SPath,
-        stream: &mut dyn StreamingIterator<Item=[u8]>,
+        stream: &mut dyn StreamingIterator<Item = [u8]>,
         must_exist: bool,
     ) -> Result<usize, WriteError> {
         let path = spath.relative_path();

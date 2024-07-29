@@ -27,7 +27,7 @@ const GITIGNORE_FILE: &str = ".gitignore";
 /// Contents of a directory, sorted lexicographically. Also identifies a .gitignore
 /// file if it exists in the directory.
 struct DirContents {
-    files: Box<dyn Iterator<Item=SPath>>,
+    files: Box<dyn Iterator<Item = SPath>>,
     ignore: Option<Gitignore>,
 }
 

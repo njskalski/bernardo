@@ -248,7 +248,7 @@ impl SPath {
         fsf.exists(self)
     }
 
-    pub fn overwrite_with_stream(&self, stream: &mut dyn StreamingIterator<Item=[u8]>, must_exist: bool) -> Result<usize, WriteError> {
+    pub fn overwrite_with_stream(&self, stream: &mut dyn StreamingIterator<Item = [u8]>, must_exist: bool) -> Result<usize, WriteError> {
         let fsf = self.fsf();
         fsf.overwrite_with_stream(self, stream, must_exist)
     }
@@ -264,7 +264,7 @@ impl SPath {
         self.overwrite_with_str(&ron_item, must_exist).map_err(|e| e.into())
     }
 
-    pub fn blocking_list(&self) -> Result<impl Iterator<Item=SPath> + '_, ListError> {
+    pub fn blocking_list(&self) -> Result<impl Iterator<Item = SPath> + '_, ListError> {
         let fsf = self.fsf();
         fsf.blocking_list(self).map(|item| ArcIter::new(item))
     }
