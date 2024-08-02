@@ -14,7 +14,6 @@ pub mod generic_dialog;
 pub mod list_widget;
 pub mod main_view;
 pub mod no_editor;
-pub mod open_buffers_list;
 pub mod save_file_dialog;
 pub mod spath_list_widget_item;
 pub mod spath_tree_view_node;
@@ -27,3 +26,4 @@ pub mod nested_menu;
 pub mod context_menu;
 #[cfg(test)]
 mod tests;
+pub mod find_in_files_widget;
