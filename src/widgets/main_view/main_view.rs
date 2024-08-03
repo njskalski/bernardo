@@ -335,17 +335,29 @@ impl MainView {
             Some(
                 SubwidgetPointer::new(
                     Box::new(|mv: &MainView| {
-                        match mv.hover.as_ref().unwrap() {
-                            HoverItem::FuzzySearch(fs) => fs as &dyn Widget,
-                            HoverItem::FuzzySearch2(fs) => fs as &dyn Widget,
-                            HoverItem::SearchInFiles(fs) => fs as &dyn Widget,
+                        if mv.hover.is_some() {
+                            match mv.hover.as_ref().unwrap() {
+                                HoverItem::FuzzySearch(fs) => fs as &dyn Widget,
+                                HoverItem::FuzzySearch2(fs) => fs as &dyn Widget,
+                                HoverItem::SearchInFiles(fs) => fs as &dyn Widget,
+                            }
+                        } else {
+                            error!("no hover found, this subwidget pointer should have been overriden by now.");
+                            let sw = mv.get_default_focused().clone();
+                            sw.get(mv)
                         }
                     }),
                     Box::new(|mv: &mut MainView| {
-                        match mv.hover.as_mut().unwrap() {
-                            HoverItem::FuzzySearch(fs) => fs as &mut dyn Widget,
-                            HoverItem::FuzzySearch2(fs) => fs as &mut dyn Widget,
-                            HoverItem::SearchInFiles(fs) => fs as &mut dyn Widget,
+                        if mv.hover.is_some() {
+                            match mv.hover.as_mut().unwrap() {
+                                HoverItem::FuzzySearch(fs) => fs as &mut dyn Widget,
+                                HoverItem::FuzzySearch2(fs) => fs as &mut dyn Widget,
+                                HoverItem::SearchInFiles(fs) => fs as &mut dyn Widget,
+                            }
+                        } else {
+                            error!("no hover found, this subwidget pointer should have been overriden by now.");
+                            let sw = mv.get_default_focused().clone();
+                            sw.get_mut(mv)
                         }
                     }),
                 )
