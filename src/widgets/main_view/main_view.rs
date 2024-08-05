@@ -3,7 +3,6 @@ use std::rc::Rc;
 use log::{debug, error, warn};
 use uuid::Uuid;
 
-use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::experiments::buffer_register::OpenResult;
 use crate::experiments::filename_to_language::filename_to_language;
@@ -25,7 +24,7 @@ use crate::primitives::xy::XY;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
 use crate::widgets::editor_view::editor_view::EditorView;
@@ -41,6 +40,7 @@ use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
+use crate::{subwidget, unpack_or, unpack_or_e};
 
 pub type BufferId = Uuid;
 
@@ -249,11 +249,7 @@ impl MainView {
             return;
         }
 
-        self.hover = Some(
-            HoverItem::SearchInFiles(FindEverywhereWidget::new(
-                self.providers.fsf().root()
-            ))
-        )
+        self.hover = Some(HoverItem::SearchInFiles(FindEverywhereWidget::new(self.providers.fsf().root())))
     }
 
     fn open_empty_editor_and_focus(&mut self) {
@@ -295,8 +291,8 @@ impl MainView {
                 |_| Some(Box::new(MainViewMsg::CloseHover)),
                 Some(self.providers.clipboard().clone()),
             )
-                .with_provider(self.get_display_list_provider())
-                .with_draw_comment_setting(DrawComment::Highlighted),
+            .with_provider(self.get_display_list_provider())
+            .with_draw_comment_setting(DrawComment::Highlighted),
         )));
         self.set_focus_to_hover();
     }
@@ -317,7 +313,7 @@ impl MainView {
     fn get_opened_views_for_document_id(
         &self,
         document_identifier: DocumentIdentifier,
-    ) -> impl Iterator<Item=(usize, &MainViewDisplay)> + '_ {
+    ) -> impl Iterator<Item = (usize, &MainViewDisplay)> + '_ {
         self.displays.iter().enumerate().filter_map(move |(idx, item)| match item {
             MainViewDisplay::ResultsView(_) => None,
             MainViewDisplay::Editor(editor) => {
@@ -332,36 +328,34 @@ impl MainView {
 
     fn get_hover_subwidget(&self) -> Option<SubwidgetPointer<Self>> {
         if self.hover.is_some() {
-            Some(
-                SubwidgetPointer::new(
-                    Box::new(|mv: &MainView| {
-                        if mv.hover.is_some() {
-                            match mv.hover.as_ref().unwrap() {
-                                HoverItem::FuzzySearch(fs) => fs as &dyn Widget,
-                                HoverItem::FuzzySearch2(fs) => fs as &dyn Widget,
-                                HoverItem::SearchInFiles(fs) => fs as &dyn Widget,
-                            }
-                        } else {
-                            error!("no hover found, this subwidget pointer should have been overriden by now.");
-                            let sw = mv.get_default_focused().clone();
-                            sw.get(mv)
+            Some(SubwidgetPointer::new(
+                Box::new(|mv: &MainView| {
+                    if mv.hover.is_some() {
+                        match mv.hover.as_ref().unwrap() {
+                            HoverItem::FuzzySearch(fs) => fs as &dyn Widget,
+                            HoverItem::FuzzySearch2(fs) => fs as &dyn Widget,
+                            HoverItem::SearchInFiles(fs) => fs as &dyn Widget,
                         }
-                    }),
-                    Box::new(|mv: &mut MainView| {
-                        if mv.hover.is_some() {
-                            match mv.hover.as_mut().unwrap() {
-                                HoverItem::FuzzySearch(fs) => fs as &mut dyn Widget,
-                                HoverItem::FuzzySearch2(fs) => fs as &mut dyn Widget,
-                                HoverItem::SearchInFiles(fs) => fs as &mut dyn Widget,
-                            }
-                        } else {
-                            error!("no hover found, this subwidget pointer should have been overriden by now.");
-                            let sw = mv.get_default_focused().clone();
-                            sw.get_mut(mv)
+                    } else {
+                        error!("no hover found, this subwidget pointer should have been overriden by now.");
+                        let sw = mv.get_default_focused().clone();
+                        sw.get(mv)
+                    }
+                }),
+                Box::new(|mv: &mut MainView| {
+                    if mv.hover.is_some() {
+                        match mv.hover.as_mut().unwrap() {
+                            HoverItem::FuzzySearch(fs) => fs as &mut dyn Widget,
+                            HoverItem::FuzzySearch2(fs) => fs as &mut dyn Widget,
+                            HoverItem::SearchInFiles(fs) => fs as &mut dyn Widget,
                         }
-                    }),
-                )
-            )
+                    } else {
+                        error!("no hover found, this subwidget pointer should have been overriden by now.");
+                        let sw = mv.get_default_focused().clone();
+                        sw.get_mut(mv)
+                    }
+                }),
+            ))
         } else {
             None
         }
@@ -460,7 +454,10 @@ impl Widget for MainView {
                     MainViewMsg::OpenFuzzyBuffers.someboxed()
                 }
             }
-            InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_everywhere => MainViewMsg::OpenFindEverywhere { root_dir: self.providers.fsf().root() }.someboxed(),
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_everywhere => MainViewMsg::OpenFindEverywhere {
+                root_dir: self.providers.fsf().root(),
+            }
+            .someboxed(),
             _ => {
                 debug!("input {:?} NOT consumed", input_event);
                 None

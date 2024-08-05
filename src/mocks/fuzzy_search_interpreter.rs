@@ -12,7 +12,6 @@ pub struct FuzzySearchInterpreter<'a> {
     output: &'a MetaOutputFrame,
 
     editbox: EditWidgetInterpreter<'a>,
-
 }
 
 /// This type is used in fuzzy_file_open_test as if it was corresponding to FuzzyFileSearchWidget,
@@ -55,7 +54,10 @@ impl<'a> FuzzySearchInterpreter<'a> {
         rect_without_editbox.pos += XY::new(0, editbox_rect.size.y);
         rect_without_editbox.size.y -= editbox_rect.size.y;
 
-        self.output.buffer.lines_iter().with_rect(rect_without_editbox)
+        self.output
+            .buffer
+            .lines_iter()
+            .with_rect(rect_without_editbox)
             .filter(|line| line.text_style == Some(self.output.theme.highlighted(self.is_focused())))
             .map(|item| item.text.trim().to_string())
             .filter(|item| !item.is_empty())
