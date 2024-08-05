@@ -28,6 +28,7 @@ use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
 use crate::widgets::editor_view::editor_view::EditorView;
+use crate::widgets::find_in_files_widget::find_in_files_widget::FindEverywhereWidget;
 use crate::widgets::fuzzy_search::fsf_provider::{FsfProvider, SPathMsg};
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
 use crate::widgets::fuzzy_search::item_provider::ItemsProvider;
@@ -44,8 +45,13 @@ use crate::{subwidget, unpack_or, unpack_or_e};
 pub type BufferId = Uuid;
 
 pub enum HoverItem {
+    // used in fuzzy buffer list
     FuzzySearch(WithScroll<FuzzySearchWidget>),
+    // used in fuzzy file list
     FuzzySearch2(FuzzyFileSearchWidget),
+
+    // search in files
+    SearchInFiles(FindEverywhereWidget),
 }
 
 // TODO start indexing documents with DocumentIdentifier as opposed to usize
@@ -237,6 +243,15 @@ impl MainView {
         }
     }
 
+    fn open_find_everywhere(&mut self) {
+        if self.hover.is_some() {
+            debug!("ignoring 'open find everywhere', because there is already a hover");
+            return;
+        }
+
+        self.hover = Some(HoverItem::SearchInFiles(FindEverywhereWidget::new(self.providers.fsf().root())))
+    }
+
     fn open_empty_editor_and_focus(&mut self) {
         let buffer = if let Ok(mut buffer_register) = self.providers.buffer_register().try_write() {
             buffer_register.open_new_file(&self.providers)
@@ -311,6 +326,41 @@ impl MainView {
         })
     }
 
+    fn get_hover_subwidget(&self) -> Option<SubwidgetPointer<Self>> {
+        if self.hover.is_some() {
+            Some(SubwidgetPointer::new(
+                Box::new(|mv: &MainView| {
+                    if mv.hover.is_some() {
+                        match mv.hover.as_ref().unwrap() {
+                            HoverItem::FuzzySearch(fs) => fs as &dyn Widget,
+                            HoverItem::FuzzySearch2(fs) => fs as &dyn Widget,
+                            HoverItem::SearchInFiles(fs) => fs as &dyn Widget,
+                        }
+                    } else {
+                        error!("no hover found, this subwidget pointer should have been overriden by now.");
+                        let sw = mv.get_default_focused().clone();
+                        sw.get(mv)
+                    }
+                }),
+                Box::new(|mv: &mut MainView| {
+                    if mv.hover.is_some() {
+                        match mv.hover.as_mut().unwrap() {
+                            HoverItem::FuzzySearch(fs) => fs as &mut dyn Widget,
+                            HoverItem::FuzzySearch2(fs) => fs as &mut dyn Widget,
+                            HoverItem::SearchInFiles(fs) => fs as &mut dyn Widget,
+                        }
+                    } else {
+                        error!("no hover found, this subwidget pointer should have been overriden by now.");
+                        let sw = mv.get_default_focused().clone();
+                        sw.get_mut(mv)
+                    }
+                }),
+            ))
+        } else {
+            None
+        }
+    }
+
     // opens new document or brings old one to forefront (TODO this is temporary)
     // this entire method should be remade, it's here just to facilitate test that "hitting enter on
     // go to definition goes somewhere"
@@ -340,34 +390,12 @@ impl MainView {
     }
 
     fn set_focus_to_hover(&mut self) {
-        let ptr_to_hover = SubwidgetPointer::<Self>::new(
-            Box::new(|s: &MainView| {
-                let hover_present = s.hover.is_some();
-                if hover_present {
-                    match s.hover.as_ref().unwrap() {
-                        HoverItem::FuzzySearch(fs) => fs as &dyn Widget,
-                        HoverItem::FuzzySearch2(fs) => fs as &dyn Widget,
-                    }
-                } else {
-                    error!("failed to unwrap hover widget!");
-                    s.get_default_focused().get(s)
-                }
-            }),
-            Box::new(|s: &mut MainView| {
-                let hover_present = s.hover.is_some();
-                if hover_present {
-                    match s.hover.as_mut().unwrap() {
-                        HoverItem::FuzzySearch(fs) => fs as &mut dyn Widget,
-                        HoverItem::FuzzySearch2(fs) => fs as &mut dyn Widget,
-                    }
-                } else {
-                    error!("failed to unwrap hover widget!");
-                    s.get_default_focused().get_mut(s)
-                }
-            }),
-        );
-
-        self.set_focused(ptr_to_hover);
+        if let Some(subwidget_ptr) = self.get_hover_subwidget() {
+            self.set_focused(subwidget_ptr);
+        } else {
+            error!("failed to set focus to hover - no hover found! Setting to default.");
+            self.set_focus_to_default();
+        }
     }
 
     pub fn with_empty_editor(mut self) -> Self {
@@ -426,6 +454,10 @@ impl Widget for MainView {
                     MainViewMsg::OpenFuzzyBuffers.someboxed()
                 }
             }
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_everywhere => MainViewMsg::OpenFindEverywhere {
+                root_dir: self.providers.fsf().root(),
+            }
+            .someboxed(),
             _ => {
                 debug!("input {:?} NOT consumed", input_event);
                 None
@@ -463,6 +495,7 @@ impl Widget for MainView {
                     }
 
                     self.hover = None;
+                    self.set_focus_to_default();
                     None
                 }
                 MainViewMsg::OpenFuzzyBuffers => {
@@ -563,40 +596,10 @@ impl ComplexWidget for MainView {
             .with(SplitRule::Proportional(1.0), left_column)
             .with(SplitRule::Proportional(5.0), right_column);
 
-        let res = if let Some(hover) = &self.hover {
-            match hover {
-                HoverItem::FuzzySearch(_fuzzy) => {
-                    let hover = LeafLayout::new(SubwidgetPointer::new(
-                        Box::new(|s: &Self| match s.hover.as_ref().unwrap() {
-                            HoverItem::FuzzySearch(fs) => fs,
-                            _ => unimplemented!(),
-                        }),
-                        Box::new(|s: &mut Self| match s.hover.as_mut().unwrap() {
-                            HoverItem::FuzzySearch(fs) => fs,
-                            _ => unimplemented!(),
-                        }),
-                    ))
-                    .boxed();
-
-                    HoverLayout::new(bg_layout.boxed(), hover, Box::new(Self::get_hover_rect), true).boxed()
-                }
-                HoverItem::FuzzySearch2(fuzzy) => {
-                    let hover = LeafLayout::new(SubwidgetPointer::new(
-                        Box::new(|s: &Self| match s.hover.as_ref().unwrap() {
-                            HoverItem::FuzzySearch2(fs) => fs,
-                            _ => unimplemented!(),
-                        }),
-                        Box::new(|s: &mut Self| match s.hover.as_mut().unwrap() {
-                            HoverItem::FuzzySearch2(fs) => fs,
-                            _ => unimplemented!(),
-                        }),
-                    ))
-                    .boxed();
-                    let size = fuzzy.full_size();
-
-                    HoverLayout::new(bg_layout.boxed(), hover, Box::new(Self::get_hover_rect), true).boxed()
-                }
-            }
+        let res = if self.hover.is_some() {
+            let subwidget = self.get_hover_subwidget().unwrap();
+            let leaf = LeafLayout::new(subwidget).boxed();
+            HoverLayout::new(bg_layout.boxed(), leaf, Box::new(Self::get_hover_rect), true).boxed()
         } else {
             bg_layout.boxed()
         };

@@ -2,6 +2,7 @@ use crate::cursor::cursor::CursorStatus;
 use crate::io::cell::Cell;
 use crate::io::output::Metadata;
 use crate::mocks::meta_frame::MetaOutputFrame;
+use crate::primitives::rect::Rect;
 use crate::widgets::edit_box::EditBoxWidget;
 
 pub struct EditWidgetInterpreter<'a> {
@@ -18,6 +19,10 @@ impl<'a> EditWidgetInterpreter<'a> {
 
     pub fn is_focused(&self) -> bool {
         self.meta.focused
+    }
+
+    pub fn rect(&self) -> Rect {
+        self.meta.rect
     }
 
     pub fn contents(&self) -> String {

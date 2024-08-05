@@ -7,6 +7,3 @@ pub mod complex_widget;
 pub mod fill_policy;
 pub mod mock_file_list;
 pub mod widget;
-
-// #[cfg(test)]
-// pub mod tests;

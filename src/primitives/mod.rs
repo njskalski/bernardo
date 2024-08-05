@@ -15,7 +15,6 @@ pub mod common_edit_msgs;
 pub mod common_query;
 pub mod is_default;
 pub mod macros;
-pub mod provider;
 pub mod search_pattern;
 pub mod stupid_cursor;
 pub mod tmtheme;

@@ -30,12 +30,13 @@ pub struct KeyboardConfig {
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Global {
+    pub browse_buffers: Key,
     pub close: Key,
+    pub close_context_menu: Key,
+    pub everything_bar: Key,
+    pub find_everywhere: Key,
     pub fuzzy_file: Key,
     pub new_buffer: Key,
-    pub browse_buffers: Key,
-    pub everything_bar: Key,
-    pub close_context_menu: Key,
 }
 
 impl Default for Global {
@@ -48,6 +49,7 @@ impl Default for Global {
             // This is the most important feature of them all.
             // In order to support it EVERYWHERE it will need to be converted to InputEvent
             everything_bar: Keycode::Char('e').to_key().with_ctrl(),
+            find_everywhere: Keycode::Char('g').to_key().with_ctrl(),
             close_context_menu: Keycode::Esc.to_key(),
         }
     }
