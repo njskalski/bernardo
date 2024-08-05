@@ -17,19 +17,21 @@ use crate::subwidget;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::combined_widget::CombinedWidget;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::fuzzy_search::fsf_provider::FsfProvider;
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
 use crate::widgets::fuzzy_search::item_provider::ItemsProvider;
 use crate::widgets::fuzzy_search::msg::FuzzySearchMsg;
 use crate::widgets::main_view::msg::MainViewMsg;
+use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
 
 pub struct FuzzyFileSearchWidget {
     wid: WID,
     size: XY,
 
+    title: TextWidget,
     search_widget: WithScroll<FuzzySearchWidget>,
 
     layout_res: Option<LayoutResult<Self>>,
@@ -46,6 +48,7 @@ impl FuzzyFileSearchWidget {
 
         FuzzyFileSearchWidget {
             wid: get_new_widget_id(),
+            title: TextWidget::new(Box::new("Fuzzy file search")),
             size,
             search_widget: WithScroll::new(ScrollDirection::Vertical, search_widget),
             layout_res: None,
@@ -99,7 +102,9 @@ impl Widget for FuzzyFileSearchWidget {
         }
 
         self.combined_render(theme, focused, output);
+        // TODO merge border with title?
         SINGLE_BORDER_STYLE.draw_edges(theme.default_text(focused), output);
+        self.title.render(theme, focused, output);
     }
 
     fn act_on(&mut self, input_event: InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
@@ -120,7 +125,7 @@ impl CombinedWidget for FuzzyFileSearchWidget {
         self.layout_res.as_ref()
     }
 
-    fn get_subwidgets_for_input(&self) -> impl Iterator<Item = SubwidgetPointer<Self>> {
+    fn get_subwidgets_for_input(&self) -> impl Iterator<Item=SubwidgetPointer<Self>> {
         [subwidget!(Self.search_widget)].into_iter()
     }
 }

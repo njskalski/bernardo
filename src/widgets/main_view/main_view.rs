@@ -498,6 +498,7 @@ impl Widget for MainView {
                     }
 
                     self.hover = None;
+                    self.set_focus_to_default();
                     None
                 }
                 MainViewMsg::OpenFuzzyBuffers => {

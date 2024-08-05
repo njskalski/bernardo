@@ -4,6 +4,7 @@ use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use crate::{subwidget, unpack_unit_e};
 use crate::config::theme::Theme;
 use crate::cursor::cursor::CursorStatus;
 use crate::experiments::clipboard::ClipboardRef;
@@ -22,11 +23,10 @@ use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::edit_box::{EditBoxWidget, EditBoxWidgetMsg};
 use crate::widgets::fuzzy_search::item_provider::{Item, ItemsProvider};
 use crate::widgets::fuzzy_search::msg::{FuzzySearchMsg, Navigation};
-use crate::{subwidget, unpack_unit_e};
 
 /* TODO I am not sure if I want to keep this widget, or do I integrate it with context menu widget now brewing \
 slowly somewhere in editor */
@@ -59,6 +59,7 @@ pub struct FuzzySearchWidget {
     last_size: Option<Screenspace>,
 }
 
+ 
 impl FuzzySearchWidget {
     pub const TYPENAME: &'static str = "fuzzy_search";
 
@@ -199,7 +200,7 @@ struct ItemIter<'a> {
     query: String,
     rows_limit: usize,
     provider_idx: usize,
-    cur_iter: Option<Box<dyn Iterator<Item = Box<dyn Item + 'a>> + 'a>>,
+    cur_iter: Option<Box<dyn Iterator<Item=Box<dyn Item + 'a>> + 'a>>,
 }
 
 impl<'a> Iterator for ItemIter<'a> {
@@ -436,6 +437,14 @@ impl Widget for FuzzySearchWidget {
 
     fn kite(&self) -> XY {
         //TODO overflow
-        XY::new(self.highlighted as u16, 0)
+        let y = self.highlighted as u16;
+
+        let y = match self.draw_comment {
+            DrawComment::None => y,
+            DrawComment::Highlighted => y + 1,
+            DrawComment::All => 2 * y
+        };
+
+        XY::new(0, y)
     }
 }
