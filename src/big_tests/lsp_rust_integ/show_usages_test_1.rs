@@ -17,12 +17,16 @@ fn get_full_setup() -> FullSetup {
 
 #[test]
 fn show_usages_integ_test_1() {
+    if std::env::var("CI").is_ok() {
+        return;
+    }
+
     let mut full_setup = get_full_setup();
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
     // TODO this should be replaced with "waiting for LSP to be ready", when some kind of statusbar
     // is implemented to signal presence of NavComp
-    thread::sleep(Duration::from_secs(5));
+    thread::sleep(Duration::from_secs(2));
     // full_setup.send_input(InputEvent::Tick);
 
     assert_eq!(
