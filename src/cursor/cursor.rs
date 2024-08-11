@@ -22,11 +22,11 @@
 //TODO add "invariant protectors" to cursor set and warnings/errors, maybe add tests.
 
 use std::cmp::Ordering;
-
 use std::ops::Range;
 
 use log::{error, warn};
 
+use crate::cursor::cursor_set::CursorSet;
 use crate::primitives::has_invariant::HasInvariant;
 use crate::text::text_buffer::TextBuffer;
 
@@ -133,6 +133,10 @@ impl Cursor {
             a: anc,
             preferred_column: None,
         }
+    }
+
+    pub fn as_cursor_set(self) -> CursorSet {
+        CursorSet::singleton(self)
     }
 
     pub fn with_selection(self, selection: Selection) -> Self {

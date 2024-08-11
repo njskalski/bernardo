@@ -11,11 +11,9 @@ debian:
   before_script:
     - apt-get update
     - apt-get install -y curl build-essential gcc make clangd clang
-    #    - rustup component add rust-analyzer
     - rustup component add rustfmt
-    #    - echo $PATH | grep cargo
-    #    - which rust-analyzer
-    #    - rust-analyzer --help
+    - rustup component add rust-analyzer
+    - which rust-analyzer
   script:
     - cargo build
     - cargo test

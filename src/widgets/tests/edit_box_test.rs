@@ -1,5 +1,3 @@
-use test_log::test;
-
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 

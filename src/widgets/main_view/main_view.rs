@@ -4,6 +4,8 @@ use log::{debug, error, warn};
 use uuid::Uuid;
 
 use crate::config::theme::Theme;
+use crate::cursor::cursor::Cursor;
+use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::buffer_register::OpenResult;
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::experiments::screenspace::Screenspace;
@@ -267,7 +269,7 @@ impl MainView {
         self.set_focus_to_default();
     }
 
-    pub fn open_file_with_path(&mut self, ff: SPath) -> bool {
+    pub fn open_file_with_path_and_focus(&mut self, ff: SPath) -> bool {
         debug!("opening file {:?}", ff);
 
         if let Some(idx) = self.get_editor_idx_for(&ff) {
@@ -364,24 +366,44 @@ impl MainView {
     // opens new document or brings old one to forefront (TODO this is temporary)
     // this entire method should be remade, it's here just to facilitate test that "hitting enter on
     // go to definition goes somewhere"
-    fn open_document_and_focus(&mut self, document_identifier: DocumentIdentifier) -> bool {
+    fn open_document_and_focus(&mut self, document_identifier: DocumentIdentifier, position_op: Option<Cursor>) -> bool {
         let idx_op = self
             .get_opened_views_for_document_id(document_identifier.clone())
             .next()
             .map(|pair| pair.0);
 
-        if let Some(idx) = idx_op {
+        let succeeded = if let Some(idx) = idx_op {
             self.display_idx = idx;
-            self.set_focused(self.get_default_focused());
+            let widget_getter = self.get_default_focused();
+            self.set_focused(widget_getter.clone());
+
             true
         } else {
             if let Some(path) = document_identifier.file_path {
-                self.open_file_with_path(path)
+                self.open_file_with_path_and_focus(path)
             } else {
                 error!("no path for document {:?} provided - cannot open.", document_identifier);
                 false
             }
+        };
+
+        if !succeeded {
+            return false;
         }
+
+        if let Some(position) = position_op {
+            let cfe = unpack_or_e!(self.get_currently_focused_editor_view_mut(), false, "no editor focused");
+            cfe.override_cursor_set(position.as_cursor_set());
+        }
+
+        true
+    }
+
+    fn get_currently_focused_editor_view_mut(&mut self) -> Option<&mut EditorView> {
+        // let picker = unpack_or_e!(self.get_focused_mut(), None, "get_focused_mut() == None");
+        debug_assert!(self.display_idx < self.displays.len());
+
+        self.displays.get_mut(self.display_idx).map(|item| item.as_editor_mut()).flatten()
     }
 
     fn set_focus_to_default(&mut self) {
@@ -479,7 +501,7 @@ impl Widget for MainView {
                 }
                 MainViewMsg::TreeExpandedFlip { .. } => None,
                 MainViewMsg::TreeSelected { item } => {
-                    if !self.open_file_with_path(item.clone()) {
+                    if !self.open_file_with_path_and_focus(item.clone()) {
                         error!("failed open_file");
                     }
 
@@ -539,7 +561,7 @@ impl Widget for MainView {
                     None
                 }
                 MainViewMsg::OpenFile { file, position_op } => {
-                    self.open_document_and_focus(file.clone());
+                    self.open_document_and_focus(file.clone(), position_op.clone());
                     None
                 }
                 _ => {
@@ -553,7 +575,7 @@ impl Widget for MainView {
             return match fuzzy_file_msg {
                 SPathMsg::Hit(file_front) => {
                     if file_front.is_file() {
-                        self.open_file_with_path(file_front.clone());
+                        self.open_file_with_path_and_focus(file_front.clone());
                         self.hover = None;
                         None
                     } else if file_front.is_dir() {

@@ -1,3 +1,4 @@
+use std::thread;
 use std::time::Duration;
 
 use crate::io::keys::Keycode;
@@ -15,13 +16,18 @@ fn get_full_setup() -> FullSetup {
 }
 
 #[test]
-fn show_usages_integ_test_1_INCOMPLETE() {
+fn show_usages_integ_test_1() {
     if std::env::var("CI").is_ok() {
         return;
     }
 
     let mut full_setup = get_full_setup();
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
+
+    // TODO this should be replaced with "waiting for LSP to be ready", when some kind of statusbar
+    // is implemented to signal presence of NavComp
+    thread::sleep(Duration::from_secs(2));
+    // full_setup.send_input(InputEvent::Tick);
 
     assert_eq!(
         full_setup
@@ -108,5 +114,14 @@ fn show_usages_integ_test_1_INCOMPLETE() {
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().is_none() }));
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_first_editor().is_some() }));
 
-    // TODO still needed the part where we check that the right line is picked.
+    // I test whether the right line is marked
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines()
+            .map(|line| line.visible_idx)
+            .collect::<Vec<_>>()
+            == vec![12]
+    }));
 }

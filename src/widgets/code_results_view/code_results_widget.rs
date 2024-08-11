@@ -97,7 +97,7 @@ impl CodeResultsView {
 
         MainViewMsg::OpenFile {
             file: buffer_lock.get_document_identifier().clone(),
-            position_op: single_cursor,
+            position_op: Some(single_cursor),
         }
         .someboxed()
     }

@@ -1,3 +1,4 @@
+use std::any::{Any, TypeId};
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -8,7 +9,7 @@ use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::xy::XY;
-use crate::widget::any_msg::AnyMsg;
+use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::fill_policy::SizePolicy;
 
 // this corresponds to message to Parent.
@@ -16,6 +17,8 @@ pub type WidgetAction<W> = fn(&W) -> Option<Box<dyn AnyMsg>>;
 pub type WidgetActionParam<W, P> = fn(&W, P) -> Option<Box<dyn AnyMsg>>;
 
 pub type WID = usize;
+
+// Widget: Any + 'static + AsAnyWidget
 
 pub trait Widget: 'static {
     fn id(&self) -> WID;
@@ -133,6 +136,32 @@ pub trait Widget: 'static {
         (consumed, None)
     }
 }
+
+// pub trait AsAnyWidget {
+//     fn as_any_widget(&self) -> &dyn Any;
+//
+//     fn as_any_widget_mut(&mut self) -> &mut dyn Any;
+// }
+//
+// impl<T: Widget> AsAnyWidget for T {
+//     fn as_any_widget(&self) -> &dyn Any {
+//         self as &dyn Any
+//     }
+//
+//     fn as_any_widget_mut(&mut self) -> &mut dyn Any {
+//         self as &mut dyn Any
+//     }
+// }
+//
+// impl dyn Widget {
+//     pub fn as_widget<T: Widget + Sized>(&self) -> Option<&T> {
+//         self.as_any_widget().downcast_ref::<T>()
+//     }
+//
+//     pub fn as_msg_mut<T: Widget + Sized>(&mut self) -> Option<&mut T> {
+//         self.as_any_widget_mut().downcast_mut::<T>()
+//     }
+// }
 
 impl<'a> Debug for dyn Widget + 'a {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

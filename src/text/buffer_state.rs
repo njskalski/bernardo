@@ -273,10 +273,12 @@ impl BufferState {
         Some(first_char_idx..beyond_last_char_idx)
     }
 
+    // WidgetId should correspond to EditorWidget and NOT EditorView.
     pub fn cursors(&self, widget_id: WID) -> Option<&CursorSet> {
         self.text().get_cursor_set(widget_id)
     }
 
+    // WidgetId should correspond to EditorWidget and NOT EditorView.
     pub fn cursors_mut(&mut self, widget_id: WID) -> Option<&mut CursorSet> {
         self.text_mut().get_cursor_set_mut(widget_id)
     }

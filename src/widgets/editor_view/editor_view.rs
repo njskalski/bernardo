@@ -3,6 +3,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
 use crate::cursor::cursor::Cursor;
+use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::path::SPath;
@@ -301,6 +302,16 @@ impl EditorView {
             .lock()
             .map(|buffer_lock| buffer_lock.get_path().map(|c| c.clone()))
             .flatten()
+    }
+
+    pub fn override_cursor_set(&mut self, cursor_set: CursorSet) -> bool {
+        let widget: &mut EditorWidget = self.editor.internal_mut();
+        let wid = widget.id();
+        let mut buffer_lock = unpack_or_e!(widget.get_buffer().lock_rw(), false, "failed to lock buffer");
+        let mut old_cursor_set = unpack_or_e!(buffer_lock.cursors_mut(wid), false, "failed to acquire cursor_set");
+        *old_cursor_set = cursor_set;
+
+        true
     }
 
     pub fn get_internal_widget(&self) -> &EditorWidget {
