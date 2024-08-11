@@ -14,8 +14,8 @@ use crate::io::output::FinalOutput;
 use crate::primitives::helpers::get_next_filename;
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::inspector::{inspect_workspace, InspectError};
-use crate::w7e::workspace::WORKSPACE_FILE_NAME;
 use crate::w7e::workspace::{LoadError, ScopeLoadErrors, Workspace};
+use crate::w7e::workspace::WORKSPACE_FILE_NAME;
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
 
@@ -106,7 +106,7 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
         if !providers
             .fsf()
             .descendant_checked(f)
-            .map(|ff| main_view.open_file_with_path(ff))
+            .map(|ff| main_view.open_file_with_path_and_focus(ff))
             .unwrap_or(false)
         {
             error!("failed opening file {:?}", f);

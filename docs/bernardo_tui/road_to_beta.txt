@@ -8,6 +8,7 @@ Code navigation:
     Go to definition
     Show usages
         On selected - open file
+[missing piece of test that checks whether the right line is selected]
 
 2)
 Full text search

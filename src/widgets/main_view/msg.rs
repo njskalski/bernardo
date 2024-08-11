@@ -1,7 +1,6 @@
 use crate::cursor::cursor::Cursor;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::fs::path::SPath;
-
 use crate::widget::any_msg::AnyMsg;
 use crate::widgets::code_results_view::promise_provider::WrappedSymbolUsagesPromise;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
@@ -34,7 +33,7 @@ pub enum MainViewMsg {
     /*
     file, or identifier of scratchpad (to be filled)
      */
-    OpenFile { file: DocumentIdentifier, position_op: Cursor },
+    OpenFile { file: DocumentIdentifier, position_op: Option<Cursor> },
 
     BufferChangedName { updated_identifier: DocumentIdentifier },
 }

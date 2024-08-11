@@ -29,4 +29,18 @@ impl MainViewDisplay {
             _ => None,
         }
     }
+
+    pub fn as_editor(&self) -> Option<&EditorView> {
+        match self {
+            MainViewDisplay::Editor(e) => Some(e),
+            _ => None,
+        }
+    }
+
+    pub fn as_editor_mut(&mut self) -> Option<&mut EditorView> {
+        match self {
+            MainViewDisplay::Editor(e) => Some(e),
+            _ => None,
+        }
+    }
 }

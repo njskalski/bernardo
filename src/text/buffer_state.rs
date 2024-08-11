@@ -11,6 +11,7 @@ use tree_sitter::Point;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use crate::{unpack_or, unpack_or_e};
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::filename_to_language::filename_to_language;
@@ -23,12 +24,11 @@ use crate::primitives::xy::XY;
 use crate::text::contents_and_cursors::ContentsAndCursors;
 use crate::text::text_buffer::{LinesIter, TextBuffer};
 use crate::tsw::lang_id::LangId;
-use crate::tsw::tree_sitter_wrapper::{pack_rope_with_callback, HighlightItem, TreeSitterWrapper};
+use crate::tsw::tree_sitter_wrapper::{HighlightItem, pack_rope_with_callback, TreeSitterWrapper};
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 use crate::widget::widget::WID;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
-use crate::{unpack_or, unpack_or_e};
 
 // TODO it would use a method "would_accept_cem" to be used in "on_input" but before "update"
 
@@ -273,10 +273,12 @@ impl BufferState {
         Some(first_char_idx..beyond_last_char_idx)
     }
 
+    // WidgetId should correspond to EditorWidget and NOT EditorView.
     pub fn cursors(&self, widget_id: WID) -> Option<&CursorSet> {
         self.text().get_cursor_set(widget_id)
     }
 
+    // WidgetId should correspond to EditorWidget and NOT EditorView.
     pub fn cursors_mut(&mut self, widget_id: WID) -> Option<&mut CursorSet> {
         self.text_mut().get_cursor_set_mut(widget_id)
     }
