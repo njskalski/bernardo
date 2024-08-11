@@ -114,6 +114,7 @@ fn show_usages_integ_test_1() {
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().is_none() }));
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_first_editor().is_some() }));
 
+    // I test whether the right line is marked
     assert!(full_setup.wait_for(|full_setup| {
         full_setup
             .get_first_editor()

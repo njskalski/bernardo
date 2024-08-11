@@ -214,9 +214,7 @@ fn clangd_cpp_go_to_definition_INCOMPLETE() {
     assert!(full_setup.send_key(Keycode::Enter.to_key()));
 
     // TODO this test is incomplete, until "go to definition" is fully implemented
-
-    // sleep(Duration::new(2, 0));
-
+    //
     // full_setup.wait_frame();
     // full_setup.screenshot();
 }

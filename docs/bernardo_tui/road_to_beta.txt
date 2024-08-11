@@ -3,10 +3,13 @@ Here is what I want to be present in Gladius Beta:
 1)
 [seems to work, needs tests]
 Code navigation:
-    Go to definition
-    Show usages
-        On selected - open file
-[missing piece of test that checks whether the right line is selected]
+[done]    Show usages
+[done]        On selected - open file
+[TODO]    Go to definition
+
+nice to have:
+- add file name/path to selection avatar
+
 
 2)
 Full text search
