@@ -11,10 +11,15 @@ pub enum MainViewMsg {
 
     // This is called whenever item in tree is "expanded" or "collapsed".
     // I'm moving entire ChildRc, because PathBuf would allocate, and passing &Path would unleash borrow checker hell.
-    TreeExpandedFlip { expanded: bool, item: SPath },
+    TreeExpandedFlip {
+        expanded: bool,
+        item: SPath,
+    },
 
     // This is called whenever a file is selected.
-    TreeSelected { item: SPath },
+    TreeSelected {
+        item: SPath,
+    },
 
     OpenNewFile,
 
@@ -25,17 +30,26 @@ pub enum MainViewMsg {
 
     // Open "open buffers"
     OpenFuzzyBuffers,
-    FuzzyBuffersHit { pos: usize },
+    FuzzyBuffersHit {
+        pos: usize,
+    },
 
     // it's option, just that we can "take" it, not changing the msg, because that doesn't work well
-    FindReferences { promise_op: Option<WrappedSymbolUsagesPromise> },
+    FindReferences {
+        promise_op: Option<WrappedSymbolUsagesPromise>,
+    },
 
     /*
     file, or identifier of scratchpad (to be filled)
      */
-    OpenFile { file: DocumentIdentifier, position_op: Option<Cursor> },
+    OpenFile {
+        file: DocumentIdentifier,
+        position_op: Option<Cursor>,
+    },
 
-    BufferChangedName { updated_identifier: DocumentIdentifier },
+    BufferChangedName {
+        updated_identifier: DocumentIdentifier,
+    },
 }
 
 impl AnyMsg for MainViewMsg {}

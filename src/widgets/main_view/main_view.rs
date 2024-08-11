@@ -3,7 +3,6 @@ use std::rc::Rc;
 use log::{debug, error, warn};
 use uuid::Uuid;
 
-use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor_set::CursorSet;
@@ -27,7 +26,7 @@ use crate::primitives::xy::XY;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
 use crate::widgets::editor_view::editor_view::EditorView;
@@ -42,6 +41,7 @@ use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
+use crate::{subwidget, unpack_or, unpack_or_e};
 
 pub type BufferId = Uuid;
 
@@ -278,8 +278,8 @@ impl MainView {
                 |_| Some(Box::new(MainViewMsg::CloseHover)),
                 Some(self.providers.clipboard().clone()),
             )
-                .with_provider(self.get_display_list_provider())
-                .with_draw_comment_setting(DrawComment::Highlighted),
+            .with_provider(self.get_display_list_provider())
+            .with_draw_comment_setting(DrawComment::Highlighted),
         )));
         self.set_focus_to_hover();
     }
@@ -300,7 +300,7 @@ impl MainView {
     fn get_opened_views_for_document_id(
         &self,
         document_identifier: DocumentIdentifier,
-    ) -> impl Iterator<Item=(usize, &MainViewDisplay)> + '_ {
+    ) -> impl Iterator<Item = (usize, &MainViewDisplay)> + '_ {
         self.displays.iter().enumerate().filter_map(move |(idx, item)| match item {
             MainViewDisplay::ResultsView(_) => None,
             MainViewDisplay::Editor(editor) => {
@@ -598,7 +598,7 @@ impl ComplexWidget for MainView {
                             _ => unimplemented!(),
                         }),
                     ))
-                        .boxed();
+                    .boxed();
 
                     HoverLayout::new(bg_layout.boxed(), hover, Box::new(Self::get_hover_rect), true).boxed()
                 }
@@ -613,7 +613,7 @@ impl ComplexWidget for MainView {
                             _ => unimplemented!(),
                         }),
                     ))
-                        .boxed();
+                    .boxed();
                     let size = fuzzy.full_size();
 
                     HoverLayout::new(bg_layout.boxed(), hover, Box::new(Self::get_hover_rect), true).boxed()

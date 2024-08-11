@@ -163,7 +163,6 @@ pub trait Widget: 'static {
 //     }
 // }
 
-
 impl<'a> Debug for dyn Widget + 'a {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "W{}:{}", self.typename(), self.id())
