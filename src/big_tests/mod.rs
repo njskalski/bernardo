@@ -2,7 +2,6 @@ mod completion;
 mod dropping_cursor;
 mod find_replace;
 mod fuzzy_file_open;
-mod integration;
 mod lsp_clangd_cpp;
 mod lsp_rust_integ;
 mod save;
