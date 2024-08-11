@@ -115,6 +115,12 @@ fn show_usages_integ_test_1() {
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_first_editor().is_some() }));
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor().unwrap().get_visible_cursor_lines().map(|line| line.visible_idx).collect::<Vec<_>>() == vec![12]
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines()
+            .map(|line| line.visible_idx)
+            .collect::<Vec<_>>()
+            == vec![12]
     }));
 }
