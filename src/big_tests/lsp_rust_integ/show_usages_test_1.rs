@@ -1,7 +1,6 @@
 use std::thread;
 use std::time::Duration;
 
-use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::with_wait_for::WithWaitFor;
@@ -23,8 +22,8 @@ fn show_usages_integ_test_1() {
 
     // TODO this should be replaced with "waiting for LSP to be ready", when some kind of statusbar
     // is implemented to signal presence of NavComp
-    thread::sleep(Duration::from_secs(2));
-    full_setup.send_input(InputEvent::Tick);
+    thread::sleep(Duration::from_secs(5));
+    // full_setup.send_input(InputEvent::Tick);
 
     assert_eq!(
         full_setup
