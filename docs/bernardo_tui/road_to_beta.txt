@@ -1,9 +1,7 @@
-What I am working on right now:
-- I am trying to get the "code results widget" to display anything
-
 Here is what I want to be present in Gladius Beta:
 
 1)
+[seems to work, needs tests]
 Code navigation:
     Go to definition
     Show usages
@@ -17,6 +15,7 @@ Full text search
 USER FOCUS PATH
 
 3)
+[DONE]
 Context menu
 
 4)
@@ -26,11 +25,12 @@ Overall commands:
 
 5)
 git filtering in:
-    - file search
+[DONE]    - file search
     - full text search
 
 6)
 [DONE] Editor "labels" (in-code overlay-"comments", clearly distingushible messages noting errors/warnings)
+[but not wired]
 
 6.5)
 Status bar (at minimum file, col, row)

@@ -436,6 +436,14 @@ impl Widget for FuzzySearchWidget {
 
     fn kite(&self) -> XY {
         //TODO overflow
-        XY::new(self.highlighted as u16, 0)
+        let y = self.highlighted as u16;
+
+        let y = match self.draw_comment {
+            DrawComment::None => y,
+            DrawComment::Highlighted => y + 1,
+            DrawComment::All => 2 * y,
+        };
+
+        XY::new(0, y)
     }
 }
