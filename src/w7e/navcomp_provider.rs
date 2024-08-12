@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 
+use lsp_types::LocationLink;
+
 use crate::fs::path::SPath;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
@@ -103,6 +105,8 @@ pub type SymbolContextActionsPromise = Box<dyn Promise<Vec<Completion>> + 'stati
 pub type SymbolPromise = Box<dyn Promise<Option<NavCompSymbol>> + 'static>;
 pub type SymbolUsagesPromise = Box<dyn Promise<Vec<SymbolUsage>> + 'static>;
 
+pub type GoToDefinitonPromise = Box<dyn Promise<Vec<LocationLink>> + 'static>;
+
 // this is a wrapper around LSP and "similar services".
 pub trait NavCompProvider: Debug + Send + Sync {
     /*
@@ -120,11 +124,13 @@ pub trait NavCompProvider: Debug + Send + Sync {
     // TODO this will probably get more complicated
     fn completion_triggers(&self, path: &SPath) -> &Vec<String>;
 
-    fn todo_get_context_options(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolContextActionsPromise>;
+    // fn todo_get_context_options(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolContextActionsPromise>;
 
     // fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise>;
 
-    fn todo_get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise>;
+    fn get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise>;
+
+    fn go_to_definition(&self, path: &SPath, cursor: StupidCursor) -> Option<GoToDefinitonPromise>;
 
     /*
     missing items:

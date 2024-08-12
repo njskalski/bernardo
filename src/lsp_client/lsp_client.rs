@@ -345,6 +345,18 @@ impl LspWrapper {
         })
     }
 
+    pub fn text_document_goto_definition(
+        &mut self,
+        url: Url,
+        cursor: StupidCursor,
+    ) -> Result<LSPPromise<lsp_types::request::GotoDefinition>, LspWriteError> {
+        self.send_message::<lsp_types::request::GotoDefinition>(lsp_types::GotoDefinitionParams {
+            text_document_position_params: Self::get_position_params(url, cursor),
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+        })
+    }
+
     /*
     This is a non-incremental variant of text_document_did_change
      */
