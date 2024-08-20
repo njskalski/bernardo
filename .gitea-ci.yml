@@ -1,0 +1,26 @@
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_SUBMODULE_UPDATE_FLAGS: --jobs 4
+
+stages:
+  - everything
+
+debian:
+  stage: everything
+  image: rust:1.80.0-bookworm
+  before_script:
+    - apt-get update
+    - apt-get install -y curl build-essential gcc make clangd clang
+    - rustup component add rustfmt
+    - rustup component add rust-analyzer
+    - which rust-analyzer
+  script:
+    - cargo build
+    - cargo test
+    - cargo fmt --check
+  artifacts:
+    paths:
+      - "clang*"
+      - "screenshots"
+    when: always
+
