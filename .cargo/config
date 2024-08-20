@@ -1,7 +1,0 @@
-#[source]
-#
-#[source.mirror]
-#registry = "http://localhost:8080/index"
-#
-#[source.crates-io]
-#replace-with = "mirror"

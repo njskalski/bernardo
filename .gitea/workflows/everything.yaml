@@ -20,6 +20,8 @@ jobs:
           which rust-analyzer
       - name: Check out repository code
         uses: actions/checkout@v4
+        with:
+          submodules: 'true'
       - name: build
         run: cargo build
       - name: test
