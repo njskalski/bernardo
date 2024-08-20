@@ -11,7 +11,7 @@ jobs:
       - name: install prerequisites
         run: |
           apt-get update
-          apt-get install -y curl build-essential gcc make clangd clang
+          apt-get install -y curl build-essential gcc make clangd clang nodejs
           rustup component add rustfmt
           rustup component add rust-analyzer
       - name: check versions
