@@ -1,0 +1,24 @@
+name: Everything
+run-name: ${{ gitea.actor }} is running "everything" pipeline
+on: [ push ]
+
+jobs:
+  everything:
+    runs-on: rust:1.80.0-bookworm
+    steps:
+      - name: install prerequisites
+        run: |
+          apt-get update
+          apt-get install -y curl build-essential gcc make clangd clang
+          rustup component add rustfmt
+          rustup component add rust-analyzer
+      - name: check versions
+        run: |
+          cargo --version
+          which rust-analyzer
+      - name: build
+        run: cargo build
+      - name: test
+        run: cargo test
+      - name: check-fmt
+        run: cargo fmt --check
