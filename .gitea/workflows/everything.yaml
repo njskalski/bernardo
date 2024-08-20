@@ -4,7 +4,9 @@ on: [ push ]
 
 jobs:
   everything:
-    runs-on: rust:1.80.0-bookworm
+    runs-on: ubuntu-latest
+    container:
+      image: rust:1.80.0-bookworm
     steps:
       - name: install prerequisites
         run: |
