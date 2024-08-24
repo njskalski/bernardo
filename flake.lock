@@ -53,7 +53,8 @@
       "inputs": {
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs",
-        "rust-overlay": "rust-overlay"
+        "rust-overlay": "rust-overlay",
+        "subproject": "subproject"
       }
     },
     "rust-overlay": {
@@ -72,6 +73,22 @@
         "owner": "oxalica",
         "repo": "rust-overlay",
         "type": "github"
+      }
+    },
+    "subproject": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1707658579,
+        "narHash": "sha256-inzHbLYMyGfr1d5HUv7jd/DyjeM7GSUxQmtxuU4t/Ew=",
+        "ref": "refs/heads/master",
+        "rev": "b52b298669f0813bbfbc12d07280c9e2f6f17ebc",
+        "revCount": 4817,
+        "type": "git",
+        "url": "file:third-party/nvim-treesitter"
+      },
+      "original": {
+        "type": "git",
+        "url": "file:third-party/nvim-treesitter"
       }
     },
     "systems": {
