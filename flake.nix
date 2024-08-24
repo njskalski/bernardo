@@ -1,7 +1,7 @@
 {
   description = "Bernardo / Gladius project flake";
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-23.11";
+    nixpkgs.url = "nixpkgs/nixos-24.05";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url  = "github:numtide/flake-utils";
   };
@@ -23,7 +23,14 @@
 
         cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
         version = cargoToml.package.version;
-        cleanSrc = pkgs.lib.cleanSource ./.;
+#        cleanSrc = pkgs.lib.cleanSource {
+#            src = ./.;
+#            checkSubmodules = true;
+#        };
+        cleanSrc = pkgs.lib.fileset.toSource {
+          root = ./.;
+          fileset = pkgs.lib.fileset.gitTrackedWith { recurseSubmodules = true; } ./.;
+        };
       in
       {
         devShells.default = with pkgs; mkShell {
