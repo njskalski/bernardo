@@ -8,6 +8,7 @@ use crate::io::output::FinalOutput;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_output::MockOutput;
 use crate::mocks::with_scroll_interpreter::WithScrollWidgetInterpreter;
+use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
@@ -102,5 +103,9 @@ impl WithScrollTestbed {
     pub fn send_input(&mut self, input: InputEvent) {
         self.widget.act_on(input);
         self.next_frame();
+    }
+
+    pub fn last_child_visible_rect(&self) -> Option<Rect> {
+        self.widget.internal().get_last_size().map(|i| i.visible_rect())
     }
 }

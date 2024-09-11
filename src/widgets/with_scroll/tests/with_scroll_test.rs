@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
+use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widgets::with_scroll::tests::with_scroll_view_testbed::WithScrollTestbed;
 
@@ -61,18 +62,21 @@ fn with_scroll_visible_rect_offset() {
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(1).unwrap().trim(), "2 item1");
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "20 item19");
     assert_eq!(setup.widget.scroll().offset, XY::ZERO);
+    assert_eq!(setup.last_child_visible_rect().unwrap(), Rect::new(XY::ZERO, XY::new(6, 20)));
 
     setup.send_input(InputEvent::KeyInput(Keycode::PageDown.to_key()));
 
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "2 item1");
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "21 item20");
     assert_eq!(setup.widget.scroll().offset, XY::new(0, 1));
+    assert_eq!(setup.last_child_visible_rect().unwrap(), Rect::new(XY::new(0, 1), XY::new(6, 20)));
 
     setup.send_input(InputEvent::KeyInput(Keycode::PageDown.to_key()));
 
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "22 item21");
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "41 item40");
     assert_eq!(setup.widget.scroll().offset, XY::new(0, 21));
+    assert_eq!(setup.last_child_visible_rect().unwrap(), Rect::new(XY::new(0, 21), XY::new(6, 20)));
 
 
     // let visible_rect = setup.widget.internal().get_last_size().unwrap().visible_rect();
