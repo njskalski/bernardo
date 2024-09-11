@@ -221,6 +221,12 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
 
         XY::new(cols, rows)
     }
+
+    #[cfg(test)]
+    // used in tests
+    pub fn get_last_size(&self) -> Option<Screenspace> {
+        self.last_size
+    }
 }
 
 impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {

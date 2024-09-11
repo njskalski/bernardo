@@ -277,7 +277,7 @@ impl<W: Widget> Widget for WithScroll<W> {
 
         // this is tricky part: I take "child_size_in_its_output" which is "how much space child will 'see'
         // as in it's output", but we move it to parent space. This has no logical meaning other
-        // than I want it in parent space, to intersect the it with "parent_space_maximum_child_output_rect"
+        // than I want it in parent space, to intersect it with "parent_space_maximum_child_output_rect"
         // to get the final constraint.
         let parent_space_child_internal_size = Rect::new(child_visible_rect_pos_in_parent_space, child_output.child_size_in_its_output);
 
@@ -301,7 +301,7 @@ impl<W: Widget> Widget for WithScroll<W> {
             }
         };
 
-        let child_visible_rect_in_child_space: Rect =
+        let mut child_visible_rect_in_child_space: Rect =
             match child_visible_rect_in_parent_space.minus_shift(child_visible_rect_pos_in_parent_space) {
                 Some(s) => s,
                 None => {
@@ -309,6 +309,10 @@ impl<W: Widget> Widget for WithScroll<W> {
                     return;
                 }
             };
+
+        // now I have no idea why I need to do it, but without it tests don't work
+        child_visible_rect_in_child_space.pos += self.scroll.offset;
+
         let child_screenspace = Screenspace::new(child_output.child_size_in_its_output, child_visible_rect_in_child_space);
         self.child_widget.layout(child_screenspace);
 
