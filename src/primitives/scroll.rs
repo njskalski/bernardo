@@ -57,5 +57,8 @@ impl Scroll {
                 self.offset.y += diff;
             }
         }
+
+        debug_assert!((self.offset + parent_output_size).x > kite.x);
+        debug_assert!((self.offset + parent_output_size).y > kite.y);
     }
 }

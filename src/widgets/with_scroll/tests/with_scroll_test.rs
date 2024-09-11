@@ -61,6 +61,8 @@ fn with_scroll_visible_rect_offset() {
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "1 name");
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(1).unwrap().trim(), "2 item1");
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "20 item19");
+    assert_eq!(setup.widget.internal().get_highlighted().unwrap().as_str(), "item1");
+    assert_eq!(setup.observed_highlighted_op().unwrap().as_str(), "item1");
     assert_eq!(setup.widget.scroll().offset, XY::ZERO);
     assert_eq!(setup.last_child_visible_rect().unwrap(), Rect::new(XY::ZERO, XY::new(6, 20)));
 
@@ -68,6 +70,11 @@ fn with_scroll_visible_rect_offset() {
 
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "2 item1");
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "21 item20");
+    assert_eq!(setup.widget.internal().get_highlighted().unwrap().as_str(), "item21");
+    setup.screenshot();
+    // TODO HERE so this test is failing, it seems like kite is followed properly, but over output/suboutput draws wrong lines
+
+    assert_eq!(setup.observed_highlighted_op().unwrap().as_str(), "item21");
     assert_eq!(setup.widget.scroll().offset, XY::new(0, 1));
     assert_eq!(setup.last_child_visible_rect().unwrap(), Rect::new(XY::new(0, 1), XY::new(6, 20)));
 
@@ -75,8 +82,13 @@ fn with_scroll_visible_rect_offset() {
 
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "22 item21");
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "41 item40");
+    assert_eq!(setup.widget.internal().get_highlighted().unwrap().as_str(), "item41");
+    assert_eq!(setup.observed_highlighted_op().unwrap().as_str(), "item41");
     assert_eq!(setup.widget.scroll().offset, XY::new(0, 21));
     assert_eq!(setup.last_child_visible_rect().unwrap(), Rect::new(XY::new(0, 21), XY::new(6, 20)));
+
+    setup.send_input(InputEvent::KeyInput(Keycode::PageUp.to_key()));
+
 
 
     // let visible_rect = setup.widget.internal().get_last_size().unwrap().visible_rect();

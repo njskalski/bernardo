@@ -108,4 +108,11 @@ impl WithScrollTestbed {
     pub fn last_child_visible_rect(&self) -> Option<Rect> {
         self.widget.internal().get_last_size().map(|i| i.visible_rect())
     }
+
+    pub fn observed_highlighted_op(&self) -> Option<String> {
+        let frame = self.last_frame.as_ref()?;
+        frame.buffer.items_of_style(
+            self.theme.highlighted(true)
+        ).map(|item| item.text.trim().to_string()).next()
+    }
 }

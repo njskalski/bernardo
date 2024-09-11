@@ -248,6 +248,7 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn layout(&mut self, screenspace: Screenspace) {
+        //TODO write more tests and redo the code (perhaps)
         self.layout_res = None; // erasing old layout_res
 
         let child_output = self.get_output_size_that_will_be_offered_to_child(screenspace.output_size());
@@ -310,14 +311,17 @@ impl<W: Widget> Widget for WithScroll<W> {
                 }
             };
 
-        // now I have no idea why I need to do it, but without it tests don't work
+        // This is where scroll actually follows the widget.
+        // I need to update the scroll offset first to use it in next step.
+        self.scroll.follow_kite(screenspace.output_size(), self.child_widget.kite());
+
+        // this line came about via trial-and-error in tests. That probably invalidates
+        // a lot of code above, but I am on vacation and I have too little screen here to
+        // redo entire code.
         child_visible_rect_in_child_space.pos += self.scroll.offset;
 
         let child_screenspace = Screenspace::new(child_output.child_size_in_its_output, child_visible_rect_in_child_space);
         self.child_widget.layout(child_screenspace);
-
-        // This is where scroll actually follows the widget.
-        self.scroll.follow_kite(screenspace.output_size(), self.child_widget.kite());
 
         self.layout_res = Some(LayoutRes {
             margin_width: child_output.margin_width,
