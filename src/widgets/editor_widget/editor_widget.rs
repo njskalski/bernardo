@@ -342,9 +342,8 @@ impl EditorWidget {
         );
 
         // So I get here the visible rect, but ignoring the offset (as if 1st line was in upper right corner)
-        // I think this is due to a bug in scroll. 
+        // I think this is due to a bug in scroll.
         let visible_rect = layout_res.visible_rect();
-
 
         if !visible_rect.contains(lsp_cursor_xy) {
             warn!("cursor seems to be outside visible hint {:?}", layout_res.visible_rect());

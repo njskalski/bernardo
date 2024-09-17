@@ -111,8 +111,10 @@ impl WithScrollTestbed {
 
     pub fn observed_highlighted_op(&self) -> Option<String> {
         let frame = self.last_frame.as_ref()?;
-        frame.buffer.items_of_style(
-            self.theme.highlighted(true)
-        ).map(|item| item.text.trim().to_string()).next()
+        frame
+            .buffer
+            .items_of_style(self.theme.highlighted(true))
+            .map(|item| item.text.trim().to_string())
+            .next()
     }
 }

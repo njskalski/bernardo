@@ -15,7 +15,7 @@ use crate::primitives::xy::XY;
 use crate::unpack_unit;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::{DeterminedBy, SizePolicy};
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 
 // const DEFAULT_MARGIN_WIDTH: u16 = 4;
 
@@ -330,7 +330,12 @@ impl<W: Widget> Widget for WithScroll<W> {
 
         // This is where scroll actually follows the widget.
         // I need to update the scroll offset first to use it in next step.
-        debug!("following kite at {} with output_size() = {} vis_rect = {}", self.child_widget.kite(), screenspace.output_size(), screenspace.visible_rect());
+        debug!(
+            "following kite at {} with output_size() = {} vis_rect = {}",
+            self.child_widget.kite(),
+            screenspace.output_size(),
+            screenspace.visible_rect()
+        );
         self.scroll.follow_kite(screenspace.output_size(), self.child_widget.kite());
 
         // this line came about via trial-and-error in tests. That probably invalidates
@@ -340,8 +345,18 @@ impl<W: Widget> Widget for WithScroll<W> {
 
         let child_screenspace = Screenspace::new(child_output.child_size_in_its_output, child_visible_rect_in_child_space);
 
-        debug_assert!(self.child_widget.kite().x < child_screenspace.visible_rect().max_x(), "kite {} child_screenspace.visible_rect().lower_right() = {}", self.child_widget.kite(), child_screenspace.visible_rect().lower_right());
-        debug_assert!(self.child_widget.kite().y < child_screenspace.visible_rect().max_y(), "kite {} child_screenspace.visible_rect().lower_right() = {}", self.child_widget.kite(), child_screenspace.visible_rect().lower_right());
+        debug_assert!(
+            self.child_widget.kite().x < child_screenspace.visible_rect().max_x(),
+            "kite {} child_screenspace.visible_rect().lower_right() = {}",
+            self.child_widget.kite(),
+            child_screenspace.visible_rect().lower_right()
+        );
+        debug_assert!(
+            self.child_widget.kite().y < child_screenspace.visible_rect().max_y(),
+            "kite {} child_screenspace.visible_rect().lower_right() = {}",
+            self.child_widget.kite(),
+            child_screenspace.visible_rect().lower_right()
+        );
 
         self.child_widget.layout(child_screenspace);
 

@@ -19,7 +19,7 @@ use crate::primitives::xy::XY;
 use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 use crate::widgets::list_widget::provider::ListItemProvider;
 
@@ -82,7 +82,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         ListWidget { provider, ..self }
     }
 
-    pub fn items(&self) -> Box<dyn Iterator<Item=&Item> + '_> {
+    pub fn items(&self) -> Box<dyn Iterator<Item = &Item> + '_> {
         if let Some(query) = self.query.as_ref() {
             Box::new(
                 self.provider
@@ -256,7 +256,18 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     }
 
     fn kite(&self) -> XY {
-        XY::new(0, self.highlighted.unwrap_or(0) as u16 + if self.show_column_names { 1 } else { 0 })
+        if self.show_column_names {
+            // if we show the column names and highlight first row, we put kite on column names
+
+            let highlight = self.highlighted.unwrap_or(0) as u16;
+            if highlight == 0 {
+                return XY::ZERO;
+            }
+
+            XY::new(0, highlight + 1)
+        } else {
+            XY::new(0, self.highlighted.unwrap_or(0) as u16)
+        }
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -293,7 +304,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
             },
             _ => None,
         }
-            .map(|m| Box::new(m) as Box<dyn AnyMsg>);
+        .map(|m| Box::new(m) as Box<dyn AnyMsg>);
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
@@ -365,9 +376,9 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                     let page_height = last_size.page_height();
                     let preferred_idx = highlighted + page_height as usize;
 
-                    let count = self.items().take(preferred_idx + 1).count();
+                    let count = self.items().take(preferred_idx).count();
                     if count > 0 {
-                        self.highlighted = Some(count - 1);
+                        self.highlighted = Some(count);
                         self.on_change()
                     } else {
                         error!("something was highlighted, now provider is empty. That's an error described in focus_and_input.md in section about subscriptions");
