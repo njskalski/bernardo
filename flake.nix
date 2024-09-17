@@ -54,6 +54,17 @@
           cargoLock = {
             lockFile = ./Cargo.lock;
           };
+
+          nativeBuildInputs = [ pkgs.rust-analyzer ];
+
+          # Split the build and test steps
+          buildPhase = ''
+            cargo build --release
+          '';
+
+          checkPhase = ''
+            cargo test --release
+          '';
         };
       }
     );
