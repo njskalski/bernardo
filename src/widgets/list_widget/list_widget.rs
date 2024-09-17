@@ -19,7 +19,7 @@ use crate::primitives::xy::XY;
 use crate::unpack_or_e;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 use crate::widgets::list_widget::provider::ListItemProvider;
 
@@ -82,7 +82,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
         ListWidget { provider, ..self }
     }
 
-    pub fn items(&self) -> Box<dyn Iterator<Item = &Item> + '_> {
+    pub fn items(&self) -> Box<dyn Iterator<Item=&Item> + '_> {
         if let Some(query) = self.query.as_ref() {
             Box::new(
                 self.provider
@@ -256,8 +256,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     }
 
     fn kite(&self) -> XY {
-        // TODO overflow
-        XY::new(0, self.highlighted.unwrap_or(0) as u16)
+        XY::new(0, self.highlighted.unwrap_or(0) as u16 + if self.show_column_names { 1 } else { 0 })
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -294,7 +293,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
             },
             _ => None,
         }
-        .map(|m| Box::new(m) as Box<dyn AnyMsg>);
+            .map(|m| Box::new(m) as Box<dyn AnyMsg>);
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {

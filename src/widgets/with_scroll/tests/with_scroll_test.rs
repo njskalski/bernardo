@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::rc::Rc;
 
+use crate::gladius::logger_setup::logger_setup;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::primitives::rect::Rect;
@@ -8,6 +9,8 @@ use crate::primitives::xy::XY;
 use crate::widgets::with_scroll::tests::with_scroll_view_testbed::WithScrollTestbed;
 
 fn get_setup() -> WithScrollTestbed {
+    logger_setup(true, None, None);
+
     let mut testbed = WithScrollTestbed::new();
     {
         let list = testbed.widget.internal_mut();
@@ -88,7 +91,6 @@ fn with_scroll_visible_rect_offset() {
     assert_eq!(setup.last_child_visible_rect().unwrap(), Rect::new(XY::new(0, 21), XY::new(6, 20)));
 
     setup.send_input(InputEvent::KeyInput(Keycode::PageUp.to_key()));
-
 
 
     // let visible_rect = setup.widget.internal().get_last_size().unwrap().visible_rect();
