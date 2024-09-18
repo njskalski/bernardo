@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
-use flexi_logger::writers::LogWriter;
 use flexi_logger::FileSpec;
-use log::{warn, LevelFilter};
+use flexi_logger::writers::LogWriter;
+use log::{LevelFilter, warn};
 
 const DEFAULT_LEVEL: log::LevelFilter = log::LevelFilter::Info;
 
@@ -30,7 +30,7 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     ("bernardo::widgets::list_widget::list_widget", log::LevelFilter::Warn),
     ("bernardo::widgets::main_view::main_view", log::LevelFilter::Info),
     ("bernardo::widgets::save_file_dialog::save_file_dialog", log::LevelFilter::Warn),
-    ("bernardo::widgets::with_scroll", log::LevelFilter::Debug),
+    ("bernardo::widgets::with_scroll", log::LevelFilter::Warn),
     ("bernardo::layout", log::LevelFilter::Info),
     ("bernardo::layout::split_layout", log::LevelFilter::Info),
     // ("bernardo::layout::leaf_layout", log::LevelFilter::Debug),

@@ -15,7 +15,7 @@ use crate::primitives::xy::XY;
 use crate::unpack_unit;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::{DeterminedBy, SizePolicy};
-use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 
 // const DEFAULT_MARGIN_WIDTH: u16 = 4;
 
@@ -297,10 +297,10 @@ impl<W: Widget> Widget for WithScroll<W> {
         // as in it's output", but we move it to parent space. This has no logical meaning other
         // than I want it in parent space, to intersect it with "parent_space_maximum_child_output_rect"
         // to get the final constraint.
-        let parent_space_child_internal_size = Rect::new(child_visible_rect_pos_in_parent_space, child_output.child_size_in_its_output);
+        let parent_space_child_output_rect_uncut = Rect::new(child_visible_rect_pos_in_parent_space, child_output.child_size_in_its_output);
 
         let parent_space_child_output_rect = parent_space_maximum_child_output_rect
-            .intersect(parent_space_child_internal_size)
+            .intersect(parent_space_child_output_rect_uncut)
             .unwrap(); //TODO prove this can't go wrong.
 
         let child_visible_rect_in_parent_space: Rect = match screenspace.visible_rect().intersect(parent_space_child_output_rect) {
@@ -328,6 +328,8 @@ impl<W: Widget> Widget for WithScroll<W> {
                 }
             };
 
+        debug_assert!(child_visible_rect_in_child_space.size == child_visible_rect_in_parent_space.size);
+
         // This is where scroll actually follows the widget.
         // I need to update the scroll offset first to use it in next step.
         debug!(
@@ -336,7 +338,8 @@ impl<W: Widget> Widget for WithScroll<W> {
             screenspace.output_size(),
             screenspace.visible_rect()
         );
-        self.scroll.follow_kite(screenspace.output_size(), self.child_widget.kite());
+
+        self.scroll.follow_kite(child_visible_rect_in_child_space.size, child_output.child_size_in_its_output, self.child_widget.kite());
 
         // this line came about via trial-and-error in tests. That probably invalidates
         // a lot of code above, but I am on vacation and I have too little screen here to

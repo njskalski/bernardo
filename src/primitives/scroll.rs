@@ -1,3 +1,6 @@
+use std::cmp::min;
+
+use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection::{Both, Vertical};
 use crate::primitives::xy::XY;
 
@@ -32,7 +35,10 @@ impl Scroll {
         }
     }
 
-    pub fn follow_kite(&mut self, parent_output_size: XY, kite: XY) {
+    pub fn follow_kite(&mut self, page_size: XY, max_output_size: XY, kite: XY) {
+        debug_assert!(max_output_size > kite);
+        debug_assert!(max_output_size >= page_size);
+
         let adjust_x = self.direction == ScrollDirection::Horizontal || self.direction == ScrollDirection::Both;
         let adjust_y = self.direction == ScrollDirection::Vertical || self.direction == ScrollDirection::Both;
 
@@ -41,9 +47,8 @@ impl Scroll {
                 self.offset.x = kite.x;
             }
 
-            if kite.x >= (self.offset.x + parent_output_size.x) {
-                let diff = 1 + kite.x - (self.offset.x + parent_output_size.x);
-                self.offset.x += diff;
+            if kite.x >= (self.offset.x + page_size.x) {
+                self.offset.x = min(kite.x - page_size.x + 1, max_output_size.x - page_size.x);
             }
         }
 
@@ -52,13 +57,11 @@ impl Scroll {
                 self.offset.y = kite.y;
             }
 
-            if kite.y >= (self.offset.y + parent_output_size.y) {
-                let diff = 1 + kite.y - (self.offset.y + parent_output_size.y);
-                self.offset.y += diff;
+            if kite.y >= (self.offset.y + page_size.y) {
+                self.offset.y = min(kite.y - page_size.y + 1, max_output_size.y - page_size.y);
             }
         }
 
-        debug_assert!((self.offset + parent_output_size).x > kite.x);
-        debug_assert!((self.offset + parent_output_size).y > kite.y);
+        debug_assert!(Rect::new(self.offset, page_size).contains(kite));
     }
 }
