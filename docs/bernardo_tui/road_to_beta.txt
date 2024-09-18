@@ -17,10 +17,6 @@ Full text search
 3)
 USER FOCUS PATH
 
-3)
-[DONE]
-Context menu
-
 4)
 Overall commands:
     - prune unchanged buffers
@@ -47,8 +43,6 @@ copy-cut-paste and context bar in tree!
 Nice to haves (only if they turn out to be low hanging fruits):
 
 9) errors/warnings in editor
-
-9.5) a file descriptor I can stream to output from build commands to make the labels
 
 10)
 Tests:
