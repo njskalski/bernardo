@@ -54,7 +54,6 @@ fn basic_with_scroll_testbed_test_page_down_and_page_up_works() {
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(0).unwrap().trim(), "32 item31");
     assert_eq!(setup.frame_op().unwrap().buffer.get_line(19).unwrap().trim(), "51 item50");
 
-
     setup.send_input(InputEvent::KeyInput(Keycode::PageUp.to_key()));
 
     assert_eq!(setup.observed_highlighted_op().unwrap().as_str(), "item30");

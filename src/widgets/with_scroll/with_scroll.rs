@@ -15,7 +15,7 @@ use crate::primitives::xy::XY;
 use crate::unpack_unit;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::{DeterminedBy, SizePolicy};
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 
 // const DEFAULT_MARGIN_WIDTH: u16 = 4;
 
@@ -339,7 +339,11 @@ impl<W: Widget> Widget for WithScroll<W> {
             screenspace.visible_rect()
         );
 
-        self.scroll.follow_kite(child_visible_rect_in_child_space.size, child_output.child_size_in_its_output, self.child_widget.kite());
+        self.scroll.follow_kite(
+            child_visible_rect_in_child_space.size,
+            child_output.child_size_in_its_output,
+            self.child_widget.kite(),
+        );
 
         // this line came about via trial-and-error in tests. That probably invalidates
         // a lot of code above, but I am on vacation and I have too little screen here to
