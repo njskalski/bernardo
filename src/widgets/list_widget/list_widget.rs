@@ -171,7 +171,7 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
     }
 
     pub fn set_highlighted(&mut self, highlighted: usize) -> bool {
-        if self.items().count() >= highlighted {
+        if self.items().count() > highlighted {
             self.highlighted = Some(highlighted);
             true
         } else {
@@ -221,6 +221,12 @@ impl<Item: ListWidgetItem> ListWidget<Item> {
 
         XY::new(cols, rows)
     }
+
+    #[cfg(test)]
+    // used in tests
+    pub fn get_last_size(&self) -> Option<Screenspace> {
+        self.last_size
+    }
 }
 
 impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
@@ -250,8 +256,25 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     }
 
     fn kite(&self) -> XY {
-        // TODO overflow
-        XY::new(0, self.highlighted.unwrap_or(0) as u16)
+        let kite = if self.show_column_names {
+            // if we show the column names and highlight first row, we put kite on column names
+
+            let highlight = self.highlighted.unwrap_or(0) as u16;
+            if highlight == 0 {
+                return XY::ZERO;
+            }
+
+            XY::new(0, highlight + 1)
+        } else {
+            XY::new(0, self.highlighted.unwrap_or(0) as u16)
+        };
+
+        {
+            let full_size = self.full_size();
+            debug_assert!(kite < self.full_size(), "kite = {}, full_size = {}", kite, full_size);
+        }
+
+        kite
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -332,13 +355,14 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                     if highlighted > 0 {
                         let last_size = unpack_or_e!(self.last_size, None, "page_up before layout");
                         let page_height = last_size.page_height();
+
                         let preferred_idx = if highlighted > page_height as usize {
                             highlighted - page_height as usize
                         } else {
                             0
                         };
 
-                        let count = self.items().take(preferred_idx + 1).count();
+                        let count = self.items().count();
                         if count > preferred_idx {
                             self.highlighted = Some(preferred_idx);
                         } else if count > 0 {
@@ -346,7 +370,12 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                         } else {
                             self.highlighted = None;
                         }
-                        self.on_change()
+
+                        if self.highlighted == Some(highlighted) {
+                            self.on_miss()
+                        } else {
+                            self.on_change()
+                        }
                     } else {
                         self.on_miss()
                     }
@@ -360,13 +389,18 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
                     let page_height = last_size.page_height();
                     let preferred_idx = highlighted + page_height as usize;
 
-                    let count = self.items().take(preferred_idx + 1).count();
-                    if count > 0 {
-                        self.highlighted = Some(count - 1);
-                        self.on_change()
+                    let count = self.items().count();
+
+                    if preferred_idx < count {
+                        self.highlighted = Some(preferred_idx);
                     } else {
-                        error!("something was highlighted, now provider is empty. That's an error described in focus_and_input.md in section about subscriptions");
+                        self.highlighted = Some(count - 1);
+                    }
+
+                    if self.highlighted == Some(highlighted) {
                         self.on_miss()
+                    } else {
+                        self.on_change()
                     }
                 } else {
                     self.on_miss()

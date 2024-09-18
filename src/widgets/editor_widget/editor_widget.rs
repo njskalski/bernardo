@@ -340,6 +340,9 @@ impl EditorWidget {
             None,
             "single_cursor_screen_pos called before first layout"
         );
+
+        // So I get here the visible rect, but ignoring the offset (as if 1st line was in upper right corner)
+        // I think this is due to a bug in scroll.
         let visible_rect = layout_res.visible_rect();
 
         if !visible_rect.contains(lsp_cursor_xy) {
@@ -375,7 +378,7 @@ impl EditorWidget {
      */
     pub fn get_cursor_related_hover_settings(&self, buffer: &BufferState, triggers: Option<&Vec<String>>) -> Option<HoverSettings> {
         // let last_size = unpack_or!(self.last_size, None, "requested hover before layout");
-        let cursor: Cursor = unpack_or!(
+        let cursor: Cursor = unpack_or_e!(
             buffer.cursors(self.wid).and_then(|co| co.as_single()),
             None,
             "multiple cursors or none, not doing hover"
