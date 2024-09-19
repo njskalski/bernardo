@@ -103,7 +103,6 @@ pub type SymbolContextActionsPromise = Box<dyn Promise<Vec<Completion>> + 'stati
 pub type SymbolPromise = Box<dyn Promise<Option<NavCompSymbol>> + 'static>;
 pub type SymbolUsagesPromise = Box<dyn Promise<Vec<SymbolUsage>> + 'static>;
 
-
 // this is a wrapper around LSP and "similar services".
 pub trait NavCompProvider: Debug + Send + Sync {
     /*

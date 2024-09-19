@@ -166,7 +166,10 @@ fn highlighting_clangd_cpp_file() {
 }
 
 #[test]
-fn clangd_cpp_go_to_definition() {
+fn clangd_cpp_go_to_definition_PROBLEM() {
+    // problem: stupid clang finds DECLARATION, not DEFINITION, because it's stupid.
+    // civilised languages don't even have declarations, unless doing FFI, but C++ is stupid.
+
     let mut full_setup = get_full_setup("src/main.cpp");
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
@@ -205,7 +208,8 @@ fn clangd_cpp_go_to_definition() {
 
     assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().context_bar_op().is_some()));
 
-    full_setup.send_key(Keycode::ArrowDown.to_key());
+    assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
+    assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
 
     assert!(full_setup.wait_for(|f| {
         f.get_first_editor().unwrap().context_bar_op().unwrap().selected_option() == Some("go to definition".to_string())
@@ -213,10 +217,16 @@ fn clangd_cpp_go_to_definition() {
 
     assert!(full_setup.send_key(Keycode::Enter.to_key()));
 
-    // TODO this test is incomplete, until "go to definition" is fully implemented
-    //
-    full_setup.wait_frame();
-    full_setup.screenshot();
+    assert!(full_setup.wait_for(|f| {
+        f.get_code_results_view().map(|crv| {
+            crv.editors().len() > 0
+        }).unwrap_or(false)
+    }));
+
+    // This is WRONG, the LSP actually goes to declaration, not definition
+    assert!(full_setup.wait_for(|f| {
+        f.get_code_results_view().unwrap().editors().first().unwrap().get_visible_cursor_lines().find(|line| line.contents.text.contains("void fill_array(std::vector<int> &array)")).is_some()
+    }));
 }
 
 #[test]

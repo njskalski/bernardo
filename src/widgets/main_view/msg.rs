@@ -56,7 +56,7 @@ pub enum MainViewMsg {
     },
 
     GoToDefinition {
-        promise_op: Option<WrappedSymbolUsagesPromise>
+        promise_op: Option<WrappedSymbolUsagesPromise>,
     },
 }
 

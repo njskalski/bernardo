@@ -7,7 +7,6 @@ use matches::debug_assert_matches;
 use streaming_iterator::StreamingIterator;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{unpack_or, unpack_or_e, unpack_unit, unpack_unit_e};
 use crate::config::theme::Theme;
 use crate::cursor::cursor::{Cursor, CursorStatus, Selection};
 use crate::cursor::cursor_set::CursorSet;
@@ -23,7 +22,7 @@ use crate::io::style::TextStyle;
 use crate::io::sub_output::SubOutput;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::color::Color;
-use crate::primitives::common_edit_msgs::{apply_common_edit_message, cme_to_direction, CommonEditMsg, key_to_edit_msg};
+use crate::primitives::common_edit_msgs::{apply_common_edit_message, cme_to_direction, key_to_edit_msg, CommonEditMsg};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::helpers;
 use crate::primitives::printable::Printable;
@@ -39,15 +38,16 @@ use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_provider::CompletionAction;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::code_results_view::symbol_usage_promise_provider::WrappedSymbolUsagesPromise;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
 use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::context_options_matrix::get_context_options;
-use crate::widgets::editor_widget::helpers::{CursorScreenPosition, find_trigger_and_substring};
+use crate::widgets::editor_widget::helpers::{find_trigger_and_substring, CursorScreenPosition};
 use crate::widgets::editor_widget::label::label::Label;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::main_view::msg::MainViewMsg;
+use crate::{unpack_or, unpack_or_e, unpack_unit, unpack_unit_e};
 
 const MIN_EDITOR_SIZE: XY = XY::new(10, 3);
 // const MAX_HOVER_SIZE: XY = XY::new(64, 20);
@@ -1084,7 +1084,7 @@ impl EditorWidget {
                 hover_settings.anchor.y - visible_rect.pos.y
             } else {
                 visible_rect.lower_right().y - hover_settings.anchor.y - 1 // there was a drawing,
-                // it should be OK.
+                                                                           // it should be OK.
             };
 
             let hover_size = XY::new(maxx, maxy);
@@ -1167,7 +1167,7 @@ impl EditorWidget {
         MainViewMsg::FindReferences {
             promise_op: Some(wrapped_promise),
         }
-            .someboxed()
+        .someboxed()
     }
 
     /*
@@ -1199,11 +1199,16 @@ impl EditorWidget {
             _ => "Definition of symbol:".to_string(),
         };
 
-        let promise = unpack_or_e!(navcomp.go_to_definition(path, stupid_cursor), None, "failed to acquire GoToDefinitionPromise from navcomp");
+        let promise = unpack_or_e!(
+            navcomp.go_to_definition(path, stupid_cursor),
+            None,
+            "failed to acquire GoToDefinitionPromise from navcomp"
+        );
 
         MainViewMsg::GoToDefinition {
-            promise_op: Some(WrappedSymbolUsagesPromise::new(symbol_desc, promise))
-        }.someboxed()
+            promise_op: Some(WrappedSymbolUsagesPromise::new(symbol_desc, promise)),
+        }
+        .someboxed()
     }
 }
 

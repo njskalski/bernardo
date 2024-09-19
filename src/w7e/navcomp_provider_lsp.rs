@@ -6,7 +6,6 @@ use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error};
 use lsp_types::{CompletionResponse, CompletionTextEdit, GotoDefinitionResponse, Location, LocationLink, Position, SymbolKind};
 
-use crate::{unpack_or_e, unpack_unit_e};
 use crate::fs::path::SPath;
 use crate::lsp_client::lsp_client::LspWrapper;
 use crate::lsp_client::lsp_io_error::LspIOError;
@@ -20,6 +19,7 @@ use crate::w7e::navcomp_provider::{
     Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, StupidSubstituteMessage,
     SymbolContextActionsPromise, SymbolType, SymbolUsage, SymbolUsagesPromise,
 };
+use crate::{unpack_or_e, unpack_unit_e};
 
 /*
 TODO I am silently ignoring errors here. I guess that if NavComp fails it should get re-started.
@@ -101,7 +101,7 @@ fn location_to_symbol_usage(loc: Location) -> SymbolUsage {
             StupidCursor {
                 char_idx_0b: loc.range.end.character,
                 line_0b: loc.range.end.line,
-            }
+            },
         ),
     }
 }
@@ -117,11 +117,10 @@ fn location_link_to_symbol_usage(loc: LocationLink) -> SymbolUsage {
             StupidCursor {
                 char_idx_0b: loc.target_range.end.character,
                 line_0b: loc.target_range.end.line,
-            }
+            },
         ),
     }
 }
-
 
 impl NavCompProvider for NavCompProviderLsp {
     fn file_open_for_edition(&self, path: &SPath, file_contents: ropey::Rope) {
@@ -261,7 +260,9 @@ impl NavCompProvider for NavCompProviderLsp {
                         let mut locations: Vec<SymbolUsage> = Vec::default();
 
                         match items {
-                            GotoDefinitionResponse::Scalar(item) => { locations.push(location_to_symbol_usage(item)); }
+                            GotoDefinitionResponse::Scalar(item) => {
+                                locations.push(location_to_symbol_usage(item));
+                            }
                             GotoDefinitionResponse::Array(links) => {
                                 for link in links {
                                     locations.push(location_to_symbol_usage(link));
@@ -275,7 +276,6 @@ impl NavCompProvider for NavCompProviderLsp {
                         locations
                     }
                 });
-
 
                 Some(Box::new(new_promise))
             }

@@ -41,11 +41,11 @@ impl RustcOutputParserLabelProvider {
         }
     }
 
-    pub fn errors_iter(&self) -> impl Iterator<Item=&Label> {
+    pub fn errors_iter(&self) -> impl Iterator<Item = &Label> {
         self.labels.iter().filter(|label| label.style == LabelStyle::Error)
     }
 
-    pub fn warnings_iter(&self) -> impl Iterator<Item=&Label> {
+    pub fn warnings_iter(&self) -> impl Iterator<Item = &Label> {
         self.labels.iter().filter(|label| label.style == LabelStyle::Warning)
     }
 
