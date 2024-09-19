@@ -217,15 +217,18 @@ fn clangd_cpp_go_to_definition_PROBLEM() {
 
     assert!(full_setup.send_key(Keycode::Enter.to_key()));
 
-    assert!(full_setup.wait_for(|f| {
-        f.get_code_results_view().map(|crv| {
-            crv.editors().len() > 0
-        }).unwrap_or(false)
-    }));
+    assert!(full_setup.wait_for(|f| { f.get_code_results_view().map(|crv| { crv.editors().len() > 0 }).unwrap_or(false) }));
 
     // This is WRONG, the LSP actually goes to declaration, not definition
     assert!(full_setup.wait_for(|f| {
-        f.get_code_results_view().unwrap().editors().first().unwrap().get_visible_cursor_lines().find(|line| line.contents.text.contains("void fill_array(std::vector<int> &array)")).is_some()
+        f.get_code_results_view()
+            .unwrap()
+            .editors()
+            .first()
+            .unwrap()
+            .get_visible_cursor_lines()
+            .find(|line| line.contents.text.contains("void fill_array(std::vector<int> &array)"))
+            .is_some()
     }));
 }
 

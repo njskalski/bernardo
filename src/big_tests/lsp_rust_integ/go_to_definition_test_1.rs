@@ -49,7 +49,8 @@ fn go_to_definition_test_1() {
         .is_some()));
 
     assert!(full_setup.wait_for(|full_setup| {
-        full_setup.get_first_editor()
+        full_setup
+            .get_first_editor()
             .unwrap()
             .get_visible_cursor_lines()
             .find(|line| line.contents.text.contains("some_function(\"a"))
@@ -79,21 +80,28 @@ fn go_to_definition_test_1() {
         f.get_first_editor()
             .unwrap()
             .context_bar_op()
-            .map(|c| c.selected_option().map(|c| c.trim().starts_with("go to definition")).unwrap_or(false))
+            .map(|c| {
+                c.selected_option()
+                    .map(|c| c.trim().starts_with("go to definition"))
+                    .unwrap_or(false)
+            })
             .unwrap_or(false)
     }));
 
     assert!(full_setup.send_key(Keycode::Enter.to_key()));
 
-    assert!(full_setup.wait_for(|f| {
-        f.get_code_results_view().map(|crv| {
-            crv.editors().len() > 0
-        }).unwrap_or(false)
-    }));
+    assert!(full_setup.wait_for(|f| { f.get_code_results_view().map(|crv| { crv.editors().len() > 0 }).unwrap_or(false) }));
 
     assert!(full_setup.get_code_results_view().unwrap().editors().len() == 1);
 
     assert!(full_setup.wait_for(|f| {
-        f.get_code_results_view().unwrap().editors().first().unwrap().get_visible_cursor_lines().find(|line| line.contents.text.contains("pub fn some_function(x: &str) {")).is_some()
+        f.get_code_results_view()
+            .unwrap()
+            .editors()
+            .first()
+            .unwrap()
+            .get_visible_cursor_lines()
+            .find(|line| line.contents.text.contains("pub fn some_function(x: &str) {"))
+            .is_some()
     }));
 }
