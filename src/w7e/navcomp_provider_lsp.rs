@@ -16,7 +16,7 @@ use crate::promise::promise::Promise;
 use crate::tsw::lang_id::LangId;
 use crate::w7e::navcomp_group::NavCompTickSender;
 use crate::w7e::navcomp_provider::{
-    Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, StupidSubstituteMessage,
+    Completion, CompletionAction, CompletionsPromise, FormattingPromise, GoToDefinitonPromise, NavCompProvider, StupidSubstituteMessage,
     SymbolContextActionsPromise, SymbolType, SymbolUsage, SymbolUsagesPromise,
 };
 use crate::{unpack_or_e, unpack_unit_e};
@@ -137,10 +137,6 @@ impl NavCompProvider for NavCompProviderLsp {
         &self.triggers
     }
 
-    fn todo_get_context_options(&self, _path: &SPath, _cursor: StupidCursor) -> Option<SymbolContextActionsPromise> {
-        todo!()
-    }
-
     // fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
     //     let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url",
     // path);     let mut lock = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring
@@ -183,11 +179,46 @@ impl NavCompProvider for NavCompProviderLsp {
     //     }
     // }
 
-    fn todo_get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
+    fn get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
         let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url", path);
         let mut lock = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring lock");
 
         match lock.text_document_references(url, cursor) {
+            Ok(resp) => {
+                let new_promise = resp.map(|response| match response {
+                    None => Vec::new(),
+                    Some(items) => items
+                        .into_iter()
+                        .map(|loc| SymbolUsage {
+                            path: loc.uri.to_string(),
+                            stupid_range: (
+                                StupidCursor {
+                                    char_idx_0b: loc.range.start.character,
+                                    line_0b: loc.range.start.line,
+                                },
+                                StupidCursor {
+                                    char_idx_0b: loc.range.end.character,
+                                    line_0b: loc.range.end.line,
+                                },
+                            ),
+                        })
+                        .collect(),
+                });
+
+                Some(Box::new(new_promise))
+            }
+            Err(e) => {
+                self.eat_write_error(e);
+                None
+            }
+        }
+    }
+
+    fn go_to_definition(&self, path: &SPath, cursor: StupidCursor) -> Option<GoToDefinitonPromise> {
+        let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url", path);
+        let mut lock = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring lock");
+
+        match lock.text_document_goto_definition(url, cursor) {
             Ok(resp) => {
                 let new_promise = resp.map(|response| match response {
                     None => Vec::new(),

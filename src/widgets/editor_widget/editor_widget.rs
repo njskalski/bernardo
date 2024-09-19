@@ -1128,6 +1128,9 @@ impl EditorWidget {
         }
     }
 
+    /*
+    The BufferState is passed to avoid double-locking
+     */
     pub fn show_usages(&self, buffer: &BufferState) -> Option<Box<dyn AnyMsg>> {
         let navcomp = unpack_or_e!(&self.navcomp, None, "can't show usages without navcomp");
         let cursor = unpack_or!(
@@ -1155,7 +1158,7 @@ impl EditorWidget {
         };
 
         let promise = unpack_or!(
-            navcomp.todo_get_symbol_usages(path, stupid_cursor),
+            navcomp.get_symbol_usages(path, stupid_cursor),
             None,
             "failed retrieving usage symbol"
         );
@@ -1167,7 +1170,37 @@ impl EditorWidget {
         .someboxed()
     }
 
-    pub fn todo_go_to_definition(&mut self) {}
+    /*
+    The BufferState is passed to avoid double-locking
+     */
+    pub fn todo_go_to_definition(&mut self, buffer: &BufferState) -> Option<Box<dyn AnyMsg>> {
+        let navcomp = unpack_or_e!(&self.navcomp, None, "can't show usages without navcomp");
+        let cursor = unpack_or!(
+            buffer.cursors(self.wid).and_then(|c| c.as_single()),
+            None,
+            "not opening completions - cursor not single."
+        );
+        let path = unpack_or!(buffer.get_path(), None, "no path set");
+        let stupid_cursor = unpack_or!(
+            StupidCursor::from_real_cursor(buffer, cursor).ok(),
+            None,
+            "failed conversion to stupid cursor"
+        );
+        let highlight = buffer.smallest_highlight(cursor.a);
+
+        let symbol_op: Option<String> = highlight
+            .as_ref()
+            .and_then(|item| buffer.get_selected_chars(Selection::new(item.char_begin, item.char_end)).0);
+
+        let symbol_desc: String = match (highlight, symbol_op) {
+            (Some(type_), Some(item)) => {
+                format!("Definition of {} \"{}\"", type_.identifier.as_ref(), item)
+            }
+            _ => "Definition of symbol:".to_string(),
+        };
+
+        None
+    }
 }
 
 impl Widget for EditorWidget {
