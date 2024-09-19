@@ -166,7 +166,7 @@ fn highlighting_clangd_cpp_file() {
 }
 
 #[test]
-fn clangd_cpp_go_to_definition_INCOMPLETE() {
+fn clangd_cpp_go_to_definition() {
     let mut full_setup = get_full_setup("src/main.cpp");
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
@@ -215,8 +215,8 @@ fn clangd_cpp_go_to_definition_INCOMPLETE() {
 
     // TODO this test is incomplete, until "go to definition" is fully implemented
     //
-    // full_setup.wait_frame();
-    // full_setup.screenshot();
+    full_setup.wait_frame();
+    full_setup.screenshot();
 }
 
 #[test]

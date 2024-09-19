@@ -2,7 +2,7 @@ use crate::cursor::cursor::Cursor;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::fs::path::SPath;
 use crate::widget::any_msg::AnyMsg;
-use crate::widgets::code_results_view::promise_provider::WrappedSymbolUsagesPromise;
+use crate::widgets::code_results_view::symbol_usage_promise_provider::WrappedSymbolUsagesPromise;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
 
 #[derive(Debug)]
@@ -53,6 +53,10 @@ pub enum MainViewMsg {
 
     OpenFindEverywhere {
         root_dir: SPath,
+    },
+
+    GoToDefinition {
+        promise_op: Option<WrappedSymbolUsagesPromise>
     },
 }
 

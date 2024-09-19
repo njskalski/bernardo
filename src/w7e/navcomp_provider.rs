@@ -1,7 +1,5 @@
 use std::fmt::Debug;
 
-use lsp_types::LocationLink;
-
 use crate::fs::path::SPath;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
@@ -105,7 +103,6 @@ pub type SymbolContextActionsPromise = Box<dyn Promise<Vec<Completion>> + 'stati
 pub type SymbolPromise = Box<dyn Promise<Option<NavCompSymbol>> + 'static>;
 pub type SymbolUsagesPromise = Box<dyn Promise<Vec<SymbolUsage>> + 'static>;
 
-pub type GoToDefinitonPromise = Box<dyn Promise<Vec<LocationLink>> + 'static>;
 
 // this is a wrapper around LSP and "similar services".
 pub trait NavCompProvider: Debug + Send + Sync {
@@ -130,7 +127,7 @@ pub trait NavCompProvider: Debug + Send + Sync {
 
     fn get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise>;
 
-    fn go_to_definition(&self, path: &SPath, cursor: StupidCursor) -> Option<GoToDefinitonPromise>;
+    fn go_to_definition(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise>;
 
     /*
     missing items:

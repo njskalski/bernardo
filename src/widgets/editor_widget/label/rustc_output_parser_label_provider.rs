@@ -41,11 +41,11 @@ impl RustcOutputParserLabelProvider {
         }
     }
 
-    pub fn errors_iter(&self) -> impl Iterator<Item = &Label> {
+    pub fn errors_iter(&self) -> impl Iterator<Item=&Label> {
         self.labels.iter().filter(|label| label.style == LabelStyle::Error)
     }
 
-    pub fn warnings_iter(&self) -> impl Iterator<Item = &Label> {
+    pub fn warnings_iter(&self) -> impl Iterator<Item=&Label> {
         self.labels.iter().filter(|label| label.style == LabelStyle::Warning)
     }
 
@@ -588,7 +588,7 @@ warning: unused import: `crate::w7e::buffer_state_shared_ref::BufferSharedRef`
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 warning: unused import: `UpdateResult`
- --> src/widgets/code_results_view/promise_provider.rs:8:45
+ --> src/widgets/code_results_view/symbol_usage_promise_provider:8:45
   |
 8 | use crate::promise::promise::{PromiseState, UpdateResult};
   |                                             ^^^^^^^^^^^^
@@ -1482,7 +1482,7 @@ warning: unused import: `crate::w7e::buffer_state_shared_ref::BufferSharedRef`
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 warning: unused import: `UpdateResult`
- --> src/widgets/code_results_view/promise_provider.rs:8:45
+ --> src/widgets/code_results_view/symbol_usage_promise_provider:8:45
   |
 8 | use crate::promise::promise::{PromiseState, UpdateResult};
   |                                             ^^^^^^^^^^^^
