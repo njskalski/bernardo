@@ -120,11 +120,13 @@ pub trait NavCompProvider: Debug + Send + Sync {
     // TODO this will probably get more complicated
     fn completion_triggers(&self, path: &SPath) -> &Vec<String>;
 
-    fn todo_get_context_options(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolContextActionsPromise>;
+    // fn todo_get_context_options(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolContextActionsPromise>;
 
     // fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise>;
 
-    fn todo_get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise>;
+    fn get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise>;
+
+    fn go_to_definition(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise>;
 
     /*
     missing items:

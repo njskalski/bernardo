@@ -1,5 +1,4 @@
 use std::fmt::{Debug, Formatter};
-
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use std::time::Duration;
 
@@ -194,10 +193,6 @@ impl NavCompProvider for MockNavCompProvider {
         &self.triggers
     }
 
-    fn todo_get_context_options(&self, _path: &SPath, _cursor: StupidCursor) -> Option<SymbolContextActionsPromise> {
-        None
-    }
-
     // fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
     //     let symbols = unpack_or_e!(self.symbols.read().ok(), None, "failed acquiring lock on
     // symbols");
@@ -229,7 +224,7 @@ impl NavCompProvider for MockNavCompProvider {
     //     res
     // }
 
-    fn todo_get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
+    fn get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
         let symbols = unpack_or_e!(self.symbols.read().ok(), None, "failed acquiring lock on symbols");
 
         let res = symbols
@@ -251,6 +246,10 @@ impl NavCompProvider for MockNavCompProvider {
         }
 
         res
+    }
+
+    fn go_to_definition(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
+        todo!()
     }
 
     fn todo_reformat(&self, _path: &SPath) -> Option<FormattingPromise> {

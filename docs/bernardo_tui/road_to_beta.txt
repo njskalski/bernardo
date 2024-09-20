@@ -5,7 +5,7 @@ Here is what I want to be present in Gladius Beta:
 Code navigation:
 [done]    Show usages
 [done]        On selected - open file
-[TODO]    Go to definition
+[done]    Go to definition
 
 nice to have:
 - add file name/path to selection avatar

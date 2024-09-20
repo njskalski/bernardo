@@ -39,7 +39,7 @@ use crate::w7e::navcomp_provider::CompletionAction;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
-use crate::widgets::code_results_view::promise_provider::WrappedSymbolUsagesPromise;
+use crate::widgets::code_results_view::symbol_usage_promise_provider::WrappedSymbolUsagesPromise;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
 use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::context_options_matrix::get_context_options;
@@ -1128,6 +1128,9 @@ impl EditorWidget {
         }
     }
 
+    /*
+    The BufferState is passed to avoid double-locking
+     */
     pub fn show_usages(&self, buffer: &BufferState) -> Option<Box<dyn AnyMsg>> {
         let navcomp = unpack_or_e!(&self.navcomp, None, "can't show usages without navcomp");
         let cursor = unpack_or!(
@@ -1155,7 +1158,7 @@ impl EditorWidget {
         };
 
         let promise = unpack_or!(
-            navcomp.todo_get_symbol_usages(path, stupid_cursor),
+            navcomp.get_symbol_usages(path, stupid_cursor),
             None,
             "failed retrieving usage symbol"
         );
@@ -1167,7 +1170,46 @@ impl EditorWidget {
         .someboxed()
     }
 
-    pub fn todo_go_to_definition(&mut self) {}
+    /*
+    The BufferState is passed to avoid double-locking
+     */
+    pub fn go_to_definition(&mut self, buffer: &BufferState) -> Option<Box<dyn AnyMsg>> {
+        let navcomp = unpack_or_e!(&self.navcomp, None, "can't show usages without navcomp");
+        let cursor = unpack_or!(
+            buffer.cursors(self.wid).and_then(|c| c.as_single()),
+            None,
+            "not opening completions - cursor not single."
+        );
+        let path = unpack_or!(buffer.get_path(), None, "no path set");
+        let stupid_cursor = unpack_or!(
+            StupidCursor::from_real_cursor(buffer, cursor).ok(),
+            None,
+            "failed conversion to stupid cursor"
+        );
+        let highlight = buffer.smallest_highlight(cursor.a);
+
+        let symbol_op: Option<String> = highlight
+            .as_ref()
+            .and_then(|item| buffer.get_selected_chars(Selection::new(item.char_begin, item.char_end)).0);
+
+        let symbol_desc: String = match (highlight, symbol_op) {
+            (Some(type_), Some(item)) => {
+                format!("Definition of {} \"{}\"", type_.identifier.as_ref(), item)
+            }
+            _ => "Definition of symbol:".to_string(),
+        };
+
+        let promise = unpack_or_e!(
+            navcomp.go_to_definition(path, stupid_cursor),
+            None,
+            "failed to acquire GoToDefinitionPromise from navcomp"
+        );
+
+        MainViewMsg::GoToDefinition {
+            promise_op: Some(WrappedSymbolUsagesPromise::new(symbol_desc, promise)),
+        }
+        .someboxed()
+    }
 }
 
 impl Widget for EditorWidget {
@@ -1379,8 +1421,7 @@ impl Widget for EditorWidget {
                         }
                         (&EditorState::Editing, EditorWidgetMsg::GoToDefinition) => {
                             self.requested_hover = None;
-                            self.todo_go_to_definition();
-                            None
+                            self.go_to_definition(&buffer)
                         }
                         (editor_state, msg) => {
                             error!("Unhandled combination of editor state {:?} and msg {:?}", editor_state, msg);
