@@ -4,7 +4,7 @@ use std::sync::RwLock;
 
 use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error};
-use lsp_types::{CompletionResponse, CompletionTextEdit, Position, SymbolKind};
+use lsp_types::{CompletionResponse, CompletionTextEdit, GotoDefinitionResponse, Location, LocationLink, Position, SymbolKind};
 
 use crate::fs::path::SPath;
 use crate::lsp_client::lsp_client::LspWrapper;
@@ -88,6 +88,40 @@ impl NavCompProviderLsp {
     }
 }
 
+// I am reusing SymbolUsage to NOT write a new widget while implementing go-to-definition.
+// This might be changed later.
+fn location_to_symbol_usage(loc: Location) -> SymbolUsage {
+    SymbolUsage {
+        path: loc.uri.to_string(),
+        stupid_range: (
+            StupidCursor {
+                char_idx_0b: loc.range.start.character,
+                line_0b: loc.range.start.line,
+            },
+            StupidCursor {
+                char_idx_0b: loc.range.end.character,
+                line_0b: loc.range.end.line,
+            },
+        ),
+    }
+}
+
+fn location_link_to_symbol_usage(loc: LocationLink) -> SymbolUsage {
+    SymbolUsage {
+        path: loc.target_uri.to_string(),
+        stupid_range: (
+            StupidCursor {
+                char_idx_0b: loc.target_range.start.character,
+                line_0b: loc.target_range.start.line,
+            },
+            StupidCursor {
+                char_idx_0b: loc.target_range.end.character,
+                line_0b: loc.target_range.end.line,
+            },
+        ),
+    }
+}
+
 impl NavCompProvider for NavCompProviderLsp {
     fn file_open_for_edition(&self, path: &SPath, file_contents: ropey::Rope) {
         let url = unpack_unit_e!(path.to_url().ok(), "failed to convert spath [{}] to url", path);
@@ -137,10 +171,6 @@ impl NavCompProvider for NavCompProviderLsp {
         &self.triggers
     }
 
-    fn todo_get_context_options(&self, _path: &SPath, _cursor: StupidCursor) -> Option<SymbolContextActionsPromise> {
-        todo!()
-    }
-
     // fn todo_get_symbol_at(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolPromise> {
     //     let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url",
     // path);     let mut lock = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring
@@ -183,7 +213,7 @@ impl NavCompProvider for NavCompProviderLsp {
     //     }
     // }
 
-    fn todo_get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
+    fn get_symbol_usages(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
         let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url", path);
         let mut lock = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring lock");
 
@@ -207,6 +237,44 @@ impl NavCompProvider for NavCompProviderLsp {
                             ),
                         })
                         .collect(),
+                });
+
+                Some(Box::new(new_promise))
+            }
+            Err(e) => {
+                self.eat_write_error(e);
+                None
+            }
+        }
+    }
+
+    fn go_to_definition(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
+        let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url", path);
+        let mut lock = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring lock");
+
+        match lock.text_document_goto_definition(url, cursor) {
+            Ok(resp) => {
+                let new_promise = resp.map(|response| match response {
+                    None => Vec::new(),
+                    Some(items) => {
+                        let mut locations: Vec<SymbolUsage> = Vec::default();
+
+                        match items {
+                            GotoDefinitionResponse::Scalar(item) => {
+                                locations.push(location_to_symbol_usage(item));
+                            }
+                            GotoDefinitionResponse::Array(links) => {
+                                for link in links {
+                                    locations.push(location_to_symbol_usage(link));
+                                }
+                            }
+                            GotoDefinitionResponse::Link(links) => {
+                                locations = links.into_iter().map(location_link_to_symbol_usage).collect();
+                            }
+                        }
+
+                        locations
+                    }
                 });
 
                 Some(Box::new(new_promise))
