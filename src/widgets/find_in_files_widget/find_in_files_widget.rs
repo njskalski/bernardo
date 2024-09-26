@@ -15,15 +15,15 @@ use crate::primitives::xy::XY;
 use crate::subwidget;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_widget::label::label::Label;
 use crate::widgets::text_widget::TextWidget;
 
-const FIND_EVERYWHERE_WIDGET_NAME: &'static str = "find_in_files_widget";
+const FIND_IN_FILES_WIDGET_NAME: &'static str = "find_in_files_widget";
 
-pub struct FindEverywhereWidget {
+pub struct FindInFilesWidget {
     wid: WID,
     root: SPath,
 
@@ -35,9 +35,9 @@ pub struct FindEverywhereWidget {
     cancel_button: ButtonWidget,
 }
 
-impl FindEverywhereWidget {
+impl FindInFilesWidget {
     pub fn new(root: SPath) -> Self {
-        FindEverywhereWidget {
+        FindInFilesWidget {
             wid: get_new_widget_id(),
             root,
             layout_result: None,
@@ -49,7 +49,7 @@ impl FindEverywhereWidget {
     }
 }
 
-impl Widget for FindEverywhereWidget {
+impl Widget for FindInFilesWidget {
     fn id(&self) -> WID {
         self.wid
     }
@@ -58,11 +58,11 @@ impl Widget for FindEverywhereWidget {
     where
         Self: Sized,
     {
-        FIND_EVERYWHERE_WIDGET_NAME
+        FIND_IN_FILES_WIDGET_NAME
     }
 
     fn typename(&self) -> &'static str {
-        FIND_EVERYWHERE_WIDGET_NAME
+        FIND_IN_FILES_WIDGET_NAME
     }
 
     fn full_size(&self) -> XY {
@@ -111,7 +111,7 @@ impl Widget for FindEverywhereWidget {
     }
 }
 
-impl ComplexWidget for FindEverywhereWidget {
+impl ComplexWidget for FindInFilesWidget {
     fn get_layout(&self) -> Box<dyn Layout<Self>> {
         let frame = XY::new(1, 1);
 

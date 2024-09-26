@@ -18,13 +18,6 @@ use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
 use crate::widgets::context_menu::widget::ContextMenuWidget;
 
-#[derive(Debug, Eq, PartialEq)]
-pub enum ContextMenuTestMsg {
-    Text(String),
-}
-
-impl AnyMsg for ContextMenuTestMsg {}
-
 pub struct ContextMenuTestbed {
     context_menu: ContextMenuWidget<String, MockTreeItem>,
     size: XY,
@@ -93,7 +86,7 @@ impl ContextMenuTestbed {
         }
     }
 
-    pub fn has_items<'a, I: Iterator<Item = &'a str>>(&self, items: I) -> bool {
+    pub fn has_items<'a, I: Iterator<Item=&'a str>>(&self, items: I) -> bool {
         for item_label in items {
             if self
                 .context_menu()
@@ -111,7 +104,7 @@ impl ContextMenuTestbed {
         true
     }
 
-    pub fn has_none_of_items<'a, I: Iterator<Item = &'a str>>(&self, items: I) -> bool {
+    pub fn has_none_of_items<'a, I: Iterator<Item=&'a str>>(&self, items: I) -> bool {
         for item_label in items {
             if self
                 .context_menu()
