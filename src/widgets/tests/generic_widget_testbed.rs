@@ -13,8 +13,9 @@ use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::Widget;
 
-pub struct GenericWidgetTestbed<W: Widget> {
+pub struct GenericWidgetTestbed<W: Widget, AdditionalData = ()> {
     pub widget: W,
+    pub additional_data: AdditionalData,
     pub size: XY,
     pub providers: Providers,
     pub last_frame: Option<MetaOutputFrame>,

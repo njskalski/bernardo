@@ -87,6 +87,7 @@ impl EditorWidgetTestbedBuilder {
         EditorViewTestbed {
             widget: editor_view,
 
+            additional_data: (),
             size,
             providers: build_result.providers,
             last_frame: None,

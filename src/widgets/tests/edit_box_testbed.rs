@@ -16,6 +16,7 @@ impl EditBoxTestbed {
 
         Self {
             widget: EditBoxWidget::new(),
+            additional_data: (),
             size,
             last_frame: None,
             mock_navcomp_pilot: build_result.side_channels.navcomp_pilot,

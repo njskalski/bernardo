@@ -26,7 +26,7 @@ fn item_to_msg(item: &MockTreeItem) -> Option<Box<dyn AnyMsg>> {
     }
 }
 
-pub type NestedMenuTestbed = GenericWidgetTestbed<NestedMenuWidget<String, MockTreeItem>>;
+pub type NestedMenuTestbed = GenericWidgetTestbed<NestedMenuWidget<String, MockTreeItem>, ()>;
 
 impl NestedMenuTestbed {
     pub fn new(mock_data_set: MockTreeItem) -> Self {
@@ -37,6 +37,7 @@ impl NestedMenuTestbed {
 
         NestedMenuTestbed {
             widget: NestedMenuWidget::new(build_result.providers.clone(), mock_data_set, size).with_mapper(item_to_msg),
+            additional_data: (),
             size,
             last_frame: None,
             mock_navcomp_pilot: build_result.side_channels.navcomp_pilot,
