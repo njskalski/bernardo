@@ -1,11 +1,14 @@
 use crate::io::keys::Keycode;
 use crate::mocks::mock_tree_item::get_mock_data_set_1;
-use crate::widgets::nested_menu::tests::nested_menu_testbed::{AdditionalData, NestedMenuTestbed, NestedMenuTestbedBuilder, NestedMenuTestMsg};
+use crate::widgets::nested_menu::tests::nested_menu_testbed::{
+    AdditionalData, NestedMenuTestMsg, NestedMenuTestbed, NestedMenuTestbedBuilder,
+};
 
 pub fn get_setup_1() -> NestedMenuTestbed {
     NestedMenuTestbedBuilder::new(AdditionalData {
-        root: get_mock_data_set_1()
-    }).build()
+        root: get_mock_data_set_1(),
+    })
+    .build()
 }
 
 #[test]

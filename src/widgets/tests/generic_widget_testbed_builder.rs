@@ -6,21 +6,9 @@
 //
 // impl SomeWidgetTestbedBuilder {
 //  fn build() -> SomeWidgetTestbed {
-//   SomeWidget {
+//   SomeWidgetTestbed {
 //   }
 //  }
-// }
-
-// pub struct GenericWidgetTestbedBuilder<W: Widget> {
-// pub widget: W,
-// pub size: XY,
-// pub providers: Providers,
-// pub last_frame: Option<MetaOutputFrame>,
-// pub mock_navcomp_pilot: MockNavCompProviderPilot,
-//
-// pub output: MockOutput,
-// pub recv: Receiver<MetaOutputFrame>,
-// pub last_msg: Option<Box<dyn AnyMsg>>,
 // }
 
 use std::default::Default;

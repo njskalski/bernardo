@@ -4,7 +4,8 @@ use crate::widgets::nested_menu::tests::nested_menu_testbed::{AdditionalData, Ne
 pub fn get_setup_2() -> NestedMenuTestbed {
     NestedMenuTestbedBuilder::new(AdditionalData {
         root: get_mock_data_set_2(),
-    }).build()
+    })
+    .build()
 }
 
 // #[test]

@@ -36,46 +36,12 @@ impl ContextMenuTestbedBuilder {
     }
 }
 
-// pub struct ContextMenuTestbed {
-//     context_menu: ContextMenuWidget<String, MockTreeItem>,
-//     size: XY,
-//     config: ConfigRef,
-//     theme: Theme,
-//     last_frame: Option<MetaOutputFrame>,
-//     last_msg: Option<Box<dyn AnyMsg>>,
-//
-//     output: MockOutput,
-//     recv: Receiver<MetaOutputFrame>,
-// }
-
 impl ContextMenuTestbed {
-    // pub fn new(mock_data_set: MockTreeItem) -> Self {
-    //     let size = XY::new(30, 20);
-    //     let providers = MockProvidersBuilder::new().build().providers;
-    //
-    //     let theme: Theme = Default::default();
-    //
-    //     let (output, recv) = MockOutput::new(size, false, theme.clone());
-    //
-    //     ContextMenuTestbed {
-    //         widget: ContextMenuWidget::new(providers, mock_data_set),
-    //         additional_data: (),
-    //         size,
-    //         theme,
-    //         last_frame: None,
-    //         last_msg: None,
-    //         output,
-    //         recv,
-    //         self.providers.unwrap(),
-    //         mock_navcomp_pilot: providers.,
-    //     }
-    // }
     pub fn context_menu(&self) -> Option<ContextMenuInterpreter<'_>> {
         self.last_frame.as_ref().map(|frame| frame.get_context_menus().next()).flatten()
     }
 
-
-    pub fn has_items<'a, I: Iterator<Item=&'a str>>(&self, items: I) -> bool {
+    pub fn has_items<'a, I: Iterator<Item = &'a str>>(&self, items: I) -> bool {
         for item_label in items {
             if self
                 .context_menu()
@@ -93,7 +59,7 @@ impl ContextMenuTestbed {
         true
     }
 
-    pub fn has_none_of_items<'a, I: Iterator<Item=&'a str>>(&self, items: I) -> bool {
+    pub fn has_none_of_items<'a, I: Iterator<Item = &'a str>>(&self, items: I) -> bool {
         for item_label in items {
             if self
                 .context_menu()

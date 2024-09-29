@@ -29,7 +29,7 @@ pub struct GenericWidgetTestbed<W: Widget, AdditionalData = ()> {
 }
 
 lazy_static! {
-    static ref DEFAULT_THEME : Theme = Theme::default();
+    static ref DEFAULT_THEME: Theme = Theme::default();
 }
 
 impl<W: Widget, AdditionalData> GenericWidgetTestbed<W, AdditionalData> {

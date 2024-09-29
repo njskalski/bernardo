@@ -31,7 +31,9 @@ fn get_setup() -> EditorViewTestbed {
     ));
 
     let mut editor_view_testbed_builder = EditorViewTestbedBuilder::default();
-    editor_view_testbed_builder.providers = editor_view_testbed_builder.providers.with_label_provider(mock_labels_provider.into_ref());
+    editor_view_testbed_builder.providers = editor_view_testbed_builder
+        .providers
+        .with_label_provider(mock_labels_provider.into_ref());
 
     let editor_view_testbed = editor_view_testbed_builder.build();
 

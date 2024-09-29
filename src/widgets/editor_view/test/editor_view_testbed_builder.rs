@@ -48,14 +48,12 @@ impl EditorViewTestbedBuilder {
     //     }
     // }
 
-
     // pub fn with_theme(self, theme: Theme) -> Self {
     //     Self {
     //         provider_builder: self.provider_builder.with_theme(theme),
     //         ..self
     //     }
     // }
-
 
     // pub fn with_label_provider(mut self, provider: LabelsProviderRef) -> Self {
     //     Self {
