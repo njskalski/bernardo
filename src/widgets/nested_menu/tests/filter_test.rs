@@ -1,10 +1,10 @@
 use crate::mocks::mock_tree_item::get_mock_data_set_2;
-use crate::widgets::nested_menu::tests::nested_menu_testbed::NestedMenuTestbed;
+use crate::widgets::nested_menu::tests::nested_menu_testbed::{AdditionalData, NestedMenuTestbed, NestedMenuTestbedBuilder};
 
 pub fn get_setup_2() -> NestedMenuTestbed {
-    let nested_menu_testbed = NestedMenuTestbed::new(get_mock_data_set_2());
-
-    nested_menu_testbed
+    NestedMenuTestbedBuilder::new(AdditionalData {
+        root: get_mock_data_set_2(),
+    }).build()
 }
 
 // #[test]

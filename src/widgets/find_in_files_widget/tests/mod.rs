@@ -1,13 +1,16 @@
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::mock_fs::MockFS;
 use crate::spath;
-use crate::widgets::find_in_files_widget::tests::find_in_files_widget_testbed::{AdditionalData, FindInFilesWidgetTestbed, FindInFilesWidgetTestbedBuilder};
+use crate::widgets::find_in_files_widget::tests::find_in_files_widget_testbed::{
+    AdditionalData, FindInFilesWidgetTestbed, FindInFilesWidgetTestbedBuilder,
+};
 
 mod find_in_files_widget_testbed;
 pub fn get_setup_1() -> FindInFilesWidgetTestbed {
     FindInFilesWidgetTestbedBuilder::new(AdditionalData {
         root: spath!(MockFS::new("./test_envs/find_in_files_test_1").to_fsf()).unwrap(),
-    }).build()
+    })
+    .build()
 }
 
 // #[test]

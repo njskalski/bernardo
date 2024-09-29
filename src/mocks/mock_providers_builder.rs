@@ -29,8 +29,8 @@ pub struct BuildResult {
     pub side_channels: SideChannels,
 }
 
-impl MockProvidersBuilder {
-    pub fn new() -> Self {
+impl Default for MockProvidersBuilder {
+    fn default() -> Self {
         MockProvidersBuilder {
             config_op: None,
             fsf_op: None,
@@ -38,28 +38,28 @@ impl MockProvidersBuilder {
             theme_op: None,
         }
     }
+}
 
-    pub fn with_theme(self, theme: Theme) -> Self {
-        MockProvidersBuilder {
+impl MockProvidersBuilder {
+    pub fn with_theme(mut self, theme: Theme) -> Self {
+        self = MockProvidersBuilder {
             theme_op: Some(theme),
             ..self
-        }
+        };
+        self
     }
 
-    pub fn with_config(self, config: Config) -> Self {
-        MockProvidersBuilder {
+    pub fn with_config(mut self, config: Config) -> Self {
+        self = MockProvidersBuilder {
             config_op: Some(config),
             ..self
-        }
+        };
+        self
     }
 
-    pub fn with_label_provider(self, label_provider: LabelsProviderRef) -> Self {
-        let mut providers = self.label_providers;
-        providers.push(label_provider);
-        MockProvidersBuilder {
-            label_providers: providers,
-            ..self
-        }
+    pub fn with_label_provider(mut self, label_provider: LabelsProviderRef) -> Self {
+        self.label_providers.push(label_provider);
+        self
     }
 
     pub fn build(self) -> BuildResult {

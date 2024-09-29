@@ -1,10 +1,10 @@
 use crate::experiments::screen_shot::screenshot;
 use crate::mocks::mock_labels_provider::MockLabelsProvider;
 use crate::primitives::stupid_cursor::StupidCursor;
+use crate::widgets::editor_view::test::editor_view_testbed::EditorViewTestbed;
+use crate::widgets::editor_view::test::editor_view_testbed_builder::EditorViewTestbedBuilder;
 use crate::widgets::editor_widget::label::label::{Label, LabelPos, LabelStyle};
 use crate::widgets::editor_widget::label::labels_provider::LabelsProvider;
-use crate::widgets::tests::editor_view_testbed::EditorViewTestbed;
-use crate::widgets::tests::editor_widget_testbed_builder::EditorWidgetTestbedBuilder;
 
 fn get_setup() -> EditorViewTestbed {
     let mut mock_labels_provider = MockLabelsProvider::new();
@@ -30,9 +30,10 @@ fn get_setup() -> EditorViewTestbed {
         Box::new("random error annotation".to_string()),
     ));
 
-    let editor_view_testbed = EditorWidgetTestbedBuilder::new()
-        .with_label_provider(mock_labels_provider.into_ref())
-        .build_editor();
+    let mut editor_view_testbed_builder = EditorViewTestbedBuilder::default();
+    editor_view_testbed_builder.providers = editor_view_testbed_builder.providers.with_label_provider(mock_labels_provider.into_ref());
+
+    let editor_view_testbed = editor_view_testbed_builder.build();
 
     {
         let some_text = r#"use std::path::PathBuf;

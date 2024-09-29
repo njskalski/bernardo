@@ -1,9 +1,12 @@
 use crossbeam_channel::Receiver;
+use lazy_static::lazy_static;
 
+use crate::config::theme::Theme;
 use crate::experiments::screen_shot::screenshot;
 use crate::experiments::screenspace::Screenspace;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
+use crate::io::keys::Keycode;
 use crate::io::output::{FinalOutput, Output};
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
@@ -19,19 +22,23 @@ pub struct GenericWidgetTestbed<W: Widget, AdditionalData = ()> {
     pub size: XY,
     pub providers: Providers,
     pub last_frame: Option<MetaOutputFrame>,
-    pub mock_navcomp_pilot: MockNavCompProviderPilot,
-
+    pub mock_navcomp_pilot: Option<MockNavCompProviderPilot>,
     pub output: MockOutput,
     pub recv: Receiver<MetaOutputFrame>,
     pub last_msg: Option<Box<dyn AnyMsg>>,
 }
 
-impl<W: Widget> GenericWidgetTestbed<W> {
+lazy_static! {
+    static ref DEFAULT_THEME : Theme = Theme::default();
+}
+
+impl<W: Widget, AdditionalData> GenericWidgetTestbed<W, AdditionalData> {
     pub fn next_frame(&mut self) {
         self.output.clear().unwrap();
         self.widget.prelayout();
         self.widget.layout(Screenspace::full_output(self.size));
-        self.widget.render(&self.providers.theme(), true, &mut self.output);
+        let theme = self.theme().clone();
+        self.widget.render(&theme, true, &mut self.output);
 
         self.output.end_frame().unwrap();
 
@@ -43,6 +50,9 @@ impl<W: Widget> GenericWidgetTestbed<W> {
         self.last_frame.as_ref()
     }
 
+    pub fn theme(&self) -> &Theme {
+        self.providers.theme()
+    }
     pub fn screenshot(&self) -> bool {
         self.frame_op().map(|frame| screenshot(&frame.buffer)).unwrap_or(false)
     }
@@ -58,9 +68,21 @@ impl<W: Widget> GenericWidgetTestbed<W> {
     pub fn widget_mut(&mut self) -> &mut W {
         &mut self.widget
     }
+
+    pub fn push_input(&mut self, input: InputEvent) {
+        let (_, last_msg) = self.widget.act_on(input);
+        self.last_msg = last_msg;
+        self.next_frame();
+    }
+
+    pub fn push_text(&mut self, text: &str) {
+        for char in text.chars() {
+            self.push_input(Keycode::Char(char).to_key().to_input_event())
+        }
+    }
 }
 
-impl<W: Widget> WithWaitFor for GenericWidgetTestbed<W> {
+impl<W: Widget, AdditionalData> WithWaitFor for GenericWidgetTestbed<W, AdditionalData> {
     fn is_frame_based_wait(&self) -> bool {
         false
     }

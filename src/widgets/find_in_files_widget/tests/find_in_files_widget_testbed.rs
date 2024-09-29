@@ -1,6 +1,5 @@
 use crate::fs::path::SPath;
 use crate::mocks::mock_output::MockOutput;
-use crate::mocks::mock_providers_builder::MockProvidersBuilder;
 use crate::primitives::xy::XY;
 use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
 use crate::widgets::tests::generic_widget_testbed::GenericWidgetTestbed;
@@ -17,20 +16,20 @@ pub type FindInFilesWidgetTestbedBuilder = GenericWidgetTestbedBuilder<FindInFil
 impl FindInFilesWidgetTestbedBuilder {
     pub fn build(self) -> FindInFilesWidgetTestbed {
         let size = self.size.unwrap_or(XY::new(30, 20));
-        let build_result = MockProvidersBuilder::new().build();
+
+        let build_result = self.providers.build();
         let (output, recv) = MockOutput::new(size, false, build_result.providers.theme().clone());
 
         FindInFilesWidgetTestbed {
             widget: FindInFilesWidget::new(self.additional_data.root.clone()),
             additional_data: self.additional_data,
             size,
-            providers: self.providers.unwrap_or(build_result.providers),
+            providers: build_result.providers,
             last_frame: None,
-            mock_navcomp_pilot: build_result.side_channels.navcomp_pilot,
+            mock_navcomp_pilot: Some(build_result.side_channels.navcomp_pilot),
             output,
             recv,
             last_msg: None,
         }
     }
 }
-

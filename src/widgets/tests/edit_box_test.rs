@@ -1,12 +1,12 @@
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 
-use super::edit_box_testbed::EditBoxTestbed;
+use super::edit_box_testbed::{EditBoxTestbed, EditBoxTestbedBuilder};
 
 const TEXT: &'static str = "with single line of text";
 
 fn get_setup(text: &str) -> EditBoxTestbed {
-    let mut testbed = EditBoxTestbed::new();
+    let mut testbed = EditBoxTestbedBuilder::default().build();
     testbed.widget.set_text(text);
     testbed
 }
