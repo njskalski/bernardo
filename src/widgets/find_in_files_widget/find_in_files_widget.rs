@@ -17,7 +17,7 @@ use crate::primitives::xy::XY;
 use crate::subwidget;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_widget::label::label::Label;
@@ -60,14 +60,8 @@ impl FindInFilesWidget {
             query_box: EditBoxWidget::default().with_text("x"),
             filter_box_label: TextWidget::new(Box::new("Where:")),
             filter_box: EditBoxWidget::default().with_text("y"),
-            search_button: ButtonWidget::new(Box::new("Search"))
-                .with_on_hit(|_| {
-                    Msg::Hit.someboxed()
-                }),
-            cancel_button: ButtonWidget::new(Box::new("Cancel"))
-                .with_on_hit(|_|
-                Msg::Cancel.someboxed()
-                ),
+            search_button: ButtonWidget::new(Box::new("Search")).with_on_hit(|_| Msg::Hit.someboxed()),
+            cancel_button: ButtonWidget::new(Box::new("Cancel")).with_on_hit(|_| Msg::Cancel.someboxed()),
             display_state: None,
             on_hit: None,
             on_cancel: None,
@@ -75,10 +69,7 @@ impl FindInFilesWidget {
     }
 
     pub fn with_on_hit(self, on_hit: Option<WidgetAction<Self>>) -> Self {
-        Self {
-            on_hit,
-            ..self
-        }
+        Self { on_hit, ..self }
     }
 
     pub fn set_on_hit(&mut self, on_hit: Option<WidgetAction<Self>>) {
@@ -86,10 +77,7 @@ impl FindInFilesWidget {
     }
 
     pub fn with_on_cancel(self, on_cancel: Option<WidgetAction<Self>>) -> Self {
-        Self {
-            on_cancel,
-            ..self
-        }
+        Self { on_cancel, ..self }
     }
 
     pub fn set_on_cancel(&mut self, on_cancel: Option<WidgetAction<Self>>) {
@@ -106,6 +94,19 @@ impl FindInFilesWidget {
             Some(filter)
         } else {
             None
+        }
+    }
+
+    pub fn is_focused_on_button(&self) -> bool {
+        if let Some(focused) = self.display_state.as_ref().map(|ds| ds.focused.clone()) {
+            let focused_widget_id = focused.get(self).id();
+            if focused_widget_id == self.search_button.id() || focused_widget_id == self.cancel_button.id() {
+                true
+            } else {
+                false
+            }
+        } else {
+            false
         }
     }
 }
@@ -149,16 +150,10 @@ impl Widget for FindInFilesWidget {
                 warn!("expecetd FindInFiles::Msg, got {:?}", msg);
                 None
             }
-            Some(msg) => {
-                match msg {
-                    Msg::Hit => {
-                        self.on_hit.map(|f| f(self)).flatten()
-                    }
-                    Msg::Cancel => {
-                        self.on_cancel.map(|f| f(self)).flatten()
-                    }
-                }
-            }
+            Some(msg) => match msg {
+                Msg::Hit => self.on_hit.map(|f| f(self)).flatten(),
+                Msg::Cancel => self.on_cancel.map(|f| f(self)).flatten(),
+            },
         };
     }
 
@@ -185,6 +180,15 @@ impl Widget for FindInFilesWidget {
 
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
         self.complex_get_focused_mut()
+    }
+    fn pre_act_on(&mut self, input_event: &InputEvent) {
+        // This is implementation of a thing:
+        //  if user started typing while pointing at buttons, it will jump to query immediately
+        if input_event.as_key().map(|key| key.keycode.is_symbol()).unwrap_or(false) {
+            if self.is_focused_on_button() {
+                self.set_focused(subwidget!(Self.query_box));
+            }
+        }
     }
 }
 

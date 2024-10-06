@@ -247,13 +247,14 @@ impl MainView {
         }
     }
 
-    fn open_find_everywhere(&mut self) {
+    fn open_find_in_files(&mut self) {
         if self.hover.is_some() {
             debug!("ignoring 'open find everywhere', because there is already a hover");
             return;
         }
 
-        self.hover = Some(HoverItem::SearchInFiles(FindInFilesWidget::new(self.providers.fsf().root())))
+        self.hover = Some(HoverItem::SearchInFiles(FindInFilesWidget::new(self.providers.fsf().root())));
+        self.set_focus_to_hover();
     }
 
     fn open_empty_editor_and_focus(&mut self) {
@@ -478,7 +479,7 @@ impl Widget for MainView {
                     MainViewMsg::OpenFuzzyBuffers.someboxed()
                 }
             }
-            InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_everywhere => MainViewMsg::OpenFindEverywhere {
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_everywhere => MainViewMsg::OpenFindInFiles {
                 root_dir: self.providers.fsf().root(),
             }
             .someboxed(),
@@ -580,6 +581,10 @@ impl Widget for MainView {
                     } else {
                         warn!("find reference with empty promise")
                     }
+                    None
+                }
+                MainViewMsg::OpenFindInFiles { root_dir } => {
+                    self.open_find_in_files();
                     None
                 }
                 _ => {

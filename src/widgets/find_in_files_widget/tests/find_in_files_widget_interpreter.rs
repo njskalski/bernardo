@@ -1,7 +1,11 @@
 use crate::io::output::Metadata;
+use crate::mocks::button_interpreter::ButtonWidgetInterpreter;
+use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::primitives::rect::Rect;
 use crate::widget::widget::Widget;
+use crate::widgets::button::ButtonWidget;
+use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
 
 pub struct FindInFilesWidgetInterpreter<'a> {
@@ -24,29 +28,43 @@ impl<'a> FindInFilesWidgetInterpreter<'a> {
         self.meta.rect
     }
 
-    // pub fn contents(&self) -> String {
-    //     self.output
-    //         .buffer
-    //         .lines_iter()
-    //         .with_rect(self.meta.rect)
-    //         .next()
-    //         .unwrap()
-    //         .text
-    //         .trim()
-    //         .to_string()
-    // }
-    //
-    // pub fn cursor_pos(&self) -> usize {
-    //     let cursor_bg = self.output.theme.cursor_background(CursorStatus::UnderCursor).unwrap();
-    //
-    //     self.output
-    //         .buffer
-    //         .cells_iter()
-    //         .find(|(_pos, cell)| match cell {
-    //             Cell::Begin { style, .. } => style.background == cursor_bg,
-    //             Cell::Continuation => false,
-    //         })
-    //         .map(|(pos, _cell)| pos.x as usize)
-    //         .unwrap()
-    // }
+    pub fn query_box(&self) -> EditWidgetInterpreter<'_> {
+        let meta = self.output.get_meta_by_type(EditBoxWidget::static_typename()).next().unwrap();
+
+        EditWidgetInterpreter::new(meta, self.output)
+    }
+
+    pub fn filter_box(&self) -> EditWidgetInterpreter<'_> {
+        let meta = self
+            .output
+            .get_meta_by_type(EditBoxWidget::static_typename())
+            .skip(1)
+            .next()
+            .unwrap();
+
+        EditWidgetInterpreter::new(meta, self.output)
+    }
+
+    pub fn cancel_button(&self) -> ButtonWidgetInterpreter<'_> {
+        let meta = self
+            .output
+            .get_meta_by_type(ButtonWidget::static_typename())
+            .skip(1)
+            .next()
+            .unwrap();
+        let interp = ButtonWidgetInterpreter::new(meta, self.output);
+
+        debug_assert!(interp.contents().contains("Cancel"));
+
+        interp
+    }
+
+    pub fn search_button(&self) -> ButtonWidgetInterpreter<'_> {
+        let meta = self.output.get_meta_by_type(ButtonWidget::static_typename()).next().unwrap();
+        let interp = ButtonWidgetInterpreter::new(meta, self.output);
+
+        debug_assert!(interp.contents().contains("Search"));
+
+        interp
+    }
 }

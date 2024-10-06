@@ -154,6 +154,14 @@ impl Keycode {
             modifiers: Modifiers::default(),
         }
     }
+
+    // True for all characters, but not arrows, F1-12 etc.
+    pub fn is_symbol(&self) -> bool {
+        match self {
+            Keycode::Char(_) => true,
+            _ => false,
+        }
+    }
 }
 
 impl ToString for Keycode {

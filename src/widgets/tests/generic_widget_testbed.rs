@@ -89,6 +89,12 @@ impl<W: Widget, AdditionalData> GenericWidgetTestbed<W, AdditionalData> {
         let msg = self.last_msg.as_ref()?;
         msg.as_msg::<M>()
     }
+
+    pub fn type_in(&mut self, text: &str) {
+        for c in text.chars() {
+            self.send_input(InputEvent::KeyInput(Keycode::Char(c).to_key()));
+        }
+    }
 }
 
 impl<W: Widget, AdditionalData> WithWaitFor for GenericWidgetTestbed<W, AdditionalData> {

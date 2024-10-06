@@ -34,10 +34,7 @@ impl FindInFilesWidgetTestbedBuilder {
         FindInFilesWidgetTestbed {
             widget: FindInFilesWidget::new(self.additional_data.root.clone())
                 .with_on_cancel(Some(|_| Msg::Cancel.someboxed()))
-                .with_on_hit(Some(|widget| Msg::Query(
-                    widget.get_query(), widget.get_filter(),
-                ).someboxed()))
-            ,
+                .with_on_hit(Some(|widget| Msg::Query(widget.get_query(), widget.get_filter()).someboxed())),
             additional_data: self.additional_data,
             size,
             providers: build_result.providers,
@@ -53,7 +50,10 @@ impl FindInFilesWidgetTestbedBuilder {
 impl FindInFilesWidgetTestbed {
     pub fn interpreter(&self) -> Option<FindInFilesWidgetInterpreter<'_>> {
         let frame = self.frame_op()?;
-        let meta = frame.metadata.iter().find(|item| item.typename == FindInFilesWidget::static_typename())?;
+        let meta = frame
+            .metadata
+            .iter()
+            .find(|item| item.typename == FindInFilesWidget::static_typename())?;
 
         Some(FindInFilesWidgetInterpreter::new(meta, frame))
     }

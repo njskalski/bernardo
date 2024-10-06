@@ -51,7 +51,7 @@ pub enum MainViewMsg {
         updated_identifier: DocumentIdentifier,
     },
 
-    OpenFindEverywhere {
+    OpenFindInFiles {
         root_dir: SPath,
     },
 

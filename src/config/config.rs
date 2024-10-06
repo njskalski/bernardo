@@ -81,7 +81,7 @@ impl Default for Editor {
             request_completions: Keycode::Space.to_key().with_ctrl(),
             // I know it's stupid, but at this point I am out of keys on under my left hand
             //  normal people will use context options anyway
-            reformat: Keycode::Char('g').to_key().with_ctrl(),
+            reformat: Keycode::Char('l').to_key().with_ctrl(),
         }
     }
 }

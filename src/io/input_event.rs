@@ -14,3 +14,12 @@ pub enum InputEvent {
     // primary feature - everything bar with escalation
     EverythingBarTrigger,
 }
+
+impl InputEvent {
+    pub fn as_key(&self) -> Option<&Key> {
+        match self {
+            InputEvent::KeyInput(key) => Some(key),
+            _ => None,
+        }
+    }
+}
