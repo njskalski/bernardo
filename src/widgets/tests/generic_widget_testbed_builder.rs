@@ -31,9 +31,11 @@ pub struct GenericWidgetTestbedBuilder<W: Widget, AdditionalData> {
 }
 
 impl<W: Widget, AdditionalData> GenericWidgetTestbedBuilder<W, AdditionalData> {
+    const DEFAULT_SIZE: XY = XY::new(50, 10);
+
     pub fn new(additional_data: AdditionalData) -> Self {
         GenericWidgetTestbedBuilder {
-            size: None,
+            size: Some(Self::DEFAULT_SIZE),
             providers: MockProvidersBuilder::default(),
             mock_nav_comp_provider: None,
             additional_data,

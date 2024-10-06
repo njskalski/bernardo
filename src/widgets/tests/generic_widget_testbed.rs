@@ -80,6 +80,15 @@ impl<W: Widget, AdditionalData> GenericWidgetTestbed<W, AdditionalData> {
             self.push_input(Keycode::Char(char).to_key().to_input_event())
         }
     }
+
+    pub fn last_msg(&self) -> Option<&Box<dyn AnyMsg>> {
+        self.last_msg.as_ref()
+    }
+
+    pub fn last_msg_as<M: AnyMsg>(&self) -> Option<&M> {
+        let msg = self.last_msg.as_ref()?;
+        msg.as_msg::<M>()
+    }
 }
 
 impl<W: Widget, AdditionalData> WithWaitFor for GenericWidgetTestbed<W, AdditionalData> {

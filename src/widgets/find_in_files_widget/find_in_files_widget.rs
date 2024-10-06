@@ -1,3 +1,5 @@
+use log::{debug, warn};
+
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
@@ -15,10 +17,12 @@ use crate::primitives::xy::XY;
 use crate::subwidget;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_widget::label::label::Label;
+use crate::widgets::editor_widget::msg::EditorWidgetMsg;
+use crate::widgets::find_in_files_widget::msg::Msg;
 use crate::widgets::text_widget::TextWidget;
 
 const FIND_IN_FILES_WIDGET_NAME: &'static str = "find_in_files_widget";
@@ -27,24 +31,81 @@ pub struct FindInFilesWidget {
     wid: WID,
     root: SPath,
 
-    layout_result: Option<LayoutResult<Self>>,
-
     label: TextWidget,
-    edit_box_widget: EditBoxWidget,
+
+    query_box_label: TextWidget,
+    query_box: EditBoxWidget,
+
+    filter_box_label: TextWidget,
+    filter_box: EditBoxWidget,
+
     search_button: ButtonWidget,
     cancel_button: ButtonWidget,
+
+    display_state: Option<DisplayState<Self>>,
+
+    on_hit: Option<WidgetAction<Self>>,
+    on_cancel: Option<WidgetAction<Self>>,
 }
 
 impl FindInFilesWidget {
+    const DEFAULT_SIZE: XY = XY::new(50, 10);
+
     pub fn new(root: SPath) -> Self {
         FindInFilesWidget {
             wid: get_new_widget_id(),
             root,
-            layout_result: None,
             label: TextWidget::new(Box::new("Search in files:")),
-            edit_box_widget: EditBoxWidget::default(),
-            search_button: ButtonWidget::new(Box::new("Search")),
-            cancel_button: ButtonWidget::new(Box::new("Cancel")),
+            query_box_label: TextWidget::new(Box::new("What:")),
+            query_box: EditBoxWidget::default().with_text("x"),
+            filter_box_label: TextWidget::new(Box::new("Where:")),
+            filter_box: EditBoxWidget::default().with_text("y"),
+            search_button: ButtonWidget::new(Box::new("Search"))
+                .with_on_hit(|_| {
+                    Msg::Hit.someboxed()
+                }),
+            cancel_button: ButtonWidget::new(Box::new("Cancel"))
+                .with_on_hit(|_|
+                Msg::Cancel.someboxed()
+                ),
+            display_state: None,
+            on_hit: None,
+            on_cancel: None,
+        }
+    }
+
+    pub fn with_on_hit(self, on_hit: Option<WidgetAction<Self>>) -> Self {
+        Self {
+            on_hit,
+            ..self
+        }
+    }
+
+    pub fn set_on_hit(&mut self, on_hit: Option<WidgetAction<Self>>) {
+        self.on_hit = on_hit;
+    }
+
+    pub fn with_on_cancel(self, on_cancel: Option<WidgetAction<Self>>) -> Self {
+        Self {
+            on_cancel,
+            ..self
+        }
+    }
+
+    pub fn set_on_cancel(&mut self, on_cancel: Option<WidgetAction<Self>>) {
+        self.on_cancel = on_cancel;
+    }
+
+    pub fn get_query(&self) -> String {
+        self.query_box.get_text()
+    }
+
+    pub fn get_filter(&self) -> Option<String> {
+        let filter = self.filter_box.get_text();
+        if filter.is_empty() {
+            Some(filter)
+        } else {
+            None
         }
     }
 }
@@ -66,7 +127,7 @@ impl Widget for FindInFilesWidget {
     }
 
     fn full_size(&self) -> XY {
-        todo!()
+        Self::DEFAULT_SIZE
     }
 
     fn layout(&mut self, screenspace: Screenspace) {
@@ -78,17 +139,33 @@ impl Widget for FindInFilesWidget {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        todo!()
+        None
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
-        todo!()
+        debug!("update {:?}, receives {:?}", self as &dyn Widget, &msg);
+        return match msg.as_msg::<Msg>() {
+            None => {
+                warn!("expecetd FindInFiles::Msg, got {:?}", msg);
+                None
+            }
+            Some(msg) => {
+                match msg {
+                    Msg::Hit => {
+                        self.on_hit.map(|f| f(self)).flatten()
+                    }
+                    Msg::Cancel => {
+                        self.on_cancel.map(|f| f(self)).flatten()
+                    }
+                }
+            }
+        };
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         #[cfg(test)]
         {
-            let size = crate::unpack_unit_e!(self.layout_result.as_ref(), "render before layout",).total_size;
+            let size = crate::unpack_unit_e!(self.display_state.as_ref().map(|item| item.total_size), "render before layout",);
 
             output.emit_metadata(crate::io::output::Metadata {
                 id: self.id(),
@@ -117,21 +194,35 @@ impl ComplexWidget for FindInFilesWidget {
 
         let text_line = LeafLayout::new(subwidget!(Self.label)).boxed();
 
-        let edit = LeafLayout::new(subwidget!(Self.edit_box_widget)).boxed();
+        let query = LeafLayout::new(subwidget!(Self.query_box)).boxed();
+        let query_label = LeafLayout::new(subwidget!(Self.query_box_label)).boxed();
+
+        let query_line = SplitLayout::new(SplitDirection::Horizontal)
+            .with(SplitRule::Fixed(7), query_label)
+            .with(SplitRule::Proportional(1.0), query);
+
+        let filter = LeafLayout::new(subwidget!(Self.filter_box)).boxed();
+        let filter_label = LeafLayout::new(subwidget!(Self.filter_box_label)).boxed();
+
+        let filter_line = SplitLayout::new(SplitDirection::Horizontal)
+            .with(SplitRule::Fixed(7), filter_label)
+            .with(SplitRule::Proportional(1.0), filter);
 
         let ok_box = LeafLayout::new(subwidget!(Self.search_button)).boxed();
         let cancel_box = LeafLayout::new(subwidget!(Self.cancel_button)).boxed();
 
         let button_bar = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0), EmptyLayout::new().boxed())
-            .with(SplitRule::Fixed(10), cancel_box)
             .with(SplitRule::Fixed(10), ok_box)
+            .with(SplitRule::Fixed(10), cancel_box)
             .boxed();
 
         let combined_layout = SplitLayout::new(SplitDirection::Vertical)
             .with(SplitRule::Fixed(1), text_line)
             .with(SplitRule::Fixed(1), EmptyLayout::new().boxed())
-            .with(SplitRule::Fixed(1), edit)
+            .with(SplitRule::Fixed(1), query_line.boxed())
+            // .with(SplitRule::Fixed(1), EmptyLayout::new().boxed())
+            .with(SplitRule::Fixed(1), filter_line.boxed())
             .with(SplitRule::Fixed(1), EmptyLayout::new().boxed())
             .with(SplitRule::Fixed(1), button_bar)
             .boxed();
@@ -140,18 +231,18 @@ impl ComplexWidget for FindInFilesWidget {
     }
 
     fn get_default_focused(&self) -> SubwidgetPointer<Self> {
-        todo!()
+        subwidget!(Self.search_button)
     }
 
     fn set_display_state(&mut self, display_state: DisplayState<Self>) {
-        todo!()
+        self.display_state = Some(display_state);
     }
 
     fn get_display_state_op(&self) -> Option<&DisplayState<Self>> {
-        todo!()
+        self.display_state.as_ref()
     }
 
     fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
-        todo!()
+        self.display_state.as_mut()
     }
 }
