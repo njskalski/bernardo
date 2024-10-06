@@ -5,6 +5,7 @@ use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::path::SPath;
 use crate::io::input_event::InputEvent;
+use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::layout::empty_layout::EmptyLayout;
 use crate::layout::frame_layout::FrameLayout;
@@ -17,6 +18,7 @@ use crate::primitives::xy::XY;
 use crate::subwidget;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
+use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
@@ -57,9 +59,9 @@ impl FindInFilesWidget {
             root,
             label: TextWidget::new(Box::new("Search in files:")),
             query_box_label: TextWidget::new(Box::new("What:")),
-            query_box: EditBoxWidget::default().with_text("x"),
+            query_box: EditBoxWidget::default().with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH),
             filter_box_label: TextWidget::new(Box::new("Where:")),
-            filter_box: EditBoxWidget::default().with_text("y"),
+            filter_box: EditBoxWidget::default().with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH),
             search_button: ButtonWidget::new(Box::new("Search")).with_on_hit(|_| Msg::Hit.someboxed()),
             cancel_button: ButtonWidget::new(Box::new("Cancel")).with_on_hit(|_| Msg::Cancel.someboxed()),
             display_state: None,
@@ -78,6 +80,10 @@ impl FindInFilesWidget {
 
     pub fn with_on_cancel(self, on_cancel: Option<WidgetAction<Self>>) -> Self {
         Self { on_cancel, ..self }
+    }
+
+    pub fn cancel(&self) -> Option<Box<dyn AnyMsg>> {
+        self.on_cancel.map(|action| action(self)).flatten()
     }
 
     pub fn set_on_cancel(&mut self, on_cancel: Option<WidgetAction<Self>>) {
@@ -140,7 +146,10 @@ impl Widget for FindInFilesWidget {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        None
+        match input_event {
+            InputEvent::KeyInput(key) if key == Keycode::Esc.to_key() => Msg::Cancel.someboxed(),
+            _ => None,
+        }
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {

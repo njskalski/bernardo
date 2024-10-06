@@ -77,6 +77,7 @@ impl ContentsAndCursors {
         true
     }
 
+    // TODO remove "empty"
     pub fn empty() -> Self {
         ContentsAndCursors {
             rope: Rope::default(),

@@ -49,10 +49,14 @@ impl EditBoxWidget {
     pub const TYPENAME: &'static str = "edit_box";
 
     pub fn new() -> Self {
+        let widget_id = get_new_widget_id();
+        let mut buffer = BufferState::simplified_single_line();
+        buffer.initialize_for_widget(widget_id, None);
+
         let mut res = EditBoxWidget {
-            id: get_new_widget_id(),
+            id: widget_id,
             enabled: true,
-            buffer: BufferState::simplified_single_line(),
+            buffer,
             on_hit: None,
             on_change: None,
             on_miss: None,
@@ -119,10 +123,12 @@ impl EditBoxWidget {
     }
 
     pub fn with_text<'a, T: AsRef<str>>(self, text: T) -> Self {
-        EditBoxWidget {
+        let mut res = EditBoxWidget {
             buffer: BufferState::simplified_single_line().with_text(text),
             ..self
-        }
+        };
+        res.buffer.initialize_for_widget(self.id, None);
+        res
     }
 
     pub fn get_buffer(&self) -> &BufferState {

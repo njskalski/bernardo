@@ -25,6 +25,7 @@ fn find_in_files_escape_cancels() {
     let mut f = get_setup_1();
 
     debug_assert!(f.wait_for(|f| f.interpreter().is_some()));
+    debug_assert!(f.interpreter().unwrap().search_button().is_focused());
 
     f.send_input(Keycode::Esc.to_key().to_input_event());
 
@@ -52,10 +53,10 @@ fn start_typing_jumps_to_query() {
 #[test]
 fn find_in_files_dev_1() {
     // this test is temporary, just used to see how the widget looks like
-    let mut testbed = get_setup_1();
-
-    testbed.next_frame();
-    testbed.interpreter();
-
-    testbed.screenshot();
+    // let mut testbed = get_setup_1();
+    //
+    // testbed.next_frame();
+    // testbed.interpreter();
+    //
+    // testbed.screenshot();
 }

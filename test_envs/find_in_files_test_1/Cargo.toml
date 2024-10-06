@@ -1,5 +1,5 @@
 [package]
-name = "completion_test_1"
+name = "find_in_files_test_1"
 version = "0.1.0"
 edition = "2021"
 
