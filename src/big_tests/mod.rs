@@ -8,3 +8,4 @@ mod save;
 mod save_file_dialog;
 mod show_usages;
 mod syntax_highlighting;
+mod find_in_files;

@@ -5,10 +5,10 @@ use std::sync::{Arc, RwLock};
 use std::thread::JoinHandle;
 use std::time::Duration;
 
-use crossbeam_channel::{select, Receiver, Sender};
-use flexi_logger::writers::LogWriter;
+use crossbeam_channel::{Receiver, select, Sender};
 use flexi_logger::Logger;
-use log::{debug, error, warn, LevelFilter};
+use flexi_logger::writers::LogWriter;
+use log::{debug, error, LevelFilter, warn};
 
 use crate::config::config::{Config, ConfigRef};
 use crate::config::theme::Theme;
@@ -39,6 +39,8 @@ use crate::mocks::with_wait_for::WithWaitFor;
 use crate::primitives::xy::XY;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
+use crate::widgets::find_in_files_widget::tests::find_in_files_widget_interpreter::FindInFilesWidgetInterpreter;
 use crate::widgets::tree_view;
 
 pub struct FullSetupBuilder {
@@ -70,7 +72,7 @@ impl FullSetupBuilder {
         FullSetupBuilder { mock_navcomp, ..self }
     }
 
-    pub fn with_files<P: AsRef<OsStr>, I: IntoIterator<Item = P>>(self, items: I) -> Self {
+    pub fn with_files<P: AsRef<OsStr>, I: IntoIterator<Item=P>>(self, items: I) -> Self {
         let files: Vec<PathBuf> = items.into_iter().map(|p| PathBuf::from(p.as_ref())).collect();
 
         FullSetupBuilder { files, ..self }
@@ -323,6 +325,10 @@ impl FullSetup {
 
     pub fn get_fuzzy_search(&self) -> Option<FuzzySearchInterpreter> {
         self.last_frame.as_ref().map(|frame| frame.get_fuzzy_search()).flatten()
+    }
+
+    pub fn get_find_in_files(&self) -> Option<FindInFilesWidgetInterpreter> {
+        self.last_frame.as_ref().map(|frame| frame.get_find_in_files()).flatten()
     }
 
     pub fn send_input(&self, ie: InputEvent) -> bool {
