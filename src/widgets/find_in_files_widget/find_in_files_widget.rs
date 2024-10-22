@@ -59,7 +59,9 @@ impl FindInFilesWidget {
             root,
             label: TextWidget::new(Box::new("Search in files:")),
             query_box_label: TextWidget::new(Box::new("What:")),
-            query_box: EditBoxWidget::default().with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH),
+            query_box: EditBoxWidget::default()
+                .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
+                .with_on_hit(|_| Msg::Hit.someboxed()),
             filter_box_label: TextWidget::new(Box::new("Where:")),
             filter_box: EditBoxWidget::default().with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH),
             search_button: ButtonWidget::new(Box::new("Search")).with_on_hit(|_| Msg::Hit.someboxed()),
@@ -86,6 +88,10 @@ impl FindInFilesWidget {
         self.on_cancel.map(|action| action(self)).flatten()
     }
 
+    pub fn hit(&self) -> Option<Box<dyn AnyMsg>> {
+        self.on_hit.map(|action| action(self)).flatten()
+    }
+
     pub fn set_on_cancel(&mut self, on_cancel: Option<WidgetAction<Self>>) {
         self.on_cancel = on_cancel;
     }
@@ -96,7 +102,7 @@ impl FindInFilesWidget {
 
     pub fn get_filter(&self) -> Option<String> {
         let filter = self.filter_box.get_text();
-        if filter.is_empty() {
+        if filter.len() > 0 {
             Some(filter)
         } else {
             None

@@ -19,4 +19,3 @@ fn find_in_files_opens() {
     assert!(full_setup.wait_for(|f| f.get_find_in_files().is_some()));
     assert!(full_setup.get_find_in_files().unwrap().is_focused());
 }
-

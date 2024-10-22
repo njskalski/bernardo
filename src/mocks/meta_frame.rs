@@ -31,28 +31,28 @@ pub struct MetaOutputFrame {
 }
 
 impl MetaOutputFrame {
-    pub fn get_meta_by_type(&self, typename: &'static str) -> impl Iterator<Item=&Metadata> {
+    pub fn get_meta_by_type(&self, typename: &'static str) -> impl Iterator<Item = &Metadata> {
         self.metadata.iter().filter(move |i| i.typename == typename)
     }
 
-    pub fn get_editors(&self) -> impl Iterator<Item=EditorInterpreter> {
+    pub fn get_editors(&self) -> impl Iterator<Item = EditorInterpreter> {
         self.get_meta_by_type(EditorView::TYPENAME)
             .map(|meta| EditorInterpreter::new(self, meta))
             .flatten()
     }
 
-    pub fn get_nested_menus(&self) -> impl Iterator<Item=NestedMenuInterpreter> {
+    pub fn get_nested_menus(&self) -> impl Iterator<Item = NestedMenuInterpreter> {
         self.get_meta_by_type(NESTED_MENU_TYPENAME)
             .map(|meta| NestedMenuInterpreter::new(self, meta))
             .flatten()
     }
 
-    pub fn get_context_menus(&self) -> impl Iterator<Item=ContextMenuInterpreter> {
+    pub fn get_context_menus(&self) -> impl Iterator<Item = ContextMenuInterpreter> {
         self.get_meta_by_type(CONTEXT_MENU_WIDGET_NAME)
             .map(|meta| ContextMenuInterpreter::new(self, meta))
     }
 
-    pub fn get_scroll<T: Widget>(&self) -> impl Iterator<Item=WithScrollWidgetInterpreter<T>> {
+    pub fn get_scroll<T: Widget>(&self) -> impl Iterator<Item = WithScrollWidgetInterpreter<T>> {
         self.get_meta_by_type(WithScroll::<T>::TYPENAME_FOR_MARGIN)
             .map(|meta| WithScrollWidgetInterpreter::new(self, meta))
     }
