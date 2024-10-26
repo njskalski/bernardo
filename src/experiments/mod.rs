@@ -11,3 +11,4 @@ pub mod regex_search;
 pub mod screen_shot;
 pub mod screenspace;
 pub mod subwidget_pointer;
+pub mod wrapped_ref_iter;
