@@ -9,10 +9,13 @@ use crate::cursor::cursor::Selection;
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::regex_search::{regex_find, FindError};
 use crate::primitives::search_pattern::SearchPattern;
+use crate::primitives::symbol_usage::SymbolUsage;
+use crate::text::text_buffer::TextBuffer;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::unpack_or_e;
+use crate::w7e::navcomp_provider::StupidSymbolUsage;
 use crate::widget::widget::WID;
 
 /*

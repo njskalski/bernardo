@@ -2,24 +2,17 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::fs::Metadata;
 use std::hash::{Hash, Hasher};
-use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::{fs, iter};
 
 use log::{debug, error};
-use parking_lot::MappedRwLockReadGuard;
 use parking_lot::{RwLock, RwLockReadGuard};
-use streaming_iterator::{StreamingIterator, StreamingIteratorMut};
+use streaming_iterator::StreamingIterator;
 
 use crate::fs::filesystem_front::FilesystemFront;
 use crate::fs::path::SPath;
 use crate::fs::read_error::{ListError, ReadError};
 use crate::fs::write_error::WriteError;
-use crate::primitives::common_query::CommonQuery;
-use crate::primitives::symbol_usage::SymbolUsage;
-use crate::promise::streaming_promise::StreamingPromise;
-use crate::promise::streaming_promise_impl::WrappedMspcReceiver;
 
 // Chaching should be implemented here or nowhere.
 
@@ -156,6 +149,7 @@ impl FsfRef {
         let path = spath.relative_path();
         let metadata = self.fs.fs.metadata(&path).ok();
 
+        // TODO we have "cache invalid never read". Why?
         let mut cache_invalid = false;
 
         if let Some(system_time) = metadata.as_ref().map(|data| data.modified().ok()).flatten() {

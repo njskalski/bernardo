@@ -39,7 +39,7 @@ use crate::w7e::navcomp_provider::CompletionAction;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
-use crate::widgets::code_results_view::symbol_usage_promise_provider::WrappedSymbolUsagesPromise;
+use crate::widgets::code_results_view::stupid_symbol_usage_code_results_provider::StupidSymbolUsageCodeResultsProvider;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
 use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::context_options_matrix::get_context_options;
@@ -1162,7 +1162,7 @@ impl EditorWidget {
             None,
             "failed retrieving usage symbol"
         );
-        let wrapped_promise = WrappedSymbolUsagesPromise::new(symbol_desc, promise);
+        let wrapped_promise = StupidSymbolUsageCodeResultsProvider::new(self.providers.clone(), symbol_desc, promise);
 
         MainViewMsg::FindReferences {
             promise_op: Some(wrapped_promise),
@@ -1206,7 +1206,11 @@ impl EditorWidget {
         );
 
         MainViewMsg::GoToDefinition {
-            promise_op: Some(WrappedSymbolUsagesPromise::new(symbol_desc, promise)),
+            promise_op: Some(StupidSymbolUsageCodeResultsProvider::new(
+                self.providers.clone(),
+                symbol_desc,
+                promise,
+            )),
         }
         .someboxed()
     }

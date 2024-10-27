@@ -1,11 +1,12 @@
 use std::fmt::{Debug, Formatter};
 
-use log::error;
+use log::{error, warn};
 use ropey::iter::{Chars, Chunks};
 use streaming_iterator::StreamingIterator;
 
-use crate::cursor::cursor::Selection;
+use crate::cursor::cursor::{Cursor, Selection};
 use crate::cursor::cursor_set::CursorSet;
+use crate::primitives::stupid_cursor::StupidCursor;
 use crate::primitives::xy::XY;
 use crate::tsw::lang_id::LangId;
 
@@ -104,6 +105,25 @@ pub trait TextBuffer: ToString {
         }
 
         Some(result)
+    }
+
+    fn stupid_cursor_to_cursor(&self, sc1: StupidCursor, sc2: Option<StupidCursor>) -> Option<Cursor> {
+        let pos1 = self.line_to_char(sc1.line_0b as usize)? + sc1.char_idx_0b as usize;
+        let pos2: Option<usize> = match sc2 {
+            None => None,
+            Some(sc2) => Some(self.line_to_char(sc2.line_0b as usize)? + sc2.char_idx_0b as usize),
+        };
+
+        let mut cursor = Cursor::new(pos1);
+        if let Some(pos2) = pos2 {
+            if pos1 != pos2 {
+                cursor = cursor.with_selection(Selection::new(pos1, pos2));
+            } else {
+                warn!("weird, malformed, stupid cursor (pos1 == pos2)");
+            }
+        };
+
+        Some(cursor)
     }
 }
 

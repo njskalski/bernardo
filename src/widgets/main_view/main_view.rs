@@ -30,7 +30,7 @@ use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
-use crate::widgets::code_results_view::symbol_usage_promise_provider::WrappedSymbolUsagesPromise;
+use crate::widgets::code_results_view::stupid_symbol_usage_code_results_provider::StupidSymbolUsageCodeResultsProvider;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
 use crate::widgets::fuzzy_search::fsf_provider::{FsfProvider, SPathMsg};

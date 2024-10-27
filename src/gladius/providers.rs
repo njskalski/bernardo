@@ -2,7 +2,7 @@
 This is a simplified "dependency injection" struct, because I just have too much items in constructors
 of key components like EditorView or CodeResultsView
  */
-
+use std::fmt::{Debug, Formatter};
 use std::sync::{Arc, RwLock};
 
 use crate::config::config::ConfigRef;
@@ -30,6 +30,12 @@ pub struct Providers {
     buffer_register: BufferRegisterRef,
 
     todo_labels_providers: Vec<LabelsProviderRef>,
+}
+
+impl Debug for Providers {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[providers]")
+    }
 }
 
 impl Providers {

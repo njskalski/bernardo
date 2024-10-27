@@ -2,7 +2,7 @@ use crate::cursor::cursor::Cursor;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::fs::path::SPath;
 use crate::widget::any_msg::AnyMsg;
-use crate::widgets::code_results_view::symbol_usage_promise_provider::WrappedSymbolUsagesPromise;
+use crate::widgets::code_results_view::stupid_symbol_usage_code_results_provider::StupidSymbolUsageCodeResultsProvider;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
 
 #[derive(Debug)]
@@ -36,7 +36,7 @@ pub enum MainViewMsg {
 
     // it's option, just that we can "take" it, not changing the msg, because that doesn't work well
     FindReferences {
-        promise_op: Option<WrappedSymbolUsagesPromise>,
+        promise_op: Option<StupidSymbolUsageCodeResultsProvider>,
     },
 
     /*
@@ -61,7 +61,7 @@ pub enum MainViewMsg {
     },
 
     GoToDefinition {
-        promise_op: Option<WrappedSymbolUsagesPromise>,
+        promise_op: Option<StupidSymbolUsageCodeResultsProvider>,
     },
 }
 
