@@ -41,7 +41,7 @@ pub trait StreamingPromise<T> {
 
      */
     fn read(&self) -> &Vec<T>;
-    
+
     fn map<B, F: Fn(&T) -> B>(self, mapper: F) -> MappedStreamingPromise<T, Self, B, F>
     where
         Self: Sized,

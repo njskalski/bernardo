@@ -12,7 +12,7 @@ pub struct MappedStreamingPromise<OldType, InternalPromise: StreamingPromise<Old
 }
 
 impl<OldType, InternalPromise: StreamingPromise<OldType>, NewType: Clone, Mutator: Fn(&OldType) -> NewType>
-MappedStreamingPromise<OldType, InternalPromise, NewType, Mutator>
+    MappedStreamingPromise<OldType, InternalPromise, NewType, Mutator>
 {
     pub fn new(internal: InternalPromise, mutator: Mutator) -> Self {
         MappedStreamingPromise {
@@ -52,7 +52,7 @@ MappedStreamingPromise<OldType, InternalPromise, NewType, Mutator>
 }
 
 impl<OldType, InternalPromise: StreamingPromise<OldType>, NewType: Clone, Mutator: Fn(&OldType) -> NewType> StreamingPromise<NewType>
-for MappedStreamingPromise<OldType, InternalPromise, NewType, Mutator>
+    for MappedStreamingPromise<OldType, InternalPromise, NewType, Mutator>
 {
     fn state(&self) -> StreamingPromiseState {
         self.status
