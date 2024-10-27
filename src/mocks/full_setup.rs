@@ -39,6 +39,8 @@ use crate::mocks::with_wait_for::WithWaitFor;
 use crate::primitives::xy::XY;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
+use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
+use crate::widgets::find_in_files_widget::tests::find_in_files_widget_interpreter::FindInFilesWidgetInterpreter;
 use crate::widgets::tree_view;
 
 pub struct FullSetupBuilder {
@@ -323,6 +325,10 @@ impl FullSetup {
 
     pub fn get_fuzzy_search(&self) -> Option<FuzzySearchInterpreter> {
         self.last_frame.as_ref().map(|frame| frame.get_fuzzy_search()).flatten()
+    }
+
+    pub fn get_find_in_files(&self) -> Option<FindInFilesWidgetInterpreter> {
+        self.last_frame.as_ref().map(|frame| frame.get_find_in_files()).flatten()
     }
 
     pub fn send_input(&self, ie: InputEvent) -> bool {

@@ -1,6 +1,6 @@
 use crossbeam_channel::{Receiver, Sender};
 
-use crate::config::config::{Config, ConfigRef};
+use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::fs::fsf_ref::FsfRef;
@@ -8,65 +8,63 @@ use crate::io::input_event::InputEvent;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_navcomp_provider::MockNavCompProviderPilot;
 use crate::mocks::mock_output::MockOutput;
-use crate::mocks::mock_providers_builder::MockProvidersBuilder;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::tsw::lang_id::LangId;
 use crate::widget::widget::Widget;
 use crate::widgets::editor_view::editor_view::EditorView;
-use crate::widgets::editor_widget::label::labels_provider::LabelsProviderRef;
+use crate::widgets::editor_view::test::editor_view_testbed::EditorViewTestbed;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
-use crate::widgets::tests::editor_view_testbed::EditorViewTestbed;
+use crate::widgets::tests::generic_widget_testbed_builder::GenericWidgetTestbedBuilder;
 
-pub struct EditorWidgetTestbedBuilder {
-    provider_builder: MockProvidersBuilder,
-    size: XY,
-    step_frame: bool,
-}
+// pub struct EditorViewTestbedBuilder {
+//     provider_builder: MockProvidersBuilder,
+//     size: XY,
+//     step_frame: bool,
+// }
 
-impl EditorWidgetTestbedBuilder {
+pub type EditorViewTestbedBuilder = GenericWidgetTestbedBuilder<EditorView, ()>;
+
+impl EditorViewTestbedBuilder {
     pub const DEFAULT_MOCK_OUTPUT_SIZE: XY = XY::new(120, 36);
 
-    pub fn new() -> Self {
-        EditorWidgetTestbedBuilder {
-            provider_builder: MockProvidersBuilder::new(),
-            size: Self::DEFAULT_MOCK_OUTPUT_SIZE,
-            step_frame: false,
-        }
-    }
+    // pub fn new(additional_data: ()) -> Self {
+    //     EditorViewTestbedBuilder {
+    //         size: Some(Self::DEFAULT_MOCK_OUTPUT_SIZE),
+    //         providers: None,
+    //         mock_nav_comp_provider: None,
+    //         additional_data: (),
+    //         theme: None,
+    //         config: None,
+    //         // step_frame: false,
+    //         _phantom_data: Default::default(),
+    //     }
+    // }
 
-    pub fn with_config(self, config: Config) -> Self {
-        Self {
-            provider_builder: self.provider_builder.with_config(config),
-            ..self
-        }
-    }
+    // pub fn with_config(self, config: Config) -> Self {
+    //     Self {
+    //         provider_builder: self.provider_builder.with_config(config),
+    //         ..self
+    //     }
+    // }
 
-    pub fn with_size(self, size: XY) -> Self {
-        Self { size, ..self }
-    }
+    // pub fn with_theme(self, theme: Theme) -> Self {
+    //     Self {
+    //         provider_builder: self.provider_builder.with_theme(theme),
+    //         ..self
+    //     }
+    // }
 
-    pub fn with_theme(self, theme: Theme) -> Self {
-        Self {
-            provider_builder: self.provider_builder.with_theme(theme),
-            ..self
-        }
-    }
+    // pub fn with_label_provider(mut self, provider: LabelsProviderRef) -> Self {
+    //     Self {
+    //         provider_builder: self.provider_builder.with_label_provider(provider),
+    //         ..self
+    //     }
+    // }
 
-    pub fn with_step_frame(self, step_frame: bool) -> Self {
-        Self { step_frame, ..self }
-    }
-
-    pub fn with_label_provider(mut self, provider: LabelsProviderRef) -> Self {
-        Self {
-            provider_builder: self.provider_builder.with_label_provider(provider),
-            ..self
-        }
-    }
-
-    pub fn build_editor(self) -> EditorViewTestbed {
-        let size = self.size;
-        let build_result = self.provider_builder.build();
+    pub fn build(self) -> EditorViewTestbed {
+        let size = self.size.unwrap_or(Self::DEFAULT_MOCK_OUTPUT_SIZE);
+        let build_result = self.providers.build();
 
         let docid = DocumentIdentifier::new_unique();
         let buffer = BufferState::full(Some(build_result.providers.tree_sitter().clone()), docid)
@@ -87,10 +85,11 @@ impl EditorWidgetTestbedBuilder {
         EditorViewTestbed {
             widget: editor_view,
 
+            additional_data: (),
             size,
             providers: build_result.providers,
             last_frame: None,
-            mock_navcomp_pilot: build_result.side_channels.navcomp_pilot,
+            mock_navcomp_pilot: Some(build_result.side_channels.navcomp_pilot),
             output,
             recv,
             last_msg: None,

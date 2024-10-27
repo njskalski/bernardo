@@ -96,10 +96,11 @@ pub trait Widget: 'static {
     {
         self as &mut dyn Widget
     }
-
     fn act_on(&mut self, input_event: InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
         let self_desc = self.desc();
         debug!(target: "act_on", "1: {} acting on input {:?}", &self_desc, &input_event);
+
+        self.pre_act_on(&input_event);
 
         // first offering message to a highlighted child (default behavior)
         let (consumed, message_to_self_op) = if let Some(child) = self.get_focused_mut() {
@@ -135,6 +136,8 @@ pub trait Widget: 'static {
 
         (consumed, None)
     }
+
+    fn pre_act_on(&mut self, input_event: &InputEvent) {}
 }
 
 // pub trait AsAnyWidget {

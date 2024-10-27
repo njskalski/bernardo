@@ -1,5 +1,6 @@
 mod completion;
 mod dropping_cursor;
+mod find_in_files;
 mod find_replace;
 mod fuzzy_file_open;
 mod lsp_clangd_cpp;

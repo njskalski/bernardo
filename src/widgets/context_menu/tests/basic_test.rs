@@ -1,12 +1,13 @@
 use crate::io::keys::Keycode;
 use crate::mocks::mock_tree_item::get_mock_data_set_1;
 use crate::mocks::with_wait_for::WithWaitFor;
-use crate::widgets::context_menu::tests::context_menu_testbed::ContextMenuTestbed;
+use crate::widgets::context_menu::tests::context_menu_testbed::{AdditionalData, ContextMenuTestbed, ContextMenuTestbedBuilder};
 
 pub fn get_setup_1() -> ContextMenuTestbed {
-    let nested_menu_testbed = ContextMenuTestbed::new(get_mock_data_set_1());
-
-    nested_menu_testbed
+    ContextMenuTestbedBuilder::new(AdditionalData {
+        root: get_mock_data_set_1(),
+    })
+    .build()
 }
 
 #[test]

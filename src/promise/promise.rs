@@ -43,7 +43,6 @@ pub trait Promise<T> {
 
     // Blocks current thread until promise is delivered or broken or deadline is exceeded.
     // Double wait *is not* an error.
-    // Returns true iff value became available, false if promise is broken.
     // If how_long is exceeded, it returns Unresolved
     fn wait(&mut self, how_long: Option<Duration>) -> PromiseState;
 

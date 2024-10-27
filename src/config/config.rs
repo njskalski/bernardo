@@ -34,7 +34,7 @@ pub struct Global {
     pub close: Key,
     pub close_context_menu: Key,
     pub everything_bar: Key,
-    pub find_everywhere: Key,
+    pub find_in_files: Key,
     pub fuzzy_file: Key,
     pub new_buffer: Key,
 }
@@ -49,7 +49,7 @@ impl Default for Global {
             // This is the most important feature of them all.
             // In order to support it EVERYWHERE it will need to be converted to InputEvent
             everything_bar: Keycode::Char('e').to_key().with_ctrl(),
-            find_everywhere: Keycode::Char('g').to_key().with_ctrl(),
+            find_in_files: Keycode::Char('g').to_key().with_ctrl(),
             close_context_menu: Keycode::Esc.to_key(),
         }
     }
@@ -81,7 +81,7 @@ impl Default for Editor {
             request_completions: Keycode::Space.to_key().with_ctrl(),
             // I know it's stupid, but at this point I am out of keys on under my left hand
             //  normal people will use context options anyway
-            reformat: Keycode::Char('g').to_key().with_ctrl(),
+            reformat: Keycode::Char('l').to_key().with_ctrl(),
         }
     }
 }

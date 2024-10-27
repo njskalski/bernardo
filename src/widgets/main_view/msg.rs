@@ -51,8 +51,13 @@ pub enum MainViewMsg {
         updated_identifier: DocumentIdentifier,
     },
 
-    OpenFindEverywhere {
+    OpenFindInFiles {
         root_dir: SPath,
+    },
+    FindInFilesQuery {
+        root_dir: SPath,
+        query: String,
+        filter_op: Option<String>,
     },
 
     GoToDefinition {

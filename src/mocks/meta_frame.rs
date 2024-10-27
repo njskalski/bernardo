@@ -12,6 +12,8 @@ use crate::widget::widget::Widget;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
 use crate::widgets::context_menu::widget::CONTEXT_MENU_WIDGET_NAME;
 use crate::widgets::editor_view::editor_view::EditorView;
+use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
+use crate::widgets::find_in_files_widget::tests::find_in_files_widget_interpreter::FindInFilesWidgetInterpreter;
 use crate::widgets::fuzzy_search::fuzzy_search::FuzzySearchWidget;
 use crate::widgets::nested_menu::widget::NESTED_MENU_TYPENAME;
 use crate::widgets::no_editor::NoEditorWidget;
@@ -70,6 +72,12 @@ impl MetaOutputFrame {
     pub fn get_code_results_view(&self) -> Option<CodeResultsViewInterpreter> {
         self.get_meta_by_type(CodeResultsView::TYPENAME)
             .map(|meta| CodeResultsViewInterpreter::new(self, meta))
+            .next()
+    }
+
+    pub fn get_find_in_files(&self) -> Option<FindInFilesWidgetInterpreter> {
+        self.get_meta_by_type(FindInFilesWidget::static_typename())
+            .map(|meta| FindInFilesWidgetInterpreter::new(meta, self))
             .next()
     }
 }

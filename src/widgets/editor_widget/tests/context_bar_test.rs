@@ -1,11 +1,11 @@
 use crate::experiments::screen_shot::screenshot;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
-use crate::widgets::tests::editor_view_testbed::EditorViewTestbed;
-use crate::widgets::tests::editor_widget_testbed_builder::EditorWidgetTestbedBuilder;
+use crate::widgets::editor_view::test::editor_view_testbed::EditorViewTestbed;
+use crate::widgets::editor_view::test::editor_view_testbed_builder::EditorViewTestbedBuilder;
 
 pub fn get_setup() -> EditorViewTestbed {
-    let editor_view_testbed = EditorWidgetTestbedBuilder::new().build_editor();
+    let editor_view_testbed = EditorViewTestbedBuilder::default().build();
 
     {
         let some_text = r#"use std::path::PathBuf;

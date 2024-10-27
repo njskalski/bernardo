@@ -1,52 +1,60 @@
-use std::fmt::Debug;
-
+use crate::fs::path::SPath;
 use crate::mocks::mock_output::MockOutput;
-use crate::mocks::mock_providers_builder::MockProvidersBuilder;
-use crate::mocks::mock_tree_item::MockTreeItem;
-use crate::mocks::nested_menu_interpreter::NestedMenuInterpreter;
-use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
-use crate::widgets::nested_menu::widget::NestedMenuWidget;
+use crate::widget::widget::Widget;
+use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
+use crate::widgets::find_in_files_widget::tests::find_in_files_widget_interpreter::FindInFilesWidgetInterpreter;
 use crate::widgets::tests::generic_widget_testbed::GenericWidgetTestbed;
+use crate::widgets::tests::generic_widget_testbed_builder::GenericWidgetTestbedBuilder;
+
+pub struct AdditionalData {
+    pub root: SPath,
+}
 
 #[derive(Debug, Eq, PartialEq)]
-pub enum NestedMenuTestMsg {
-    Text(String),
+pub enum Msg {
+    Query(String, Option<String>),
+    Cancel,
 }
 
-impl AnyMsg for NestedMenuTestMsg {}
+impl AnyMsg for Msg {}
 
-fn item_to_msg(item: &MockTreeItem) -> Option<Box<dyn AnyMsg>> {
-    if item.is_leaf() {
-        Some(NestedMenuTestMsg::Text(item.name.clone()).boxed())
-    } else {
-        assert!(false);
-        None
-    }
-}
+pub type FindInFilesWidgetTestbed = GenericWidgetTestbed<FindInFilesWidget, AdditionalData>;
 
-pub type NestedMenuTestbed = GenericWidgetTestbed<NestedMenuWidget<String, MockTreeItem>>;
+pub type FindInFilesWidgetTestbedBuilder = GenericWidgetTestbedBuilder<FindInFilesWidget, AdditionalData>;
 
-impl NestedMenuTestbed {
-    pub fn new(mock_data_set: MockTreeItem) -> Self {
-        let size = XY::new(30, 20);
+impl FindInFilesWidgetTestbedBuilder {
+    pub fn build(self) -> FindInFilesWidgetTestbed {
+        let size = self.size.unwrap_or(XY::new(30, 20));
 
-        let build_result = MockProvidersBuilder::new().build();
+        let build_result = self.providers.build();
         let (output, recv) = MockOutput::new(size, false, build_result.providers.theme().clone());
 
-        NestedMenuTestbed {
-            widget: NestedMenuWidget::new(build_result.providers.clone(), mock_data_set, size).with_mapper(item_to_msg),
+        FindInFilesWidgetTestbed {
+            widget: FindInFilesWidget::new(self.additional_data.root.clone())
+                .with_on_cancel(Some(|_| Msg::Cancel.someboxed()))
+                .with_on_hit(Some(|widget| Msg::Query(widget.get_query(), widget.get_filter()).someboxed())),
+            additional_data: self.additional_data,
             size,
+            providers: build_result.providers,
             last_frame: None,
-            mock_navcomp_pilot: build_result.side_channels.navcomp_pilot,
+            mock_navcomp_pilot: Some(build_result.side_channels.navcomp_pilot),
             output,
             recv,
             last_msg: None,
-            providers: build_result.providers,
         }
     }
-    pub fn nested_menu(&self) -> Option<NestedMenuInterpreter> {
-        self.last_frame.as_ref().map(|frame| frame.get_nested_menus().next()).flatten()
+}
+
+impl FindInFilesWidgetTestbed {
+    pub fn interpreter(&self) -> Option<FindInFilesWidgetInterpreter<'_>> {
+        let frame = self.frame_op()?;
+        let meta = frame
+            .metadata
+            .iter()
+            .find(|item| item.typename == FindInFilesWidget::static_typename())?;
+
+        Some(FindInFilesWidgetInterpreter::new(meta, frame))
     }
 }

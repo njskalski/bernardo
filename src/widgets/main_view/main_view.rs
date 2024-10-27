@@ -32,7 +32,7 @@ use crate::widgets::code_results_view::code_results_provider::CodeResultsProvide
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
 use crate::widgets::code_results_view::symbol_usage_promise_provider::WrappedSymbolUsagesPromise;
 use crate::widgets::editor_view::editor_view::EditorView;
-use crate::widgets::find_in_files_widget::find_in_files_widget::FindEverywhereWidget;
+use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
 use crate::widgets::fuzzy_search::fsf_provider::{FsfProvider, SPathMsg};
 use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
 use crate::widgets::fuzzy_search::item_provider::ItemsProvider;
@@ -55,7 +55,7 @@ pub enum HoverItem {
     FuzzySearch2(FuzzyFileSearchWidget),
 
     // search in files
-    SearchInFiles(FindEverywhereWidget),
+    SearchInFiles(FindInFilesWidget),
 }
 
 // TODO start indexing documents with DocumentIdentifier as opposed to usize
@@ -247,13 +247,29 @@ impl MainView {
         }
     }
 
-    fn open_find_everywhere(&mut self) {
+    fn open_find_in_files(&mut self) {
         if self.hover.is_some() {
             debug!("ignoring 'open find everywhere', because there is already a hover");
             return;
         }
 
-        self.hover = Some(HoverItem::SearchInFiles(FindEverywhereWidget::new(self.providers.fsf().root())))
+        self.hover = Some(HoverItem::SearchInFiles(
+            FindInFilesWidget::new(self.providers.fsf().root())
+                .with_on_hit(Some(|widget| {
+                    MainViewMsg::FindInFilesQuery {
+                        root_dir: widget.root().clone(),
+                        query: widget.get_query(),
+                        filter_op: widget.get_filter(),
+                    }
+                    .someboxed()
+                }))
+                .with_on_cancel(Some(|_| MainViewMsg::CloseHover.someboxed())),
+        ));
+        self.set_focus_to_hover();
+    }
+
+    fn handle_open_find_in_files(&mut self, root_dir: SPath, query: String, filter_op: Option<String>) {
+        // NJ HERE
     }
 
     fn open_empty_editor_and_focus(&mut self) {
@@ -478,7 +494,7 @@ impl Widget for MainView {
                     MainViewMsg::OpenFuzzyBuffers.someboxed()
                 }
             }
-            InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_everywhere => MainViewMsg::OpenFindEverywhere {
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_in_files => MainViewMsg::OpenFindInFiles {
                 root_dir: self.providers.fsf().root(),
             }
             .someboxed(),
@@ -580,6 +596,18 @@ impl Widget for MainView {
                     } else {
                         warn!("find reference with empty promise")
                     }
+                    None
+                }
+                MainViewMsg::OpenFindInFiles { root_dir } => {
+                    self.open_find_in_files();
+                    None
+                }
+                MainViewMsg::FindInFilesQuery {
+                    root_dir,
+                    query,
+                    filter_op,
+                } => {
+                    self.handle_open_find_in_files(root_dir.clone(), query.clone(), filter_op.take());
                     None
                 }
                 _ => {
