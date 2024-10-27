@@ -12,7 +12,7 @@ nice to have:
 
 
 2)
-Full text search
+[DONE] Full text search
 
 3)
 USER FOCUS PATH
