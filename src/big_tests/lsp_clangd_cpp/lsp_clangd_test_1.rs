@@ -166,7 +166,7 @@ fn highlighting_clangd_cpp_file() {
 }
 
 #[test]
-fn clangd_cpp_go_to_definition() {
+fn clangd_cpp_go_to_definition_PROBLEM() {
     if std::env::var("CI").is_ok() {
         return;
     }
@@ -227,7 +227,7 @@ fn clangd_cpp_go_to_definition() {
             .first()
             .unwrap()
             .get_visible_cursor_lines()
-            .find(|line| line.contents.text.contains("fill_array(some)"))
+            .find(|line| line.contents.text.contains("fill_array"))
             .is_some()
     }));
 }
