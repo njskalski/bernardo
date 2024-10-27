@@ -2,8 +2,6 @@ use std::ops::Add;
 use std::time::{Duration, Instant};
 
 use crossbeam_channel::{Receiver, RecvError, RecvTimeoutError, TryRecvError};
-use log::warn;
-use streaming_iterator::{IntoStreamingIterator, StreamingIterator};
 
 use crate::promise::streaming_promise::{StreamingPromise, StreamingPromiseState, UpdateResult};
 
@@ -14,6 +12,16 @@ pub struct WrappedMspcReceiver<A> {
     receiver: Receiver<A>,
     cached: Vec<A>,
     status: StreamingPromiseState,
+}
+
+impl<A> WrappedMspcReceiver<A> {
+    pub fn new(receiver: Receiver<A>) -> Self {
+        Self {
+            receiver,
+            cached: vec![],
+            status: StreamingPromiseState::Streaming,
+        }
+    }
 }
 
 impl<A> StreamingPromise<A> for WrappedMspcReceiver<A> {
@@ -100,16 +108,7 @@ impl<A> StreamingPromise<A> for WrappedMspcReceiver<A> {
         }
     }
 
-    fn read(&self) -> Box<dyn Iterator<Item = &A> + '_> {
-        let items: Vec<&A> = self.cached.iter().collect();
-        Box::new(items.into_iter())
-    }
-
-    fn take(self) -> Vec<A> {
-        if self.status != StreamingPromiseState::Finished {
-            warn!("warning, taking result of non-finished stream");
-        }
-
-        self.cached
+    fn read(&self) -> &Vec<A> {
+        &self.cached
     }
 }

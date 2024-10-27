@@ -1,3 +1,4 @@
+// this entire class is to be removed when I fix the async
 use std::fmt::{Debug, Formatter};
 use std::time::Duration;
 
@@ -11,28 +12,6 @@ pub enum StreamingPromiseState {
     Finished,
     Broken,
 }
-
-// impl StreamingPromiseState {
-//     #[inline]
-//     pub fn is_ready(&self) -> bool {
-//         *self == StreamingPromiseState::Finished
-//     }
-//
-//     #[inline]
-//     pub fn is_broken(&self) -> bool {
-//         *self == StreamingPromiseState::Broken
-//     }
-//
-//     #[inline]
-//     pub fn is_resolved(&self) -> bool {
-//         *self == StreamingPromiseState::Finished || *self == StreamingPromiseState::Broken
-//     }
-//
-//     #[inline]
-//     pub fn is_unresolved(&self) -> bool {
-//         *self == StreamingPromiseState::Streaming
-//     }
-// }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct UpdateResult {
@@ -59,15 +38,10 @@ pub trait StreamingPromise<T> {
     /*
     Returns value, provided it was retrieved before. Does *not* change state, so it can return None
     *even if Promise is ready to be determined*.
-     */
-    fn read(&self) -> Box<dyn Iterator<Item = &T> + '_>;
 
-    /*
-    Immediately consumes promise returning value inside. It *does not* poll for message, so it's
-    *not* an equivalent of Future.now_or_never().
      */
-    fn take(self) -> Vec<T>;
-
+    fn read(&self) -> &Vec<T>;
+    
     fn map<B, F: Fn(&T) -> B>(self, mapper: F) -> MappedStreamingPromise<T, Self, B, F>
     where
         Self: Sized,

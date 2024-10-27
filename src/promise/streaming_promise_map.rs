@@ -1,9 +1,6 @@
 use std::marker::PhantomData;
 use std::time::Duration;
 
-use log::warn;
-use streaming_iterator::{IntoStreamingIterator, StreamingIterator};
-
 use crate::promise::streaming_promise::{StreamingPromise, StreamingPromiseState, UpdateResult};
 
 pub struct MappedStreamingPromise<OldType, InternalPromise: StreamingPromise<OldType>, NewType: Clone, Mutator: Fn(&OldType) -> NewType> {
@@ -15,7 +12,7 @@ pub struct MappedStreamingPromise<OldType, InternalPromise: StreamingPromise<Old
 }
 
 impl<OldType, InternalPromise: StreamingPromise<OldType>, NewType: Clone, Mutator: Fn(&OldType) -> NewType>
-    MappedStreamingPromise<OldType, InternalPromise, NewType, Mutator>
+MappedStreamingPromise<OldType, InternalPromise, NewType, Mutator>
 {
     pub fn new(internal: InternalPromise, mutator: Mutator) -> Self {
         MappedStreamingPromise {
@@ -32,7 +29,7 @@ impl<OldType, InternalPromise: StreamingPromise<OldType>, NewType: Clone, Mutato
             if let Some(internal) = self.internal.as_mut() {
                 let state = internal.drain(how_long);
 
-                for item in internal.read().skip(self.cached.len()) {
+                for item in internal.read().iter().skip(self.cached.len()) {
                     self.cached.push((self.mutator)(item));
                 }
 
@@ -55,7 +52,7 @@ impl<OldType, InternalPromise: StreamingPromise<OldType>, NewType: Clone, Mutato
 }
 
 impl<OldType, InternalPromise: StreamingPromise<OldType>, NewType: Clone, Mutator: Fn(&OldType) -> NewType> StreamingPromise<NewType>
-    for MappedStreamingPromise<OldType, InternalPromise, NewType, Mutator>
+for MappedStreamingPromise<OldType, InternalPromise, NewType, Mutator>
 {
     fn state(&self) -> StreamingPromiseState {
         self.status
@@ -85,7 +82,7 @@ impl<OldType, InternalPromise: StreamingPromise<OldType>, NewType: Clone, Mutato
         if let Some(internal) = self.internal.as_mut() {
             let ur = internal.update();
 
-            for item in internal.read().skip(self.cached.len()) {
+            for item in internal.read().iter().skip(self.cached.len()) {
                 self.cached.push((self.mutator)(item));
             }
 
@@ -108,16 +105,7 @@ impl<OldType, InternalPromise: StreamingPromise<OldType>, NewType: Clone, Mutato
         }
     }
 
-    fn read(&self) -> Box<dyn Iterator<Item = &NewType> + '_> {
-        let iters: Vec<&NewType> = self.cached.iter().collect();
-        Box::new(iters.into_iter())
-    }
-
-    fn take(self) -> Vec<NewType> {
-        if self.state() != StreamingPromiseState::Finished {
-            warn!("warning: taking result of non-finished promise!")
-        }
-
-        self.cached
+    fn read(&self) -> &Vec<NewType> {
+        &self.cached
     }
 }
