@@ -7,4 +7,5 @@ pub mod mock_fs;
 pub mod path;
 pub mod read_error;
 pub mod real_fs;
+pub mod search_error;
 pub mod write_error;

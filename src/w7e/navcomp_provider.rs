@@ -82,7 +82,7 @@ pub struct StupidSubstituteMessage {
 }
 
 #[derive(Debug, Clone)]
-pub struct SymbolUsage {
+pub struct StupidSymbolUsage {
     pub path: String,
     pub stupid_range: (StupidCursor, StupidCursor),
 }
@@ -101,7 +101,7 @@ pub type CompletionsPromise = Box<dyn Promise<Vec<Completion>> + 'static>;
 pub type FormattingPromise = Box<dyn Promise<Option<Vec<StupidSubstituteMessage>>> + 'static>;
 pub type SymbolContextActionsPromise = Box<dyn Promise<Vec<Completion>> + 'static>;
 pub type SymbolPromise = Box<dyn Promise<Option<NavCompSymbol>> + 'static>;
-pub type SymbolUsagesPromise = Box<dyn Promise<Vec<SymbolUsage>> + 'static>;
+pub type SymbolUsagesPromise = Box<dyn Promise<Vec<StupidSymbolUsage>> + 'static>;
 
 // this is a wrapper around LSP and "similar services".
 pub trait NavCompProvider: Debug + Send + Sync {

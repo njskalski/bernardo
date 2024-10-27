@@ -4,7 +4,7 @@ use crate::mocks::mock_navcomp_provider::MockSymbolMatcher;
 use crate::mocks::with_wait_for::WithWaitFor;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::spath;
-use crate::w7e::navcomp_provider::{NavCompSymbol, SymbolType, SymbolUsage};
+use crate::w7e::navcomp_provider::{NavCompSymbol, StupidSymbolUsage, SymbolType};
 
 fn get_full_setup() -> FullSetup {
     let full_setup: FullSetup = FullSetup::new("./test_envs/show_usages_test_1")
@@ -27,11 +27,11 @@ fn get_full_setup() -> FullSetup {
                 stupid_range: first_occ,
             },
             usages: Some(vec![
-                SymbolUsage {
+                StupidSymbolUsage {
                     path: "src/main.rs".to_string(),
                     stupid_range: first_occ,
                 },
-                SymbolUsage {
+                StupidSymbolUsage {
                     path: "src/main.rs".to_string(),
                     stupid_range: second_occ,
                 },
@@ -44,11 +44,11 @@ fn get_full_setup() -> FullSetup {
                 stupid_range: second_occ,
             },
             usages: Some(vec![
-                SymbolUsage {
+                StupidSymbolUsage {
                     path: "src/main.rs".to_string(),
                     stupid_range: first_occ,
                 },
-                SymbolUsage {
+                StupidSymbolUsage {
                     path: "src/main.rs".to_string(),
                     stupid_range: second_occ,
                 },

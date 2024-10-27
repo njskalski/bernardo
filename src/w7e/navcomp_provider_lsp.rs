@@ -16,8 +16,8 @@ use crate::promise::promise::Promise;
 use crate::tsw::lang_id::LangId;
 use crate::w7e::navcomp_group::NavCompTickSender;
 use crate::w7e::navcomp_provider::{
-    Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, StupidSubstituteMessage,
-    SymbolContextActionsPromise, SymbolType, SymbolUsage, SymbolUsagesPromise,
+    Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, StupidSubstituteMessage, StupidSymbolUsage,
+    SymbolContextActionsPromise, SymbolType, SymbolUsagesPromise,
 };
 use crate::{unpack_or_e, unpack_unit_e};
 
@@ -90,8 +90,8 @@ impl NavCompProviderLsp {
 
 // I am reusing SymbolUsage to NOT write a new widget while implementing go-to-definition.
 // This might be changed later.
-fn location_to_symbol_usage(loc: Location) -> SymbolUsage {
-    SymbolUsage {
+fn location_to_symbol_usage(loc: Location) -> StupidSymbolUsage {
+    StupidSymbolUsage {
         path: loc.uri.to_string(),
         stupid_range: (
             StupidCursor {
@@ -106,8 +106,8 @@ fn location_to_symbol_usage(loc: Location) -> SymbolUsage {
     }
 }
 
-fn location_link_to_symbol_usage(loc: LocationLink) -> SymbolUsage {
-    SymbolUsage {
+fn location_link_to_symbol_usage(loc: LocationLink) -> StupidSymbolUsage {
+    StupidSymbolUsage {
         path: loc.target_uri.to_string(),
         stupid_range: (
             StupidCursor {
@@ -223,7 +223,7 @@ impl NavCompProvider for NavCompProviderLsp {
                     None => Vec::new(),
                     Some(items) => items
                         .into_iter()
-                        .map(|loc| SymbolUsage {
+                        .map(|loc| StupidSymbolUsage {
                             path: loc.uri.to_string(),
                             stupid_range: (
                                 StupidCursor {
@@ -257,7 +257,7 @@ impl NavCompProvider for NavCompProviderLsp {
                 let new_promise = resp.map(|response| match response {
                     None => Vec::new(),
                     Some(items) => {
-                        let mut locations: Vec<SymbolUsage> = Vec::default();
+                        let mut locations: Vec<StupidSymbolUsage> = Vec::default();
 
                         match items {
                             GotoDefinitionResponse::Scalar(item) => {

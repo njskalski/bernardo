@@ -5,17 +5,27 @@ use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use log::{error, warn};
+use crossbeam_channel::internal::SelectHandle;
+use crossbeam_channel::SendError;
+use log::{debug, error, warn};
+use regex::Regex;
 use ropey::Rope;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use streaming_iterator::StreamingIterator;
 use url::Url;
 
+use crate::cursor::cursor::{Cursor, Selection};
 use crate::fs::fsf_iter::RecursiveFsIter;
 use crate::fs::fsf_ref::{ArcIter, FsfRef};
 use crate::fs::read_error::{ListError, ReadError};
+use crate::fs::search_error::SearchError;
 use crate::fs::write_error::{WriteError, WriteOrSerError};
+use crate::primitives::common_query::CommonQuery;
+use crate::primitives::printable::Printable;
+use crate::primitives::symbol_usage::SymbolUsage;
+use crate::promise::streaming_promise::StreamingPromise;
+use crate::promise::streaming_promise_impl::WrappedMspcReceiver;
 
 // TODO add some invariants.
 
@@ -282,6 +292,69 @@ impl SPath {
 
     pub fn recursive_iter(&self) -> RecursiveFsIter {
         RecursiveFsIter::new(self.clone())
+    }
+
+    // TODO this is "muscle" part of editor, perhaps it's worth to move it to a separate file?
+    // TODO I would prefer this algorithm to work with BFS as opposed to DFS.
+    // TODO add REGEX
+    pub fn start_full_text_search(
+        &self,
+        query: CommonQuery,
+        ignore_git: bool,
+    ) -> Result<Box<dyn StreamingPromise<SymbolUsage>>, SearchError> {
+        let simple_query = match query {
+            CommonQuery::Epsilon => {
+                return Err(SearchError::UnsupporedQueryType {
+                    details: "empty query not allowed in full text search",
+                })
+            }
+            CommonQuery::String(s) => s,
+            CommonQuery::Fuzzy(_) => {
+                return Err(SearchError::UnsupporedQueryType {
+                    details: "fuzzy query not allowed in full text search",
+                })
+            }
+            CommonQuery::Regex(_) => {
+                return Err(SearchError::UnsupporedQueryType {
+                    details: "regex query (currently) not allowed in full text search",
+                })
+            }
+        };
+
+        let (sender, receiver) = crossbeam_channel::unbounded::<SymbolUsage>();
+
+        let root = self.clone();
+        std::thread::spawn(move || {
+            let mut iter = root.recursive_iter();
+            'main_loop: for item in iter {
+                match item.read_entire_file_to_string() {
+                    Err(e) => {
+                        error!("failed reading file {} because {}, continuing.", &item, e);
+                    }
+                    Ok(string) => {
+                        for hit in string.match_indices(&simple_query) {
+                            let symbol_usage = SymbolUsage {
+                                path: item.clone(),
+                                range: Cursor::new(hit.0).with_selection(Selection::new(hit.0, hit.0 + hit.1.graphemes().count())),
+                            };
+
+                            match sender.send(symbol_usage) {
+                                Ok(_) => {}
+                                Err(_) => {
+                                    debug!(
+                                        "Stopping search for '{}' in '{}' and descendants - channel closed.",
+                                        simple_query, root
+                                    );
+                                    break 'main_loop;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        Ok(WrappedMspcReceiver::new(receiver).boxed())
     }
 }
 

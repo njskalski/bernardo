@@ -1,6 +1,6 @@
 use crate::io::loading_state::LoadingState;
 use crate::primitives::printable::Printable;
-use crate::w7e::navcomp_provider::SymbolUsage;
+use crate::w7e::navcomp_provider::StupidSymbolUsage;
 
 pub struct PollResult {
     pub old_state: LoadingState,
@@ -24,5 +24,5 @@ pub trait CodeResultsProvider {
 
     fn loading_state(&self) -> LoadingState;
 
-    fn items(&self) -> Box<dyn Iterator<Item = SymbolUsage> + '_>;
+    fn items(&self) -> Box<dyn Iterator<Item = StupidSymbolUsage> + '_>;
 }
