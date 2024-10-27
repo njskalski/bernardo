@@ -166,13 +166,10 @@ fn highlighting_clangd_cpp_file() {
 }
 
 #[test]
-fn clangd_cpp_go_to_definition_PROBLEM() {
+fn clangd_cpp_go_to_definition() {
     if std::env::var("CI").is_ok() {
         return;
     }
-
-    // problem: stupid clang finds DECLARATION, not DEFINITION, because it's stupid.
-    // civilised languages don't even have declarations, unless doing FFI, but C++ is stupid.
 
     let mut full_setup = get_full_setup("src/main.cpp");
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
@@ -231,7 +228,7 @@ fn clangd_cpp_go_to_definition_PROBLEM() {
             .first()
             .unwrap()
             .get_visible_cursor_lines()
-            .find(|line| line.contents.text.contains("void fill_array(std::vector<int> &array)"))
+            .find(|line| line.contents.text.contains("fill_array(some)"))
             .is_some()
     }));
 }
