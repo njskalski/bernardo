@@ -13,8 +13,8 @@ use crate::promise::promise::Promise;
 use crate::unpack_or_e;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 use crate::w7e::navcomp_provider::{
-    Completion, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, SymbolContextActionsPromise, SymbolType,
-    SymbolUsage, SymbolUsagesPromise,
+    Completion, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, StupidSymbolUsage, SymbolContextActionsPromise,
+    SymbolType, SymbolUsagesPromise,
 };
 
 pub struct MockCompletionMatcher {
@@ -28,7 +28,7 @@ pub struct MockSymbolMatcher {
     pub path: Option<SPath>,
     pub symbol: NavCompSymbol,
     // None means "return broken promise"
-    pub usages: Option<Vec<SymbolUsage>>,
+    pub usages: Option<Vec<StupidSymbolUsage>>,
 }
 
 impl MockSymbolMatcher {
@@ -233,7 +233,9 @@ impl NavCompProvider for MockNavCompProvider {
             .map(|c| match c.usages.as_ref() {
                 None => {
                     debug!("returning broken symbol usages promise");
-                    Box::new(MockNavCompPromise::<Vec<SymbolUsage>>::new_broken(self.navcomp_tick_server.clone())) as SymbolUsagesPromise
+                    Box::new(MockNavCompPromise::<Vec<StupidSymbolUsage>>::new_broken(
+                        self.navcomp_tick_server.clone(),
+                    )) as SymbolUsagesPromise
                 }
                 Some(usages) => {
                     debug!("returning successful symbol usages promise");

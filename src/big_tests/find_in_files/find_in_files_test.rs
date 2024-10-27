@@ -1,4 +1,9 @@
+use std::thread::sleep;
+use std::time::Duration;
+
+use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
+use crate::mocks::editor_interpreter::LineIdxTuple;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::with_wait_for::WithWaitFor;
 
@@ -12,7 +17,6 @@ fn common_start() -> FullSetup {
     full_setup
 }
 
-#[ignore]
 #[test]
 fn find_in_files_opens() {
     let mut f = common_start();
@@ -27,5 +31,43 @@ fn find_in_files_opens() {
 
     f.send_input(Keycode::Enter.to_key().to_input_event());
 
-    // assert!(f.wait_for(|f| { f.get_code_results_view().is_some() }));
+    assert!(f.wait_for(|f| { f.get_code_results_view().is_some() }));
+
+    // TODO remove tick
+    sleep(Duration::from_secs(1));
+    f.send_input(InputEvent::Tick);
+
+    // displays
+    assert!(f.wait_for(|f| { f.get_code_results_view().unwrap().editors().len() == 3 }));
+    assert!(f.wait_for(|f| {
+        f.get_code_results_view()
+            .unwrap()
+            .editors()
+            .first()
+            .map(|editor| {
+                editor
+                    .get_visible_cursor_lines()
+                    .find(|line| line.contents.text.starts_with("distinctio. Nam libero tempore"))
+                    .is_some()
+            })
+            .unwrap_or(false)
+    }));
+
+    f.send_input(Keycode::Enter.to_key().to_input_event());
+
+    assert!(f.wait_for(|f| f.get_code_results_view().is_none()));
+    assert!(f.wait_for(|f| { f.get_first_editor().is_some() }));
+
+    let lines: Vec<LineIdxTuple> = f.get_first_editor().unwrap().get_all_visible_lines().collect();
+
+    assert!(lines[0]
+        .contents
+        .text
+        .starts_with("\"At vero eos et accusamus et iusto odio dignissimos"));
+    assert!(lines[4]
+        .contents
+        .text
+        .starts_with("placeat facere possimus, omnis voluptas assumenda"));
+
+    f.screenshot();
 }

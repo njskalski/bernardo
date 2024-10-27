@@ -82,7 +82,7 @@ impl RecursiveFsIter {
 
     /// Checks whether a path is ignored by comparing against all gitignore files
     /// in ancestor directories till the root directory.
-    fn is_ignored(&mut self, path: &SPath) -> bool {
+    fn is_ignored(&self, path: &SPath) -> bool {
         self.stack
             .iter()
             .filter_map(|dir| dir.ignore.as_ref())
