@@ -131,7 +131,10 @@ impl Widget for CodeResultsView {
 
             for symbol in self.data_provider.items().skip(self.item_list.internal().items().count()) {
                 // TODO unwrap
-                let buffer_state_ref = buffer_register_lock.get_buffer_ref_from_path(&symbol.path).unwrap();
+                let buffer_state_ref = buffer_register_lock
+                    .open_file(&self.providers, &symbol.path)
+                    .buffer_shared_ref
+                    .unwrap();
 
                 let mut edit_view = EditorView::new(self.providers.clone(), buffer_state_ref)
                     .with_readonly()

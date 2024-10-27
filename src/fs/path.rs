@@ -327,11 +327,18 @@ impl SPath {
         std::thread::spawn(move || {
             let mut iter = root.recursive_iter();
             'main_loop: for item in iter {
+                // error!("item {}", &item);
+
+                if !item.is_file() {
+                    continue;
+                }
+
                 match item.read_entire_file_to_string() {
                     Err(e) => {
                         error!("failed reading file {} because {}, continuing.", &item, e);
                     }
                     Ok(string) => {
+                        error!("file {}, contents length {}", item, string.len());
                         for hit in string.match_indices(&simple_query) {
                             let symbol_usage = SymbolUsage {
                                 path: item.clone(),

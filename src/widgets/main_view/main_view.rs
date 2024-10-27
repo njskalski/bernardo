@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::sync::Arc;
 
 use log::{debug, error, warn};
 use uuid::Uuid;
@@ -19,10 +20,13 @@ use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::common_query::CommonQuery;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
+use crate::primitives::symbol_usage::SymbolUsage;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
+use crate::promise::streaming_promise::StreamingPromise;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::navcomp_provider::SymbolUsagesPromise;
 use crate::widget::any_msg::{AnyMsg, AsAny};
@@ -30,6 +34,7 @@ use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
+use crate::widgets::code_results_view::full_text_search_code_results_provider::FullTextSearchCodeResultsProvider;
 use crate::widgets::code_results_view::stupid_symbol_usage_code_results_provider::StupidSymbolUsageCodeResultsProvider;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
@@ -268,8 +273,24 @@ impl MainView {
         self.set_focus_to_hover();
     }
 
+    // TODO add filtering
+    // TODO add checkbox for "ignore git"
     fn handle_open_find_in_files(&mut self, root_dir: SPath, query: String, filter_op: Option<String>) {
-        // NJ HERE
+        let desc = format!("full text search of '{}' ", query);
+
+        let promise: Box<dyn StreamingPromise<SymbolUsage>> = unpack_or_e!(
+            root_dir.start_full_text_search(CommonQuery::String(query), true).ok(),
+            (),
+            "failed to start full text search"
+        );
+        let idx = unpack_or_e!(
+            self.create_new_display_for_code_results(FullTextSearchCodeResultsProvider::new(Arc::new(desc), promise).boxed())
+                .ok(),
+            (),
+            "failed creating full_text_search view"
+        );
+        self.display_idx = idx;
+        self.set_focus_to_default();
     }
 
     fn open_empty_editor_and_focus(&mut self) {
@@ -608,6 +629,8 @@ impl Widget for MainView {
                     filter_op,
                 } => {
                     self.handle_open_find_in_files(root_dir.clone(), query.clone(), filter_op.take());
+                    self.hover = None;
+                    self.set_focus_to_default();
                     None
                 }
                 _ => {
