@@ -47,6 +47,13 @@ pub enum MainViewMsg {
         position_op: Option<Cursor>,
     },
 
+    /*
+    Opens file by path. Reopens existing buffer if it already exists.
+     */
+    OpenFileBySpath {
+        spath: SPath,
+    },
+
     BufferChangedName {
         updated_identifier: DocumentIdentifier,
     },

@@ -85,8 +85,8 @@ impl Rect {
             (other.lower_right().y, false),
         ];
 
-        xs.sort();
-        ys.sort();
+        xs.sort_unstable();
+        ys.sort_unstable();
 
         if xs[0].1 == true && xs[1].1 == true && ys[0].1 == true && ys[1].1 == true {
             Some(Rect {

@@ -48,7 +48,7 @@ fn fuzzy_search_esc_doesnt_crash() {
 }
 
 #[test]
-#[ignore]
+// #[ignore]
 fn fuzzy_search_scroll_works_FAILING() {
     let mut full_setup = common_start();
 

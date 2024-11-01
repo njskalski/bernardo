@@ -61,6 +61,7 @@ impl BufferRegister {
         bsr
     }
 
+    // TODO document
     pub fn open_file(&mut self, providers: &Providers, path: &SPath) -> OpenResult {
         if let Some(id) = self.get_id_from_path(path) {
             let bsr = self.buffers.get(&id).unwrap();
