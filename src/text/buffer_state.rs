@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::ops::Range;
 use std::sync::Arc;
 
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use ropey::iter::{Chars, Chunks};
 use ropey::Rope;
 use streaming_iterator::StreamingIterator;
@@ -455,7 +455,7 @@ impl BufferState {
             Some(li) => li,
             None => match self.get_path().map(filename_to_language).flatten() {
                 None => {
-                    error!("couldn't determine language: path = {:?}", self.get_path());
+                    info!("couldn't determine language: path = {:?}", self.get_path());
                     return false;
                 }
                 Some(lang_id) => lang_id,

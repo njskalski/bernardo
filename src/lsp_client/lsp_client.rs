@@ -308,7 +308,9 @@ impl LspWrapper {
         {
             let mut lock = self.file_versions.write()?;
             if let Some(old_id) = lock.get(&url) {
-                warn!("expected document {:?} version to be 0, is {}", &url, old_id);
+                if *old_id > 0 {
+                    warn!("expected document {:?} version to be 0, is {}", &url, old_id);
+                }
             } else {
                 lock.insert(url.clone(), 0);
             }

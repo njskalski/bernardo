@@ -67,8 +67,6 @@ impl EditBoxWidget {
             size_policy: SizePolicy::SELF_DETERMINED,
         };
 
-        res.buffer.initialize_for_widget(res.id, None);
-
         res
     }
 
