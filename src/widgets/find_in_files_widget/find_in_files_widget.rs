@@ -19,7 +19,7 @@ use crate::subwidget;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::find_in_files_widget::msg::Msg;

@@ -155,7 +155,7 @@ impl<'a> EditorInterpreter<'a> {
     }
 
     // returns cursors in SCREEN SPACE
-    pub fn get_visible_cursor_cells(&self) -> impl Iterator<Item=(XY, &Cell)> + '_ {
+    pub fn get_visible_cursor_cells(&self) -> impl Iterator<Item = (XY, &Cell)> + '_ {
         let cursor_background = EditorWidget::get_cell_style(
             &self.mock_output.theme,
             CursorStatus::UnderCursor,
@@ -163,7 +163,7 @@ impl<'a> EditorInterpreter<'a> {
             false,
             self.is_editor_focused(),
         )
-            .background;
+        .background;
 
         let result: Vec<_> = self
             .mock_output
@@ -183,7 +183,7 @@ impl<'a> EditorInterpreter<'a> {
         self.mock_output.buffer.consistent_items_iter().with_rect(self.rect_without_scroll)
     }
 
-    pub fn get_visible_cursor_line_indices(&self) -> impl Iterator<Item=LineIdxPair> + '_ {
+    pub fn get_visible_cursor_line_indices(&self) -> impl Iterator<Item = LineIdxPair> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
         self.get_visible_cursor_cells().map(move |(xy, _)| LineIdxPair {
             y: xy.y,
@@ -195,7 +195,7 @@ impl<'a> EditorInterpreter<'a> {
     Return visible items conforming to given style, enriched with information about line index they are displayed in
     TODO: not tested
      */
-    pub fn get_indexed_items_by_style(&self, style: TextStyle) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_indexed_items_by_style(&self, style: TextStyle) -> impl Iterator<Item = LineIdxTuple> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
 
         self.mock_output
@@ -213,15 +213,15 @@ impl<'a> EditorInterpreter<'a> {
             })
     }
 
-    pub fn get_warnings(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_warnings(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         self.get_indexed_items_by_style(self.mock_output.theme.editor_label_warning())
     }
 
-    pub fn get_errors(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_errors(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         self.get_indexed_items_by_style(self.mock_output.theme.editor_label_error())
     }
 
-    pub fn get_type_annotations(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_type_annotations(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         self.get_indexed_items_by_style(self.mock_output.theme.editor_label_type_annotation())
     }
 
@@ -230,7 +230,7 @@ impl<'a> EditorInterpreter<'a> {
     second item is usize 1-based display line idx
     third item is line contents
      */
-    pub fn get_visible_cursor_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_visible_cursor_lines(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
         self.get_visible_cursor_cells()
             .map(move |(xy, _)| {
@@ -253,7 +253,7 @@ impl<'a> EditorInterpreter<'a> {
             .next()
     }
 
-    pub fn get_all_visible_lines(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_all_visible_lines(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
         self.mock_output
             .buffer
@@ -283,7 +283,7 @@ impl<'a> EditorInterpreter<'a> {
     CURRENTLY DOES NOT SUPPORT MULTI LINE CURSORS
     also, this is not properly tested. It's Bullshit and Duct Tape™ quality.
      */
-    pub fn get_visible_cursor_lines_with_coded_cursors(&self) -> impl Iterator<Item=LineIdxTuple> + '_ {
+    pub fn get_visible_cursor_lines_with_coded_cursors(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         // Setting colors
         let under_cursor = EditorWidget::get_cell_style(
             &self.mock_output.theme,

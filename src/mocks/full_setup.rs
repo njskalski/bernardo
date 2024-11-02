@@ -5,7 +5,7 @@ use std::sync::{Arc, RwLock};
 use std::thread::JoinHandle;
 use std::time::Duration;
 
-use crossbeam_channel::{Receiver, select, Sender};
+use crossbeam_channel::{select, Receiver, Sender};
 use flexi_logger::writers::LogWriter;
 use log::error;
 
@@ -70,7 +70,7 @@ impl FullSetupBuilder {
         FullSetupBuilder { mock_navcomp, ..self }
     }
 
-    pub fn with_files<P: AsRef<OsStr>, I: IntoIterator<Item=P>>(self, items: I) -> Self {
+    pub fn with_files<P: AsRef<OsStr>, I: IntoIterator<Item = P>>(self, items: I) -> Self {
         let files: Vec<PathBuf> = items.into_iter().map(|p| PathBuf::from(p.as_ref())).collect();
 
         FullSetupBuilder { files, ..self }

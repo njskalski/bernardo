@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crossbeam_channel::{Receiver, select};
+use crossbeam_channel::{select, Receiver};
 use log::{debug, error, warn};
 
 use crate::experiments::screen_shot::screenshot;

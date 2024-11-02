@@ -18,7 +18,7 @@ use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::nested_menu;
 use crate::widgets::nested_menu::msg::Msg;
 

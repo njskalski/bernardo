@@ -33,7 +33,7 @@ use crate::text::text_buffer::TextBuffer;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction, WidgetActionParam};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WidgetActionParam, WID};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::generic_dialog::generic_dialog::GenericDialog;
@@ -483,13 +483,13 @@ impl ComplexWidget for SaveFileDialogWidget {
                 Box::new(|x: &Self| x.hover_dialog.as_ref().unwrap()),
                 Box::new(|x: &mut Self| x.hover_dialog.as_mut().unwrap()),
             ))
-                .boxed();
+            .boxed();
 
             FrameLayout::new(
                 HoverLayout::new(layout, dialog_layout, Box::new(Self::get_child_hover_rect), true).boxed(),
                 frame,
             )
-                .boxed()
+            .boxed()
         }
     }
 

@@ -146,9 +146,9 @@ impl CodeResultsProvider for StupidSymbolUsageCodeResultsProvider {
     }
 
     // TODO this entire method is a stub. It should not copy, it should stream and stuff.
-    fn items(&self) -> Box<dyn Iterator<Item=&SymbolUsage> + '_> {
+    fn items(&self) -> Box<dyn Iterator<Item = &SymbolUsage> + '_> {
         if self.promise.is_some() {
-            Box::new(iter::empty()) as Box<dyn Iterator<Item=&SymbolUsage>>
+            Box::new(iter::empty()) as Box<dyn Iterator<Item = &SymbolUsage>>
         } else {
             Box::new(self.resolved_symbols.iter())
         }
