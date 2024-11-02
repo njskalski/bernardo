@@ -18,7 +18,7 @@ use crate::primitives::tree::tree_node::{TreeItFilter, TreeNode};
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 
 pub const TYPENAME: &str = "tree_view";
 
@@ -230,7 +230,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
         }
     }
 
-    pub fn items(&self) -> impl Iterator<Item = (u16, Item)> {
+    pub fn items(&self) -> impl Iterator<Item=(u16, Item)> {
         // TreeIt::new(&self.root_node, Some(&self.expanded), self.filter_op.as_ref(), self.filter_depth_op)
         if self.filter_overrides_expanded && self.filter_op.is_some() {
             eager_iterator(&self.root_node, None, self.filter_op.as_ref())
@@ -245,6 +245,21 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
 
     pub fn get_root_node(&self) -> &Item {
         &self.root_node
+    }
+
+    // Does NOT check for presence of Key in the tree
+    pub fn set_expanded(&mut self, key: Key, expanded: bool) {
+        if expanded {
+            self.expanded.insert(key);
+        } else {
+            self.expanded.remove(&key);
+        }
+    }
+
+    // Returns true if Key was found AND the node was expanded.
+    // Returns false if node was NOT expanded OR THE KEY IS ABSENT.
+    pub fn get_expanded(&self, key: &Key) -> bool {
+        self.expanded.contains(key)
     }
 }
 

@@ -48,9 +48,9 @@ impl TreeNode<usize> for DisplayRegistryTreeNode {
         }
     }
 
-    fn child_iter(&self) -> Box<dyn Iterator<Item = Self> + '_> {
+    fn child_iter(&self) -> Box<dyn Iterator<Item=Self> + '_> {
         match &self.t {
-            Type::Root(items) => Box::new(items.clone().into_iter()) as Box<dyn Iterator<Item = Self> + '_>,
+            Type::Root(items) => Box::new(items.clone().into_iter()) as Box<dyn Iterator<Item=Self> + '_>,
             Type::Buffer { .. } => Box::new(std::iter::empty()),
             Type::BufferList(items) => Box::new(items.clone().into_iter()),
             Type::CodeResults { .. } => Box::new(std::iter::empty()),
@@ -69,23 +69,25 @@ pub fn get_fuzzy_screen_list(displays: &Vec<MainViewDisplay>, display_idx: usize
     let mut buffer_list: Vec<Arc<DisplayRegistryItem>> = Vec::new();
     let mut results_view_list: Vec<Arc<DisplayRegistryItem>> = Vec::new();
 
+    let len = displays.len();
+
     for (idx, display) in displays.iter().enumerate() {
         match display {
             MainViewDisplay::Editor(e) => {
                 let buf = DisplayRegistryItem {
                     id: idx,
                     t: Type::Buffer {
-                        description: "x".to_string(),
+                        description: e.get_buffer_ref().document_identifier().to_string(),
                     },
                 };
 
                 buffer_list.push(Arc::new(buf));
             }
-            MainViewDisplay::ResultsView(_) => {
+            MainViewDisplay::ResultsView(code_results) => {
                 let code_view = DisplayRegistryItem {
                     id: idx,
                     t: Type::CodeResults {
-                        description: "y".to_string(),
+                        description: code_results.get_description(),
                     },
                 };
 
@@ -97,19 +99,19 @@ pub fn get_fuzzy_screen_list(displays: &Vec<MainViewDisplay>, display_idx: usize
     let mut items: Vec<Arc<DisplayRegistryItem>> = Vec::new();
     if buffer_list.is_empty() == false {
         items.push(Arc::new(DisplayRegistryItem {
-            id: display_idx + 1,
+            id: len + 1,
             t: Type::BufferList(buffer_list),
         }));
     }
     if results_view_list.is_empty() == false {
         items.push(Arc::new(DisplayRegistryItem {
-            id: display_idx + 2,
+            id: len + 2,
             t: Type::CodeResultsList(results_view_list),
         }));
     }
 
     Arc::new(DisplayRegistryItem {
-        id: display_idx,
+        id: len,
         t: Type::Root(items),
     })
 }

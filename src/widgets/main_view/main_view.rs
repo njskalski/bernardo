@@ -1,8 +1,10 @@
+use std::fmt::{Display, format};
 use std::sync::Arc;
 
 use log::{debug, error, warn};
 use uuid::Uuid;
 
+use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::cursor::cursor::Cursor;
 use crate::experiments::buffer_register::OpenResult;
@@ -27,7 +29,7 @@ use crate::primitives::xy::XY;
 use crate::promise::streaming_promise::StreamingPromise;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
 use crate::widgets::code_results_view::full_text_search_code_results_provider::FullTextSearchCodeResultsProvider;
@@ -35,13 +37,12 @@ use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
 use crate::widgets::main_view::display::MainViewDisplay;
 use crate::widgets::main_view::fuzzy_file_search_widget::FuzzyFileSearchWidget;
-use crate::widgets::main_view::fuzzy_screens_list_widget::{get_fuzzy_screen_list, FuzzyScreensList};
+use crate::widgets::main_view::fuzzy_screens_list_widget::{FuzzyScreensList, get_fuzzy_screen_list};
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
-use crate::{subwidget, unpack_or, unpack_or_e};
 
 pub type BufferId = Uuid;
 
@@ -61,6 +62,19 @@ pub enum HoverItem {
 pub struct DocumentIdentifier {
     pub buffer_id: BufferId,
     pub file_path: Option<SPath>,
+}
+
+impl Display for DocumentIdentifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.file_path {
+            None => {
+                write!(f, "[unnamed] #{}", self.buffer_id)
+            }
+            Some(sp) => {
+                write!(f, "{} #{}", sp.label(), self.buffer_id)
+            }
+        }
+    }
 }
 
 impl DocumentIdentifier {
@@ -229,7 +243,7 @@ impl MainView {
                         query: widget.get_query(),
                         filter_op: widget.get_filter(),
                     }
-                    .someboxed()
+                        .someboxed()
                 })))
                 .with_on_cancel(Some(Box::new(|_| MainViewMsg::CloseHover.someboxed()))),
         ));
@@ -290,12 +304,23 @@ impl MainView {
 
     fn open_fuzzy_buffer_list_and_focus(&mut self) {
         let len = self.displays.len();
-        self.hover = Some(HoverItem::FuzzySearch(
-            FuzzyScreensList::new(self.providers.clone(), get_fuzzy_screen_list(&self.displays, self.display_idx))
-                .with_on_hit(Box::new(move |w| if w.get_highlighted().0 as usize >= len { None } else { None }))
-                .with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()))
-                .with_expanded_root(),
-        ));
+
+        let mut fsl = FuzzyScreensList::new(self.providers.clone(), get_fuzzy_screen_list(&self.displays, self.display_idx))
+            .with_on_hit(Box::new(move |w| {
+                if *w.get_highlighted().1.id() >= len {
+                    None
+                } else {
+                    MainViewMsg::FocusOnDisplay { display_idx: *w.get_highlighted().1.id() }.someboxed()
+                }
+            }))
+            .with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()))
+            .with_expanded_root();
+
+        // I use "len +1" and "len +2" for "buffers" and "searches"
+        fsl.tree_view_mut().set_expanded(len + 1, true);
+        fsl.tree_view_mut().set_expanded(len + 2, true);
+
+        self.hover = Some(HoverItem::FuzzySearch(fsl));
         self.set_focus_to_hover();
     }
 
@@ -315,7 +340,7 @@ impl MainView {
     fn get_opened_views_for_document_id(
         &self,
         document_identifier: DocumentIdentifier,
-    ) -> impl Iterator<Item = (usize, &MainViewDisplay)> + '_ {
+    ) -> impl Iterator<Item=(usize, &MainViewDisplay)> + '_ {
         self.displays.iter().enumerate().filter_map(move |(idx, item)| match item {
             MainViewDisplay::ResultsView(_) => None,
             MainViewDisplay::Editor(editor) => {
@@ -473,13 +498,13 @@ impl Widget for MainView {
                     debug!("ignoring browse_buffers request - no displays open.");
                     None
                 } else {
-                    MainViewMsg::OpenFuzzyBuffers.someboxed()
+                    MainViewMsg::OpenChooseDisplay.someboxed()
                 }
             }
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_in_files => MainViewMsg::OpenFindInFiles {
                 root_dir: self.providers.fsf().root(),
             }
-            .someboxed(),
+                .someboxed(),
             _ => {
                 debug!("input {:?} NOT consumed", input_event);
                 None
@@ -520,7 +545,7 @@ impl Widget for MainView {
                     self.set_focus_to_default();
                     None
                 }
-                MainViewMsg::OpenFuzzyBuffers => {
+                MainViewMsg::OpenChooseDisplay => {
                     self.open_fuzzy_buffer_list_and_focus();
                     None
                 }
@@ -528,7 +553,7 @@ impl Widget for MainView {
                     self.open_empty_editor_and_focus();
                     None
                 }
-                MainViewMsg::FuzzyBuffersHit { pos } => {
+                MainViewMsg::FocusOnDisplay { display_idx: pos } => {
                     if *pos >= self.displays.len() {
                         error!(
                             "received FuzzyBufferHit for an index {} and len is {}, ignoring",
