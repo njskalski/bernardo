@@ -16,9 +16,9 @@ pub fn get_setup_1() -> FindInFilesWidgetTestbed {
     })
     .build();
 
-    setup
-        .widget
-        .set_on_hit(Some(|widget| Msg::Query(widget.get_query(), widget.get_filter()).someboxed()));
+    setup.widget.set_on_hit(Some(Box::new(|widget| {
+        Msg::Query(widget.get_query(), widget.get_filter()).someboxed()
+    })));
 
     setup.next_frame();
     setup

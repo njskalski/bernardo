@@ -469,8 +469,8 @@ impl EditorWidget {
             self.requested_hover = hover_settings_op.map(|hs| {
                 let context_bar = ContextBarWidget::new(self.providers.clone(), items.unwrap())
                     .autoexpand_if_single_subtree()
-                    .with_on_hit(|widget| widget.get_highlighted().1.on_hit())
-                    .with_on_close(|_| EditorWidgetMsg::HoverClose.someboxed());
+                    .with_on_hit(Box::new(|widget| widget.get_highlighted().1.on_hit()))
+                    .with_on_close(Box::new(|_| EditorWidgetMsg::HoverClose.someboxed()));
 
                 let hover = EditorHover::Context(context_bar);
                 (hs, hover)

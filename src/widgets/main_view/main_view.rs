@@ -39,7 +39,8 @@ use crate::widgets::code_results_view::stupid_symbol_usage_code_results_provider
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
 use crate::widgets::main_view::display::MainViewDisplay;
-use crate::widgets::main_view::fuzzy_file_search::FuzzyFileSearch;
+use crate::widgets::main_view::fuzzy_file_search_widget::FuzzyFileSearchWidget;
+use crate::widgets::main_view::fuzzy_screens_list_widget::{get_fuzzy_screen_list, FuzzyScreensList};
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::{DirTreeNode, FileTreeNode};
@@ -51,9 +52,9 @@ pub type BufferId = Uuid;
 
 pub enum HoverItem {
     // used in fuzzy buffer list
-    FuzzySearch(WithScroll<FuzzySearchWidget>),
+    FuzzySearch(FuzzyScreensList),
     // used in fuzzy file list
-    FuzzySearch2(FuzzyFileSearch),
+    FuzzySearch2(FuzzyFileSearchWidget),
 
     // search in files
     SearchInFiles(FindInFilesWidget),
@@ -161,35 +162,6 @@ impl MainView {
         }
     }
 
-    pub fn get_display_list_provider(&self) -> Box<dyn ItemsProvider> {
-        Box::new(
-            self.displays
-                .iter()
-                .enumerate()
-                .map(|(idx, display)| {
-                    match display {
-                        MainViewDisplay::Editor(editor) => {
-                            let text = match editor.get_path() {
-                                None => {
-                                    format!("unnamed file #{}", idx)
-                                }
-                                Some(path) => path.label().to_string(),
-                            };
-
-                            // TODO unnecessary Rc over new
-                            DisplayItem::new(idx, Rc::new(text))
-                        }
-                        MainViewDisplay::ResultsView(result) => {
-                            let text = result.get_text().clone();
-
-                            DisplayItem::new(idx, text.into())
-                        }
-                    }
-                })
-                .collect::<Vec<_>>(),
-        )
-    }
-
     fn get_editor_idx_for(&self, ff: &SPath) -> Option<usize> {
         let register = unpack_or_e!(self.providers.buffer_register().try_read().ok(), None, "failed locking register");
         let buffer_shared_ref = unpack_or!(register.get_buffer_ref_from_path(ff), None, "no buffer for path");
@@ -221,20 +193,20 @@ impl MainView {
     pub fn new(providers: Providers) -> MainView {
         let root = providers.fsf().root();
         let tree = TreeViewWidget::new(FileTreeNode::new(root.clone()))
-            .with_on_flip_expand(|widget| {
+            .with_on_flip_expand(Box::new(|widget| {
                 let (_, item) = widget.get_highlighted();
 
                 Some(Box::new(MainViewMsg::TreeExpandedFlip {
                     expanded: widget.is_expanded(item.id()),
                     item: item.spath().clone(),
                 }))
-            })
-            .with_on_hit(|widget| {
+            }))
+            .with_on_hit(Box::new(|widget| {
                 let (_, item) = widget.get_highlighted();
                 Some(Box::new(MainViewMsg::TreeSelected {
                     item: item.spath().clone(),
                 }))
-            });
+            }));
 
         MainView {
             wid: get_new_widget_id(),
@@ -256,15 +228,15 @@ impl MainView {
 
         self.hover = Some(HoverItem::SearchInFiles(
             FindInFilesWidget::new(self.providers.fsf().root())
-                .with_on_hit(Some(|widget| {
+                .with_on_hit(Some(Box::new(|widget| {
                     MainViewMsg::FindInFilesQuery {
                         root_dir: widget.root().clone(),
                         query: widget.get_query(),
                         filter_op: widget.get_filter(),
                     }
                     .someboxed()
-                }))
-                .with_on_cancel(Some(|_| MainViewMsg::CloseHover.someboxed())),
+                })))
+                .with_on_cancel(Some(Box::new(|_| MainViewMsg::CloseHover.someboxed()))),
         ));
         self.set_focus_to_hover();
     }
@@ -322,26 +294,24 @@ impl MainView {
     }
 
     fn open_fuzzy_buffer_list_and_focus(&mut self) {
-        self.hover = Some(HoverItem::FuzzySearch(WithScroll::new(
-            ScrollDirection::Vertical,
-            FuzzySearchWidget::new(
-                |_| Some(Box::new(MainViewMsg::CloseHover)),
-                Some(self.providers.clipboard().clone()),
-            )
-            .with_provider(self.get_display_list_provider())
-            .with_draw_comment_setting(DrawComment::Highlighted),
-        )));
+        let len = self.displays.len();
+        self.hover = Some(HoverItem::FuzzySearch(
+            FuzzyScreensList::new(self.providers.clone(), get_fuzzy_screen_list(&self.displays, self.display_idx))
+                .with_on_hit(Box::new(move |w| if w.get_highlighted().0 as usize >= len { None } else { None }))
+                .with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()))
+                .with_expanded_root(),
+        ));
         self.set_focus_to_hover();
     }
 
     fn open_fuzzy_search_in_files_and_focus(&mut self) {
         self.hover = Some(HoverItem::FuzzySearch2(
-            FuzzyFileSearch::new(self.providers.clone(), FileTreeNode::new(self.providers.fsf().root().clone()))
-                .with_on_hit(|w| {
+            FuzzyFileSearchWidget::new(self.providers.clone(), FileTreeNode::new(self.providers.fsf().root().clone()))
+                .with_on_hit(Box::new(|w| {
                     let spath = w.get_highlighted().1.spath().clone();
                     MainViewMsg::OpenFileBySpath { spath }.someboxed()
-                })
-                .with_on_close(|_| MainViewMsg::CloseHover.someboxed())
+                }))
+                .with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()))
                 .with_expanded_root(),
         ));
         self.set_focus_to_hover();
@@ -643,28 +613,28 @@ impl Widget for MainView {
             };
         };
 
-        if let Some(fuzzy_file_msg) = msg.as_msg::<SPathMsg>() {
-            return match fuzzy_file_msg {
-                SPathMsg::Hit(file_front) => {
-                    if file_front.is_file() {
-                        self.open_file_with_path_and_focus(file_front.clone());
-                        self.hover = None;
-                        None
-                    } else if file_front.is_dir() {
-                        if !self.tree_widget.internal_mut().expand_path(file_front) {
-                            error!("failed to set path")
-                        }
-                        self.hover = None;
-                        None
-                    } else {
-                        error!("ff {:?} is neither file nor dir!", file_front);
-                        None
-                    }
-                }
-            };
-        }
+        // if let Some(fuzzy_file_msg) = msg.as_msg::<SPathMsg>() {
+        //     return match fuzzy_file_msg {
+        //         SPathMsg::Hit(file_front) => {
+        //             if file_front.is_file() {
+        //                 self.open_file_with_path_and_focus(file_front.clone());
+        //                 self.hover = None;
+        //                 None
+        //             } else if file_front.is_dir() {
+        //                 if !self.tree_widget.internal_mut().expand_path(file_front) {
+        //                     error!("failed to set path")
+        //                 }
+        //                 self.hover = None;
+        //                 None
+        //             } else {
+        //                 error!("ff {:?} is neither file nor dir!", file_front);
+        //                 None
+        //             }
+        //         }
+        //     };
+        // }
 
-        warn!("expecetd MainViewMsg | FuzzyFileMsg, got {:?}", msg);
+        warn!("expecetd MainViewMsg got {:?}", msg);
         None
     }
 

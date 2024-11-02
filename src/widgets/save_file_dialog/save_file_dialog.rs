@@ -77,35 +77,36 @@ impl SaveFileDialogWidget {
 
         let tree_widget = TreeViewWidget::<SPath, DirTreeNode>::new(DirTreeNode::new(root.clone()))
             .with_size_policy(SizePolicy::MATCH_LAYOUT)
-            .with_on_flip_expand(|widget| {
+            .with_on_flip_expand(Box::new(|widget| {
                 let (_, item) = widget.get_highlighted();
                 Some(Box::new(SaveFileDialogMsg::TreeExpanded(item.spath().clone())))
-            })
-            .with_on_highlighted_changed(|widget| {
+            }))
+            .with_on_highlighted_changed(Box::new(|widget| {
                 let (_, item) = widget.get_highlighted();
                 Some(Box::new(SaveFileDialogMsg::TreeHighlighted(item.spath().clone())))
-            })
-            .with_on_hit(|widget| {
+            }))
+            .with_on_hit(Box::new(|widget| {
                 let (_, item) = widget.get_highlighted();
                 SaveFileDialogMsg::TreeHit(item.spath().clone()).someboxed()
-            });
+            }));
 
         let scroll_tree_widget = WithScroll::new(ScrollDirection::Vertical, tree_widget);
 
         let list_widget: ListWidget<SPath> = ListWidget::new()
             .with_selection()
             .with_size_policy(SizePolicy::MATCH_LAYOUT)
-            .with_on_hit(|w| {
+            .with_on_hit(Box::new(|w| {
                 w.get_highlighted()
                     .map(|item| Some(SaveFileDialogMsg::FileListHit(item.clone()).boxed()))
                     .flatten()
-            });
+            }));
         let edit_box = EditBoxWidget::new()
             .with_size_policy(SizePolicy::MATCH_LAYOUT)
             .with_enabled(true)
-            .with_on_hit(|_| SaveFileDialogMsg::EditBoxHit.someboxed());
-        let ok_button = ButtonWidget::new(Box::new(Self::OK_LABEL)).with_on_hit(|_| SaveFileDialogMsg::Save.someboxed());
-        let cancel_button = ButtonWidget::new(Box::new(Self::CANCEL_LABEL)).with_on_hit(|_| SaveFileDialogMsg::Cancel.someboxed());
+            .with_on_hit(Box::new(|_| SaveFileDialogMsg::EditBoxHit.someboxed()));
+        let ok_button = ButtonWidget::new(Box::new(Self::OK_LABEL)).with_on_hit(Box::new(|_| SaveFileDialogMsg::Save.someboxed()));
+        let cancel_button =
+            ButtonWidget::new(Box::new(Self::CANCEL_LABEL)).with_on_hit(Box::new(|_| SaveFileDialogMsg::Cancel.someboxed()));
 
         let path = fsf.root();
 
@@ -389,7 +390,10 @@ impl Widget for SaveFileDialogWidget {
                 self.set_focused(subwidget!(Self.ok_button));
                 None
             }
-            SaveFileDialogMsg::Cancel => self.on_cancel.and_then(|action| action(self)),
+            SaveFileDialogMsg::Cancel => self
+                .on_cancel
+                .as_ref()
+                .and_then(Box::new(|action: &WidgetAction<Self>| action(self))),
             SaveFileDialogMsg::Save => self.save_or_ask_for_override(),
             SaveFileDialogMsg::CancelOverride => {
                 self.hover_dialog = None;

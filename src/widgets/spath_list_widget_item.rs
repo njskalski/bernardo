@@ -28,7 +28,7 @@ impl ListWidgetItem for SPath {
 
     fn get(&self, idx: usize) -> Option<Rc<String>> {
         match idx {
-            0 => Some(self.display_name()), // TODO,
+            0 => Some(Rc::new(self.label().to_string())), //TODO
             1 => Some(Rc::new("N/A".to_string())),
             2 => Some(Rc::new("N/A".to_string())),
             _ => None,

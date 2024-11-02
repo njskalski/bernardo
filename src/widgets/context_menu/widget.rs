@@ -54,7 +54,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key,
             config: providers.config().clone(),
             query_box: EditBoxWidget::new()
                 .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
-                .with_on_change(|editbox| ContextMenuMsg::UpdateQuery(editbox.get_text()).someboxed()),
+                .with_on_change(Box::new(|editbox| ContextMenuMsg::UpdateQuery(editbox.get_text()).someboxed())),
             tree_view: WithScroll::new(
                 ScrollDirection::Vertical,
                 TreeViewWidget::new(root_node)
@@ -173,7 +173,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
                 None
             }
             ContextMenuMsg::Close => {
-                if let Some(on_close) = self.on_close {
+                if let Some(on_close) = self.on_close.as_ref() {
                     on_close(self)
                 } else {
                     warn!("received close message, but no on-miss is defined");

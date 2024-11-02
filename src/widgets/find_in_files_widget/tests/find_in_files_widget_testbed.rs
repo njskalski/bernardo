@@ -33,8 +33,10 @@ impl FindInFilesWidgetTestbedBuilder {
 
         FindInFilesWidgetTestbed {
             widget: FindInFilesWidget::new(self.additional_data.root.clone())
-                .with_on_cancel(Some(|_| Msg::Cancel.someboxed()))
-                .with_on_hit(Some(|widget| Msg::Query(widget.get_query(), widget.get_filter()).someboxed())),
+                .with_on_cancel(Some(Box::new(|_| Msg::Cancel.someboxed())))
+                .with_on_hit(Some(Box::new(|widget| {
+                    Msg::Query(widget.get_query(), widget.get_filter()).someboxed()
+                }))),
             additional_data: self.additional_data,
             size,
             providers: build_result.providers,

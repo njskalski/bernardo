@@ -57,7 +57,9 @@ impl CompletionWidget {
                     .with_selection()
                     .with_show_column_names(false)
                     .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
-                    .with_on_hit(|w| w.get_highlighted().map(|c| CompletionWidgetMsg::Selected(c.action.clone()).boxed())),
+                    .with_on_hit(Box::new(|w| {
+                        w.get_highlighted().map(|c| CompletionWidgetMsg::Selected(c.action.clone()).boxed())
+                    })),
             ),
             completions_promise: Some(completions_promise),
             display_state: None,

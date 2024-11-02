@@ -74,7 +74,7 @@ impl Widget for ButtonWidget {
                 if self.on_hit.is_none() {
                     None
                 } else {
-                    self.on_hit.unwrap()(&self)
+                    (self.on_hit.as_ref().unwrap())(&self)
                 }
             }
         }
