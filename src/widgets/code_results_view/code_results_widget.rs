@@ -2,6 +2,7 @@ use std::cmp::max;
 
 use log::{debug, error, warn};
 
+use crate::{subwidget, unpack_or_e, unpack_unit_e};
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
@@ -14,21 +15,18 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::xy::XY;
-use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::big_list::big_list_widget::BigList;
 use crate::widgets::code_results_view::code_results_msg::CodeResultsMsg;
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::editor_view::editor_view::EditorView;
-use crate::widgets::editor_widget::editor_widget::EditorWidget;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
-use crate::{subwidget, unpack_or, unpack_or_e, unpack_unit_e};
 
 pub struct CodeResultsView {
     wid: WID,
@@ -96,7 +94,7 @@ impl CodeResultsView {
             file: buffer_lock.get_document_identifier().clone(),
             position_op: Some(single_cursor),
         }
-        .someboxed()
+            .someboxed()
     }
 }
 

@@ -1,42 +1,26 @@
-use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::marker::PhantomData;
 
 use log::{error, warn};
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
-use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
-use crate::io::keys::{Key, Keycode};
+use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::io::style::{Effect, TextStyle};
-use crate::layout::layout::Layout;
-use crate::layout::leaf_layout::LeafLayout;
-use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
-use crate::primitives::arrow::{Arrow, HorizontalArrow, VerticalArrow};
-use crate::primitives::common_edit_msgs::{apply_common_edit_message, key_to_edit_msg, CommonEditMsg};
-use crate::primitives::has_invariant::HasInvariant;
-use crate::primitives::printable::Printable;
+use crate::primitives::arrow::VerticalArrow;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::BufferState;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
-use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WID};
-use crate::widgets::button::ButtonWidgetMsg;
-use crate::widgets::edit_box::EditBoxWidget;
-use crate::widgets::editor_widget::editor_widget::EditorWidget;
-use crate::widgets::list_widget::provider::ListItemProvider;
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::nested_menu;
 use crate::widgets::nested_menu::msg::Msg;
-use crate::{selfwidget, subwidget};
 
 /*
 This describes a simple context menu.

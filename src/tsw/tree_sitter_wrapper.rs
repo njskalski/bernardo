@@ -19,7 +19,7 @@ use crate::unpack_or_e;
 static EMPTY_SLICE: [u8; 0] = [0; 0];
 
 lazy_static! {
-    static ref tree_sitter_cpp_highlight_query: String = include_str!("../../third-party/nvim-treesitter/queries/c/highlights.scm")
+    static ref TREE_SITTER_CPP_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/c/highlights.scm")
         .to_owned()
         + include_str!("../../third-party/nvim-treesitter/queries/cpp/highlights.scm");
 }
@@ -129,7 +129,7 @@ impl TreeSitterWrapper {
         #[allow(unreachable_patterns)]
         match lang_id {
             LangId::C => Some(tree_sitter_c::HIGHLIGHT_QUERY),
-            LangId::CPP => Some(tree_sitter_cpp_highlight_query.as_str()),
+            LangId::CPP => Some(TREE_SITTER_CPP_HIGHLIGHT_QUERY.as_str()),
             LangId::HTML => Some(tree_sitter_html::HIGHLIGHTS_QUERY),
             LangId::ELM => Some(tree_sitter_elm::HIGHLIGHTS_QUERY),
             LangId::GO => Some(tree_sitter_go::HIGHLIGHT_QUERY),

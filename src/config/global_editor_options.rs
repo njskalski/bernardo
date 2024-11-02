@@ -17,8 +17,8 @@ impl GlobalEditorOptions {
         self.rust_lsp_path.clone().or_else(|| {
             debug!("discovering location of rust-analyzer");
 
-            let mut paths_iter = unpack_or_e!(which::which_all("rust-analyzer").ok(), None, "failed to query for rust-analyzer");
-            let mut paths: Vec<PathBuf> = paths_iter.collect();
+            let paths_iter = unpack_or_e!(which::which_all("rust-analyzer").ok(), None, "failed to query for rust-analyzer");
+            let paths: Vec<PathBuf> = paths_iter.collect();
 
             if paths.len() > 1 {
                 warn!(

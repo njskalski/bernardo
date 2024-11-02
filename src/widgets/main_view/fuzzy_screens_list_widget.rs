@@ -48,9 +48,9 @@ impl TreeNode<usize> for DisplayRegistryTreeNode {
         }
     }
 
-    fn child_iter(&self) -> impl Iterator<Item = Self> + '_ {
+    fn child_iter(&self) -> Box<dyn Iterator<Item=Self> + '_> {
         match &self.t {
-            Type::Root(items) => Box::new(items.clone().into_iter()) as Box<dyn Iterator<Item = Self> + '_>,
+            Type::Root(items) => Box::new(items.clone().into_iter()) as Box<dyn Iterator<Item=Self> + '_>,
             Type::Buffer { .. } => Box::new(std::iter::empty()),
             Type::BufferList(items) => Box::new(items.clone().into_iter()),
             Type::CodeResults { .. } => Box::new(std::iter::empty()),

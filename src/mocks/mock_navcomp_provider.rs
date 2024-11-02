@@ -2,7 +2,7 @@ use std::fmt::{Debug, Formatter};
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use std::time::Duration;
 
-use crossbeam_channel::{select, Receiver, Sender};
+use crossbeam_channel::{Receiver, select, Sender};
 use log::{debug, error};
 
 use crate::fs::path::SPath;
@@ -13,7 +13,7 @@ use crate::promise::promise::Promise;
 use crate::unpack_or_e;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 use crate::w7e::navcomp_provider::{
-    Completion, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, StupidSymbolUsage, SymbolContextActionsPromise,
+    Completion, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, StupidSymbolUsage,
     SymbolType, SymbolUsagesPromise,
 };
 

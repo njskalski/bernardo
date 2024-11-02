@@ -13,7 +13,7 @@ use crate::widget::fill_policy::SizePolicy;
 
 // this corresponds to message to Parent.
 pub type WidgetAction<W> = Box<dyn Fn(&W) -> Option<Box<dyn AnyMsg>>>;
-pub type WidgetActionParam<W, P> = fn(&W, P) -> Option<Box<dyn AnyMsg>>;
+pub type WidgetActionParam<W, P> = Box<dyn Fn(&W, P) -> Option<Box<dyn AnyMsg>>>;
 
 pub type WID = usize;
 

@@ -1,8 +1,9 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use log::{debug, error, warn};
+use log::{debug, warn};
 
+use crate::{subwidget, unpack_unit_e};
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
@@ -21,21 +22,18 @@ use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::combined_widget::CombinedWidget;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WidgetActionParam, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::context_menu::msg::ContextMenuMsg;
 use crate::widgets::edit_box::EditBoxWidget;
-use crate::widgets::list_widget::list_widget::ListWidgetMsg;
-use crate::widgets::nested_menu::widget::NESTED_MENU_TYPENAME;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
-use crate::{subwidget, unpack_unit_e};
 
 pub const DEFAULT_SIZE: XY = XY::new(20, 10);
 pub const CONTEXT_MENU_WIDGET_NAME: &'static str = "context_menu";
 
 pub struct ContextMenuWidget<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> {
     id: WID,
-    size: XY,
+    size: XY, //TODO never used
     config: ConfigRef,
 
     query_box: EditBoxWidget,
@@ -239,7 +237,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> CombinedWidget for Con
         self.layout_res.as_ref()
     }
 
-    fn get_subwidgets_for_input(&self) -> impl Iterator<Item = SubwidgetPointer<Self>> {
+    fn get_subwidgets_for_input(&self) -> impl Iterator<Item=SubwidgetPointer<Self>> {
         [subwidget!(Self.tree_view), subwidget!(Self.query_box)].into_iter()
     }
 }
