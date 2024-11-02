@@ -346,7 +346,8 @@ impl MainView {
                     let spath = w.get_highlighted().1.spath().clone();
                     MainViewMsg::OpenFileBySpath { spath }.someboxed()
                 })
-                .with_on_close(|_| MainViewMsg::CloseHover.someboxed()),
+                .with_on_close(|_| MainViewMsg::CloseHover.someboxed())
+                .with_expanded_root(),
         ));
         self.set_focus_to_hover();
     }

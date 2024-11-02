@@ -90,6 +90,15 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key,
         self
     }
 
+    pub fn with_expanded_root(mut self) -> Self {
+        self.tree_view.internal_mut().expand_root();
+        self
+    }
+
+    pub fn expand_root(&mut self) {
+        self.tree_view.internal_mut().expand_root();
+    }
+
     fn input_to_treeview(input_event: &InputEvent) -> bool {
         match input_event {
             InputEvent::KeyInput(key) => match key.keycode {
