@@ -1,20 +1,15 @@
 use log::{debug, error};
 
 use crate::config::theme::Theme;
-use crate::experiments::focus_group::{FocusGraph, FocusUpdate};
-use crate::experiments::from_geometry::from_geometry;
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::io::sub_output::SubOutput;
 use crate::layout::layout::{Layout, LayoutResult};
-use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::helpers::fill_output;
-use crate::primitives::rect::Rect;
-use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
-use crate::widget::widget::{Widget, WID};
+use crate::widget::widget::Widget;
 
 /*
 A combine widget is a widget that merges more than one widget using standard layout mechanisms,

@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log::debug;
 use tree_sitter::{Node, TextProvider};
 
 pub struct RopeWrapper<'a>(pub &'a ropey::Rope);

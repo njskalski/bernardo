@@ -4,13 +4,12 @@ use std::ops::Range;
 use std::sync::{Arc, RwLock};
 
 use lazy_static::lazy_static;
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use ropey::Rope;
-use tree_sitter::{InputEdit, Language, LogType, Parser, Point, Query, QueryCursor};
+use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor};
+#[allow(unused_imports)]
 use tree_sitter_cpp::*;
 
-use crate::primitives::printable::Printable;
-use crate::text::text_buffer::TextBuffer;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::parsing_tuple::ParsingTuple;
@@ -196,7 +195,7 @@ impl ParsingTuple {
             cursor.set_byte_range(begin_byte..end_byte);
         };
 
-        let query_captures: Vec<_> = cursor
+        let _query_captures: Vec<_> = cursor
             .captures(&self.highlight_query, self.tree.as_ref()?.root_node(), RopeWrapper(&rope))
             .collect();
         let query_matches = cursor.matches(&self.highlight_query, self.tree.as_ref()?.root_node(), RopeWrapper(&rope));

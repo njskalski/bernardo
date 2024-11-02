@@ -6,7 +6,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use log::{debug, error, warn};
-use regex::Regex;
 use ropey::Rope;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -298,7 +297,7 @@ impl SPath {
     pub fn start_full_text_search(
         &self,
         query: CommonQuery,
-        ignore_git: bool,
+        _ignore_git: bool,
     ) -> Result<Box<dyn StreamingPromise<SymbolUsage>>, SearchError> {
         let simple_query = match query {
             CommonQuery::Epsilon => {

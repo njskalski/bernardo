@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use flexi_logger::writers::LogWriter;
 use flexi_logger::FileSpec;
-use log::{warn, LevelFilter};
+use log::warn;
 
 const DEFAULT_LEVEL: log::LevelFilter = log::LevelFilter::Info;
 
@@ -80,7 +80,7 @@ pub fn logger_setup(stderr_on: bool, file_to_log_to: Option<PathBuf>, log_writer
     }
 
     match logger.start() {
-        Ok(logger) => {}
+        Ok(_logger) => {}
         Err(e) => {
             warn!("failed initializing log: {:?}", e);
         }

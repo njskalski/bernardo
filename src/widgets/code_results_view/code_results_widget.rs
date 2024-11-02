@@ -1,10 +1,8 @@
 use std::cmp::max;
-use std::collections::HashSet;
 
 use log::{debug, error, warn};
 
 use crate::config::theme::Theme;
-use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::gladius::providers::Providers;

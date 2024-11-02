@@ -5,11 +5,8 @@ This is a simplified BufferState used for tests.
 use log::error;
 use ropey::iter::{Chars, Chunks};
 use ropey::Rope;
-use tree_sitter::Point;
 
-use crate::cursor::cursor_set::CursorSet;
 use crate::text::text_buffer::{LinesIter, TextBuffer};
-use crate::tsw::tree_sitter_wrapper::pack_rope_with_callback;
 
 impl TextBuffer for Rope {
     fn byte_to_char(&self, byte_idx: usize) -> Option<usize> {

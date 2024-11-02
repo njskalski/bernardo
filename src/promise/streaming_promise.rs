@@ -2,8 +2,6 @@
 use std::fmt::{Debug, Formatter};
 use std::time::Duration;
 
-use streaming_iterator::StreamingIterator;
-
 use crate::promise::streaming_promise_map::MappedStreamingPromise;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

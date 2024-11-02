@@ -17,7 +17,7 @@ use crate::tsw::lang_id::LangId;
 use crate::w7e::navcomp_group::NavCompTickSender;
 use crate::w7e::navcomp_provider::{
     Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, StupidSubstituteMessage, StupidSymbolUsage,
-    SymbolContextActionsPromise, SymbolType, SymbolUsagesPromise,
+    SymbolType, SymbolUsagesPromise,
 };
 use crate::{unpack_or_e, unpack_unit_e};
 

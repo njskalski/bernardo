@@ -49,6 +49,7 @@ impl<'a> BufferConsistentItemsIter<'a> {
 impl<'a> Iterator for BufferConsistentItemsIter<'a> {
     type Item = ConsistentHorizontalItem;
 
+    #[allow(unused_labels)]
     fn next(&mut self) -> Option<Self::Item> {
         'y: while self.pos.y < self.rect.lower_right().y {
             let mut result = String::new();
