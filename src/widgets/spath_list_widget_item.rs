@@ -3,7 +3,6 @@ use std::rc::Rc;
 use log::warn;
 
 use crate::fs::path::SPath;
-use crate::widgets::fuzzy_search::item_provider::Item;
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 
 impl ListWidgetItem for SPath {

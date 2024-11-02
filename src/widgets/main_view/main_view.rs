@@ -38,14 +38,9 @@ use crate::widgets::code_results_view::full_text_search_code_results_provider::F
 use crate::widgets::code_results_view::stupid_symbol_usage_code_results_provider::StupidSymbolUsageCodeResultsProvider;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
-use crate::widgets::fuzzy_search::fsf_provider::{FsfProvider, SPathMsg};
-use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
-use crate::widgets::fuzzy_search::item_provider::ItemsProvider;
 use crate::widgets::main_view::display::MainViewDisplay;
-use crate::widgets::main_view::display_fuzzy::DisplayItem;
-use crate::widgets::main_view::fuzzy_file_search::FuzzyFileSearchWidget;
+use crate::widgets::main_view::fuzzy_file_search::FuzzyFileSearch;
 use crate::widgets::main_view::msg::MainViewMsg;
-use crate::widgets::main_view::new_fuzzy_file_search::NewFuzzyFileSearch;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::{DirTreeNode, FileTreeNode};
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
@@ -58,7 +53,7 @@ pub enum HoverItem {
     // used in fuzzy buffer list
     FuzzySearch(WithScroll<FuzzySearchWidget>),
     // used in fuzzy file list
-    FuzzySearch2(NewFuzzyFileSearch),
+    FuzzySearch2(FuzzyFileSearch),
 
     // search in files
     SearchInFiles(FindInFilesWidget),
@@ -341,7 +336,7 @@ impl MainView {
 
     fn open_fuzzy_search_in_files_and_focus(&mut self) {
         self.hover = Some(HoverItem::FuzzySearch2(
-            NewFuzzyFileSearch::new(self.providers.clone(), FileTreeNode::new(self.providers.fsf().root().clone()))
+            FuzzyFileSearch::new(self.providers.clone(), FileTreeNode::new(self.providers.fsf().root().clone()))
                 .with_on_hit(|w| {
                     let spath = w.get_highlighted().1.spath().clone();
                     MainViewMsg::OpenFileBySpath { spath }.someboxed()
