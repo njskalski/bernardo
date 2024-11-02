@@ -22,7 +22,20 @@ fn fuzzy_file_opens() {
 
     full_setup.type_in("ain");
 
-    assert!(full_setup.wait_for(|f| f.get_fuzzy_search().unwrap().get_edit_box().contents().as_str() == "ain"));
+    assert!(full_setup.wait_for(|f| f.get_fuzzy_search().unwrap().editbox().contents().as_str() == "ain"));
+
+    for _ in 0..3 {
+        full_setup.send_key(Keycode::ArrowDown.to_key());
+    }
+
+    assert!(full_setup.wait_for(|f| f
+        .get_fuzzy_search()
+        .unwrap()
+        .selected_option()
+        .unwrap()
+        .as_str()
+        .trim()
+        .contains("main.rs")));
 
     full_setup.send_key(Keycode::Enter.to_key());
 
@@ -58,11 +71,11 @@ fn fuzzy_search_scroll_works_FAILING() {
     assert!(full_setup.get_fuzzy_search().unwrap().is_focused());
 
     for i in 0..15 {
-        let prev_highlighted = full_setup.get_fuzzy_search().unwrap().highlighted();
+        let prev_highlighted = full_setup.get_fuzzy_search().unwrap().selected_option();
         assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
         // error!("{:?}", full_setup.get_fuzzy_search().unwrap().highlighted());
         assert!(full_setup.wait_for(|full_setup| {
-            let new_highlighted = full_setup.get_fuzzy_search().unwrap().highlighted();
+            let new_highlighted = full_setup.get_fuzzy_search().unwrap().selected_option();
             new_highlighted != prev_highlighted
         }))
     }

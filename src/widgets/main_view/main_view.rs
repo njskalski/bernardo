@@ -4,7 +4,6 @@ use std::sync::Arc;
 use log::{debug, error, warn};
 use uuid::Uuid;
 
-use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor_set::CursorSet;
@@ -32,7 +31,7 @@ use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::navcomp_provider::SymbolUsagesPromise;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
 use crate::widgets::code_results_view::full_text_search_code_results_provider::FullTextSearchCodeResultsProvider;
@@ -51,6 +50,7 @@ use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::{DirTreeNode, FileTreeNode};
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
+use crate::{subwidget, unpack_or, unpack_or_e};
 
 pub type BufferId = Uuid;
 
@@ -267,7 +267,7 @@ impl MainView {
                         query: widget.get_query(),
                         filter_op: widget.get_filter(),
                     }
-                        .someboxed()
+                    .someboxed()
                 }))
                 .with_on_cancel(Some(|_| MainViewMsg::CloseHover.someboxed())),
         ));
@@ -333,23 +333,20 @@ impl MainView {
                 |_| Some(Box::new(MainViewMsg::CloseHover)),
                 Some(self.providers.clipboard().clone()),
             )
-                .with_provider(self.get_display_list_provider())
-                .with_draw_comment_setting(DrawComment::Highlighted),
+            .with_provider(self.get_display_list_provider())
+            .with_draw_comment_setting(DrawComment::Highlighted),
         )));
         self.set_focus_to_hover();
     }
 
     fn open_fuzzy_search_in_files_and_focus(&mut self) {
         self.hover = Some(HoverItem::FuzzySearch2(
-            NewFuzzyFileSearch::new(
-                self.providers.clone(),
-                FileTreeNode::new(self.providers.fsf().root().clone()),
-            ).with_on_hit(|w| {
-                let spath = w.get_highlighted().1.spath().clone();
-                MainViewMsg::OpenFileBySpath { spath }.someboxed()
-            }).with_on_close(|_| {
-                MainViewMsg::CloseHover.someboxed()
-            }),
+            NewFuzzyFileSearch::new(self.providers.clone(), FileTreeNode::new(self.providers.fsf().root().clone()))
+                .with_on_hit(|w| {
+                    let spath = w.get_highlighted().1.spath().clone();
+                    MainViewMsg::OpenFileBySpath { spath }.someboxed()
+                })
+                .with_on_close(|_| MainViewMsg::CloseHover.someboxed()),
         ));
         self.set_focus_to_hover();
     }
@@ -357,7 +354,7 @@ impl MainView {
     fn get_opened_views_for_document_id(
         &self,
         document_identifier: DocumentIdentifier,
-    ) -> impl Iterator<Item=(usize, &MainViewDisplay)> + '_ {
+    ) -> impl Iterator<Item = (usize, &MainViewDisplay)> + '_ {
         self.displays.iter().enumerate().filter_map(move |(idx, item)| match item {
             MainViewDisplay::ResultsView(_) => None,
             MainViewDisplay::Editor(editor) => {
@@ -521,7 +518,7 @@ impl Widget for MainView {
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_in_files => MainViewMsg::OpenFindInFiles {
                 root_dir: self.providers.fsf().root(),
             }
-                .someboxed(),
+            .someboxed(),
             _ => {
                 debug!("input {:?} NOT consumed", input_event);
                 None

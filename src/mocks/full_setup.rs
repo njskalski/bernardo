@@ -25,8 +25,8 @@ use crate::gladius::run_gladius::run_gladius;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::{Key, Keycode};
 use crate::mocks::code_results_interpreter::CodeResultsViewInterpreter;
+use crate::mocks::context_menu_interpreter::ContextMenuInterpreter;
 use crate::mocks::editor_interpreter::EditorInterpreter;
-use crate::mocks::fuzzy_search_interpreter::FuzzySearchInterpreter;
 use crate::mocks::log_capture::CapturingLogger;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_clipboard::MockClipboard;
@@ -323,7 +323,7 @@ impl FullSetup {
         self.last_frame.as_ref().map(|frame| frame.get_code_results_view()).flatten()
     }
 
-    pub fn get_fuzzy_search(&self) -> Option<FuzzySearchInterpreter> {
+    pub fn get_fuzzy_search(&self) -> Option<ContextMenuInterpreter<'_>> {
         self.last_frame.as_ref().map(|frame| frame.get_fuzzy_search()).flatten()
     }
 

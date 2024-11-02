@@ -1,18 +1,7 @@
 Here is what I want to be present in Gladius Beta:
 
-1)
-[seems to work, needs tests]
-Code navigation:
-[done]    Show usages
-[done]        On selected - open file
-[done]    Go to definition
-
 nice to have:
 - add file name/path to selection avatar
-
-
-2)
-[DONE] Full text search
 
 3)
 USER FOCUS PATH

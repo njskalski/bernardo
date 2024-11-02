@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use log::{debug, error};
-use parking_lot::{RwLock, RwLockReadGuard};
+use parking_lot::RwLock;
 use streaming_iterator::StreamingIterator;
 
 use crate::fs::filesystem_front::FilesystemFront;

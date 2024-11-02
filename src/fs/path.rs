@@ -5,8 +5,6 @@ use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use crossbeam_channel::internal::SelectHandle;
-use crossbeam_channel::SendError;
 use log::{debug, error, warn};
 use regex::Regex;
 use ropey::Rope;

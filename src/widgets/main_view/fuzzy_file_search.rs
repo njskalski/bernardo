@@ -17,7 +17,7 @@ use crate::subwidget;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::combined_widget::CombinedWidget;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::context_menu::widget::ContextMenuWidget;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::fuzzy_search::fsf_provider::FsfProvider;
@@ -47,7 +47,6 @@ impl FuzzyFileSearchWidget {
             .with_provider(provider)
             .with_draw_comment_setting(DrawComment::All);
 
-        
         FuzzyFileSearchWidget {
             wid: get_new_widget_id(),
             title: TextWidget::new(Box::new("Fuzzy file search")),
@@ -127,7 +126,7 @@ impl CombinedWidget for FuzzyFileSearchWidget {
         self.layout_res.as_ref()
     }
 
-    fn get_subwidgets_for_input(&self) -> impl Iterator<Item=SubwidgetPointer<Self>> {
+    fn get_subwidgets_for_input(&self) -> impl Iterator<Item = SubwidgetPointer<Self>> {
         [subwidget!(Self.search_widget)].into_iter()
     }
 }
