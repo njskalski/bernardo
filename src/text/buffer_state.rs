@@ -3,15 +3,13 @@ use std::fmt::Debug;
 use std::ops::Range;
 use std::sync::Arc;
 
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use ropey::iter::{Chars, Chunks};
 use ropey::Rope;
 use streaming_iterator::StreamingIterator;
-use tree_sitter::Point;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::clipboard::ClipboardRef;
 use crate::experiments::filename_to_language::filename_to_language;
@@ -24,7 +22,7 @@ use crate::primitives::xy::XY;
 use crate::text::contents_and_cursors::ContentsAndCursors;
 use crate::text::text_buffer::{LinesIter, TextBuffer};
 use crate::tsw::lang_id::LangId;
-use crate::tsw::tree_sitter_wrapper::{pack_rope_with_callback, HighlightItem, TreeSitterWrapper};
+use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 use crate::widget::widget::WID;
@@ -455,7 +453,7 @@ impl BufferState {
             Some(li) => li,
             None => match self.get_path().map(filename_to_language).flatten() {
                 None => {
-                    error!("couldn't determine language: path = {:?}", self.get_path());
+                    info!("couldn't determine language: path = {:?}", self.get_path());
                     return false;
                 }
                 Some(lang_id) => lang_id,

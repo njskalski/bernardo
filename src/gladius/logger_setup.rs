@@ -2,13 +2,13 @@ use std::path::PathBuf;
 
 use flexi_logger::writers::LogWriter;
 use flexi_logger::FileSpec;
-use log::{warn, LevelFilter};
+use log::warn;
 
 const DEFAULT_LEVEL: log::LevelFilter = log::LevelFilter::Info;
 
 const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     // this is for git ignore
-    ("globset", log::LevelFilter::Debug),
+    ("globset", log::LevelFilter::Info),
     // I have no clue where it comes from, and I don't care so I suppress it
     ("mio::poll", log::LevelFilter::Error),
     ("bernardo", log::LevelFilter::Info),
@@ -21,6 +21,10 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     ("bernardo::widget", log::LevelFilter::Debug), // ComplexWidget lives here
     ("bernardo::widgets", log::LevelFilter::Debug),
     ("bernardo::widgets::code_results_widget", log::LevelFilter::Info),
+    (
+        "bernardo::widgets::code_results_view::stupid_symbol_usage_code_results_provider",
+        log::LevelFilter::Info,
+    ),
     ("bernardo::widgets::completion_widget", log::LevelFilter::Info),
     ("bernardo::widgets::dir_tree_view", log::LevelFilter::Warn),
     ("bernardo::widgets::edit_box", log::LevelFilter::Warn),
@@ -76,7 +80,7 @@ pub fn logger_setup(stderr_on: bool, file_to_log_to: Option<PathBuf>, log_writer
     }
 
     match logger.start() {
-        Ok(logger) => {}
+        Ok(_logger) => {}
         Err(e) => {
             warn!("failed initializing log: {:?}", e);
         }

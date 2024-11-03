@@ -1,4 +1,3 @@
-pub mod action_triggers_fuzzy_provicer;
 pub mod attention_node;
 pub mod big_list;
 pub mod button;
@@ -9,7 +8,7 @@ pub mod edit_box;
 pub mod editor_view;
 pub mod editor_widget;
 pub mod file_tree_view;
-pub mod fuzzy_search;
+
 pub mod generic_dialog;
 pub mod list_widget;
 pub mod main_view;

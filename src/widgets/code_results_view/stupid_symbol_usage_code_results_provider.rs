@@ -1,16 +1,13 @@
 use std::iter;
-use std::sync::{Arc, RwLockReadGuard};
+use std::sync::Arc;
 
 use log::{debug, error};
 
-use crate::cursor::cursor::Cursor;
-use crate::fs::fsf_ref::FsfRef;
 use crate::gladius::providers::Providers;
 use crate::io::loading_state::LoadingState;
 use crate::primitives::printable::Printable;
 use crate::primitives::symbol_usage::SymbolUsage;
 use crate::promise::promise::PromiseState;
-use crate::text::buffer_state::BufferState;
 use crate::text::text_buffer::TextBuffer;
 use crate::unpack_unit_e;
 use crate::w7e::navcomp_provider::{StupidSymbolUsage, SymbolUsagesPromise};

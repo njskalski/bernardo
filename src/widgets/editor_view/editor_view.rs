@@ -2,7 +2,6 @@ use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
-use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
@@ -85,11 +84,11 @@ impl EditorView {
         let replace_label = TextWidget::new(Box::new(REPLACE));
 
         let find_box = EditBoxWidget::new()
-            .with_on_hit(|_| EditorViewMsg::FindHit.someboxed())
+            .with_on_hit(Box::new(|_| EditorViewMsg::FindHit.someboxed()))
             .with_clipboard(providers.clipboard().clone())
             .with_size_policy(SizePolicy::MATCH_LAYOUT);
         let replace_box = EditBoxWidget::new()
-            .with_on_hit(|_| EditorViewMsg::ReplaceHit.someboxed())
+            .with_on_hit(Box::new(|_| EditorViewMsg::ReplaceHit.someboxed()))
             .with_clipboard(providers.clipboard().clone())
             .with_size_policy(SizePolicy::MATCH_LAYOUT);
 
@@ -176,7 +175,7 @@ impl EditorView {
      */
     fn save_or_save_as(&mut self, buffer: &BufferState) {
         if let Some(ff) = buffer.get_path() {
-            ff.overwrite_with_stream(&mut buffer.streaming_iterator(), false);
+            let _todo = ff.overwrite_with_stream(&mut buffer.streaming_iterator(), false);
         } else {
             self.open_save_as_dialog_and_focus(buffer)
         }
@@ -191,8 +190,8 @@ impl EditorView {
         }
 
         let save_file_dialog = SaveFileDialogWidget::new(self.providers.fsf().clone())
-            .with_on_cancel(|_| EditorViewMsg::OnSaveAsCancel.someboxed())
-            .with_on_save(|_, ff| EditorViewMsg::OnSaveAsHit { ff }.someboxed())
+            .with_on_cancel(Box::new(|_| EditorViewMsg::OnSaveAsCancel.someboxed()))
+            .with_on_save(Box::new(|_, ff| EditorViewMsg::OnSaveAsHit { ff }.someboxed()))
             .with_path(self.get_save_file_dialog_path(buffer));
 
         self.hover_dialog = Some(save_file_dialog);
@@ -308,7 +307,7 @@ impl EditorView {
         let widget: &mut EditorWidget = self.editor.internal_mut();
         let wid = widget.id();
         let mut buffer_lock = unpack_or_e!(widget.get_buffer().lock_rw(), false, "failed to lock buffer");
-        let mut old_cursor_set = unpack_or_e!(buffer_lock.cursors_mut(wid), false, "failed to acquire cursor_set");
+        let old_cursor_set: &mut CursorSet = unpack_or_e!(buffer_lock.cursors_mut(wid), false, "failed to acquire cursor_set");
         *old_cursor_set = cursor_set;
 
         true

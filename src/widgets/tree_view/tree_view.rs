@@ -18,7 +18,7 @@ use crate::primitives::tree::tree_node::{TreeItFilter, TreeNode};
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WidgetActionParam, WID};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 
 pub const TYPENAME: &str = "tree_view";
 
@@ -193,7 +193,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
     }
 
     fn event_highlighted_changed(&self) -> Option<Box<dyn AnyMsg>> {
-        self.on_highlighted_changed.and_then(|f| f(self))
+        self.on_highlighted_changed.as_ref().and_then(|f: &WidgetAction<Self>| f(self))
     }
 
     pub fn with_on_hit(self, on_hit: WidgetAction<TreeViewWidget<Key, Item>>) -> Self {
@@ -208,15 +208,15 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
     }
 
     fn event_hit(&self) -> Option<Box<dyn AnyMsg>> {
-        self.on_hit.and_then(|f| f(self))
+        self.on_hit.as_ref().and_then(|f: &WidgetAction<Self>| f(self))
     }
 
     fn event_miss(&self) -> Option<Box<dyn AnyMsg>> {
-        self.on_miss.and_then(|f| f(self))
+        self.on_miss.as_ref().and_then(|f: &WidgetAction<Self>| f(self))
     }
 
     fn event_flip_expand(&self) -> Option<Box<dyn AnyMsg>> {
-        self.on_flip_expand.and_then(|f| f(self))
+        self.on_flip_expand.as_ref().and_then(|f: &WidgetAction<Self>| f(self))
     }
 
     // returns new value
@@ -245,6 +245,21 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
 
     pub fn get_root_node(&self) -> &Item {
         &self.root_node
+    }
+
+    // Does NOT check for presence of Key in the tree
+    pub fn set_expanded(&mut self, key: Key, expanded: bool) {
+        if expanded {
+            self.expanded.insert(key);
+        } else {
+            self.expanded.remove(&key);
+        }
+    }
+
+    // Returns true if Key was found AND the node was expanded.
+    // Returns false if node was NOT expanded OR THE KEY IS ABSENT.
+    pub fn get_expanded(&self, key: &Key) -> bool {
+        self.expanded.contains(key)
     }
 }
 

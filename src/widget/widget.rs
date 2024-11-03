@@ -1,4 +1,3 @@
-use std::any::{Any, TypeId};
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -9,12 +8,12 @@ use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::xy::XY;
-use crate::widget::any_msg::{AnyMsg, AsAny};
+use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
 
 // this corresponds to message to Parent.
-pub type WidgetAction<W> = fn(&W) -> Option<Box<dyn AnyMsg>>;
-pub type WidgetActionParam<W, P> = fn(&W, P) -> Option<Box<dyn AnyMsg>>;
+pub type WidgetAction<W> = Box<dyn Fn(&W) -> Option<Box<dyn AnyMsg>>>;
+pub type WidgetActionParam<W, P> = Box<dyn Fn(&W, P) -> Option<Box<dyn AnyMsg>>>;
 
 pub type WID = usize;
 
@@ -137,7 +136,7 @@ pub trait Widget: 'static {
         (consumed, None)
     }
 
-    fn pre_act_on(&mut self, input_event: &InputEvent) {}
+    fn pre_act_on(&mut self, _input_event: &InputEvent) {}
 }
 
 // pub trait AsAnyWidget {

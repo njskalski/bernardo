@@ -21,7 +21,6 @@ use crate::io::output::Output;
 use crate::io::style::TextStyle;
 use crate::io::sub_output::SubOutput;
 use crate::primitives::arrow::Arrow;
-use crate::primitives::color::Color;
 use crate::primitives::common_edit_msgs::{apply_common_edit_message, cme_to_direction, key_to_edit_msg, CommonEditMsg};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::helpers;
@@ -469,8 +468,8 @@ impl EditorWidget {
             self.requested_hover = hover_settings_op.map(|hs| {
                 let context_bar = ContextBarWidget::new(self.providers.clone(), items.unwrap())
                     .autoexpand_if_single_subtree()
-                    .with_on_hit(|widget| widget.get_highlighted().1.on_hit())
-                    .with_on_miss(|_| EditorWidgetMsg::HoverClose.someboxed());
+                    .with_on_hit(Box::new(|widget| widget.get_highlighted().1.on_hit()))
+                    .with_on_close(Box::new(|_| EditorWidgetMsg::HoverClose.someboxed()));
 
                 let hover = EditorHover::Context(context_bar);
                 (hs, hover)
@@ -800,7 +799,7 @@ impl EditorWidget {
                         EditorState::DroppingCursor { .. } => true,
                     };
 
-                    let mut local_style = Self::get_cell_style(theme, CursorStatus::None, is_dropping_cursor, false, focused);
+                    let local_style = Self::get_cell_style(theme, CursorStatus::None, is_dropping_cursor, false, focused);
 
                     // I follow up on not drawn labels
                     for (label_pos, label) in label_it {

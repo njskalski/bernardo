@@ -9,7 +9,7 @@ use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::layout::empty_layout::EmptyLayout;
 use crate::layout::frame_layout::FrameLayout;
-use crate::layout::layout::{Layout, LayoutResult};
+use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::border::SINGLE_BORDER_STYLE;
@@ -22,8 +22,6 @@ use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
-use crate::widgets::editor_widget::label::label::Label;
-use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::find_in_files_widget::msg::Msg;
 use crate::widgets::text_widget::TextWidget;
 
@@ -61,11 +59,11 @@ impl FindInFilesWidget {
             query_box_label: TextWidget::new(Box::new("What:")),
             query_box: EditBoxWidget::default()
                 .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
-                .with_on_hit(|_| Msg::Hit.someboxed()),
+                .with_on_hit(Box::new(|_| Msg::Hit.someboxed())),
             filter_box_label: TextWidget::new(Box::new("Where:")),
             filter_box: EditBoxWidget::default().with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH),
-            search_button: ButtonWidget::new(Box::new("Search")).with_on_hit(|_| Msg::Hit.someboxed()),
-            cancel_button: ButtonWidget::new(Box::new("Cancel")).with_on_hit(|_| Msg::Cancel.someboxed()),
+            search_button: ButtonWidget::new(Box::new("Search")).with_on_hit(Box::new(|_| Msg::Hit.someboxed())),
+            cancel_button: ButtonWidget::new(Box::new("Cancel")).with_on_hit(Box::new(|_| Msg::Cancel.someboxed())),
             display_state: None,
             on_hit: None,
             on_cancel: None,
@@ -85,11 +83,11 @@ impl FindInFilesWidget {
     }
 
     pub fn cancel(&self) -> Option<Box<dyn AnyMsg>> {
-        self.on_cancel.map(|action| action(self)).flatten()
+        self.on_cancel.as_ref().map(|action| action(self)).flatten()
     }
 
     pub fn hit(&self) -> Option<Box<dyn AnyMsg>> {
-        self.on_hit.map(|action| action(self)).flatten()
+        self.on_hit.as_ref().map(|action| action(self)).flatten()
     }
 
     pub fn set_on_cancel(&mut self, on_cancel: Option<WidgetAction<Self>>) {
@@ -170,8 +168,8 @@ impl Widget for FindInFilesWidget {
                 None
             }
             Some(msg) => match msg {
-                Msg::Hit => self.on_hit.map(|f| f(self)).flatten(),
-                Msg::Cancel => self.on_cancel.map(|f| f(self)).flatten(),
+                Msg::Hit => self.on_hit.as_ref().map(|f| f(self)).flatten(),
+                Msg::Cancel => self.on_cancel.as_ref().map(|f| f(self)).flatten(),
             },
         };
     }

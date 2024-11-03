@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use std::iter::empty;
-use std::sync::{RwLock, TryLockResult};
+use std::sync::RwLock;
 
 use log::{debug, error};
 use syntect::highlighting::{Highlighter, ThemeSet};

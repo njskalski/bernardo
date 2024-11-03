@@ -18,6 +18,6 @@ pub fn override_dialog<T: Printable>(filename: T) -> GenericDialog {
 
     GenericDialog::new(Box::new(text))
         .with_border(&SINGLE_BORDER_STYLE)
-        .with_option(ButtonWidget::new(Box::new(CANCEL_STRING)).with_on_hit(|_| CancelOverride.someboxed()))
-        .with_option(ButtonWidget::new(Box::new(OVERRIDE_STRING)).with_on_hit(|_| ConfirmOverride.someboxed()))
+        .with_option(ButtonWidget::new(Box::new(CANCEL_STRING)).with_on_hit(Box::new(|_| CancelOverride.someboxed())))
+        .with_option(ButtonWidget::new(Box::new(OVERRIDE_STRING)).with_on_hit(Box::new(|_| ConfirmOverride.someboxed())))
 }

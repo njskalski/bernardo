@@ -4,13 +4,12 @@ use std::ops::Range;
 use std::sync::{Arc, RwLock};
 
 use lazy_static::lazy_static;
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use ropey::Rope;
-use tree_sitter::{InputEdit, Language, LogType, Parser, Point, Query, QueryCursor};
+use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor};
+#[allow(unused_imports)]
 use tree_sitter_cpp::*;
 
-use crate::primitives::printable::Printable;
-use crate::text::text_buffer::TextBuffer;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::parsing_tuple::ParsingTuple;
@@ -20,7 +19,7 @@ use crate::unpack_or_e;
 static EMPTY_SLICE: [u8; 0] = [0; 0];
 
 lazy_static! {
-    static ref tree_sitter_cpp_highlight_query: String = include_str!("../../third-party/nvim-treesitter/queries/c/highlights.scm")
+    static ref TREE_SITTER_CPP_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/c/highlights.scm")
         .to_owned()
         + include_str!("../../third-party/nvim-treesitter/queries/cpp/highlights.scm");
 }
@@ -130,7 +129,7 @@ impl TreeSitterWrapper {
         #[allow(unreachable_patterns)]
         match lang_id {
             LangId::C => Some(tree_sitter_c::HIGHLIGHT_QUERY),
-            LangId::CPP => Some(tree_sitter_cpp_highlight_query.as_str()),
+            LangId::CPP => Some(TREE_SITTER_CPP_HIGHLIGHT_QUERY.as_str()),
             LangId::HTML => Some(tree_sitter_html::HIGHLIGHTS_QUERY),
             LangId::ELM => Some(tree_sitter_elm::HIGHLIGHTS_QUERY),
             LangId::GO => Some(tree_sitter_go::HIGHLIGHT_QUERY),
@@ -196,7 +195,7 @@ impl ParsingTuple {
             cursor.set_byte_range(begin_byte..end_byte);
         };
 
-        let query_captures: Vec<_> = cursor
+        let _query_captures: Vec<_> = cursor
             .captures(&self.highlight_query, self.tree.as_ref()?.root_node(), RopeWrapper(&rope))
             .collect();
         let query_matches = cursor.matches(&self.highlight_query, self.tree.as_ref()?.root_node(), RopeWrapper(&rope));

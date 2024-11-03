@@ -77,7 +77,7 @@ impl TreeNode<SPath> for DirTreeNode {
         self.child_iter().next().is_none()
     }
 
-    fn child_iter(&self) -> impl Iterator<Item = Self> + '_ {
+    fn child_iter(&self) -> Box<dyn Iterator<Item = Self> + '_> {
         match self.sp.blocking_list() {
             Ok(items) => Box::new(items.into_iter().filter(|c| c.is_dir()).map(DirTreeNode::new)) as Box<dyn Iterator<Item = Self>>,
             Err(e) => {

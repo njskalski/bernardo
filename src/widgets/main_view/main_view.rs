@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::fmt::{format, Display};
 use std::sync::Arc;
 
 use log::{debug, error, warn};
@@ -6,7 +6,6 @@ use uuid::Uuid;
 
 use crate::config::theme::Theme;
 use crate::cursor::cursor::Cursor;
-use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::buffer_register::OpenResult;
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::experiments::screenspace::Screenspace;
@@ -27,23 +26,17 @@ use crate::primitives::symbol_usage::SymbolUsage;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
 use crate::promise::streaming_promise::StreamingPromise;
-use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
-use crate::w7e::navcomp_provider::SymbolUsagesPromise;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
 use crate::widgets::code_results_view::full_text_search_code_results_provider::FullTextSearchCodeResultsProvider;
-use crate::widgets::code_results_view::stupid_symbol_usage_code_results_provider::StupidSymbolUsageCodeResultsProvider;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
-use crate::widgets::fuzzy_search::fsf_provider::{FsfProvider, SPathMsg};
-use crate::widgets::fuzzy_search::fuzzy_search::{DrawComment, FuzzySearchWidget};
-use crate::widgets::fuzzy_search::item_provider::ItemsProvider;
 use crate::widgets::main_view::display::MainViewDisplay;
-use crate::widgets::main_view::display_fuzzy::DisplayItem;
-use crate::widgets::main_view::fuzzy_file_search::FuzzyFileSearchWidget;
+use crate::widgets::main_view::fuzzy_file_search_widget::FuzzyFileSearchWidget;
+use crate::widgets::main_view::fuzzy_screens_list_widget::{get_fuzzy_screen_list, FuzzyScreensList};
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
@@ -55,7 +48,7 @@ pub type BufferId = Uuid;
 
 pub enum HoverItem {
     // used in fuzzy buffer list
-    FuzzySearch(WithScroll<FuzzySearchWidget>),
+    FuzzySearch(FuzzyScreensList),
     // used in fuzzy file list
     FuzzySearch2(FuzzyFileSearchWidget),
 
@@ -69,6 +62,19 @@ pub enum HoverItem {
 pub struct DocumentIdentifier {
     pub buffer_id: BufferId,
     pub file_path: Option<SPath>,
+}
+
+impl Display for DocumentIdentifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.file_path {
+            None => {
+                write!(f, "[unnamed] #{}", self.buffer_id)
+            }
+            Some(sp) => {
+                write!(f, "{} #{}", sp.label(), self.buffer_id)
+            }
+        }
+    }
 }
 
 impl DocumentIdentifier {
@@ -165,35 +171,6 @@ impl MainView {
         }
     }
 
-    pub fn get_display_list_provider(&self) -> Box<dyn ItemsProvider> {
-        Box::new(
-            self.displays
-                .iter()
-                .enumerate()
-                .map(|(idx, display)| {
-                    match display {
-                        MainViewDisplay::Editor(editor) => {
-                            let text = match editor.get_path() {
-                                None => {
-                                    format!("unnamed file #{}", idx)
-                                }
-                                Some(path) => path.label().to_string(),
-                            };
-
-                            // TODO unnecessary Rc over new
-                            DisplayItem::new(idx, Rc::new(text))
-                        }
-                        MainViewDisplay::ResultsView(result) => {
-                            let text = result.get_text().clone();
-
-                            DisplayItem::new(idx, text.into())
-                        }
-                    }
-                })
-                .collect::<Vec<_>>(),
-        )
-    }
-
     fn get_editor_idx_for(&self, ff: &SPath) -> Option<usize> {
         let register = unpack_or_e!(self.providers.buffer_register().try_read().ok(), None, "failed locking register");
         let buffer_shared_ref = unpack_or!(register.get_buffer_ref_from_path(ff), None, "no buffer for path");
@@ -225,20 +202,20 @@ impl MainView {
     pub fn new(providers: Providers) -> MainView {
         let root = providers.fsf().root();
         let tree = TreeViewWidget::new(FileTreeNode::new(root.clone()))
-            .with_on_flip_expand(|widget| {
+            .with_on_flip_expand(Box::new(|widget| {
                 let (_, item) = widget.get_highlighted();
 
                 Some(Box::new(MainViewMsg::TreeExpandedFlip {
                     expanded: widget.is_expanded(item.id()),
                     item: item.spath().clone(),
                 }))
-            })
-            .with_on_hit(|widget| {
+            }))
+            .with_on_hit(Box::new(|widget| {
                 let (_, item) = widget.get_highlighted();
                 Some(Box::new(MainViewMsg::TreeSelected {
                     item: item.spath().clone(),
                 }))
-            });
+            }));
 
         MainView {
             wid: get_new_widget_id(),
@@ -260,15 +237,15 @@ impl MainView {
 
         self.hover = Some(HoverItem::SearchInFiles(
             FindInFilesWidget::new(self.providers.fsf().root())
-                .with_on_hit(Some(|widget| {
+                .with_on_hit(Some(Box::new(|widget| {
                     MainViewMsg::FindInFilesQuery {
                         root_dir: widget.root().clone(),
                         query: widget.get_query(),
                         filter_op: widget.get_filter(),
                     }
                     .someboxed()
-                }))
-                .with_on_cancel(Some(|_| MainViewMsg::CloseHover.someboxed())),
+                })))
+                .with_on_cancel(Some(Box::new(|_| MainViewMsg::CloseHover.someboxed()))),
         ));
         self.set_focus_to_hover();
     }
@@ -326,28 +303,40 @@ impl MainView {
     }
 
     fn open_fuzzy_buffer_list_and_focus(&mut self) {
-        self.hover = Some(HoverItem::FuzzySearch(WithScroll::new(
-            ScrollDirection::Vertical,
-            FuzzySearchWidget::new(
-                |_| Some(Box::new(MainViewMsg::CloseHover)),
-                Some(self.providers.clipboard().clone()),
-            )
-            .with_provider(self.get_display_list_provider())
-            .with_draw_comment_setting(DrawComment::Highlighted),
-        )));
+        let len = self.displays.len();
+
+        let mut fsl = FuzzyScreensList::new(self.providers.clone(), get_fuzzy_screen_list(&self.displays, self.display_idx))
+            .with_on_hit(Box::new(move |w| {
+                if *w.get_highlighted().1.id() >= len {
+                    None
+                } else {
+                    MainViewMsg::FocusOnDisplay {
+                        display_idx: *w.get_highlighted().1.id(),
+                    }
+                    .someboxed()
+                }
+            }))
+            .with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()))
+            .with_expanded_root();
+
+        // I use "len +1" and "len +2" for "buffers" and "searches"
+        fsl.tree_view_mut().set_expanded(len + 1, true);
+        fsl.tree_view_mut().set_expanded(len + 2, true);
+
+        self.hover = Some(HoverItem::FuzzySearch(fsl));
         self.set_focus_to_hover();
     }
 
     fn open_fuzzy_search_in_files_and_focus(&mut self) {
-        let size = unpack_or_e!(self.display_state.as_ref(), (), "can't open fuzzy search before layout").total_size * 4 / 5;
-
-        let fsf_provider = Box::new(FsfProvider::new(self.providers.fsf().clone()).with_ignores_filter());
-
-        self.hover = Some(HoverItem::FuzzySearch2(FuzzyFileSearchWidget::new(
-            &self.providers,
-            size,
-            fsf_provider,
-        )));
+        self.hover = Some(HoverItem::FuzzySearch2(
+            FuzzyFileSearchWidget::new(self.providers.clone(), FileTreeNode::new(self.providers.fsf().root().clone()))
+                .with_on_hit(Box::new(|w| {
+                    let spath = w.get_highlighted().1.spath().clone();
+                    MainViewMsg::OpenFileBySpath { spath }.someboxed()
+                }))
+                .with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()))
+                .with_expanded_root(),
+        ));
         self.set_focus_to_hover();
     }
 
@@ -512,7 +501,7 @@ impl Widget for MainView {
                     debug!("ignoring browse_buffers request - no displays open.");
                     None
                 } else {
-                    MainViewMsg::OpenFuzzyBuffers.someboxed()
+                    MainViewMsg::OpenChooseDisplay.someboxed()
                 }
             }
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_in_files => MainViewMsg::OpenFindInFiles {
@@ -559,7 +548,7 @@ impl Widget for MainView {
                     self.set_focus_to_default();
                     None
                 }
-                MainViewMsg::OpenFuzzyBuffers => {
+                MainViewMsg::OpenChooseDisplay => {
                     self.open_fuzzy_buffer_list_and_focus();
                     None
                 }
@@ -567,7 +556,7 @@ impl Widget for MainView {
                     self.open_empty_editor_and_focus();
                     None
                 }
-                MainViewMsg::FuzzyBuffersHit { pos } => {
+                MainViewMsg::FocusOnDisplay { display_idx: pos } => {
                     if *pos >= self.displays.len() {
                         error!(
                             "received FuzzyBufferHit for an index {} and len is {}, ignoring",
@@ -601,6 +590,13 @@ impl Widget for MainView {
                 }
                 MainViewMsg::OpenFile { file, position_op } => {
                     self.open_document_and_focus(file.clone(), position_op.clone());
+                    None
+                }
+                MainViewMsg::OpenFileBySpath { spath } => {
+                    // removing the dialog
+                    self.hover = None;
+                    self.set_focus_to_default();
+                    self.open_file_with_path_and_focus(spath.clone());
                     None
                 }
                 MainViewMsg::GoToDefinition { promise_op } => {
@@ -640,28 +636,28 @@ impl Widget for MainView {
             };
         };
 
-        if let Some(fuzzy_file_msg) = msg.as_msg::<SPathMsg>() {
-            return match fuzzy_file_msg {
-                SPathMsg::Hit(file_front) => {
-                    if file_front.is_file() {
-                        self.open_file_with_path_and_focus(file_front.clone());
-                        self.hover = None;
-                        None
-                    } else if file_front.is_dir() {
-                        if !self.tree_widget.internal_mut().expand_path(file_front) {
-                            error!("failed to set path")
-                        }
-                        self.hover = None;
-                        None
-                    } else {
-                        error!("ff {:?} is neither file nor dir!", file_front);
-                        None
-                    }
-                }
-            };
-        }
+        // if let Some(fuzzy_file_msg) = msg.as_msg::<SPathMsg>() {
+        //     return match fuzzy_file_msg {
+        //         SPathMsg::Hit(file_front) => {
+        //             if file_front.is_file() {
+        //                 self.open_file_with_path_and_focus(file_front.clone());
+        //                 self.hover = None;
+        //                 None
+        //             } else if file_front.is_dir() {
+        //                 if !self.tree_widget.internal_mut().expand_path(file_front) {
+        //                     error!("failed to set path")
+        //                 }
+        //                 self.hover = None;
+        //                 None
+        //             } else {
+        //                 error!("ff {:?} is neither file nor dir!", file_front);
+        //                 None
+        //             }
+        //         }
+        //     };
+        // }
 
-        warn!("expecetd MainViewMsg | FuzzyFileMsg, got {:?}", msg);
+        warn!("expecetd MainViewMsg got {:?}", msg);
         None
     }
 

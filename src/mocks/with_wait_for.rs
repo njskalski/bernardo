@@ -4,9 +4,7 @@ use crossbeam_channel::{select, Receiver};
 use log::{debug, error, warn};
 
 use crate::experiments::screen_shot::screenshot;
-use crate::mocks::full_setup::FullSetup;
 use crate::mocks::meta_frame::MetaOutputFrame;
-use crate::widget::widget::Widget;
 
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(3);
 

@@ -5,7 +5,6 @@ use ropey::iter::{Chars, Chunks};
 use streaming_iterator::StreamingIterator;
 
 use crate::cursor::cursor::{Cursor, Selection};
-use crate::cursor::cursor_set::CursorSet;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::primitives::xy::XY;
 use crate::tsw::lang_id::LangId;

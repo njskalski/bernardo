@@ -10,7 +10,7 @@ pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {
     fn label(&self) -> Cow<str>;
     fn is_leaf(&self) -> bool;
 
-    fn child_iter(&self) -> impl Iterator<Item = Self> + '_;
+    fn child_iter(&self) -> Box<dyn Iterator<Item = Self> + '_>;
 
     fn is_complete(&self) -> bool;
 

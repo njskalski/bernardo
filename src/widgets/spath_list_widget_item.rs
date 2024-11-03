@@ -3,7 +3,6 @@ use std::rc::Rc;
 use log::warn;
 
 use crate::fs::path::SPath;
-use crate::widgets::fuzzy_search::item_provider::Item;
 use crate::widgets::list_widget::list_widget_item::ListWidgetItem;
 
 impl ListWidgetItem for SPath {
@@ -29,7 +28,7 @@ impl ListWidgetItem for SPath {
 
     fn get(&self, idx: usize) -> Option<Rc<String>> {
         match idx {
-            0 => Some(self.display_name()), // TODO,
+            0 => Some(Rc::new(self.label().to_string())), //TODO
             1 => Some(Rc::new("N/A".to_string())),
             2 => Some(Rc::new("N/A".to_string())),
             _ => None,

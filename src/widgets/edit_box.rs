@@ -67,8 +67,6 @@ impl EditBoxWidget {
             size_policy: SizePolicy::SELF_DETERMINED,
         };
 
-        res.buffer.initialize_for_widget(res.id, None);
-
         res
     }
 
@@ -161,7 +159,7 @@ impl EditBoxWidget {
 
     fn event_changed(&self) -> Option<Box<dyn AnyMsg>> {
         if self.on_change.is_some() {
-            self.on_change.unwrap()(self)
+            self.on_change.as_ref().unwrap()(self)
         } else {
             None
         }
@@ -169,7 +167,7 @@ impl EditBoxWidget {
 
     fn event_miss(&self) -> Option<Box<dyn AnyMsg>> {
         if self.on_miss.is_some() {
-            self.on_miss.unwrap()(self)
+            self.on_miss.as_ref().unwrap()(self)
         } else {
             None
         }
@@ -177,7 +175,7 @@ impl EditBoxWidget {
 
     fn event_hit(&self) -> Option<Box<dyn AnyMsg>> {
         if self.on_hit.is_some() {
-            self.on_hit.unwrap()(self)
+            self.on_hit.as_ref().unwrap()(self)
         } else {
             None
         }

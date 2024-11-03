@@ -7,8 +7,7 @@ use std::time::Duration;
 
 use crossbeam_channel::{select, Receiver, Sender};
 use flexi_logger::writers::LogWriter;
-use flexi_logger::Logger;
-use log::{debug, error, warn, LevelFilter};
+use log::error;
 
 use crate::config::config::{Config, ConfigRef};
 use crate::config::theme::Theme;
@@ -25,8 +24,8 @@ use crate::gladius::run_gladius::run_gladius;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::{Key, Keycode};
 use crate::mocks::code_results_interpreter::CodeResultsViewInterpreter;
+use crate::mocks::context_menu_interpreter::ContextMenuInterpreter;
 use crate::mocks::editor_interpreter::EditorInterpreter;
-use crate::mocks::fuzzy_search_interpreter::FuzzySearchInterpreter;
 use crate::mocks::log_capture::CapturingLogger;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_clipboard::MockClipboard;
@@ -39,7 +38,6 @@ use crate::mocks::with_wait_for::WithWaitFor;
 use crate::primitives::xy::XY;
 use crate::tsw::language_set::LanguageSet;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
-use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
 use crate::widgets::find_in_files_widget::tests::find_in_files_widget_interpreter::FindInFilesWidgetInterpreter;
 use crate::widgets::tree_view;
 
@@ -323,7 +321,7 @@ impl FullSetup {
         self.last_frame.as_ref().map(|frame| frame.get_code_results_view()).flatten()
     }
 
-    pub fn get_fuzzy_search(&self) -> Option<FuzzySearchInterpreter> {
+    pub fn get_fuzzy_search(&self) -> Option<ContextMenuInterpreter<'_>> {
         self.last_frame.as_ref().map(|frame| frame.get_fuzzy_search()).flatten()
     }
 
