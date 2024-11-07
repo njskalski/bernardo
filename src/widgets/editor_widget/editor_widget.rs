@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::cmp::{max, min};
 use std::collections::BTreeMap;
 use std::time::Duration;
@@ -10,7 +11,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::config::theme::Theme;
 use crate::cursor::cursor::{Cursor, CursorStatus, Selection};
 use crate::cursor::cursor_set::CursorSet;
-use crate::cursor::cursor_set_rect::cursor_set_to_rect;
+use crate::cursor::cursor_set_rect::{cursor_set_to_rect, cursor_to_xy, cursor_to_xy_xy};
 use crate::experiments::regex_search::FindError;
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
@@ -1469,6 +1470,46 @@ impl Widget for EditorWidget {
 
     fn kite(&self) -> XY {
         self.kite
+    }
+
+    fn get_status_description(&self) -> Option<Cow<'_, str>> {
+        let lock = unpack_or_e!(self.buffer.lock(), None, "failed to lock buffer state for status");
+
+        let name = lock.get_document_identifier().label();
+
+        let cursor_set = unpack_or_e!(lock.cursors(self.wid), None, "failed receiving cursor set");
+        if let Some(single) = cursor_set.as_single() {
+            let (begin, end_op, bidx) = cursor_to_xy_xy(&single, lock.text().rope());
+
+            if let Some(end) = end_op {
+                if bidx == false {
+                    Some(Cow::Owned(format!(
+                        "{} | [ ({}:{}) - {}:{} )",
+                        name, begin.x, begin.y, end.x, end.y
+                    )))
+                } else {
+                    Some(Cow::Owned(format!(
+                        "{} | [ {}:{} - ({}:{}) )",
+                        name, begin.x, begin.y, end.x, end.y
+                    )))
+                }
+            } else {
+                Some(Cow::Owned(format!("{} | {}:{} ", name, begin.x, begin.y)))
+            }
+        } else {
+            let num_cursors = cursor_set.len();
+            let rect = cursor_set_to_rect(cursor_set, lock.text().rope());
+
+            Some(Cow::Owned(format!(
+                "{} | {} cursors in rect [{}-{})x[{}-{})",
+                name,
+                num_cursors,
+                rect.upper_left().x,
+                rect.upper_left().y,
+                rect.lower_right().x,
+                rect.lower_right().y
+            )))
+        }
     }
 }
 
