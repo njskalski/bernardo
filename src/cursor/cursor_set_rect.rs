@@ -6,7 +6,7 @@ use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::text::text_buffer::TextBuffer;
 
-fn cursor_to_xy(c: &Cursor, buffer: &dyn TextBuffer) -> XY {
+pub fn cursor_to_xy(c: &Cursor, buffer: &dyn TextBuffer) -> XY {
     let y = buffer.char_to_line(c.a).unwrap_or_else(|| {
         error!("failed translating cursor to XY (1), most likely wrong buffer provided. c: {:?}", c);
         0
@@ -25,6 +25,24 @@ fn cursor_to_xy(c: &Cursor, buffer: &dyn TextBuffer) -> XY {
         XY::ZERO
     } else {
         XY::new(x as u16, y as u16)
+    }
+}
+
+// returns begin of selection, end of selection and "which XY is the anchor": false => first one, true => second one
+pub fn cursor_to_xy_xy(c: &Cursor, buffer: &dyn TextBuffer) -> (XY, Option<XY>, bool) {
+    if let Some(sel) = c.s {
+        let begin = cursor_to_xy(&Cursor::new(sel.b), buffer);
+        let end = cursor_to_xy(&Cursor::new(sel.e), buffer);
+
+        if c.a == sel.b {
+            (begin, Some(end), false)
+        } else {
+            debug_assert!(c.a == sel.e);
+            (begin, Some(end), true)
+        }
+    } else {
+        let begin = cursor_to_xy(c, buffer);
+        (begin, None, false)
     }
 }
 

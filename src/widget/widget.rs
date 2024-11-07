@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -136,7 +137,15 @@ pub trait Widget: 'static {
         (consumed, None)
     }
 
+    fn is_focusable(&self) -> bool {
+        true
+    }
+
     fn pre_act_on(&mut self, _input_event: &InputEvent) {}
+
+    fn get_status_description(&self) -> Option<Cow<'_, str>> {
+        None
+    }
 }
 
 // pub trait AsAnyWidget {

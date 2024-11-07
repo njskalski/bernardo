@@ -230,9 +230,11 @@ impl Cursor {
 
                 debug_assert!(old_pos == sel.b || old_pos == sel.e);
 
+                // for explaination why "min" and "max" in two statements below, see single_cursor_to_flip_selection_bug_2 - it is possible that begin and end flip sides.
+
                 if sel.b == old_pos {
                     if new_pos != sel.e {
-                        self.s = Some(Selection::new(new_pos, sel.e));
+                        self.s = Some(Selection::new(usize::min(new_pos, sel.e), usize::max(new_pos, sel.e)));
                     } else {
                         self.s = None;
                     }
@@ -241,7 +243,7 @@ impl Cursor {
                 }
                 if sel.e == old_pos {
                     if sel.b != new_pos {
-                        self.s = Some(Selection::new(sel.b, new_pos));
+                        self.s = Some(Selection::new(usize::min(new_pos, sel.b), usize::max(new_pos, sel.b)));
                     } else {
                         self.s = None;
                     }

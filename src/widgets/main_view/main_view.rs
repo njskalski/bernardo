@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt::{format, Display};
 use std::sync::Arc;
 
@@ -35,9 +36,11 @@ use crate::widgets::code_results_view::full_text_search_code_results_provider::F
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
 use crate::widgets::main_view::display::MainViewDisplay;
+use crate::widgets::main_view::focus_path_widget::FocusPathWidget;
 use crate::widgets::main_view::fuzzy_file_search_widget::FuzzyFileSearchWidget;
 use crate::widgets::main_view::fuzzy_screens_list_widget::{get_fuzzy_screen_list, FuzzyScreensList};
 use crate::widgets::main_view::msg::MainViewMsg;
+use crate::widgets::main_view::util::get_focus_path;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
@@ -91,6 +94,17 @@ impl DocumentIdentifier {
             ..self
         }
     }
+
+    pub fn label(&self) -> String {
+        match &self.file_path {
+            None => {
+                format!("[unnamed]")
+            }
+            Some(sp) => {
+                format!("{}", sp.label())
+            }
+        }
+    }
 }
 
 pub struct MainView {
@@ -108,6 +122,8 @@ pub struct MainView {
     no_editor: NoEditorWidget,
     displays: Vec<MainViewDisplay>,
     display_idx: usize,
+
+    status_bar: FocusPathWidget,
 
     hover: Option<HoverItem>,
 }
@@ -225,6 +241,7 @@ impl MainView {
             displays: Vec::new(),
             no_editor: NoEditorWidget::default(),
             display_idx: 0,
+            status_bar: FocusPathWidget::new(),
             hover: None,
         }
     }
@@ -474,6 +491,9 @@ impl Widget for MainView {
 
     fn prelayout(&mut self) {
         self.complex_prelayout();
+
+        let focus_path = get_focus_path(self);
+        self.status_bar.set_focus_path(focus_path);
     }
 
     fn full_size(&self) -> XY {
@@ -636,27 +656,6 @@ impl Widget for MainView {
             };
         };
 
-        // if let Some(fuzzy_file_msg) = msg.as_msg::<SPathMsg>() {
-        //     return match fuzzy_file_msg {
-        //         SPathMsg::Hit(file_front) => {
-        //             if file_front.is_file() {
-        //                 self.open_file_with_path_and_focus(file_front.clone());
-        //                 self.hover = None;
-        //                 None
-        //             } else if file_front.is_dir() {
-        //                 if !self.tree_widget.internal_mut().expand_path(file_front) {
-        //                     error!("failed to set path")
-        //                 }
-        //                 self.hover = None;
-        //                 None
-        //             } else {
-        //                 error!("ff {:?} is neither file nor dir!", file_front);
-        //                 None
-        //             }
-        //         }
-        //     };
-        // }
-
         warn!("expecetd MainViewMsg got {:?}", msg);
         None
     }
@@ -672,6 +671,10 @@ impl Widget for MainView {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         self.complex_render(theme, focused, output)
     }
+
+    fn get_status_description(&self) -> Option<Cow<'_, str>> {
+        Some(Cow::Borrowed("gladius"))
+    }
 }
 
 impl ComplexWidget for MainView {
@@ -679,9 +682,15 @@ impl ComplexWidget for MainView {
         let left_column = LeafLayout::new(subwidget!(Self.tree_widget)).boxed();
         let right_column = LeafLayout::new(self.get_curr_display_ptr()).boxed();
 
+        let bottom_bar = LeafLayout::new(subwidget!(Self.status_bar));
+
         let bg_layout = SplitLayout::new(SplitDirection::Horizontal)
             .with(SplitRule::Proportional(1.0), left_column)
             .with(SplitRule::Proportional(5.0), right_column);
+
+        let bg_layout = SplitLayout::new(SplitDirection::Vertical)
+            .with(SplitRule::Proportional(1.0), bg_layout.boxed())
+            .with(SplitRule::Fixed(1), bottom_bar.boxed());
 
         let res = if self.hover.is_some() {
             let subwidget = self.get_hover_subwidget().unwrap();

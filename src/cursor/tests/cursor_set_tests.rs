@@ -366,7 +366,6 @@ fn single_cursor_to_move_down_bug_1() {
 
     assert_eq!(apply("#abc\n\n", f), "abc\n#\n");
 }
-
 #[test]
 fn single_cursor_word_begin() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
