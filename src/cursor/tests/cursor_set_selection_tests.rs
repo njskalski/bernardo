@@ -340,3 +340,21 @@ fn multiple_cursors_word_begin_with_selection() {
         assert_eq!(apply_on_encoded_text_and_cursors(progress[i], f), progress[i + 1], "i: {}", i);
     }
 }
+
+#[test]
+fn single_cursor_to_flip_selection_bug_1() {
+    let f: fn(&mut CursorSet, &dyn TextBuffer) = |c: &mut CursorSet, bs: &dyn TextBuffer| {
+        c.move_vertically_by(bs, -1, true);
+    };
+
+    assert_eq!(apply_on_encoded_text_and_cursors("abcd\nabc(d\na]bcd", f), "abcd\na[bc)d\nabcd");
+}
+
+#[test]
+fn single_cursor_to_flip_selection_bug_2() {
+    let f: fn(&mut CursorSet, &dyn TextBuffer) = |c: &mut CursorSet, bs: &dyn TextBuffer| {
+        c.move_vertically_by(bs, -1, true);
+    };
+
+    assert_eq!(apply_on_encoded_text_and_cursors("abcd\na(bc]d\nabcd", f), "abc[d\na)bcd\nabcd");
+}
