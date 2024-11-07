@@ -29,13 +29,13 @@ fn buffer_cursors_to_text(rope: &dyn TextBuffer, cs: &CursorSet) -> String {
 #[test]
 fn text_to_buffer_cursors_and_back() {
     let text = concat!(
-        "t#here was a man\n",
-        "called paul\n",
-        "#who went to a fancy\n",
-        "dr#ess ball\n",
-        "he just went for fun\n",
-        "dressed up as bone\n",
-        "and dog ea#t h#im up in the# hall\n"
+    "t#here was a man\n",
+    "called paul\n",
+    "#who went to a fancy\n",
+    "dr#ess ball\n",
+    "he just went for fun\n",
+    "dressed up as bone\n",
+    "and dog ea#t h#im up in the# hall\n"
     );
 
     let (buffer, cursors) = text_to_buffer_cursors(text);
@@ -216,23 +216,23 @@ fn single_cursor_move_down_by_some() {
 
     {
         let text = concat!(
-            "t#here was a man\n",
-            "called paul\n",
-            "who went to a fancy\n",
-            "dress ball\n",
-            "he just went for fun\n",
-            "dressed up as bone\n",
-            "and dog eat him up in the hall\n"
+        "t#here was a man\n",
+        "called paul\n",
+        "who went to a fancy\n",
+        "dress ball\n",
+        "he just went for fun\n",
+        "dressed up as bone\n",
+        "and dog eat him up in the hall\n"
         );
 
         let new_text = concat!(
-            "there was a man\n",
-            "called paul\n",
-            "who went to a fancy\n",
-            "d#ress ball\n",
-            "he just went for fun\n",
-            "dressed up as bone\n",
-            "and dog eat him up in the hall\n"
+        "there was a man\n",
+        "called paul\n",
+        "who went to a fancy\n",
+        "d#ress ball\n",
+        "he just went for fun\n",
+        "dressed up as bone\n",
+        "and dog eat him up in the hall\n"
         );
 
         assert_eq!(apply(text, f), new_text);
@@ -240,23 +240,23 @@ fn single_cursor_move_down_by_some() {
 
     {
         let text = concat!(
-            "t#here was a ma#n\n",
-            "calle#d paul\n",
-            "who went to a fancy\n",
-            "dress ball\n",
-            "he just went for fun\n",
-            "dressed up as bone\n",
-            "and dog eat him up in the hall\n"
+        "t#here was a ma#n\n",
+        "calle#d paul\n",
+        "who went to a fancy\n",
+        "dress ball\n",
+        "he just went for fun\n",
+        "dressed up as bone\n",
+        "and dog eat him up in the hall\n"
         );
 
         let new_text = concat!(
-            "there was a man\n",
-            "called paul\n",
-            "who went to a fancy\n",
-            "d#ress ball#\n",
-            "he ju#st went for fun\n",
-            "dressed up as bone\n",
-            "and dog eat him up in the hall\n"
+        "there was a man\n",
+        "called paul\n",
+        "who went to a fancy\n",
+        "d#ress ball#\n",
+        "he ju#st went for fun\n",
+        "dressed up as bone\n",
+        "and dog eat him up in the hall\n"
         );
 
         assert_eq!(apply(text, f), new_text);
@@ -319,23 +319,23 @@ fn single_cursor_move_up_by_some() {
 
     {
         let text = concat!(
-            "t#here was a man\n",
-            "called paul\n",
-            "who went to a fancy\n",
-            "dress ball\n",
-            "he just went for fun\n",
-            "d#ressed up as bone\n",
-            "and dog eat him up in the hall#\n"
+        "t#here was a man\n",
+        "called paul\n",
+        "who went to a fancy\n",
+        "dress ball\n",
+        "he just went for fun\n",
+        "d#ressed up as bone\n",
+        "and dog eat him up in the hall#\n"
         );
 
         let new_text = concat!(
-            "#there was a man\n",
-            "called paul\n",
-            "w#ho went to a fancy\n",
-            "dress ball#\n",
-            "he just went for fun\n",
-            "dressed up as bone\n",
-            "and dog eat him up in the hall\n"
+        "#there was a man\n",
+        "called paul\n",
+        "w#ho went to a fancy\n",
+        "dress ball#\n",
+        "he just went for fun\n",
+        "dressed up as bone\n",
+        "and dog eat him up in the hall\n"
         );
 
         assert_eq!(apply(text, f), new_text);
@@ -366,7 +366,6 @@ fn single_cursor_to_move_down_bug_1() {
 
     assert_eq!(apply("#abc\n\n", f), "abc\n#\n");
 }
-
 #[test]
 fn single_cursor_word_begin() {
     let f: fn(&mut CursorSet, &Rope) = |c: &mut CursorSet, bs: &Rope| {
