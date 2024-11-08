@@ -4,6 +4,7 @@ use std::hash::Hash;
 use log::{debug, warn};
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::{subwidget, unpack_unit_e};
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
@@ -23,12 +24,11 @@ use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::combined_widget::CombinedWidget;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget, WidgetAction};
 use crate::widgets::context_menu::msg::ContextMenuMsg;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
-use crate::{subwidget, unpack_unit_e};
 
 pub const DEFAULT_SIZE: XY = XY::new(20, 10);
 pub const CONTEXT_MENU_WIDGET_NAME: &'static str = "context_menu";
@@ -191,11 +191,9 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
                     {
                         if **label_grapheme == **query_grapheme {
                             result.push(*label_idx);
-                            let _ = label_grapheme_it.next();
                             let _ = query_grapheme_it.next();
-                        } else {
-                            let _ = label_grapheme_it.next();
                         }
+                        let _ = label_grapheme_it.next();
                     }
 
                     if query_grapheme_it.peek().is_some() {
@@ -274,7 +272,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> CombinedWidget for Con
         self.layout_res.as_ref()
     }
 
-    fn get_subwidgets_for_input(&self) -> impl Iterator<Item = SubwidgetPointer<Self>> {
+    fn get_subwidgets_for_input(&self) -> impl Iterator<Item=SubwidgetPointer<Self>> {
         [subwidget!(Self.tree_view), subwidget!(Self.query_box)].into_iter()
     }
 }
