@@ -2,6 +2,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 use log::{debug, warn};
+use unicode_segmentation::UnicodeSegmentation;
 
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
@@ -15,6 +16,7 @@ use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::common_query::CommonQuery;
+use crate::primitives::printable::Printable;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
@@ -46,13 +48,15 @@ pub struct ContextMenuWidget<Key: Hash + Eq + Debug + Clone + 'static, Item: Tre
 
 impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key, Item> {
     pub fn new(providers: Providers, root_node: Item) -> Self {
+        let query_box = EditBoxWidget::new()
+            .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
+            .with_on_change(Box::new(|editbox| ContextMenuMsg::UpdateQuery(editbox.get_text()).someboxed()));
+
         Self {
             id: get_new_widget_id(),
             size: DEFAULT_SIZE,
             config: providers.config().clone(),
-            query_box: EditBoxWidget::new()
-                .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
-                .with_on_change(Box::new(|editbox| ContextMenuMsg::UpdateQuery(editbox.get_text()).someboxed())),
+            query_box,
             tree_view: WithScroll::new(
                 ScrollDirection::Vertical,
                 TreeViewWidget::new(root_node)
@@ -171,10 +175,33 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
         return match our_msg.unwrap() {
             ContextMenuMsg::UpdateQuery(query) => {
                 let query_fuzz = CommonQuery::Fuzzy(query.clone()); //TODO unnecessary copy
+                let query_copy = query.clone();
 
-                self.tree_view
-                    .internal_mut()
-                    .set_filter_op(Some(Box::new(move |item: &Item| query_fuzz.matches(item.label().as_ref()))), None);
+                let tree_view = self.tree_view.internal_mut();
+                tree_view.set_filter_op(Some(Box::new(move |item: &Item| query_fuzz.matches(item.label().as_ref()))), None);
+
+                tree_view.set_highlighter(Some(Box::new(move |label: &str| -> Vec<usize> {
+                    let mut label_grapheme_it = label.graphemes(false).enumerate().peekable();
+                    let mut query_grapheme_it = query_copy.graphemes().peekable();
+
+                    let mut result: Vec<usize> = Vec::new();
+
+                    while let (Some((label_idx, label_grapheme)), Some(query_grapheme)) =
+                        (label_grapheme_it.peek(), query_grapheme_it.peek())
+                    {
+                        if **label_grapheme == **query_grapheme {
+                            result.push(*label_idx);
+                            let _ = query_grapheme_it.next();
+                        }
+                        let _ = label_grapheme_it.next();
+                    }
+
+                    if query_grapheme_it.peek().is_some() {
+                        warn!("did not highlight entire query - filter desynchronized")
+                    }
+
+                    result
+                })));
 
                 None
             }
