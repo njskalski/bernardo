@@ -23,7 +23,7 @@ use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 pub const TYPENAME: &str = "tree_view";
 
 // expectation is that these are sorted
-pub type LabelHighlighter = fn(&str) -> Vec<usize>;
+pub type LabelHighlighter = Box<dyn Fn(&str) -> Vec<usize>>;
 
 // Keys are unique
 
@@ -408,8 +408,8 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
             };
 
             let text = format!("{} {}", prefix, node.label());
-            let higlighted: Vec<usize> = self.highlighter_op.map(|h| h(&text)).unwrap_or_default();
-            let highlighted_idx: usize = 0;
+            let highlighted: Vec<usize> = self.highlighter_op.as_ref().map(|h| h(&text)).unwrap_or_default();
+            let mut highlighted_iter = highlighted.into_iter().peekable();
 
             let mut x_offset: usize = 0;
             for (grapheme_idx, g) in text.graphemes(true).enumerate() {
@@ -429,8 +429,12 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
 
                 let mut local_style = style;
 
-                if highlighted_idx < higlighted.len() && higlighted[highlighted_idx] == grapheme_idx {
-                    local_style = local_style.with_background(theme.ui.focused_highlighted.background);
+                //highlighted_idx < highlighted.len() && highlighted[highlighted_idx] == grapheme_idx
+                if let Some(highlighted_idx) = highlighted_iter.peek() {
+                    if *highlighted_idx == grapheme_idx {
+                        local_style = local_style.with_background(theme.ui.focused_highlighted.background);
+                        let _ = highlighted_iter.next();
+                    }
                 }
 
                 output.print_at(XY::new(x, y), local_style, g);

@@ -20,9 +20,6 @@ git filtering in:
 [DONE] Editor "labels" (in-code overlay-"comments", clearly distingushible messages noting errors/warnings)
 [but not wired]
 
-6.5)
-Status bar (at minimum file, col, row)
-
 7)
 Code "collapsing"
 
@@ -45,7 +42,6 @@ Docs:
 1) how views work
 2) how main loop works
 3) how filesystems are implemented
-
 
 
 Descoped:
