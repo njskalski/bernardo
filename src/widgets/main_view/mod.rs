@@ -7,3 +7,6 @@ mod main_context_menu;
 pub mod main_view;
 pub mod msg;
 mod util;
+
+#[cfg(test)]
+mod test;

@@ -43,6 +43,7 @@ use crate::widgets::main_view::fuzzy_file_search_widget::FuzzyFileSearchWidget;
 use crate::widgets::main_view::fuzzy_screens_list_widget::{get_fuzzy_screen_list, FuzzyScreensList};
 use crate::widgets::main_view::main_context_menu::{get_focus_path_w, MainContextMenuWidget};
 use crate::widgets::main_view::msg::MainViewMsg;
+use crate::widgets::main_view::util;
 use crate::widgets::main_view::util::get_focus_path;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
@@ -510,27 +511,7 @@ impl MainView {
 
         let ds = unpack_or_e!(self.display_state.as_ref(), None, "failed to acquire display state");
 
-        let left_half = xy.x * 2 < ds.total_size.x; // equivalent of xy.x < center.x
-        let upper_half = xy.y * 2 < ds.total_size.y; // equivalent of xy.y < center.y
-
-        let mut rect = unpack_or_e!(Rect::hover_centered_percent(ds.total_size, 80), None, "failed to get centered rect");
-
-        if left_half {
-            let new_x = xy.x + 1;
-            if new_x > rect.pos.x {
-                let diff = new_x - rect.pos.x;
-                if diff > rect.size.x {
-                    warn!("couldn't fit the context_menu on x left half");
-                    return None;
-                }
-                rect.pos.x = new_x;
-                rect.size.x -= diff;
-            } else {
-                let diff = rect.pos.x - new_x;
-            }
-        }
-
-        Some(rect)
+        util::get_rect_for_context_menu(ds.total_size, xy)
     }
 }
 
