@@ -479,7 +479,7 @@ impl MainView {
         self
     }
 
-    pub fn build_main_context_menu(&mut self) {
+    pub fn open_main_context_menu_and_focus(&mut self) {
         // TODO add checks for hover being empty or whatever
 
         let fp = get_focus_path_w(self);
@@ -489,7 +489,8 @@ impl MainView {
         let mut options: Vec<ContextBarItem> = Vec::new();
 
         for item in fp {
-            final_kite += item.kite();
+            // I need to adjust final kite by layout results
+
             if let Some(option) = item.get_widget_actions() {
                 options.push(option);
             }
@@ -503,15 +504,6 @@ impl MainView {
             widget,
         });
         self.set_focus_to_hover();
-    }
-
-    // TODO add tests
-    fn get_rect_for_context_menu(&self, xy: XY) -> Option<Rect> {
-        // first let's decide orientation of context menu
-
-        let ds = unpack_or_e!(self.display_state.as_ref(), None, "failed to acquire display state");
-
-        util::get_rect_for_context_menu(ds.total_size, xy)
     }
 }
 
@@ -568,6 +560,8 @@ impl Widget for MainView {
                 root_dir: self.providers.fsf().root(),
             }
             .someboxed(),
+            InputEvent::EverythingBarTrigger => MainViewMsg::OpenContextMenu.someboxed(),
+            // InputEvent::KeyInput(key) if key == config.keyboard_config.global.everything_bar => MainViewMsg::OpenContextMenu.someboxed(),
             _ => {
                 debug!("input {:?} NOT consumed", input_event);
                 None
@@ -689,6 +683,10 @@ impl Widget for MainView {
                     self.set_focus_to_default();
                     None
                 }
+                MainViewMsg::OpenContextMenu => {
+                    self.open_main_context_menu_and_focus();
+                    None
+                }
                 _ => {
                     warn!("unprocessed event {:?}", main_view_msg);
                     None
@@ -760,7 +758,21 @@ impl ComplexWidget for MainView {
         let res = if self.hover.is_some() {
             let subwidget = self.get_hover_subwidget().unwrap();
             let leaf = LeafLayout::new(subwidget).boxed();
-            HoverLayout::new(bg_layout.boxed(), leaf, Box::new(Self::get_hover_rect), true).boxed()
+
+            let layout = match self.hover.as_ref().unwrap() {
+                HoverItem::ContextMain { anchor, .. } => {
+                    let anchor_clone = *anchor;
+                    HoverLayout::new(
+                        bg_layout.boxed(),
+                        leaf,
+                        Box::new(move |screenspace: Screenspace| util::get_rect_for_context_menu(screenspace.output_size(), anchor_clone)),
+                        true,
+                    )
+                }
+                _ => HoverLayout::new(bg_layout.boxed(), leaf, Box::new(Self::get_hover_rect), true),
+            };
+
+            layout.boxed()
         } else {
             bg_layout.boxed()
         };

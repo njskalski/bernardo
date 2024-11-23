@@ -25,6 +25,8 @@ pub enum MainViewMsg {
 
     // Open fuzzy files
     OpenFuzzyFiles,
+    OpenContextMenu,
+
     // Used by OpenOpenBuffers too
     CloseHover,
 
