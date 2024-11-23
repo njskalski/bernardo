@@ -70,6 +70,8 @@ pub enum MainViewMsg {
     GoToDefinition {
         promise_op: Option<StupidSymbolUsageCodeResultsProvider>,
     },
+
+    QuitGladius,
 }
 
 impl AnyMsg for MainViewMsg {}

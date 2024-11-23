@@ -40,8 +40,8 @@ use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::code_results_view::stupid_symbol_usage_code_results_provider::StupidSymbolUsageCodeResultsProvider;
+use crate::widgets::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
-use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::context_options_matrix::get_context_options;
 use crate::widgets::editor_widget::helpers::{find_trigger_and_substring, CursorScreenPosition};
 use crate::widgets::editor_widget::label::label::Label;
@@ -1292,7 +1292,8 @@ impl Widget for EditorWidget {
                     None
                 }
             }
-            (&EditorState::Editing, None, InputEvent::EverythingBarTrigger) => EditorWidgetMsg::RequestContextBar.someboxed(),
+            // TODO disabling local context bar
+            // (&EditorState::Editing, None, InputEvent::EverythingBarTrigger) => EditorWidgetMsg::RequestContextBar.someboxed(),
             (&EditorState::Editing, None, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
                 let cem = key_to_edit_msg(key).unwrap();
                 if cem.is_editing() && self.readonly {

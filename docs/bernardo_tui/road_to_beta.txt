@@ -1,10 +1,11 @@
 Here is what I want to be present in Gladius Beta:
 
-nice to have:
-- add file name/path to selection avatar
+1) code search avatar needs to contain file name
+2) labels in context menu (for learning mode)
 
-3)
-USER FOCUS PATH
+
+
+
 
 4)
 Overall commands:
@@ -44,9 +45,10 @@ Docs:
 3) how filesystems are implemented
 
 
-Descoped:
-11)
-validate invariants
+Nice to haves:
+1) tree view desc path should name expanded path
 
-12)
-I'd love to see SubwidgetPointer refactored to SubwidgetPointerOp and handling of "non found subwidget"
+DESCOPED:
+11) validate invariants
+12) I'd love to see SubwidgetPointer refactored to SubwidgetPointerOp and handling of "non found subwidget"
+3) USER FOCUS STACK

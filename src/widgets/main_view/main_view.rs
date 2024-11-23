@@ -15,6 +15,7 @@ use crate::fs::path::SPath;
 use crate::fs::read_error::ReadError;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
+use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
@@ -29,6 +30,7 @@ use crate::primitives::xy::XY;
 use crate::promise::streaming_promise::StreamingPromise;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
+use crate::widget::context_bar_item::ContextBarItem;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
@@ -39,6 +41,7 @@ use crate::widgets::main_view::display::MainViewDisplay;
 use crate::widgets::main_view::focus_path_widget::FocusPathWidget;
 use crate::widgets::main_view::fuzzy_file_search_widget::FuzzyFileSearchWidget;
 use crate::widgets::main_view::fuzzy_screens_list_widget::{get_fuzzy_screen_list, FuzzyScreensList};
+use crate::widgets::main_view::main_context_menu::{get_focus_path_w, MainContextMenuWidget};
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::main_view::util::get_focus_path;
 use crate::widgets::no_editor::NoEditorWidget;
@@ -57,6 +60,9 @@ pub enum HoverItem {
 
     // search in files
     SearchInFiles(FindInFilesWidget),
+
+    // Context menu
+    ContextMain { anchor: XY, widget: MainContextMenuWidget },
 }
 
 // TODO start indexing documents with DocumentIdentifier as opposed to usize
@@ -382,6 +388,7 @@ impl MainView {
                             HoverItem::FuzzySearch(fs) => fs as &dyn Widget,
                             HoverItem::FuzzySearch2(fs) => fs as &dyn Widget,
                             HoverItem::SearchInFiles(fs) => fs as &dyn Widget,
+                            HoverItem::ContextMain { anchor, widget } => widget as &dyn Widget,
                         }
                     } else {
                         error!("no hover found, this subwidget pointer should have been overriden by now.");
@@ -395,6 +402,7 @@ impl MainView {
                             HoverItem::FuzzySearch(fs) => fs as &mut dyn Widget,
                             HoverItem::FuzzySearch2(fs) => fs as &mut dyn Widget,
                             HoverItem::SearchInFiles(fs) => fs as &mut dyn Widget,
+                            HoverItem::ContextMain { anchor, widget } => widget as &mut dyn Widget,
                         }
                     } else {
                         error!("no hover found, this subwidget pointer should have been overriden by now.");
@@ -470,9 +478,60 @@ impl MainView {
         self
     }
 
-    // pub fn set_search_result(&mut self, crv_op: Option<CodeResultsView>) {
-    //     // self.crv_op = crv_op;
-    // }
+    pub fn build_main_context_menu(&mut self) {
+        // TODO add checks for hover being empty or whatever
+
+        let fp = get_focus_path_w(self);
+
+        let mut final_kite = XY::ZERO;
+
+        let mut options: Vec<ContextBarItem> = Vec::new();
+
+        for item in fp {
+            final_kite += item.kite();
+            if let Some(option) = item.get_widget_actions() {
+                options.push(option);
+            }
+        }
+
+        let item = ContextBarItem::new_internal_node(Cow::Borrowed("gladius"), options);
+        let widget = MainContextMenuWidget::new(self.providers.clone(), item);
+
+        self.hover = Some(HoverItem::ContextMain {
+            anchor: final_kite,
+            widget,
+        });
+        self.set_focus_to_hover();
+    }
+
+    // TODO add tests
+    fn get_rect_for_context_menu(&self, xy: XY) -> Option<Rect> {
+        // first let's decide orientation of context menu
+
+        let ds = unpack_or_e!(self.display_state.as_ref(), None, "failed to acquire display state");
+
+        let left_half = xy.x * 2 < ds.total_size.x; // equivalent of xy.x < center.x
+        let upper_half = xy.y * 2 < ds.total_size.y; // equivalent of xy.y < center.y
+
+        let mut rect = unpack_or_e!(Rect::hover_centered_percent(ds.total_size, 80), None, "failed to get centered rect");
+
+        if left_half {
+            let new_x = xy.x + 1;
+            if new_x > rect.pos.x {
+                let diff = new_x - rect.pos.x;
+                if diff > rect.size.x {
+                    warn!("couldn't fit the context_menu on x left half");
+                    return None;
+                }
+                rect.pos.x = new_x;
+                rect.size.x -= diff;
+            } else {
+                let diff = rect.pos.x - new_x;
+            }
+        }
+
+        Some(rect)
+    }
 }
 
 impl Widget for MainView {
@@ -674,6 +733,31 @@ impl Widget for MainView {
 
     fn get_status_description(&self) -> Option<Cow<'_, str>> {
         Some(Cow::Borrowed("gladius"))
+    }
+
+    fn get_widget_actions(&self) -> Option<ContextBarItem> {
+        let config = self.providers.config();
+
+        Some(ContextBarItem::new_internal_node(
+            Cow::Borrowed("gladius"),
+            vec![
+                ContextBarItem::new_leaf_node(
+                    Cow::Borrowed("quit"),
+                    || MainViewMsg::QuitGladius.boxed(),
+                    Some(config.keyboard_config.global.close),
+                ),
+                ContextBarItem::new_leaf_node(
+                    Cow::Borrowed("open display list"),
+                    || MainViewMsg::QuitGladius.boxed(),
+                    Some(config.keyboard_config.global.browse_buffers),
+                ),
+                ContextBarItem::new_leaf_node(
+                    Cow::Borrowed("open new buffer"),
+                    || MainViewMsg::QuitGladius.boxed(),
+                    Some(config.keyboard_config.global.new_buffer),
+                ),
+            ],
+        ))
     }
 }
 

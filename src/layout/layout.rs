@@ -9,6 +9,9 @@ pub type WidgetGetterMut<T> = Box<dyn Fn(&'_ mut T) -> &'_ mut dyn Widget>;
 /* TODO I want to get to the point where all layout is generated from macros, and then
 depending on whether root is mut or not, we get mut layout or not-mut layout. */
 
+pub type WidgetOpGetter<T> = Box<dyn Fn(&'_ T) -> Option<&'_ dyn Widget>>;
+pub type WidgetOpGetterMut<T> = Box<dyn Fn(&'_ mut T) -> Option<&'_ mut dyn Widget>>;
+
 pub struct LayoutResult<W: Widget> {
     pub wwrs: Vec<WidgetWithRect<W>>,
     pub total_size: XY,

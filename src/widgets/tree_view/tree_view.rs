@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -447,5 +448,9 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
     fn kite(&self) -> XY {
         //TODO add x corresponding to depth
         XY::new(0, self.highlighted as u16) //TODO unsafe cast
+    }
+
+    fn get_status_description(&self) -> Option<Cow<'_, str>> {
+        Some(Cow::Borrowed("tree view"))
     }
 }
