@@ -1,6 +1,7 @@
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
+use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::screenspace::Screenspace;
@@ -24,7 +25,7 @@ use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_view::msg::EditorViewMsg;
 use crate::widgets::editor_widget::editor_widget::EditorWidget;
@@ -32,7 +33,6 @@ use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::text_widget::TextWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
-use crate::{subwidget, unpack_or, unpack_or_e};
 
 const PATTERN: &str = "pattern: ";
 const REPLACE: &str = "replace: ";
@@ -473,7 +473,7 @@ impl Widget for EditorView {
     }
 
     fn kite(&self) -> XY {
-        XY::ZERO
+        self.complex_kite()
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
@@ -523,7 +523,7 @@ impl ComplexWidget for EditorView {
                 Box::new(|s: &Self| s.hover_dialog.as_ref().unwrap()),
                 Box::new(|s: &mut Self| s.hover_dialog.as_mut().unwrap()),
             ))
-            .boxed();
+                .boxed();
 
             HoverLayout::new(background, hover, Box::new(Self::get_hover_rect), true).boxed()
         }

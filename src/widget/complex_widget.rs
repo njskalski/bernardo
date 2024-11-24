@@ -12,7 +12,8 @@ use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::helpers::fill_output;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
-use crate::widget::widget::{Widget, WID};
+use crate::unpack_or_e;
+use crate::widget::widget::{WID, Widget};
 
 // here one could merge focus_group.focused with ds.focused, but not it's not important.
 
@@ -232,5 +233,25 @@ pub trait ComplexWidget: Widget + Sized {
                 }
             })
             .flatten()
+    }
+
+    fn get_focused_wwr(&self) -> Option<&WidgetWithRect<Self>> {
+        let ds = unpack_or_e!(self.get_display_state_op(), None, "requested get_focused_wwr before layout");
+
+        let focused_id = ds.focused.get(self).id();
+
+        ds.wwrs.iter().find(|wwr| {
+            wwr.widget().get(self).id() == focused_id
+        })
+    }
+
+    fn complex_kite(&self) -> XY {
+        let focused_wwr = unpack_or_e!(self.get_focused_wwr(), XY::ZERO, "failed acquiring focused wwr");
+
+        let pos = focused_wwr.rect().pos;
+
+        let internal_kite = focused_wwr.widget().get(self).kite();
+
+        internal_kite + pos
     }
 }
