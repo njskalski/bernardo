@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use flexi_logger::writers::LogWriter;
 use flexi_logger::FileSpec;
+use flexi_logger::writers::LogWriter;
 use log::warn;
 
 const DEFAULT_LEVEL: log::LevelFilter = log::LevelFilter::Info;
@@ -9,6 +9,8 @@ const DEFAULT_LEVEL: log::LevelFilter = log::LevelFilter::Info;
 const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     // this is for git ignore
     ("globset", log::LevelFilter::Info),
+    // this is heart and mind of gladius
+    ("act_on", log::LevelFilter::Debug),
     // I have no clue where it comes from, and I don't care so I suppress it
     ("mio::poll", log::LevelFilter::Error),
     ("bernardo", log::LevelFilter::Info),
@@ -48,7 +50,6 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     // ("bernardo::lsp_client::lsp_write", log::LevelFilter::Warn),
     ("bernardo::mocks::full_setup", log::LevelFilter::Warn),
     ("bernardo::mocks", log::LevelFilter::Warn),
-    // ("act_on", log::LevelFilter::Debug),
 ];
 
 pub fn logger_setup(stderr_on: bool, file_to_log_to: Option<PathBuf>, log_writer_op: Option<Box<dyn LogWriter>>) {

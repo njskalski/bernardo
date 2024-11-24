@@ -19,6 +19,8 @@ pub fn get_focus_path_w<'a>(root: &'a dyn Widget) -> Vec<&'a dyn Widget> {
         }
     }
 
+    recursive_get_focus_path(root, &mut result);
+
     result
 }
 

@@ -6,3 +6,4 @@ pub mod navcomp_loader;
 pub mod providers;
 pub mod real_navcomp_loader;
 pub mod run_gladius;
+pub mod msg;

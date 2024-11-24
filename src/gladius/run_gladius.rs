@@ -6,6 +6,7 @@ use log::{debug, error};
 
 use crate::experiments::screen_shot::screenshot;
 use crate::experiments::screenspace::Screenspace;
+use crate::gladius::msg::GladiusMsg;
 use crate::gladius::providers::Providers;
 use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
@@ -14,8 +15,8 @@ use crate::io::output::FinalOutput;
 use crate::primitives::helpers::get_next_filename;
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::inspector::{inspect_workspace, InspectError};
-use crate::w7e::workspace::WORKSPACE_FILE_NAME;
 use crate::w7e::workspace::{LoadError, ScopeLoadErrors, Workspace};
+use crate::w7e::workspace::WORKSPACE_FILE_NAME;
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
 
@@ -157,18 +158,25 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
                             InputEvent::KeyInput(key) if key == providers.config().keyboard_config.global.everything_bar => {
                                 ie = InputEvent::EverythingBarTrigger;
                             }
-                            InputEvent::KeyInput(key) if key.keycode == Keycode::Char('u') && key.modifiers.ctrl => {
-                                let buffer = output.get_front_buffer();
-                                screenshot(&buffer);
-                            }
-                            // TODO move to message, to handle signals in the same way?
-                            InputEvent::KeyInput(key) if key == providers.config().keyboard_config.global.close => {
-                                break 'main;
-                            }
                             _ => {}
                         }
 
-                        main_view.act_on(ie);
+                        let (_ , result_op) = main_view.act_on(ie);
+                        if let Some(result) = result_op.as_ref() {
+                            if let Some(gladius_msg) = result.as_msg::<GladiusMsg>() {
+                                match gladius_msg {
+                                    GladiusMsg::Quit => {
+                                        break 'main;
+                                    }
+                                    GladiusMsg::Screenshot => {
+                                        let buffer = output.get_front_buffer();
+                                        screenshot(&buffer);
+                                    }
+                                }
+                            } else {
+                                error!("failed processing output msg {:?}", result);
+                            }
+                        }
                     },
                     Err(e) => {
                         error!("failed receiving input: {}", e);

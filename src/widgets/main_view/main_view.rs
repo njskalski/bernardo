@@ -1,10 +1,11 @@
 use std::borrow::Cow;
-use std::fmt::{format, Display};
+use std::fmt::{Display, format};
 use std::sync::Arc;
 
 use log::{debug, error, warn};
 use uuid::Uuid;
 
+use crate::{subwidget, unpack_or, unpack_or_e};
 use crate::config::theme::Theme;
 use crate::cursor::cursor::Cursor;
 use crate::experiments::buffer_register::OpenResult;
@@ -13,6 +14,7 @@ use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::path::SPath;
 use crate::fs::read_error::ReadError;
+use crate::gladius::msg::GladiusMsg;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
@@ -31,7 +33,7 @@ use crate::promise::streaming_promise::StreamingPromise;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::context_bar_item::ContextBarItem;
-use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::widget::widget::{get_new_widget_id, WID, Widget};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
 use crate::widgets::code_results_view::full_text_search_code_results_provider::FullTextSearchCodeResultsProvider;
@@ -40,7 +42,7 @@ use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidge
 use crate::widgets::main_view::display::MainViewDisplay;
 use crate::widgets::main_view::focus_path_widget::FocusPathWidget;
 use crate::widgets::main_view::fuzzy_file_search_widget::FuzzyFileSearchWidget;
-use crate::widgets::main_view::fuzzy_screens_list_widget::{get_fuzzy_screen_list, FuzzyScreensList};
+use crate::widgets::main_view::fuzzy_screens_list_widget::{FuzzyScreensList, get_fuzzy_screen_list};
 use crate::widgets::main_view::main_context_menu::{get_focus_path_w, MainContextMenuWidget};
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::main_view::util;
@@ -49,7 +51,6 @@ use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
-use crate::{subwidget, unpack_or, unpack_or_e};
 
 pub type BufferId = Uuid;
 
@@ -267,7 +268,7 @@ impl MainView {
                         query: widget.get_query(),
                         filter_op: widget.get_filter(),
                     }
-                    .someboxed()
+                        .someboxed()
                 })))
                 .with_on_cancel(Some(Box::new(|_| MainViewMsg::CloseHover.someboxed()))),
         ));
@@ -337,7 +338,7 @@ impl MainView {
                     MainViewMsg::FocusOnDisplay {
                         display_idx: *w.get_highlighted().1.id(),
                     }
-                    .someboxed()
+                        .someboxed()
                 }
             }))
             .with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()))
@@ -367,7 +368,7 @@ impl MainView {
     fn get_opened_views_for_document_id(
         &self,
         document_identifier: DocumentIdentifier,
-    ) -> impl Iterator<Item = (usize, &MainViewDisplay)> + '_ {
+    ) -> impl Iterator<Item=(usize, &MainViewDisplay)> + '_ {
         self.displays.iter().enumerate().filter_map(move |(idx, item)| match item {
             MainViewDisplay::ResultsView(_) => None,
             MainViewDisplay::Editor(editor) => {
@@ -489,15 +490,19 @@ impl MainView {
         let mut options: Vec<ContextBarItem> = Vec::new();
 
         for item in fp {
-            // I need to adjust final kite by layout results
-
             if let Some(option) = item.get_widget_actions() {
                 options.push(option);
             }
         }
 
         let item = ContextBarItem::new_internal_node(Cow::Borrowed("gladius"), options);
-        let widget = MainContextMenuWidget::new(self.providers.clone(), item);
+        let widget = MainContextMenuWidget::new(self.providers.clone(), item)
+            .with_on_close(Box::new(|_| {
+                MainViewMsg::CloseHover.someboxed()
+            }))
+            .with_on_hit(Box::new(|widget| {
+                widget.get_highlighted().1.on_hit()
+            }));
 
         self.hover = Some(HoverItem::ContextMain {
             anchor: final_kite,
@@ -559,7 +564,7 @@ impl Widget for MainView {
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_in_files => MainViewMsg::OpenFindInFiles {
                 root_dir: self.providers.fsf().root(),
             }
-            .someboxed(),
+                .someboxed(),
             InputEvent::EverythingBarTrigger => MainViewMsg::OpenContextMenu.someboxed(),
             // InputEvent::KeyInput(key) if key == config.keyboard_config.global.everything_bar => MainViewMsg::OpenContextMenu.someboxed(),
             _ => {
@@ -687,6 +692,9 @@ impl Widget for MainView {
                     self.open_main_context_menu_and_focus();
                     None
                 }
+                MainViewMsg::QuitGladius => {
+                    GladiusMsg::Quit.someboxed()
+                }
                 _ => {
                     warn!("unprocessed event {:?}", main_view_msg);
                     None
@@ -727,12 +735,12 @@ impl Widget for MainView {
                 ),
                 ContextBarItem::new_leaf_node(
                     Cow::Borrowed("open display list"),
-                    || MainViewMsg::QuitGladius.boxed(),
+                    || MainViewMsg::OpenChooseDisplay.boxed(),
                     Some(config.keyboard_config.global.browse_buffers),
                 ),
                 ContextBarItem::new_leaf_node(
                     Cow::Borrowed("open new buffer"),
-                    || MainViewMsg::QuitGladius.boxed(),
+                    || MainViewMsg::OpenNewFile.boxed(),
                     Some(config.keyboard_config.global.new_buffer),
                 ),
             ],
