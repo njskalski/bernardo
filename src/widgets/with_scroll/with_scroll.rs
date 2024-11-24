@@ -3,7 +3,6 @@ use std::cmp::{max, min};
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
-use crate::{unpack_or_e, unpack_unit};
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
@@ -15,7 +14,8 @@ use crate::primitives::scroll::{Scroll, ScrollDirection};
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::{DeterminedBy, SizePolicy};
-use crate::widget::widget::{get_new_widget_id, WID, Widget};
+use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::{unpack_or_e, unpack_unit};
 
 // const DEFAULT_MARGIN_WIDTH: u16 = 4;
 
@@ -437,13 +437,10 @@ impl<W: Widget> Widget for WithScroll<W> {
 
     fn kite(&self) -> XY {
         let child_kite = self.child_widget.kite();
-        let scroll_offset = self.scroll.offset;
 
-        if child_kite >= scroll_offset {
-            child_kite - scroll_offset
-        } else {
-            error!("invisible kite, returning dummy kite");
-            XY::ZERO
-        }
+        let lr = unpack_or_e!(self.layout_res.as_ref(), XY::ZERO, "failed to get kite before layout");
+        let offset = XY::new(lr.margin_width, 0) + self.scroll.offset;
+
+        child_kite + offset
     }
 }
