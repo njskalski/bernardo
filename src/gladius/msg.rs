@@ -8,5 +8,4 @@ pub enum GladiusMsg {
     Screenshot,
 }
 
-
 impl AnyMsg for GladiusMsg {}

@@ -412,6 +412,9 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
             let highlighted: Vec<usize> = self.highlighter_op.as_ref().map(|h| h(&text)).unwrap_or_default();
             let mut highlighted_iter = highlighted.into_iter().peekable();
 
+            // This is fine, because idx is proved to be within output constraints, which by definition are u16.
+            let y = item_idx as u16;
+
             let mut x_offset: usize = 0;
             for (grapheme_idx, g) in text.graphemes(true).enumerate() {
                 let desired_pos_x: usize = depth as usize * 2 + x_offset;
@@ -424,9 +427,6 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
                 if x >= visible_rect.lower_right().x {
                     break;
                 }
-
-                // This is fine, because idx is proved to be within output constraints, which by definition are u16.
-                let y = item_idx as u16;
 
                 let mut local_style = style;
 
@@ -441,6 +441,29 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
                 output.print_at(XY::new(x, y), local_style, g);
 
                 x_offset += g.width();
+            }
+
+            // drawing label
+            if let Some(label) = node.keyboard_shortcut() {
+                x_offset += 2;
+
+                for g in label.graphemes(true) {
+                    let desired_pos_x: usize = depth as usize * 2 + x_offset;
+                    if desired_pos_x > u16::MAX as usize {
+                        error!("skipping drawing beyond x = u16::MAX");
+                        break;
+                    }
+
+                    let x = desired_pos_x as u16;
+                    if x >= visible_rect.lower_right().x {
+                        break;
+                    }
+
+                    let style = theme.editor_label_warning();
+
+                    output.print_at(XY::new(x, y), style, g);
+                    x_offset += g.width();
+                }
             }
         }
     }

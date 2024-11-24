@@ -8,6 +8,10 @@ use crate::primitives::maybe_bool::MaybeBool;
 pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {
     fn id(&self) -> &Key;
     fn label(&self) -> Cow<str>;
+
+    fn keyboard_shortcut(&self) -> Option<Cow<str>> {
+        None
+    }
     fn is_leaf(&self) -> bool;
 
     fn child_iter(&self) -> Box<dyn Iterator<Item = Self> + '_>;

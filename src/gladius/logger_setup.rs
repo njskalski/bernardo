@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use flexi_logger::FileSpec;
 use flexi_logger::writers::LogWriter;
+use flexi_logger::FileSpec;
 use log::warn;
 
 const DEFAULT_LEVEL: log::LevelFilter = log::LevelFilter::Info;

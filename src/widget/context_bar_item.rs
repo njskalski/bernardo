@@ -80,6 +80,16 @@ impl TreeNode<TreeKey> for ContextBarItem {
         self.title.clone()
     }
 
+    fn keyboard_shortcut(&self) -> Option<Cow<str>> {
+        match self.node_type {
+            NodeType::InternalNode(_) => None,
+            NodeType::Leaf { action, key } => {
+                let key = key.as_ref()?;
+                Some(Cow::Owned(key.to_string()))
+            }
+        }
+    }
+
     fn is_leaf(&self) -> bool {
         match self.node_type {
             NodeType::Leaf { .. } => true,
