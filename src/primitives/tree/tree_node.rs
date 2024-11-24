@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::Hash;
 
+use crate::io::keys;
 use crate::primitives::maybe_bool::MaybeBool;
 
 // Keep it lightweight. It is expected to be implemented by Rc<some type>
@@ -9,7 +10,7 @@ pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {
     fn id(&self) -> &Key;
     fn label(&self) -> Cow<str>;
 
-    fn keyboard_shortcut(&self) -> Option<Cow<str>> {
+    fn keyboard_shortcut(&self) -> Option<keys::Key> {
         None
     }
     fn is_leaf(&self) -> bool;

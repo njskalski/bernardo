@@ -23,7 +23,7 @@ use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::combined_widget::CombinedWidget;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WidgetActionParam, WID};
 use crate::widgets::context_menu::msg::ContextMenuMsg;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
@@ -99,6 +99,10 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key,
 
     pub fn expand_root(&mut self) {
         self.tree_view.internal_mut().expand_root();
+    }
+
+    pub fn set_on_shortcut_hit(&mut self, on_shortcut_hit: WidgetActionParam<TreeViewWidget<Key, Item>, Item>) {
+        self.tree_view.internal_mut().set_on_shortcut_hit(on_shortcut_hit)
     }
 
     fn input_to_treeview(input_event: &InputEvent) -> bool {

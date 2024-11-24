@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::iter;
 
 use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
@@ -19,7 +20,8 @@ use crate::primitives::tree::tree_node::{TreeItFilter, TreeNode};
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WidgetActionParam, WID};
+use crate::{unpack, unpack_or_e};
 
 pub const TYPENAME: &str = "tree_view";
 
@@ -39,11 +41,13 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
     last_size: Option<Screenspace>,
 
     //events
-    on_miss: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
-    on_highlighted_changed: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
-    on_flip_expand: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
+    on_miss: Option<WidgetAction<Self>>,
+    on_highlighted_changed: Option<WidgetAction<Self>>,
+    on_flip_expand: Option<WidgetAction<Self>>,
     // called on hitting "enter" over a selection.
-    on_hit: Option<WidgetAction<TreeViewWidget<Key, Item>>>,
+    on_hit: Option<WidgetAction<Self>>,
+
+    on_keyboard_shortcut_hit: Option<WidgetActionParam<Self, Item>>,
 
     // This will highlight letters given their indices. Use to do "fuzzy search" in tree.
     highlighter_op: Option<LabelHighlighter>,
@@ -76,7 +80,7 @@ Warranties:
 - TODO change highlighted to Rc<Key>, because now with lazy loading and filtering, items can
     disappear...
  */
-impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, Item> {
+impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> TreeViewWidget<Key, Item> {
     pub fn new(root_node: Item) -> Self {
         Self {
             id: get_new_widget_id(),
@@ -88,6 +92,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
             on_highlighted_changed: None,
             on_flip_expand: None,
             on_hit: None,
+            on_keyboard_shortcut_hit: None,
             highlighter_op: None,
             filter_op: None,
             filter_depth_op: None,
@@ -193,6 +198,17 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
         }
     }
 
+    pub fn with_on_shortcut_hit(self, on_shortcut_hit: WidgetActionParam<Self, Item>) -> Self {
+        Self {
+            on_keyboard_shortcut_hit: Some(on_shortcut_hit),
+            ..self
+        }
+    }
+
+    pub fn set_on_shortcut_hit(&mut self, on_shortcut_hit: WidgetActionParam<Self, Item>) {
+        self.on_keyboard_shortcut_hit = Some(on_shortcut_hit);
+    }
+
     fn event_highlighted_changed(&self) -> Option<Box<dyn AnyMsg>> {
         self.on_highlighted_changed.as_ref().and_then(|f: &WidgetAction<Self>| f(self))
     }
@@ -262,6 +278,24 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> TreeViewWidget<Key, It
     pub fn get_expanded(&self, key: &Key) -> bool {
         self.expanded.contains(key)
     }
+
+    // Idx, depth, item
+    pub fn get_visible_items(&self) -> Box<dyn Iterator<Item = (usize, (u16, Item))> + 'static> {
+        let screenspace = unpack_or_e!(
+            self.last_size,
+            Box::new(iter::empty()),
+            "can't decide visible items without last_size"
+        );
+        let visible_rect = screenspace.visible_rect();
+
+        Box::new(
+            self.items()
+                .enumerate()
+                // skipping lines that cannot be visible, because they are before hint()
+                .skip(visible_rect.upper_left().y as usize)
+                .take(visible_rect.size.y as usize),
+        )
+    }
 }
 
 impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget for TreeViewWidget<K, I> {
@@ -300,7 +334,19 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
                 Keycode::ArrowUp => Some(Box::new(TreeViewMsg::Arrow(Arrow::Up))),
                 Keycode::ArrowDown => Some(Box::new(TreeViewMsg::Arrow(Arrow::Down))),
                 Keycode::Enter => Some(Box::new(TreeViewMsg::HitEnter)),
-                _ => None,
+                _ => {
+                    if let Some(action_trigger) = self.on_keyboard_shortcut_hit.as_ref() {
+                        for item in self.items() {
+                            if let Some(shortcut) = item.1.keyboard_shortcut() {
+                                if key == shortcut {
+                                    return (action_trigger)(self, item.1);
+                                }
+                            }
+                        }
+                    }
+
+                    None
+                }
             },
             _ => None,
         }
@@ -444,8 +490,10 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
             }
 
             // drawing label
-            if let Some(label) = node.keyboard_shortcut() {
+            if let Some(key) = node.keyboard_shortcut() {
                 x_offset += 2;
+
+                let label = key.to_string();
 
                 for g in label.graphemes(true) {
                     let desired_pos_x: usize = depth as usize * 2 + x_offset;

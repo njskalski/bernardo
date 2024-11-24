@@ -496,9 +496,14 @@ impl MainView {
         }
 
         let item = ContextBarItem::new_internal_node(Cow::Borrowed("gladius"), options);
-        let widget = MainContextMenuWidget::new(self.providers.clone(), item)
-            .with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()))
-            .with_on_hit(Box::new(|widget| widget.get_highlighted().1.on_hit()));
+        let mut widget =
+            MainContextMenuWidget::new(self.providers.clone(), item).with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()));
+
+        widget.set_on_shortcut_hit(Box::new(|widget, item| item.on_hit()));
+
+        if !self.providers.config().learning_mode {
+            widget = widget.with_on_hit(Box::new(|widget| widget.get_highlighted().1.on_hit()));
+        }
 
         self.hover = Some(HoverItem::ContextMain {
             anchor: final_kite,
@@ -574,6 +579,12 @@ impl Widget for MainView {
         debug!("main_view.update {:?}", msg);
 
         if let Some(main_view_msg) = msg.as_msg_mut::<MainViewMsg>() {
+            // I am not sure about this line, but I don't have an idea how to implement 'learning mode' without breaking paradigm.
+            if self.hover.is_some() {
+                self.hover = None;
+                self.set_focus_to_default();
+            }
+
             return match main_view_msg {
                 MainViewMsg::FocusUpdateMsg(focus_update) => {
                     if !self.update_focus(*focus_update) {
@@ -594,15 +605,7 @@ impl Widget for MainView {
                     self.open_fuzzy_search_in_files_and_focus();
                     None
                 }
-                MainViewMsg::CloseHover => {
-                    if self.hover.is_none() {
-                        error!("expected self.hover to be not None.");
-                    }
-
-                    self.hover = None;
-                    self.set_focus_to_default();
-                    None
-                }
+                MainViewMsg::CloseHover => None,
                 MainViewMsg::OpenChooseDisplay => {
                     self.open_fuzzy_buffer_list_and_focus();
                     None
@@ -621,9 +624,6 @@ impl Widget for MainView {
                     } else {
                         self.display_idx = *pos;
                     }
-                    // removing the dialog
-                    self.hover = None;
-                    self.set_focus_to_default();
 
                     None
                 }
@@ -648,9 +648,6 @@ impl Widget for MainView {
                     None
                 }
                 MainViewMsg::OpenFileBySpath { spath } => {
-                    // removing the dialog
-                    self.hover = None;
-                    self.set_focus_to_default();
                     self.open_file_with_path_and_focus(spath.clone());
                     None
                 }
@@ -680,8 +677,6 @@ impl Widget for MainView {
                     filter_op,
                 } => {
                     self.handle_open_find_in_files(root_dir.clone(), query.clone(), filter_op.take());
-                    self.hover = None;
-                    self.set_focus_to_default();
                     None
                 }
                 MainViewMsg::OpenContextMenu => {

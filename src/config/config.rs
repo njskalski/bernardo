@@ -18,6 +18,8 @@ pub struct Config {
 
     #[serde(default, skip_serializing_if = "GlobalEditorOptions::is_default")]
     pub global: GlobalEditorOptions,
+
+    pub learning_mode: bool,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
