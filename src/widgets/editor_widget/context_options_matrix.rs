@@ -18,7 +18,7 @@ pub fn get_context_options(
     single_stupid_cursor: Option<StupidCursor>,
     lsp_symbol: Option<&NavCompSymbol>,
     tree_sitter_symbol: Option<&str>,
-) -> Option<ContextBarItem> {
+) -> Vec<ContextBarItem> {
     let mut code_results: Vec<ContextBarItem> = Vec::new();
 
     debug!("hit lsp_symbol, tree_sitter_symbol: {:?} {:?}", &lsp_symbol, &tree_sitter_symbol);
@@ -59,9 +59,5 @@ pub fn get_context_options(
 
     debug!("get_context_options: [{:?}]", &code_results);
 
-    if code_results.is_empty() {
-        None
-    } else {
-        Some(ContextBarItem::new_internal_node("code".into(), code_results))
-    }
+    code_results
 }

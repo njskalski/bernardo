@@ -34,5 +34,7 @@ pub fn aggregate_actions(widget: &dyn Widget) -> Vec<ContextBarItem> {
         }
     }
 
+    result.reverse();
+
     result
 }
