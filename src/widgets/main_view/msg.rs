@@ -26,6 +26,11 @@ pub enum MainViewMsg {
     // Open fuzzy files
     OpenFuzzyFiles,
     OpenContextMenu,
+    // depth describes depth of focus path. It's Option so I can "take"
+    ContextMenuHit {
+        msg: Option<Box<dyn AnyMsg>>,
+        depth: usize,
+    },
 
     // Used by OpenOpenBuffers too
     CloseHover,

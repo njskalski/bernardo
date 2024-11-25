@@ -42,7 +42,7 @@ use crate::widgets::main_view::display::MainViewDisplay;
 use crate::widgets::main_view::focus_path_widget::FocusPathWidget;
 use crate::widgets::main_view::fuzzy_file_search_widget::FuzzyFileSearchWidget;
 use crate::widgets::main_view::fuzzy_screens_list_widget::{get_fuzzy_screen_list, FuzzyScreensList};
-use crate::widgets::main_view::main_context_menu::{get_focus_path_w, MainContextMenuWidget};
+use crate::widgets::main_view::main_context_menu::{aggregate_actions, get_focus_path_w, MainContextMenuWidget};
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::main_view::util;
 use crate::widgets::main_view::util::get_focus_path;
@@ -483,26 +483,39 @@ impl MainView {
     pub fn open_main_context_menu_and_focus(&mut self) {
         // TODO add checks for hover being empty or whatever
 
-        let fp = get_focus_path_w(self);
+        // let fp = get_focus_path_w(self);
+
+        let options = aggregate_actions(self);
 
         let final_kite = self.kite(); // kite is recursive now
 
-        let mut options: Vec<ContextBarItem> = Vec::new();
+        // let mut options: Vec<ContextBarItem> = Vec::new();
 
-        for item in fp {
-            if let Some(option) = item.get_widget_actions() {
-                options.push(option);
-            }
-        }
+        // for item in fp {
+        //     if let Some(option) = item.get_widget_actions() {
+        //         options.push(option);
+        //     }
+        // }
 
         let item = ContextBarItem::new_internal_node(Cow::Borrowed("gladius"), options);
         let mut widget =
             MainContextMenuWidget::new(self.providers.clone(), item).with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()));
 
-        widget.set_on_shortcut_hit(Box::new(|widget, item| item.on_hit()));
+        widget.set_on_shortcut_hit(Box::new(|widget, item| -> Option<Box<dyn AnyMsg>> {
+            let depth = item.get_depth();
+            let msg = item.on_hit()?;
+
+            MainViewMsg::ContextMenuHit { msg: Some(msg), depth }.someboxed()
+        }));
 
         if !self.providers.config().learning_mode {
-            widget = widget.with_on_hit(Box::new(|widget| widget.get_highlighted().1.on_hit()));
+            widget = widget.with_on_hit(Box::new(|widget| -> Option<Box<dyn AnyMsg>> {
+                let highlighted = widget.get_highlighted();
+                let depth = highlighted.1.get_depth();
+                let msg = highlighted.1.on_hit()?;
+
+                MainViewMsg::ContextMenuHit { msg: Some(msg), depth }.someboxed()
+            }));
         }
 
         self.hover = Some(HoverItem::ContextMain {
@@ -510,6 +523,30 @@ impl MainView {
             widget,
         });
         self.set_focus_to_hover();
+    }
+
+    // TODO this piece of code would be great to unify with act_on, but I have no idea how to do it now.
+    fn context_menu_process_hit(&mut self, msg: Box<dyn AnyMsg>, depth: usize) -> Option<Box<dyn AnyMsg>> {
+        fn rec_process_msg(widget: &mut dyn Widget, depth: usize, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+            if depth == 0 {
+                widget.update(msg)
+            } else {
+                if let Some(child) = widget.get_focused_mut() {
+                    let result_op = rec_process_msg(child, depth - 1, msg);
+
+                    if let Some(new_msg) = result_op {
+                        widget.update(new_msg)
+                    } else {
+                        None
+                    }
+                } else {
+                    error!("failed reaching expected focus path depth! Dropping msg {:?}", msg);
+                    None
+                }
+            }
+        }
+
+        rec_process_msg(self, depth, msg)
     }
 }
 
@@ -579,7 +616,7 @@ impl Widget for MainView {
         debug!("main_view.update {:?}", msg);
 
         if let Some(main_view_msg) = msg.as_msg_mut::<MainViewMsg>() {
-            // I am not sure about this line, but I don't have an idea how to implement 'learning mode' without breaking paradigm.
+            // I am not sure if I want to keep this part. Originally it was meant for "not breaking learning mode", but I think I managed to keep it working without that piece using ContextMenuHit { msg: Box<dyn AnyMsg>, depth: usize }
             if self.hover.is_some() {
                 self.hover = None;
                 self.set_focus_to_default();
@@ -682,6 +719,13 @@ impl Widget for MainView {
                 MainViewMsg::OpenContextMenu => {
                     self.open_main_context_menu_and_focus();
                     None
+                }
+                MainViewMsg::ContextMenuHit { msg, depth } => {
+                    if let Some(msg) = msg.take() {
+                        self.context_menu_process_hit(msg, *depth)
+                    } else {
+                        None
+                    }
                 }
                 MainViewMsg::QuitGladius => GladiusMsg::Quit.someboxed(),
                 _ => {

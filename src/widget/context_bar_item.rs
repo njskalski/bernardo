@@ -20,6 +20,7 @@ pub enum NodeType {
 pub struct ContextBarItem {
     title: Cow<'static, str>,
     node_type: NodeType,
+    depth: usize,
 }
 
 impl ContextBarItem {
@@ -27,6 +28,7 @@ impl ContextBarItem {
         ContextBarItem {
             title,
             node_type: NodeType::InternalNode(children),
+            depth: 0,
         }
     }
 
@@ -34,7 +36,27 @@ impl ContextBarItem {
         ContextBarItem {
             title,
             node_type: NodeType::Leaf { action, key: key_op },
+            depth: 0,
         }
+    }
+
+    pub fn set_depth_recursively(&mut self, depth: usize) {
+        self.depth = depth;
+
+        for child in self.child_iter_mut() {
+            child.set_depth_recursively(depth);
+        }
+    }
+
+    fn child_iter_mut(&mut self) -> Box<dyn Iterator<Item = &mut Self> + '_> {
+        match &mut self.node_type {
+            NodeType::Leaf { .. } => Box::new(std::iter::Empty::default()),
+            NodeType::InternalNode(items) => Box::new(items.iter_mut()),
+        }
+    }
+
+    pub fn get_depth(&self) -> usize {
+        self.depth
     }
 
     pub const GO_TO_DEFINITION: ContextBarItem = ContextBarItem {
@@ -43,6 +65,7 @@ impl ContextBarItem {
             action: || EditorWidgetMsg::GoToDefinition.boxed(),
             key: None,
         },
+        depth: 0,
     };
     pub const REFORMAT_FILE: ContextBarItem = ContextBarItem {
         title: Cow::Borrowed("reformat file"),
@@ -50,6 +73,7 @@ impl ContextBarItem {
             action: || EditorWidgetMsg::Reformat.boxed(),
             key: None,
         },
+        depth: 0,
     };
     pub const SHOW_USAGES: ContextBarItem = ContextBarItem {
         title: Cow::Borrowed("show usages"),
@@ -57,6 +81,7 @@ impl ContextBarItem {
             action: || EditorWidgetMsg::ShowUsages.boxed(),
             key: None,
         },
+        depth: 0,
     };
 }
 

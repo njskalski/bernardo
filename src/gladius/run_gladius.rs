@@ -162,6 +162,7 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
                         }
 
                         let (_ , result_op) = main_view.act_on(ie);
+                        error!("result_op = {:?}", result_op);
                         if let Some(result) = result_op.as_ref() {
                             if let Some(gladius_msg) = result.as_msg::<GladiusMsg>() {
                                 match gladius_msg {
