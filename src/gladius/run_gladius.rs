@@ -15,8 +15,8 @@ use crate::io::output::FinalOutput;
 use crate::primitives::helpers::get_next_filename;
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::inspector::{inspect_workspace, InspectError};
-use crate::w7e::workspace::WORKSPACE_FILE_NAME;
 use crate::w7e::workspace::{LoadError, ScopeLoadErrors, Workspace};
+use crate::w7e::workspace::WORKSPACE_FILE_NAME;
 use crate::widget::widget::Widget;
 use crate::widgets::main_view::main_view::MainView;
 
@@ -162,7 +162,6 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
                         }
 
                         let (_ , result_op) = main_view.act_on(ie);
-                        error!("result_op = {:?}", result_op);
                         if let Some(result) = result_op.as_ref() {
                             if let Some(gladius_msg) = result.as_msg::<GladiusMsg>() {
                                 match gladius_msg {
