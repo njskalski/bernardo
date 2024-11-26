@@ -482,22 +482,9 @@ impl MainView {
 
     pub fn open_main_context_menu_and_focus(&mut self) {
         // TODO add checks for hover being empty or whatever
-
-        // let fp = get_focus_path_w(self);
-
         let options = aggregate_actions(self);
-
         let final_kite = self.kite(); // kite is recursive now
-
-        // let mut options: Vec<ContextBarItem> = Vec::new();
-
-        // for item in fp {
-        //     if let Some(option) = item.get_widget_actions() {
-        //         options.push(option);
-        //     }
-        // }
-
-        let item = ContextBarItem::new_internal_node(Cow::Borrowed("gladius"), options);
+        let item = ContextBarItem::new_internal_node(Cow::Borrowed("†"), options);
         let mut widget =
             MainContextMenuWidget::new(self.providers.clone(), item).with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()));
 
@@ -507,6 +494,8 @@ impl MainView {
 
             MainViewMsg::ContextMenuHit { msg: Some(msg), depth }.someboxed()
         }));
+
+        widget.tree_view_mut().expand_all_internal_nodes();
 
         if !self.providers.config().learning_mode {
             widget = widget.with_on_hit(Box::new(|widget| -> Option<Box<dyn AnyMsg>> {
@@ -589,6 +578,7 @@ impl Widget for MainView {
             InputEvent::FocusUpdate(focus_update) if self.will_accept_focus_update(focus_update) => {
                 MainViewMsg::FocusUpdateMsg(focus_update).someboxed()
             }
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.close => GladiusMsg::Quit.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.new_buffer => MainViewMsg::OpenNewFile.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.fuzzy_file => MainViewMsg::OpenFuzzyFiles.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.browse_buffers => {
@@ -660,6 +650,7 @@ impl Widget for MainView {
                         );
                     } else {
                         self.display_idx = *pos;
+                        self.set_focus_to_default();
                     }
 
                     None

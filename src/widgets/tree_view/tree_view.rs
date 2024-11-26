@@ -11,14 +11,15 @@ use unicode_width::UnicodeWidthStr;
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Keycode;
+use crate::io::keys;
+use crate::io::keys::{Key, Keycode};
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
 use crate::primitives::tree::tree_it::eager_iterator;
 use crate::primitives::tree::tree_node::{TreeItFilter, TreeNode};
 use crate::primitives::xy::XY;
-use crate::widget::any_msg::AnyMsg;
+use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WidgetActionParam, WID};
 use crate::{unpack, unpack_or_e};
@@ -70,6 +71,7 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
 enum TreeViewMsg {
     Arrow(Arrow),
     HitEnter,
+    ShortcutHit(keys::Key),
 }
 
 impl AnyMsg for TreeViewMsg {}
@@ -273,6 +275,20 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         }
     }
 
+    pub fn expand_all_internal_nodes(&mut self) {
+        fn expand<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>(expanded: &mut HashSet<Key>, node: &Item) {
+            if !node.is_leaf() {
+                expanded.insert(node.id().clone());
+
+                for child in node.child_iter() {
+                    expand(expanded, &child);
+                }
+            }
+        }
+
+        expand(&mut self.expanded, &self.root_node);
+    }
+
     // Returns true if Key was found AND the node was expanded.
     // Returns false if node was NOT expanded OR THE KEY IS ABSENT.
     pub fn get_expanded(&self, key: &Key) -> bool {
@@ -280,6 +296,7 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
     }
 
     // Idx, depth, item
+    // TODO I think there is a bug there
     pub fn get_visible_items(&self) -> Box<dyn Iterator<Item = (usize, (u16, Item))> + 'static> {
         let screenspace = unpack_or_e!(
             self.last_size,
@@ -296,6 +313,50 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
                 .take(visible_rect.size.y as usize),
         )
     }
+
+    pub fn get_all_shortcuts(&self) -> Box<dyn Iterator<Item = (usize, Key, keys::Key)> + 'static> {
+        Box::new(
+            self.items()
+                .enumerate()
+                .filter(|(_, (_, item))| item.keyboard_shortcut().is_some())
+                .map(|(idx, (_, item))| (idx, item.id().clone(), item.keyboard_shortcut().unwrap())),
+        )
+    }
+
+    // these 3 methods below are unused as of now, I am not sure I want to use them. If I do,
+    // I need to figure out definition of page-up and page-down.
+    // fn can_select(&self, key: &Key) -> bool {
+    //     true
+    // }
+    //
+    // fn get_prev_highlight(&self) -> Option<usize> {
+    //     if self.highlighted == 0 {
+    //         return None;
+    //     }
+    //
+    //     let mut it = self.items().enumerate().take(self.highlighted - 1);
+    //     let mut last_idx: Option<usize> = None;
+    //
+    //     while let Some((idx, (_, item))) = it.next() {
+    //         if self.can_select(item.id()) {
+    //             last_idx = Some(idx);
+    //         }
+    //     }
+    //
+    //     last_idx
+    // }
+    //
+    // fn get_next_highlight(&self) -> Option<usize> {
+    //     let mut it = self.items().enumerate().skip(self.highlighted);
+    //
+    //     while let Some((idx, (_, item))) = it.next() {
+    //         if self.can_select(item.id()) {
+    //             return Some(idx);
+    //         }
+    //     }
+    //
+    //     None
+    // }
 }
 
 impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget for TreeViewWidget<K, I> {
@@ -339,7 +400,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
                         for item in self.items() {
                             if let Some(shortcut) = item.1.keyboard_shortcut() {
                                 if key == shortcut {
-                                    return (action_trigger)(self, item.1);
+                                    return TreeViewMsg::ShortcutHit(shortcut).someboxed();
                                 }
                             }
                         }
@@ -397,6 +458,19 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
                     self.flip_expanded(node.id());
                     self.event_flip_expand()
                 }
+            }
+            TreeViewMsg::ShortcutHit(key) => {
+                if let Some(action_trigger) = self.on_keyboard_shortcut_hit.as_ref() {
+                    for item in self.items() {
+                        if let Some(shortcut) = item.1.keyboard_shortcut() {
+                            if *key == shortcut {
+                                return action_trigger(self, item.1);
+                            }
+                        }
+                    }
+                }
+                error!("expected a valid key shortcut for {:?}, found none", key);
+                None
             }
         };
     }
