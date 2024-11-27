@@ -578,7 +578,7 @@ impl Widget for MainView {
             InputEvent::FocusUpdate(focus_update) if self.will_accept_focus_update(focus_update) => {
                 MainViewMsg::FocusUpdateMsg(focus_update).someboxed()
             }
-            InputEvent::KeyInput(key) if key == config.keyboard_config.global.close => GladiusMsg::Quit.someboxed(),
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.close => MainViewMsg::QuitGladius.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.new_buffer => MainViewMsg::OpenNewFile.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.fuzzy_file => MainViewMsg::OpenFuzzyFiles.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.browse_buffers => {
