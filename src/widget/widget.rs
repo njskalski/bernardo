@@ -10,6 +10,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
+use crate::widget::context_bar_item::ContextBarItem;
 use crate::widget::fill_policy::SizePolicy;
 
 // this corresponds to message to Parent.
@@ -144,6 +145,10 @@ pub trait Widget: 'static {
     fn pre_act_on(&mut self, _input_event: &InputEvent) {}
 
     fn get_status_description(&self) -> Option<Cow<'_, str>> {
+        None
+    }
+
+    fn get_widget_actions(&self) -> Option<ContextBarItem> {
         None
     }
 }

@@ -12,6 +12,7 @@ use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::helpers::fill_output;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
+use crate::unpack_or_e;
 use crate::widget::widget::{Widget, WID};
 
 // here one could merge focus_group.focused with ds.focused, but not it's not important.
@@ -198,7 +199,7 @@ pub trait ComplexWidget: Widget + Sized {
 
     fn complex_get_focused(&self) -> Option<&dyn Widget> {
         if self.get_display_state_op().is_none() {
-            error!("requested complex_get_focused before layout");
+            error!("requested complex_get_focused before layout in widget {}", self.desc());
         }
 
         self.get_display_state_op()
@@ -216,7 +217,7 @@ pub trait ComplexWidget: Widget + Sized {
 
     fn complex_get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
         if self.get_display_state_op().is_none() {
-            error!("requested complex_get_focused_mut before layout");
+            error!("requested complex_get_focused_mut before layout in widget {}", self.desc());
         }
 
         let focused_ptr = self.get_display_state_op().as_ref().map(|ds| ds.focused.clone());
@@ -232,5 +233,23 @@ pub trait ComplexWidget: Widget + Sized {
                 }
             })
             .flatten()
+    }
+
+    fn get_focused_wwr(&self) -> Option<&WidgetWithRect<Self>> {
+        let ds = unpack_or_e!(self.get_display_state_op(), None, "requested get_focused_wwr before layout");
+
+        let focused_id = ds.focused.get(self).id();
+
+        ds.wwrs.iter().find(|wwr| wwr.widget().get(self).id() == focused_id)
+    }
+
+    fn complex_kite(&self) -> XY {
+        let focused_wwr = unpack_or_e!(self.get_focused_wwr(), XY::ZERO, "failed acquiring focused wwr");
+
+        let pos = focused_wwr.rect().pos;
+
+        let internal_kite = focused_wwr.widget().get(self).kite();
+
+        internal_kite + pos
     }
 }

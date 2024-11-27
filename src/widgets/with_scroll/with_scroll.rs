@@ -12,10 +12,10 @@ use crate::io::sub_output::SubOutput;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::{Scroll, ScrollDirection};
 use crate::primitives::xy::XY;
-use crate::unpack_unit;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::{DeterminedBy, SizePolicy};
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::{unpack_or_e, unpack_unit};
 
 // const DEFAULT_MARGIN_WIDTH: u16 = 4;
 
@@ -436,7 +436,11 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn kite(&self) -> XY {
-        error!("Scroll nesting is unsupported! I should crash on you now!");
-        XY::ZERO
+        let child_kite = self.child_widget.kite();
+
+        let lr = unpack_or_e!(self.layout_res.as_ref(), XY::ZERO, "failed to get kite before layout");
+        let offset = XY::new(lr.margin_width, 0) + self.scroll.offset;
+
+        child_kite + offset
     }
 }

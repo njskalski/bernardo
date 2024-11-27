@@ -5,6 +5,5 @@ mod helpers;
 pub mod label;
 pub mod msg;
 
-mod context_bar;
 #[cfg(test)]
 mod tests;

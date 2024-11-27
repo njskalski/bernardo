@@ -18,6 +18,8 @@ pub struct Config {
 
     #[serde(default, skip_serializing_if = "GlobalEditorOptions::is_default")]
     pub global: GlobalEditorOptions,
+
+    pub learning_mode: bool,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -37,6 +39,7 @@ pub struct Global {
     pub find_in_files: Key,
     pub fuzzy_file: Key,
     pub new_buffer: Key,
+    pub make_screenshot: Key,
 }
 
 impl Default for Global {
@@ -51,6 +54,7 @@ impl Default for Global {
             everything_bar: Keycode::Char('e').to_key().with_ctrl(),
             find_in_files: Keycode::Char('g').to_key().with_ctrl(),
             close_context_menu: Keycode::Esc.to_key(),
+            make_screenshot: Keycode::Char('u').to_key().with_ctrl(),
         }
     }
 }

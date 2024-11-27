@@ -13,8 +13,10 @@ use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::path::SPath;
 use crate::fs::read_error::ReadError;
+use crate::gladius::msg::GladiusMsg;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
+use crate::io::keys::Keycode;
 use crate::io::output::Output;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
@@ -29,6 +31,7 @@ use crate::primitives::xy::XY;
 use crate::promise::streaming_promise::StreamingPromise;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
+use crate::widget::context_bar_item::ContextBarItem;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
@@ -39,7 +42,9 @@ use crate::widgets::main_view::display::MainViewDisplay;
 use crate::widgets::main_view::focus_path_widget::FocusPathWidget;
 use crate::widgets::main_view::fuzzy_file_search_widget::FuzzyFileSearchWidget;
 use crate::widgets::main_view::fuzzy_screens_list_widget::{get_fuzzy_screen_list, FuzzyScreensList};
+use crate::widgets::main_view::main_context_menu::{aggregate_actions, get_focus_path_w, MainContextMenuWidget};
 use crate::widgets::main_view::msg::MainViewMsg;
+use crate::widgets::main_view::util;
 use crate::widgets::main_view::util::get_focus_path;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
@@ -57,6 +62,9 @@ pub enum HoverItem {
 
     // search in files
     SearchInFiles(FindInFilesWidget),
+
+    // Context menu
+    ContextMain { anchor: XY, widget: MainContextMenuWidget },
 }
 
 // TODO start indexing documents with DocumentIdentifier as opposed to usize
@@ -382,6 +390,7 @@ impl MainView {
                             HoverItem::FuzzySearch(fs) => fs as &dyn Widget,
                             HoverItem::FuzzySearch2(fs) => fs as &dyn Widget,
                             HoverItem::SearchInFiles(fs) => fs as &dyn Widget,
+                            HoverItem::ContextMain { anchor, widget } => widget as &dyn Widget,
                         }
                     } else {
                         error!("no hover found, this subwidget pointer should have been overriden by now.");
@@ -395,6 +404,7 @@ impl MainView {
                             HoverItem::FuzzySearch(fs) => fs as &mut dyn Widget,
                             HoverItem::FuzzySearch2(fs) => fs as &mut dyn Widget,
                             HoverItem::SearchInFiles(fs) => fs as &mut dyn Widget,
+                            HoverItem::ContextMain { anchor, widget } => widget as &mut dyn Widget,
                         }
                     } else {
                         error!("no hover found, this subwidget pointer should have been overriden by now.");
@@ -470,9 +480,63 @@ impl MainView {
         self
     }
 
-    // pub fn set_search_result(&mut self, crv_op: Option<CodeResultsView>) {
-    //     // self.crv_op = crv_op;
-    // }
+    pub fn open_main_context_menu_and_focus(&mut self) {
+        // TODO add checks for hover being empty or whatever
+        let options = aggregate_actions(self);
+        let final_kite = self.kite(); // kite is recursive now
+        let item = ContextBarItem::new_internal_node(Cow::Borrowed("†"), options);
+        let mut widget =
+            MainContextMenuWidget::new(self.providers.clone(), item).with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()));
+
+        widget.set_on_shortcut_hit(Box::new(|widget, item| -> Option<Box<dyn AnyMsg>> {
+            let depth = item.get_depth();
+            let msg = item.on_hit()?;
+
+            MainViewMsg::ContextMenuHit { msg: Some(msg), depth }.someboxed()
+        }));
+
+        widget.tree_view_mut().expand_all_internal_nodes();
+
+        if !self.providers.config().learning_mode {
+            widget = widget.with_on_hit(Box::new(|widget| -> Option<Box<dyn AnyMsg>> {
+                let highlighted = widget.get_highlighted();
+                let depth = highlighted.1.get_depth();
+                let msg = highlighted.1.on_hit()?;
+
+                MainViewMsg::ContextMenuHit { msg: Some(msg), depth }.someboxed()
+            }));
+        }
+
+        self.hover = Some(HoverItem::ContextMain {
+            anchor: final_kite,
+            widget,
+        });
+        self.set_focus_to_hover();
+    }
+
+    // TODO this piece of code would be great to unify with act_on, but I have no idea how to do it now.
+    fn context_menu_process_hit(&mut self, msg: Box<dyn AnyMsg>, depth: usize) -> Option<Box<dyn AnyMsg>> {
+        fn rec_process_msg(widget: &mut dyn Widget, depth: usize, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+            if depth == 0 {
+                widget.update(msg)
+            } else {
+                if let Some(child) = widget.get_focused_mut() {
+                    let result_op = rec_process_msg(child, depth - 1, msg);
+
+                    if let Some(new_msg) = result_op {
+                        widget.update(new_msg)
+                    } else {
+                        None
+                    }
+                } else {
+                    error!("failed reaching expected focus path depth! Dropping msg {:?}", msg);
+                    None
+                }
+            }
+        }
+
+        rec_process_msg(self, depth, msg)
+    }
 }
 
 impl Widget for MainView {
@@ -514,6 +578,7 @@ impl Widget for MainView {
             InputEvent::FocusUpdate(focus_update) if self.will_accept_focus_update(focus_update) => {
                 MainViewMsg::FocusUpdateMsg(focus_update).someboxed()
             }
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.close => MainViewMsg::QuitGladius.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.new_buffer => MainViewMsg::OpenNewFile.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.fuzzy_file => MainViewMsg::OpenFuzzyFiles.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.browse_buffers => {
@@ -528,6 +593,8 @@ impl Widget for MainView {
                 root_dir: self.providers.fsf().root(),
             }
             .someboxed(),
+            InputEvent::EverythingBarTrigger => MainViewMsg::OpenContextMenu.someboxed(),
+            // InputEvent::KeyInput(key) if key == config.keyboard_config.global.everything_bar => MainViewMsg::OpenContextMenu.someboxed(),
             _ => {
                 debug!("input {:?} NOT consumed", input_event);
                 None
@@ -539,6 +606,12 @@ impl Widget for MainView {
         debug!("main_view.update {:?}", msg);
 
         if let Some(main_view_msg) = msg.as_msg_mut::<MainViewMsg>() {
+            // I am not sure if I want to keep this part. Originally it was meant for "not breaking learning mode", but I think I managed to keep it working without that piece using ContextMenuHit { msg: Box<dyn AnyMsg>, depth: usize }
+            if self.hover.is_some() {
+                self.hover = None;
+                self.set_focus_to_default();
+            }
+
             return match main_view_msg {
                 MainViewMsg::FocusUpdateMsg(focus_update) => {
                     if !self.update_focus(*focus_update) {
@@ -559,15 +632,7 @@ impl Widget for MainView {
                     self.open_fuzzy_search_in_files_and_focus();
                     None
                 }
-                MainViewMsg::CloseHover => {
-                    if self.hover.is_none() {
-                        error!("expected self.hover to be not None.");
-                    }
-
-                    self.hover = None;
-                    self.set_focus_to_default();
-                    None
-                }
+                MainViewMsg::CloseHover => None,
                 MainViewMsg::OpenChooseDisplay => {
                     self.open_fuzzy_buffer_list_and_focus();
                     None
@@ -585,10 +650,8 @@ impl Widget for MainView {
                         );
                     } else {
                         self.display_idx = *pos;
+                        self.set_focus_to_default();
                     }
-                    // removing the dialog
-                    self.hover = None;
-                    self.set_focus_to_default();
 
                     None
                 }
@@ -613,9 +676,6 @@ impl Widget for MainView {
                     None
                 }
                 MainViewMsg::OpenFileBySpath { spath } => {
-                    // removing the dialog
-                    self.hover = None;
-                    self.set_focus_to_default();
                     self.open_file_with_path_and_focus(spath.clone());
                     None
                 }
@@ -645,10 +705,20 @@ impl Widget for MainView {
                     filter_op,
                 } => {
                     self.handle_open_find_in_files(root_dir.clone(), query.clone(), filter_op.take());
-                    self.hover = None;
-                    self.set_focus_to_default();
                     None
                 }
+                MainViewMsg::OpenContextMenu => {
+                    self.open_main_context_menu_and_focus();
+                    None
+                }
+                MainViewMsg::ContextMenuHit { msg, depth } => {
+                    if let Some(msg) = msg.take() {
+                        self.context_menu_process_hit(msg, *depth)
+                    } else {
+                        None
+                    }
+                }
+                MainViewMsg::QuitGladius => GladiusMsg::Quit.someboxed(),
                 _ => {
                     warn!("unprocessed event {:?}", main_view_msg);
                     None
@@ -675,6 +745,35 @@ impl Widget for MainView {
     fn get_status_description(&self) -> Option<Cow<'_, str>> {
         Some(Cow::Borrowed("gladius"))
     }
+
+    fn get_widget_actions(&self) -> Option<ContextBarItem> {
+        let config = self.providers.config();
+
+        Some(ContextBarItem::new_internal_node(
+            Cow::Borrowed("gladius"),
+            vec![
+                ContextBarItem::new_leaf_node(
+                    Cow::Borrowed("quit"),
+                    || MainViewMsg::QuitGladius.boxed(),
+                    Some(config.keyboard_config.global.close),
+                ),
+                ContextBarItem::new_leaf_node(
+                    Cow::Borrowed("open display list"),
+                    || MainViewMsg::OpenChooseDisplay.boxed(),
+                    Some(config.keyboard_config.global.browse_buffers),
+                ),
+                ContextBarItem::new_leaf_node(
+                    Cow::Borrowed("open new buffer"),
+                    || MainViewMsg::OpenNewFile.boxed(),
+                    Some(config.keyboard_config.global.new_buffer),
+                ),
+            ],
+        ))
+    }
+
+    fn kite(&self) -> XY {
+        self.complex_kite()
+    }
 }
 
 impl ComplexWidget for MainView {
@@ -695,7 +794,21 @@ impl ComplexWidget for MainView {
         let res = if self.hover.is_some() {
             let subwidget = self.get_hover_subwidget().unwrap();
             let leaf = LeafLayout::new(subwidget).boxed();
-            HoverLayout::new(bg_layout.boxed(), leaf, Box::new(Self::get_hover_rect), true).boxed()
+
+            let layout = match self.hover.as_ref().unwrap() {
+                HoverItem::ContextMain { anchor, .. } => {
+                    let anchor_clone = *anchor;
+                    HoverLayout::new(
+                        bg_layout.boxed(),
+                        leaf,
+                        Box::new(move |screenspace: Screenspace| util::get_rect_for_context_menu(screenspace.output_size(), anchor_clone)),
+                        true,
+                    )
+                }
+                _ => HoverLayout::new(bg_layout.boxed(), leaf, Box::new(Self::get_hover_rect), true),
+            };
+
+            layout.boxed()
         } else {
             bg_layout.boxed()
         };

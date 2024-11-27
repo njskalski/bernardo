@@ -1,7 +1,8 @@
+use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use log::{debug, warn};
+use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::config::config::ConfigRef;
@@ -23,7 +24,7 @@ use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::combined_widget::CombinedWidget;
 use crate::widget::fill_policy::SizePolicy;
-use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
+use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WidgetActionParam, WID};
 use crate::widgets::context_menu::msg::ContextMenuMsg;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
@@ -101,7 +102,11 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key,
         self.tree_view.internal_mut().expand_root();
     }
 
-    fn input_to_treeview(input_event: &InputEvent) -> bool {
+    pub fn set_on_shortcut_hit(&mut self, on_shortcut_hit: WidgetActionParam<TreeViewWidget<Key, Item>, Item>) {
+        self.tree_view.internal_mut().set_on_shortcut_hit(on_shortcut_hit)
+    }
+
+    fn input_to_treeview(&self, input_event: &InputEvent) -> bool {
         match input_event {
             InputEvent::KeyInput(key) => match key.keycode {
                 Keycode::ArrowUp => true,
@@ -111,7 +116,17 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key,
                 Keycode::Enter => true,
                 Keycode::PageUp => true,
                 Keycode::PageDown => true,
-                _ => false,
+                _ => {
+                    let all_keycodes: Vec<_> = self.tree_view.internal().get_all_shortcuts().collect();
+
+                    error!("nananna {:?}", all_keycodes);
+
+                    self.tree_view
+                        .internal()
+                        .get_all_shortcuts()
+                        .find(|(_, _, bound_key)| *bound_key == *key)
+                        .is_some()
+                }
             },
             _ => false,
         }
@@ -233,7 +248,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
     }
 
     fn act_on(&mut self, input_event: InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
-        let mut act_result = if Self::input_to_treeview(&input_event) {
+        let mut act_result = if self.input_to_treeview(&input_event) {
             self.tree_view.act_on(input_event)
         } else {
             self.query_box.act_on(input_event)
@@ -253,6 +268,10 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
         } else {
             act_result
         }
+    }
+
+    fn get_status_description(&self) -> Option<Cow<'_, str>> {
+        Some(Cow::Borrowed("context menu"))
     }
 }
 

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use log::{debug, error, warn};
 use unicode_width::UnicodeWidthStr;
 
@@ -23,6 +25,7 @@ use crate::text::buffer_state::{BufferState, SetFilePathResult};
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
+use crate::widget::context_bar_item::ContextBarItem;
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::edit_box::EditBoxWidget;
@@ -136,23 +139,6 @@ impl EditorView {
         self.editor.internal_mut().set_ignore_input_altogether(true);
         self
     }
-
-    // pub fn with_buffer(self, buffer: BufferSharedRef) -> Self {
-    //     let navcomp_op: Option<NavCompRef> = if let Some(buffer_lock) = buffer.lock() {
-    //         buffer_lock.get_path().map(|path| self.nav_comp_group.get_navcomp_for(path)).flatten()
-    //     } else {
-    //         error!("can't set navcomp - buffer lock aquisition failed");
-    //         None
-    //     };
-    //
-    //     let mut editor = self.editor;
-    //     editor.internal_mut().set_buffer(buffer, navcomp_op);
-    //
-    //     EditorView {
-    //         editor,
-    //         ..self
-    //     }
-    // }
 
     pub fn get_buffer_ref(&self) -> &BufferSharedRef {
         self.editor.internal().get_buffer()
@@ -473,7 +459,7 @@ impl Widget for EditorView {
     }
 
     fn kite(&self) -> XY {
-        XY::ZERO
+        self.complex_kite()
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
@@ -482,6 +468,36 @@ impl Widget for EditorView {
 
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
         self.complex_get_focused_mut()
+    }
+
+    fn get_widget_actions(&self) -> Option<ContextBarItem> {
+        let config = self.providers.config();
+
+        Some(ContextBarItem::new_internal_node(
+            Cow::Borrowed("editor"),
+            vec![
+                ContextBarItem::new_leaf_node(
+                    Cow::Borrowed("save"),
+                    || EditorViewMsg::Save.boxed(),
+                    Some(config.keyboard_config.editor.save),
+                ),
+                ContextBarItem::new_leaf_node(
+                    Cow::Borrowed("save as"),
+                    || EditorViewMsg::SaveAs.boxed(),
+                    Some(config.keyboard_config.editor.save_as),
+                ),
+                ContextBarItem::new_leaf_node(
+                    Cow::Borrowed("find"),
+                    || EditorViewMsg::ToFind.boxed(),
+                    Some(config.keyboard_config.editor.find),
+                ),
+                ContextBarItem::new_leaf_node(
+                    Cow::Borrowed("replace"),
+                    || EditorViewMsg::ToFindReplace.boxed(),
+                    Some(config.keyboard_config.editor.replace),
+                ),
+            ],
+        ))
     }
 }
 

@@ -22,6 +22,7 @@ pub mod with_scroll;
 
 pub mod nested_menu;
 
+mod context_bar;
 pub mod context_menu;
 pub mod find_in_files_widget;
 #[cfg(test)]

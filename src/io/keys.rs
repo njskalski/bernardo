@@ -1,6 +1,7 @@
 use std::fmt::Formatter;
 use std::str::FromStr;
 
+use log::error;
 use serde::de::Visitor;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
@@ -88,6 +89,24 @@ impl Modifiers {
 pub struct Key {
     pub keycode: Keycode,
     pub modifiers: Modifiers,
+}
+
+impl ToString for Key {
+    fn to_string(&self) -> String {
+        let s = match ron::to_string(self) {
+            Ok(s) => s,
+            Err(e) => {
+                error!("failed serializing key to string {:?} because {}", self, e);
+                return "".to_string();
+            }
+        };
+
+        if s.starts_with("\"") && s.ends_with("\"") {
+            s[1..s.len() - 1].to_string()
+        } else {
+            s
+        }
+    }
 }
 
 impl Key {
