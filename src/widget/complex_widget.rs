@@ -199,7 +199,7 @@ pub trait ComplexWidget: Widget + Sized {
 
     fn complex_get_focused(&self) -> Option<&dyn Widget> {
         if self.get_display_state_op().is_none() {
-            error!("requested complex_get_focused before layout");
+            error!("requested complex_get_focused before layout in widget {}", self.desc());
         }
 
         self.get_display_state_op()
@@ -217,7 +217,7 @@ pub trait ComplexWidget: Widget + Sized {
 
     fn complex_get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
         if self.get_display_state_op().is_none() {
-            error!("requested complex_get_focused_mut before layout");
+            error!("requested complex_get_focused_mut before layout in widget {}", self.desc());
         }
 
         let focused_ptr = self.get_display_state_op().as_ref().map(|ds| ds.focused.clone());

@@ -99,8 +99,9 @@ fn show_usages_test_1() {
 
     assert!(full_setup.wait_for(|f| { f.get_first_editor().unwrap().context_bar_op().is_some() }));
 
-    assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
-    assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
+    for _ in 0..3 {
+        assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
+    }
 
     assert!(full_setup.wait_for(|f| {
         f.get_first_editor()
