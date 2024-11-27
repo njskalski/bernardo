@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
@@ -83,5 +85,9 @@ impl Widget for NoEditorWidget {
         // fill_background(theme.default_background(focused), output);
 
         output.print_at(self.text_pos, theme.default_text(focused), Self::NO_EDIT_TEXT);
+    }
+
+    fn get_status_description(&self) -> Option<Cow<'_, str>> {
+        Some(Cow::Borrowed("no editor opened"))
     }
 }

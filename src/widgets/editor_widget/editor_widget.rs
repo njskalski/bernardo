@@ -37,11 +37,12 @@ use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::w7e::handler::NavCompRef;
 use crate::w7e::navcomp_provider::CompletionAction;
 use crate::widget::any_msg::{AnyMsg, AsAny};
+use crate::widget::context_bar_item::ContextBarItem;
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::code_results_view::stupid_symbol_usage_code_results_provider::StupidSymbolUsageCodeResultsProvider;
+use crate::widgets::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
-use crate::widgets::editor_widget::context_bar::widget::ContextBarWidget;
 use crate::widgets::editor_widget::context_options_matrix::get_context_options;
 use crate::widgets::editor_widget::helpers::{find_trigger_and_substring, CursorScreenPosition};
 use crate::widgets::editor_widget::label::label::Label;
@@ -419,15 +420,8 @@ impl EditorWidget {
         })
     }
 
-    pub fn todo_request_context_bar(&mut self, buffer: &BufferState) {
-        debug!("request_context_bar");
-
-        // need to resolve first
-        // if let Some(navcomp_symbol) = self.navcomp_symbol.as_mut() {
-        //     navcomp_symbol.update();
-        // };
-
-        let cursor_set = unpack_unit!(buffer.cursors(self.wid), "no cursor for wid",).clone();
+    pub fn get_context_bar_items(&self, buffer: &BufferState) -> Vec<ContextBarItem> {
+        let cursor_set = unpack_or_e!(buffer.cursors(self.wid), vec![], "no cursor for wid",).clone();
 
         let single_cursor = cursor_set.as_single();
         let stupid_cursor_op = single_cursor.and_then(|c| StupidCursor::from_real_cursor(buffer, c).ok());
@@ -460,22 +454,7 @@ impl EditorWidget {
             tree_sitter_highlight.as_ref().map(|c| c.as_str()),
         );
 
-        if items.is_none() {
-            warn!("ignoring everything bar, no items");
-            self.requested_hover = None;
-        } else {
-            let hover_settings_op = self.get_cursor_related_hover_settings(buffer, None);
-
-            self.requested_hover = hover_settings_op.map(|hs| {
-                let context_bar = ContextBarWidget::new(self.providers.clone(), items.unwrap())
-                    .autoexpand_if_single_subtree()
-                    .with_on_hit(Box::new(|widget| widget.get_highlighted().1.on_hit()))
-                    .with_on_close(Box::new(|_| EditorWidgetMsg::HoverClose.someboxed()));
-
-                let hover = EditorHover::Context(context_bar);
-                (hs, hover)
-            });
-        }
+        items
     }
 
     // TODO add test to reformat
@@ -1292,7 +1271,8 @@ impl Widget for EditorWidget {
                     None
                 }
             }
-            (&EditorState::Editing, None, InputEvent::EverythingBarTrigger) => EditorWidgetMsg::RequestContextBar.someboxed(),
+            // TODO disabling local context bar
+            // (&EditorState::Editing, None, InputEvent::EverythingBarTrigger) => EditorWidgetMsg::RequestContextBar.someboxed(),
             (&EditorState::Editing, None, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
                 let cem = key_to_edit_msg(key).unwrap();
                 if cem.is_editing() && self.readonly {
@@ -1411,10 +1391,11 @@ impl Widget for EditorWidget {
                             self.apply_completion_action(&mut buffer, completion);
                             None
                         }
-                        (&EditorState::Editing, EditorWidgetMsg::RequestContextBar) => {
-                            self.todo_request_context_bar(&buffer);
-                            None
-                        }
+                        // DISABLED, functionality moved to ContextMenu
+                        // (&EditorState::Editing, EditorWidgetMsg::RequestContextBar) => {
+                        //     self.todo_request_context_bar(&buffer);
+                        //     None
+                        // }
                         (&EditorState::Editing, EditorWidgetMsg::Reformat) => {
                             self.reformat(&mut buffer);
                             None
@@ -1509,6 +1490,17 @@ impl Widget for EditorWidget {
                 rect.lower_right().x,
                 rect.lower_right().y
             )))
+        }
+    }
+
+    fn get_widget_actions(&self) -> Option<ContextBarItem> {
+        let buffer_lock = unpack_or_e!(self.buffer.lock(), None, "failed to acquire buffer lock");
+        let items = self.get_context_bar_items(&buffer_lock);
+
+        if items.len() > 0 {
+            Some(ContextBarItem::new_internal_node("code".into(), items))
+        } else {
+            None
         }
     }
 }

@@ -24,6 +24,20 @@ impl Rect {
         Rect { pos: XY::ZERO, size }
     }
 
+    pub const fn hover_centered_percent(size: XY, percent: u8) -> Option<Self> {
+        if percent > 100 {
+            return None;
+        }
+
+        let x = ((size.x as usize) * (percent as usize) / (100 as usize)) as u16;
+        let y = ((size.y as usize) * (percent as usize) / (100 as usize)) as u16;
+
+        let margin_x = (size.x - x) / 2;
+        let margin_y = (size.y - y) / 2;
+
+        Some(Rect::new(XY::new(margin_x, margin_y), XY::new(x, y)))
+    }
+
     pub fn xxyy(x1: u16, x2: u16, y1: u16, y2: u16) -> Self {
         let minx = std::cmp::min(x1, x2);
         let maxx = std::cmp::max(x1, x2);
