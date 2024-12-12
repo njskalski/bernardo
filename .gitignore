@@ -2,3 +2,4 @@
 /test_envs/*/target
 /screenshots/*
 .fleet
+*.log

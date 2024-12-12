@@ -1,16 +1,10 @@
 Here is what I want to be present in Gladius Beta:
 
 1) code search avatar needs to contain file name
-2) labels in context menu (for learning mode)
-
-
-
-
 
 4)
 Overall commands:
     - prune unchanged buffers
-    - learning mode
 
 5)
 git filtering in:

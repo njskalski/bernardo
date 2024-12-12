@@ -1,4 +1,5 @@
 mod completion;
+mod context_kite_and_scroll;
 mod dropping_cursor;
 mod find_in_files;
 mod find_replace;
