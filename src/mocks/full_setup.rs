@@ -329,6 +329,10 @@ impl FullSetup {
         self.last_frame.as_ref().map(|frame| frame.get_find_in_files()).flatten()
     }
 
+    pub fn get_first_context_menu(&self) -> Option<ContextMenuInterpreter<'_>> {
+        self.last_frame.as_ref().map(|frame| frame.get_context_menus().next()).flatten()
+    }
+
     pub fn send_input(&self, ie: InputEvent) -> bool {
         self.input_sender.send(ie).is_ok()
     }
