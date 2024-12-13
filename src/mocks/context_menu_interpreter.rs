@@ -71,4 +71,8 @@ impl<'a> ContextMenuInterpreter<'a> {
             .map(|item| item.label)
             .next()
     }
+
+    pub fn meta(&self) -> &'a Metadata {
+        self.meta
+    }
 }

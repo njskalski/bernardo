@@ -1,6 +1,8 @@
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::with_wait_for::WithWaitFor;
+use crate::primitives::rect::Rect;
+use crate::primitives::sized_xy::SizedXY;
 
 #[test]
 fn context_kite_and_scroll_test_1() {
@@ -52,7 +54,16 @@ fn context_kite_and_scroll_test_1() {
 
     full_setup.wait_for(|full_setup| full_setup.get_first_context_menu().is_some());
 
-    // TODO here
+    let rect = full_setup.get_first_context_menu().unwrap().meta().rect;
+    assert!(Rect::from_zero(full_setup.get_frame().unwrap().buffer.size()).contains_rect(rect));
 
-    full_setup.screenshot();
+    let cursor_pos = full_setup
+        .get_first_editor()
+        .unwrap()
+        .get_visible_cursor_lines()
+        .next()
+        .unwrap()
+        .contents
+        .absolute_pos;
+    assert!(!rect.contains(cursor_pos));
 }
