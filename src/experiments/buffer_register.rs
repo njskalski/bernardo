@@ -94,7 +94,9 @@ impl BufferRegister {
 
             let doc_id = DocumentIdentifier::new_unique().with_file_path(path.clone());
 
-            let buffer_state = BufferState::full(Some(providers.tree_sitter().clone()), doc_id.clone()).with_text(buffer_str);
+            let buffer_state = BufferState::full(Some(providers.tree_sitter().clone()), doc_id.clone())
+                .with_text(buffer_str)
+                .with_maked_as_saved();
 
             let bsr = BufferSharedRef::new_from_buffer(buffer_state);
 

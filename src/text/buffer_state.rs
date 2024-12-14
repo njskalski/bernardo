@@ -110,12 +110,10 @@ impl BufferState {
         TODO the fact that Undo/Redo requires special handling here a lot suggests that maybe these shouldn't be CEMs. But it works now.
          */
 
-        match cem {
-            CommonEditMsg::Undo | CommonEditMsg::Redo => {}
-            _ => {
-                self.set_milestone();
-            }
-        }
+        let set_milestone = match cem {
+            CommonEditMsg::Undo | CommonEditMsg::Redo => false,
+            _ => self.set_milestone(),
+        };
 
         let any_change = apply_common_edit_message(cem.clone(), &mut cursors_copy, &mut vec![], self, page_height as usize, clipboard);
 
@@ -124,7 +122,7 @@ impl BufferState {
             CommonEditMsg::Undo | CommonEditMsg::Redo => {}
             _ => {
                 self.text_mut().set_cursor_set(widget_id, cursors_copy);
-                if !any_change {
+                if !any_change && set_milestone {
                     self.undo_milestone();
                 }
             }
@@ -204,7 +202,7 @@ impl BufferState {
             "failed to cast (2) to real cursor"
         );
 
-        self.set_milestone();
+        let set_milestone = self.set_milestone();
 
         // removing old item
         if stupid_message.stupid_range.0 != stupid_message.stupid_range.1 {
@@ -227,7 +225,9 @@ impl BufferState {
                 );
             } else {
                 error!("failed to remove range [{}..{}) from rope", begin.a, end.a);
-                self.undo_milestone();
+                if set_milestone {
+                    self.undo_milestone();
+                }
                 return false;
             }
         }
@@ -253,7 +253,9 @@ impl BufferState {
                 );
             } else {
                 error!("failed to remove range [{}..{}) from rope", begin.a, end.a);
-                self.undo_milestone();
+                if set_milestone {
+                    self.undo_milestone();
+                }
                 return false;
             }
         }
@@ -294,17 +296,21 @@ impl BufferState {
     // TODO change pattern from str to enum we created
      */
     pub fn find_once(&mut self, widget_id: WID, pattern: &str) -> Result<bool, FindError> {
-        self.set_milestone();
+        let set_milestone = self.set_milestone();
 
         let result = match self.text_mut().find_once(widget_id, pattern) {
             Err(e) => {
                 // not even started the search: strip milestone and propagate error.
-                self.undo_milestone();
+                if set_milestone {
+                    self.undo_milestone();
+                }
                 Err(e)
             }
             Ok(false) => {
                 // there was no occurrences, so nothing changed - strip milestone.
-                self.undo_milestone();
+                if set_milestone {
+                    self.undo_milestone();
+                }
                 Ok(false)
             }
             Ok(true) => Ok(true),
@@ -410,7 +416,9 @@ impl BufferState {
         self.history_pos -= 1;
 
         if let Some(last_save_pos) = self.last_save_pos {
-            if last_save_pos >= self.history.len() {
+            if last_save_pos == self.history_pos + 1 {
+                self.last_save_pos = Some(last_save_pos - 1);
+            } else if last_save_pos >= self.history.len() {
                 self.last_save_pos = None;
             }
         }
@@ -617,6 +625,15 @@ impl BufferState {
         debug_assert!(result.check_invariant());
 
         result
+    }
+
+    pub fn with_maked_as_saved(self) -> Self {
+        let pos = self.history_pos;
+
+        Self {
+            last_save_pos: Some(pos),
+            ..self
+        }
     }
 
     /*

@@ -2,7 +2,10 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::sync::Arc;
 
+use log::error;
+
 use crate::primitives::tree::tree_node::TreeNode;
+use crate::text::text_buffer::TextBuffer;
 use crate::widgets::context_menu::widget::ContextMenuWidget;
 use crate::widgets::main_view::display::MainViewDisplay;
 
@@ -11,11 +14,12 @@ use crate::widgets::main_view::display::MainViewDisplay;
 #[derive(Debug, Clone)]
 pub enum Type {
     Root(Vec<Arc<DisplayRegistryItem>>),
-    Buffer { description: String },
+    Buffer { description: String, edited: bool },
     BufferList(Vec<Arc<DisplayRegistryItem>>),
     CodeResults { description: String },
     CodeResultsList(Vec<Arc<DisplayRegistryItem>>),
 }
+
 #[derive(Debug, Clone)]
 pub struct DisplayRegistryItem {
     id: usize,
@@ -32,7 +36,11 @@ impl TreeNode<usize> for DisplayRegistryTreeNode {
     fn label(&self) -> Cow<str> {
         match &self.t {
             Type::Root(_) => Cow::Borrowed("root"),
-            Type::Buffer { description } => Cow::Borrowed(description.as_ref()),
+            Type::Buffer { description, edited } => {
+                let edited_marker = if *edited { " [*]" } else { "" };
+
+                Cow::Owned(format!("{}{}", description, edited_marker))
+            }
             Type::CodeResults { description } => Cow::Borrowed(description.as_ref()),
             Type::BufferList(_) => Cow::Borrowed("buffers:"),
             Type::CodeResultsList(_) => Cow::Borrowed("search/code results views:"),
@@ -74,10 +82,18 @@ pub fn get_fuzzy_screen_list(displays: &Vec<MainViewDisplay>, display_idx: usize
     for (idx, display) in displays.iter().enumerate() {
         match display {
             MainViewDisplay::Editor(e) => {
+                let edited: bool = if let Some(lock) = e.get_buffer_ref().lock() {
+                    lock.is_saved() == false
+                } else {
+                    error!("failed to lock the lock for figuring out if buffer is edited or not");
+                    false
+                };
+
                 let buf = DisplayRegistryItem {
                     id: idx,
                     t: Type::Buffer {
                         description: e.get_buffer_ref().document_identifier().to_string(),
+                        edited,
                     },
                 };
 
