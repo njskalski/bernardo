@@ -318,6 +318,12 @@ impl SPath {
             }
         };
 
+        if simple_query.is_empty() {
+            return Err(SearchError::MalformedQuery {
+                details: "query cannot be empty",
+            });
+        }
+
         let (sender, receiver) = crossbeam_channel::unbounded::<SymbolUsage>();
 
         let root = self.clone();
@@ -337,6 +343,11 @@ impl SPath {
                     Ok(string) => {
                         error!("file {}, contents length {}", item, string.len());
                         for hit in string.match_indices(&simple_query) {
+                            if hit.1.is_empty() {
+                                error!("malformed selection, skipping result at {}", hit.0);
+                                continue;
+                            }
+
                             let symbol_usage = SymbolUsage {
                                 path: item.clone(),
                                 range: Cursor::new(hit.0).with_selection(Selection::new(hit.0, hit.0 + hit.1.graphemes().count())),

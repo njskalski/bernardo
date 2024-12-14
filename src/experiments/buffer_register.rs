@@ -108,6 +108,10 @@ impl BufferRegister {
             }
         }
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&'_ DocumentIdentifier, &'_ BufferSharedRef)> {
+        self.buffers.iter()
+    }
 }
 
 impl HasInvariant for BufferRegister {

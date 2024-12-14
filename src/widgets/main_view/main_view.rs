@@ -537,6 +537,22 @@ impl MainView {
 
         rec_process_msg(self, depth, msg)
     }
+
+    fn do_prune_unchanged_buffers(&mut self) -> Result<(), ()> {
+        let buffer_register = unpack_or_e!(
+            self.providers.buffer_register().write().ok(),
+            Err(()),
+            "failed to lock buffer register"
+        );
+
+        for (id, bf) in buffer_register.iter() {
+            if let Some(buffer) = bf.lock() {
+                // buffer.
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl Widget for MainView {
@@ -589,10 +605,7 @@ impl Widget for MainView {
                     MainViewMsg::OpenChooseDisplay.someboxed()
                 }
             }
-            InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_in_files => MainViewMsg::OpenFindInFiles {
-                root_dir: self.providers.fsf().root(),
-            }
-            .someboxed(),
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_in_files => MainViewMsg::OpenFindInFiles.someboxed(),
             InputEvent::EverythingBarTrigger => MainViewMsg::OpenContextMenu.someboxed(),
             // InputEvent::KeyInput(key) if key == config.keyboard_config.global.everything_bar => MainViewMsg::OpenContextMenu.someboxed(),
             _ => {
@@ -695,7 +708,7 @@ impl Widget for MainView {
                     }
                     None
                 }
-                MainViewMsg::OpenFindInFiles { root_dir } => {
+                MainViewMsg::OpenFindInFiles => {
                     self.open_find_in_files();
                     None
                 }
@@ -718,6 +731,11 @@ impl Widget for MainView {
                         None
                     }
                 }
+                MainViewMsg::PruneUnchangedBuffers => {
+                    self.do_prune_unchanged_buffers();
+                    None
+                }
+
                 MainViewMsg::QuitGladius => GladiusMsg::Quit.someboxed(),
                 _ => {
                     warn!("unprocessed event {:?}", main_view_msg);
@@ -766,6 +784,16 @@ impl Widget for MainView {
                     Cow::Borrowed("open new buffer"),
                     || MainViewMsg::OpenNewFile.boxed(),
                     Some(config.keyboard_config.global.new_buffer),
+                ),
+                ContextBarItem::new_leaf_node(
+                    Cow::Borrowed("find in files"),
+                    || MainViewMsg::OpenFindInFiles.boxed(),
+                    Some(config.keyboard_config.global.find_in_files),
+                ),
+                ContextBarItem::new_leaf_node(
+                    Cow::Borrowed("prune unchanged buffers"),
+                    || MainViewMsg::PruneUnchangedBuffers.boxed(),
+                    None,
                 ),
             ],
         ))

@@ -73,4 +73,13 @@ impl TextBuffer for Rope {
 
         self.try_remove(char_idx_begin..char_idx_end).is_ok()
     }
+
+    fn is_saved(&self) -> bool {
+        false
+    }
+
+    fn mark_as_saved(&mut self) {
+        error!("rope buffer cannot be marked as saved");
+        debug_assert!(false);
+    }
 }

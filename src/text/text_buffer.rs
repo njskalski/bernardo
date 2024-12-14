@@ -124,6 +124,9 @@ pub trait TextBuffer: ToString {
 
         Some(cursor)
     }
+
+    fn is_saved(&self) -> bool;
+    fn mark_as_saved(&mut self);
 }
 
 pub struct LinesIter<'a> {
