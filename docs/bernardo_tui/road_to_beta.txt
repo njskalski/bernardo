@@ -2,16 +2,6 @@ Here is what I want to be present in Gladius Beta:
 
 1) code search avatar needs to contain file name
 
-4)
-Overall commands:
-    - prune unchanged buffers
-
-4.5)
-add test that:
-- freshly open buffers are not marked as edited
-- edited buffers are marked as edited
-- saved buffers are not marked as edited
-
 5)
 git filtering in:
 [DONE]    - file search
@@ -43,7 +33,6 @@ Docs:
 1) how views work
 2) how main loop works
 3) how filesystems are implemented
-
 
 Nice to haves:
 1) tree view desc path should name expanded path
