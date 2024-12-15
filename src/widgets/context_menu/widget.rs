@@ -117,9 +117,8 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key,
                 Keycode::PageUp => true,
                 Keycode::PageDown => true,
                 _ => {
-                    let all_keycodes: Vec<_> = self.tree_view.internal().get_all_shortcuts().collect();
-
-                    error!("nananna {:?}", all_keycodes);
+                    // let all_keycodes: Vec<_> = self.tree_view.internal().get_all_shortcuts().collect();
+                    // error!("nananna {:?}", all_keycodes);
 
                     self.tree_view
                         .internal()

@@ -1,3 +1,4 @@
+mod buffer_list;
 mod completion;
 mod context_kite_and_scroll;
 mod dropping_cursor;
