@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::fmt::{format, Display};
 use std::sync::Arc;
 
@@ -29,6 +30,7 @@ use crate::primitives::symbol_usage::SymbolUsage;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
 use crate::promise::streaming_promise::StreamingPromise;
+use crate::text::text_buffer::TextBuffer;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::context_bar_item::ContextBarItem;
@@ -538,20 +540,50 @@ impl MainView {
         rec_process_msg(self, depth, msg)
     }
 
-    fn do_prune_unchanged_buffers(&mut self) -> Result<(), ()> {
-        let buffer_register = unpack_or_e!(
+    fn do_prune_unchanged_buffers(&mut self) -> bool {
+        let mut buffer_register = unpack_or_e!(
             self.providers.buffer_register().write().ok(),
-            Err(()),
+            false,
             "failed to lock buffer register"
         );
 
+        let mut buffers_to_close: HashSet<DocumentIdentifier> = Default::default();
+
         for (id, bf) in buffer_register.iter() {
             if let Some(buffer) = bf.lock() {
-                // buffer.
+                if buffer.is_saved() {
+                    buffers_to_close.insert(id.clone());
+                }
             }
         }
 
-        Ok(())
+        let mut indices_to_remove: Vec<usize> = Default::default();
+        for (idx, disp) in self.displays.iter().enumerate() {
+            if let Some(editor) = disp.as_editor() {
+                let di = editor.get_buffer_ref().document_identifier();
+                if buffers_to_close.contains(di) {
+                    indices_to_remove.push(idx);
+                }
+            }
+        }
+
+        // this is potentially O(n^2), we need to fix it
+
+        for idx in indices_to_remove.iter().rev() {
+            if *idx >= self.display_idx {
+                self.display_idx -= 1;
+            }
+
+            self.displays.remove(*idx);
+        }
+
+        let mut success: bool = false;
+
+        for buffer_id in buffers_to_close {
+            success = success && buffer_register.close_buffer(&buffer_id);
+        }
+
+        success
     }
 }
 

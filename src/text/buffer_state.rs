@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::ops::Range;
 use std::sync::Arc;
 
+use crossbeam_channel::{SendError, Sender};
 use log::{debug, error, info, warn};
 use ropey::iter::{Chars, Chunks};
 use ropey::Rope;
@@ -69,6 +70,8 @@ pub struct BufferState {
     lang_id: Option<LangId>,
 
     document_identifier: DocumentIdentifier,
+
+    debug_sink: Option<Sender<DocumentIdentifier>>,
 }
 
 impl BufferState {
@@ -321,7 +324,11 @@ impl BufferState {
         result
     }
 
-    pub fn full(tree_sitter_op: Option<Arc<TreeSitterWrapper>>, document_identifier: DocumentIdentifier) -> BufferState {
+    pub fn full(
+        tree_sitter_op: Option<Arc<TreeSitterWrapper>>,
+        document_identifier: DocumentIdentifier,
+        debug_sink: Option<Sender<DocumentIdentifier>>,
+    ) -> BufferState {
         let res = BufferState {
             subtype: BufferType::Full,
             tree_sitter_op,
@@ -330,6 +337,7 @@ impl BufferState {
             last_save_pos: None,
             lang_id: None,
             document_identifier,
+            debug_sink,
         };
 
         debug_assert!(res.check_invariant());
@@ -541,6 +549,7 @@ impl BufferState {
             last_save_pos: None,
             lang_id: None,
             document_identifier: doc_id,
+            debug_sink: None,
         };
 
         debug_assert!(res.check_invariant());
@@ -596,44 +605,44 @@ impl BufferState {
         debug_assert!(self.check_invariant());
     }
 
-    pub fn with_lang(self, lang_id: LangId) -> Self {
+    pub fn with_lang(mut self, lang_id: LangId) -> Self {
         if self.subtype != BufferType::Full {
             error!("setting lang in non TextBuffer::Full!");
         }
 
-        let res = Self {
-            lang_id: Some(lang_id),
-            ..self
-        };
+        self.lang_id = Some(lang_id);
 
-        debug_assert!(res.check_invariant());
+        // let res = Self {
+        //     lang_id: Some(lang_id),
+        //     ..self
+        // };
 
-        res
+        debug_assert!(self.check_invariant());
+
+        self
     }
 
-    pub fn with_text<T: AsRef<str>>(self, text: T) -> Self {
+    pub fn with_text<T: AsRef<str>>(mut self, text: T) -> Self {
         let rope = ropey::Rope::from_str(text.as_ref());
 
-        let mut result = Self {
-            history: vec![ContentsAndCursors::empty().with_rope(rope)],
-            history_pos: 0,
-            ..self
-        };
+        self.history = vec![ContentsAndCursors::empty().with_rope(rope)];
+        self.history_pos = 0;
 
-        result.set_parsing_tuple();
+        self.set_parsing_tuple();
 
-        debug_assert!(result.check_invariant());
+        debug_assert!(self.check_invariant());
 
-        result
+        self
     }
 
-    pub fn with_maked_as_saved(self) -> Self {
+    pub fn with_maked_as_saved(mut self) -> Self {
         let pos = self.history_pos;
 
-        Self {
-            last_save_pos: Some(pos),
-            ..self
-        }
+        self.last_save_pos = Some(pos);
+
+        debug_assert!(self.check_invariant());
+
+        self
     }
 
     /*
@@ -650,21 +659,18 @@ impl BufferState {
     /*
     This is expected to be used only in construction, it clears the history.
      */
-    pub fn with_text_from_rope(self, rope: Rope, lang_id: Option<LangId>) -> Self {
+    pub fn with_text_from_rope(mut self, rope: Rope, lang_id: Option<LangId>) -> Self {
         let text = ContentsAndCursors::empty().with_rope(rope);
 
-        let mut res = Self {
-            history: vec![text],
-            history_pos: 0,
-            lang_id,
-            ..self
-        };
+        self.history = vec![text];
+        self.history_pos = 0;
+        self.lang_id = lang_id;
 
-        res.set_parsing_tuple();
+        self.set_parsing_tuple();
 
-        debug_assert!(res.check_invariant());
+        debug_assert!(self.check_invariant());
 
-        res
+        self
     }
 
     pub fn can_redo(&self) -> bool {
@@ -905,5 +911,18 @@ impl HasInvariant for BufferState {
         }
 
         true
+    }
+}
+
+impl Drop for BufferState {
+    fn drop(&mut self) {
+        if let Some(sink) = &self.debug_sink {
+            match sink.send(self.document_identifier.clone()) {
+                Ok(_) => {}
+                Err(e) => {
+                    error!("failed to send close message for {}, because {}", self.document_identifier, e);
+                }
+            }
+        }
     }
 }
