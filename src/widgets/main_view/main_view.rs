@@ -570,7 +570,7 @@ impl MainView {
         // this is potentially O(n^2), we need to fix it
 
         for idx in indices_to_remove.iter().rev() {
-            if *idx >= self.display_idx {
+            if *idx < self.display_idx {
                 self.display_idx -= 1;
             }
 
