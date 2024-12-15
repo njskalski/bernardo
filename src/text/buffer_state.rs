@@ -30,8 +30,6 @@ use crate::widget::widget::WID;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
 use crate::{unpack_or, unpack_or_e};
 
-// TODO it would use a method "would_accept_cem" to be used in "on_input" but before "update"
-
 /*
 Ok, so I'd like to have multiple views of the same file. We can for a second even think that they
 each have separate set of cursors. They definitely should share history of edits, at least until
@@ -488,8 +486,13 @@ impl BufferState {
     set_milestone drops "forward history".
      */
     fn set_milestone(&mut self) -> bool {
-        if self.is_saved() {
-            return false;
+        if self.history_pos > 0 {
+            let last = &self.history[self.history_pos - 1];
+            let current = &self.history[self.history_pos];
+
+            if last.rope() == current.rope() {
+                return false;
+            }
         }
 
         self.history.truncate(self.history_pos + 1);

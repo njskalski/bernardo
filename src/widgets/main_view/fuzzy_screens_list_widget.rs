@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use log::error;
 
+use crate::primitives::printable::Printable;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::text::text_buffer::TextBuffer;
 use crate::widgets::context_menu::widget::ContextMenuWidget;
@@ -82,19 +83,27 @@ pub fn get_fuzzy_screen_list(displays: &Vec<MainViewDisplay>, display_idx: usize
     for (idx, display) in displays.iter().enumerate() {
         match display {
             MainViewDisplay::Editor(e) => {
-                let edited: bool = if let Some(lock) = e.get_buffer_ref().lock() {
-                    lock.is_saved() == false
+                let (edited, file_name_op) = if let Some(lock) = e.get_buffer_ref().lock() {
+                    let file_name_op: Option<String> = lock
+                        .get_path()
+                        .map(|p| p.last_file_name().map(|p| p.to_string_lossy().to_string()))
+                        .flatten();
+
+                    (lock.is_saved() == false, file_name_op)
                 } else {
                     error!("failed to lock the lock for figuring out if buffer is edited or not");
-                    false
+                    (false, None)
+                };
+
+                let description: String = if let Some(file_name) = file_name_op {
+                    file_name
+                } else {
+                    format!("unnamed {}", e.get_buffer_ref().document_identifier())
                 };
 
                 let buf = DisplayRegistryItem {
                     id: idx,
-                    t: Type::Buffer {
-                        description: e.get_buffer_ref().document_identifier().to_string(),
-                        edited,
-                    },
+                    t: Type::Buffer { description, edited },
                 };
 
                 buffer_list.push(Arc::new(buf));

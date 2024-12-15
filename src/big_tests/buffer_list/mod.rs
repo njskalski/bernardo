@@ -1,1 +1,1 @@
-mod fuzzy_file_open_test;
+mod buffer_list_test;
