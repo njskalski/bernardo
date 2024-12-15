@@ -67,7 +67,7 @@ impl EditorViewTestbedBuilder {
         let build_result = self.providers.build();
 
         let docid = DocumentIdentifier::new_unique();
-        let buffer = BufferState::full(Some(build_result.providers.tree_sitter().clone()), docid)
+        let buffer = BufferState::full(Some(build_result.providers.tree_sitter().clone()), docid, None)
             .with_lang(LangId::RUST)
             .into_bsr();
 

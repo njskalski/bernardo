@@ -9,7 +9,7 @@ fn encode_buffer_state(text: &str) -> (BufferState, WID) {
     let (text, cursors) = decode_text_and_cursors(text);
     let wid: WID = get_new_widget_id();
 
-    let mut bs = BufferState::full(None, DocumentIdentifier::new_unique()).with_text(text.to_string());
+    let mut bs = BufferState::full(None, DocumentIdentifier::new_unique(), None).with_text(text.to_string());
     assert!(bs.text_mut().add_cursor_set(wid, cursors));
 
     (bs, wid)

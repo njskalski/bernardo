@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::ops::Range;
 use std::sync::Arc;
 
+use crossbeam_channel::{SendError, Sender};
 use log::{debug, error, info, warn};
 use ropey::iter::{Chars, Chunks};
 use ropey::Rope;
@@ -64,10 +65,13 @@ pub struct BufferState {
     tree_sitter_op: Option<Arc<TreeSitterWrapper>>,
     history: Vec<ContentsAndCursors>,
     history_pos: usize,
+    last_save_pos: Option<usize>,
 
     lang_id: Option<LangId>,
 
     document_identifier: DocumentIdentifier,
+
+    debug_sink: Option<Sender<DocumentIdentifier>>,
 }
 
 impl BufferState {
@@ -109,12 +113,10 @@ impl BufferState {
         TODO the fact that Undo/Redo requires special handling here a lot suggests that maybe these shouldn't be CEMs. But it works now.
          */
 
-        match cem {
-            CommonEditMsg::Undo | CommonEditMsg::Redo => {}
-            _ => {
-                self.set_milestone();
-            }
-        }
+        let set_milestone = match cem {
+            CommonEditMsg::Undo | CommonEditMsg::Redo => false,
+            _ => self.set_milestone(),
+        };
 
         let any_change = apply_common_edit_message(cem.clone(), &mut cursors_copy, &mut vec![], self, page_height as usize, clipboard);
 
@@ -123,7 +125,7 @@ impl BufferState {
             CommonEditMsg::Undo | CommonEditMsg::Redo => {}
             _ => {
                 self.text_mut().set_cursor_set(widget_id, cursors_copy);
-                if !any_change {
+                if !any_change && set_milestone {
                     self.undo_milestone();
                 }
             }
@@ -159,6 +161,8 @@ impl BufferState {
                 res = true;
             }
         }
+
+        debug_assert!(self.check_invariant());
 
         res
     }
@@ -201,7 +205,7 @@ impl BufferState {
             "failed to cast (2) to real cursor"
         );
 
-        self.set_milestone();
+        let set_milestone = self.set_milestone();
 
         // removing old item
         if stupid_message.stupid_range.0 != stupid_message.stupid_range.1 {
@@ -224,7 +228,9 @@ impl BufferState {
                 );
             } else {
                 error!("failed to remove range [{}..{}) from rope", begin.a, end.a);
-                self.undo_milestone();
+                if set_milestone {
+                    self.undo_milestone();
+                }
                 return false;
             }
         }
@@ -250,7 +256,9 @@ impl BufferState {
                 );
             } else {
                 error!("failed to remove range [{}..{}) from rope", begin.a, end.a);
-                self.undo_milestone();
+                if set_milestone {
+                    self.undo_milestone();
+                }
                 return false;
             }
         }
@@ -291,31 +299,45 @@ impl BufferState {
     // TODO change pattern from str to enum we created
      */
     pub fn find_once(&mut self, widget_id: WID, pattern: &str) -> Result<bool, FindError> {
-        self.set_milestone();
+        let set_milestone = self.set_milestone();
 
-        match self.text_mut().find_once(widget_id, pattern) {
+        let result = match self.text_mut().find_once(widget_id, pattern) {
             Err(e) => {
                 // not even started the search: strip milestone and propagate error.
-                self.undo_milestone();
+                if set_milestone {
+                    self.undo_milestone();
+                }
                 Err(e)
             }
             Ok(false) => {
                 // there was no occurrences, so nothing changed - strip milestone.
-                self.undo_milestone();
+                if set_milestone {
+                    self.undo_milestone();
+                }
                 Ok(false)
             }
             Ok(true) => Ok(true),
-        }
+        };
+
+        debug_assert!(self.check_invariant());
+
+        result
     }
 
-    pub fn full(tree_sitter_op: Option<Arc<TreeSitterWrapper>>, document_identifier: DocumentIdentifier) -> BufferState {
+    pub fn full(
+        tree_sitter_op: Option<Arc<TreeSitterWrapper>>,
+        document_identifier: DocumentIdentifier,
+        debug_sink: Option<Sender<DocumentIdentifier>>,
+    ) -> BufferState {
         let res = BufferState {
             subtype: BufferType::Full,
             tree_sitter_op,
             history: vec![ContentsAndCursors::empty()],
             history_pos: 0,
+            last_save_pos: None,
             lang_id: None,
             document_identifier,
+            debug_sink,
         };
 
         debug_assert!(res.check_invariant());
@@ -374,11 +396,21 @@ impl BufferState {
     }
 
     pub fn remove_history(&mut self) {
+        let is_saved = self.is_saved();
+
         if self.history_pos != 0 {
             self.history.swap(0, self.history_pos)
         }
         self.history.truncate(1);
         self.history_pos = 0;
+
+        if is_saved {
+            self.last_save_pos = Some(0);
+        } else {
+            self.last_save_pos = None;
+        }
+
+        debug_assert!(self.check_invariant());
     }
 
     /* removes previous to last milestone, and moves last one to it's position.
@@ -390,6 +422,16 @@ impl BufferState {
 
         self.history.remove(self.history_pos - 1);
         self.history_pos -= 1;
+
+        if let Some(last_save_pos) = self.last_save_pos {
+            if last_save_pos == self.history_pos + 1 {
+                self.last_save_pos = Some(last_save_pos - 1);
+            } else if last_save_pos >= self.history.len() {
+                self.last_save_pos = None;
+            }
+        }
+
+        debug_assert!(self.check_invariant());
     }
 
     // TODO overload and optimise?
@@ -420,6 +462,8 @@ impl BufferState {
 
         self.document_identifier.file_path = file_path_op;
 
+        debug_assert!(self.check_invariant());
+
         SetFilePathResult {
             document_id: self.document_identifier.clone(),
             path_changed: changed,
@@ -433,18 +477,26 @@ impl BufferState {
 
         self.lang_id = lang_id;
         self.set_parsing_tuple();
+
+        debug_assert!(self.check_invariant());
     }
 
     /*
     This creates new milestone to undo/redo. The reason for it is that potentially multiple edits inform a single milestone.
-    Returns false only if buffer have not changed since last milestone (TODO: that part is not implemented).
+    Returns false only if buffer have not changed since last milestone.
 
     set_milestone drops "forward history".
      */
     fn set_milestone(&mut self) -> bool {
+        if self.is_saved() {
+            return false;
+        }
+
         self.history.truncate(self.history_pos + 1);
         self.history.push(self.history[self.history_pos].clone());
         self.history_pos += 1;
+
+        debug_assert!(self.check_invariant());
         true
     }
 
@@ -462,7 +514,7 @@ impl BufferState {
 
         let copy_rope = self.text().rope().clone();
 
-        if let Some(tree_sitter_clone) = self.tree_sitter_op.as_ref().map(|r| r.clone()) {
+        let result = if let Some(tree_sitter_clone) = self.tree_sitter_op.as_ref().map(|r| r.clone()) {
             let parse_success: bool = self.text_mut().parse(tree_sitter_clone, lang_id);
 
             // TODO I honestly don't remember why I reparse here
@@ -480,7 +532,11 @@ impl BufferState {
         } else {
             error!("will not parse, because TreeSitter not available - simplified buffer?");
             false
-        }
+        };
+
+        debug_assert!(self.check_invariant());
+
+        result
     }
 
     pub fn simplified_single_line() -> BufferState {
@@ -490,8 +546,10 @@ impl BufferState {
             tree_sitter_op: None,
             history: vec![ContentsAndCursors::empty()],
             history_pos: 0,
+            last_save_pos: None,
             lang_id: None,
             document_identifier: doc_id,
+            debug_sink: None,
         };
 
         debug_assert!(res.check_invariant());
@@ -512,16 +570,22 @@ impl BufferState {
 
     pub fn initialize_for_widget(&mut self, widget_id: WID, cursors_op: Option<CursorSet>) -> bool {
         let cursor_set = cursors_op.unwrap_or(CursorSet::single());
-        self.history[self.history_pos].add_cursor_set(widget_id, cursor_set)
+        let result = self.history[self.history_pos].add_cursor_set(widget_id, cursor_set);
+
+        debug_assert!(self.check_invariant());
+
+        result
     }
 
     pub fn text(&self) -> &ContentsAndCursors {
-        debug_assert!(self.history.len() >= self.history_pos);
+        debug_assert!(self.check_invariant());
+
         &self.history[self.history_pos]
     }
 
     pub fn text_mut(&mut self) -> &mut ContentsAndCursors {
-        debug_assert!(self.history.len() >= self.history_pos);
+        debug_assert!(self.check_invariant());
+
         &mut self.history[self.history_pos]
     }
 
@@ -531,37 +595,54 @@ impl BufferState {
         debug_assert!(self.history_pos > 0);
         self.history_pos -= 1;
         self.history.truncate(self.history_pos + 1);
+
+        if let Some(last_save_pos) = self.last_save_pos {
+            if last_save_pos >= self.history.len() {
+                self.last_save_pos = None;
+            }
+        }
+
+        debug_assert!(self.check_invariant());
     }
 
-    pub fn with_lang(self, lang_id: LangId) -> Self {
+    pub fn with_lang(mut self, lang_id: LangId) -> Self {
         if self.subtype != BufferType::Full {
             error!("setting lang in non TextBuffer::Full!");
         }
 
-        let res = Self {
-            lang_id: Some(lang_id),
-            ..self
-        };
+        self.lang_id = Some(lang_id);
 
-        debug_assert!(res.check_invariant());
+        // let res = Self {
+        //     lang_id: Some(lang_id),
+        //     ..self
+        // };
 
-        res
+        debug_assert!(self.check_invariant());
+
+        self
     }
 
-    pub fn with_text<T: AsRef<str>>(self, text: T) -> Self {
+    pub fn with_text<T: AsRef<str>>(mut self, text: T) -> Self {
         let rope = ropey::Rope::from_str(text.as_ref());
 
-        let mut result = Self {
-            history: vec![ContentsAndCursors::empty().with_rope(rope)],
-            history_pos: 0,
-            ..self
-        };
+        self.history = vec![ContentsAndCursors::empty().with_rope(rope)];
+        self.history_pos = 0;
 
-        result.set_parsing_tuple();
+        self.set_parsing_tuple();
 
-        debug_assert!(result.check_invariant());
+        debug_assert!(self.check_invariant());
 
-        result
+        self
+    }
+
+    pub fn with_maked_as_saved(mut self) -> Self {
+        let pos = self.history_pos;
+
+        self.last_save_pos = Some(pos);
+
+        debug_assert!(self.check_invariant());
+
+        self
     }
 
     /*
@@ -578,19 +659,18 @@ impl BufferState {
     /*
     This is expected to be used only in construction, it clears the history.
      */
-    pub fn with_text_from_rope(self, rope: Rope, lang_id: Option<LangId>) -> Self {
+    pub fn with_text_from_rope(mut self, rope: Rope, lang_id: Option<LangId>) -> Self {
         let text = ContentsAndCursors::empty().with_rope(rope);
 
-        let mut res = Self {
-            history: vec![text],
-            history_pos: 0,
-            lang_id,
-            ..self
-        };
+        self.history = vec![text];
+        self.history_pos = 0;
+        self.lang_id = lang_id;
 
-        res.set_parsing_tuple();
+        self.set_parsing_tuple();
 
-        res
+        debug_assert!(self.check_invariant());
+
+        self
     }
 
     pub fn can_redo(&self) -> bool {
@@ -599,16 +679,6 @@ impl BufferState {
 
     pub fn can_undo(&self) -> bool {
         self.history_pos > 0
-    }
-}
-
-impl HasInvariant for BufferState {
-    fn check_invariant(&self) -> bool {
-        if self.history_pos >= self.history.len() {
-            return false;
-        }
-
-        true
     }
 }
 
@@ -658,7 +728,7 @@ impl TextBuffer for BufferState {
         let grapheme_len = block.graphemes(true).count();
         let text = self.text_mut();
 
-        match text.rope_mut().try_insert(char_idx, block) {
+        let result = match text.rope_mut().try_insert(char_idx, block) {
             Ok(_) => {
                 let rope_clone = text.rope().clone();
 
@@ -677,12 +747,16 @@ impl TextBuffer for BufferState {
                 warn!("failed inserting block {} (len {}) because {}", char_idx, grapheme_len, e);
                 false
             }
-        }
+        };
+
+        debug_assert!(self.check_invariant());
+
+        result
     }
 
     fn insert_char(&mut self, char_idx: usize, ch: char) -> bool {
         let text = self.text_mut();
-        match text.rope_mut().try_insert_char(char_idx, ch) {
+        let result = match text.rope_mut().try_insert_char(char_idx, ch) {
             Ok(_) => {
                 // TODO maybe this method should be moved to text object.
                 let rope_clone = text.rope().clone();
@@ -702,7 +776,11 @@ impl TextBuffer for BufferState {
                 warn!("failed inserting char {} because {}", char_idx, e);
                 false
             }
-        }
+        };
+
+        debug_assert!(self.check_invariant());
+
+        result
     }
 
     fn is_editable(&self) -> bool {
@@ -734,12 +812,16 @@ impl TextBuffer for BufferState {
 
     fn redo(&mut self) -> bool {
         debug!("REDO pos {} len {}", self.history_pos, self.history.len());
-        if self.history_pos + 1 < self.history.len() {
+        let result = if self.history_pos + 1 < self.history.len() {
             self.history_pos += 1;
             true
         } else {
             false
-        }
+        };
+
+        debug_assert!(self.check_invariant());
+
+        result
     }
 
     fn remove(&mut self, char_idx_begin: usize, char_idx_end: usize) -> bool {
@@ -749,7 +831,7 @@ impl TextBuffer for BufferState {
         }
 
         let text = self.text_mut();
-        match text.rope_mut().try_remove(char_idx_begin..char_idx_end) {
+        let result = match text.rope_mut().try_remove(char_idx_begin..char_idx_end) {
             Ok(_) => {
                 let rope_clone = text.rope().clone();
 
@@ -768,17 +850,34 @@ impl TextBuffer for BufferState {
                 warn!("failed removing char {:?}-{:?} because {}", char_idx_begin, char_idx_end, e);
                 false
             }
-        }
+        };
+
+        debug_assert!(self.check_invariant());
+
+        result
     }
 
     fn undo(&mut self) -> bool {
         debug!("UNDO pos {} len {}", self.history_pos, self.history.len());
-        if self.history_pos > 0 {
+        let result = if self.history_pos > 0 {
             self.history_pos -= 1;
             true
         } else {
             false
-        }
+        };
+
+        debug_assert!(self.check_invariant());
+
+        result
+    }
+
+    fn mark_as_saved(&mut self) {
+        self.last_save_pos = Some(self.history_pos);
+        debug_assert!(self.check_invariant());
+    }
+
+    fn is_saved(&self) -> bool {
+        self.last_save_pos == Some(self.history_pos)
     }
 }
 
@@ -796,5 +895,34 @@ impl<'a> StreamingIterator for BufferStateStreamingIterator<'a> {
 
     fn get(&self) -> Option<&Self::Item> {
         self.curr_chunk.map(|c| c.as_bytes())
+    }
+}
+
+impl HasInvariant for BufferState {
+    fn check_invariant(&self) -> bool {
+        if self.history_pos >= self.history.len() {
+            return false;
+        }
+
+        if let Some(last_save_pos) = self.last_save_pos {
+            if last_save_pos >= self.history.len() {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+impl Drop for BufferState {
+    fn drop(&mut self) {
+        if let Some(sink) = &self.debug_sink {
+            match sink.send(self.document_identifier.clone()) {
+                Ok(_) => {}
+                Err(e) => {
+                    error!("failed to send close message for {}, because {}", self.document_identifier, e);
+                }
+            }
+        }
     }
 }

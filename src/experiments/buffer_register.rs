@@ -1,8 +1,10 @@
 use std::collections::{HashMap, HashSet};
 use std::str::from_utf8;
 use std::sync::{Arc, RwLock};
+use std::time::{Duration, Instant};
 
-use log::error;
+use crossbeam_channel::{Receiver, RecvTimeoutError, Sender};
+use log::{debug, error};
 
 use crate::fs::path::SPath;
 use crate::fs::read_error::ReadError;
@@ -10,14 +12,19 @@ use crate::gladius::providers::Providers;
 use crate::primitives::has_invariant::HasInvariant;
 use crate::text::buffer_state::BufferState;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
-use crate::widgets::main_view::main_view::DocumentIdentifier;
+use crate::widgets::main_view::main_view::{BufferId, DocumentIdentifier};
 
 /*
 This is a provider of mapping DocumentIdentifier to buffer.
  */
 pub struct BufferRegister {
     buffers: HashMap<DocumentIdentifier, BufferSharedRef>,
+
+    // When a BufferState is dropped, it's identifier will be sent for clearing. If it's not received, an error will be emitted.
+    debug_channel: (Sender<DocumentIdentifier>, Receiver<DocumentIdentifier>),
 }
+
+const DEBUG_CHANNEL_DEADLINE: Duration = Duration::from_millis(600);
 
 pub type BufferRegisterRef = Arc<RwLock<BufferRegister>>;
 
@@ -28,7 +35,11 @@ pub struct OpenResult {
 
 impl BufferRegister {
     pub fn new() -> BufferRegister {
-        BufferRegister { buffers: HashMap::new() }
+        let debug_channel = crossbeam_channel::unbounded::<DocumentIdentifier>();
+        BufferRegister {
+            buffers: HashMap::new(),
+            debug_channel,
+        }
     }
 
     pub fn get_id_from_path(&self, path: &SPath) -> Option<DocumentIdentifier> {
@@ -51,7 +62,11 @@ impl BufferRegister {
     pub fn open_new_file(&mut self, providers: &Providers) -> BufferSharedRef {
         let doc_id = DocumentIdentifier::new_unique();
 
-        let buffer_state = BufferState::full(Some(providers.tree_sitter().clone()), doc_id.clone());
+        let buffer_state = BufferState::full(
+            Some(providers.tree_sitter().clone()),
+            doc_id.clone(),
+            Some(self.debug_channel.0.clone()),
+        );
 
         let bsr = BufferSharedRef::new_from_buffer(buffer_state);
 
@@ -94,7 +109,13 @@ impl BufferRegister {
 
             let doc_id = DocumentIdentifier::new_unique().with_file_path(path.clone());
 
-            let buffer_state = BufferState::full(Some(providers.tree_sitter().clone()), doc_id.clone()).with_text(buffer_str);
+            let buffer_state = BufferState::full(
+                Some(providers.tree_sitter().clone()),
+                doc_id.clone(),
+                Some(self.debug_channel.0.clone()),
+            )
+            .with_text(buffer_str)
+            .with_maked_as_saved();
 
             let bsr = BufferSharedRef::new_from_buffer(buffer_state);
 
@@ -107,6 +128,50 @@ impl BufferRegister {
                 opened: true,
             }
         }
+    }
+
+    pub fn close_buffer(&mut self, document_identifier: &DocumentIdentifier) -> bool {
+        /*
+        This method is a little paranoid over-protected, because leaking references to buffers would
+        result in a catastrophic memory leaks - the structures employed for code highlighting and
+        history will be the largest objects in memory.
+         */
+
+        if self.buffers.contains_key(document_identifier) {
+            let _removed = self.buffers.remove(document_identifier);
+
+            match self.debug_channel.1.recv_deadline(Instant::now() + DEBUG_CHANNEL_DEADLINE) {
+                Ok(id) => {
+                    if id == *document_identifier {
+                        debug!("successfully removed document id {}", document_identifier);
+                        true
+                    } else {
+                        error!("expected document id {}, got {}", document_identifier, id);
+                        false
+                    }
+                }
+                Err(e) => match e {
+                    RecvTimeoutError::Timeout => {
+                        error!(
+                            "did not received confirmation of buffer id {} being dropped - there is somewhere a live reference",
+                            document_identifier
+                        );
+                        false
+                    }
+                    RecvTimeoutError::Disconnected => {
+                        error!("debug channel broken");
+                        false
+                    }
+                },
+            }
+        } else {
+            error!("failed dropping document id {} - not found in registry", document_identifier);
+            false
+        }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&'_ DocumentIdentifier, &'_ BufferSharedRef)> {
+        self.buffers.iter()
     }
 }
 

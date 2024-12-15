@@ -65,9 +65,7 @@ pub enum MainViewMsg {
         updated_identifier: DocumentIdentifier,
     },
 
-    OpenFindInFiles {
-        root_dir: SPath,
-    },
+    OpenFindInFiles,
     FindInFilesQuery {
         root_dir: SPath,
         query: String,
@@ -77,6 +75,8 @@ pub enum MainViewMsg {
     GoToDefinition {
         promise_op: Option<StupidSymbolUsageCodeResultsProvider>,
     },
+
+    PruneUnchangedBuffers,
 
     QuitGladius,
 }

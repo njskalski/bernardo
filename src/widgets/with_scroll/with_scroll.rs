@@ -439,10 +439,9 @@ impl<W: Widget> Widget for WithScroll<W> {
         let child_kite = self.child_widget.kite();
 
         let lr = unpack_or_e!(self.layout_res.as_ref(), XY::ZERO, "failed to get kite before layout");
-        let offset = XY::new(lr.margin_width, 0) + self.scroll.offset;
 
-        debug_assert!(child_kite >= offset);
+        debug_assert!(child_kite >= self.scroll.offset);
 
-        child_kite - offset
+        child_kite - self.scroll.offset + XY::new(lr.margin_width, 0)
     }
 }

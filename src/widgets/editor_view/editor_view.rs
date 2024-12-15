@@ -8,6 +8,7 @@ use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::path::SPath;
+use crate::fs::write_error::WriteError;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
@@ -22,6 +23,7 @@ use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::search_pattern::SearchPattern;
 use crate::primitives::xy::XY;
 use crate::text::buffer_state::{BufferState, SetFilePathResult};
+use crate::text::text_buffer::TextBuffer;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
@@ -159,9 +161,17 @@ impl EditorView {
     /*
     This attempts to save current file, but in case that's not possible (filename unknown) proceeds to open_save_as_dialog() below
      */
-    fn save_or_save_as(&mut self, buffer: &BufferState) {
+    fn save_or_save_as(&mut self, buffer: &mut BufferState) {
         if let Some(ff) = buffer.get_path() {
-            let _todo = ff.overwrite_with_stream(&mut buffer.streaming_iterator(), false);
+            // TODO do something wih thi
+            match ff.overwrite_with_stream(&mut buffer.streaming_iterator(), false) {
+                Ok(_) => {
+                    buffer.mark_as_saved();
+                }
+                Err(e) => {
+                    error!("failed to save file {} because {:?}", ff, e);
+                }
+            }
         } else {
             self.open_save_as_dialog_and_focus(buffer)
         }
@@ -184,9 +194,11 @@ impl EditorView {
         self.set_focused(self.get_hover_subwidget());
     }
 
-    fn after_positive_save(&mut self, buffer_mut: &mut BufferState, path: &SPath) -> Option<MainViewMsg> {
+    fn after_positive_save_as(&mut self, buffer_mut: &mut BufferState, path: &SPath) -> Option<MainViewMsg> {
         // setting the file path
         let set_path_result = self.set_file_name(buffer_mut, path);
+
+        buffer_mut.mark_as_saved();
 
         if set_path_result.path_changed {
             // updating the "save as dialog" starting position
@@ -368,7 +380,7 @@ impl Widget for EditorView {
                 if let Some(mut buffer_lock) = self.editor.internal_mut().get_buffer().clone().lock_rw() {
                     match msg {
                         EditorViewMsg::Save => {
-                            self.save_or_save_as(&buffer_lock);
+                            self.save_or_save_as(&mut buffer_lock);
                             None
                         }
                         EditorViewMsg::SaveAs => {
@@ -383,8 +395,9 @@ impl Widget for EditorView {
                         EditorViewMsg::OnSaveAsHit { ff } => {
                             // TODO handle errors and add test that
                             // TODO add test that checks if effects of after_positive_save are achieved
+                            // TODO do I want to set the path to new file or not?
                             if ff.overwrite_with_stream(&mut buffer_lock.streaming_iterator(), false).is_ok() {
-                                self.after_positive_save(&mut buffer_lock, ff);
+                                self.after_positive_save_as(&mut buffer_lock, ff);
                             }
 
                             self.hover_dialog = None;
