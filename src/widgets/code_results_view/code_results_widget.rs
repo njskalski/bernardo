@@ -19,6 +19,7 @@ use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::big_list::big_list_widget::BigList;
+use crate::widgets::code_result_avatar::widget::CodeResultAvatarWidget;
 use crate::widgets::code_results_view::code_results_msg::CodeResultsMsg;
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::editor_view::editor_view::EditorView;
@@ -32,7 +33,7 @@ pub struct CodeResultsView {
     wid: WID,
 
     label: TextWidget,
-    item_list: WithScroll<BigList<EditorView>>,
+    item_list: WithScroll<BigList<CodeResultAvatarWidget>>,
 
     //providers
     data_provider: Box<dyn CodeResultsProvider>,
@@ -65,11 +66,11 @@ impl CodeResultsView {
         self.label.get_text()
     }
 
-    pub fn get_selected_item(&self) -> &EditorView {
+    pub fn get_selected_item(&self) -> &CodeResultAvatarWidget {
         self.item_list.internal().get_selected_item()
     }
 
-    pub fn get_selected_item_mut(&mut self) -> &mut EditorView {
+    pub fn get_selected_item_mut(&mut self) -> &mut CodeResultAvatarWidget {
         self.item_list.internal_mut().get_selected_item_mut()
     }
 
@@ -85,7 +86,7 @@ impl CodeResultsView {
 
     fn on_hit(&self) -> Option<Box<dyn AnyMsg>> {
         let editor = self.get_selected_item();
-        let editor_widget_id = editor.get_internal_widget().id();
+        let editor_widget_id = editor.get_editor_widget().id();
         let buffer_lock = editor.get_buffer_ref().lock()?;
         let cursors = buffer_lock.cursors(editor_widget_id);
         let single_cursor = unpack_or_e!(cursors.map(|cs| cs.as_single()).flatten(), None, "can't single the cursor");
@@ -142,7 +143,9 @@ impl Widget for CodeResultsView {
                     error!("failed setting cursor set for file {}", symbol.path);
                 }
 
-                self.item_list.internal_mut().add_item(SplitRule::Fixed(5), edit_view)
+                let item = CodeResultAvatarWidget::new(edit_view);
+
+                self.item_list.internal_mut().add_item(SplitRule::Fixed(5), item)
             }
         } // to drop buffer_register_lock
 
