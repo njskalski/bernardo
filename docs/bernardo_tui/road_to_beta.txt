@@ -1,7 +1,5 @@
 Here is what I want to be present in Gladius Beta:
 
-1) code search avatar needs to contain file name
-
 5)
 git filtering in:
 [DONE]    - file search
