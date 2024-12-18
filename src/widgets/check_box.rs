@@ -2,10 +2,13 @@ use crossterm::event::KeyCode;
 use log::warn;
 
 use super::text_widget::TextWidget;
+use crate::config::theme::Theme;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
+use crate::io::style::Effect;
 use crate::io::sub_output::SubOutput;
+use crate::primitives::color::Color;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
@@ -15,24 +18,35 @@ pub struct CheckBoxWidget {
     wid: WID,
     enabled: bool,
     label: TextWidget,
+    text_widget_theme: Theme, //ToDo Is it good design?
 }
 
 impl CheckBoxWidget {
     pub const TYPENAME: &'static str = "check_box";
-    pub const CHECK_SYMBOL_ENABLED: &'static str = "[X]";
-    pub const CHECK_SYMBOL_DISABLED: &'static str = "[ ]";
-    pub const CHECK_SYMBOL_SIZE: u16 = 3;
+    const CHECK_SYMBOL_ENABLED: &'static str = "[X]";
+    const CHECK_SYMBOL_DISABLED: &'static str = "[ ]";
+    const CHECK_SYMBOL_SIZE: u16 = 3;
 
     pub fn new(label: TextWidget) -> Self {
+        let clicked_color = Color::new(255, 255, 153);
+        let mut theme = Theme::default();
+        theme.ui.focused.set_foreground(clicked_color);
+        theme.ui.non_focused.set_foreground(clicked_color);
+        
         Self {
             wid: get_new_widget_id(),
             enabled: false,
             label,
+            text_widget_theme: theme,
         }
     }
 
     pub fn is_enabled(&self) -> bool {
         self.enabled
+    }
+
+    pub fn toggle(&mut self) {
+        self.enabled =!self.enabled;
     }
 }
 
@@ -76,19 +90,21 @@ impl Widget for CheckBoxWidget {
             warn!("expecetd CheckBoxMsg, got {:?}", msg);
             return None;
         }
-        self.enabled = !self.enabled;
+        self.toggle();
         None
     }
 
     fn render(&self, theme: &crate::config::theme::Theme, focused: bool, output: &mut dyn crate::io::output::Output) {
         let text = theme.default_text(focused);
-        let mut checked_symbol = Self::CHECK_SYMBOL_ENABLED;
-        if !self.enabled {
-            checked_symbol = Self::CHECK_SYMBOL_DISABLED;
-        }
+        let (checked_symbol, label_theme) = if self.enabled {
+            (Self::CHECK_SYMBOL_ENABLED, &self.text_widget_theme)
+        } else {
+            (Self::CHECK_SYMBOL_DISABLED, theme)
+        };
+        
         output.print_at(XY::ZERO, text, &checked_symbol);
         let sub_output = &mut SubOutput::new(output, Rect::new(XY::new(Self::CHECK_SYMBOL_SIZE + 1, 0), self.label.text_size()));
-        self.label.render(theme, focused, sub_output);
+        self.label.render(label_theme, focused, sub_output);
     }
 }
 
@@ -128,5 +144,5 @@ mod tests {
         assert_eq!(checkbox.is_enabled(), false);
     }
 
-    // #[test]
+
 }

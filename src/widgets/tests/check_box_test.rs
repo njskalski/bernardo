@@ -59,4 +59,4 @@ fn odd_clicks_test() {
     }
     assert!(setup.widget.is_enabled());
     setup.screenshot();
-}
+}   
