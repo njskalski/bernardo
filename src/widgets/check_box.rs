@@ -5,6 +5,8 @@ use super::text_widget::TextWidget;
 use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
+use crate::io::sub_output::SubOutput;
+use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
@@ -85,14 +87,8 @@ impl Widget for CheckBoxWidget {
             checked_symbol = Self::CHECK_SYMBOL_DISABLED;
         }
         output.print_at(XY::ZERO, text, &checked_symbol);
-
-        let mut line_idx = 0;
-        let binding = self.label.get_text();
-        let mut line_it = binding.lines();
-        while let Some(line) = line_it.next() {
-            output.print_at(XY::new(Self::CHECK_SYMBOL_SIZE, line_idx), text, line);
-            line_idx += 1;
-        }
+        let sub_output = &mut SubOutput::new(output, Rect::new(XY::new(Self::CHECK_SYMBOL_SIZE + 1, 0), self.label.text_size()));
+        self.label.render(theme, focused, sub_output);
     }
 }
 
