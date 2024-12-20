@@ -15,7 +15,7 @@ pub struct CheckBoxWidget {
     wid: WID,
     checked: bool,
     label: TextWidget,
-    text_widget_theme: Theme, //ToDo Is it good design?
+    text_widget_theme: Theme,
 }
 
 impl CheckBoxWidget {
