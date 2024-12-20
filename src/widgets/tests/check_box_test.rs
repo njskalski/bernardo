@@ -1,5 +1,5 @@
-use crate::io::keys::Keycode;
 use crate::io::input_event::InputEvent;
+use crate::io::keys::Keycode;
 
 use super::check_box_testbed::{CheckBoxTestbed, CheckBoxTestbedBuilder};
 
@@ -59,4 +59,4 @@ fn odd_clicks_test() {
     }
     assert!(setup.widget.is_enabled());
     setup.screenshot();
-}   
+}

@@ -29,7 +29,7 @@ impl CheckBoxWidget {
         let mut theme = Theme::default();
         theme.ui.focused.set_foreground(clicked_color);
         theme.ui.non_focused.set_foreground(clicked_color);
-        
+
         Self {
             wid: get_new_widget_id(),
             enabled: false,
@@ -43,7 +43,7 @@ impl CheckBoxWidget {
     }
 
     pub fn toggle(&mut self) {
-        self.enabled =!self.enabled;
+        self.enabled = !self.enabled;
     }
 }
 
@@ -98,7 +98,7 @@ impl Widget for CheckBoxWidget {
         } else {
             (Self::CHECK_SYMBOL_DISABLED, theme)
         };
-        
+
         output.print_at(XY::ZERO, text, &checked_symbol);
         let sub_output = &mut SubOutput::new(output, Rect::new(XY::new(Self::CHECK_SYMBOL_SIZE + 1, 0), self.label.text_size()));
         self.label.render(label_theme, focused, sub_output);
@@ -140,6 +140,4 @@ mod tests {
 
         assert_eq!(checkbox.is_enabled(), false);
     }
-
-
 }
