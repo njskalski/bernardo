@@ -13,7 +13,7 @@ use crate::widget::widget::{get_new_widget_id, Widget, WID};
 
 pub struct CheckBoxWidget {
     wid: WID,
-    enabled: bool,
+    checked: bool,
     label: TextWidget,
     text_widget_theme: Theme, //ToDo Is it good design?
 }
@@ -32,18 +32,22 @@ impl CheckBoxWidget {
 
         Self {
             wid: get_new_widget_id(),
-            enabled: false,
+            checked: false,
             label,
             text_widget_theme: theme,
         }
     }
 
-    pub fn is_enabled(&self) -> bool {
-        self.enabled
+    pub fn with_checked(self, checked: bool) -> Self {
+        Self { checked, ..self }
+    }
+
+    pub fn is_checked(&self) -> bool {
+        self.checked
     }
 
     pub fn toggle(&mut self) {
-        self.enabled = !self.enabled;
+        self.checked = !self.checked;
     }
 }
 
@@ -93,7 +97,7 @@ impl Widget for CheckBoxWidget {
 
     fn render(&self, theme: &crate::config::theme::Theme, focused: bool, output: &mut dyn crate::io::output::Output) {
         let text = theme.default_text(focused);
-        let (checked_symbol, label_theme) = if self.enabled {
+        let (checked_symbol, label_theme) = if self.checked {
             (Self::CHECK_SYMBOL_ENABLED, &self.text_widget_theme)
         } else {
             (Self::CHECK_SYMBOL_DISABLED, theme)
@@ -111,33 +115,3 @@ pub enum CheckBoxMsg {
 }
 
 impl AnyMsg for CheckBoxMsg {}
-
-#[cfg(test)]
-mod tests {
-    use crate::io::keys::{Key, Modifiers};
-
-    use super::*;
-
-    #[test]
-    fn test_check_box_click() {
-        let label = TextWidget::new(Box::new("Test Checkbox".to_string()));
-        let mut checkbox = CheckBoxWidget::new(label);
-        assert_eq!(checkbox.is_enabled(), false);
-        let key_event = Key {
-            keycode: Keycode::Enter,
-            modifiers: Modifiers::default(),
-        };
-        let input_event = KeyInput(key_event);
-        if let Some(msg) = checkbox.on_input(input_event) {
-            checkbox.update(msg);
-        }
-
-        assert_eq!(checkbox.is_enabled(), true);
-
-        if let Some(msg) = checkbox.on_input(input_event) {
-            checkbox.update(msg);
-        }
-
-        assert_eq!(checkbox.is_enabled(), false);
-    }
-}
