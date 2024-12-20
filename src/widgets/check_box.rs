@@ -20,8 +20,8 @@ pub struct CheckBoxWidget {
 
 impl CheckBoxWidget {
     pub const TYPENAME: &'static str = "check_box";
-    const CHECK_SYMBOL_ENABLED: &'static str = "[X]";
-    const CHECK_SYMBOL_DISABLED: &'static str = "[ ]";
+    const CHECK_SYMBOL_CHECKED: &'static str = "[X]";
+    const CHECK_SYMBOL_UNCHECKED: &'static str = "[ ]";
     const CHECK_SYMBOL_SIZE: u16 = 3;
 
     pub fn new(label: TextWidget) -> Self {
@@ -98,9 +98,9 @@ impl Widget for CheckBoxWidget {
     fn render(&self, theme: &crate::config::theme::Theme, focused: bool, output: &mut dyn crate::io::output::Output) {
         let text = theme.default_text(focused);
         let (checked_symbol, label_theme) = if self.checked {
-            (Self::CHECK_SYMBOL_ENABLED, &self.text_widget_theme)
+            (Self::CHECK_SYMBOL_CHECKED, &self.text_widget_theme)
         } else {
-            (Self::CHECK_SYMBOL_DISABLED, theme)
+            (Self::CHECK_SYMBOL_UNCHECKED, theme)
         };
 
         output.print_at(XY::ZERO, text, &checked_symbol);
