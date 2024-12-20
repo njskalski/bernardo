@@ -4,17 +4,19 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::process::{ChildStderr, ChildStdout, Stdio};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, LockResult, RwLock};
 use std::thread::JoinHandle;
 use std::time::Duration;
 use std::{process, thread};
 
 use crossbeam_channel::{Receiver, Sender};
 use log::{debug, error, warn};
-use lsp_types;
+use lsp_types::{self, PublishDiagnosticsParams};
 use url::Url;
 
 use crate::lsp_client::debug_helpers::lsp_debug_save;
+use crate::lsp_client::diagnostic;
+use crate::lsp_client::diagnostic::{Diagnostic, DiagnosticSeverity};
 use crate::lsp_client::lsp_io_error::LspIOError;
 use crate::lsp_client::lsp_notification::LspServerNotification;
 use crate::lsp_client::lsp_read::read_lsp;
@@ -25,7 +27,9 @@ use crate::lsp_client::promise::LSPPromise;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::{Promise, PromiseState};
 use crate::tsw::lang_id::LangId;
+use crate::unpack_or;
 use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
+use crate::widgets::editor_widget::label::label::{Label, LabelPos, LabelStyle};
 
 // I use ID == String, because i32 might be small, and i64 is safe, so I send i64 as string and so I
 // store it. LSP defines id integer as i32, while jsonrpc_core as u64.
@@ -35,6 +39,20 @@ pub struct CallInfo {
 }
 
 pub type IdToCallInfo = HashMap<String, CallInfo>;
+
+pub struct LSPFileDescriptor {
+    // this is the ordering version used to distinguish between "which version of file this message
+    // relates to". In general we don't care about messages coming for outdated versions.
+    pub version: i32,
+
+    // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_publishDiagnostics
+    // has a nice guarantee:
+    // "Newly pushed diagnostics always replace previously pushed diagnostics. There is no merging that happens on the client side."
+    // Nicely done Microsoft.
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+pub type FilesStore = Arc<RwLock<HashMap<Url, LSPFileDescriptor>>>;
 
 /*
 Represents a single LSP server connection
@@ -48,17 +66,14 @@ pub struct LspWrapper {
     //TODO the common state should probably be merged to avoid concurrency issues. It's not like I
     // will be sending multiple edit events concurrently.
     ids: Arc<RwLock<IdToCallInfo>>,
-    file_versions: Arc<RwLock<HashMap<Url, i32>>>,
+    files: FilesStore,
 
     curr_id: u64,
     reader_handle: JoinHandle<Result<(), LspReadError>>,
     logger_handle: JoinHandle<Result<(), ()>>,
-    notification_reader_handle: JoinHandle<Result<(), ()>>,
 
     error_sink: Sender<LspReadError>,
 }
-
-// pub type LspWrapperRef = Arc<RwLock<LspWrapper>>;
 
 impl LspWrapper {
     pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(1);
@@ -100,9 +115,8 @@ impl LspWrapper {
             Some(e) => BufReader::new(e),
         };
 
-        let (notification_sender, notification_receiver) = crossbeam_channel::unbounded::<LspServerNotification>();
         let ids = Arc::new(RwLock::new(IdToCallInfo::default()));
-        let file_versions = Arc::new(RwLock::new(HashMap::default()));
+        let files = Arc::new(RwLock::new(HashMap::default()));
 
         let reader_identifier: String = format!(
             "{}-{}",
@@ -116,12 +130,11 @@ impl LspWrapper {
         let reader_identifier2 = reader_identifier.clone();
 
         let ids_clone = ids.clone();
+        let files_clone = files.clone();
         let reader_handle: JoinHandle<Result<(), LspReadError>> =
-            thread::spawn(move || Self::reader_thread(reader_identifier, ids_clone, notification_sender, stdout, tick_sender));
+            thread::spawn(move || Self::lsp_reader_thread_main(reader_identifier, ids_clone, files_clone, stdout, tick_sender));
 
         let logger_handle: JoinHandle<Result<(), ()>> = thread::spawn(|| Self::logger_thread(reader_identifier2, stderr));
-
-        let notification_reader_handle: JoinHandle<Result<(), ()>> = thread::spawn(|| Self::notification_thread(notification_receiver));
 
         Some(LspWrapper {
             server_path: lsp_path,
@@ -129,11 +142,10 @@ impl LspWrapper {
             language,
             child,
             ids,
-            file_versions,
+            files,
             curr_id: 1,
             reader_handle,
             logger_handle,
-            notification_reader_handle,
             error_sink,
         })
     }
@@ -306,13 +318,19 @@ impl LspWrapper {
 
     pub fn text_document_did_open(&mut self, url: Url, text: String) -> Result<(), LspWriteError> {
         {
-            let mut lock = self.file_versions.write()?;
-            if let Some(old_id) = lock.get(&url) {
-                if *old_id > 0 {
-                    warn!("expected document {:?} version to be 0, is {}", &url, old_id);
+            let mut lock = self.files.write()?;
+            if let Some(fd) = lock.get(&url) {
+                if fd.version > 0 {
+                    warn!("expected document {:?} version to be 0, is {}", &url, fd.version);
                 }
             } else {
-                lock.insert(url.clone(), 0);
+                lock.insert(
+                    url.clone(),
+                    LSPFileDescriptor {
+                        version: 0,
+                        diagnostics: vec![],
+                    },
+                );
             }
         }
 
@@ -364,11 +382,11 @@ impl LspWrapper {
      */
     pub fn text_document_did_change(&mut self, url: Url, full_text: String) -> Result<(), LspWriteError> {
         let version = {
-            let mut lock = self.file_versions.write()?;
-            if let Some(old_id) = lock.get(&url).map(|i| *i) {
+            let mut lock = self.files.write()?;
+            if let Some(fd) = lock.get_mut(&url) {
                 // debug!("updating document {} from {} to {}", &url, old_id, old_id+1);
-                lock.insert(url.clone(), old_id + 1);
-                old_id + 1
+                fd.version += 1;
+                fd.version
             } else {
                 error!("failed to find document version for {:?} - was document opened?", &url);
                 // TODO add error for "no document version found"
@@ -435,11 +453,11 @@ impl LspWrapper {
         &self.reader_handle
     }
 
-    pub fn reader_thread(
+    pub fn lsp_reader_thread_main(
         // used for debugging
         identifier: String,
         id_to_name: Arc<RwLock<IdToCallInfo>>,
-        notification_sender: Sender<LspServerNotification>,
+        files: FilesStore,
         mut stdout: BufReader<ChildStdout>,
         tick_sender: Sender<NavCompTick>,
     ) -> Result<(), LspReadError> {
@@ -450,7 +468,7 @@ impl LspWrapper {
 
         loop {
             num += 1;
-            match read_lsp(&identifier, &mut num, &mut stdout, &id_to_name, &notification_sender) {
+            match read_lsp(&identifier, &mut num, &mut stdout, &id_to_name, &files) {
                 Ok(_) => {
                     // TODO Pass LangId and whatever usize is?
                     match tick_sender.try_send(NavCompTick::LspTick(LangId::RUST, 0)) {
@@ -505,25 +523,40 @@ impl LspWrapper {
         Ok(())
     }
 
-    /*
-    This thread just dries the stderr
-     */
-    pub fn notification_thread(notification_receiver: Receiver<LspServerNotification>) -> Result<(), ()> {
-        loop {
-            let notification = notification_receiver.recv();
-            match notification {
-                Ok(_notification) => {
-                    // debug!("received LSP notification:\n---\n{:?}\n---\n", notification);
-                    // debug!("received LSP notification");
-                }
-                Err(e) => {
-                    debug!("notification channel closed: {:?}", e);
-                    break;
-                }
-            }
-        }
+    // Tells you "what is the current version of Labels for that file
+    pub fn get_labels_file_version_id(&self, uri: &Url) -> Option<i32> {
+        let lock = unpack_or!(self.files.read().ok(), None, "failed to lock LSP files store to read");
+        let item = unpack_or!(lock.get(uri), None, "diagnostics of file {} not found", uri);
 
-        Ok(())
+        Some(item.version)
+    }
+
+    // This should combine diagnostics (errors, warnings) AND types
+    pub fn get_labels_for_file(&self, uri: &Url) -> Box<dyn Iterator<Item = Label>> {
+        let lock = unpack_or!(
+            self.files.read().ok(),
+            Box::new(std::iter::empty()),
+            "failed to lock LSP files store to read"
+        );
+        let item = unpack_or!(lock.get(uri), Box::new(std::iter::empty()), "diagnostics of file {} not found", uri);
+
+        let labels: Vec<Label> = item
+            .diagnostics
+            .iter()
+            .map(|d| {
+                Label::new(
+                    LabelPos::LineAfter { line_no_1b: d.line_no_1b },
+                    match d.severity {
+                        DiagnosticSeverity::Error => LabelStyle::Error,
+                        DiagnosticSeverity::Warning => LabelStyle::Warning,
+                        DiagnosticSeverity::Info => LabelStyle::TypeAnnotation,
+                    },
+                    Box::new(d.message.clone()),
+                )
+            })
+            .collect();
+
+        Box::new(labels.into_iter())
     }
 }
 

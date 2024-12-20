@@ -1,4 +1,6 @@
+use std::ops::Deref;
 use std::sync::Arc;
+use std::sync::RwLock;
 
 use log::{debug, error};
 use ropey::Rope;
@@ -14,6 +16,7 @@ use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::unpack_or_e;
 use crate::widget::widget::WID;
+use crate::widgets::editor_widget::label::label::Label;
 
 /*
 I allow empty history, it means "nobody is looking at the buffer now, first who comes needs to set
@@ -25,6 +28,7 @@ pub struct ContentsAndCursors {
     rope: Rope,
     parsing: Option<ParsingTuple>,
     cursor_sets: Vec<(WID, CursorSet)>,
+    labels: Vec<Label>,
 }
 
 impl ContentsAndCursors {
@@ -33,6 +37,7 @@ impl ContentsAndCursors {
             rope,
             parsing,
             cursor_sets: Vec::new(),
+            labels: Vec::new(),
         }
     }
 
@@ -83,6 +88,7 @@ impl ContentsAndCursors {
             rope: Rope::default(),
             parsing: None,
             cursor_sets: vec![],
+            labels: vec![],
         }
     }
 
@@ -208,6 +214,14 @@ impl ContentsAndCursors {
 
     pub fn with_rope(self, rope: Rope) -> Self {
         Self { rope, ..self }
+    }
+
+    pub fn labels(&self) -> &[Label] {
+        &self.labels
+    }
+
+    pub fn replace_labels(&mut self, labels: Vec<Label>) {
+        self.labels = labels;
     }
 }
 

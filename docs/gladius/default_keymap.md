@@ -25,9 +25,15 @@ happen if we introduce new/rename old options).
 | replace                         | ctrl + r              |                                                                                                                             |
 | reformat                        | ctrl + g              |                                                                                                                             |
 | enter "cursor dropping mode"    | ctrl + w              |                                                                                                                             |
-| undo                            | ctrl + z              | crashes right [now](https://gitlab.com/njskalski/bernardo/-/issues/46)                                                      |                                                                                                          |
+| undo                            | ctrl + z              |                                                                                                                             |                                                                                                          |
 | redo                            | honestly dont know    |                                                                                                                             |
 | ask for completions             | ctrl + space          | like in Eclipse                                                                                                             |
+
+## Tree view
+
+| description                             | key combination | comment             |
+|-----------------------------------------|-----------------|---------------------|
+| hide/unhide hidden (dot-prefixed) files | ctr+h           | not implemented yet |
 
 ## General keys
 

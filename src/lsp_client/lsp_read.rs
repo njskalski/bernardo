@@ -4,13 +4,16 @@ use std::sync::{Arc, RwLock};
 
 use crossbeam_channel::{SendError, Sender};
 use jsonrpc_core::{Call, Id, Output};
-use log::{debug, error};
+use log::{debug, error, warn};
 use serde_json::Value;
 
 use crate::lsp_client::debug_helpers::{format_or_noop, lsp_debug_save};
-use crate::lsp_client::lsp_client::IdToCallInfo;
+use crate::lsp_client::diagnostic;
+use crate::lsp_client::diagnostic::Diagnostic;
+use crate::lsp_client::lsp_client::{FilesStore, IdToCallInfo, LSPFileDescriptor};
 use crate::lsp_client::lsp_notification::{parse_notification, LspServerNotification};
 use crate::lsp_client::lsp_read_error::LspReadError;
+use crate::unpack_unit_e;
 
 // TODO one can reduce allocation here
 fn id_to_str(id: Id) -> String {
@@ -27,7 +30,7 @@ pub fn read_lsp<R: Read>(
     num: &mut usize,
     input: &mut R,
     id_to_method: &Arc<RwLock<IdToCallInfo>>,
-    notification_sink: &Sender<LspServerNotification>,
+    files: &FilesStore,
 ) -> Result<(), LspReadError> {
     let mut headers: Vec<u8> = Vec::new();
 
@@ -82,14 +85,7 @@ pub fn read_lsp<R: Read>(
                 debug!("deserialized call->notification {:?}", &notification.method);
                 match parse_notification(notification) {
                     Ok(no) => {
-                        match notification_sink.send(no) {
-                            Ok(_) => {}
-                            Err(e) => match e {
-                                SendError(_) => {
-                                    error!("notification_sink.send fail: {:?}, non critical", e);
-                                }
-                            },
-                        };
+                        internal_process_incoming_notification(no, files);
                         Ok(())
                     }
                     Err(e) => Err(LspReadError::DeError(e.to_string())),
@@ -118,7 +114,7 @@ pub fn read_lsp<R: Read>(
                     debug!("deserialized notification");
                     match parse_notification(notification) {
                         Ok(no) => {
-                            notification_sink.send(no).map_err(|_| LspReadError::BrokenChannel)?;
+                            internal_process_incoming_notification(no, files);
                             Ok(())
                         }
                         Err(e) => Err(LspReadError::DeError(e.to_string())),
@@ -160,6 +156,39 @@ fn internal_send_to_promise(
             id: id.to_string(),
             method: method.map(|m| m.to_string()).unwrap_or("<unset>".to_string()),
         })
+    }
+}
+
+fn internal_process_incoming_notification(no: LspServerNotification, files: &FilesStore) {
+    match no {
+        LspServerNotification::TextDocumentPublishDiagnostics(diagnostics) => {
+            let mut file_store = unpack_unit_e!(files.write().ok(), "failed to lock LSP FileStore");
+
+            if !file_store.contains_key(&diagnostics.uri) {
+                file_store.insert(
+                    diagnostics.uri.clone(),
+                    LSPFileDescriptor {
+                        version: 0,
+                        diagnostics: vec![],
+                    },
+                );
+            }
+
+            let file_desc = file_store.get_mut(&diagnostics.uri).unwrap();
+
+            if let Some(version) = diagnostics.version {
+                if version < file_desc.version {
+                    warn!("discarding outdated diagnostics for file {}", diagnostics.uri);
+                }
+                file_desc.version = version;
+            }
+
+            let diagnostics: Vec<Diagnostic> = diagnostics.diagnostics.into_iter().map(diagnostic::Diagnostic::from).collect();
+            file_desc.diagnostics = diagnostics;
+        }
+        other => {
+            debug!("ignoring LSP diagnostics {:?}, because no handling of it is implemented", other);
+        }
     }
 }
 

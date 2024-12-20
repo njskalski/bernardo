@@ -1,5 +1,4 @@
 use crate::fs::path::SPath;
-
 use crate::widgets::editor_widget::label::label::Label;
 use crate::widgets::editor_widget::label::labels_provider::LabelsProvider;
 
@@ -14,7 +13,7 @@ impl MockLabelsProvider {
 }
 
 impl LabelsProvider for MockLabelsProvider {
-    fn query_for(&self, _path_op: Option<&SPath>) -> Box<dyn Iterator<Item = &'_ Label> + '_> {
+    fn query_for(&self, path_op: Option<&SPath>) -> Box<dyn Iterator<Item = &Label> + '_> {
         Box::new(self.labels.iter())
     }
 }

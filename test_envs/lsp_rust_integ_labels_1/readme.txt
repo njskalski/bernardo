@@ -1,0 +1,1 @@
+This test env is for an integration test with Rust LSP for Labels (errors, warnings) in code.

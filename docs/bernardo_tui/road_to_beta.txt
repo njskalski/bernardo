@@ -5,9 +5,8 @@ git filtering in:
 [DONE]    - file search
     - full text search
 
-6)
-[DONE] Editor "labels" (in-code overlay-"comments", clearly distingushible messages noting errors/warnings)
-[but not wired]
+13) ctrl-h - hidden files
+14) debug
 
 7)
 Code "collapsing"
@@ -16,8 +15,6 @@ Code "collapsing"
 copy-cut-paste and context bar in tree!
 
 Nice to haves (only if they turn out to be low hanging fruits):
-
-9) errors/warnings in editor
 
 10)
 Tests:

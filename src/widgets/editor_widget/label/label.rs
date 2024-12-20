@@ -11,6 +11,7 @@ use crate::primitives::styled_printable::{StyleBorrowedPrintable, StyledPrintabl
 use crate::primitives::xy::XY;
 use crate::text::text_buffer::TextBuffer;
 
+#[derive(Debug, Clone)]
 pub enum LabelPos {
     /*
     Appears immediately after anchoring symbol, can be cursor selected for context
@@ -94,11 +95,12 @@ pub enum LabelStyle {
     Random(TextStyle),
 }
 
+#[derive(Clone, Debug)]
 pub struct Label {
     // TODO make private
     pub pos: LabelPos,
     pub style: LabelStyle,
-    contents: Box<dyn Printable + Sync + Send>,
+    contents: String,
 }
 
 impl Label {
@@ -106,7 +108,7 @@ impl Label {
         Label {
             pos: label_pos,
             style,
-            contents,
+            contents: contents.to_owned_string(),
         }
     }
 
@@ -122,6 +124,6 @@ impl Label {
             LabelStyle::Random(style) => style,
         };
 
-        StyleBorrowedPrintable::new(computed_style, self.contents.as_ref())
+        StyleBorrowedPrintable::new(computed_style, &self.contents)
     }
 }

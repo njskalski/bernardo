@@ -1,12 +1,16 @@
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::path::PathBuf;
 use std::sync::RwLock;
 
 use crossbeam_channel::{Receiver, Sender};
-use log::{debug, error};
+use log::{debug, error, warn};
 use lsp_types::{CompletionResponse, CompletionTextEdit, GotoDefinitionResponse, Location, LocationLink, Position, SymbolKind};
+use parking_lot::{MappedRwLockReadGuard, RwLockReadGuard};
+use url::Url;
 
 use crate::fs::path::SPath;
+use crate::lsp_client::diagnostic::Diagnostic;
 use crate::lsp_client::lsp_client::LspWrapper;
 use crate::lsp_client::lsp_io_error::LspIOError;
 use crate::lsp_client::lsp_read_error::LspReadError;
@@ -19,6 +23,7 @@ use crate::w7e::navcomp_provider::{
     Completion, CompletionAction, CompletionsPromise, FormattingPromise, NavCompProvider, StupidSubstituteMessage, StupidSymbolUsage,
     SymbolType, SymbolUsagesPromise,
 };
+use crate::widgets::editor_widget::label::label::Label;
 use crate::{unpack_or_e, unpack_unit_e};
 
 /*
@@ -47,7 +52,11 @@ pub struct NavCompProviderLsp {
     triggers: Vec<String>,
     read_error_channel: (Sender<LspReadError>, Receiver<LspReadError>),
 
-    //
+    // mapping of "LSP file version to labels", so I know when I need to recompute them.
+    // TODO this RwLock is here only to drop "mut" from provider. It could be replaced by some
+    // "stream promise" or "refreshable state" ("observer?") or "receiver".
+    file_to_labels: parking_lot::RwLock<HashMap<SPath, (i32, Vec<Label>)>>,
+
     crashed: RwLock<bool>,
 }
 
@@ -67,6 +76,7 @@ impl NavCompProviderLsp {
                         // TODO this will get lang specific
                         triggers: vec![".".to_string(), "::".to_string()],
                         read_error_channel: error_channel,
+                        file_to_labels: Default::default(),
                         crashed: RwLock::new(false),
                     })
                 }
@@ -329,6 +339,37 @@ impl NavCompProvider for NavCompProviderLsp {
         let url = unpack_unit_e!(path.to_url().ok(), "failed to convert spath [{}] to url", path);
         let mut lock = unpack_unit_e!(self.lsp.try_write().ok(), "failed acquiring lock",);
         lock.text_document_did_close(url);
+    }
+
+    fn get_labels_for_file(&self, path: &SPath) -> Option<MappedRwLockReadGuard<Vec<Label>>> {
+        let url = unpack_or_e!(path.to_url().ok(), None, "failed to convert spath [{}] to url", path);
+        let mut lsp_wrapper = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring lock on LSP Wrapper");
+
+        {
+            // lazy refresh
+            let mut write_guard = unpack_or_e!(self.file_to_labels.try_write(), None, "failed acquiring local store lock");
+
+            if let Some(new_record_index) = lsp_wrapper.get_labels_file_version_id(&url) {
+                if let Some(cached_record) = write_guard.get_mut(path) {
+                    if new_record_index != cached_record.0 {
+                        cached_record.0 = new_record_index;
+                        cached_record.1 = lsp_wrapper.get_labels_for_file(&url).collect();
+                    }
+                    // else noop
+                } else {
+                    let labels: Vec<_> = lsp_wrapper.get_labels_for_file(&url).collect();
+                    write_guard.insert(path.clone(), (new_record_index, labels));
+                }
+            }
+        }
+
+        // returning result
+        let read_guard = unpack_or_e!(self.file_to_labels.try_read(), None, "failed acquiring local store lock");
+
+        Some(parking_lot::RwLockReadGuard::map(
+            read_guard,
+            |hash_map: &HashMap<SPath, (i32, Vec<Label>)>| -> &Vec<Label> { hash_map.get(path).unwrap().1.as_ref() },
+        ))
     }
 
     fn todo_navcomp_sender(&self) -> &NavCompTickSender {

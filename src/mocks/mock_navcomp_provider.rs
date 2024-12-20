@@ -4,8 +4,11 @@ use std::time::Duration;
 
 use crossbeam_channel::{select, Receiver, Sender};
 use log::{debug, error};
+use parking_lot::MappedRwLockReadGuard;
+use url::Url;
 
 use crate::fs::path::SPath;
+use crate::lsp_client::diagnostic::Diagnostic;
 use crate::mocks::mock_navcomp_promise::MockNavCompPromise;
 use crate::mocks::mock_navcomp_provider::MockNavCompEvent::FileOpened;
 use crate::primitives::stupid_cursor::StupidCursor;
@@ -15,6 +18,7 @@ use crate::w7e::navcomp_group::{NavCompTick, NavCompTickSender};
 use crate::w7e::navcomp_provider::{
     Completion, CompletionsPromise, FormattingPromise, NavCompProvider, NavCompSymbol, StupidSymbolUsage, SymbolType, SymbolUsagesPromise,
 };
+use crate::widgets::editor_widget::label::label::Label;
 
 pub struct MockCompletionMatcher {
     // None matches all
@@ -258,6 +262,10 @@ impl NavCompProvider for MockNavCompProvider {
     }
 
     fn file_closed(&self, _path: &SPath) {}
+
+    fn get_labels_for_file(&self, path: &SPath) -> Option<MappedRwLockReadGuard<Vec<Label>>> {
+        None
+    }
 
     fn todo_navcomp_sender(&self) -> &NavCompTickSender {
         &self.navcomp_tick_server

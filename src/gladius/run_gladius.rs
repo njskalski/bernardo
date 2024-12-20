@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use crossbeam_channel::select;
-use log::{debug, error};
+use log::{debug, error, warn};
 
 use crate::experiments::screen_shot::screenshot;
 use crate::experiments::screenspace::Screenspace;
@@ -12,12 +12,15 @@ use crate::io::input::Input;
 use crate::io::input_event::InputEvent;
 use crate::io::keys::Keycode;
 use crate::io::output::FinalOutput;
+use crate::lsp_client::diagnostic::DiagnosticSeverity;
 use crate::primitives::helpers::get_next_filename;
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::inspector::{inspect_workspace, InspectError};
+use crate::w7e::navcomp_group::NavCompTick;
 use crate::w7e::workspace::WORKSPACE_FILE_NAME;
 use crate::w7e::workspace::{LoadError, ScopeLoadErrors, Workspace};
 use crate::widget::widget::Widget;
+use crate::widgets::editor_widget::label::label::{Label, LabelPos, LabelStyle};
 use crate::widgets::main_view::main_view::MainView;
 
 pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut output: O, files: Vec<PathBuf>) {
@@ -230,3 +233,45 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
         }
     }
 }
+
+// fn update_diagnostics(providers: &Providers) {
+//     let all_diags = providers.navcomp_group().try_read().unwrap().flush_all_diagnostics();
+//     if all_diags.is_empty() {
+//         return;
+//     }
+//
+//     for (uri, diags) in all_diags {
+//         let uri = uri.to_string();
+//         let Some(no_prefix) = uri.strip_prefix("file://") else {
+//             warn!("failed stripping prefix file:// from {}", &uri);
+//             continue;
+//         };
+//
+//         let Some(spath) = providers.fsf().descendant_checked(&no_prefix) else {
+//             error!("failed to get spath from {}", &no_prefix);
+//             continue;
+//         };
+//
+//         let labels = diags
+//             .into_iter()
+//             .map(|d| {
+//                 Label::new(
+//                     LabelPos::LineAfter { line_no_1b: d.line_no_1b },
+//                     match d.severity {
+//                         DiagnosticSeverity::Error => LabelStyle::Error,
+//                         DiagnosticSeverity::Warning => LabelStyle::Warning,
+//                         DiagnosticSeverity::Info => LabelStyle::TypeAnnotation,
+//                     },
+//                     Box::new(d.message),
+//                 )
+//             })
+//             .collect();
+//
+//         let Some(buffer) = providers.buffer_register().try_write().unwrap().get_buffer_ref_from_path(&spath) else {
+//             continue;
+//         };
+//         if let Some(mut buf) = buffer.lock_rw() {
+//             buf.text_mut().replace_labels(labels);
+//         };
+//     }
+// }

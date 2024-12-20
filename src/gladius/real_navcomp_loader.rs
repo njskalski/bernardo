@@ -1,6 +1,7 @@
 use log::warn;
 
 use crate::config::config::ConfigRef;
+use crate::experiments::buffer_register::BufferRegisterRef;
 use crate::gladius::navcomp_loader::NavCompLoader;
 use crate::w7e::handler::Handler;
 use crate::w7e::handler_factory::handler_factory;
@@ -25,6 +26,7 @@ impl NavCompLoader for RealNavCompLoader {
     fn load_handler(
         &self,
         config: &ConfigRef,
+        buffer_register_ref: &BufferRegisterRef,
         project_scope: &ProjectScope,
         navcomp_tick_sender: NavCompTickSender,
     ) -> Result<Box<dyn Handler>, HandlerLoadError> {
@@ -38,6 +40,7 @@ impl NavCompLoader for RealNavCompLoader {
             }
             Some(handler_id) => Ok(handler_factory(
                 config,
+                buffer_register_ref,
                 &handler_id,
                 project_scope.path.clone(),
                 navcomp_tick_sender.clone(),
