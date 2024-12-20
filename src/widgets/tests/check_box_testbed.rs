@@ -11,22 +11,22 @@ pub type CheckBoxTestbed = GenericWidgetTestbed<CheckBoxWidget, ()>;
 pub type CheckBoxTestbedBuilder = GenericWidgetTestbedBuilder<CheckBoxWidget, ()>;
 
 impl CheckBoxTestbedBuilder {
-  pub fn build(self, text: &'static str) -> CheckBoxTestbed {
-      let size = XY::new(100, 1);
+    pub fn build(self, text: &'static str) -> CheckBoxTestbed {
+        let size = XY::new(100, 1);
 
-      let build_result = self.providers.build();
-      let (output, recv) = MockOutput::new(size, false, build_result.providers.theme().clone());
-      let label = TextWidget::new(Box::new(text));
-      CheckBoxTestbed {
-          widget: CheckBoxWidget::new(label),
-          additional_data: (),
-          size,
-          last_frame: None,
-          mock_navcomp_pilot: Some(build_result.side_channels.navcomp_pilot),
-          output,
-          recv,
-          providers: build_result.providers,
-          last_msg: None,
-      }
-  }
+        let build_result = self.providers.build();
+        let (output, recv) = MockOutput::new(size, false, build_result.providers.theme().clone());
+        let label = TextWidget::new(Box::new(text));
+        CheckBoxTestbed {
+            widget: CheckBoxWidget::new(label),
+            additional_data: (),
+            size,
+            last_frame: None,
+            mock_navcomp_pilot: Some(build_result.side_channels.navcomp_pilot),
+            output,
+            recv,
+            providers: build_result.providers,
+            last_msg: None,
+        }
+    }
 }

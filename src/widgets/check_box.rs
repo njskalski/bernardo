@@ -1,18 +1,18 @@
 use crossterm::event::KeyCode;
 use log::warn;
 
+use super::text_widget::TextWidget;
+use crate::io::input_event::InputEvent;
+use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
-use crate::io::input_event::InputEvent;
-use crate::io::input_event::InputEvent::KeyInput;
-use super::text_widget::TextWidget;
 
 pub struct CheckBoxWidget {
-  wid: WID,
-  enabled:bool,
-  label: TextWidget, 
+    wid: WID,
+    enabled: bool,
+    label: TextWidget,
 }
 
 impl CheckBoxWidget {
@@ -25,7 +25,7 @@ impl CheckBoxWidget {
         Self {
             wid: get_new_widget_id(),
             enabled: false,
-            label
+            label,
         }
     }
 
@@ -41,7 +41,8 @@ impl Widget for CheckBoxWidget {
 
     fn static_typename() -> &'static str
     where
-        Self: Sized {
+        Self: Sized,
+    {
         Self::TYPENAME
     }
 
@@ -55,17 +56,16 @@ impl Widget for CheckBoxWidget {
         size
     }
 
-    fn layout(&mut self, screenspace: crate::experiments::screenspace::Screenspace) {
-    }
+    fn layout(&mut self, screenspace: crate::experiments::screenspace::Screenspace) {}
 
     fn on_input(&self, input_event: crate::io::input_event::InputEvent) -> Option<Box<dyn crate::widget::any_msg::AnyMsg>> {
         return match input_event {
             KeyInput(key_event) => match key_event.keycode {
                 Keycode::Enter => Some(Box::new(CheckBoxMsg::Hit)),
-                _ => None
-            }
+                _ => None,
+            },
             _ => None,
-        }
+        };
     }
 
     fn update(&mut self, msg: Box<dyn crate::widget::any_msg::AnyMsg>) -> Option<Box<dyn crate::widget::any_msg::AnyMsg>> {
@@ -76,29 +76,24 @@ impl Widget for CheckBoxWidget {
         }
         self.enabled = !self.enabled;
         None
-        
-
-
     }
 
     fn render(&self, theme: &crate::config::theme::Theme, focused: bool, output: &mut dyn crate::io::output::Output) {
         let text = theme.default_text(focused);
-
-        let mut line_idx = 0;
-        let binding = self.label.get_text();
-        let mut line_it = binding.lines();
-
-        while let Some(line) = line_it.next() {
-            output.print_at(XY::new(Self::CHECK_SYMBOL_SIZE, line_idx), text, line); //TODO leaks etc
-            line_idx += 1;
-        }
         let mut checked_symbol = Self::CHECK_SYMBOL_ENABLED;
         if !self.enabled {
             checked_symbol = Self::CHECK_SYMBOL_DISABLED;
         }
-        output.print_at(XY::new(0, 0), text, &checked_symbol);
-    }
+        output.print_at(XY::ZERO, text, &checked_symbol);
 
+        let mut line_idx = 0;
+        let binding = self.label.get_text();
+        let mut line_it = binding.lines();
+        while let Some(line) = line_it.next() {
+            output.print_at(XY::new(Self::CHECK_SYMBOL_SIZE, line_idx), text, line);
+            line_idx += 1;
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -106,14 +101,13 @@ pub enum CheckBoxMsg {
     Hit,
 }
 
-impl AnyMsg for CheckBoxMsg{}
+impl AnyMsg for CheckBoxMsg {}
 
 #[cfg(test)]
 mod tests {
     use crate::io::keys::{Key, Modifiers};
 
     use super::*;
-
 
     #[test]
     fn test_check_box_click() {

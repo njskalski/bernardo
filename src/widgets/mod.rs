@@ -2,6 +2,7 @@ pub mod attention_node;
 pub mod big_list;
 pub mod button;
 pub mod code_result_avatar;
+pub mod check_box;
 pub mod code_results_view;
 pub mod dir_tree_view;
 pub mod dump_visualizer_widget;
@@ -9,7 +10,6 @@ pub mod edit_box;
 pub mod editor_view;
 pub mod editor_widget;
 pub mod file_tree_view;
-pub mod check_box;
 
 pub mod generic_dialog;
 pub mod list_widget;
