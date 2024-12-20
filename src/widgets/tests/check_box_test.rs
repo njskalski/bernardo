@@ -1,3 +1,5 @@
+use std::panic;
+
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::{Key, Keycode, Modifiers};
 use crate::widget::widget::Widget;
@@ -9,7 +11,7 @@ use super::check_box_testbed::{CheckBoxTestbed, CheckBoxTestbedBuilder};
 const TEXT: &'static str = "single line text";
 // TODO below text causes panick in bernardo::io::buffer::Buffer::flatten_index
 // I assume it's ann issue with TextWidget
-// const TEXT: &'static str = "multiple\n line\n text\n";
+const MULTILINE_TEXT: &'static str = "multiple\n line\n text\n";
 
 fn get_setup() -> CheckBoxTestbed {
     CheckBoxTestbedBuilder::default().build(TEXT)
@@ -96,4 +98,22 @@ fn with_checked_test() {
     let enter_input = InputEvent::KeyInput(Keycode::Enter.to_key());
     setup.send_input(enter_input);
     assert!(!setup.widget.is_checked());
+}
+
+#[test]
+fn multiline_label_test() {
+    let result = panic::catch_unwind(|| {
+        let mut setup = CheckBoxTestbedBuilder::default().build(MULTILINE_TEXT);
+        setup.next_frame();
+        let enter_input = InputEvent::KeyInput(Keycode::Enter.to_key());
+        setup.send_input(enter_input);
+        assert!(setup.widget.is_checked());
+        setup.send_input(enter_input);
+        assert!(!setup.widget.is_checked());
+        setup.screenshot();
+    });
+    assert!(
+        result.is_ok(),
+        "TEST_FAIL \n*\n*\n*\n Test panicked with multiline label \n*\n*\n*\nTEST_FAIL"
+    );
 }
