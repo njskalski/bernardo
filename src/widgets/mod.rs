@@ -1,6 +1,7 @@
 pub mod attention_node;
 pub mod big_list;
 pub mod button;
+pub mod check_box;
 pub mod code_result_avatar;
 pub mod code_results_view;
 pub mod dir_tree_view;
