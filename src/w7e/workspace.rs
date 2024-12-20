@@ -9,7 +9,6 @@ use crate::fs::path::SPath;
 use crate::fs::write_error::WriteOrSerError;
 use crate::gladius::providers::Providers;
 use crate::w7e::handler_load_error::HandlerLoadError;
-
 use crate::w7e::project_scope;
 use crate::w7e::project_scope::{ProjectScope, SerializableProjectScope};
 
@@ -98,10 +97,12 @@ impl Workspace {
         let mut nav_comp_group = providers.navcomp_group().try_write().map_err(|_| ())?;
 
         for scope in self.scopes.iter_mut() {
-            match providers
-                .navcomp_loader()
-                .load_handler(providers.config(), &scope, nav_comp_group.todo_sender().clone())
-            {
+            match providers.navcomp_loader().load_handler(
+                providers.config(),
+                providers.buffer_register(),
+                &scope,
+                nav_comp_group.todo_sender().clone(),
+            ) {
                 Ok(handler) => {
                     scope.handler = Some(handler);
 

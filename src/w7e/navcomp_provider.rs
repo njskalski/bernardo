@@ -1,9 +1,12 @@
 use std::fmt::Debug;
 
+use parking_lot::MappedRwLockReadGuard;
+
 use crate::fs::path::SPath;
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::promise::promise::Promise;
 use crate::w7e::navcomp_group::NavCompTickSender;
+use crate::widgets::editor_widget::label::label::Label;
 
 // So I am not sure if I want to escalate errors from underlying implementation (LSP most likely)
 //  or just provide some generic "check health" status, that would trigger a reload when LSP dies.
@@ -134,7 +137,10 @@ pub trait NavCompProvider: Debug + Send + Sync {
      */
     fn todo_reformat(&self, path: &SPath) -> Option<FormattingPromise>;
 
+    // TODO this might need wiring
     fn file_closed(&self, path: &SPath);
+
+    fn get_labels_for_file(&self, path: &SPath) -> Option<MappedRwLockReadGuard<Vec<Label>>>;
 
     fn todo_navcomp_sender(&self) -> &NavCompTickSender;
 

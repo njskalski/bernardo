@@ -10,9 +10,11 @@ use crate::config::theme::Theme;
 use crate::experiments::buffer_register::{BufferRegister, BufferRegisterRef};
 use crate::experiments::clipboard::ClipboardRef;
 use crate::fs::fsf_ref::FsfRef;
+use crate::fs::path::SPath;
 use crate::gladius::navcomp_loader::NavCompLoader;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::w7e::navcomp_group::NavCompGroup;
+use crate::widgets::editor_widget::label::label::Label;
 use crate::widgets::editor_widget::label::labels_provider::LabelsProviderRef;
 
 // do not share via Arc, we want to be able to "overload" providers in tests or exotic cases
@@ -101,7 +103,28 @@ impl Providers {
         &self.navcomp_group
     }
 
-    pub fn todo_label_providers(&self) -> impl Iterator<Item = &LabelsProviderRef> {
-        self.todo_labels_providers.iter()
+    // this method should not be here, but I have no time to bring Arc<RwLock<NavCompGroup> and Arc<Box<dyn LabelsProvider>> under a common interface, so I cheat by hiding them behind a facade.
+    // TODO I give up, there should be no allocation here but I just have no time to fight the borrowchecker.
+    // path is optional, there might be labels in unsaved file
+    pub fn todo_get_aggegated_labels(&self, path_op: Option<&SPath>) -> Vec<Label> {
+        let mut result: Vec<Label> = vec![];
+
+        if let Some(path) = path_op {
+            if let Some(navcompref) = self.navcomp_group.read().ok() {
+                if let Some(navcompref) = navcompref.get_navcomp_for(path) {
+                    if let Some(items) = navcompref.get_labels_for_file(path) {
+                        result.append(&mut items.clone());
+                    }
+                }
+            }
+        }
+
+        for label_provider in &self.todo_labels_providers {
+            for label in label_provider.query_for(path_op) {
+                result.push(label.clone());
+            }
+        }
+
+        result
     }
 }

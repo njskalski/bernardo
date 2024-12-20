@@ -1,5 +1,5 @@
 mod debug_helpers;
-pub mod helpers;
+pub mod diagnostic;
 pub mod lsp_client;
 pub mod lsp_io_error;
 mod lsp_notification;

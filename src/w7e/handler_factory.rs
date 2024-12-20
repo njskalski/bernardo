@@ -3,6 +3,7 @@ use std::sync::Arc;
 use log::{debug, error};
 
 use crate::config::config::ConfigRef;
+use crate::experiments::buffer_register::BufferRegisterRef;
 use crate::fs::path::SPath;
 use crate::tsw::lang_id::LangId;
 use crate::w7e::cpp::handler_cpp::CppHandler;
@@ -20,6 +21,7 @@ This is a single point of entry to loading LanguageHandlers, to be used by both 
 // TODO move lsp_path to workspace? Or at least allow override.
 pub fn handler_factory(
     config: &ConfigRef,
+    buffer_register_ref: &BufferRegisterRef,
     handler_id: &str,
     ff: SPath,
     navcomp_tick_sender: NavCompTickSender,
@@ -32,7 +34,7 @@ pub fn handler_factory(
             let workspace_root = ff.absolute_path();
             let mut navcomp_op: Option<NavCompRef> = None;
             if let Some(navcomp_lsp) = NavCompProviderLsp::new(lsp_path, workspace_root, LangId::RUST, navcomp_tick_sender) {
-                navcomp_op = Some(Arc::new(Box::new(navcomp_lsp)));
+                navcomp_op = Some(NavCompRef::new(Box::new(navcomp_lsp)));
             } else {
                 error!("LspWrapper construction failed.")
             }
@@ -49,7 +51,7 @@ pub fn handler_factory(
             let workspace_root = ff.absolute_path();
             let mut navcomp_op: Option<NavCompRef> = None;
             if let Some(navcomp_lsp) = NavCompProviderLsp::new(lsp_path, workspace_root, LangId::CPP, navcomp_tick_sender) {
-                navcomp_op = Some(Arc::new(Box::new(navcomp_lsp)));
+                navcomp_op = Some(NavCompRef::new(Box::new(navcomp_lsp)));
             } else {
                 error!("LspWrapper construction failed.")
             }

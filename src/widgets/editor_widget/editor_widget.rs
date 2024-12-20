@@ -46,6 +46,7 @@ use crate::widgets::editor_widget::completion::completion_widget::CompletionWidg
 use crate::widgets::editor_widget::context_options_matrix::get_context_options;
 use crate::widgets::editor_widget::helpers::{find_trigger_and_substring, CursorScreenPosition};
 use crate::widgets::editor_widget::label::label::Label;
+use crate::widgets::editor_widget::label::labels_provider::LabelsProvider;
 use crate::widgets::editor_widget::msg::EditorWidgetMsg;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::{unpack_or, unpack_or_e, unpack_unit, unpack_unit_e};
@@ -257,7 +258,7 @@ impl EditorWidget {
                 None
             };
 
-            self.navcomp = navcomp;
+            self.navcomp = navcomp.cloned();
         }
 
         match (self.navcomp.as_ref(), buffer.get_path()) {
@@ -590,7 +591,7 @@ impl EditorWidget {
         ))
     }
 
-    fn can_add_label(labels: &mut BTreeMap<XY, &Label>, new_label: (XY, &Label)) -> bool {
+    fn can_add_label(labels: &mut BTreeMap<XY, Label>, new_label: (XY, &Label)) -> bool {
         let width = new_label.1.screen_width();
         let new_rect = Rect::new(new_label.0, XY::new(width, 1));
 
@@ -646,26 +647,24 @@ impl EditorWidget {
         // preparing labels
         // Right now labels "chain" one after another. Provided priority does not change, they should not
         // glitter.
-        let mut labels: BTreeMap<XY, &Label> = BTreeMap::new();
+        let mut labels: BTreeMap<XY, Label> = BTreeMap::new();
 
         // if we don't have a char_range, that means the "visible rect" is empty, so we don't draw anything
         if let Some(char_range) = char_range_op {
-            for label_provider in self.providers.todo_label_providers() {
-                for label in label_provider.query_for(buffer.get_path()) {
-                    if label
-                        .pos
-                        .maybe_should_draw(char_range.clone(), lines_to_skip..visible_rect.lower_right().y as usize)
-                    {
-                        if let Some(xy) = label.pos.into_position(&*buffer) {
-                            if (xy.y as usize) < lines_to_skip {
-                                continue;
-                            }
+            for label in self.providers.todo_get_aggegated_labels(buffer.get_path()) {
+                if label
+                    .pos
+                    .maybe_should_draw(char_range.clone(), lines_to_skip..visible_rect.lower_right().y as usize)
+                {
+                    if let Some(xy) = label.pos.into_position(&*buffer) {
+                        if (xy.y as usize) < lines_to_skip {
+                            continue;
+                        }
 
-                            if Self::can_add_label(&mut labels, (xy, label)) {
-                                labels.insert(xy, label);
-                            } else {
-                                warn!("Discarding a label because of collision. This is an omission most likely.");
-                            }
+                        if Self::can_add_label(&mut labels, (xy, &label)) {
+                            labels.insert(xy, label.clone());
+                        } else {
+                            warn!("Discarding a label because of collision. This is an omission most likely.");
                         }
                     }
                 }

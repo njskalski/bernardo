@@ -2,9 +2,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use log::debug;
+use url::Url;
 
 use crate::experiments::filename_to_language::filename_to_language;
 use crate::fs::path::SPath;
+use crate::lsp_client::diagnostic::Diagnostic;
 use crate::tsw::lang_id::LangId;
 use crate::w7e::handler::NavCompRef;
 
@@ -34,8 +36,6 @@ pub struct NavCompGroup {
     tick_receiver: NavCompTickRecv,
 }
 
-pub type NavCompGroupRef = Arc<NavCompGroup>;
-
 impl NavCompGroup {
     pub fn new() -> Self {
         let (tick_sender, tick_receiver) = crossbeam_channel::unbounded::<NavCompTick>();
@@ -47,7 +47,7 @@ impl NavCompGroup {
         }
     }
 
-    pub fn get_navcomp_for(&self, spath: &SPath) -> Option<NavCompRef> {
+    pub fn get_navcomp_for(&self, spath: &SPath) -> Option<&NavCompRef> {
         // TODO(never) theoretically for the same language we can have multiple navcomps. I do not
         // intend to handle this case any time soon, but I prefer to use spath whenever possible.
 
@@ -56,8 +56,8 @@ impl NavCompGroup {
             .flatten()
     }
 
-    pub fn get_navcomp_for_lang(&self, lang: LangId) -> Option<NavCompRef> {
-        self.navcomps.get(&lang).map(|n| n.clone())
+    pub fn get_navcomp_for_lang(&self, lang: LangId) -> Option<&NavCompRef> {
+        self.navcomps.get(&lang)
     }
 
     // TODO(never) again, theoretically there could be multiple navcomps for one lang

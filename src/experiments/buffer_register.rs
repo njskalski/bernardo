@@ -4,7 +4,7 @@ use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender};
-use log::{debug, error};
+use log::{debug, error, warn};
 
 use crate::fs::path::SPath;
 use crate::fs::read_error::ReadError;
@@ -12,7 +12,10 @@ use crate::gladius::providers::Providers;
 use crate::primitives::has_invariant::HasInvariant;
 use crate::text::buffer_state::BufferState;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
-use crate::widgets::main_view::main_view::{BufferId, DocumentIdentifier};
+use crate::widgets::editor_widget::label::label::Label;
+use crate::widgets::editor_widget::label::labels_provider::LabelsProvider;
+use crate::widgets::main_view::main_view::BufferId;
+use crate::widgets::main_view::main_view::DocumentIdentifier;
 
 /*
 This is a provider of mapping DocumentIdentifier to buffer.

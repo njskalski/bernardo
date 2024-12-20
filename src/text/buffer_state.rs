@@ -66,10 +66,9 @@ pub struct BufferState {
     last_save_pos: Option<usize>,
 
     lang_id: Option<LangId>,
-
     document_identifier: DocumentIdentifier,
 
-    debug_sink: Option<Sender<DocumentIdentifier>>,
+    drop_notice_sink: Option<Sender<DocumentIdentifier>>,
 }
 
 impl BufferState {
@@ -335,7 +334,7 @@ impl BufferState {
             last_save_pos: None,
             lang_id: None,
             document_identifier,
-            debug_sink,
+            drop_notice_sink: debug_sink,
         };
 
         debug_assert!(res.check_invariant());
@@ -552,7 +551,7 @@ impl BufferState {
             last_save_pos: None,
             lang_id: None,
             document_identifier: doc_id,
-            debug_sink: None,
+            drop_notice_sink: None,
         };
 
         debug_assert!(res.check_invariant());
@@ -919,7 +918,7 @@ impl HasInvariant for BufferState {
 
 impl Drop for BufferState {
     fn drop(&mut self) {
-        if let Some(sink) = &self.debug_sink {
+        if let Some(sink) = &self.drop_notice_sink {
             match sink.send(self.document_identifier.clone()) {
                 Ok(_) => {}
                 Err(e) => {
