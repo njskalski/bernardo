@@ -1,5 +1,5 @@
 use crate::io::keys::Keycode;
-use crate::io::{input::Input, input_event::InputEvent};
+use crate::io::input_event::InputEvent;
 
 use super::check_box_testbed::{CheckBoxTestbed, CheckBoxTestbedBuilder};
 

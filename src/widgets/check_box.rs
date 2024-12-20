@@ -1,12 +1,9 @@
-use crossterm::event::KeyCode;
 use log::warn;
 
 use super::text_widget::TextWidget;
 use crate::config::theme::Theme;
-use crate::io::input_event::InputEvent;
 use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::Keycode;
-use crate::io::style::Effect;
 use crate::io::sub_output::SubOutput;
 use crate::primitives::color::Color;
 use crate::primitives::rect::Rect;
@@ -130,7 +127,7 @@ mod tests {
             keycode: Keycode::Enter,
             modifiers: Modifiers::default(),
         };
-        let input_event = InputEvent::KeyInput(key_event);
+        let input_event = KeyInput(key_event);
         if let Some(msg) = checkbox.on_input(input_event) {
             checkbox.update(msg);
         }

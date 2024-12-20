@@ -1,7 +1,5 @@
-use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
 use crate::mocks::mock_output::MockOutput;
 use crate::primitives::xy::XY;
-use crate::widget::widget::Widget;
 use crate::widgets::check_box::CheckBoxWidget;
 use crate::widgets::tests::generic_widget_testbed::GenericWidgetTestbed;
 use crate::widgets::tests::generic_widget_testbed_builder::GenericWidgetTestbedBuilder;
