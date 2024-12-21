@@ -1,3 +1,5 @@
+use std::fmt::{Debug, Formatter};
+
 use crate::widget::widget::Widget;
 
 pub trait Getter<W>: Fn(&W) -> &dyn Widget {
@@ -75,6 +77,12 @@ impl<W: Widget> Clone for SubwidgetPointer<W> {
             getter: self.getter.clone_box(),
             getter_mut: self.getter_mut.clone_box(),
         }
+    }
+}
+
+impl<W: Widget> Debug for SubwidgetPointer<W> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "subwidget_pointer of {}", W::static_typename())
     }
 }
 

@@ -294,7 +294,7 @@ warning: unused imports: `NavCompGroupRef`, `NavCompGroup`
    |                                 ^^^^^^^^^^^^  ^^^^^^^^^^^^^^^
 
 warning: unused import: `Metadata`
-  --> src/widgets/save_file_dialog/save_file_dialog.rs:22:25
+  --> src/widgets/save_file_dialog/file_tree_view:22:25
    |
 22 | use crate::io::output::{Metadata, Output};
    |                         ^^^^^^^^
@@ -642,7 +642,7 @@ warning: unused import: `Promise`
    |                               ^^^^^^^
 
 warning: unused variable: `size`
-   --> src/widgets/save_file_dialog/save_file_dialog.rs:434:13
+   --> src/widgets/save_file_dialog/file_tree_view:434:13
     |
 434 |         let size = unpack_or_e!(self.display_state.as_ref(), (), "render before layout").total_size;
     |             ^^^^ help: if this is intentional, prefix it with an underscore: `_size`
@@ -833,7 +833,7 @@ warning: fields `title` and `trigger` are never read
   |     ^^^^^^^
 
 warning: field `root_path` is never read
-  --> src/widgets/save_file_dialog/save_file_dialog.rs:65:5
+  --> src/widgets/save_file_dialog/file_tree_view:65:5
    |
 49 | pub struct SaveFileDialogWidget {
    |            -------------------- field in this struct
@@ -1188,7 +1188,7 @@ warning: unused imports: `NavCompGroupRef`, `NavCompGroup`
    |                                 ^^^^^^^^^^^^  ^^^^^^^^^^^^^^^
 
 warning: unused import: `Metadata`
-  --> src/widgets/save_file_dialog/save_file_dialog.rs:22:25
+  --> src/widgets/save_file_dialog/file_tree_view:22:25
    |
 22 | use crate::io::output::{Metadata, Output};
    |                         ^^^^^^^^

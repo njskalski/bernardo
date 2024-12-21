@@ -218,7 +218,7 @@ impl SPath {
     }
 
     /*
-    Returns &Path representing last component of path
+    Returns &Path representing last component of path. Empty for Filesystem Root.
      */
     pub fn last_file_name(&self) -> Option<&Path> {
         self.0.as_path()

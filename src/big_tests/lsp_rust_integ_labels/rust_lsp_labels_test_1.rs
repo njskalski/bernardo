@@ -35,6 +35,4 @@ fn rust_lsp_labels_test_1() {
         .is_some()));
 
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_first_editor().unwrap().get_errors().next().is_some() }));
-
-    full_setup.screenshot();
 }

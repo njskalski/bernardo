@@ -139,6 +139,10 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         self.after_filter_set();
     }
 
+    pub fn is_filter_set(&self) -> bool {
+        self.filter_op.is_some()
+    }
+
     // This re-sets highlighter to first item matching filter.
     fn after_filter_set(&mut self) {
         if let Some(filter) = &self.filter_op {

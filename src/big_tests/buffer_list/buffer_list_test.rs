@@ -135,8 +135,6 @@ fn saving_removes_markers() {
 
     full_setup.send_key(full_setup.config().keyboard_config.editor.save);
 
-    full_setup.screenshot();
-
     assert!(full_setup.wait_for(|full_setup| -> bool {
         let file = match spath!(full_setup.fsf(), "data33.txt") {
             None => {

@@ -28,6 +28,9 @@ pub struct KeyboardConfig {
     pub global: Global,
     #[serde(default)]
     pub editor: Editor,
+
+    #[serde(default)]
+    pub file_tree: FileTree,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -86,6 +89,19 @@ impl Default for Editor {
             // I know it's stupid, but at this point I am out of keys on under my left hand
             //  normal people will use context options anyway
             reformat: Keycode::Char('l').to_key().with_ctrl(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct FileTree {
+    pub toggle_hidden_files: Key,
+}
+
+impl Default for FileTree {
+    fn default() -> Self {
+        FileTree {
+            toggle_hidden_files: Keycode::Char('h').to_key().with_ctrl(),
         }
     }
 }
