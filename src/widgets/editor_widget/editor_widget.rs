@@ -820,7 +820,9 @@ impl EditorWidget {
         let one_beyond_last_pos = XY::new(x_beyond_last as u16, last_line as u16);
 
         if one_beyond_last_pos < visible_rect.lower_right() {
-            let style = Self::get_cell_style(&theme, CursorStatus::None, is_dropping_cursor, false, focused);
+            let cursor_status = cursor_set_copy.get_cursor_status_for_char(one_beyond_limit);
+
+            let style = Self::get_cell_style(&theme, cursor_status, is_dropping_cursor, false, focused);
 
             output.print_at(one_beyond_last_pos, style, BEYOND);
         }
