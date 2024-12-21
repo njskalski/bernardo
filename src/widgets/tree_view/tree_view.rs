@@ -136,6 +136,21 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
     pub fn set_filter_op(&mut self, filter_op: Option<TreeItFilter<Item>>, filter_depth_op: Option<usize>) {
         self.filter_op = filter_op;
         self.filter_depth_op = filter_depth_op;
+        self.after_filter_set();
+    }
+
+    // This re-sets highlighter to first item matching filter.
+    fn after_filter_set(&mut self) {
+        if let Some(filter) = &self.filter_op {
+            for (idx, (_, item)) in self.items().enumerate() {
+                if filter(&item) {
+                    self.highlighted = idx;
+                    break;
+                }
+            }
+        } else {
+            self.highlighted = 0;
+        }
     }
 
     pub fn is_expanded(&self, key: &Key) -> bool {
