@@ -79,3 +79,54 @@ fn toggle_filter() {
     assert!(new_count < original_count);
     assert_eq!(new_count, 4);
 }
+
+#[test]
+fn context_toggle_works() {
+    let mut full_setup = common_start();
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup
+            .get_file_tree_view()
+            .unwrap()
+            .items()
+            .iter()
+            .find(|item| item.label.starts_with(".gladius"))
+            .is_some()
+    }));
+
+    // triggering toggle #1
+    assert!(full_setup.send_key(full_setup.config().keyboard_config.global.everything_bar));
+    assert!(full_setup.wait_for(|full_setup| full_setup.get_first_context_menu().is_some()));
+    full_setup.type_in("toggle");
+    assert!(full_setup.send_key(Keycode::Enter.to_key()));
+
+    assert!(full_setup.wait_for(|full_setup| full_setup.get_first_context_menu().is_none()));
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup
+            .get_file_tree_view()
+            .unwrap()
+            .items()
+            .iter()
+            .find(|item| item.label.starts_with(".gladius"))
+            .is_none()
+    }));
+
+    // triggering toggle #2
+    assert!(full_setup.send_key(full_setup.config().keyboard_config.global.everything_bar));
+    assert!(full_setup.wait_for(|full_setup| full_setup.get_first_context_menu().is_some()));
+    full_setup.type_in("toggle");
+    assert!(full_setup.send_key(Keycode::Enter.to_key()));
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup
+            .get_file_tree_view()
+            .unwrap()
+            .items()
+            .iter()
+            .find(|item| item.label.starts_with(".gladius"))
+            .is_some()
+    }));
+
+    full_setup.screenshot();
+}
