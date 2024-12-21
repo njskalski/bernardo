@@ -17,8 +17,6 @@ fn common_start() -> FullSetup {
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
     assert!(full_setup.send_key(full_setup.config().keyboard_config.editor.save_as));
 
-    screenshot(&full_setup.get_frame().unwrap().buffer);
-
     assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().save_file_dialog().is_some()));
 
     assert!(full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().is_focused());

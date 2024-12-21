@@ -39,6 +39,7 @@ use crate::widgets::code_results_view::code_results_provider::CodeResultsProvide
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
 use crate::widgets::code_results_view::full_text_search_code_results_provider::FullTextSearchCodeResultsProvider;
 use crate::widgets::editor_view::editor_view::EditorView;
+use crate::widgets::file_tree_view::file_tree_view::FileTreeViewWidget;
 use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
 use crate::widgets::main_view::display::MainViewDisplay;
 use crate::widgets::main_view::focus_path_widget::FocusPathWidget;
@@ -66,7 +67,13 @@ pub enum HoverItem {
     SearchInFiles(FindInFilesWidget),
 
     // Context menu
-    ContextMain { anchor: XY, widget: MainContextMenuWidget },
+    ContextMain {
+        anchor: XY,
+        widget: MainContextMenuWidget,
+
+        // I need this to put focus back where it was on CLOSING of context menu.
+        old_focus: SubwidgetPointer<MainView>,
+    },
 }
 
 // TODO start indexing documents with DocumentIdentifier as opposed to usize
@@ -126,9 +133,7 @@ pub struct MainView {
      */
     display_state: Option<DisplayState<MainView>>,
 
-    // TODO PathBuf -> WrappedRcPath? See profiler.
-    tree_widget: WithScroll<TreeViewWidget<SPath, FileTreeNode>>,
-
+    tree_widget: FileTreeViewWidget,
     no_editor: NoEditorWidget,
     displays: Vec<MainViewDisplay>,
     display_idx: usize,
@@ -227,27 +232,12 @@ impl MainView {
 
     pub fn new(providers: Providers) -> MainView {
         let root = providers.fsf().root();
-        let tree = TreeViewWidget::new(FileTreeNode::new(root.clone()))
-            .with_on_flip_expand(Box::new(|widget| {
-                let (_, item) = widget.get_highlighted();
-
-                Some(Box::new(MainViewMsg::TreeExpandedFlip {
-                    expanded: widget.is_expanded(item.id()),
-                    item: item.spath().clone(),
-                }))
-            }))
-            .with_on_hit(Box::new(|widget| {
-                let (_, item) = widget.get_highlighted();
-                Some(Box::new(MainViewMsg::TreeSelected {
-                    item: item.spath().clone(),
-                }))
-            }));
 
         MainView {
             wid: get_new_widget_id(),
             providers: providers.clone(),
             display_state: None,
-            tree_widget: WithScroll::new(ScrollDirection::Both, tree),
+            tree_widget: FileTreeViewWidget::new(providers.config().clone(), root),
             displays: Vec::new(),
             no_editor: NoEditorWidget::default(),
             display_idx: 0,
@@ -280,6 +270,7 @@ impl MainView {
     // TODO add filtering
     // TODO add checkbox for "ignore git"
     fn handle_open_find_in_files(&mut self, root_dir: SPath, query: String, filter_op: Option<String>) {
+        self.hover = None;
         let desc = format!("full text search of '{}' ", query);
 
         let promise: Box<dyn StreamingPromise<SymbolUsage>> = unpack_or_e!(
@@ -392,7 +383,7 @@ impl MainView {
                             HoverItem::FuzzySearch(fs) => fs as &dyn Widget,
                             HoverItem::FuzzySearch2(fs) => fs as &dyn Widget,
                             HoverItem::SearchInFiles(fs) => fs as &dyn Widget,
-                            HoverItem::ContextMain { anchor, widget } => widget as &dyn Widget,
+                            HoverItem::ContextMain { anchor, widget, old_focus } => widget as &dyn Widget,
                         }
                     } else {
                         error!("no hover found, this subwidget pointer should have been overriden by now.");
@@ -406,7 +397,7 @@ impl MainView {
                             HoverItem::FuzzySearch(fs) => fs as &mut dyn Widget,
                             HoverItem::FuzzySearch2(fs) => fs as &mut dyn Widget,
                             HoverItem::SearchInFiles(fs) => fs as &mut dyn Widget,
-                            HoverItem::ContextMain { anchor, widget } => widget as &mut dyn Widget,
+                            HoverItem::ContextMain { anchor, widget, old_focus } => widget as &mut dyn Widget,
                         }
                     } else {
                         error!("no hover found, this subwidget pointer should have been overriden by now.");
@@ -477,6 +468,15 @@ impl MainView {
         }
     }
 
+    fn get_current_focus(&self) -> SubwidgetPointer<Self> {
+        if let Some(item) = self.display_state.as_ref().map(|item| item.focused.clone()) {
+            item
+        } else {
+            error!("get_current_focus before display_state is set!");
+            self.get_curr_display_ptr()
+        }
+    }
+
     pub fn with_empty_editor(mut self) -> Self {
         self.open_empty_editor_and_focus();
         self
@@ -490,17 +490,21 @@ impl MainView {
         let mut widget =
             MainContextMenuWidget::new(self.providers.clone(), item).with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()));
 
-        widget.set_on_shortcut_hit(Box::new(|widget, item| -> Option<Box<dyn AnyMsg>> {
-            let depth = item.get_depth();
-            let msg = item.on_hit()?;
+        let old_focus = self.get_current_focus();
 
-            MainViewMsg::ContextMenuHit { msg: Some(msg), depth }.someboxed()
-        }));
+        {
+            widget.set_on_shortcut_hit(Box::new(move |widget, item| -> Option<Box<dyn AnyMsg>> {
+                let depth = item.get_depth();
+                let msg = item.on_hit()?;
+
+                MainViewMsg::ContextMenuHit { msg: Some(msg), depth }.someboxed()
+            }));
+        }
 
         widget.tree_view_mut().expand_all_internal_nodes();
 
         if !self.providers.config().learning_mode {
-            widget = widget.with_on_hit(Box::new(|widget| -> Option<Box<dyn AnyMsg>> {
+            widget = widget.with_on_hit(Box::new(move |widget| -> Option<Box<dyn AnyMsg>> {
                 let highlighted = widget.get_highlighted();
                 let depth = highlighted.1.get_depth();
                 let msg = highlighted.1.on_hit()?;
@@ -512,6 +516,7 @@ impl MainView {
         self.hover = Some(HoverItem::ContextMain {
             anchor: final_kite,
             widget,
+            old_focus,
         });
         self.set_focus_to_hover();
     }
@@ -651,12 +656,6 @@ impl Widget for MainView {
         debug!("main_view.update {:?}", msg);
 
         if let Some(main_view_msg) = msg.as_msg_mut::<MainViewMsg>() {
-            // I am not sure if I want to keep this part. Originally it was meant for "not breaking learning mode", but I think I managed to keep it working without that piece using ContextMenuHit { msg: Box<dyn AnyMsg>, depth: usize }
-            if self.hover.is_some() {
-                self.hover = None;
-                self.set_focus_to_default();
-            }
-
             return match main_view_msg {
                 MainViewMsg::FocusUpdateMsg(focus_update) => {
                     if !self.update_focus(*focus_update) {
@@ -677,7 +676,15 @@ impl Widget for MainView {
                     self.open_fuzzy_search_in_files_and_focus();
                     None
                 }
-                MainViewMsg::CloseHover => None,
+                MainViewMsg::CloseHover => {
+                    if let Some(HoverItem::ContextMain { anchor, widget, old_focus }) = self.hover.take() {
+                        self.set_focused(old_focus);
+                    } else {
+                        self.set_focus_to_default();
+                    };
+
+                    None
+                }
                 MainViewMsg::OpenChooseDisplay => {
                     self.open_fuzzy_buffer_list_and_focus();
                     None
@@ -721,6 +728,7 @@ impl Widget for MainView {
                     None
                 }
                 MainViewMsg::OpenFileBySpath { spath } => {
+                    self.hover = None;
                     self.open_file_with_path_and_focus(spath.clone());
                     None
                 }
@@ -757,6 +765,10 @@ impl Widget for MainView {
                     None
                 }
                 MainViewMsg::ContextMenuHit { msg, depth } => {
+                    if let Some(HoverItem::ContextMain { anchor, widget, old_focus }) = self.hover.take() {
+                        self.set_focused(old_focus);
+                    }
+
                     if let Some(msg) = msg.take() {
                         self.context_menu_process_hit(msg, *depth)
                     } else {

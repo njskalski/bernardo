@@ -39,6 +39,9 @@ fn find_in_files_opens() {
 
     // displays
     assert!(f.wait_for(|f| { f.get_code_results_view().unwrap().editors().len() == 3 }));
+
+    f.screenshot();
+
     assert!(f.wait_for(|f| {
         f.get_code_results_view()
             .unwrap()
@@ -68,6 +71,4 @@ fn find_in_files_opens() {
         .contents
         .text
         .starts_with("placeat facere possimus, omnis voluptas assumenda"));
-
-    f.screenshot();
 }
