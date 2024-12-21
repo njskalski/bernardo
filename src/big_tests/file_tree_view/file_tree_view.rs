@@ -127,6 +127,18 @@ fn context_toggle_works() {
             .find(|item| item.label.starts_with(".gladius"))
             .is_some()
     }));
+}
 
-    full_setup.screenshot();
+#[test]
+fn context_close_does_not_lose_focus() {
+    let mut full_setup = common_start();
+
+    assert!(full_setup.send_key(full_setup.config().keyboard_config.global.everything_bar));
+    assert!(full_setup.wait_for(|full_setup| full_setup.get_first_context_menu().is_some()));
+
+    assert!(full_setup.send_key(Keycode::Esc.to_key()));
+
+    assert!(full_setup.wait_for(|full_setup| full_setup.get_first_context_menu().is_none()));
+
+    assert!(full_setup.wait_for(|full_setup| full_setup.get_file_tree_view().unwrap().is_focused()));
 }
