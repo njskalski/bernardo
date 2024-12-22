@@ -9,9 +9,10 @@ use crate::{io::input_event::InputEvent, widgets::text_widget::TextWidget};
 use super::check_box_testbed::{CheckBoxTestbed, CheckBoxTestbedBuilder};
 
 const TEXT: &'static str = "single line text";
-// TODO below text causes panick in bernardo::io::buffer::Buffer::flatten_index
-// I assume it's ann issue with TextWidget
-const MULTILINE_TEXT: &'static str = "multiple\n line\n text\n";
+const MULTILINE_TEXT: &'static str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaa\n
+fwfwefwefwfw\nwfwfwfwfwf\nwffffffffffffffffff";
+
 
 fn get_setup() -> CheckBoxTestbed {
     CheckBoxTestbedBuilder::default().build(TEXT)
