@@ -13,7 +13,6 @@ const MULTILINE_TEXT: &'static str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 aaaaaaaaaaaaaaaaaaaaaaaaaa\n
 fwfwefwefwfw\nwfwfwfwfwf\nwffffffffffffffffff";
 
-
 fn get_setup() -> CheckBoxTestbed {
     CheckBoxTestbedBuilder::default().build(TEXT)
 }

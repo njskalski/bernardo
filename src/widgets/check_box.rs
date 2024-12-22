@@ -69,10 +69,10 @@ impl CheckBoxWidget {
                 lines.push(current_line);
                 current_line = String::new();
                 if lines.len() >= max_size.y as usize {
-                    break
+                    break;
                 }
             }
-            
+
             if !current_line.is_empty() {
                 current_line.push(' ');
             }
