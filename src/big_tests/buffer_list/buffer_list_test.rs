@@ -41,6 +41,30 @@ fn common_start() -> FullSetup {
 }
 
 #[test]
+fn buffer_list_hit_opens_file_and_closes_the_list() {
+    let mut full_setup = common_start();
+
+    full_setup.send_key(full_setup.config().keyboard_config.global.browse_buffers);
+    assert!(full_setup.wait_for(|full_setup| { full_setup.get_fuzzy_search().is_some() }));
+
+    full_setup.type_in("data11.txt");
+
+    assert!(full_setup.wait_for(|full_setup| { full_setup.get_fuzzy_search().unwrap().editbox().contents().contains("data11.txt") }));
+
+    full_setup.send_input(Keycode::Enter.to_key().to_input_event());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .get_all_visible_lines()
+            .find(|line| line.contents.text.contains("data11"))
+            .is_some()
+    }));
+    assert!(full_setup.get_fuzzy_search().is_none());
+}
+
+#[test]
 fn non_edited_files_have_no_markers_1() {
     let mut full_setup = common_start();
 

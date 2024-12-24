@@ -694,6 +694,8 @@ impl Widget for MainView {
                     None
                 }
                 MainViewMsg::FocusOnDisplay { display_idx: pos } => {
+                    self.hover = None;
+
                     if *pos >= self.displays.len() {
                         error!(
                             "received FuzzyBufferHit for an index {} and len is {}, ignoring",
