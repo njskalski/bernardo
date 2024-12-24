@@ -328,7 +328,7 @@ impl MainView {
                 if *w.get_highlighted().1.id() >= len {
                     None
                 } else {
-                    MainViewMsg::FocusOnDisplay {
+                    MainViewMsg::BufferListHit {
                         display_idx: *w.get_highlighted().1.id(),
                     }
                     .someboxed()
@@ -693,7 +693,9 @@ impl Widget for MainView {
                     self.open_empty_editor_and_focus();
                     None
                 }
-                MainViewMsg::FocusOnDisplay { display_idx: pos } => {
+                MainViewMsg::BufferListHit { display_idx: pos } => {
+                    self.hover = None;
+
                     if *pos >= self.displays.len() {
                         error!(
                             "received FuzzyBufferHit for an index {} and len is {}, ignoring",

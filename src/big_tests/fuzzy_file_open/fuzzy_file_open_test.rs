@@ -40,6 +40,10 @@ fn fuzzy_file_opens() {
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
+    assert!(
+        full_setup.wait_for(|f| f.get_fuzzy_search().is_none()),
+        "fuzzy file open did not close itself after hit"
+    );
 
     full_setup.finish();
 }

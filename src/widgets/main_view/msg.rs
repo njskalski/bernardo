@@ -37,7 +37,7 @@ pub enum MainViewMsg {
 
     // Open "open buffers"
     OpenChooseDisplay,
-    FocusOnDisplay {
+    BufferListHit {
         display_idx: usize,
     },
 
