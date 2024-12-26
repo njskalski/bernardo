@@ -4,10 +4,17 @@ use crate::mocks::with_wait_for::WithWaitFor;
 use crate::widgets::context_menu::tests::context_menu_testbed::{AdditionalData, ContextMenuTestbed, ContextMenuTestbedBuilder};
 
 pub fn get_setup_1() -> ContextMenuTestbed {
-    ContextMenuTestbedBuilder::new(AdditionalData {
+    let setup = ContextMenuTestbedBuilder::new(AdditionalData {
         root: get_mock_data_set_1(),
     })
-    .build()
+    .build();
+
+    assert_eq!(setup.widget.tree_view().is_root_expanded(), false);
+    assert_eq!(setup.widget.tree_view().is_filter_set(), false);
+
+    // assert_eq!(setup.context_menu().unwrap().tree_view().items().len(), 1);
+
+    setup
 }
 
 #[test]
@@ -29,6 +36,7 @@ fn context_menu_2_letters_filter() {
     let mut testbed = get_setup_1();
 
     testbed.next_frame();
+    testbed.screenshot();
 
     assert_eq!(testbed.context_menu().unwrap().tree_view().items().len(), 1);
     assert!(testbed.has_items(["menu1"].into_iter()));

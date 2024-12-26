@@ -16,7 +16,7 @@ use crate::io::keys::{Key, Keycode};
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
-use crate::primitives::tree::tree_it::eager_iterator;
+use crate::primitives::tree::tree_it::{eager_iterator, FilterPolicy};
 use crate::primitives::tree::tree_node::{TreeItFilter, TreeNode};
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
@@ -54,12 +54,8 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
     highlighter_op: Option<LabelHighlighter>,
     // This is a filter that will be applied to decide which items to show or not.
     filter_op: Option<TreeItFilter<Item>>,
-    // This tells whether to follow to dive down looking for filter matching nodes, even if
-    // parent node fails filter. The idea is: "I'm looking for files with infix X, but will
-    // display their non-matching parents too".
-    // filter_depth = None means "don't dive"
-    // filter_depth = Some(x) means "look for items down to x levels down".
-    filter_depth_op: Option<usize>,
+
+    filter_policy: FilterPolicy,
 
     size_policy: SizePolicy,
 
@@ -97,7 +93,8 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
             on_keyboard_shortcut_hit: None,
             highlighter_op: None,
             filter_op: None,
-            filter_depth_op: None,
+
+            filter_policy: FilterPolicy::MatchNodeOrAncestors,
             size_policy: SizePolicy::MATCH_LAYOUT,
             filter_overrides_expanded: false,
         }
@@ -108,6 +105,14 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
             highlighter_op: Some(highlighter),
             ..self
         }
+    }
+
+    pub fn with_filter_policy(self, filter_policy: FilterPolicy) -> Self {
+        Self { filter_policy, ..self }
+    }
+
+    pub fn set_filter_policy(&mut self, filter_policy: FilterPolicy) {
+        self.filter_policy = filter_policy;
     }
 
     pub fn with_filter_overrides_expanded(self) -> Self {
@@ -125,17 +130,17 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         self.highlighter_op = highlighter_op;
     }
 
-    pub fn with_filter(self, filter: TreeItFilter<Item>, filter_depth_op: Option<usize>) -> Self {
+    pub fn with_filter(self, filter: TreeItFilter<Item>, filter_policy: FilterPolicy) -> Self {
         Self {
             filter_op: Some(filter),
-            filter_depth_op,
+            filter_policy,
             ..self
         }
     }
 
-    pub fn set_filter_op(&mut self, filter_op: Option<TreeItFilter<Item>>, filter_depth_op: Option<usize>) {
+    pub fn set_filter_op(&mut self, filter_op: Option<TreeItFilter<Item>>, filter_policy: FilterPolicy) {
         self.filter_op = filter_op;
-        self.filter_depth_op = filter_depth_op;
+        self.filter_policy = filter_policy;
         self.after_filter_set();
     }
 
@@ -159,6 +164,10 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
 
     pub fn is_expanded(&self, key: &Key) -> bool {
         self.expanded.contains(key)
+    }
+
+    pub fn is_root_expanded(&self) -> bool {
+        self.expanded.contains(self.root_node.id())
     }
 
     pub fn expanded_mut(&mut self) -> &mut HashSet<Key> {
@@ -270,10 +279,10 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
 
     pub fn items(&self) -> impl Iterator<Item = (u16, Item)> {
         // TreeIt::new(&self.root_node, Some(&self.expanded), self.filter_op.as_ref(), self.filter_depth_op)
-        if self.filter_overrides_expanded && self.filter_op.is_some() {
-            eager_iterator(&self.root_node, None, self.filter_op.as_ref())
+        if self.filter_op.is_some() && self.filter_overrides_expanded {
+            eager_iterator(&self.root_node, None, self.filter_op.as_ref(), self.filter_policy)
         } else {
-            eager_iterator(&self.root_node, Some(&self.expanded), self.filter_op.as_ref())
+            eager_iterator(&self.root_node, Some(&self.expanded), self.filter_op.as_ref(), self.filter_policy)
         }
     }
 

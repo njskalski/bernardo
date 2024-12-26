@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use clap::Parser;
-use log::debug;
+use log::{debug, error};
 
 use bernardo::app::App;
 use bernardo::config::theme::Theme;
@@ -28,7 +28,9 @@ fn main() {
 
     #[cfg(debug_assertions)]
     {
-        coredump::register_panic_handler();
+        if let Err(e) = coredump::register_panic_handler() {
+            error!("failed registering coredump panic handler, due {} : {}", e.1, e.0);
+        }
     }
 
     // Initializing subsystems
