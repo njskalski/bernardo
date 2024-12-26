@@ -110,3 +110,55 @@ pub fn get_mock_data_set_2() -> MockTreeItem {
         ],
     }
 }
+
+pub fn get_mock_data_set_3() -> MockTreeItem {
+    MockTreeItem {
+        name: "root1".to_string(),
+        children: vec![
+            MockTreeItem {
+                name: "option1".to_string(),
+                children: vec![],
+            },
+            MockTreeItem {
+                name: "subtree1".to_string(),
+                children: vec![MockTreeItem {
+                    name: "subsubtree1".to_string(),
+                    children: vec![
+                        MockTreeItem {
+                            name: "subsubtree1child1".to_string(),
+                            children: vec![],
+                        },
+                        MockTreeItem {
+                            name: ".subsubtree1hiddenchild2".to_string(),
+                            children: vec![],
+                        },
+                    ],
+                }],
+            },
+            MockTreeItem {
+                name: ".hiddenoption2".to_string(),
+                children: vec![],
+            },
+            MockTreeItem {
+                name: ".hiddensubtree2".to_string(),
+                children: vec![
+                    MockTreeItem {
+                        name: "subsubtree2".to_string(),
+                        children: vec![MockTreeItem {
+                            name: "subsubtree2child1".to_string(),
+                            children: vec![],
+                        }],
+                    },
+                    MockTreeItem {
+                        name: "subtree2child1".to_string(),
+                        children: vec![],
+                    },
+                    MockTreeItem {
+                        name: "subtree2child2".to_string(),
+                        children: vec![],
+                    },
+                ],
+            },
+        ],
+    }
+}
