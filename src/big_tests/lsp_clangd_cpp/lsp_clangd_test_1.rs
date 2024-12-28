@@ -14,9 +14,9 @@ fn get_full_setup(file: &str) -> FullSetup {
 
 #[test]
 fn completions_clangd_cpp_completion() {
-    if std::env::var("CI").is_ok() {
-        return;
-    }
+    // if std::env::var("CI").is_ok() {
+    //     return;
+    // }
 
     let mut full_setup = get_full_setup("src/main.cpp");
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
@@ -167,9 +167,9 @@ fn highlighting_clangd_cpp_file() {
 
 #[test]
 fn clangd_cpp_go_to_definition_PROBLEM() {
-    if std::env::var("CI").is_ok() {
-        return;
-    }
+    // if std::env::var("CI").is_ok() {
+    //     return;
+    // }
 
     let mut full_setup = get_full_setup("src/main.cpp");
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
@@ -236,9 +236,9 @@ fn clangd_cpp_go_to_definition_PROBLEM() {
 
 #[test]
 fn clangd_cpp_show_usages() {
-    if std::env::var("CI").is_ok() {
-        return;
-    }
+    // if std::env::var("CI").is_ok() {
+    //     return;
+    // }
 
     let mut full_setup = get_full_setup("src/hello.hpp");
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
