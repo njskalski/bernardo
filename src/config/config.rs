@@ -63,7 +63,7 @@ impl Default for Global {
     fn default() -> Self {
         Global {
             close: Keycode::Char('q').to_key().with_ctrl(),
-            fuzzy_file: Keycode::Char('h').to_key().with_ctrl(),
+            fuzzy_file: Keycode::Char('j').to_key().with_ctrl(),
             new_buffer: Keycode::Char('n').to_key().with_ctrl(),
             browse_buffers: Keycode::Char('b').to_key().with_ctrl(),
             // This is the most important feature of them all.
