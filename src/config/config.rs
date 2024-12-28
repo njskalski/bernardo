@@ -32,9 +32,7 @@ pub struct FileTreeViewOptions {
 
 impl Default for FileTreeViewOptions {
     fn default() -> Self {
-        FileTreeViewOptions {
-            show_hidden_files: false,
-        }
+        FileTreeViewOptions { show_hidden_files: false }
     }
 }
 
