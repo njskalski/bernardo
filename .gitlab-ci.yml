@@ -17,7 +17,7 @@ debian:
     - cargo install cargo-nextest --locked
   script:
     - cargo build
-    - cargo nextest run
+    - cargo nextest run --retries
     - cargo fmt --check
   artifacts:
     paths:

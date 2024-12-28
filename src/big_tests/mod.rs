@@ -9,6 +9,8 @@ mod fuzzy_file_open;
 mod lsp_clangd_cpp;
 mod lsp_rust_integ;
 mod lsp_rust_integ_labels;
+
+mod main_basic;
 mod save;
 mod save_file_dialog;
 mod show_usages;

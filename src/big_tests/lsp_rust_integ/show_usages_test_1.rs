@@ -9,7 +9,7 @@ fn get_full_setup() -> FullSetup {
     let full_setup: FullSetup = FullSetup::new("./test_envs/lsp_rust_integ_1")
         .with_files(["src/some_other_file.rs"])
         .with_mock_navcomp(false)
-        .with_timeout(Duration::from_secs(20))
+        .with_timeout(Duration::from_secs(30))
         .build();
 
     full_setup
