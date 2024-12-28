@@ -9,8 +9,6 @@ The most prominent example is [EditorView](../../src/widgets/editor_view/editor_
 - [Editor widget](../../src/widgets/editor_widget/editor_widget.rs) (where the text is drawn, which is quite complex in
   itself)
 - Find/Replace editboxes
-- [ContextMenu](../../src/widgets/context_menu/widget.rs) (that pops on ctr+e in default config, that offers options
-  like "go to definition", "find usages" etc.)
 
 Another example is ["Save as Dialog"](../../src/widgets/save_file_dialog/save_file_dialog.rs) which consists of:
 

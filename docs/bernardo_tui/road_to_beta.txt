@@ -5,8 +5,7 @@ git filtering in:
 [DONE]    - file search
     - full text search
 
-13) ctrl-h - hidden files
-14) debug
+13) [done] ctrl-h - hidden files
 
 7)
 Code "collapsing"
@@ -36,3 +35,4 @@ DESCOPED:
 11) validate invariants
 12) I'd love to see SubwidgetPointer refactored to SubwidgetPointerOp and handling of "non found subwidget"
 3) USER FOCUS STACK
+14) debug
