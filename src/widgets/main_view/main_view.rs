@@ -233,11 +233,14 @@ impl MainView {
     pub fn new(providers: Providers) -> MainView {
         let root = providers.fsf().root();
 
+        let tree_widget = FileTreeViewWidget::new(providers.config().clone(), root)
+            .with_hidden_files_filter(providers.config().file_tree_view_options.show_hidden_files == false);
+
         MainView {
             wid: get_new_widget_id(),
             providers: providers.clone(),
             display_state: None,
-            tree_widget: FileTreeViewWidget::new(providers.config().clone(), root),
+            tree_widget,
             displays: Vec::new(),
             no_editor: NoEditorWidget::default(),
             display_idx: 0,
@@ -891,7 +894,11 @@ impl ComplexWidget for MainView {
     }
 
     fn get_default_focused(&self) -> SubwidgetPointer<MainView> {
-        self.get_curr_display_ptr()
+        if self.displays.is_empty() {
+            subwidget!(Self.tree_widget)
+        } else {
+            self.get_curr_display_ptr()
+        }
     }
 
     fn set_display_state(&mut self, display_state: DisplayState<MainView>) {

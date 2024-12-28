@@ -20,6 +20,22 @@ pub struct Config {
     pub global: GlobalEditorOptions,
 
     pub learning_mode: bool,
+
+    #[serde(default)]
+    pub file_tree_view_options: FileTreeViewOptions,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct FileTreeViewOptions {
+    pub show_hidden_files: bool,
+}
+
+impl Default for FileTreeViewOptions {
+    fn default() -> Self {
+        FileTreeViewOptions {
+            show_hidden_files: false,
+        }
+    }
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
