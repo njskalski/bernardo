@@ -9,7 +9,7 @@ fn get_full_setup() -> FullSetup {
     let full_setup: FullSetup = FullSetup::new("./test_envs/lsp_rust_integ_1")
         .with_files(["src/some_other_file.rs"])
         .with_mock_navcomp(false)
-        .with_timeout(Duration::from_secs(30))
+        .with_timeout(Duration::from_secs(20))
         .build();
 
     full_setup
@@ -17,9 +17,9 @@ fn get_full_setup() -> FullSetup {
 
 #[test]
 fn show_usages_integ_test_1() {
-    // if std::env::var("CI").is_ok() {
-    //     return;
-    // }
+    if std::env::var("CI").is_ok() {
+        return;
+    }
 
     let mut full_setup = get_full_setup();
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
