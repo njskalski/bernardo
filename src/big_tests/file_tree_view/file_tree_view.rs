@@ -6,10 +6,7 @@ fn common_start() -> FullSetup {
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/main_tree_view_test_1").build();
 
     assert!(full_setup.wait_for(|f| f.is_no_editor_opened()));
-    assert!(full_setup.send_key(Keycode::ArrowLeft.to_key().with_alt()));
-
     assert!(full_setup.wait_for(|f| f.get_file_tree_view().unwrap().is_focused()));
-
     assert!(full_setup.send_key(Keycode::Enter.to_key()));
 
     assert!(full_setup.wait_for(|f| f.get_file_tree_view().unwrap().items().len() > 1));
@@ -56,14 +53,14 @@ fn toggle_filter() {
     let mut full_setup = common_start();
 
     let original_count = full_setup.get_file_tree_view().unwrap().items().len();
-    assert_eq!(original_count, 5);
+    assert_eq!(original_count, 4);
     assert!(full_setup
         .get_file_tree_view()
         .unwrap()
         .items()
         .iter()
         .find(|item| item.label.starts_with(".gladius"))
-        .is_some());
+        .is_none());
 
     assert!(full_setup.send_key(full_setup.config().keyboard_config.file_tree.toggle_hidden_files));
 
@@ -73,11 +70,11 @@ fn toggle_filter() {
         .items()
         .iter()
         .find(|item| item.label.starts_with(".gladius"))
-        .is_none()));
+        .is_some()));
 
     let new_count = full_setup.get_file_tree_view().unwrap().items().len();
-    assert!(new_count < original_count);
-    assert_eq!(new_count, 4);
+    assert!(new_count > original_count);
+    assert_eq!(new_count, 5);
 }
 
 #[test]
@@ -91,7 +88,7 @@ fn context_toggle_works() {
             .items()
             .iter()
             .find(|item| item.label.starts_with(".gladius"))
-            .is_some()
+            .is_none()
     }));
 
     // triggering toggle #1
@@ -109,7 +106,7 @@ fn context_toggle_works() {
             .items()
             .iter()
             .find(|item| item.label.starts_with(".gladius"))
-            .is_none()
+            .is_some()
     }));
 
     // triggering toggle #2
@@ -125,7 +122,7 @@ fn context_toggle_works() {
             .items()
             .iter()
             .find(|item| item.label.starts_with(".gladius"))
-            .is_some()
+            .is_none()
     }));
 }
 

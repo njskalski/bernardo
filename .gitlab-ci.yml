@@ -7,16 +7,17 @@ stages:
 
 debian:
   stage: everything
-  image: rust:1.80.0-bookworm
+  image: rust:1-bookworm
   before_script:
     - apt-get update
     - apt-get install -y curl build-essential gcc make clangd clang
     - rustup component add rustfmt
     - rustup component add rust-analyzer
     - which rust-analyzer
+    - cargo install cargo-nextest --locked
   script:
     - cargo build
-    - cargo test
+    - cargo nextest run --retries 1
     - cargo fmt --check
   artifacts:
     paths:

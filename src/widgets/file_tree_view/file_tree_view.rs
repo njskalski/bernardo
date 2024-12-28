@@ -85,6 +85,11 @@ impl FileTreeViewWidget {
         }
     }
 
+    pub fn with_hidden_files_filter(mut self, enabled: bool) -> Self {
+        self.set_hidden_files_filter(enabled);
+        self
+    }
+
     pub fn are_hidden_files_filtered(&self) -> bool {
         self.tree_view_widget.internal().is_filter_set()
     }

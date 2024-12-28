@@ -13,7 +13,7 @@ pub struct Args {
     pub stderr_log: bool,
 
     /// When set, logs are written to FILE
-    #[clap(short = 'f', long = "log_to_file", default_value = "None", value_name = "FILE")]
+    #[clap(short = 'f', long = "log_to_file", default_value = None, value_name = "FILE")]
     pub file_log: Option<PathBuf>,
 
     #[clap(short = 'r', long = "reconfigure")]

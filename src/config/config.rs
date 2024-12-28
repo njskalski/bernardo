@@ -20,6 +20,20 @@ pub struct Config {
     pub global: GlobalEditorOptions,
 
     pub learning_mode: bool,
+
+    #[serde(default)]
+    pub file_tree_view_options: FileTreeViewOptions,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct FileTreeViewOptions {
+    pub show_hidden_files: bool,
+}
+
+impl Default for FileTreeViewOptions {
+    fn default() -> Self {
+        FileTreeViewOptions { show_hidden_files: false }
+    }
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -49,7 +63,7 @@ impl Default for Global {
     fn default() -> Self {
         Global {
             close: Keycode::Char('q').to_key().with_ctrl(),
-            fuzzy_file: Keycode::Char('h').to_key().with_ctrl(),
+            fuzzy_file: Keycode::Char('j').to_key().with_ctrl(),
             new_buffer: Keycode::Char('n').to_key().with_ctrl(),
             browse_buffers: Keycode::Char('b').to_key().with_ctrl(),
             // This is the most important feature of them all.
