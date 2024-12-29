@@ -1,12 +1,13 @@
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::with_wait_for::WithWaitFor;
+use std::time::Duration;
 
 fn get_full_setup(file: &str) -> FullSetup {
     let full_setup: FullSetup = FullSetup::new("./test_envs/lsp_clangd_cpp_1")
         .with_files([file])
         .with_mock_navcomp(false)
-        // .with_frame_based_wait()
+        .with_timeout(Duration::from_secs(3))
         .build();
 
     full_setup

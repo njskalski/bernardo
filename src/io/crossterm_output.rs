@@ -2,7 +2,7 @@ use std::fmt::{Debug, Formatter};
 use std::io::Write;
 
 use crossterm::style::{Attribute, Color, Print, SetAttribute, SetBackgroundColor, SetForegroundColor};
-use crossterm::terminal::{Clear, ClearType};
+use crossterm::terminal::{BeginSynchronizedUpdate, Clear, ClearType, EndSynchronizedUpdate};
 use crossterm::{cursor, style, terminal, QueueableCommand};
 use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;
@@ -134,6 +134,7 @@ impl<W: Write> FinalOutput for CrosstermOutput<W> {
             (&self.back_buffer, &self.front_buffer)
         };
 
+        self.stdout.queue(BeginSynchronizedUpdate);
         self.stdout
             .queue(Clear(ClearType::All))?
             .queue(SetForegroundColor(Color::Reset))?
@@ -213,6 +214,7 @@ impl<W: Write> FinalOutput for CrosstermOutput<W> {
             curr_pos.x = 0;
         }
 
+        self.stdout.queue(EndSynchronizedUpdate);
         self.stdout.flush()
     }
 }

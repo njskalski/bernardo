@@ -2,7 +2,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::sync::RwLock;
 
-use log::{debug, error};
+use log::{debug, error, warn};
 use ropey::Rope;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -157,7 +157,14 @@ impl ContentsAndCursors {
     }
 
     pub fn get_cursor_set(&self, widget_id: WID) -> Option<&CursorSet> {
-        self.cursor_sets.iter().find(|(wid, _)| *wid == widget_id).map(|(_, cs)| cs)
+        let res = self.cursor_sets.iter().find(|(wid, _)| *wid == widget_id).map(|(_, cs)| cs);
+
+        if res.is_none() {
+            let cursors = self.cursor_sets.iter().map(|item| item.0).collect::<Vec<_>>();
+            error!("failed to find WID {:?} in Cursors, available are: {:?}", widget_id, cursors)
+        }
+
+        res
     }
 
     pub fn get_cursor_set_mut(&mut self, widget_id: WID) -> Option<&mut CursorSet> {

@@ -207,7 +207,11 @@ impl EditorWidget {
 
         match buffer.lock_rw() {
             Some(mut buffer_lock) => {
-                debug_assert!(buffer_lock.initialize_for_widget(res.wid, None));
+                let init_res = buffer_lock.initialize_for_widget(res.wid, None);
+                if !init_res {
+                    debug_assert!(init_res, "failed initializing buffer for widget");
+                    error!("failed to initialize buffer for widget {}", res.wid)
+                }
             }
             None => {
                 error!("failed to lock buffer for rw, shit will blow up");
