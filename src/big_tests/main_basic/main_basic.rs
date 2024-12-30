@@ -87,7 +87,9 @@ fn rs_files_autoindent() {
 
 #[test]
 fn txt_file_no_autoindent() {
-    let mut full_setup: FullSetup = FullSetup::new("./test_envs/main_basic_test_1").with_files(["src/sometext.txt"]).build();
+    let mut full_setup: FullSetup = FullSetup::new("./test_envs/main_basic_test_1")
+        .with_files(["src/sometext.txt"])
+        .build();
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
     full_setup.send_input(Keycode::End.to_key().to_input_event());
