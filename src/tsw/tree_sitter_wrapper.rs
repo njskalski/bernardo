@@ -6,7 +6,7 @@ use std::sync::{Arc, RwLock};
 use lazy_static::lazy_static;
 use log::{debug, error, warn};
 use ropey::Rope;
-use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor};
+use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor, QueryError};
 #[allow(unused_imports)]
 use tree_sitter_cpp::*;
 
@@ -19,9 +19,13 @@ use crate::unpack_or_e;
 static EMPTY_SLICE: [u8; 0] = [0; 0];
 
 lazy_static! {
+    // I have no idea how I came up with this
     static ref TREE_SITTER_CPP_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/c/highlights.scm")
         .to_owned()
         + include_str!("../../third-party/nvim-treesitter/queries/cpp/highlights.scm");
+
+    static ref TREE_SITTER_RUST_INDENT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/rust/indents.scm")
+        .to_owned();
 }
 
 pub fn byte_offset_to_point(rope: &Rope, byte_offset: usize) -> Option<Point> {
@@ -138,10 +142,18 @@ impl TreeSitterWrapper {
         }
     }
 
+    pub fn indent_query(&self, lang_id: LangId) -> Option<&str> {
+        #[allow(unreachable_patterns)]
+        match lang_id {
+            LangId::RUST => Some(TREE_SITTER_RUST_INDENT_QUERY.as_str()),
+            _ => None,
+        }
+    }
+
     // This should be called on loading a file. On update, ParserAndTree struct should be used.
     pub fn new_parse(&self, lang_id: LangId) -> Option<ParsingTuple> {
         let language = self.languages.get(&lang_id)?;
-        let highlight_query = self.highlight_query(lang_id)?;
+        let highlight_query_str = self.highlight_query(lang_id)?;
         let mut parser = Parser::new();
         match parser.set_language(language.clone()) {
             Ok(_) => {}
@@ -151,22 +163,32 @@ impl TreeSitterWrapper {
             }
         };
 
-        let query = match Query::new(*language, highlight_query) {
-            Ok(query) => query,
-            Err(e) => {
-                error!("failed to compile query {}", e);
-                return None;
-            }
+        let highlight_query = unpack_or_e!(
+            Query::new(*language, highlight_query_str).ok(),
+            None,
+            "failed to compile highlight query"
+        );
+
+        let indent_query = match self.indent_query(lang_id) {
+            None => None,
+            Some(query_string) => match Query::new(*language, query_string) {
+                Ok(q) => Some(q),
+                Err(e) => {
+                    error!("failed compiling indent query: {}", e);
+                    None
+                }
+            },
         };
 
-        let id_to_name: Vec<Arc<String>> = query.capture_names().iter().map(|cn| Arc::new(cn.to_owned())).collect();
+        let id_to_name: Vec<Arc<String>> = highlight_query.capture_names().iter().map(|cn| Arc::new(cn.to_owned())).collect();
 
         Some(ParsingTuple {
             tree: None,
             lang_id,
             parser: Arc::new(RwLock::new(parser)),
             language: language.clone(),
-            highlight_query: Arc::new(query),
+            highlight_query: Arc::new(highlight_query),
+            indent_query: indent_query.map(Arc::new),
             id_to_name: Arc::new(id_to_name),
         })
     }

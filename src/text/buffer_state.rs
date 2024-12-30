@@ -21,6 +21,7 @@ use crate::primitives::common_edit_msgs::{apply_common_edit_message, CommonEditM
 use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::xy::XY;
 use crate::text::contents_and_cursors::ContentsAndCursors;
+use crate::text::ident_type::IndentType;
 use crate::text::text_buffer::{LinesIter, TextBuffer};
 use crate::tsw::lang_id::LangId;
 use crate::tsw::tree_sitter_wrapper::{HighlightItem, TreeSitterWrapper};
@@ -29,7 +30,6 @@ use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 use crate::widget::widget::WID;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
 use crate::{unpack_or, unpack_or_e};
-
 /*
 Ok, so I'd like to have multiple views of the same file. We can for a second even think that they
 each have separate set of cursors. They definitely should share history of edits, at least until
@@ -82,6 +82,7 @@ impl BufferState {
         widget_id: WID,
         page_height: usize,
         clipboard: Option<&ClipboardRef>,
+        autoindent: bool,
     ) -> bool {
         if self.subtype == BufferType::SingleLine {
             if page_height != 1 {
@@ -103,9 +104,42 @@ impl BufferState {
             }
         }
 
-        let cem = cem;
         let mut cursors_copy = unpack_or_e!(self.text().get_cursor_set(widget_id), false, "cursor set not found").clone();
 
+        if self.subtype == BufferType::Full {
+            if autoindent && cem == CommonEditMsg::Char('\n') {
+                if let Some((indent_num, indent_type)) = self.text().get_common_indentation_level_for_cursor_set(&cursors_copy) {
+                    let mut block = "\n".to_string();
+                    for _ in 0..indent_num {
+                        match indent_type {
+                            IndentType::Tabs => block += "\t",
+                            IndentType::Spaces => block += " ",
+                        }
+                    }
+                    cem = CommonEditMsg::Block(block)
+                }
+            }
+            // TODO remove is_single requirement
+            if autoindent && cem == CommonEditMsg::Backspace {
+                if let Some(cursor) = cursors_copy.as_single() {
+                    if cursor.is_simple() {
+                        if let (indent_num, indent_type) = self.text().get_indentation_level_dumb(&cursor) {
+                            if indent_num > 0 {
+                                if let Some(line_begin_idx) = self.char_idx_to_begin_line_char_idx(cursor.a) {
+                                    if line_begin_idx + indent_num == cursor.a {
+                                        cem = CommonEditMsg::DeleteBlock {
+                                            char_range: line_begin_idx..(line_begin_idx + indent_num),
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let cem = cem;
         /*
         TODO the fact that Undo/Redo requires special handling here a lot suggests that maybe these shouldn't be CEMs. But it works now.
          */
@@ -213,6 +247,7 @@ impl BufferState {
                 widget_id,
                 page_height,
                 None,
+                true,
             ) {
                 let rope = self.text().rope().clone(); // shallow copy
                 self.text_mut().parsing_mut().map_or_else(
@@ -241,6 +276,7 @@ impl BufferState {
                 widget_id,
                 page_height,
                 None,
+                false,
             ) {
                 let rope = self.text().rope().clone(); // shallow copy
                 self.text_mut().parsing_mut().map_or_else(

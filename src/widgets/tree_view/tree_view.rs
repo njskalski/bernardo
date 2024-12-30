@@ -1,10 +1,10 @@
+use flexi_logger::AdaptiveFormat::Default;
+use log::{debug, error, warn};
 use std::borrow::Cow;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::iter;
-
-use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -557,7 +557,17 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
             };
 
             let text = format!("{} {}", prefix, node.label());
-            let highlighted: Vec<usize> = self.highlighter_op.as_ref().map(|h| h(&text)).unwrap_or_default();
+            let highlighted: Vec<usize> = if let (Some(filter), Some(highlighter)) = (self.filter_op.as_ref(), self.highlighter_op.as_ref())
+            {
+                if filter(&node) {
+                    highlighter(&text)
+                } else {
+                    Vec::new()
+                }
+            } else {
+                Vec::new()
+            };
+
             let mut highlighted_iter = highlighted.into_iter().peekable();
 
             // This is fine, because idx is proved to be within output constraints, which by definition are u16.

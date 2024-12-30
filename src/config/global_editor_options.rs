@@ -6,10 +6,24 @@ use which;
 
 use crate::unpack_or_e;
 
-#[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct GlobalEditorOptions {
     pub rust_lsp_path: Option<PathBuf>,
     pub clangd_lsp_path: Option<PathBuf>,
+    pub auto_indent_extensions: Vec<String>,
+}
+
+impl Default for GlobalEditorOptions {
+    fn default() -> Self {
+        GlobalEditorOptions {
+            rust_lsp_path: None,
+            clangd_lsp_path: None,
+            auto_indent_extensions: vec!["py", "rs", "yaml", "cpp", "cxx", "c", "h", "hpp", "hxx"]
+                .iter()
+                .map(|item| item.to_string())
+                .collect(),
+        }
+    }
 }
 
 impl GlobalEditorOptions {

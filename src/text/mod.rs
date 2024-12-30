@@ -9,3 +9,4 @@ mod rope_tests;
 
 #[cfg(feature = "arbitrary")]
 mod buffer_state_fuzz;
+mod ident_type;

@@ -8,7 +8,7 @@ use crate::cursor::cursor::{Cursor, Selection};
 use crate::primitives::stupid_cursor::StupidCursor;
 use crate::primitives::xy::XY;
 use crate::tsw::lang_id::LangId;
-
+use crate::unpack_or_e;
 //TODO create tests for undo/redo/set milestone
 
 pub trait TextBuffer: ToString {
@@ -127,6 +127,12 @@ pub trait TextBuffer: ToString {
 
     fn is_saved(&self) -> bool;
     fn mark_as_saved(&mut self);
+
+    fn char_idx_to_begin_line_char_idx(&self, char_idx: usize) -> Option<usize> {
+        let line_idx = unpack_or_e!(self.char_to_line(char_idx), None, "failed to get line idx");
+        let begin_line_char_idx = unpack_or_e!(self.line_to_char(line_idx), None, "failed to get char idx for line idx");
+        Some(begin_line_char_idx)
+    }
 }
 
 pub struct LinesIter<'a> {

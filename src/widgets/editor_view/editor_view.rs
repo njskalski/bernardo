@@ -270,7 +270,8 @@ impl EditorView {
                 CommonEditMsg::Block(with_what),
                 editor_widget_id,
                 page_height,
-                Some(self.providers.clipboard()), //not really needed but why not
+                Some(self.providers.clipboard()),
+                false,
             );
 
             self.hit_find_once(buffer_mut);

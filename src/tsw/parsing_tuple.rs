@@ -15,6 +15,7 @@ pub struct ParsingTuple {
     pub parser: Arc<RwLock<Parser>>,
     pub language: Language,
     pub highlight_query: Arc<Query>,
+    pub indent_query: Option<Arc<Query>>,
     pub id_to_name: Arc<Vec<Arc<String>>>,
 }
 
