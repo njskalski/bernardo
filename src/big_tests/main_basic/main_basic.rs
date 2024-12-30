@@ -81,7 +81,40 @@ fn rs_files_autoindent() {
             .next()
             .unwrap();
 
-        error!("{:?}", line);
         line.visible_idx == 8 && line.contents.text.contains(");#")
+    }));
+}
+
+#[test]
+fn txt_file_no_autoindent() {
+    let mut full_setup: FullSetup = FullSetup::new("./test_envs/main_basic_test_1").with_files(["src/sometext.txt"]).build();
+    assert!(full_setup.wait_for(|f| f.is_editor_opened()));
+
+    full_setup.send_input(Keycode::End.to_key().to_input_event());
+
+    assert!(full_setup.wait_for(|f| {
+        let line = f
+            .get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines_with_coded_cursors()
+            .next()
+            .unwrap();
+
+        error!("line [{:?}]", line);
+        line.visible_idx == 1 && line.contents.text.starts_with("    here is some indented text#")
+    }));
+
+    full_setup.send_input(Keycode::Enter.to_key().to_input_event());
+
+    // after enter, line is NOT prefixed with any whitespace
+    assert!(full_setup.wait_for(|f| {
+        let line = f
+            .get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines_with_coded_cursors()
+            .next()
+            .unwrap();
+
+        line.visible_idx == 2 && line.contents.text.starts_with("#") // cursor immediately follows newline
     }));
 }
