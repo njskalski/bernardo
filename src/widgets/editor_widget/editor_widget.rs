@@ -1,9 +1,10 @@
 use std::borrow::Cow;
 use std::cmp::{max, min};
 use std::collections::BTreeMap;
+use std::path::Path;
 use std::time::Duration;
 
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use matches::debug_assert_matches;
 use streaming_iterator::StreamingIterator;
 use unicode_width::UnicodeWidthStr;
@@ -125,21 +126,18 @@ pub struct HoverSettings {
 
 enum EditorHover {
     Completion(CompletionWidget),
-    Context(ContextBarWidget),
 }
 
 impl EditorHover {
     fn get_widget(&self) -> &dyn Widget {
         match self {
             EditorHover::Completion(cw) => cw,
-            EditorHover::Context(cw) => cw,
         }
     }
 
     fn get_widget_mut(&mut self) -> &mut dyn Widget {
         match self {
             EditorHover::Completion(cw) => cw,
-            EditorHover::Context(cw) => cw,
         }
     }
 }
@@ -173,6 +171,7 @@ pub struct EditorWidget {
     requested_hover: Option<(HoverSettings, EditorHover)>,
     // These are label providers. Their order is important.
     // todo_lable_providers: Vec<LabelsProviderRef>, // moved to providers
+    autoindent: bool,
 }
 
 impl EditorWidget {
@@ -199,6 +198,7 @@ impl EditorWidget {
             state: EditorState::Editing,
             navcomp: None,
             requested_hover: None,
+            autoindent: false,
         };
 
         if buffer_named {
@@ -225,6 +225,18 @@ impl EditorWidget {
         self.readonly = readonly;
     }
 
+    pub fn with_autoindent_on(self) -> Self {
+        Self { autoindent: true, ..self }
+    }
+
+    pub fn with_autoindent(self, autoindent: bool) -> Self {
+        Self { autoindent, ..self }
+    }
+
+    pub fn set_autoindent(&mut self, autoindent: bool) {
+        self.autoindent = autoindent;
+    }
+
     pub fn with_readonly(self) -> Self {
         Self { readonly: true, ..self }
     }
@@ -242,6 +254,32 @@ impl EditorWidget {
 
     fn after_path_change(&mut self) {
         self.update_navcomp();
+        let set_autoindent: bool = if let Some(lock) = self.buffer.lock() {
+            match lock.get_path().map(|path| path.last_file_name()).flatten() {
+                None => {
+                    warn!("path unset - isn't that an error?");
+                    false
+                }
+                Some(filename) => {
+                    if let Some(ext) = filename.extension().map(|ext| ext.to_string_lossy().to_string()) {
+                        if self.providers.config().global.auto_indent_extensions.contains(&ext) {
+                            true
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                }
+            }
+        } else {
+            error!("failed to acquire lock");
+            false
+        };
+
+        if set_autoindent {
+            self.set_autoindent(true);
+        }
     }
 
     pub fn get_buffer(&self) -> &BufferSharedRef {
@@ -586,11 +624,9 @@ impl EditorWidget {
         Some(SubwidgetPointer::<Self>::new(
             Box::new(|s: &EditorWidget| match s.requested_hover.as_ref().unwrap() {
                 (_, EditorHover::Completion(comp)) => comp as &dyn Widget,
-                (_, EditorHover::Context(cont)) => cont as &dyn Widget,
             }),
             Box::new(|s: &mut EditorWidget| match s.requested_hover.as_mut().unwrap() {
                 (_, EditorHover::Completion(comp)) => comp as &mut dyn Widget,
-                (_, EditorHover::Context(cont)) => cont as &mut dyn Widget,
             }),
         ))
     }
@@ -842,7 +878,6 @@ impl EditorWidget {
             let mut sub_output = SubOutput::new(output, rect);
             match hover {
                 EditorHover::Completion(completion) => completion.render(theme, focused, &mut sub_output),
-                EditorHover::Context(context) => context.render(theme, focused, &mut sub_output),
             }
         }
     }
@@ -1004,6 +1039,7 @@ impl EditorWidget {
                 self.wid,
                 self.page_height() as usize,
                 Some(self.providers.clipboard()),
+                false,
             ); // TODO unnecessary clone
             self.close_hover();
 
@@ -1312,6 +1348,7 @@ impl Widget for EditorWidget {
                                 self.wid,
                                 page_height as usize,
                                 Some(self.providers.clipboard()),
+                                self.autoindent,
                             );
 
                             // TODO this needs to happen only if CONTENTS changed, not if cursor positions changed

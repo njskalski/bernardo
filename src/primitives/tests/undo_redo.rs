@@ -26,7 +26,7 @@ fn test_undo_redo_1() {
     let (mut buffer_state, wid) = encode_buffer_state("ala ma kota#");
 
     for _ in 0..4 {
-        assert!(buffer_state.apply_common_edit_message(CommonEditMsg::Backspace, wid, 4, None));
+        assert!(buffer_state.apply_common_edit_message(CommonEditMsg::Backspace, wid, 4, None, true));
     }
 
     assert_eq!(decode_buffer_state(&buffer_state, wid), "ala ma #".to_string());

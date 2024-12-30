@@ -1,9 +1,11 @@
+use flexi_logger::AdaptiveFormat::Default;
+use log::{debug, error, warn};
+use ropey::Rope;
+use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::sync::Arc;
 use std::sync::RwLock;
-
-use log::{debug, error, warn};
-use ropey::Rope;
+use tree_sitter::{Node, QueryCursor};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::cursor::cursor::Cursor;
@@ -11,13 +13,14 @@ use crate::cursor::cursor::Selection;
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::regex_search::{regex_find, FindError};
 use crate::primitives::search_pattern::SearchPattern;
+use crate::text::ident_type::IndentType;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
+use crate::tsw::rope_wrappers::RopeWrapper;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
 use crate::widget::widget::WID;
 use crate::widgets::editor_widget::label::label::Label;
 use crate::{unpack, unpack_or, unpack_or_e};
-
 /*
 I allow empty history, it means "nobody is looking at the buffer now, first who comes needs to set
 it's cursors.
@@ -231,28 +234,108 @@ impl ContentsAndCursors {
         self.labels = labels;
     }
 
-    pub fn get_indentation_level(&self, cursor: &Cursor) -> Option<usize> {
-        if let Some(query) = self.parsing.as_ref().map(|p| p.indent_query.as_ref()).flatten() {}
+    // TODO this is dead code, I don't know how to fix it, I don't understand treesitter enough
+    pub fn get_indentation_level_with_treesitter(&self, cursor: &Cursor) -> Option<usize> {
+        let parsing_tuple = self.parsing.as_ref()?;
+        let query = parsing_tuple.indent_query.as_ref()?;
+        let cursor_in_bytes = unpack_or_e!(self.rope.try_char_to_byte(cursor.a).ok(), None, "failed to convert cursor to bytes");
+        let tree = parsing_tuple.tree.as_ref()?;
+
+        let node = tree.root_node().descendant_for_byte_range(cursor_in_bytes, cursor_in_bytes + 1)?;
+
+        let mut cursor = QueryCursor::new();
+
+        let mut nodes_on_path: HashSet<Node> = HashSet::new();
+
+        let mut node_iter = tree.root_node().descendant_for_byte_range(cursor_in_bytes, cursor_in_bytes);
+
+        while let Some(node) = node_iter {
+            nodes_on_path.insert(node);
+            node_iter = node.parent();
+        }
+
+        // let query_matches = cursor.matches(&query, node, RopeWrapper(&self.rope));
+        let query_captures = cursor.captures(&query, node, RopeWrapper(&self.rope));
+
+        let mut name_to_num: HashMap<String, usize> = HashMap::new();
+        let mut bs: Vec<_> = vec![];
+        for (query_match, _) in query_captures {
+            let mut result: Vec<_> = vec![];
+
+            for capture in query_match.captures {
+                // if !nodes_on_path.contains(&capture.node) {
+                //     error!("skipping node");
+                //     continue;
+                // }
+
+                let capture_name = &query.capture_names()[capture.index as usize];
+
+                if let Some(value) = name_to_num.get_mut(capture_name) {
+                    *value += 1;
+                } else {
+                    name_to_num.insert(capture_name.clone(), 1);
+                }
+
+                result.push(capture_name);
+            }
+
+            bs.push(result);
+        }
+
+        error!("query_matches: [{:?}], name_to_num = [{:?}]", bs, name_to_num);
 
         None
     }
 
-    // TODO can replace cs with WID
-    pub fn get_common_indentation_level_for_cursor_set(&self, cs: &CursorSet) -> Option<usize> {
-        let value = self.get_indentation_level(&cs.first());
-        if value.is_none() {
-            return None;
+    // This method retrieves indentation of current line under the cursor, returns (num_spaces, num_tabs)
+    pub fn get_indentation_level_dumb(&self, cursor: &Cursor) -> (usize, usize) {
+        let line_idx = unpack_or_e!(
+            self.rope.try_char_to_line(cursor.a).ok(),
+            (0, 0),
+            "failed converting char_idx to line_idx"
+        );
+        debug_assert!(line_idx < self.rope.len_lines());
+        let line = self.rope.line(line_idx);
+
+        let mut num_spaces: usize = 0;
+        let mut num_tabs: usize = 0;
+
+        for char in line.chars() {
+            match char {
+                '\t' => num_tabs += 1,
+                ' ' => num_spaces += 1,
+                _ => break,
+            }
         }
 
-        for cursor in cs.iter().skip(1) {
-            let new_value = self.get_indentation_level(cursor);
-            if new_value != value {
-                debug!("non uniform indentation level over multiple cursors");
+        (num_spaces, num_tabs)
+    }
+
+    // TODO can replace cs with WID
+    pub fn get_common_indentation_level_for_cursor_set(&self, cs: &CursorSet) -> Option<(usize, IndentType)> {
+        // TODO fix indent from TreeSitter where available
+
+        let res = self.get_indentation_level_dumb(&cs.first());
+        for c in cs.iter().skip(1) {
+            let new_res = self.get_indentation_level_dumb(c);
+
+            if res != new_res {
                 return None;
             }
         }
 
-        value
+        if res.0 > 0 && res.1 > 0 {
+            debug!("found both spaces and tabs, don't know what to do, returning nothing");
+            return None;
+        }
+
+        if res.0 > 0 {
+            Some((res.0, IndentType::Spaces))
+        } else if res.1 > 0 {
+            Some((res.1, IndentType::Tabs))
+        } else {
+            Some((0, IndentType::Spaces))
+        }
     }
 }
 
