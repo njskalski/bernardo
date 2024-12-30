@@ -188,7 +188,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
             return Some(msg);
         }
 
-        return match our_msg.unwrap() {
+        match our_msg.unwrap() {
             ContextMenuMsg::UpdateQuery(query) => {
                 if query.is_empty() {
                     let tree_view = self.tree_view.internal_mut();
@@ -221,7 +221,11 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
                         }
 
                         if query_grapheme_it.peek().is_some() {
-                            warn!("did not highlight entire query - filter desynchronized")
+                            let non_displayed_characters = query_grapheme_it.collect::<Vec<_>>();
+                            warn!(
+                                "did not highlight entire query - filter desynchronized. Leftover characters: {:?}",
+                                non_displayed_characters
+                            );
                         }
 
                         result
@@ -238,7 +242,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
                     None
                 }
             }
-        };
+        }
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {

@@ -595,7 +595,8 @@ impl EditorWidget {
         ))
     }
 
-    fn can_add_label(labels: &mut BTreeMap<XY, Label>, new_label: (XY, &Label)) -> bool {
+    // Returns first colliding label
+    fn can_add_label<'a>(labels: &'a mut BTreeMap<XY, Label>, new_label: (XY, &Label)) -> Option<(XY, &'a Label)> {
         let width = new_label.1.screen_width();
         let new_rect = Rect::new(new_label.0, XY::new(width, 1));
 
@@ -604,11 +605,11 @@ impl EditorWidget {
             let old_rect = Rect::new(*pos, XY::new(width, 1));
 
             if old_rect.intersect(new_rect).is_some() {
-                return false;
+                return Some((*pos, label));
             }
         }
 
-        true
+        None
     }
 
     fn internal_render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
@@ -665,10 +666,13 @@ impl EditorWidget {
                             continue;
                         }
 
-                        if Self::can_add_label(&mut labels, (xy, &label)) {
-                            labels.insert(xy, label.clone());
+                        if let Some((_collision_xy, old_label)) = Self::can_add_label(&mut labels, (xy, &label)) {
+                            warn!(
+                                "Discarding a label because of collision. Discarded label [{:?}], colliding label [{:?}]",
+                                label, old_label
+                            );
                         } else {
-                            warn!("Discarding a label because of collision. This is an omission most likely.");
+                            labels.insert(xy, label.clone());
                         }
                     }
                 }

@@ -103,9 +103,17 @@ impl BufferState {
             }
         }
 
-        let cem = cem;
         let mut cursors_copy = unpack_or_e!(self.text().get_cursor_set(widget_id), false, "cursor set not found").clone();
 
+        if self.subtype == BufferType::Full {
+            if cem == CommonEditMsg::Char('\n') {
+                if let Some(indent) = self.text().get_common_indentation_level_for_cursor_set(&cursors_copy) {
+                    warn!("indent = {}", indent);
+                }
+            }
+        }
+
+        let cem = cem;
         /*
         TODO the fact that Undo/Redo requires special handling here a lot suggests that maybe these shouldn't be CEMs. But it works now.
          */

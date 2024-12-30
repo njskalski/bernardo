@@ -14,9 +14,9 @@ use crate::primitives::search_pattern::SearchPattern;
 use crate::tsw::lang_id::LangId;
 use crate::tsw::parsing_tuple::ParsingTuple;
 use crate::tsw::tree_sitter_wrapper::TreeSitterWrapper;
-use crate::unpack_or_e;
 use crate::widget::widget::WID;
 use crate::widgets::editor_widget::label::label::Label;
+use crate::{unpack, unpack_or, unpack_or_e};
 
 /*
 I allow empty history, it means "nobody is looking at the buffer now, first who comes needs to set
@@ -229,6 +229,30 @@ impl ContentsAndCursors {
 
     pub fn replace_labels(&mut self, labels: Vec<Label>) {
         self.labels = labels;
+    }
+
+    pub fn get_indentation_level(&self, cursor: &Cursor) -> Option<usize> {
+        if let Some(query) = self.parsing.as_ref().map(|p| p.indent_query.as_ref()).flatten() {}
+
+        None
+    }
+
+    // TODO can replace cs with WID
+    pub fn get_common_indentation_level_for_cursor_set(&self, cs: &CursorSet) -> Option<usize> {
+        let value = self.get_indentation_level(&cs.first());
+        if value.is_none() {
+            return None;
+        }
+
+        for cursor in cs.iter().skip(1) {
+            let new_value = self.get_indentation_level(cursor);
+            if new_value != value {
+                debug!("non uniform indentation level over multiple cursors");
+                return None;
+            }
+        }
+
+        value
     }
 }
 
