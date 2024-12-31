@@ -15,16 +15,13 @@ pub struct SubOutput<'a> {
 
 impl<'a> SubOutput<'a> {
     pub fn new(output: &'a mut dyn Output, frame: Rect) -> Self {
+        let output_size = output.size();
+        let output_visible_rect = output.visible_rect();
+        debug_assert!(frame.lower_right() <= output_size, "{} <?= {}", frame.lower_right(), output_size);
         debug_assert!(
-            frame.lower_right() <= output.size(),
-            "{} <?= {}",
-            frame.lower_right(),
-            output.size()
-        );
-        debug_assert!(
-            output.visible_rect().intersect(frame).is_some(),
+            output_visible_rect.intersect(frame).is_some(),
             "no intersection between output.visible_rect() {} and frame of sub-output {}",
-            output.visible_rect(),
+            output_visible_rect,
             frame
         );
 

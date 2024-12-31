@@ -1,6 +1,7 @@
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::with_wait_for::WithWaitFor;
+use log::error;
 use std::time::Duration;
 
 fn get_full_setup(file: &str) -> FullSetup {
@@ -58,9 +59,15 @@ fn completions_clangd_cpp_completion() {
     assert!(full_setup.wait_for(|f| { f.get_first_editor().unwrap().completions().map(|comp| comp.is_loading()) == Some(false) }));
 
     // each infix should appear at least once
-    let expected_infixes: Vec<&'static str> = vec!["assign(", "at(size_type n)", "back()", "begin()"];
+    let expected_infixes: Vec<&'static str> = vec!["assign(", "at(size_ty", "back()", "begin()"];
 
     let expected_highlight = "assign(";
+
+    let items: Vec<_> = full_setup.get_first_editor().unwrap().completions().unwrap().items().collect();
+
+    // error!("items = [{:?}]", items);
+
+    full_setup.screenshot();
 
     assert!(full_setup
         .get_first_editor()

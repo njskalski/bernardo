@@ -12,7 +12,7 @@ pub struct CursorScreenPosition {
     pub cursor: Cursor,
     // This is position in screen space of the widget (so not absolute). Can be none, because cursor
     //  can be outside of visible part of widget.
-    pub widget_space: Option<XY>,
+    pub visible_rect_space: Option<XY>,
     // This is position in space of text rendered from (0, 0)
     pub text_space: XY,
 }
@@ -23,7 +23,7 @@ pub fn find_trigger_and_substring<'a>(
     buffer: &'a dyn TextBuffer,
     cursor_pos: &'a CursorScreenPosition,
 ) -> Option<(&'a str, String)> {
-    let cursor_screen_pos = match cursor_pos.widget_space {
+    let cursor_screen_pos = match cursor_pos.visible_rect_space {
         None => {
             debug!("cursor not visible");
             return None;
