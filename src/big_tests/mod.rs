@@ -15,3 +15,4 @@ mod save;
 mod save_file_dialog;
 mod show_usages;
 mod syntax_highlighting;
+mod test_utils;

@@ -873,7 +873,7 @@ impl Widget for MainView {
                     Some(config.keyboard_config.global.next_display),
                 ),
                 ContextBarItem::new_leaf_node(
-                    Cow::Borrowed("prev display"),
+                    Cow::Borrowed("previous display"),
                     || MainViewMsg::PrevDisplay.boxed(),
                     Some(config.keyboard_config.global.prev_display),
                 ),
