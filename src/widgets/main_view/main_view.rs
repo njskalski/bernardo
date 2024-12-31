@@ -331,7 +331,7 @@ impl MainView {
                 if *w.get_highlighted().1.id() >= len {
                     None
                 } else {
-                    MainViewMsg::BufferListHit {
+                    MainViewMsg::ChooseDisplayHit {
                         display_idx: *w.get_highlighted().1.id(),
                     }
                     .someboxed()
@@ -593,6 +593,34 @@ impl MainView {
 
         success
     }
+
+    fn do_next_display(&mut self) -> bool {
+        if self.hover.is_some() {
+            return false;
+        }
+
+        if self.displays.is_empty() {
+            return false;
+        }
+
+        self.display_idx = (self.display_idx + 1) % self.displays.len();
+        self.set_focus_to_default();
+        true
+    }
+
+    fn do_prev_display(&mut self) -> bool {
+        if self.hover.is_some() {
+            return false;
+        }
+
+        if self.displays.is_empty() {
+            return false;
+        }
+
+        self.display_idx = (self.display_idx + self.displays.len() - 1) % self.displays.len();
+        self.set_focus_to_default();
+        true
+    }
 }
 
 impl Widget for MainView {
@@ -646,6 +674,8 @@ impl Widget for MainView {
                 }
             }
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_in_files => MainViewMsg::OpenFindInFiles.someboxed(),
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.next_display => MainViewMsg::NextDisplay.someboxed(),
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.prev_display => MainViewMsg::PrevDisplay.someboxed(),
             InputEvent::EverythingBarTrigger => MainViewMsg::OpenContextMenu.someboxed(),
             // InputEvent::KeyInput(key) if key == config.keyboard_config.global.everything_bar => MainViewMsg::OpenContextMenu.someboxed(),
             _ => {
@@ -696,7 +726,7 @@ impl Widget for MainView {
                     self.open_empty_editor_and_focus();
                     None
                 }
-                MainViewMsg::BufferListHit { display_idx: pos } => {
+                MainViewMsg::ChooseDisplayHit { display_idx: pos } => {
                     self.hover = None;
 
                     if *pos >= self.displays.len() {
@@ -784,6 +814,14 @@ impl Widget for MainView {
                     self.do_prune_unchanged_buffers();
                     None
                 }
+                MainViewMsg::NextDisplay => {
+                    self.do_next_display();
+                    None
+                }
+                MainViewMsg::PrevDisplay => {
+                    self.do_prev_display();
+                    None
+                }
 
                 MainViewMsg::QuitGladius => GladiusMsg::Quit.someboxed(),
                 _ => {
@@ -816,36 +854,56 @@ impl Widget for MainView {
     fn get_widget_actions(&self) -> Option<ContextBarItem> {
         let config = self.providers.config();
 
-        Some(ContextBarItem::new_internal_node(
-            Cow::Borrowed("gladius"),
-            vec![
-                ContextBarItem::new_leaf_node(
-                    Cow::Borrowed("quit"),
-                    || MainViewMsg::QuitGladius.boxed(),
-                    Some(config.keyboard_config.global.close),
-                ),
+        let mut options: Vec<ContextBarItem> = vec![ContextBarItem::new_leaf_node(
+            Cow::Borrowed("quit"),
+            || MainViewMsg::QuitGladius.boxed(),
+            Some(config.keyboard_config.global.close),
+        )];
+
+        if !self.displays.is_empty() {
+            options.append(&mut vec![
                 ContextBarItem::new_leaf_node(
                     Cow::Borrowed("open display list"),
                     || MainViewMsg::OpenChooseDisplay.boxed(),
                     Some(config.keyboard_config.global.browse_buffers),
                 ),
                 ContextBarItem::new_leaf_node(
-                    Cow::Borrowed("open new buffer"),
-                    || MainViewMsg::OpenNewFile.boxed(),
-                    Some(config.keyboard_config.global.new_buffer),
+                    Cow::Borrowed("next display"),
+                    || MainViewMsg::NextDisplay.boxed(),
+                    Some(config.keyboard_config.global.next_display),
                 ),
                 ContextBarItem::new_leaf_node(
-                    Cow::Borrowed("find in files"),
-                    || MainViewMsg::OpenFindInFiles.boxed(),
-                    Some(config.keyboard_config.global.find_in_files),
+                    Cow::Borrowed("previous display"),
+                    || MainViewMsg::PrevDisplay.boxed(),
+                    Some(config.keyboard_config.global.prev_display),
                 ),
                 ContextBarItem::new_leaf_node(
                     Cow::Borrowed("prune unchanged buffers"),
                     || MainViewMsg::PruneUnchangedBuffers.boxed(),
                     None,
                 ),
-            ],
-        ))
+            ])
+        }
+
+        options.append(&mut vec![
+            ContextBarItem::new_leaf_node(
+                Cow::Borrowed("open new buffer"),
+                || MainViewMsg::OpenNewFile.boxed(),
+                Some(config.keyboard_config.global.new_buffer),
+            ),
+            ContextBarItem::new_leaf_node(
+                Cow::Borrowed("find in files"),
+                || MainViewMsg::OpenFindInFiles.boxed(),
+                Some(config.keyboard_config.global.find_in_files),
+            ),
+            ContextBarItem::new_leaf_node(
+                Cow::Borrowed("fuzzy file search"),
+                || MainViewMsg::OpenFuzzyFiles.boxed(),
+                Some(config.keyboard_config.global.fuzzy_file),
+            ),
+        ]);
+
+        Some(ContextBarItem::new_internal_node(Cow::Borrowed("gladius"), options))
     }
 
     fn kite(&self) -> XY {

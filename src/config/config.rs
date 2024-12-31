@@ -57,6 +57,8 @@ pub struct Global {
     pub fuzzy_file: Key,
     pub new_buffer: Key,
     pub make_screenshot: Key,
+    pub next_display: Key,
+    pub prev_display: Key,
 }
 
 impl Default for Global {
@@ -72,6 +74,8 @@ impl Default for Global {
             find_in_files: Keycode::Char('g').to_key().with_ctrl(),
             close_context_menu: Keycode::Esc.to_key(),
             make_screenshot: Keycode::Char('u').to_key().with_ctrl(),
+            next_display: Keycode::Char('.').to_key().with_alt(),
+            prev_display: Keycode::Char(',').to_key().with_alt(),
         }
     }
 }
