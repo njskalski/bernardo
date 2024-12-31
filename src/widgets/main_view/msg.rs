@@ -37,9 +37,11 @@ pub enum MainViewMsg {
 
     // Open "open buffers"
     OpenChooseDisplay,
-    BufferListHit {
+    ChooseDisplayHit {
         display_idx: usize,
     },
+    NextDisplay,
+    PrevDisplay,
 
     // it's option, just that we can "take" it, not changing the msg, because that doesn't work well
     FindReferences {
