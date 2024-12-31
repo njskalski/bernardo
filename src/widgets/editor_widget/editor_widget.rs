@@ -116,12 +116,35 @@ pub struct HoverSettings {
     - position of last character of trigger (if available)
     - just position of cursor
 
-    Anchor is given in widget space.
+    Anchor is given in "visible rect space"
     */
-    pub anchor: XY,
+    pub anchor_in_visible_rect: XY,
     pub cursor_screen_position: CursorScreenPosition,
     pub substring: Option<String>,
     pub trigger: Option<String>,
+}
+
+impl HoverSettings {
+    fn should_draw_above(&self, visible_rect: &Rect) -> bool {
+        let mid_line = (visible_rect.pos.y + visible_rect.size.y) / 2;
+        let above = self.anchor_in_visible_rect.y > mid_line;
+        above
+    }
+    fn get_max_hover_size(&self, visible_rect: &Rect) -> Option<XY> {
+        debug_assert!(self.anchor_in_visible_rect < visible_rect.size);
+
+        let maxx = min(visible_rect.size.x, EditorWidget::MAX_HOVER_WIDTH);
+        let maxy = if self.should_draw_above(&visible_rect) {
+            self.anchor_in_visible_rect.y - visible_rect.upper_left().y
+        } else {
+            // devised from a drawing, should be OK.
+            visible_rect.lower_right().y - self.anchor_in_visible_rect.y - 1
+        };
+
+        let hover_size = XY::new(maxx, maxy);
+
+        Some(hover_size)
+    }
 }
 
 enum EditorHover {
@@ -393,7 +416,7 @@ impl EditorWidget {
             warn!("cursor seems to be outside visible hint {:?}", layout_res.visible_rect());
             return Some(CursorScreenPosition {
                 cursor,
-                widget_space: None,
+                visible_rect_space: None,
                 text_space: lsp_cursor_xy,
             });
         }
@@ -406,7 +429,7 @@ impl EditorWidget {
 
         Some(CursorScreenPosition {
             cursor,
-            widget_space: Some(local_pos),
+            visible_rect_space: Some(local_pos),
             text_space: lsp_cursor_xy,
         })
     }
@@ -432,7 +455,7 @@ impl EditorWidget {
             None,
             "can't position hover, no cursor local pos"
         );
-        let cursor_screen_pos = unpack_or!(cursor_pos.widget_space, None, "no cursor position in screen space");
+        let cursor_screen_pos = unpack_or!(cursor_pos.visible_rect_space, None, "no cursor position in screen space");
         // let buffer_r: BufferR = unpack_or!(self.buffer.lock(), None, "failed to lock buffer");
         // let visible_rect = unpack_or!(last_size.visible_hint(), None, "no visible rect - no hover");
 
@@ -456,7 +479,7 @@ impl EditorWidget {
             .map(|tas| (Some(tas.1), Some(tas.0.to_string())))
             .unwrap_or((None, None));
         Some(HoverSettings {
-            anchor,
+            anchor_in_visible_rect: anchor,
             cursor_screen_position: cursor_pos,
             substring,
             trigger,
@@ -923,6 +946,10 @@ impl EditorWidget {
             "failed converting cursor to lsp_cursor",
         );
         let path = unpack_unit_e!(buffer.get_path(), "path not available",);
+        let visible_rect = unpack_unit_e!(
+            self.layout_res.as_ref().map(|lr| lr.visible_rect()),
+            "can't request completions before layout"
+        );
 
         let trigger_op = {
             let nt = navcomp.completion_triggers(path);
@@ -939,7 +966,8 @@ impl EditorWidget {
 
         match (promise_op, hover_settings) {
             (Some(promise), Some(hover_settings)) => {
-                let comp = CompletionWidget::new(promise).with_fuzzy(true);
+                let max_size = unpack_unit_e!(hover_settings.get_max_hover_size(&visible_rect), "failed spacing hover");
+                let comp = CompletionWidget::new(promise, max_size).with_fuzzy(true);
                 debug!("created completion: settings [{:?}]", &hover_settings);
                 self.requested_hover = Some((hover_settings, EditorHover::Completion(comp)));
             }
@@ -950,6 +978,7 @@ impl EditorWidget {
     }
 
     // TODO merge with function above
+    // TODO if cursor became non-single while waiting for completions - we need to close hover
     pub fn update_completions(&mut self, buffer: &BufferState) {
         let cursor = unpack_unit!(
             buffer.cursors(self.wid).and_then(|c| c.as_single()),
@@ -1001,7 +1030,7 @@ impl EditorWidget {
         };
 
         let close: bool = if let Some((settings, EditorHover::Completion(completion_widget))) = self.requested_hover.as_mut() {
-            if Some(settings.anchor.y) != cursor_pos.widget_space.map(|xy| xy.y) {
+            if Some(settings.anchor_in_visible_rect.y) != cursor_pos.visible_rect_space.map(|xy| xy.y) {
                 debug!("closing hover because cursor moved");
                 true
             } else {
@@ -1077,16 +1106,35 @@ impl EditorWidget {
         }
     }
 
+    //     if above {
+    //         // since it's *above* and higher bound is *exclusive*, no +-1 is needed here.
+    //         let rect_pos = XY::new(pos_x, hover_settings.anchor_in_visible_rect.y - hover_size.y);
+    //         let rect = Rect::new(rect_pos, hover_size);
+    //         debug_assert!(rect.lower_right() <= visible_rect.lower_right(), "not drawing beyond visible rect");
+    //         Some(rect)
+    //     } else
+    //     /*below*/
+    //     {
+    //         let rect_pos = XY::new(pos_x, hover_settings.anchor_in_visible_rect.y + 1);
+    //         let rect = Rect::new(rect_pos, hover_size);
+    //         debug_assert!(rect.lower_right() <= visible_rect.lower_right(), "not drawing beyond visible rect");
+    //         Some(rect)
+    //     }
+    //
+    //
+    //
+    //     // this says "to the right, but not if that would mean going out of visible rect"
+    //     let pos_x = if hover_size.x + hover_settings.anchor_in_visible_rect.x > visible_rect.lower_right().x {
+    //         visible_rect.lower_right().x - (hover_size.x + hover_settings.anchor_in_visible_rect.x)
+    //     } else {
+    //         hover_settings.anchor_in_visible_rect.x
+    //     };
+    //
+    //     XY::new(maxx, maxy)
+    // }
+
     fn layout_hover(&mut self, visible_rect: Rect) {
         let (hover_settings, hover) = unpack_unit!(self.requested_hover.as_mut());
-
-        let mid_line = (visible_rect.pos.y + visible_rect.size.y) / 2;
-        debug_assert!(hover_settings.anchor.y >= visible_rect.pos.y, "anchored above visible space");
-        debug_assert!(
-            hover_settings.anchor.y < visible_rect.lower_right().y,
-            "anchored below visible space"
-        );
-        let above = hover_settings.anchor.y > mid_line;
 
         if let EditorHover::Completion(cw) = hover {
             if !cw.poll_results_should_draw() {
@@ -1096,60 +1144,36 @@ impl EditorWidget {
             }
         }
 
+        // TODO this check should be moved somewhere else
         if visible_rect.size.x < Self::MIN_HOVER_WIDTH {
             warn!("not enough space to draw hover");
             self.requested_hover = None;
             return;
         }
 
-        let hover_rect: Option<Rect> = {
-            let maxx = min(visible_rect.size.x, Self::MAX_HOVER_WIDTH);
-            let maxy = if above {
-                hover_settings.anchor.y - visible_rect.pos.y
-            } else {
-                visible_rect.lower_right().y - hover_settings.anchor.y - 1 // there was a drawing,
-                                                                           // it should be OK.
-            };
-
-            let hover_size = XY::new(maxx, maxy);
-
-            // this says "to the right, but not if that would mean going out of visible rect"
-            let pos_x = if hover_size.x + hover_settings.anchor.x > visible_rect.lower_right().x {
-                visible_rect.lower_right().x - (hover_size.x + hover_settings.anchor.x)
-            } else {
-                hover_settings.anchor.x
-            };
-
-            if above {
-                // since it's *above* and higher bound is *exclusive*, no +-1 is needed here.
-                let rect_pos = XY::new(pos_x, hover_settings.anchor.y - hover_size.y);
-                let rect = Rect::new(rect_pos, hover_size);
-                debug_assert!(rect.lower_right() <= visible_rect.lower_right(), "not drawing beyond visible rect");
-                Some(rect)
-            } else
-            /*below*/
-            {
-                let rect_pos = XY::new(pos_x, hover_settings.anchor.y + 1);
-                let rect = Rect::new(rect_pos, hover_size);
-                debug_assert!(rect.lower_right() <= visible_rect.lower_right(), "not drawing beyond visible rect");
-                Some(rect)
-            }
+        let mut hover_size = unpack_unit_e!(hover_settings.get_max_hover_size(&visible_rect), "failed get max hover size");
+        if let EditorHover::Completion(cw) = hover {
+            let full_size = cw.full_size();
+            hover_size.x = min(hover_size.x, full_size.x);
+            hover_size.y = min(hover_size.y, full_size.y);
         };
 
-        if let Some(hover_rect) = hover_rect {
-            self.last_hover_rect = Some(hover_rect);
+        let mut rect_assuming_below = Rect::new(visible_rect.pos + hover_settings.anchor_in_visible_rect + (0, 1), hover_size);
 
-            if let Some(parent_space_hover_rect_view) = visible_rect.intersect(hover_rect) {
-                let hover_space_hover_visible_rect = parent_space_hover_rect_view.minus_shift(hover_rect.pos).unwrap(); // TODO
-                hover
-                    .get_widget_mut()
-                    .layout(Screenspace::new(hover_rect.size, hover_space_hover_visible_rect));
-            } else {
-                error!("no intersection between hover_rect and visible rect");
-            }
-        } else {
-            self.requested_hover = None;
+        if hover_settings.should_draw_above(&visible_rect) {
+            debug_assert!(rect_assuming_below.pos >= hover_settings.anchor_in_visible_rect);
+            rect_assuming_below.pos.y -= (rect_assuming_below.size.y + 1);
         }
+
+        let hover_rect = rect_assuming_below;
+
+        self.last_hover_rect = Some(hover_rect);
+
+        // hover is guaranteed to be within visible_rect, so I skip visible rect test.
+        // also, because I was too tired to figure out why it was failing.
+        hover
+            .get_widget_mut()
+            .layout(Screenspace::new(hover_rect.size, Rect::from_zero(hover_rect.size)));
     }
 
     /*

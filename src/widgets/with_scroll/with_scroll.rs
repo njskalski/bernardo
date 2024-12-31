@@ -37,6 +37,9 @@ pub struct WithScroll<W: Widget> {
 
     // margin, size of new output
     layout_res: Option<LayoutRes>,
+
+    // Used to inform a full_size when used outside greedy layout
+    max_size: Option<XY>,
 }
 
 struct InternalOutputSize {
@@ -48,7 +51,6 @@ impl<W: Widget> WithScroll<W> {
     pub const TYPENAME: &'static str = "with_scroll";
 
     pub const TYPENAME_FOR_MARGIN: &'static str = "with_scroll_margin";
-    pub const MIN_SIZE: XY = XY::new(3, 4);
 
     pub fn new(scroll_direction: ScrollDirection, widget: W) -> Self {
         let id = get_new_widget_id();
@@ -59,6 +61,14 @@ impl<W: Widget> WithScroll<W> {
             line_no: false,
             fill_non_free_axis: true,
             layout_res: None,
+            max_size: None,
+        }
+    }
+
+    pub fn with_max_size(self, max_size: XY) -> Self {
+        Self {
+            max_size: Some(max_size),
+            ..self
         }
     }
 
@@ -250,10 +260,18 @@ impl<W: Widget> Widget for WithScroll<W> {
     }
 
     fn full_size(&self) -> XY {
-        error!("this shouldn't be even called, with scroll should be used only with greedy layout");
+        if let Some(max_size) = self.max_size {
+            let full_size = self.internal().full_size();
 
-        // this code should be dead, ignore it.
-        XY::new(3, 3)
+            XY::new(min(max_size.x, full_size.x), min(max_size.y, full_size.y))
+        } else {
+            debug_assert!(
+                false,
+                "this shouldn't be even called, with scroll should be used only with greedy layout"
+            );
+            // this code should be dead, ignore it.
+            XY::new(3, 3)
+        }
     }
 
     fn size_policy(&self) -> SizePolicy {

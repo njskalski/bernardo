@@ -42,13 +42,15 @@ pub struct CompletionWidget {
     display_state: Option<DisplayState<Self>>,
 
     fuzzy: bool,
+
+    max_size: XY,
 }
 
 impl CompletionWidget {
     pub const LOADING: &'static str = "loading...";
     pub const TYPENAME: &'static str = "completion_widget";
 
-    pub fn new(completions_promise: CompletionsPromise) -> Self {
+    pub fn new(completions_promise: CompletionsPromise, max_size: XY) -> Self {
         CompletionWidget {
             wid: get_new_widget_id(),
             list_widget: WithScroll::new(
@@ -58,13 +60,16 @@ impl CompletionWidget {
                     .with_show_column_names(false)
                     .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
                     .with_on_hit(Box::new(|w| {
-                        w.get_highlighted().map(|c| CompletionWidgetMsg::Selected(c.action.clone()).boxed())
+                        w.get_highlighted()
+                            .map(|c: &Completion| CompletionWidgetMsg::Selected(c.action.clone()).boxed())
                     })),
-            ),
+            )
+            .with_max_size(max_size),
             completions_promise: Some(completions_promise),
             display_state: None,
             fuzzy: false,
             label_widget: TextWidget::new(Box::new(Self::LOADING)),
+            max_size,
         }
     }
 
@@ -173,6 +178,8 @@ impl Widget for CompletionWidget {
             self.label_widget.full_size()
         };
         debug!("min_size: {}", res);
+        // right now it's redundant
+        debug_assert!(res <= self.max_size);
         res
     }
 
