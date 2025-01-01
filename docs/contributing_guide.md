@@ -1,5 +1,7 @@
 # Contributing Guide
 
+(Work in progress)
+
 A process of contributing to Bernardo / Gladius, typically follows a following plan:
 
 1) Identify a ticket / feature you want to implement and claim it on Gitlab Issues list, so others know you are workig
@@ -139,8 +141,24 @@ Input handling follows exactly the same scenario as above:
 2) we convert it to InputView specific Msg
 3) we handle these Msg in ```fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>>;```
 
+--- 
+here I ran out of time to write the rest in details
+
+---
+
 
 ##### Tests
 
 At this point we have some code that we would like to test. Let's start with Widget test.
+
+See GenericWidgetTestbed to test widget,
+
+See FullSetup in src/big_tests to test the entire Gladius program.
+
+
+##### Profiling
+
+see [https://github.com/flamegraph-rs/flamegraph](https://github.com/flamegraph-rs/flamegraph)
+
+see [https://github.com/mstange/samply](https://github.com/mstange/samply)
 
