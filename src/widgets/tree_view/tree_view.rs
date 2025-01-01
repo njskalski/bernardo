@@ -1,4 +1,3 @@
-use std::ops::DerefMut;
 use flexi_logger::AdaptiveFormat::Default;
 use log::{debug, error, warn};
 use std::borrow::Cow;
@@ -7,6 +6,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::iter;
+use std::ops::DerefMut;
 use std::sync::Mutex;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -285,13 +285,7 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         if self.filter_op.is_some() && self.filter_overrides_expanded {
             eager_iterator(&self.root_node, None, self.filter_op.as_ref(), self.filter_policy)
         } else {
-            eager_iterator(
-                &self.root_node,
-                Some(&self.expanded),
-                self.filter_op.as_ref(),
-
-                self.filter_policy,
-            )
+            eager_iterator(&self.root_node, Some(&self.expanded), self.filter_op.as_ref(), self.filter_policy)
         }
     }
 

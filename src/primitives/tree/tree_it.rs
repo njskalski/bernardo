@@ -22,10 +22,7 @@ pub fn eager_iterator<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>(
     // bool in the middle stands for "filter hit";
     let mut result: Vec<(u16, bool, Item)> = Vec::with_capacity(128);
 
-    fn matches<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>(
-        node: &Item,
-        filter_op: &Option<&TreeItFilter<Item>>,
-    ) -> bool {
+    fn matches<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>(node: &Item, filter_op: &Option<&TreeItFilter<Item>>) -> bool {
         if let Some(filter) = filter_op.as_ref() {
             filter(node)
         } else {
