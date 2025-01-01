@@ -6,7 +6,7 @@ use crate::io::keys;
 use crate::primitives::maybe_bool::MaybeBool;
 
 // Keep it lightweight. It is expected to be implemented by Rc<some type>
-pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {
+pub trait TreeNode<Key: Hash + Eq + Debug + Clone>: Clone + Debug {
     fn id(&self) -> &Key;
     fn label(&self) -> Cow<str>;
 

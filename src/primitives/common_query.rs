@@ -10,29 +10,40 @@ pub enum CommonQuery {
     Regex(regex::Regex),
 }
 
+// (task 79)
+// Warning: currently, CommonQuery matches *characters* not *graphemes*
+// this might cause errors in situations, where a split-multi-character-grapheme pattern
+// is false-positively matched with a label that contains all characters, but not the grapheme
+// itself. To address this, and re-introduce per-grapheme matches, we need to introduce
+// grapheme-division-caching (special variant of strings), because current "graphemes"
+// implementation is too slow.
+
 impl CommonQuery {
     pub fn matches(&self, label: &str) -> bool {
         match self {
             CommonQuery::Epsilon => true,
             CommonQuery::String(substr) => label.contains(substr),
             CommonQuery::Fuzzy(subsequence) => {
-                let mut text_it = label.graphemes(false).peekable();
-                let mut pattern_it = subsequence.graphemes(false).peekable();
+                let mut text_it = label.chars();
+                let mut pattern_it = subsequence.chars();
+
+                let mut current_pattern_value = pattern_it.next();
+                let mut current_text_value = text_it.next();
 
                 loop {
-                    if pattern_it.peek().is_none() {
+                    if current_pattern_value.is_none() {
                         return true;
                     }
 
-                    if text_it.peek().is_none() {
+                    if current_text_value.is_none() {
                         return false;
                     }
 
-                    if text_it.peek() == pattern_it.peek() {
-                        let _ = text_it.next();
-                        let _ = pattern_it.next();
+                    if current_text_value == current_pattern_value {
+                        current_text_value = text_it.next();
+                        current_pattern_value = pattern_it.next();
                     } else {
-                        text_it.next();
+                        current_text_value = text_it.next();
                     }
                 }
             }
