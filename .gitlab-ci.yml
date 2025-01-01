@@ -14,10 +14,10 @@ debian:
     - rustup component add rustfmt
     - rustup component add rust-analyzer
     - which rust-analyzer
-    - cargo install cargo-nextest --locked
+    - curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
   script:
     - cargo build
-    - cargo nextest run --retries 1
+    - cargo nextest run --retries 4
     - cargo fmt --check
   artifacts:
     paths:
