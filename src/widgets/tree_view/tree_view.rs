@@ -1,10 +1,13 @@
 use flexi_logger::AdaptiveFormat::Default;
 use log::{debug, error, warn};
 use std::borrow::Cow;
-use std::collections::HashSet;
+use std::cell::{BorrowMutError, Ref, RefCell, RefMut};
+use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::iter;
+use std::ops::DerefMut;
+use std::sync::Mutex;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 

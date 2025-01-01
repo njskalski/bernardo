@@ -18,10 +18,11 @@ fn common_start() -> FullSetup {
         full_setup.type_in(file);
         full_setup.type_in(".txt");
 
-        // TODO - this should not be necessary
-        for _ in 0..2 {
-            full_setup.send_key(Keycode::ArrowDown.to_key());
-        }
+        assert!(full_setup.wait_for(|full_setup| {
+            let fs = full_setup.get_fuzzy_search().unwrap();
+            let sel = fs.selected_option();
+            sel.map(|o| o.contains(&(file.to_string() + ".txt"))).unwrap_or(false)
+        }));
 
         full_setup.send_key(Keycode::Enter.to_key());
 
