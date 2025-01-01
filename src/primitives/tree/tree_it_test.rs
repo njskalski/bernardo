@@ -15,7 +15,7 @@ mod test {
         expanded.insert(1);
 
         let try_out = |expanded_ref: &HashSet<usize>| {
-            let items: Vec<(u16, String)> = eager_iterator(&root, Some(expanded_ref), None,None, FilterPolicy::MatchNodeOrAncestors)
+            let items: Vec<(u16, String)> = eager_iterator(&root, Some(expanded_ref), None, FilterPolicy::MatchNodeOrAncestors)
                 .map(|(d, f)| (d as u16, format!("{:?}", f.id())))
                 .collect();
             let max_len = items

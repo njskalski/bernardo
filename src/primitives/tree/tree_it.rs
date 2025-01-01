@@ -17,7 +17,6 @@ pub fn eager_iterator<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>(
     root: &Item,
     expanded_op: Option<&HashSet<Key>>,
     filter_op: Option<&TreeItFilter<Item>>,
-    mut cache_op: Option<&mut HashMap<Key, bool>>,
     filter_policy: FilterPolicy,
 ) -> impl Iterator<Item = (u16, Item)> {
     // bool in the middle stands for "filter hit";
@@ -26,20 +25,9 @@ pub fn eager_iterator<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>(
     fn matches<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>(
         node: &Item,
         filter_op: &Option<&TreeItFilter<Item>>,
-        cache_op: &mut Option<&mut HashMap<Key, bool>>,
     ) -> bool {
         if let Some(filter) = filter_op.as_ref() {
-            if let Some(cache) = cache_op {
-                if let Some(value) = cache.get(node.id()) {
-                    *value
-                } else {
-                    let value = filter(node);
-                    cache.insert(node.id().clone(), value);
-                    value
-                }
-            } else {
-                filter(node)
-            }
+            filter(node)
         } else {
             true
         }
@@ -50,12 +38,11 @@ pub fn eager_iterator<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>(
         expanded_op: Option<&HashSet<Key>>,
         depth: u16,
         filter_op: Option<&TreeItFilter<Item>>,
-        cache_op: &mut Option<&mut HashMap<Key, bool>>,
         filter_policy: FilterPolicy,
         result: &mut Vec<(u16, bool, Item)>,
     ) {
         if item.is_leaf() {
-            if matches(item, &filter_op, cache_op) {
+            if matches(item, &filter_op) {
                 result.push((depth, true, item.clone()));
                 return;
             } else {
@@ -64,7 +51,7 @@ pub fn eager_iterator<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>(
         } else {
             match filter_policy {
                 FilterPolicy::MatchNode => {
-                    if !matches(item, &filter_op, cache_op) {
+                    if !matches(item, &filter_op) {
                         return;
                     }
                 }
@@ -78,7 +65,7 @@ pub fn eager_iterator<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>(
 
             if expanded_op.map(|set| set.contains(item.id())).unwrap_or(true) {
                 for child in item.child_iter() {
-                    recursive(&child, expanded_op, depth + 1, filter_op, cache_op, filter_policy, result);
+                    recursive(&child, expanded_op, depth + 1, filter_op, filter_policy, result);
 
                     // if we're filtering, we add the current node only if it's on the path to a matching leaf AND was not added already.
                     if !filter_hit && filter_op.is_some() && filter_policy == FilterPolicy::MatchNodeOrAncestors {
@@ -102,7 +89,7 @@ pub fn eager_iterator<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>(
         }
     }
 
-    recursive(root, expanded_op, 0, filter_op, &mut cache_op, filter_policy, &mut result);
+    recursive(root, expanded_op, 0, filter_op, filter_policy, &mut result);
 
     result.into_iter().filter(|item| item.1).map(|item| (item.0, item.2))
 }

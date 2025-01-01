@@ -64,8 +64,6 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
 
     // if set to true, all nodes which lead to non-empty subtrees will appear in view, even if not expanded.
     filter_overrides_expanded: bool,
-
-    filter_cache : RefCell<HashMap<Key, bool>>,
 }
 
 #[derive(Debug)]
@@ -102,8 +100,6 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
             filter_policy: FilterPolicy::MatchNodeOrAncestors,
             size_policy: SizePolicy::MATCH_LAYOUT,
             filter_overrides_expanded: false,
-
-            filter_cache: RefCell::new(HashMap::new()),
         }
     }
 
@@ -140,7 +136,6 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
     pub fn with_filter(self, filter: TreeItFilter<Item>, filter_policy: FilterPolicy) -> Self {
         Self {
             filter_op: Some(filter),
-            filter_cache: RefCell::new(HashMap::new()),
             filter_policy,
             ..self
         }
@@ -158,8 +153,6 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
 
     // This re-sets highlighter to first item matching filter.
     fn after_filter_set(&mut self) {
-        self.filter_cache = RefCell::new(HashMap::new());
-
         if let Some(filter) = &self.filter_op {
             for (idx, (_, item)) in self.items().enumerate() {
                 if filter(&item) {
@@ -288,18 +281,15 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
     }
 
     pub fn items(&self) -> impl Iterator<Item = (u16, Item)> {
-        let mut binding = self.filter_cache.try_borrow_mut().ok();
-        let cache = binding.as_mut().map(|mut item| item.deref_mut());
-
         // TreeIt::new(&self.root_node, Some(&self.expanded), self.filter_op.as_ref(), self.filter_depth_op)
         if self.filter_op.is_some() && self.filter_overrides_expanded {
-            eager_iterator(&self.root_node, None, self.filter_op.as_ref(), cache, self.filter_policy)
+            eager_iterator(&self.root_node, None, self.filter_op.as_ref(), self.filter_policy)
         } else {
             eager_iterator(
                 &self.root_node,
                 Some(&self.expanded),
                 self.filter_op.as_ref(),
-                cache,
+
                 self.filter_policy,
             )
         }

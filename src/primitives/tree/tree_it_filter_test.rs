@@ -26,7 +26,7 @@ mod test {
             let query = CommonQuery::Fuzzy("oo".to_string()); // matches "child"
             let filter: TreeItFilter<MockTreeItem> = Box::new(move |item| query.matches(item.name.as_str()));
 
-            let mut iterator = eager_iterator(&tree, None, Some(&filter), None, FilterPolicy::MatchNodeOrAncestors);
+            let mut iterator = eager_iterator(&tree, None, Some(&filter), FilterPolicy::MatchNodeOrAncestors);
 
             let names: Vec<String> = iterator.map(|(depth, item)| item.name.clone()).collect();
 
@@ -54,7 +54,7 @@ mod test {
         {
             let filter: TreeItFilter<MockTreeItem> = Box::new(move |item| item.name.starts_with('.') == false);
 
-            let mut iterator = eager_iterator(&tree, None, Some(&filter),None, FilterPolicy::MatchNode);
+            let mut iterator = eager_iterator(&tree, None, Some(&filter), FilterPolicy::MatchNode);
 
             let names: Vec<String> = iterator.map(|(depth, item)| item.name.clone()).collect();
 
