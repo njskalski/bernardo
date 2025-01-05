@@ -3,9 +3,9 @@ use log::debug;
 use crate::experiments::focus_group::FocusUpdate;
 use crate::experiments::screen_shot::screenshot;
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Keycode;
+use crate::io::keys::{Key, Keycode};
 use crate::mocks::full_setup::FullSetup;
-use crate::mocks::treeview_interpreter::TreeViewInterpreterItem;
+use crate::mocks::treeview_interpreter::{TreeViewInterpreter, TreeViewInterpreterItem};
 use crate::mocks::with_wait_for::WithWaitFor;
 use crate::spath;
 
@@ -114,6 +114,19 @@ fn hit_on_dir_expands_it() {
         .unwrap()
         .tree_view()
         .is_focused());
+
+    assert!(
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .tree_view()
+            .selected()
+            .unwrap()
+            .label
+            == "src"
+    );
 
     full_setup.send_key(Keycode::Enter.to_key());
 
@@ -291,10 +304,6 @@ fn happy_path() {
     full_setup.send_key(Keycode::Enter.to_key());
 
     assert!(full_setup.wait_for(|full_setup| {
-        for i in full_setup.fsf().root().ancestors_and_self() {
-            debug!("print {:?}", i);
-        }
-
         spath!(full_setup.fsf(), "src", "main2.rs")
             .map(|path| path.is_file())
             .unwrap_or(false)

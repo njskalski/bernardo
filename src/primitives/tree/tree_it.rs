@@ -1,17 +1,11 @@
-use crate::primitives::tree::tree_it::FilterPolicy::MatchNode;
+use crate::primitives::tree::filter_policy::FilterPolicy;
 use crate::primitives::tree::tree_node::{TreeItFilter, TreeNode};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
-
 // TODO this should be optimised but I am too tired to fix it.
 // TODO add a cut-off iterator size, so if a cyclical graph is provided this won't explode
 // TODO add max depth parameter?
-#[derive(Debug, Eq, PartialEq, Copy, Clone)]
-pub enum FilterPolicy {
-    MatchNode,
-    MatchNodeOrAncestors,
-}
 
 pub fn eager_iterator<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>>(
     root: &Item,

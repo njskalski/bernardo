@@ -2,7 +2,10 @@
 mod test {
     use crate::mocks::mock_tree_item::{get_mock_data_set_2, get_mock_data_set_3, MockTreeItem};
     use crate::primitives::common_query::CommonQuery;
-    use crate::primitives::tree::tree_it::{eager_iterator, FilterPolicy};
+    use crate::primitives::tree::filter_policy::FilterPolicy;
+    use crate::primitives::tree::filter_policy::FilterPolicy::MatchNodeOrAncestors;
+    use crate::primitives::tree::lazy_tree_it::LazyTreeIterator;
+    use crate::primitives::tree::tree_it::eager_iterator;
     use crate::primitives::tree::tree_node::TreeItFilter;
 
     #[test]
@@ -31,7 +34,27 @@ mod test {
             let names: Vec<String> = iterator.map(|(depth, item)| item.name.clone()).collect();
 
             assert_eq!(names, vec!["root1".to_string(), "option1".to_string(), "option2".to_string()]);
+
+            let mut lazy_iterator = LazyTreeIterator::new(tree)
+                .with_filter(&filter)
+                .with_filter_policy(MatchNodeOrAncestors);
         }
+    }
+
+    #[test]
+    fn tree_it_filter_test_1_1() {
+        let tree = get_mock_data_set_2();
+
+        let query = CommonQuery::Fuzzy("oo".to_string()); // matches "child"
+        let filter: TreeItFilter<MockTreeItem> = Box::new(move |item| query.matches(item.name.as_str()));
+
+        let mut iterator = LazyTreeIterator::new(tree)
+            .with_filter(&filter)
+            .with_filter_policy(MatchNodeOrAncestors);
+
+        let names: Vec<String> = iterator.map(|(depth, item)| item.name.clone()).collect();
+
+        assert_eq!(names, vec!["root1".to_string(), "option1".to_string(), "option2".to_string()]);
     }
 
     #[test]
@@ -69,5 +92,29 @@ mod test {
                 ]
             );
         }
+    }
+
+    #[test]
+    fn tree_it_filter_test_2_2() {
+        let tree = get_mock_data_set_3();
+
+        let filter: TreeItFilter<MockTreeItem> = Box::new(move |item| item.name.starts_with('.') == false);
+
+        let mut iterator = LazyTreeIterator::new(tree)
+            .with_filter(&filter)
+            .with_filter_policy(FilterPolicy::MatchNode);
+
+        let names: Vec<String> = iterator.map(|(depth, item)| item.name.clone()).collect();
+
+        assert_eq!(
+            names,
+            vec![
+                "root1".to_string(),
+                "option1".to_string(),
+                "subtree1".to_string(),
+                "subsubtree1".to_string(),
+                "subsubtree1child1".to_string()
+            ]
+        );
     }
 }
