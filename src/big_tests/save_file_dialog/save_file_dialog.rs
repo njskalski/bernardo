@@ -21,6 +21,15 @@ fn common_start() -> FullSetup {
 
     assert!(full_setup.get_first_editor().unwrap().save_file_dialog().unwrap().is_focused());
 
+    let expanded_items: Vec<(String, bool)> = tree_items(&full_setup)
+        .iter()
+        .map(|item| (item.label.clone(), item.expanded))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        expanded_items,
+        vec![("save_file_dialog_test_1".to_string(), true), ("src".to_string(), false)]
+    );
+
     full_setup
 }
 

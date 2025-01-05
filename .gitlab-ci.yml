@@ -17,7 +17,8 @@ debian:
     - curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
   script:
     - cargo build
-    - cargo nextest run --retries 4
+    # it takes ages to compile and ALL tests run under 60 seconds, so I want to get full results
+    - cargo nextest run --no-fail-fast --retries 4
     - cargo fmt --check
   artifacts:
     paths:
