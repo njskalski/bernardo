@@ -19,7 +19,7 @@ use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::common_query::CommonQuery;
 use crate::primitives::printable::Printable;
 use crate::primitives::scroll::ScrollDirection;
-use crate::primitives::tree::tree_it::FilterPolicy;
+use crate::primitives::tree::filter_policy::FilterPolicy;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
@@ -118,7 +118,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key,
                 Keycode::Enter => true,
                 Keycode::PageUp => true,
                 Keycode::PageDown => true,
-                _ => {
+                _ if self.tree_view.internal().are_shortcuts_enabled() => {
                     // let all_keycodes: Vec<_> = self.tree_view.internal().get_all_shortcuts().collect();
                     // error!("nananna {:?}", all_keycodes);
 
@@ -128,6 +128,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key,
                         .find(|(_, _, bound_key)| *bound_key == *key)
                         .is_some()
                 }
+                _ => false,
             },
             _ => false,
         }

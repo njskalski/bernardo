@@ -19,7 +19,9 @@ use crate::io::keys::{Key, Keycode};
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
-use crate::primitives::tree::tree_it::{eager_iterator, FilterPolicy};
+use crate::primitives::tree::filter_policy::FilterPolicy;
+use crate::primitives::tree::lazy_tree_it::LazyTreeIterator;
+use crate::primitives::tree::tree_it::eager_iterator;
 use crate::primitives::tree::tree_node::{TreeItFilter, TreeNode};
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
@@ -154,11 +156,18 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
     // This re-sets highlighter to first item matching filter.
     fn after_filter_set(&mut self) {
         if let Some(filter) = &self.filter_op {
+            let mut new_highlighted: Option<usize> = None;
+
             for (idx, (_, item)) in self.items().enumerate() {
                 if filter(&item) {
-                    self.highlighted = idx;
+                    // self.highlighted = idx;
+                    new_highlighted = Some(idx);
                     break;
                 }
+            }
+
+            if let Some(highlighted) = new_highlighted {
+                self.highlighted = highlighted;
             }
         } else {
             self.highlighted = 0;
@@ -186,16 +195,22 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
     }
 
     pub fn set_selected(&mut self, k: &Key) -> bool {
+        let mut new_highlighted: Option<usize> = None;
+
         for (pos, (_, item)) in self.items().enumerate() {
             if item.id() == k {
-                self.highlighted = pos;
-                return true;
+                // self.highlighted = pos;
+                new_highlighted = Some(pos);
             }
         }
 
-        error!("failed to find item with key {:?}", k);
-
-        false
+        if let Some(highlighted) = new_highlighted {
+            self.highlighted = highlighted;
+            true
+        } else {
+            error!("failed to find item with key {:?}", k);
+            false
+        }
     }
 
     fn size_from_items(&self) -> XY {
@@ -280,12 +295,18 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         }
     }
 
-    pub fn items(&self) -> impl Iterator<Item = (u16, Item)> {
-        // TreeIt::new(&self.root_node, Some(&self.expanded), self.filter_op.as_ref(), self.filter_depth_op)
+    pub fn items(&self) -> impl Iterator<Item = (u16, Item)> + '_ {
+        // TODO expensive clone
+        let mut iter = LazyTreeIterator::new(self.root_node.clone()).with_filter_policy(self.filter_policy);
+
+        if let Some(filter) = self.filter_op.as_ref() {
+            iter = iter.with_filter(filter);
+        }
+
         if self.filter_op.is_some() && self.filter_overrides_expanded {
-            eager_iterator(&self.root_node, None, self.filter_op.as_ref(), self.filter_policy)
+            iter
         } else {
-            eager_iterator(&self.root_node, Some(&self.expanded), self.filter_op.as_ref(), self.filter_policy)
+            iter.with_expanded(&self.expanded)
         }
     }
 
@@ -328,7 +349,7 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
 
     // Idx, depth, item
     // TODO I think there is a bug there
-    pub fn get_visible_items(&self) -> Box<dyn Iterator<Item = (usize, (u16, Item))> + 'static> {
+    pub fn get_visible_items(&self) -> Box<dyn Iterator<Item = (usize, (u16, Item))> + '_> {
         let screenspace = unpack_or_e!(
             self.last_size,
             Box::new(iter::empty()),
@@ -345,7 +366,11 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         )
     }
 
-    pub fn get_all_shortcuts(&self) -> Box<dyn Iterator<Item = (usize, Key, keys::Key)> + 'static> {
+    pub fn are_shortcuts_enabled(&self) -> bool {
+        self.on_keyboard_shortcut_hit.is_some()
+    }
+
+    pub fn get_all_shortcuts(&self) -> Box<dyn Iterator<Item = (usize, Key, keys::Key)> + '_> {
         Box::new(
             self.items()
                 .enumerate()

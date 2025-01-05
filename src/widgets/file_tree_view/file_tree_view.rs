@@ -14,7 +14,7 @@ use crate::fs::path::SPath;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::scroll::ScrollDirection;
-use crate::primitives::tree::tree_it::FilterPolicy;
+use crate::primitives::tree::filter_policy::FilterPolicy;
 use crate::primitives::tree::tree_node::TreeNode;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};

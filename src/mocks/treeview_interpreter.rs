@@ -65,4 +65,8 @@ impl<'a> TreeViewInterpreter<'a> {
     pub fn is_focused(&self) -> bool {
         self.meta.focused
     }
+
+    pub fn selected(&self) -> Option<TreeViewInterpreterItem> {
+        self.items().iter().filter(|item| item.highlighted).next().cloned()
+    }
 }
