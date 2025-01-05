@@ -10,7 +10,7 @@ pub struct TreeViewInterpreter<'a> {
     output: &'a MetaOutputFrame,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct TreeViewInterpreterItem {
     pub label: String,
     pub depth: u16,
