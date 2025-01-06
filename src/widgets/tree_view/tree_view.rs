@@ -69,6 +69,12 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
     filter_overrides_expanded: bool,
 
     cached_size: RefCell<Option<XY>>,
+
+    // When we use "match_node_or_ancestors", iterator can take very long time to compute.
+    // This is a "quick and dirty fix", that makes sense - if you are using fuzzy search in
+    // context bar, it's not like you are going to scroll 50 pages instead of narrowing the
+    // search criteria further.
+    filter_match_node_or_ancestors_limit: Option<usize>,
 }
 
 #[derive(Debug)]
@@ -107,6 +113,7 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
             filter_overrides_expanded: false,
 
             cached_size: RefCell::new(None),
+            filter_match_node_or_ancestors_limit: None,
         }
     }
 
@@ -115,6 +122,15 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
             highlighter_op: Some(highlighter),
             ..self
         }
+    }
+
+    pub fn set_filter_match_node_or_ancestors_limit_op(&mut self, filter_limit_op: Option<usize>) {
+        self.filter_match_node_or_ancestors_limit = filter_limit_op;
+    }
+
+    pub fn with_filter_match_node_or_ancestors_limit_op(mut self, filter_limit_op: Option<usize>) -> Self {
+        self.set_filter_match_node_or_ancestors_limit_op(filter_limit_op);
+        self
     }
 
     pub fn with_filter_policy(mut self, filter_policy: FilterPolicy) -> Self {
@@ -309,6 +325,12 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
 
         if let Some(filter) = self.filter_op.as_ref() {
             iter = iter.with_filter(filter);
+
+            if self.filter_policy == FilterPolicy::MatchNodeOrAncestors {
+                if let Some(limit) = self.filter_match_node_or_ancestors_limit {
+                    iter = iter.with_limit(limit);
+                }
+            }
         }
 
         if self.filter_op.is_some() && self.filter_overrides_expanded {
