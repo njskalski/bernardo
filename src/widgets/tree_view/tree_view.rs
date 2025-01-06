@@ -68,8 +68,6 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
     // if set to true, all nodes which lead to non-empty subtrees will appear in view, even if not expanded.
     filter_overrides_expanded: bool,
 
-    cached_size: RefCell<Option<XY>>,
-
     // When we use "match_node_or_ancestors", iterator can take very long time to compute.
     // This is a "quick and dirty fix", that makes sense - if you are using fuzzy search in
     // context bar, it's not like you are going to scroll 50 pages instead of narrowing the
@@ -112,7 +110,6 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
             size_policy: SizePolicy::MATCH_LAYOUT,
             filter_overrides_expanded: false,
 
-            cached_size: RefCell::new(None),
             filter_match_node_or_ancestors_limit: None,
         }
     }
@@ -140,13 +137,11 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
 
     pub fn set_filter_policy(&mut self, filter_policy: FilterPolicy) {
         self.filter_policy = filter_policy;
-        *self.cached_size.borrow_mut() = None;
     }
 
     pub fn with_filter_overrides_expanded(self) -> Self {
         Self {
             filter_overrides_expanded: true,
-            cached_size: RefCell::new(None),
             ..self
         }
     }
@@ -193,8 +188,6 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         } else {
             self.highlighted = 0;
         }
-
-        *self.cached_size.borrow_mut() = None;
     }
 
     pub fn is_expanded(&self, key: &Key) -> bool {
@@ -215,7 +208,6 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
 
     pub fn expand_root(&mut self) {
         self.expanded.insert(self.root_node.id().clone());
-        *self.cached_size.borrow_mut() = None;
     }
 
     pub fn set_selected(&mut self, k: &Key) -> bool {
@@ -355,8 +347,6 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         } else {
             self.expanded.remove(&key);
         }
-
-        *self.cached_size.borrow_mut() = None;
     }
 
     pub fn expand_all_internal_nodes(&mut self) {
@@ -464,12 +454,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
     }
 
     fn full_size(&self) -> XY {
-        // TODO there are two panicking things here
-        if self.cached_size.is_default() {
-            *self.cached_size.borrow_mut() = Some(Self::size_from_items(self.items()));
-        }
-
-        self.cached_size.borrow().unwrap()
+        Self::size_from_items(self.items())
     }
 
     fn size_policy(&self) -> SizePolicy {
