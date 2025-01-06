@@ -516,6 +516,7 @@ impl EditorWidget {
             single_cursor,
             &cursor_set,
             stupid_cursor_op,
+            self.navcomp.is_some(),
             None,
             tree_sitter_highlight.as_ref().map(|c| c.as_str()),
         );

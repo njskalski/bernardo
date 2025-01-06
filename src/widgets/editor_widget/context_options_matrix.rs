@@ -16,27 +16,36 @@ pub fn get_context_options(
     single_cursor: Option<Cursor>,
     multiple_cursors: &CursorSet,
     single_stupid_cursor: Option<StupidCursor>,
+    lsp_available: bool,
     lsp_symbol: Option<&NavCompSymbol>,
     tree_sitter_symbol: Option<&str>,
 ) -> Vec<ContextBarItem> {
     let mut code_results: Vec<ContextBarItem> = Vec::new();
 
-    debug!("hit lsp_symbol, tree_sitter_symbol: {:?} {:?}", &lsp_symbol, &tree_sitter_symbol);
+    debug!(target: "context_matrix", "hit lsp_symbol, tree_sitter_symbol: {:?} {:?}", &lsp_symbol, &tree_sitter_symbol);
 
     // WARNING matches are exclusive, with no passthrough, so don't forget about it
     match (
         state,
+        lsp_available,
         single_cursor,
         multiple_cursors,
         single_stupid_cursor,
         lsp_symbol,
         tree_sitter_symbol,
     ) {
-        (_, Some(_), _, _, _, Some("function")) => {
+        (EditorState::Editing, true, Some(_), _, _, _, Some("function")) => {
             code_results.push(ContextBarItem::GO_TO_DEFINITION);
             code_results.push(ContextBarItem::SHOW_USAGES);
         }
-        (_, Some(_), _, _, _, Some("function.builtin")) => {
+        (EditorState::Editing, true, Some(_), _, _, _, Some("function.builtin")) => {
+            code_results.push(ContextBarItem::GO_TO_DEFINITION);
+            code_results.push(ContextBarItem::SHOW_USAGES);
+        }
+        (EditorState::Editing, true, Some(_), _, _, _, Some("property")) => {
+            code_results.push(ContextBarItem::SHOW_USAGES);
+        }
+        (EditorState::Editing, true, Some(_), _, _, _, Some("type")) => {
             code_results.push(ContextBarItem::GO_TO_DEFINITION);
             code_results.push(ContextBarItem::SHOW_USAGES);
         }
