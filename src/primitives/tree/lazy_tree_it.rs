@@ -15,6 +15,7 @@ pub struct LazyTreeIterator<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<K
     filter_policy: FilterPolicy,
     filter_op: Option<&'a TreeItFilter<Item>>,
     expanded_op: Option<&'a HashSet<Key>>,
+    limit: Option<usize>,
 }
 
 impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> LazyTreeIterator<'a, Key, Item> {
@@ -25,6 +26,7 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> LazyTreeIterator<'
             filter_policy: FilterPolicy::MatchNode,
             filter_op: None,
             expanded_op: None,
+            limit: None,
         }
     }
 
@@ -46,6 +48,13 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> LazyTreeIterator<'
         Self { filter_policy, ..self }
     }
 
+    pub fn with_limit(self, limit: usize) -> Self {
+        Self {
+            limit: Some(limit),
+            ..self
+        }
+    }
+
     fn matches(&self, node: &Item) -> bool {
         if let Some(filter) = self.filter_op.as_ref() {
             filter(node)
@@ -59,6 +68,14 @@ impl<'a, Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Iterator for LazyT
     type Item = (u16, Item);
 
     fn next(&mut self) -> Option<Self::Item> {
+        if let Some(limit) = self.limit.as_mut() {
+            if *limit == 0 {
+                return None;
+            } else {
+                *limit -= 1;
+            }
+        }
+
         if !self.fifo.is_empty() {
             return self.fifo.pop_front();
         };

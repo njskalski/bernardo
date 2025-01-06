@@ -349,15 +349,27 @@ impl MainView {
     }
 
     fn open_fuzzy_search_in_files_and_focus(&mut self) {
-        self.hover = Some(HoverItem::FuzzySearch2(
-            FuzzyFileSearchWidget::new(self.providers.clone(), FileTreeNode::new(self.providers.fsf().root().clone()))
-                .with_on_hit(Box::new(|w| {
-                    let spath = w.get_highlighted().1.spath().clone();
-                    MainViewMsg::OpenFileBySpath { spath }.someboxed()
-                }))
-                .with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()))
-                .with_expanded_root(),
-        ));
+        let mut widget = FuzzyFileSearchWidget::new(self.providers.clone(), FileTreeNode::new(self.providers.fsf().root().clone()))
+            .with_on_hit(Box::new(|w| {
+                let spath = w.get_highlighted().1.spath().clone();
+                MainViewMsg::OpenFileBySpath { spath }.someboxed()
+            }))
+            .with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()))
+            .with_expanded_root();
+
+        if self
+            .providers
+            .config()
+            .fuzzy_file_search_options
+            .filter_match_node_ancestors_limit
+            .is_some()
+        {
+            widget.tree_view_mut().set_filter_match_node_or_ancestors_limit_op(
+                self.providers.config().fuzzy_file_search_options.filter_match_node_ancestors_limit,
+            );
+        }
+
+        self.hover = Some(HoverItem::FuzzySearch2(widget));
         self.set_focus_to_hover();
     }
 
