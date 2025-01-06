@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::fmt::{Debug, Display, Formatter};
-use std::hash::{Hash, Hasher};
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -36,9 +36,9 @@ impl Hash for PathCell {
             // PathPredecessor::FilesystemRoot(f) => state.write_usize(f.0.hash_seed()),
             // PathPredecessor::SPath(s) => s.0.hash(state)
             PathCell::Head(fzf) => fzf.hash(state),
-            PathCell::Segment { prev, cell } => {
+            PathCell::Segment { prev, cell, prev_hash } => {
+                state.write_u64(*prev_hash);
                 cell.hash(state);
-                prev.hash(state)
             }
         }
     }
@@ -47,14 +47,14 @@ impl Hash for PathCell {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PathCell {
     Head(FsfRef),
-    Segment { prev: SPath, cell: PathBuf },
+    Segment { prev: SPath, cell: PathBuf, prev_hash: u64 },
 }
 
 impl PathCell {
     pub fn relative_path(&self) -> PathBuf {
         match &self {
             PathCell::Head(_) => PathBuf::new(),
-            PathCell::Segment { prev, cell } => {
+            PathCell::Segment { prev, cell, .. } => {
                 let mut head = prev.relative_path();
                 head = head.join(cell);
 
@@ -67,7 +67,7 @@ impl PathCell {
     pub fn as_path(&self) -> Option<&Path> {
         match &self {
             PathCell::Head(_) => None,
-            PathCell::Segment { prev: _, cell } => Some(cell),
+            PathCell::Segment { prev: _, cell, .. } => Some(cell),
         }
     }
 
@@ -93,7 +93,11 @@ impl SPath {
         debug_assert!(cell.to_string_lossy() != "..");
         debug_assert!(cell.components().count() == 1);
 
-        SPath(Arc::new(PathCell::Segment { prev, cell }))
+        let mut hasher = DefaultHasher::new();
+        prev.hash(&mut hasher);
+        let prev_hash = hasher.finish();
+
+        SPath(Arc::new(PathCell::Segment { prev, cell, prev_hash }))
     }
 
     pub fn fsf(&self) -> &FsfRef {
@@ -179,7 +183,7 @@ impl SPath {
     pub fn parent_ref(&self) -> Option<&SPath> {
         match self.0.as_ref() {
             PathCell::Head(_) => None,
-            PathCell::Segment { prev, cell: _ } => Some(prev),
+            PathCell::Segment { prev, .. } => Some(prev),
         }
     }
 
@@ -193,7 +197,7 @@ impl SPath {
     pub fn file_name_str(&self) -> Option<&str> {
         match self.0.as_ref() {
             PathCell::Head(_) => None,
-            PathCell::Segment { prev: _, cell } => cell.to_str().or_else(|| {
+            PathCell::Segment { prev: _, cell, .. } => cell.to_str().or_else(|| {
                 warn!("failed casting last item of path {:?}", self);
                 None
             }),
@@ -213,7 +217,7 @@ impl SPath {
                     warn!("failed casting last item of pathbuf. Using hardcoded default.");
                     "<root>".into()
                 }),
-            PathCell::Segment { prev: _, cell } => cell.to_string_lossy().into(),
+            PathCell::Segment { prev: _, cell, .. } => cell.to_string_lossy().into(),
         }
     }
 
