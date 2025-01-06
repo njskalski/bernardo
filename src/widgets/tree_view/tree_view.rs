@@ -19,6 +19,7 @@ use crate::io::keys::{Key, Keycode};
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
 use crate::primitives::helpers;
+use crate::primitives::is_default::IsDefault;
 use crate::primitives::tree::filter_policy::FilterPolicy;
 use crate::primitives::tree::lazy_tree_it::LazyTreeIterator;
 use crate::primitives::tree::tree_it::eager_iterator;
@@ -66,6 +67,8 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
 
     // if set to true, all nodes which lead to non-empty subtrees will appear in view, even if not expanded.
     filter_overrides_expanded: bool,
+
+    cached_size: RefCell<Option<XY>>,
 }
 
 #[derive(Debug)]
@@ -102,6 +105,8 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
             filter_policy: FilterPolicy::MatchNodeOrAncestors,
             size_policy: SizePolicy::MATCH_LAYOUT,
             filter_overrides_expanded: false,
+
+            cached_size: RefCell::new(None),
         }
     }
 
@@ -112,17 +117,20 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         }
     }
 
-    pub fn with_filter_policy(self, filter_policy: FilterPolicy) -> Self {
-        Self { filter_policy, ..self }
+    pub fn with_filter_policy(mut self, filter_policy: FilterPolicy) -> Self {
+        self.set_filter_policy(filter_policy);
+        self
     }
 
     pub fn set_filter_policy(&mut self, filter_policy: FilterPolicy) {
         self.filter_policy = filter_policy;
+        *self.cached_size.borrow_mut() = None;
     }
 
     pub fn with_filter_overrides_expanded(self) -> Self {
         Self {
             filter_overrides_expanded: true,
+            cached_size: RefCell::new(None),
             ..self
         }
     }
@@ -135,12 +143,9 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         self.highlighter_op = highlighter_op;
     }
 
-    pub fn with_filter(self, filter: TreeItFilter<Item>, filter_policy: FilterPolicy) -> Self {
-        Self {
-            filter_op: Some(filter),
-            filter_policy,
-            ..self
-        }
+    pub fn with_filter(mut self, filter: TreeItFilter<Item>, filter_policy: FilterPolicy) -> Self {
+        self.set_filter_op(Some(filter), filter_policy);
+        self
     }
 
     pub fn set_filter_op(&mut self, filter_op: Option<TreeItFilter<Item>>, filter_policy: FilterPolicy) {
@@ -172,6 +177,8 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         } else {
             self.highlighted = 0;
         }
+
+        *self.cached_size.borrow_mut() = None;
     }
 
     pub fn is_expanded(&self, key: &Key) -> bool {
@@ -192,6 +199,7 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
 
     pub fn expand_root(&mut self) {
         self.expanded.insert(self.root_node.id().clone());
+        *self.cached_size.borrow_mut() = None;
     }
 
     pub fn set_selected(&mut self, k: &Key) -> bool {
@@ -213,10 +221,10 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         }
     }
 
-    fn size_from_items(&self) -> XY {
+    fn size_from_items<I: Iterator<Item = (u16, Item)>>(items: I) -> XY {
         let mut size = XY::ONE;
 
-        for item in self.items() {
+        for item in items {
             size = XY::new(
                 // depth * 2 + 2 + label_length. The +2 comes from the fact, that even at 0 depth, we add a triangle AND a space before the
                 // label.
@@ -325,6 +333,8 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         } else {
             self.expanded.remove(&key);
         }
+
+        *self.cached_size.borrow_mut() = None;
     }
 
     pub fn expand_all_internal_nodes(&mut self) {
@@ -432,7 +442,12 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
     }
 
     fn full_size(&self) -> XY {
-        self.size_from_items()
+        // TODO there are two panicking things here
+        if self.cached_size.is_default() {
+            *self.cached_size.borrow_mut() = Some(Self::size_from_items(self.items()));
+        }
+
+        self.cached_size.borrow().unwrap()
     }
 
     fn size_policy(&self) -> SizePolicy {

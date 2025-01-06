@@ -36,9 +36,8 @@ impl Hash for PathCell {
             // PathPredecessor::FilesystemRoot(f) => state.write_usize(f.0.hash_seed()),
             // PathPredecessor::SPath(s) => s.0.hash(state)
             PathCell::Head(fzf) => fzf.hash(state),
-            PathCell::Segment { prev, cell, prev_hash } => {
-                state.write_u64(*prev_hash);
-                cell.hash(state);
+            PathCell::Segment { prev, cell, hash } => {
+                state.write_u64(*hash);
             }
         }
     }
@@ -47,7 +46,7 @@ impl Hash for PathCell {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PathCell {
     Head(FsfRef),
-    Segment { prev: SPath, cell: PathBuf, prev_hash: u64 },
+    Segment { prev: SPath, cell: PathBuf, hash: u64 },
 }
 
 impl PathCell {
@@ -95,9 +94,10 @@ impl SPath {
 
         let mut hasher = DefaultHasher::new();
         prev.hash(&mut hasher);
-        let prev_hash = hasher.finish();
+        segment.as_ref().hash(&mut hasher);
+        let hash = hasher.finish();
 
-        SPath(Arc::new(PathCell::Segment { prev, cell, prev_hash }))
+        SPath(Arc::new(PathCell::Segment { prev, cell, hash }))
     }
 
     pub fn fsf(&self) -> &FsfRef {
