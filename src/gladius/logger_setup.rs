@@ -12,6 +12,7 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     // this is heart and mind of gladius
     ("act_on", log::LevelFilter::Info),
     // I have no clue where it comes from, and I don't care so I suppress it
+    ("context_matrix", log::LevelFilter::Debug),
     ("mio::poll", log::LevelFilter::Error),
     ("bernardo", log::LevelFilter::Info),
     ("bernardo::primitives::tmtheme", log::LevelFilter::Info),
