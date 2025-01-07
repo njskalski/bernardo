@@ -100,7 +100,7 @@ impl Widget for TextWidget {
         let visible_rect = output.visible_rect();
 
         while let Some(line) = line_it.next() {
-            if line_idx >  u16::MAX as usize {
+            if line_idx > u16::MAX as usize {
                 error!("skipping drawing beyond y = u16::MAX");
                 break;
             }
@@ -122,6 +122,5 @@ impl Widget for TextWidget {
             }
             line_idx += 1;
         }
-
     }
 }

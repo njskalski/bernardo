@@ -51,41 +51,6 @@ impl CheckBoxWidget {
     pub fn toggle(&mut self) {
         self.checked = !self.checked;
     }
-
-    fn label_check_size_and_crop(&self, output: &mut dyn crate::io::output::Output) -> Option<TextWidget> {
-        let mut max_size = output.size();
-        max_size.x -= Self::CHECK_SYMBOL_SIZE + 1;
-        let label_size = self.label.full_size();
-        if label_size.x <= max_size.x && label_size.y <= max_size.y {
-            return None;
-        }
-        warn!("Checkbox's label exceeds output. Cropping");
-
-        let label_string = self.label.get_text();
-        let mut lines = Vec::new();
-        let mut current_line = String::new();
-
-        for word in label_string.split_whitespace() {
-            if current_line.len() + word.len() + 1 > max_size.x as usize {
-                // Assuming max_size.y is always non zero
-                lines.push(current_line);
-                current_line = String::new();
-                if lines.len() >= max_size.y as usize {
-                    break;
-                }
-            }
-
-            if !current_line.is_empty() {
-                current_line.push(' ');
-            }
-            current_line.push_str(word);
-        }
-        if !current_line.is_empty() {
-            lines.push(current_line);
-        }
-
-        Some(TextWidget::new(Box::new(lines.join("\n"))))
-    }
 }
 
 impl Widget for CheckBoxWidget {
@@ -142,7 +107,10 @@ impl Widget for CheckBoxWidget {
 
         output.print_at(XY::ZERO, text, &checked_symbol);
 
-        let label_rect = Rect::new(XY::new(Self::CHECK_SYMBOL_SIZE + 1, 0), XY::new(output.size().x - (Self::CHECK_SYMBOL_SIZE + 1), output.size().y));
+        let label_rect = Rect::new(
+            XY::new(Self::CHECK_SYMBOL_SIZE + 1, 0),
+            XY::new(output.size().x - (Self::CHECK_SYMBOL_SIZE + 1), output.size().y),
+        );
         let sub_output = &mut SubOutput::new(output, label_rect);
         self.label.render(label_theme, focused, sub_output);
     }
