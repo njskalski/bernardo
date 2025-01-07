@@ -1,4 +1,7 @@
+use log::error;
+
 use streaming_iterator::StreamingIterator;
+use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
@@ -93,10 +96,32 @@ impl Widget for TextWidget {
 
         let mut line_idx = 0;
         let mut line_it = self.text.lines();
+        let mut x_offset;
+        let visible_rect = output.visible_rect();
 
         while let Some(line) = line_it.next() {
-            output.print_at(XY::new(0, line_idx), text, line); //TODO leaks etc
+            if line_idx >  u16::MAX as usize {
+                error!("skipping drawing beyond y = u16::MAX");
+                break;
+            }
+            if line_idx as u16 >= visible_rect.lower_right().y {
+                break;
+            }
+
+            x_offset = 0;
+            for g in line.graphemes() {
+                if x_offset > u16::MAX as usize {
+                    error!("skipping drawing beyond x = u16::MAX");
+                    break;
+                }
+                if x_offset as u16 >= visible_rect.lower_right().x {
+                    break;
+                }
+                output.print_at(XY::new(x_offset as u16, line_idx as u16), text, g);
+                x_offset += g.width();
+            }
             line_idx += 1;
         }
+
     }
 }
