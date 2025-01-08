@@ -1,3 +1,5 @@
+use std::process::Output;
+
 use log::warn;
 
 use super::text_widget::TextWidget;
@@ -104,7 +106,12 @@ impl Widget for CheckBoxWidget {
         };
 
         output.print_at(XY::ZERO, text, &checked_symbol);
-        let sub_output = &mut SubOutput::new(output, Rect::new(XY::new(Self::CHECK_SYMBOL_SIZE + 1, 0), self.label.text_size()));
+
+        let label_rect = Rect::new(
+            XY::new(Self::CHECK_SYMBOL_SIZE + 1, 0),
+            XY::new(output.size().x - (Self::CHECK_SYMBOL_SIZE + 1), output.size().y),
+        );
+        let sub_output = &mut SubOutput::new(output, label_rect);
         self.label.render(label_theme, focused, sub_output);
     }
 }
