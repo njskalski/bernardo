@@ -581,11 +581,14 @@ impl EditorWidget {
                     debug_assert!(false, "cursor background None for non-None CursorStatus = {:?}", cursor_status)
                 }
             } else {
-                // dropping cursor
                 if is_special_cursor {
+                    style.background = theme.ui.cursors.secondary_anchor_background
+                } else {
                     style.background = theme.ui.cursors.primary_anchor_background
                 }
             }
+        } else if is_special_cursor {
+            style.background = theme.ui.cursors.secondary_anchor_background
         }
 
         if !is_focused {
@@ -889,8 +892,13 @@ impl EditorWidget {
 
         if one_beyond_last_pos < visible_rect.lower_right() {
             let cursor_status = cursor_set_copy.get_cursor_status_for_char(one_beyond_limit);
+            let is_special_cursor: bool = if let EditorState::DroppingCursor { special_cursor } = &self.state {
+                special_cursor.get_cursor_status_for_char(one_beyond_limit) == CursorStatus::UnderCursor
+            } else {
+                false
+            };
 
-            let style = Self::get_cell_style(&theme, cursor_status, is_dropping_cursor, false, focused);
+            let style = Self::get_cell_style(&theme, cursor_status, is_dropping_cursor, is_special_cursor, focused);
 
             output.print_at(one_beyond_last_pos, style, BEYOND);
         }
@@ -1163,7 +1171,7 @@ impl EditorWidget {
 
         if hover_settings.should_draw_above(&visible_rect) {
             debug_assert!(rect_assuming_below.pos >= hover_settings.anchor_in_visible_rect);
-            rect_assuming_below.pos.y -= (rect_assuming_below.size.y + 1);
+            rect_assuming_below.pos.y -= rect_assuming_below.size.y + 1;
         }
 
         let hover_rect = rect_assuming_below;
