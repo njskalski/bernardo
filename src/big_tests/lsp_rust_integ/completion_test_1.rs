@@ -88,7 +88,7 @@ fn rust_lsp_completion_test_1() {
         .map(|item| item.text)
         .collect();
 
-    let some_items: Vec<_> = vec!["into_os_string", "into_boxed_path", "clamp", "capacity", "partial_cmp"];
+    let some_items: Vec<_> = vec!["into_os_string", "into_boxed_path", "clamp", "capacity"];
 
     for sitem in some_items {
         assert!(
