@@ -6,14 +6,15 @@ jobs:
   everything:
     runs-on: ubuntu-latest
     container:
-      image: rust:1.80.0-bookworm
+      image: rust:1-bookworm
     steps:
       - name: install prerequisites
         run: |
           apt-get update
           apt-get install -y curl build-essential gcc make clangd clang nodejs
           rustup component add rustfmt
-          rustup component add rust-analyzer
+          rustup component add rust-analyzer      
+          curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - name: check versions
         run: |
           cargo --version
@@ -25,6 +26,6 @@ jobs:
       - name: build
         run: cargo build
       - name: test
-        run: cargo test
+        run: cargo nextest run --no-fail-fast --retries 4
       - name: check-fmt
         run: cargo fmt --check
