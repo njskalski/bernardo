@@ -17,10 +17,6 @@ fn get_full_setup() -> FullSetup {
 
 #[test]
 fn rust_lsp_completion_test_1() {
-    // if std::env::var("CI").is_ok() {
-    //     return;
-    // }
-
     let mut full_setup = get_full_setup();
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
