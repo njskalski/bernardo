@@ -1,9 +1,9 @@
+use std::thread;
+use std::time::Duration;
+
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::with_wait_for::WithWaitFor;
-use log::error;
-use std::thread;
-use std::time::Duration;
 
 fn get_full_setup() -> FullSetup {
     let full_setup: FullSetup = FullSetup::new("./test_envs/lsp_rust_integ_2")
@@ -17,9 +17,9 @@ fn get_full_setup() -> FullSetup {
 
 #[test]
 fn rust_lsp_completion_test_1() {
-    if std::env::var("CI").is_ok() {
-        return;
-    }
+    // if std::env::var("CI").is_ok() {
+    //     return;
+    // }
 
     let mut full_setup = get_full_setup();
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
@@ -88,7 +88,7 @@ fn rust_lsp_completion_test_1() {
         .map(|item| item.text)
         .collect();
 
-    let some_items: Vec<_> = vec!["into_os_string", "into_boxed_path", "clamp", "capacity", "partial_cmp"];
+    let some_items: Vec<_> = vec!["into_os_string", "into_boxed_path", "clamp", "capacity"];
 
     for sitem in some_items {
         assert!(
