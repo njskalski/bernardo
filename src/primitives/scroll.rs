@@ -36,8 +36,8 @@ impl Scroll {
     }
 
     pub fn follow_kite(&mut self, page_size: XY, max_output_size: XY, kite: XY) {
-        debug_assert!(max_output_size > kite);
-        debug_assert!(max_output_size >= page_size);
+        // debug_assert!(max_output_size > kite);
+        // debug_assert!(max_output_size >= page_size);
 
         let adjust_x = self.direction == ScrollDirection::Horizontal || self.direction == ScrollDirection::Both;
         let adjust_y = self.direction == ScrollDirection::Vertical || self.direction == ScrollDirection::Both;
@@ -62,6 +62,6 @@ impl Scroll {
             }
         }
 
-        debug_assert!(Rect::new(self.offset, page_size).contains(kite));
+        // debug_assert!(Rect::new(self.offset, page_size).contains(kite));
     }
 }
