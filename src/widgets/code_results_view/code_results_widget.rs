@@ -66,26 +66,23 @@ impl CodeResultsView {
         self.label.get_text()
     }
 
-    pub fn get_selected_item(&self) -> &CodeResultAvatarWidget {
+    pub fn get_selected_item(&self) -> Option<&CodeResultAvatarWidget> {
         self.item_list.internal().get_selected_item()
     }
 
-    pub fn get_selected_item_mut(&mut self) -> &mut CodeResultAvatarWidget {
+    pub fn get_selected_item_mut(&mut self) -> Option<&mut CodeResultAvatarWidget> {
         self.item_list.internal_mut().get_selected_item_mut()
     }
 
-    pub fn get_selected_doc_id(&self) -> DocumentIdentifier {
-        // TODO unwrap
-        self.get_selected_item()
-            .get_buffer_ref()
-            .lock()
-            .unwrap()
-            .get_document_identifier()
-            .clone()
+    pub fn get_selected_doc_id(&self) -> Option<DocumentIdentifier> {
+        let selected_item = self.get_selected_item()?;
+        let lock = unpack_or_e!(selected_item.get_buffer_ref().lock(), None, "failed to acquire lock");
+
+        Some(lock.get_document_identifier().clone())
     }
 
     fn on_hit(&self) -> Option<Box<dyn AnyMsg>> {
-        let editor = self.get_selected_item();
+        let editor = self.get_selected_item()?;
         let editor_widget_id = editor.get_editor_widget().id();
         let buffer_lock = editor.get_buffer_ref().lock()?;
         let cursors = buffer_lock.cursors(editor_widget_id);
@@ -174,8 +171,10 @@ impl Widget for CodeResultsView {
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         debug!("{} input {:?}", self.typename(), input_event);
 
+        let has_item = self.item_list.internal().get_selected_item().is_some();
+
         match input_event {
-            InputEvent::KeyInput(key) if key == Keycode::Enter.to_key() => CodeResultsMsg::Hit.someboxed(),
+            InputEvent::KeyInput(key) if has_item && key == Keycode::Enter.to_key() => CodeResultsMsg::Hit.someboxed(),
             _ => None,
         }
     }

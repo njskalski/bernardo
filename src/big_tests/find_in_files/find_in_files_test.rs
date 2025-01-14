@@ -72,3 +72,34 @@ fn find_in_files_opens() {
         .text
         .starts_with("placeat facere possimus, omnis voluptas assumenda"));
 }
+
+#[test]
+fn find_in_files_hit_on_empty_res() {
+    let result = std::panic::catch_unwind(|| {
+        let mut f = common_start();
+
+        assert!(f.send_key(f.config().keyboard_config.global.find_in_files));
+        assert!(f.wait_for(|f| f.get_find_in_files().is_some()));
+        assert!(f.get_find_in_files().unwrap().is_focused());
+
+        f.type_in("rzeszów");
+        f.send_input(Keycode::Enter.to_key().to_input_event());
+        assert!(f.wait_for(|f| f.get_code_results_view().is_some()));
+        f.screenshot();
+        //Below input triggers panic, but in different thread and it's not properly propagated
+        //Issue is that big list doesnt handle hit on empty
+        f.send_input(Keycode::Enter.to_key().to_input_event());
+        assert!(f.wait_for(|f| f.get_code_results_view().is_some()));
+
+        //Below code only ensures that mentioned above thread didn't panic.
+        assert!(f.send_key(f.config().keyboard_config.global.find_in_files));
+        assert!(f.wait_for(|f| f.get_find_in_files().is_some()));
+        assert!(f.get_find_in_files().unwrap().is_focused());
+
+        f.type_in("rzeszów");
+        f.send_input(Keycode::Enter.to_key().to_input_event());
+        assert!(f.wait_for(|f| f.get_code_results_view().is_some()));
+    });
+
+    assert!(result.is_ok(), "Test panicked");
+}
