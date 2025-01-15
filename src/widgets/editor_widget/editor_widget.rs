@@ -349,7 +349,10 @@ impl EditorWidget {
         // TODO test
         // TODO cleanup - now cursor_set is part of buffer, we can move cursor_set_to_rect method there
 
-        let cursor_set = unpack_unit_e!(buffer.text().get_cursor_set(self.wid), "failed to get cursor_set",);
+        let cursor_set = match self.state {
+            EditorState::Editing => unpack_unit_e!(buffer.text().get_cursor_set(self.wid), "failed to get cursor_set",),
+            EditorState::DroppingCursor { special_cursor } => &CursorSet::singleton(special_cursor),
+        };
 
         let cursor_rect = cursor_set_to_rect(cursor_set, buffer);
         match last_move_direction {
@@ -1456,6 +1459,13 @@ impl Widget for EditorWidget {
                             self.state = EditorState::DroppingCursor {
                                 special_cursor: set.as_single().unwrap(),
                             };
+
+                            match cme_to_direction(cem) {
+                                None => {}
+                                Some(direction) => self.update_kite(&buffer, direction),
+                            };
+
+                            self.todo_after_cursor_moved(&buffer);
                             None
                         }
                         (&EditorState::Editing, EditorWidgetMsg::RequestCompletions) => {
