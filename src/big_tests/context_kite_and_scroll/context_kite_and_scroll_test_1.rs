@@ -70,8 +70,6 @@ fn context_kite_and_scroll_test_1() {
 
 #[test]
 fn context_kite_and_scroll_test_2() {
-    //THIS TEST SHOLD BE RUN IN RELEASE
-    //IN DEBUG IT CRASHES ON DEBUG_ASSERTS IN SCROLL
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/context_kite_and_scroll_1")
         .with_files(["long_line.txt"])
         .build();

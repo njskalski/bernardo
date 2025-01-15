@@ -371,7 +371,7 @@ impl<W: Widget> Widget for WithScroll<W> {
         let child_screenspace = Screenspace::new(child_output.child_size_in_its_output, child_visible_rect_in_child_space);
 
         debug_assert!(
-            self.child_widget.kite().x < child_screenspace.visible_rect().max_x(),
+            self.child_widget.kite().x <= child_screenspace.visible_rect().max_x(),
             "kite {} child_screenspace.visible_rect().lower_right() = {}",
             self.child_widget.kite(),
             child_screenspace.visible_rect().lower_right()
@@ -447,8 +447,8 @@ impl<W: Widget> Widget for WithScroll<W> {
             None => OverOutput::new(output, layout_res.child_space_output_size, self.scroll.offset),
         };
 
-        debug_assert!(over_output.visible_rect().lower_right().x > self.child_widget.kite().x);
-        debug_assert!(over_output.visible_rect().lower_right().y > self.child_widget.kite().y);
+        debug_assert!(over_output.visible_rect().lower_right().x >= self.child_widget.kite().x);
+        debug_assert!(over_output.visible_rect().lower_right().y >= self.child_widget.kite().y);
 
         self.child_widget.render(theme, focused, &mut over_output);
     }
