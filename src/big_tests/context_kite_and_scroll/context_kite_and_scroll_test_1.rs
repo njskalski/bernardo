@@ -98,5 +98,5 @@ fn context_kite_and_scroll_test_2() {
     });
 
     full_setup.screenshot();
-    assert!(full_setup.get_first_editor().unwrap().get_visible_cursor_cells().next().is_some());
+    assert!(full_setup.wait_for(|f| {f.get_first_editor().unwrap().get_visible_cursor_cells().next().is_some()}));
 }
