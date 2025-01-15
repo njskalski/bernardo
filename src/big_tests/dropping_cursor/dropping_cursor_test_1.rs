@@ -131,7 +131,12 @@ fn dropping_cursor_scroll_test_2() {
 
     full_setup.screenshot();
     assert!(full_setup.wait_for(|f| {
-        f.get_first_editor().unwrap().get_visible_cursor_line_indices().filter(|idx| {idx.visible_idx == 104}).next().is_some()
+        f.get_first_editor()
+            .unwrap()
+            .get_visible_cursor_line_indices()
+            .filter(|idx| idx.visible_idx == 104)
+            .next()
+            .is_some()
     }));
     full_setup.screenshot();
 }
