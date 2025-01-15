@@ -16,7 +16,7 @@ fn get_full_setup() -> FullSetup {
 }
 
 #[test]
-fn show_usages_integ_test_3() {
+fn show_usages_integ_test_2() {
     if std::env::var("CI").is_ok() {
         return;
     }
