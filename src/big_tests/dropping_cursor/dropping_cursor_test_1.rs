@@ -1,3 +1,5 @@
+use std::os::unix::thread;
+
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::with_wait_for::WithWaitFor;
@@ -98,4 +100,38 @@ fn dropping_cursor_test_1() {
     }));
 
     full_setup.finish();
+}
+
+#[test]
+fn dropping_cursor_scroll_test_2() {
+    let mut full_setup: FullSetup = FullSetup::new("./test_envs/dropping_cursor_test_1")
+        .with_files(["file_to_test_scroll.txt"])
+        .build();
+
+    assert!(full_setup.wait_for(|full_setup| full_setup.is_editor_opened()));
+    assert_eq!(
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .get_visible_cursor_line_indices()
+            .map(|c| c.visible_idx)
+            .collect::<Vec<usize>>(),
+        vec![1]
+    );
+
+    full_setup.send_key(full_setup.config().keyboard_config.editor.enter_cursor_drop_mode);
+    for _ in 0..3 {
+        full_setup.send_key(Keycode::ArrowDown.to_key());
+        full_setup.send_key(Keycode::Enter.to_key());
+    }
+
+    for _ in 0..100 {
+        full_setup.send_key(Keycode::ArrowDown.to_key());
+    }
+
+    full_setup.screenshot();
+    assert!(full_setup.wait_for(|f| {
+        f.get_first_editor().unwrap().get_visible_cursor_line_indices().filter(|idx| {idx.visible_idx == 104}).next().is_some()
+    }));
+    full_setup.screenshot();
 }

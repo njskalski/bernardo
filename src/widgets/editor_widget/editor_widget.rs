@@ -1461,12 +1461,12 @@ impl Widget for EditorWidget {
                                 special_cursor: set.as_single().unwrap(),
                             };
 
-                            match cme_to_direction(cem) {
-                                None => {}
-                                Some(direction) => self.update_kite(&buffer, direction),
-                            };
+                            // match cme_to_direction(cem) {
+                            //     None => {}
+                            //     Some(direction) => self.update_kite(&buffer, direction),
+                            // };
 
-                            self.todo_after_cursor_moved(&buffer);
+                            // self.todo_after_cursor_moved(&buffer);
                             None
                         }
                         (&EditorState::Editing, EditorWidgetMsg::RequestCompletions) => {
