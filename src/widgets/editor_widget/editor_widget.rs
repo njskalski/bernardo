@@ -363,25 +363,25 @@ impl EditorWidget {
                 if self.kite.y > cursor_rect.upper_left().y {
                     self.kite.y = cursor_rect.upper_left().y;
                 }
-                // if self.kite.x > cursor_rect.upper_left().x {
-                //     self.kite.x = cursor_rect.upper_left().x;
-                // }
+                if self.kite.x > cursor_rect.upper_left().x {
+                    self.kite.x = cursor_rect.upper_left().x;
+                }
             }
             Arrow::Down => {
                 if self.kite.y < cursor_rect.lower_right().y {
                     self.kite.y = cursor_rect.lower_right().y;
                 }
-                // if self.kite.x > cursor_rect.upper_left().x {
-                //     self.kite.x = cursor_rect.upper_left().x;
-                // }
+                if self.kite.x > cursor_rect.upper_left().x {
+                    self.kite.x = cursor_rect.upper_left().x;
+                }
             }
             Arrow::Left => {
                 if self.kite.x > cursor_rect.upper_left().x {
                     self.kite.x = cursor_rect.upper_left().x;
                 }
-                // if self.kite.y > cursor_rect.upper_left().y {
-                //     self.kite.y = cursor_rect.upper_left().y;
-                // }
+                if self.kite.y > cursor_rect.upper_left().y {
+                    self.kite.y = cursor_rect.upper_left().y;
+                }
             }
             //When going right at the end of a line, we change cursors y,
             //hence we need to update kite.y. Analogically in Arrow::Left
@@ -389,9 +389,9 @@ impl EditorWidget {
                 if self.kite.x < cursor_rect.lower_right().x {
                     self.kite.x = cursor_rect.lower_right().x;
                 }
-                // if self.kite.y < cursor_rect.lower_right().y {
-                //     self.kite.y = cursor_rect.lower_right().y;
-                // }
+                if self.kite.y < cursor_rect.lower_right().y {
+                    self.kite.y = cursor_rect.lower_right().y;
+                }
             }
         }
     }
