@@ -1,4 +1,5 @@
 use crate::io::keys::Keycode;
+use crate::mocks::editor_interpreter::LineIdxPair;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::with_wait_for::WithWaitFor;
 use crate::primitives::rect::Rect;
@@ -86,17 +87,95 @@ fn context_kite_and_scroll_test_2() {
     );
 
     assert!(full_setup.send_key(Keycode::ArrowRight.to_key().with_ctrl())); //go to the end of long line
-    assert!(full_setup.send_key(Keycode::ArrowDown.to_key())); //go to end of short line
-    full_setup.wait_for(|full_setup| {
-        full_setup
-            .get_first_editor()
+    assert!(full_setup.send_key(Keycode::ArrowLeft.to_key()));
+
+    assert!(full_setup.wait_for(|f| {
+        f.get_first_editor()
             .unwrap()
             .get_visible_cursor_cells()
             .next()
-            .map(|item| item.1.grapheme() == Some(""))
+            .map(|item| item.1.grapheme() == Some("g"))
             .unwrap_or(false)
-    });
+    }));
 
+    assert!(full_setup.send_key(Keycode::ArrowDown.to_key())); //go to end of short line
+
+    assert!(full_setup.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_visible_cursor_cells()
+            .next()
+            .map(|item| item.1.grapheme() == Some("⏎"))
+            .unwrap_or(false)
+    }));
+
+    assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
+    assert!(full_setup.send_key(Keycode::ArrowRight.to_key().with_ctrl()));
+    assert!(full_setup.send_key(Keycode::ArrowLeft.to_key()));
+
+    assert!(full_setup.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_visible_cursor_cells()
+            .next()
+            .map(|item| item.1.grapheme() == Some("g"))
+            .unwrap_or(false)
+    }));
+
+    assert!(full_setup.send_key(Keycode::ArrowUp.to_key()));
+
+    assert!(full_setup.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_visible_cursor_cells()
+            .next()
+            .map(|item| item.1.grapheme() == Some("⏎"))
+            .unwrap_or(false)
+    }));
+}
+
+#[test]
+fn context_kite_and_scroll_test_3() {
+    let mut full_setup: FullSetup = FullSetup::new("./test_envs/context_kite_and_scroll_1")
+        .with_files(["src/main.rs"])
+        .build();
+
+    // let file = spath!(full_setup.fsf(), "src", "main.rs").unwrap();
+
+    assert!(full_setup.wait_for(|f| f.is_editor_opened()));
+
+    assert_eq!(
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .get_visible_cursor_line_indices()
+            .map(|c| c.visible_idx)
+            .collect::<Vec<usize>>(),
+        vec![1]
+    );
+
+    for _ in 0..34 {
+        assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
+    }
+    assert!(full_setup.send_key(Keycode::ArrowRight.to_key().with_ctrl()));
+    assert!(full_setup.send_key(Keycode::ArrowRight.to_key().with_ctrl()));
+    assert!(full_setup.send_key(Keycode::ArrowRight.to_key()));
+    assert!(full_setup.wait_for(|f| {
+        if let Some(LineIdxPair { y: _idx, visible_idx }) = f.get_first_editor().unwrap().get_visible_cursor_line_indices().next() {
+            return visible_idx == 36;
+        }
+        false
+    }));
+
+    for _ in 0..34 {
+        assert!(full_setup.send_key(Keycode::ArrowUp.to_key()));
+    }
+    assert!(full_setup.send_key(Keycode::ArrowLeft.to_key()));
+    assert!(full_setup.wait_for(|f| {
+        if let Some(LineIdxPair { y: _idx, visible_idx }) = f.get_first_editor().unwrap().get_visible_cursor_line_indices().next() {
+            return visible_idx == 1;
+        }
+        false
+    }));
     full_setup.screenshot();
-    assert!(full_setup.wait_for(|f| {f.get_first_editor().unwrap().get_visible_cursor_cells().next().is_some()}));
 }
