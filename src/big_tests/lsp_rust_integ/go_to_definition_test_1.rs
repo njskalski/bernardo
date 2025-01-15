@@ -2,7 +2,7 @@ use std::thread;
 use std::time::Duration;
 
 use crate::io::keys::Keycode;
-use crate::mocks::full_setup::FullSetup;
+use crate::mocks::full_setup::{self, FullSetup};
 use crate::mocks::with_wait_for::WithWaitFor;
 
 fn get_full_setup() -> FullSetup {
@@ -106,4 +106,12 @@ fn go_to_definition_test_1() {
             .find(|line| line.contents.text.contains("pub fn some_function(x: &str) {"))
             .is_some()
     }));
+
+    //Here we test whether scrool follows cursor.
+    full_setup.send_input(Keycode::Enter.to_key().to_input_event());
+
+    assert!(full_setup.wait_for(|f| f.get_code_results_view().is_none()));
+    assert!(full_setup.wait_for(|f| { f.get_first_editor().is_some() }));
+    full_setup.screenshot();
+    assert!(full_setup.wait_for(|f| { f.get_first_editor().unwrap().get_visible_cursor_cells().next().is_some() }));
 }

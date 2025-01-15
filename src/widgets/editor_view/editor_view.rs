@@ -305,9 +305,7 @@ impl EditorView {
     pub fn override_cursor_set(&mut self, cursor_set: CursorSet) -> bool {
         let widget: &mut EditorWidget = self.editor.internal_mut();
         let wid = widget.id();
-        let mut buffer_lock = unpack_or_e!(widget.get_buffer().lock_rw(), false, "failed to lock buffer");
-        let old_cursor_set: &mut CursorSet = unpack_or_e!(buffer_lock.cursors_mut(wid), false, "failed to acquire cursor_set");
-        *old_cursor_set = cursor_set;
+        widget.set_cursors(cursor_set);
 
         true
     }
