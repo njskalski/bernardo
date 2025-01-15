@@ -107,14 +107,11 @@ fn go_to_definition_test_1() {
             .is_some()
     }));
 
-    
     //Here we test whether scrool follows cursor.
     full_setup.send_input(Keycode::Enter.to_key().to_input_event());
 
     assert!(full_setup.wait_for(|f| f.get_code_results_view().is_none()));
     assert!(full_setup.wait_for(|f| { f.get_first_editor().is_some() }));
     full_setup.screenshot();
-    assert!(full_setup.wait_for(|f| {
-        f.get_first_editor().unwrap().get_visible_cursor_cells().next().is_some()
-    }));
+    assert!(full_setup.wait_for(|f| { f.get_first_editor().unwrap().get_visible_cursor_cells().next().is_some() }));
 }

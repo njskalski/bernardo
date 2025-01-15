@@ -57,14 +57,13 @@ fn find_in_files_opens() {
         .text
         .starts_with("placeat facere possimus, omnis voluptas assumenda"));
 
-        f.screenshot();
+    f.screenshot();
 
     // Now perform scroll test
     assert!(f.wait_for(|f| f.is_editor_opened()));
 
     assert_eq!(
-        f
-            .get_first_editor()
+        f.get_first_editor()
             .unwrap()
             .get_visible_cursor_line_indices()
             .map(|c| c.visible_idx)
@@ -77,8 +76,7 @@ fn find_in_files_opens() {
     }
 
     f.wait_for(|f| {
-        f
-            .get_first_editor()
+        f.get_first_editor()
             .unwrap()
             .get_visible_cursor_line_indices()
             .next()
@@ -89,8 +87,7 @@ fn find_in_files_opens() {
     assert!(f.send_key(Keycode::ArrowRight.to_key().with_ctrl()));
 
     f.wait_for(|f| {
-        f
-            .get_first_editor()
+        f.get_first_editor()
             .unwrap()
             .get_visible_cursor_cells()
             .next()
@@ -119,11 +116,7 @@ fn find_in_files_opens() {
     // f.screenshot();
 }
 
-
-
-
-
-// //Using test env from rust integration test 
+// //Using test env from rust integration test
 // fn get_f() -> FullSetup {
 //     let f: FullSetup = FullSetup::new("./test_envs/scroll_code_res_hit_test")
 //         .with_files(["src/main.rs"])
@@ -133,7 +126,6 @@ fn find_in_files_opens() {
 
 //     f
 // }
-
 
 // // assert!(f.send_key(f.config().keyboard_config.global.find_in_files));
 // //     assert!(f.wait_for(|f| f.get_find_in_files().is_some()));
@@ -170,7 +162,6 @@ fn find_in_files_opens() {
 // //             .unwrap_or(false)
 // //     }));
 
-
 // #[test]
 // fn go_to_definition_and_scroll_test() {
 //     if std::env::var("CI").is_ok() {
@@ -188,7 +179,6 @@ fn find_in_files_opens() {
 
 //     assert!(f.wait_for(|f| { f.get_find_in_files().unwrap().query_box().contents().contains("some_function") }));
 //     f.screenshot();
-    
 
 //     f.send_input(Keycode::Enter.to_key().to_input_event());
 
@@ -273,6 +263,5 @@ fn find_in_files_opens() {
 //       .unwrap()
 //       .0;
 //   assert!(!rect.contains(cursor_pos));
-
 
 // }

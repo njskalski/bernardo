@@ -306,7 +306,7 @@ impl EditorView {
         let widget: &mut EditorWidget = self.editor.internal_mut();
         let wid = widget.id();
         widget.set_cursors(cursor_set);
-        
+
         true
     }
 
