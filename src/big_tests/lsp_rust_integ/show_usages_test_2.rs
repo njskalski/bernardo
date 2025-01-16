@@ -88,7 +88,7 @@ fn show_usages_integ_test_2() {
 
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().is_some() }));
 
-    assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().unwrap().editors().len() == 4 }));
+    assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().unwrap().editors().len() == 7 }));
 
     {
         // full_setup.screenshot();
@@ -97,8 +97,9 @@ fn show_usages_integ_test_2() {
 
         assert_eq!(editors[0].get_visible_cursor_lines().map(|line| line.visible_idx).next(), Some(3));
         assert_eq!(editors[1].get_visible_cursor_lines().map(|line| line.visible_idx).next(), Some(8));
-        assert_eq!(editors[2].get_visible_cursor_lines().map(|line| line.visible_idx).next(), Some(12));
-        assert_eq!(editors[3].get_visible_cursor_lines().map(|line| line.visible_idx).next(), Some(1));
+        assert_eq!(editors[2].get_visible_cursor_lines().map(|line| line.visible_idx).next(), Some(9));
+        assert_eq!(editors[3].get_visible_cursor_lines().map(|line| line.visible_idx).next(), Some(10));
+        //...
     }
 
     // we pick a THIRD use
@@ -123,6 +124,6 @@ fn show_usages_integ_test_2() {
             .get_visible_cursor_lines()
             .map(|line| line.visible_idx)
             .collect::<Vec<_>>()
-            == vec![12]
+            == vec![9]
     }));
 }

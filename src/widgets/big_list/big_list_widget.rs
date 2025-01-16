@@ -176,8 +176,17 @@ impl<T: Widget> Widget for BigList<T> {
     }
 
     fn full_size(&self) -> XY {
-        warn!("using completely arbitrary value - expected to be filling the space");
-        XY::new(10, 4) // TODO completely arbitrary
+        let mut size = XY::new(20, 0); // TODO completely width
+
+        for i in &self.items {
+            if let SplitRule::Fixed(f) = i.0 {
+                size.y += f;
+            } else {
+                error!("big should not be used with 'proportional' SplitRule");
+            }
+        }
+
+        size
     }
 
     fn layout(&mut self, screenspace: Screenspace) {

@@ -53,7 +53,7 @@ impl CodeResultsView {
             wid: get_new_widget_id(),
             label: TextWidget::new(Box::new("no description")).with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH),
             item_list: WithScroll::new(
-                ScrollDirection::Horizontal,
+                ScrollDirection::Vertical,
                 BigList::new(vec![]).with_size_policy(SizePolicy::MATCH_LAYOUT),
             ),
             data_provider,
