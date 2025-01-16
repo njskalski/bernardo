@@ -113,11 +113,11 @@ impl Widget for CodeResultAvatarWidget {
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
-        self.complex_get_focused()
+        None
     }
 
     fn get_focused_mut(&mut self) -> Option<&mut dyn Widget> {
-        self.complex_get_focused_mut()
+        None
     }
 }
 

@@ -142,7 +142,7 @@ impl Widget for CodeResultsView {
 
                 let item = CodeResultAvatarWidget::new(edit_view);
 
-                self.item_list.internal_mut().add_item(SplitRule::Fixed(5), item)
+                self.item_list.internal_mut().add_item(5, item)
             }
         } // to drop buffer_register_lock
 

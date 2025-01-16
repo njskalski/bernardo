@@ -136,6 +136,10 @@ impl<'a> EditorInterpreter<'a> {
             .filter(|child_meta| meta.rect.contains_rect(child_meta.rect))
             .collect();
 
+        if editor_widgets.is_empty() {
+            return None;
+        }
+
         assert_eq!(editor_widgets.len(), 1);
         let is_editor_widget_focused = editor_widgets.first().unwrap().focused;
         let rect_without_scroll = editor_widgets.first().unwrap().rect;
