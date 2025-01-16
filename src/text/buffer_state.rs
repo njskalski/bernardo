@@ -30,6 +30,7 @@ use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 use crate::widget::widget::WID;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
 use crate::{unpack_or, unpack_or_e};
+
 /*
 Ok, so I'd like to have multiple views of the same file. We can for a second even think that they
 each have separate set of cursors. They definitely should share history of edits, at least until
@@ -475,7 +476,7 @@ impl BufferState {
 
         let mut lines_iter = self.lines();
         while let Some(line) = lines_iter.next() {
-            size.x = max(size.x, line.width() as u16) // TODO overflow
+            size.x = max(size.x, line.width() as u16 + 1) // TODO overflow
         }
 
         size
