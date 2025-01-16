@@ -6,7 +6,7 @@ use crate::mocks::full_setup::FullSetup;
 use crate::mocks::with_wait_for::WithWaitFor;
 
 fn get_full_setup() -> FullSetup {
-    let full_setup: FullSetup = FullSetup::new("./test_envs/lsp_rust_integ_1")
+    let full_setup: FullSetup = FullSetup::new("./test_envs/lsp_rust_integ_3")
         .with_files(["src/some_other_file.rs"])
         .with_mock_navcomp(false)
         .with_timeout(Duration::from_secs(20))
@@ -16,7 +16,7 @@ fn get_full_setup() -> FullSetup {
 }
 
 #[test]
-fn show_usages_integ_test_1() {
+fn show_usages_integ_test_3() {
     if std::env::var("CI").is_ok() {
         return;
     }

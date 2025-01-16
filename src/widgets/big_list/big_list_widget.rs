@@ -29,7 +29,7 @@ This is list of bigger items, to be paired with scroll.
 pub struct BigList<T: Widget> {
     //TODO I did not add the direction
     wid: WID,
-    items: Vec<(SplitRule, T)>,
+    items: Vec<(u16, T)>,
     item_idx: usize,
 
     last_size: Option<XY>,
@@ -45,7 +45,7 @@ pub struct BigList<T: Widget> {
 impl<T: Widget> BigList<T> {
     pub const TYPENAME: &'static str = "big_list";
 
-    pub fn new(items: Vec<(SplitRule, T)>) -> Self {
+    pub fn new(items: Vec<(u16, T)>) -> Self {
         BigList {
             wid: get_new_widget_id(),
             items,
@@ -92,36 +92,28 @@ impl<T: Widget> BigList<T> {
         )
     }
 
-    pub fn add_item(&mut self, split_rule: SplitRule, item: T) {
+    pub fn add_item(&mut self, height: u16, item: T) {
         if self.items.is_empty() {
             self.update_focus_path()
         }
 
-        self.items.push((split_rule, item));
+        self.items.push((height, item));
     }
 
     fn set_kite(&mut self, going_up: bool) {
-        if let Some(ds) = &self.display_state {
-            let mut rect_op: Option<Rect> = None;
-            let selected_id = self.items[self.item_idx].1.id();
+        let mut y = 0 as u16;
 
-            for wwr in &ds.wwrs {
-                if wwr.widget().get(self).id() == selected_id {
-                    rect_op = Some(wwr.rect().clone());
-                    break;
-                }
-            }
-
-            if let Some(rect) = rect_op {
-                if going_up {
-                    self.kite = rect.upper_left();
-                } else {
-                    self.kite = XY::new(rect.upper_left().x, rect.lower_right().y);
-                }
-            } else {
-                error!("failed to set kite - id {} not found", selected_id);
-            }
+        for i in self.items.iter().take(self.item_idx) {
+            y += i.0;
         }
+
+        if going_up == false {
+            let last_height = self.items[self.item_idx].0;
+            y += if last_height > 0 { last_height - 1 } else { 0 };
+            // size points one character AFTER the avatar, and kite is inclusive.
+        }
+
+        self.kite = XY::new(0, y);
     }
 
     pub fn items(&self) -> impl Iterator<Item = &T> {
@@ -176,8 +168,13 @@ impl<T: Widget> Widget for BigList<T> {
     }
 
     fn full_size(&self) -> XY {
-        warn!("using completely arbitrary value - expected to be filling the space");
-        XY::new(10, 4) // TODO completely arbitrary
+        let mut size = XY::new(20, 0); // TODO completely width
+
+        for i in &self.items {
+            size.y += i.0;
+        }
+
+        size
     }
 
     fn layout(&mut self, screenspace: Screenspace) {
@@ -322,8 +319,8 @@ impl<T: Widget> ComplexWidget for BigList<T> {
             let mut spl = SplitLayout::new(SplitDirection::Vertical);
 
             for idx in 0..self.items.len() {
-                let rule = self.items[idx].0;
-                spl = spl.with(rule, LeafLayout::new(self.get_item_widget_ptr(idx)).boxed());
+                let height = self.items[idx].0;
+                spl = spl.with(SplitRule::Fixed(height), LeafLayout::new(self.get_item_widget_ptr(idx)).boxed());
             }
 
             spl.boxed()

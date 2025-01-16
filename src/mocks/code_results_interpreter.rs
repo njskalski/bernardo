@@ -23,6 +23,8 @@ impl<'a> CodeResultsViewInterpreter<'a> {
 
         let editors: Vec<EditorInterpreter<'a>> = editors_meta
             .into_iter()
+            // filtering out incomplete editors
+            .filter(|c| c.rect.size.y >= 4)
             .map(|editor_meta| EditorInterpreter::new(output, editor_meta).unwrap())
             .collect();
 
