@@ -1,5 +1,6 @@
 use log::{debug, warn};
 
+use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
@@ -51,17 +52,17 @@ pub struct FindInFilesWidget {
 impl FindInFilesWidget {
     const DEFAULT_SIZE: XY = XY::new(50, 10);
 
-    pub fn new(root: SPath) -> Self {
+    pub fn new(root: SPath, config: ConfigRef) -> Self {
         FindInFilesWidget {
             wid: get_new_widget_id(),
             root,
             label: TextWidget::new(Box::new("Search in files:")),
             query_box_label: TextWidget::new(Box::new("What:")),
-            query_box: EditBoxWidget::default()
+            query_box: EditBoxWidget::new(config.clone())
                 .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
                 .with_on_hit(Box::new(|_| Msg::Hit.someboxed())),
             filter_box_label: TextWidget::new(Box::new("Where:")),
-            filter_box: EditBoxWidget::default().with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH),
+            filter_box: EditBoxWidget::new(config).with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH),
             search_button: ButtonWidget::new(Box::new("Search")).with_on_hit(Box::new(|_| Msg::Hit.someboxed())),
             cancel_button: ButtonWidget::new(Box::new("Cancel")).with_on_hit(Box::new(|_| Msg::Cancel.someboxed())),
             display_state: None,

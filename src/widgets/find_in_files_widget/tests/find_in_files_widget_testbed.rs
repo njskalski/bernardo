@@ -32,7 +32,7 @@ impl FindInFilesWidgetTestbedBuilder {
         let (output, recv) = MockOutput::new(size, false, build_result.providers.theme().clone());
 
         FindInFilesWidgetTestbed {
-            widget: FindInFilesWidget::new(self.additional_data.root.clone())
+            widget: FindInFilesWidget::new(self.additional_data.root.clone(), build_result.providers.config().clone())
                 .with_on_cancel(Some(Box::new(|_| Msg::Cancel.someboxed())))
                 .with_on_hit(Some(Box::new(|widget| {
                     Msg::Query(widget.get_query(), widget.get_filter()).someboxed()

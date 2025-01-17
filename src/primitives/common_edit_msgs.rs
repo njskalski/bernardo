@@ -5,6 +5,7 @@ use log::{error, warn};
 use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::config::config::{CommonEditMsgKeybindings, ConfigRef};
 use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::clipboard::ClipboardRef;
@@ -124,7 +125,7 @@ impl CommonEditMsg {
 }
 
 // This is where the mapping of keys to Msgs is
-pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
+pub fn key_to_edit_msg(key: Key, keybindings: &CommonEditMsgKeybindings) -> Option<CommonEditMsg> {
     match key {
         Key { keycode, modifiers } => {
             match keycode {

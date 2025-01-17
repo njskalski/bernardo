@@ -88,11 +88,11 @@ impl EditorView {
         let find_label = TextWidget::new(Box::new(PATTERN));
         let replace_label = TextWidget::new(Box::new(REPLACE));
 
-        let find_box = EditBoxWidget::new()
+        let find_box = EditBoxWidget::new(providers.config().clone())
             .with_on_hit(Box::new(|_| EditorViewMsg::FindHit.someboxed()))
             .with_clipboard(providers.clipboard().clone())
             .with_size_policy(SizePolicy::MATCH_LAYOUT);
-        let replace_box = EditBoxWidget::new()
+        let replace_box = EditBoxWidget::new(providers.config().clone())
             .with_on_hit(Box::new(|_| EditorViewMsg::ReplaceHit.someboxed()))
             .with_clipboard(providers.clipboard().clone())
             .with_size_policy(SizePolicy::MATCH_LAYOUT);
@@ -185,7 +185,7 @@ impl EditorView {
             }
         }
 
-        let save_file_dialog = SaveFileDialogWidget::new(self.providers.fsf().clone())
+        let save_file_dialog = SaveFileDialogWidget::new(self.providers.fsf().clone(), self.providers.config().clone())
             .with_on_cancel(Box::new(|_| EditorViewMsg::OnSaveAsCancel.someboxed()))
             .with_on_save(Box::new(|_, ff| EditorViewMsg::OnSaveAsHit { ff }.someboxed()))
             .with_path(self.get_save_file_dialog_path(buffer));

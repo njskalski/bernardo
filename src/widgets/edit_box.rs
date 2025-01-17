@@ -2,6 +2,7 @@ use log::{debug, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::clipboard::ClipboardRef;
@@ -41,6 +42,7 @@ pub struct EditBoxWidget {
     last_size_x: Option<u16>,
 
     size_policy: SizePolicy,
+    config: ConfigRef
 }
 
 impl EditBoxWidget {
@@ -48,7 +50,7 @@ impl EditBoxWidget {
 
     pub const TYPENAME: &'static str = "edit_box";
 
-    pub fn new() -> Self {
+    pub fn new(config: ConfigRef) -> Self {
         let widget_id = get_new_widget_id();
         let mut buffer = BufferState::simplified_single_line();
         buffer.initialize_for_widget(widget_id, None);
@@ -65,6 +67,7 @@ impl EditBoxWidget {
             last_size_x: None,
             min_width_op: None,
             size_policy: SizePolicy::SELF_DETERMINED,
+            config
         };
 
         res
@@ -220,7 +223,7 @@ impl Widget for EditBoxWidget {
                 if key_event.keycode == Keycode::Enter {
                     Some(Box::new(EditBoxWidgetMsg::Hit))
                 } else {
-                    match key_to_edit_msg(key_event) {
+                    match key_to_edit_msg(key_event, &self.config.keyboard_config.edit_msgs) {
                         Some(cem) => match cem {
                             // the 4 cases below are designed to NOT consume the event in case it cannot be used.
                             CommonEditMsg::CursorUp { selecting: _ } | CommonEditMsg::CursorDown { selecting: _ } => None,
@@ -338,9 +341,3 @@ pub enum EditBoxWidgetMsg {
 }
 
 impl AnyMsg for EditBoxWidgetMsg {}
-
-impl Default for EditBoxWidget {
-    fn default() -> Self {
-        EditBoxWidget::new()
-    }
-}
