@@ -140,11 +140,6 @@ pub fn key_to_edit_msg(key: Key, keybindings: &CommonEditMsgKeybindings) -> Opti
     if key == keybindings.redo {
         return Some(CommonEditMsg::Redo);
     }
-    if let Keycode::Char(c) = key.keycode {
-        if modifiers.is_empty() || modifiers.just_shift() {
-            return Some(CommonEditMsg::Char(c));
-        }
-    }
     if key == keybindings.cursor_up {
         return Some(CommonEditMsg::CursorUp {
             selecting: modifiers.shift,
@@ -155,27 +150,25 @@ pub fn key_to_edit_msg(key: Key, keybindings: &CommonEditMsgKeybindings) -> Opti
             selecting: modifiers.shift,
         });
     }
-    if key.keycode == keybindings.cursor_left.keycode {
-        if modifiers.ctrl {
-            return Some(CommonEditMsg::WordBegin {
-                selecting: modifiers.shift,
-            });
-        } else {
-            return Some(CommonEditMsg::CursorLeft {
-                selecting: modifiers.shift,
-            });
-        }
+    if key == keybindings.cursor_left {
+        return Some(CommonEditMsg::CursorLeft {
+            selecting: modifiers.shift,
+        });
     }
-    if key.keycode == keybindings.cursor_right.keycode {
-        if modifiers.ctrl {
-            return Some(CommonEditMsg::WordEnd {
-                selecting: modifiers.shift,
-            });
-        } else {
-            return Some(CommonEditMsg::CursorRight {
-                selecting: modifiers.shift,
-            });
-        }
+    if key == keybindings.word_begin {
+        return Some(CommonEditMsg::WordBegin {
+            selecting: modifiers.shift,
+        });
+    }
+    if key == keybindings.cursor_right {
+        return Some(CommonEditMsg::CursorRight {
+            selecting: modifiers.shift,
+        });
+    }
+    if key == keybindings.word_end {
+        return Some(CommonEditMsg::WordEnd {
+            selecting: modifiers.shift,
+        });
     }
     if key.keycode == Keycode::Enter {
         return Some(CommonEditMsg::Char('\n'));
@@ -186,7 +179,7 @@ pub fn key_to_edit_msg(key: Key, keybindings: &CommonEditMsgKeybindings) -> Opti
     if key == keybindings.backspace {
         return Some(CommonEditMsg::Backspace);
     }
-    if key == keybindings.line_begin {
+    if key == keybindings.line_begin || key.keycode == keybindings.home.keycode {
         return Some(CommonEditMsg::LineBegin {
             selecting: modifiers.shift,
         });
@@ -206,21 +199,19 @@ pub fn key_to_edit_msg(key: Key, keybindings: &CommonEditMsgKeybindings) -> Opti
             selecting: modifiers.shift,
         });
     }
-    if key.keycode == keybindings.tab.keycode {
-        if !modifiers.shift {
-            return Some(CommonEditMsg::Tab);
-        } else {
-            return Some(CommonEditMsg::ShiftTab);
-        }
+    if key == keybindings.tab {
+        return Some(CommonEditMsg::Tab);
+    }
+    if key == keybindings.shift_tab {
+        return Some(CommonEditMsg::ShiftTab);
     }
     if key == keybindings.delete {
         return Some(CommonEditMsg::Delete);
     }
-
-    if key.keycode == Keycode::Home {
-        return Some(CommonEditMsg::LineBegin {
-            selecting: key.modifiers.shift,
-        });
+    if let Keycode::Char(c) = key.keycode {
+        if modifiers.is_empty() || modifiers.just_shift() {
+            return Some(CommonEditMsg::Char(c));
+        }
     }
 
     None

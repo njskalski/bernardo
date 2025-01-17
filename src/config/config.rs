@@ -171,6 +171,8 @@ pub struct CommonEditMsgKeybindings {
 
     pub tab: Key,
     pub shift_tab: Key,
+
+    pub home: Key,
 }
 
 impl Default for CommonEditMsgKeybindings {
@@ -184,8 +186,8 @@ impl Default for CommonEditMsgKeybindings {
             backspace: Keycode::Backspace.to_key(),
             line_begin: Keycode::Home.to_key(),
             line_end: Keycode::End.to_key(),
-            word_begin: Keycode::ArrowLeft.to_key(),
-            word_end: Keycode::ArrowRight.to_key(),
+            word_begin: Keycode::ArrowLeft.to_key().with_ctrl(),
+            word_end: Keycode::ArrowRight.to_key().with_ctrl(),
             page_up: Keycode::PageUp.to_key(),
             page_down: Keycode::PageDown.to_key(),
             delete: Keycode::Delete.to_key(),
@@ -195,6 +197,7 @@ impl Default for CommonEditMsgKeybindings {
             redo: Keycode::Char('y').to_key().with_ctrl(),
             tab: Keycode::Tab.to_key(),
             shift_tab: Keycode::Tab.to_key().with_shift(),
+            home: Keycode::Home.to_key(),
         }
     }
 }
