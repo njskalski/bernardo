@@ -42,7 +42,7 @@ pub struct EditBoxWidget {
     last_size_x: Option<u16>,
 
     size_policy: SizePolicy,
-    config: ConfigRef
+    config: ConfigRef,
 }
 
 impl EditBoxWidget {
@@ -67,7 +67,7 @@ impl EditBoxWidget {
             last_size_x: None,
             min_width_op: None,
             size_policy: SizePolicy::SELF_DETERMINED,
-            config
+            config,
         };
 
         res

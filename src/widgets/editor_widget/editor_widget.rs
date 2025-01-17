@@ -1362,7 +1362,9 @@ impl Widget for EditorWidget {
                 EditorWidgetMsg::Reformat.someboxed()
             }
             // TODO change to if let Some() when it's stabilized
-            (&EditorState::DroppingCursor { .. }, None, InputEvent::KeyInput(key)) if key_to_edit_msg(key, edit_msgs_keybindings).is_some() => {
+            (&EditorState::DroppingCursor { .. }, None, InputEvent::KeyInput(key))
+                if key_to_edit_msg(key, edit_msgs_keybindings).is_some() =>
+            {
                 let cem = key_to_edit_msg(key, edit_msgs_keybindings).unwrap();
                 if !cem.is_editing() {
                     EditorWidgetMsg::DropCursorMove { cem }.someboxed()

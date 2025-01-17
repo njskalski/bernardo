@@ -68,7 +68,7 @@ pub struct KeyboardConfig {
     pub file_tree: FileTree,
 
     #[serde(default)]
-    pub edit_msgs: CommonEditMsgKeybindings
+    pub edit_msgs: CommonEditMsgKeybindings,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -176,7 +176,7 @@ pub struct CommonEditMsgKeybindings {
 impl Default for CommonEditMsgKeybindings {
     fn default() -> Self {
         Self {
-            char: Keycode::Char('*').to_key(), 
+            char: Keycode::Char('*').to_key(),
             cursor_up: Keycode::ArrowUp.to_key(),
             cursor_down: Keycode::ArrowDown.to_key(),
             cursor_left: Keycode::ArrowLeft.to_key(),
@@ -184,21 +184,20 @@ impl Default for CommonEditMsgKeybindings {
             backspace: Keycode::Backspace.to_key(),
             line_begin: Keycode::Home.to_key(),
             line_end: Keycode::End.to_key(),
-            word_begin: Keycode::ArrowLeft.to_key(), 
-            word_end: Keycode::ArrowRight.to_key(), 
+            word_begin: Keycode::ArrowLeft.to_key(),
+            word_end: Keycode::ArrowRight.to_key(),
             page_up: Keycode::PageUp.to_key(),
             page_down: Keycode::PageDown.to_key(),
             delete: Keycode::Delete.to_key(),
-            copy: Keycode::Char('c').to_key().with_ctrl(), 
+            copy: Keycode::Char('c').to_key().with_ctrl(),
             paste: Keycode::Char('v').to_key().with_ctrl(),
             undo: Keycode::Char('z').to_key().with_ctrl(),
-            redo: Keycode::Char('y').to_key().with_ctrl(), 
+            redo: Keycode::Char('y').to_key().with_ctrl(),
             tab: Keycode::Tab.to_key(),
             shift_tab: Keycode::Tab.to_key().with_shift(),
         }
     }
 }
-
 
 pub type ConfigRef = Arc<Config>;
 
