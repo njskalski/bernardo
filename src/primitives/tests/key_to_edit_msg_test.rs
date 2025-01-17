@@ -66,7 +66,7 @@ fn test_random_keybindings() {
             assert_eq!(key_to_edit_msg(key, &keybindings), Some(CommonEditMsg::Backspace));
         } else if key == keybindings.delete {
             assert_eq!(key_to_edit_msg(key, &keybindings), Some(CommonEditMsg::Delete));
-        } else if key == keybindings.line_begin || key == keybindings.home {
+        } else if key == keybindings.line_begin || key.keycode == keybindings.home.keycode {
             assert_eq!(
                 key_to_edit_msg(key, &keybindings),
                 Some(CommonEditMsg::LineBegin {
