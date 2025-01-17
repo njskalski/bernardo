@@ -155,7 +155,7 @@ pub fn key_to_edit_msg(key: Key, keybindings: &CommonEditMsgKeybindings) -> Opti
             selecting: modifiers.shift,
         });
     }
-    if key == keybindings.cursor_left {
+    if key.keycode == keybindings.cursor_left.keycode {
         if modifiers.ctrl {
             return Some(CommonEditMsg::WordBegin {
                 selecting: modifiers.shift,
@@ -166,7 +166,7 @@ pub fn key_to_edit_msg(key: Key, keybindings: &CommonEditMsgKeybindings) -> Opti
             });
         }
     }
-    if key == keybindings.cursor_right {
+    if key.keycode == keybindings.cursor_right.keycode {
         if modifiers.ctrl {
             return Some(CommonEditMsg::WordEnd {
                 selecting: modifiers.shift,
@@ -206,7 +206,7 @@ pub fn key_to_edit_msg(key: Key, keybindings: &CommonEditMsgKeybindings) -> Opti
             selecting: modifiers.shift,
         });
     }
-    if key == keybindings.tab {
+    if key.keycode == keybindings.tab.keycode {
         if !modifiers.shift {
             return Some(CommonEditMsg::Tab);
         } else {
