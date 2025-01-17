@@ -217,6 +217,12 @@ pub fn key_to_edit_msg(key: Key, keybindings: &CommonEditMsgKeybindings) -> Opti
         return Some(CommonEditMsg::Delete);
     }
 
+    if key.keycode == Keycode::Home {
+        return Some(CommonEditMsg::LineBegin {
+            selecting: key.modifiers.shift,
+        });
+    }
+
     None
 }
 
