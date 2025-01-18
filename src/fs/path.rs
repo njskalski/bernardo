@@ -9,6 +9,7 @@ use log::{debug, error, warn};
 use ropey::Rope;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use smallvec::{smallvec, SmallVec};
 use streaming_iterator::StreamingIterator;
 use url::Url;
 
@@ -460,14 +461,77 @@ impl Debug for SPath {
     }
 }
 
+fn compare_two_paths(mut first: &SPath, mut second: &SPath) -> Ordering {
+    match (first.0.as_ref(), second.0.as_ref()) {
+        (PathCell::Head(_), PathCell::Head(_)) => {
+            return Ordering::Equal;
+        }
+        (PathCell::Head(_), PathCell::Segment { .. }) => {
+            return Ordering::Less;
+        }
+        (PathCell::Segment { .. }, PathCell::Head(_)) => {
+            return Ordering::Greater;
+        }
+        (
+            PathCell::Segment {
+                prev: prev1, cell: cell1, ..
+            },
+            PathCell::Segment {
+                prev: prev2, cell: cell2, ..
+            },
+        ) => {
+            // lucky strike
+            if std::ptr::eq(prev1, prev2) {
+                return cell1.cmp(cell2);
+            }
+        }
+    }
+
+    // unlucky, we compare everything now
+    let mut first_cells: SmallVec<[&PathBuf; 20]> = smallvec![];
+    let mut second_cells: SmallVec<[&PathBuf; 20]> = smallvec![];
+
+    while let PathCell::Segment { prev, cell, hash } = first.0.as_ref() {
+        first_cells.push(cell);
+        first = prev;
+    }
+
+    while let PathCell::Segment { prev, cell, hash } = second.0.as_ref() {
+        second_cells.push(cell);
+        second = prev;
+    }
+
+    let mut first_rev_iter = first_cells.iter().rev();
+    let mut second_rev_iter = second_cells.iter().rev();
+
+    loop {
+        match (first_rev_iter.next(), second_rev_iter.next()) {
+            (Some(first_item), Some(second_item)) => {
+                let ordering = first_item.cmp(second_item);
+                if ordering != Ordering::Equal {
+                    return ordering;
+                }
+            }
+            (None, Some(_)) => {
+                return Ordering::Less;
+            }
+            (Some(_), None) => {
+                return Ordering::Greater;
+            }
+            (None, None) => {
+                return Ordering::Equal;
+            }
+        }
+    }
+}
+
 impl PartialOrd<Self> for SPath {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if self.0 == other.0 {
             return Some(Ordering::Equal);
         }
 
-        // probably in after profiling I will decide to optimise here
-        self.absolute_path().partial_cmp(&other.absolute_path())
+        Some(compare_two_paths(self, other))
     }
 }
 
@@ -477,8 +541,7 @@ impl Ord for SPath {
             return Ordering::Equal;
         }
 
-        // probably in after profiling I will decide to optimise here
-        self.absolute_path().cmp(&other.absolute_path())
+        compare_two_paths(self, other)
     }
 }
 

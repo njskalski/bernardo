@@ -357,18 +357,6 @@ impl MainView {
             .with_on_close(Box::new(|_| MainViewMsg::CloseHover.someboxed()))
             .with_expanded_root();
 
-        if self
-            .providers
-            .config()
-            .fuzzy_file_search_options
-            .filter_match_node_ancestors_limit
-            .is_some()
-        {
-            widget.tree_view_mut().set_filter_match_node_or_ancestors_limit_op(
-                self.providers.config().fuzzy_file_search_options.filter_match_node_ancestors_limit,
-            );
-        }
-
         self.hover = Some(HoverItem::FuzzySearch2(widget));
         self.set_focus_to_hover();
     }

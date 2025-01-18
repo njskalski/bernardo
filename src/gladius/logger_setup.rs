@@ -11,6 +11,9 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     ("globset", log::LevelFilter::Info),
     // this is heart and mind of gladius
     ("act_on", log::LevelFilter::Info),
+    // ("lazy_tree_iter", log::LevelFilter::Debug),
+    // ("fsf_ref", log::LevelFilter::Debug),
+    // ("fsf", log::LevelFilter::Debug),
     // I have no clue where it comes from, and I don't care so I suppress it
     ("context_matrix", log::LevelFilter::Debug),
     ("mio::poll", log::LevelFilter::Error),

@@ -1,10 +1,13 @@
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::fmt::Debug;
 
-use log::error;
-
+use crate::fs::fsf_async_tree_iter::FsAsyncTreeIt;
 use crate::fs::path::SPath;
-use crate::primitives::tree::tree_node::TreeNode;
+use crate::primitives::tree::filter_policy::FilterPolicy;
+use crate::primitives::tree::tree_node::{FilterRef, TreeItFilter, TreeNode};
+use crate::promise::streaming_promise::StreamingPromise;
+use log::error;
 
 #[derive(Debug, Clone)]
 pub struct DirTreeNode {
@@ -53,7 +56,7 @@ impl TreeNode<SPath> for FileTreeNode {
         match self.sp.blocking_list() {
             Ok(items) => Box::new(items.into_iter().map(FileTreeNode::new)) as Box<dyn Iterator<Item = Self>>,
             Err(e) => {
-                error!("fail to call blocking_list {:?}", e);
+                error!("fail to call blocking_list for {:?} because {:?}", self, e);
                 Box::new(std::iter::empty()) as Box<dyn Iterator<Item = Self>>
             }
         }
@@ -61,6 +64,15 @@ impl TreeNode<SPath> for FileTreeNode {
 
     fn is_complete(&self) -> bool {
         true //TODO
+    }
+
+    fn get_streaming_promise_instead_of_iterator(
+        &self,
+        filter_op: Option<(FilterRef<FileTreeNode>, FilterPolicy)>,
+        expanded_op: Option<HashSet<SPath>>,
+    ) -> Option<Box<dyn StreamingPromise<(u16, Self)>>> {
+        Some(Box::new(FsAsyncTreeIt::new(self.clone(), filter_op, expanded_op)))
+        // TODO add expanded
     }
 }
 
@@ -81,7 +93,7 @@ impl TreeNode<SPath> for DirTreeNode {
         match self.sp.blocking_list() {
             Ok(items) => Box::new(items.into_iter().filter(|c| c.is_dir()).map(DirTreeNode::new)) as Box<dyn Iterator<Item = Self>>,
             Err(e) => {
-                error!("fail to call blocking_list {:?}", e);
+                error!("fail to call blocking_list for {:?} because {:?}", self, e);
                 Box::new(std::iter::empty()) as Box<dyn Iterator<Item = Self>>
             }
         }

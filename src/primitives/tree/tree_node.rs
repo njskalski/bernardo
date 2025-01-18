@@ -1,9 +1,11 @@
+use crate::io::keys;
+use crate::primitives::tree::filter_policy::FilterPolicy;
+use crate::promise::streaming_promise::StreamingPromise;
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
-
-use crate::io::keys;
-use crate::primitives::maybe_bool::MaybeBool;
+use std::sync::Arc;
 
 // Keep it lightweight. It is expected to be implemented by Rc<some type>
 pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {
@@ -19,45 +21,6 @@ pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {
 
     fn is_complete(&self) -> bool;
 
-    fn matching_self(&self, filter: &TreeItFilter<Self>) -> bool {
-        filter(self)
-    }
-
-    /*
-    the answer is true, false, or "we don't know yet"
-     */
-    fn matching_self_or_children(&self, filter: &TreeItFilter<Self>, max_depth: Option<usize>) -> MaybeBool {
-        if filter(self) {
-            return MaybeBool::True;
-        }
-
-        if self.is_leaf() {
-            return MaybeBool::False;
-        }
-
-        if max_depth == Some(0) {
-            return MaybeBool::Maybe;
-        }
-
-        let mut any_chance = self.is_complete();
-        for i in self.child_iter() {
-            match i.matching_self_or_children(filter, max_depth.map(|i| if i > 0 { i - 1 } else { 0 })) {
-                MaybeBool::True => return MaybeBool::True,
-                MaybeBool::Maybe => {
-                    any_chance = true;
-                    // do not add break, we're still hunting for true
-                }
-                _ => {}
-            }
-        }
-
-        if any_chance {
-            MaybeBool::Maybe
-        } else {
-            MaybeBool::False
-        }
-    }
-
     fn is_single_subtree(&self) -> bool {
         if self.is_leaf() {
             return false;
@@ -71,9 +34,41 @@ pub trait TreeNode<Key: Hash + Eq + Debug>: Clone + Debug {
 
         true
     }
+
+    fn get_streaming_promise_instead_of_iterator(
+        &self,
+        filter_op: Option<(FilterRef<Self>, FilterPolicy)>,
+        expanded_op: Option<HashSet<Key>>,
+    ) -> Option<Box<dyn StreamingPromise<(u16, Self)>>> {
+        None
+    }
 }
 
-pub type TreeItFilter<Node> = Box<dyn Fn(&Node) -> bool>;
+pub trait TreeItFilter<Node>: Send + Sync + 'static {
+    fn call(&self, node: &Node) -> bool;
 
-// pub type TreeItFilter<Key: Hash, Node: TreeViewNode<Key>> = fn(&Node) -> bool;
-// pub trait TreeItFilter<Key: Hash + Eq + Debug, Node: TreeViewNode<Key>>: Fn(&Node) -> bool {}
+    fn arc_box(self) -> Arc<Box<dyn TreeItFilter<Node> + Send + Sync + 'static>>
+    where
+        Self: Sized,
+    {
+        Arc::new(Box::new(self))
+    }
+}
+
+pub struct ClosureFilter<Node> {
+    function: Box<dyn for<'a> Fn(&'a Node) -> bool + Send + Sync + 'static>,
+}
+
+impl<Node> ClosureFilter<Node> {
+    pub fn new<F: for<'a> Fn(&'a Node) -> bool + Send + Sync + 'static>(f: F) -> Self {
+        ClosureFilter { function: Box::new(f) }
+    }
+}
+
+impl<Node: 'static> TreeItFilter<Node> for ClosureFilter<Node> {
+    fn call(&self, node: &Node) -> bool {
+        (self.function)(node)
+    }
+}
+
+pub type FilterRef<Node> = Arc<Box<dyn TreeItFilter<Node> + Send + Sync + 'static>>;

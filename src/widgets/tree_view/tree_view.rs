@@ -1,5 +1,3 @@
-use flexi_logger::AdaptiveFormat::Default;
-use log::{debug, error, warn};
 use std::borrow::Cow;
 use std::cell::{BorrowMutError, Ref, RefCell, RefMut};
 use std::collections::{HashMap, HashSet};
@@ -7,7 +5,10 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::iter;
 use std::ops::DerefMut;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+
+use flexi_logger::AdaptiveFormat::Default;
+use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -18,13 +19,15 @@ use crate::io::keys;
 use crate::io::keys::{Key, Keycode};
 use crate::io::output::Output;
 use crate::primitives::arrow::Arrow;
+use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::helpers;
 use crate::primitives::is_default::IsDefault;
 use crate::primitives::tree::filter_policy::FilterPolicy;
 use crate::primitives::tree::lazy_tree_it::LazyTreeIterator;
 use crate::primitives::tree::tree_it::eager_iterator;
-use crate::primitives::tree::tree_node::{TreeItFilter, TreeNode};
+use crate::primitives::tree::tree_node::{FilterRef, TreeItFilter, TreeNode};
 use crate::primitives::xy::XY;
+use crate::promise::streaming_promise::StreamingPromise;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WidgetActionParam, WID};
@@ -34,7 +37,6 @@ pub const TYPENAME: &str = "tree_view";
 
 // expectation is that these are sorted
 pub type LabelHighlighter = Box<dyn Fn(&str) -> Vec<usize>>;
-
 // Keys are unique
 
 pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
@@ -59,7 +61,7 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
     // This will highlight letters given their indices. Use to do "fuzzy search" in tree.
     highlighter_op: Option<LabelHighlighter>,
     // This is a filter that will be applied to decide which items to show or not.
-    filter_op: Option<TreeItFilter<Item>>,
+    filter_op: Option<Arc<Box<dyn TreeItFilter<Item> + Send + Sync + 'static>>>,
 
     filter_policy: FilterPolicy,
 
@@ -68,11 +70,7 @@ pub struct TreeViewWidget<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> {
     // if set to true, all nodes which lead to non-empty subtrees will appear in view, even if not expanded.
     filter_overrides_expanded: bool,
 
-    // When we use "match_node_or_ancestors", iterator can take very long time to compute.
-    // This is a "quick and dirty fix", that makes sense - if you are using fuzzy search in
-    // context bar, it's not like you are going to scroll 50 pages instead of narrowing the
-    // search criteria further.
-    filter_match_node_or_ancestors_limit: Option<usize>,
+    promise: Option<Box<dyn StreamingPromise<(u16, Item)>>>,
 }
 
 #[derive(Debug)]
@@ -92,7 +90,7 @@ Warranties:
  */
 impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> TreeViewWidget<Key, Item> {
     pub fn new(root_node: Item) -> Self {
-        Self {
+        let mut res = Self {
             id: get_new_widget_id(),
             root_node,
             expanded: HashSet::new(),
@@ -110,8 +108,12 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
             size_policy: SizePolicy::MATCH_LAYOUT,
             filter_overrides_expanded: false,
 
-            filter_match_node_or_ancestors_limit: None,
-        }
+            promise: None,
+        };
+
+        res.reset_promise();
+
+        res
     }
 
     pub fn with_highlighter(self, highlighter: LabelHighlighter) -> Self {
@@ -121,15 +123,7 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         }
     }
 
-    pub fn set_filter_match_node_or_ancestors_limit_op(&mut self, filter_limit_op: Option<usize>) {
-        self.filter_match_node_or_ancestors_limit = filter_limit_op;
-    }
-
-    pub fn with_filter_match_node_or_ancestors_limit_op(mut self, filter_limit_op: Option<usize>) -> Self {
-        self.set_filter_match_node_or_ancestors_limit_op(filter_limit_op);
-        self
-    }
-
+    // Filter policy has to be set before filter, because I don't want to call after_filter_set twice
     pub fn with_filter_policy(mut self, filter_policy: FilterPolicy) -> Self {
         self.set_filter_policy(filter_policy);
         self
@@ -154,12 +148,12 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         self.highlighter_op = highlighter_op;
     }
 
-    pub fn with_filter(mut self, filter: TreeItFilter<Item>, filter_policy: FilterPolicy) -> Self {
+    pub fn with_filter(mut self, filter: FilterRef<Item>, filter_policy: FilterPolicy) -> Self {
         self.set_filter_op(Some(filter), filter_policy);
         self
     }
 
-    pub fn set_filter_op(&mut self, filter_op: Option<TreeItFilter<Item>>, filter_policy: FilterPolicy) {
+    pub fn set_filter_op(&mut self, filter_op: Option<FilterRef<Item>>, filter_policy: FilterPolicy) {
         self.filter_op = filter_op;
         self.filter_policy = filter_policy;
         self.after_filter_set();
@@ -175,7 +169,7 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
             let mut new_highlighted: Option<usize> = None;
 
             for (idx, (_, item)) in self.items().enumerate() {
-                if filter(&item) {
+                if filter.call(&item) {
                     // self.highlighted = idx;
                     new_highlighted = Some(idx);
                     break;
@@ -187,6 +181,22 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
             }
         } else {
             self.highlighted = 0;
+        }
+
+        self.reset_promise();
+    }
+
+    fn reset_promise(&mut self) {
+        let expanded_op: Option<HashSet<Key>> = if self.filter_op.is_some() && self.filter_overrides_expanded {
+            None
+        } else {
+            Some(self.expanded.clone())
+        };
+
+        let filter_op: Option<(FilterRef<Item>, FilterPolicy)> = self.filter_op.clone().map(|item| (item, self.filter_policy));
+
+        if let Some(promise) = self.root_node.get_streaming_promise_instead_of_iterator(filter_op, expanded_op) {
+            self.promise = Some(promise);
         }
     }
 
@@ -208,6 +218,7 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
 
     pub fn expand_root(&mut self) {
         self.expanded.insert(self.root_node.id().clone());
+        self.reset_promise();
     }
 
     pub fn set_selected(&mut self, k: &Key) -> bool {
@@ -302,28 +313,23 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
 
     // returns new value
     fn flip_expanded(&mut self, id_to_flip: &Key) -> bool {
-        if self.expanded.contains(id_to_flip) {
+        let res = if self.expanded.contains(id_to_flip) {
             self.expanded.remove(id_to_flip);
             false
         } else {
             self.expanded.insert(id_to_flip.clone());
             true
-        }
+        };
+
+        self.reset_promise();
+
+        res
     }
 
-    pub fn items(&self) -> impl Iterator<Item = (u16, Item)> + '_ {
-        // TODO expensive clone
-        let mut iter = LazyTreeIterator::new(self.root_node.clone()).with_filter_policy(self.filter_policy);
+    fn immediate_iterator(&self) -> impl Iterator<Item = (u16, Item)> + '_ {
+        let filter_op = self.filter_op.as_ref().map(|item| (item.clone(), self.filter_policy));
 
-        if let Some(filter) = self.filter_op.as_ref() {
-            iter = iter.with_filter(filter);
-
-            if self.filter_policy == FilterPolicy::MatchNodeOrAncestors {
-                if let Some(limit) = self.filter_match_node_or_ancestors_limit {
-                    iter = iter.with_limit(limit);
-                }
-            }
-        }
+        let mut iter = LazyTreeIterator::new(self.root_node.clone(), filter_op);
 
         if self.filter_op.is_some() && self.filter_overrides_expanded {
             iter
@@ -332,8 +338,29 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         }
     }
 
+    pub fn items(&self) -> Box<dyn Iterator<Item = (u16, Item)> + '_> {
+        if let Some(promise) = self.promise.as_ref() {
+            // TODO expensive clone
+            Box::new(promise.read().iter().cloned())
+        } else {
+            Box::new(self.immediate_iterator())
+        }
+    }
+
     pub fn get_highlighted(&self) -> (u16, Item) {
-        self.items().nth(self.highlighted).clone().unwrap() //TODO
+        debug_assert!(
+            self.items().count() > self.highlighted,
+            "got {} items, highlighted is {}",
+            self.items().count(),
+            self.highlighted
+        );
+
+        if let Some(item) = self.items().nth(self.highlighted).clone() {
+            item
+        } else {
+            error!("this is a crazy violation of TreeView invariant, highlighted item {} is not available. Returning safe default (that is invalid)", self.highlighted);
+            (0, self.root_node.clone())
+        }
     }
 
     pub fn get_root_node(&self) -> &Item {
@@ -461,8 +488,14 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
         self.size_policy
     }
 
+    fn prelayout(&mut self) {
+        if let Some(promise) = self.promise.as_mut() {
+            promise.update();
+        }
+    }
+
     fn layout(&mut self, screenspace: Screenspace) {
-        self.last_size = Some(screenspace)
+        self.last_size = Some(screenspace);
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -509,7 +542,8 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
                     }
                 }
                 Arrow::Down => {
-                    if self.highlighted < self.items().count() - 1 {
+                    let item_count = self.items().count();
+                    if item_count > 0 && self.highlighted < item_count - 1 {
                         self.highlighted += 1;
                         self.event_highlighted_changed()
                     } else {
@@ -609,7 +643,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
             let text = format!("{} {}", prefix, node.label());
             let highlighted: Vec<usize> = if let (Some(filter), Some(highlighter)) = (self.filter_op.as_ref(), self.highlighter_op.as_ref())
             {
-                if filter(&node) {
+                if filter.call(&node) {
                     highlighter(&text)
                 } else {
                     Vec::new()
@@ -685,5 +719,11 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
 
     fn get_status_description(&self) -> Option<Cow<'_, str>> {
         Some(Cow::Borrowed("tree view"))
+    }
+}
+
+impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> HasInvariant for TreeViewWidget<Key, Item> {
+    fn check_invariant(&self) -> bool {
+        self.items().next().is_some() && self.items().count() > self.highlighted
     }
 }
