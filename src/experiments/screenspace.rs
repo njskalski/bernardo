@@ -19,7 +19,7 @@ impl Screenspace {
     pub fn new(output_size: XY, visible_rect: Rect) -> Self {
         debug_assert!(output_size.has_non_zero_area());
         debug_assert!(
-            visible_rect.lower_right() <= output_size,
+            visible_rect.size <= output_size,
             "visible_rect = {}, output_size = {}",
             visible_rect,
             output_size

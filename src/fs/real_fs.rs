@@ -1,10 +1,10 @@
 use std::fmt::{Debug, Formatter};
 use std::fs::Metadata;
 use std::io;
-use std::io::Write;
+use std::io::{Error, Write};
 use std::path::{Path, PathBuf};
 
-use log::{error, warn};
+use log::{error, info, warn};
 use streaming_iterator::StreamingIterator;
 
 use crate::fs::dir_entry::DirEntry;
@@ -60,8 +60,14 @@ impl FilesystemFront for RealFS {
     }
 
     fn blocking_list(&self, path: &Path) -> Result<Vec<DirEntry>, ListError> {
-        let full_path = self.root_path.join(path);
-        let readdir = std::fs::read_dir(&full_path)?;
+        let fullpath = self.root_path.join(path);
+        let readdir = match std::fs::read_dir(&fullpath) {
+            Ok(r) => r,
+            Err(e) => {
+                error!(target: "fsf", "failed to read_dir {:?} because {}", &fullpath, e);
+                return Err(ListError::UnmappedError(e.to_string()));
+            }
+        };
 
         let mut items: Vec<DirEntry> = Vec::new();
         for item in readdir {
@@ -84,8 +90,15 @@ impl FilesystemFront for RealFS {
     }
 
     fn metadata(&self, path: &Path) -> Result<Metadata, ()> {
-        // TODO more informative error
-        std::fs::metadata(&path).map_err(|_| ())
+        let fullpath: PathBuf = self.root_path.join(path);
+
+        match std::fs::metadata(&fullpath) {
+            Ok(meta) => Ok(meta),
+            Err(e) => {
+                info!(target: "fsf", "failed reading metadata for {:?}, because {}", fullpath, e);
+                Err(())
+            }
+        }
     }
 
     fn exists(&self, path: &Path) -> bool {

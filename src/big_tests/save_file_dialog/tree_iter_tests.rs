@@ -21,9 +21,8 @@ fn fsf_equal_iter_test() {
         let eager: Vec<String> = eager_iterator(&DirTreeNode::new(root.clone()), Some(expanded), None, FilterPolicy::MatchNode)
             .map(|item| item.1.label().to_string())
             .collect();
-        let lazy: Vec<String> = LazyTreeIterator::new(DirTreeNode::new(root.clone()))
+        let lazy: Vec<String> = LazyTreeIterator::new(DirTreeNode::new(root.clone()), None)
             .with_expanded(expanded)
-            .with_filter_policy(FilterPolicy::MatchNode)
             .map(|item| item.1.label().to_string())
             .collect();
 

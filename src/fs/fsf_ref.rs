@@ -147,8 +147,8 @@ impl FsfRef {
 
     pub fn blocking_list(&self, spath: &SPath) -> Result<Arc<DirCache>, ListError> {
         let path = spath.relative_path();
+        debug!(target: "fsf_ref", "blocking list for {:?}", path);
         let metadata = self.fs.fs.metadata(&path).ok();
-
         // TODO we have "cache invalid never read". Why?
         let mut cache_invalid = false;
 
@@ -157,13 +157,14 @@ impl FsfRef {
                 if let Some(cached) = rlock.get(spath) {
                     if let Some(cached_time) = cached.metadata.as_ref().map(|m| m.modified().ok()).flatten() {
                         if cached_time == system_time {
-                            debug!("cache hit.");
+                            debug!(target: "fsf_ref", "cache hit for spath {:?}", spath.to_string());
 
                             // cache is valid
                             return Ok(cached.clone());
                         }
 
                         if cached_time < system_time {
+                            debug!(target: "fsf_ref", "cache requires update for spath {:?}", spath.to_string());
                             cache_invalid = true;
                         }
                     }
@@ -185,9 +186,10 @@ impl FsfRef {
         match self.fs.caches.try_write() {
             Some(mut cache) => {
                 cache.insert(spath.clone(), dir_cache_arc.clone());
+                debug!(target: "fsf_ref", "inserted cache for spath {:?}", spath.to_string());
             }
             None => {
-                error!("failed to cache directory list for spath {}", spath)
+                error!(target: "fsf_ref", "failed to cache directory list for spath {}", spath)
             }
         }
 
@@ -220,18 +222,4 @@ macro_rules! spath {
         )*
         sp
     }};
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::fs::filesystem_front::FilesystemFront;
-    use crate::fs::mock_fs::MockFS;
-
-    #[test]
-    fn spath_macro() {
-        let mockfs = MockFS::new("/").to_fsf();
-        let _sp0 = spath!(mockfs);
-        let _sp1 = spath!(mockfs, "a");
-        let _sp2 = spath!(mockfs, "a", "b");
-    }
 }

@@ -20,7 +20,7 @@ use crate::primitives::common_query::CommonQuery;
 use crate::primitives::printable::Printable;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::tree::filter_policy::FilterPolicy;
-use crate::primitives::tree::tree_node::TreeNode;
+use crate::primitives::tree::tree_node::{ClosureFilter, TreeItFilter, TreeNode};
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::combined_widget::CombinedWidget;
@@ -201,7 +201,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
 
                     let tree_view = self.tree_view.internal_mut();
                     tree_view.set_filter_op(
-                        Some(Box::new(move |item: &Item| query_fuzz.matches(item.label().as_ref()))),
+                        Some(ClosureFilter::new(move |item: &Item| query_fuzz.matches(item.label().as_ref())).arc_box()),
                         FilterPolicy::MatchNodeOrAncestors,
                     );
 

@@ -15,7 +15,7 @@ use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::scroll::ScrollDirection;
 use crate::primitives::tree::filter_policy::FilterPolicy;
-use crate::primitives::tree::tree_node::TreeNode;
+use crate::primitives::tree::tree_node::{ClosureFilter, FilterRef, TreeItFilter, TreeNode};
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::context_bar_item::ContextBarItem;
@@ -24,7 +24,7 @@ use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::file_tree_view::msg::FileTreeViewMsg;
 use crate::widgets::main_view::msg::MainViewMsg;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
-use crate::widgets::tree_view::tree_view::TreeViewWidget;
+use crate::widgets::tree_view::tree_view::{LabelHighlighter, TreeViewWidget};
 use crate::widgets::with_scroll::with_scroll::WithScroll;
 
 pub struct FileTreeViewWidget {
@@ -60,26 +60,30 @@ impl FileTreeViewWidget {
         }
     }
 
-    pub fn set_hidden_files_filter(&mut self, enabled: bool) {
-        if enabled {
-            self.tree_view_widget.internal_mut().set_filter_op(
-                Some(Box::new(|node: &FileTreeNode| -> bool {
-                    if let Some(filename) = node.spath().last_file_name() {
-                        if let Some(filename) = filename.to_str() {
-                            if filename.starts_with(&['.']) {
-                                false
-                            } else {
-                                true
-                            }
-                        } else {
-                            true
-                        }
+    pub fn get_hidden_files_filter() -> FilterRef<FileTreeNode> {
+        ClosureFilter::new(|node: &FileTreeNode| -> bool {
+            if let Some(filename) = node.spath().last_file_name() {
+                if let Some(filename) = filename.to_str() {
+                    if filename.starts_with(&['.']) {
+                        false
                     } else {
                         true
                     }
-                })),
-                FilterPolicy::MatchNode,
-            );
+                } else {
+                    true
+                }
+            } else {
+                true
+            }
+        })
+        .arc_box()
+    }
+
+    pub fn set_hidden_files_filter(&mut self, enabled: bool) {
+        if enabled {
+            self.tree_view_widget
+                .internal_mut()
+                .set_filter_op(Some(Self::get_hidden_files_filter()), FilterPolicy::MatchNode);
         } else {
             self.tree_view_widget.internal_mut().set_filter_op(None, FilterPolicy::MatchNode);
         }

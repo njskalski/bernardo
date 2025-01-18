@@ -8,7 +8,6 @@ use crate::config::load_error::LoadError;
 use crate::config::save_error::SaveError;
 use crate::io::keys::{Key, Keycode};
 use crate::primitives::is_default::IsDefault;
-use crate::widgets::main_view::fuzzy_file_search_widget::FuzzyFileSearchWidget;
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Config {
@@ -41,19 +40,11 @@ impl Default for FileTreeViewOptions {
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct FuzzyFileSearchOptions {
-    // When we use "match_node_or_ancestors", iterator can take very long time to compute.
-    // This is a "quick and dirty fix", that makes sense - if you are using fuzzy search in
-    // context bar, it's not like you are going to scroll 50 pages instead of narrowing the
-    // search criteria further.
-    pub filter_match_node_ancestors_limit: Option<usize>,
-}
+pub struct FuzzyFileSearchOptions {}
 
 impl Default for FuzzyFileSearchOptions {
     fn default() -> Self {
-        FuzzyFileSearchOptions {
-            filter_match_node_ancestors_limit: Some(64),
-        }
+        FuzzyFileSearchOptions {}
     }
 }
 
