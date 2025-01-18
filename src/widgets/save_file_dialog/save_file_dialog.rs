@@ -10,6 +10,7 @@ I hope I will discover most of functional constraints while implementing it.
 
 use log::{debug, error, warn};
 
+use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
@@ -72,7 +73,7 @@ impl SaveFileDialogWidget {
     pub const OK_LABEL: &'static str = "OK";
     pub const CANCEL_LABEL: &'static str = "CANCEL";
 
-    pub fn new(fsf: FsfRef) -> Self {
+    pub fn new(fsf: FsfRef, config: ConfigRef) -> Self {
         let root = fsf.root();
 
         let tree_widget = TreeViewWidget::<SPath, DirTreeNode>::new(DirTreeNode::new(root.clone()))
@@ -100,7 +101,7 @@ impl SaveFileDialogWidget {
                     .map(|item| Some(SaveFileDialogMsg::FileListHit(item.clone()).boxed()))
                     .flatten()
             }));
-        let edit_box = EditBoxWidget::new()
+        let edit_box = EditBoxWidget::new(config)
             .with_size_policy(SizePolicy::MATCH_LAYOUT)
             .with_enabled(true)
             .with_on_hit(Box::new(|_| SaveFileDialogMsg::EditBoxHit.someboxed()));

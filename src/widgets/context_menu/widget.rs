@@ -50,7 +50,7 @@ pub struct ContextMenuWidget<Key: Hash + Eq + Debug + Clone + 'static, Item: Tre
 
 impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> ContextMenuWidget<Key, Item> {
     pub fn new(providers: Providers, root_node: Item) -> Self {
-        let query_box = EditBoxWidget::new()
+        let query_box = EditBoxWidget::new(providers.config().clone())
             .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
             .with_on_change(Box::new(|editbox| ContextMenuMsg::UpdateQuery(editbox.get_text()).someboxed()));
 

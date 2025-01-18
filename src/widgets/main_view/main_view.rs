@@ -256,7 +256,7 @@ impl MainView {
         }
 
         self.hover = Some(HoverItem::SearchInFiles(
-            FindInFilesWidget::new(self.providers.fsf().root())
+            FindInFilesWidget::new(self.providers.fsf().root(), self.providers.config().clone())
                 .with_on_hit(Some(Box::new(|widget| {
                     MainViewMsg::FindInFilesQuery {
                         root_dir: widget.root().clone(),

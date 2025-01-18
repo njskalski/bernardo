@@ -57,6 +57,9 @@ pub struct KeyboardConfig {
 
     #[serde(default)]
     pub file_tree: FileTree,
+
+    #[serde(default)]
+    pub edit_msgs: CommonEditMsgKeybindings,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -132,6 +135,60 @@ impl Default for FileTree {
     fn default() -> Self {
         FileTree {
             toggle_hidden_files: Keycode::Char('h').to_key().with_ctrl(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct CommonEditMsgKeybindings {
+    pub char: Key,
+    pub cursor_up: Key,
+    pub cursor_down: Key,
+    pub cursor_left: Key,
+    pub cursor_right: Key,
+    pub backspace: Key,
+    pub line_begin: Key,
+    pub line_end: Key,
+    pub word_begin: Key,
+    pub word_end: Key,
+    pub page_up: Key,
+    pub page_down: Key,
+    pub delete: Key,
+
+    pub copy: Key,
+    pub paste: Key,
+    pub undo: Key,
+    pub redo: Key,
+
+    pub tab: Key,
+    pub shift_tab: Key,
+
+    pub home: Key,
+}
+
+impl Default for CommonEditMsgKeybindings {
+    fn default() -> Self {
+        Self {
+            char: Keycode::Char('*').to_key(),
+            cursor_up: Keycode::ArrowUp.to_key(),
+            cursor_down: Keycode::ArrowDown.to_key(),
+            cursor_left: Keycode::ArrowLeft.to_key(),
+            cursor_right: Keycode::ArrowRight.to_key(),
+            backspace: Keycode::Backspace.to_key(),
+            line_begin: Keycode::Home.to_key(),
+            line_end: Keycode::End.to_key(),
+            word_begin: Keycode::ArrowLeft.to_key().with_ctrl(),
+            word_end: Keycode::ArrowRight.to_key().with_ctrl(),
+            page_up: Keycode::PageUp.to_key(),
+            page_down: Keycode::PageDown.to_key(),
+            delete: Keycode::Delete.to_key(),
+            copy: Keycode::Char('c').to_key().with_ctrl(),
+            paste: Keycode::Char('v').to_key().with_ctrl(),
+            undo: Keycode::Char('z').to_key().with_ctrl(),
+            redo: Keycode::Char('y').to_key().with_ctrl(),
+            tab: Keycode::Tab.to_key(),
+            shift_tab: Keycode::Tab.to_key().with_shift(),
+            home: Keycode::Home.to_key(),
         }
     }
 }

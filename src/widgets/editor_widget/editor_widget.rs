@@ -1337,6 +1337,7 @@ impl Widget for EditorWidget {
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         let c = &self.providers.config().keyboard_config.editor;
+        let edit_msgs_keybindings = &self.providers.config().keyboard_config.edit_msgs;
 
         match (&self.state, &self.requested_hover, input_event) {
             (_, _, _) if self.ignore_input_altogether => {
@@ -1361,8 +1362,10 @@ impl Widget for EditorWidget {
                 EditorWidgetMsg::Reformat.someboxed()
             }
             // TODO change to if let Some() when it's stabilized
-            (&EditorState::DroppingCursor { .. }, None, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
-                let cem = key_to_edit_msg(key).unwrap();
+            (&EditorState::DroppingCursor { .. }, None, InputEvent::KeyInput(key))
+                if key_to_edit_msg(key, edit_msgs_keybindings).is_some() =>
+            {
+                let cem = key_to_edit_msg(key, edit_msgs_keybindings).unwrap();
                 if !cem.is_editing() {
                     EditorWidgetMsg::DropCursorMove { cem }.someboxed()
                 } else {
@@ -1371,12 +1374,12 @@ impl Widget for EditorWidget {
             }
             // TODO disabling local context bar
             // (&EditorState::Editing, None, InputEvent::EverythingBarTrigger) => EditorWidgetMsg::RequestContextBar.someboxed(),
-            (&EditorState::Editing, None, InputEvent::KeyInput(key)) if key_to_edit_msg(key).is_some() => {
-                let cem = key_to_edit_msg(key).unwrap();
+            (&EditorState::Editing, None, InputEvent::KeyInput(key)) if key_to_edit_msg(key, edit_msgs_keybindings).is_some() => {
+                let cem = key_to_edit_msg(key, edit_msgs_keybindings).unwrap();
                 if cem.is_editing() && self.readonly {
                     None
                 } else {
-                    EditorWidgetMsg::EditMsg(key_to_edit_msg(key).unwrap()).someboxed()
+                    EditorWidgetMsg::EditMsg(key_to_edit_msg(key, edit_msgs_keybindings).unwrap()).someboxed()
                 }
             }
             _ => None,

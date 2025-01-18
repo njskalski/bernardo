@@ -1,8 +1,13 @@
+use crate::config::config::CommonEditMsgKeybindings;
 use crate::cursor::cursor_set::CursorSet;
 use crate::cursor::tests::test_helpers::{assert_cursors_are_within_text, decode_text_and_cursors, encode_cursors_and_text};
 use crate::experiments::clipboard::ClipboardRef;
+use crate::io::keys::{Key, Keycode, Modifiers};
 use crate::primitives::common_edit_msgs::{apply_common_edit_message, CommonEditMsg};
 use crate::primitives::has_invariant::HasInvariant;
+use rand::rngs::StdRng;
+use rand::seq::SliceRandom;
+use rand::{Rng, SeedableRng};
 
 pub fn decode_apply_and_encode_back(text: &str, cem: CommonEditMsg, clipboard: Option<&ClipboardRef>) -> String {
     let (mut buffer, mut cs) = decode_text_and_cursors(text);
@@ -71,4 +76,48 @@ pub fn decode_multiple_sets_and_apply_at_selected_cursor_set_and_encode_back(
     }
 
     results
+}
+
+pub fn generate_random_char(rng: &mut StdRng) -> char {
+    let ascii = rng.gen_range(32..=126) as u8;
+    ascii as char
+}
+
+pub fn generate_random_key(rng: &mut StdRng) -> Key {
+    let keycode = Keycode::Char(generate_random_char(rng));
+
+    let modifiers = Modifiers {
+        ctrl: rng.gen_bool(0.5),
+        shift: rng.gen_bool(0.5),
+        alt: rng.gen_bool(0.5),
+    };
+
+    Key { keycode, modifiers }
+}
+
+pub fn generate_pseudo_random_edit_msgs_config() -> CommonEditMsgKeybindings {
+    let mut rng = StdRng::seed_from_u64(12345);
+
+    CommonEditMsgKeybindings {
+        char: generate_random_key(&mut rng),
+        cursor_up: generate_random_key(&mut rng),
+        cursor_down: generate_random_key(&mut rng),
+        cursor_left: generate_random_key(&mut rng),
+        cursor_right: generate_random_key(&mut rng),
+        backspace: generate_random_key(&mut rng),
+        line_begin: generate_random_key(&mut rng),
+        line_end: generate_random_key(&mut rng),
+        word_begin: generate_random_key(&mut rng),
+        word_end: generate_random_key(&mut rng),
+        page_up: generate_random_key(&mut rng),
+        page_down: generate_random_key(&mut rng),
+        delete: generate_random_key(&mut rng),
+        copy: generate_random_key(&mut rng),
+        paste: generate_random_key(&mut rng),
+        undo: generate_random_key(&mut rng),
+        redo: generate_random_key(&mut rng),
+        tab: generate_random_key(&mut rng),
+        shift_tab: generate_random_key(&mut rng),
+        home: generate_random_key(&mut rng),
+    }
 }

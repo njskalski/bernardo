@@ -5,6 +5,7 @@ use log::{error, warn};
 use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::config::config::{CommonEditMsgKeybindings, ConfigRef};
 use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::clipboard::ClipboardRef;
@@ -124,76 +125,96 @@ impl CommonEditMsg {
 }
 
 // This is where the mapping of keys to Msgs is
-pub fn key_to_edit_msg(key: Key) -> Option<CommonEditMsg> {
-    match key {
-        Key { keycode, modifiers } => {
-            match keycode {
-                Keycode::Char('c') if modifiers.just_ctrl() => Some(CommonEditMsg::Copy),
-                Keycode::Char('v') if modifiers.just_ctrl() => Some(CommonEditMsg::Paste),
-                Keycode::Char('z') if modifiers.just_ctrl() => Some(CommonEditMsg::Undo),
-                Keycode::Char('x') if modifiers.just_ctrl() => Some(CommonEditMsg::Redo),
-                Keycode::Char(c) if modifiers.is_empty() || modifiers.just_shift() => Some(CommonEditMsg::Char(c)),
-                Keycode::ArrowUp => Some(CommonEditMsg::CursorUp {
-                    selecting: key.modifiers.shift,
-                }),
-                Keycode::ArrowDown => Some(CommonEditMsg::CursorDown {
-                    selecting: key.modifiers.shift,
-                }),
-                Keycode::ArrowLeft => {
-                    if key.modifiers.ctrl {
-                        Some(CommonEditMsg::WordBegin {
-                            selecting: key.modifiers.shift,
-                        })
-                    } else {
-                        Some(CommonEditMsg::CursorLeft {
-                            selecting: key.modifiers.shift,
-                        })
-                    }
-                }
-                Keycode::ArrowRight => {
-                    if key.modifiers.ctrl {
-                        Some(CommonEditMsg::WordEnd {
-                            selecting: key.modifiers.shift,
-                        })
-                    } else {
-                        Some(CommonEditMsg::CursorRight {
-                            selecting: key.modifiers.shift,
-                        })
-                    }
-                }
-                Keycode::Enter => {
-                    // debug!("mapping Keycode:Enter to Char('\\n')");
-                    Some(CommonEditMsg::Char('\n'))
-                }
-                Keycode::Space => {
-                    // debug!("mapping Keycode:Space to Char(' ')");
-                    Some(CommonEditMsg::Char(' '))
-                }
-                Keycode::Backspace => Some(CommonEditMsg::Backspace),
-                Keycode::Home => Some(CommonEditMsg::LineBegin {
-                    selecting: key.modifiers.shift,
-                }),
-                Keycode::End => Some(CommonEditMsg::LineEnd {
-                    selecting: key.modifiers.shift,
-                }),
-                Keycode::PageUp => Some(CommonEditMsg::PageUp {
-                    selecting: key.modifiers.shift,
-                }),
-                Keycode::PageDown => Some(CommonEditMsg::PageDown {
-                    selecting: key.modifiers.shift,
-                }),
-                Keycode::Tab => {
-                    if !key.modifiers.shift {
-                        Some(CommonEditMsg::Tab)
-                    } else {
-                        Some(CommonEditMsg::ShiftTab)
-                    }
-                }
-                Keycode::Delete => Some(CommonEditMsg::Delete),
-                _ => None,
-            }
+pub fn key_to_edit_msg(key: Key, keybindings: &CommonEditMsgKeybindings) -> Option<CommonEditMsg> {
+    let modifiers = key.modifiers;
+
+    if key == keybindings.copy {
+        return Some(CommonEditMsg::Copy);
+    }
+    if key == keybindings.paste {
+        return Some(CommonEditMsg::Paste);
+    }
+    if key == keybindings.undo {
+        return Some(CommonEditMsg::Undo);
+    }
+    if key == keybindings.redo {
+        return Some(CommonEditMsg::Redo);
+    }
+    if key == keybindings.cursor_up {
+        return Some(CommonEditMsg::CursorUp {
+            selecting: modifiers.shift,
+        });
+    }
+    if key == keybindings.cursor_down {
+        return Some(CommonEditMsg::CursorDown {
+            selecting: modifiers.shift,
+        });
+    }
+    if key == keybindings.cursor_left {
+        return Some(CommonEditMsg::CursorLeft {
+            selecting: modifiers.shift,
+        });
+    }
+    if key == keybindings.word_begin {
+        return Some(CommonEditMsg::WordBegin {
+            selecting: modifiers.shift,
+        });
+    }
+    if key == keybindings.cursor_right {
+        return Some(CommonEditMsg::CursorRight {
+            selecting: modifiers.shift,
+        });
+    }
+    if key == keybindings.word_end {
+        return Some(CommonEditMsg::WordEnd {
+            selecting: modifiers.shift,
+        });
+    }
+    if key.keycode == Keycode::Enter {
+        return Some(CommonEditMsg::Char('\n'));
+    }
+    if key.keycode == Keycode::Space {
+        return Some(CommonEditMsg::Char(' '));
+    }
+    if key == keybindings.backspace {
+        return Some(CommonEditMsg::Backspace);
+    }
+    if key == keybindings.line_begin || key.keycode == keybindings.home.keycode {
+        return Some(CommonEditMsg::LineBegin {
+            selecting: modifiers.shift,
+        });
+    }
+    if key == keybindings.line_end {
+        return Some(CommonEditMsg::LineEnd {
+            selecting: modifiers.shift,
+        });
+    }
+    if key == keybindings.page_up {
+        return Some(CommonEditMsg::PageUp {
+            selecting: modifiers.shift,
+        });
+    }
+    if key == keybindings.page_down {
+        return Some(CommonEditMsg::PageDown {
+            selecting: modifiers.shift,
+        });
+    }
+    if key == keybindings.tab {
+        return Some(CommonEditMsg::Tab);
+    }
+    if key == keybindings.shift_tab {
+        return Some(CommonEditMsg::ShiftTab);
+    }
+    if key == keybindings.delete {
+        return Some(CommonEditMsg::Delete);
+    }
+    if let Keycode::Char(c) = key.keycode {
+        if modifiers.is_empty() || modifiers.just_shift() {
+            return Some(CommonEditMsg::Char(c));
         }
     }
+
+    None
 }
 
 // returns sorted vector of line indices, reduced (no duplicates)

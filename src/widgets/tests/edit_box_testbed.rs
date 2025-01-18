@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use crate::config::config::Config;
 use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
 use crate::mocks::mock_output::MockOutput;
 use crate::primitives::xy::XY;
@@ -17,7 +20,7 @@ impl EditBoxTestbedBuilder {
         let (output, recv) = MockOutput::new(size, false, build_result.providers.theme().clone());
 
         EditBoxTestbed {
-            widget: EditBoxWidget::new(),
+            widget: EditBoxWidget::new(Arc::new(Config::default())),
             additional_data: (),
             size,
             last_frame: None,
