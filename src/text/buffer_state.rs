@@ -1,3 +1,4 @@
+use std::any;
 use std::cmp::max;
 use std::fmt::Debug;
 use std::ops::Range;
@@ -154,6 +155,26 @@ impl BufferState {
         let mut cursor_moved = false;
         if let Some(_) = cme_to_direction(&cem) {
             cursor_moved = true;
+
+            #[cfg(debug_assertions)]
+            {
+                let only_cursor_move = match cem {
+                    CommonEditMsg::CursorUp { selecting: _ } => true,
+                    CommonEditMsg::CursorDown { selecting: _ } => true,
+                    CommonEditMsg::CursorLeft { selecting: _ } => true,
+                    CommonEditMsg::CursorRight { selecting: _ } => true,
+                    CommonEditMsg::LineBegin { selecting: _ } => true,
+                    CommonEditMsg::LineEnd { selecting: _ } => true,
+                    CommonEditMsg::WordBegin { selecting: _ } => true,
+                    CommonEditMsg::WordEnd { selecting: _ } => true,
+                    CommonEditMsg::PageUp { selecting: _ } => true,
+                    CommonEditMsg::PageDown { selecting: _ } => true,
+                    CommonEditMsg::Tab => true,
+                    CommonEditMsg::ShiftTab => true,
+                    _ => false,
+                };
+                assert!(!(only_cursor_move && any_change));
+            }
         }
 
         //undo/redo invalidates cursors copy, so I need to watch for those

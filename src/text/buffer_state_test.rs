@@ -19,29 +19,4 @@ pub mod tests {
 
         bf.apply_common_edit_message(CommonEditMsg::Char('䄀'), get_new_widget_id(), 10, None, false);
     }
-
-    #[test]
-    fn test_cursor_movement_does_not_modify_buffer() {
-        let mut bf = BufferState::full(None, DocumentIdentifier::new_unique(), None).with_text("ala \n ma \n kota##");
-
-        let cursor_movements = vec![
-            CommonEditMsg::CursorUp { selecting: false },
-            CommonEditMsg::CursorDown { selecting: false },
-            CommonEditMsg::CursorLeft { selecting: false },
-            CommonEditMsg::CursorRight { selecting: false },
-            CommonEditMsg::LineBegin { selecting: false },
-            CommonEditMsg::LineEnd { selecting: false },
-            CommonEditMsg::WordBegin { selecting: false },
-            CommonEditMsg::WordEnd { selecting: false },
-            CommonEditMsg::PageUp { selecting: false },
-            CommonEditMsg::PageDown { selecting: false },
-        ];
-
-        let cursor_movements = cursor_movements.into_iter().rev();
-
-        let id = get_new_widget_id();
-        for cem in cursor_movements {
-            assert!(!bf.apply_common_edit_message(cem, id, 10, None, false));
-        }
-    }
 }
