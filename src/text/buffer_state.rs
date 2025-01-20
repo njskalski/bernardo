@@ -161,7 +161,7 @@ impl BufferState {
             CommonEditMsg::Undo | CommonEditMsg::Redo => {}
             _ => {
                 self.text_mut().set_cursor_set(widget_id, cursors_copy);
-                if !any_change && set_milestone && !cursor_moved{
+                if !any_change && set_milestone && !cursor_moved {
                     self.undo_milestone();
                 }
             }
