@@ -17,7 +17,7 @@ use crate::experiments::filename_to_language::filename_to_language;
 use crate::experiments::regex_search::FindError;
 use crate::fs::path::SPath;
 use crate::io::output::Output;
-use crate::primitives::common_edit_msgs::{apply_common_edit_message, CommonEditMsg};
+use crate::primitives::common_edit_msgs::{apply_common_edit_message, cme_to_direction, CommonEditMsg};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::xy::XY;
 use crate::text::contents_and_cursors::ContentsAndCursors;
@@ -151,13 +151,17 @@ impl BufferState {
         };
 
         let any_change = apply_common_edit_message(cem.clone(), &mut cursors_copy, &mut vec![], self, page_height as usize, clipboard);
+        let mut cursor_moved = false;
+        if let Some(_) = cme_to_direction(&cem) {
+            cursor_moved = true;
+        }
 
         //undo/redo invalidates cursors copy, so I need to watch for those
         match cem {
             CommonEditMsg::Undo | CommonEditMsg::Redo => {}
             _ => {
                 self.text_mut().set_cursor_set(widget_id, cursors_copy);
-                if !any_change && set_milestone {
+                if !any_change && set_milestone && !cursor_moved{
                     self.undo_milestone();
                 }
             }
