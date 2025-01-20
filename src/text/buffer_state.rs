@@ -169,8 +169,6 @@ impl BufferState {
                     CommonEditMsg::WordEnd { selecting: _ } => true,
                     CommonEditMsg::PageUp { selecting: _ } => true,
                     CommonEditMsg::PageDown { selecting: _ } => true,
-                    CommonEditMsg::Tab => true,
-                    CommonEditMsg::ShiftTab => true,
                     _ => false,
                 };
                 assert!(!(only_cursor_move && any_change));
