@@ -171,7 +171,10 @@ impl BufferState {
                     CommonEditMsg::PageDown { selecting: _ } => true,
                     _ => false,
                 };
-                assert!(!(only_cursor_move && any_change));
+                assert!(
+                    !(only_cursor_move && any_change),
+                    "buffer modified on cursor move without file modification"
+                );
             }
         }
 
