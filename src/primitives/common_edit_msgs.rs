@@ -574,30 +574,54 @@ pub fn apply_common_edit_message(
             insert_to_rope(cursor_set, observer_cursor_sets, rope, None, char.to_string().as_str())
         }
         CommonEditMsg::Block(s) => insert_to_rope(cursor_set, observer_cursor_sets, rope, None, &s),
-        CommonEditMsg::CursorUp { selecting } => cursor_set.move_vertically_by(rope, -1, selecting),
-        CommonEditMsg::CursorDown { selecting } => cursor_set.move_vertically_by(rope, 1, selecting),
-        CommonEditMsg::CursorLeft { selecting } => cursor_set.move_left(selecting),
-        CommonEditMsg::CursorRight { selecting } => cursor_set.move_right(rope, selecting),
+        CommonEditMsg::CursorUp { selecting } => {
+            cursor_set.move_vertically_by(rope, -1, selecting);
+            false
+        }
+        CommonEditMsg::CursorDown { selecting } => {
+            cursor_set.move_vertically_by(rope, 1, selecting);
+            false
+        }
+        CommonEditMsg::CursorLeft { selecting } => {
+            cursor_set.move_left(selecting);
+            false
+        }
+        CommonEditMsg::CursorRight { selecting } => {
+            cursor_set.move_right(rope, selecting);
+            false
+        }
         CommonEditMsg::Backspace => handle_backspace_and_delete(cursor_set, observer_cursor_sets, true, rope),
-        CommonEditMsg::LineBegin { selecting } => cursor_set.move_home(rope, selecting),
-        CommonEditMsg::LineEnd { selecting } => cursor_set.move_end(rope, selecting),
-        CommonEditMsg::WordBegin { selecting } => cursor_set.word_begin_default(rope, selecting),
-        CommonEditMsg::WordEnd { selecting } => cursor_set.word_end_default(rope, selecting),
+        CommonEditMsg::LineBegin { selecting } => {
+            cursor_set.move_home(rope, selecting);
+            false
+        }
+        CommonEditMsg::LineEnd { selecting } => {
+            cursor_set.move_end(rope, selecting);
+            false
+        }
+        CommonEditMsg::WordBegin { selecting } => {
+            cursor_set.word_begin_default(rope, selecting);
+            false
+        }
+        CommonEditMsg::WordEnd { selecting } => {
+            cursor_set.word_end_default(rope, selecting);
+            false
+        }
         CommonEditMsg::PageUp { selecting } => {
             if page_height > PAGE_HEIGHT_LIMIT {
                 error!("received PageUp of page_height {}, ignoring.", page_height);
-                false
             } else {
-                cursor_set.move_vertically_by(rope, -(page_height as isize), selecting)
+                cursor_set.move_vertically_by(rope, -(page_height as isize), selecting);
             }
+            false
         }
         CommonEditMsg::PageDown { selecting } => {
             if page_height > PAGE_HEIGHT_LIMIT {
                 error!("received PageDown of page_height {}, ignoring.", page_height);
-                false
             } else {
-                cursor_set.move_vertically_by(rope, page_height as isize, selecting)
+                cursor_set.move_vertically_by(rope, page_height as isize, selecting);
             }
+            false
         }
         CommonEditMsg::Delete => handle_backspace_and_delete(cursor_set, observer_cursor_sets, false, rope),
         CommonEditMsg::Copy => {
