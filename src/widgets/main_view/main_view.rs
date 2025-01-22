@@ -125,6 +125,22 @@ impl DocumentIdentifier {
     }
 }
 
+pub struct CloseBufferResult {
+    buffer_closed: bool,
+    no_currently_focused_editor_view: bool,
+    displays_empty: bool,
+}
+
+impl CloseBufferResult {
+    pub fn default() -> Self {
+        Self {
+            buffer_closed: false,
+            no_currently_focused_editor_view: false,
+            displays_empty: false,
+        }
+    }
+}
+
 pub struct MainView {
     wid: WID,
     providers: Providers,
@@ -623,24 +639,31 @@ impl MainView {
         true
     }
 
-    fn do_close_buffer(&mut self) -> bool {
+    fn do_close_buffer(&mut self) -> CloseBufferResult {
+        let mut result = CloseBufferResult::default();
         let view_opt = self.get_currently_focused_editor_view_mut();
         let id = if let Some(view) = view_opt {
             view.get_buffer_ref().document_identifier().clone()
         } else {
-            return true;
+            result.no_currently_focused_editor_view = true;
+            return result;
         };
         self.displays.remove(self.display_idx);
         if !self.do_prev_display() && !self.do_next_display() {
+            result.displays_empty = true;
             self.display_idx = 0;
         }
         let mut buffer_register = unpack_or_e!(
             self.providers.buffer_register().write().ok(),
-            false,
+            {
+                result.buffer_closed = false;
+                result
+            },
             "failed to lock buffer register"
         );
+        result.buffer_closed = buffer_register.close_buffer(&id);
 
-        return buffer_register.close_buffer(&id);
+        return result;
     }
 }
 
