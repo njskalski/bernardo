@@ -269,4 +269,56 @@ fn purge_buffers_works() {
 
         assert_eq!(all, vec!["data33.txt [*]"]);
     }
+    full_setup.screenshot();
+}
+
+#[test]
+fn close_buffer_test() {
+    let mut full_setup = common_start();
+
+    full_setup.type_in("sometext");
+    full_setup.wait_for(|full_setup| {
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .get_all_visible_lines()
+            .find(|item| item.contents.text.contains("sometext"))
+            .is_some()
+    });
+
+    full_setup.send_key(full_setup.config().keyboard_config.global.everything_bar);
+
+    assert!(full_setup.wait_for(|full_setup| full_setup.get_first_context_menu().is_some()));
+
+    full_setup.type_in("close");
+    for _ in 0..2 {
+        full_setup.send_key(Keycode::ArrowDown.to_key());
+    }
+
+    assert!(full_setup.wait_for(|full_setup| full_setup
+        .get_first_context_menu()
+        .unwrap()
+        .selected_option()
+        .unwrap()
+        .contains("close")));
+    full_setup.send_key(Keycode::Enter.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| full_setup.get_first_context_menu().is_none()));
+
+    // now only data33.txt should remain open, as all others were pruned
+    {
+        full_setup.send_key(full_setup.config().keyboard_config.global.browse_buffers);
+        assert!(full_setup.wait_for(|full_setup| { full_setup.get_fuzzy_search().is_some() }));
+
+        let all: Vec<String> = full_setup
+            .get_fuzzy_search()
+            .unwrap()
+            .visible_items()
+            .iter()
+            .filter(|item| item.leaf)
+            .map(|item| item.label.clone())
+            .collect();
+
+        assert_eq!(all, vec!["data33.txt [*]"]);
+    }
 }

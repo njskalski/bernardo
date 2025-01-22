@@ -34,6 +34,7 @@ pub enum MainViewMsg {
 
     // Used by OpenOpenBuffers too
     CloseHover,
+    CloseBuffer,
 
     // Open "open buffers"
     OpenChooseDisplay,

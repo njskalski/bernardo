@@ -621,6 +621,22 @@ impl MainView {
         self.set_focus_to_default();
         true
     }
+    
+    fn do_close_buffer(&mut self) -> bool {
+        let view_opt = self.get_currently_focused_editor_view_mut();
+        let id = if let Some(view) =  view_opt{
+            view.get_buffer_ref().document_identifier().clone()
+        } else {
+            return true;
+        };
+        let mut buffer_register = unpack_or_e!(
+            self.providers.buffer_register().write().ok(),
+            false,
+            "failed to lock buffer register"
+        );
+        return buffer_register.close_buffer(&id)
+
+    }
 }
 
 impl Widget for MainView {
@@ -822,6 +838,10 @@ impl Widget for MainView {
                     self.do_prev_display();
                     None
                 }
+                MainViewMsg::CloseBuffer => {
+                    self.do_close_buffer();
+                    None
+                }
 
                 MainViewMsg::QuitGladius => GladiusMsg::Quit.someboxed(),
                 _ => {
@@ -882,6 +902,11 @@ impl Widget for MainView {
                     || MainViewMsg::PruneUnchangedBuffers.boxed(),
                     None,
                 ),
+                ContextBarItem::new_leaf_node(
+                    Cow::Borrowed("close buffer"),
+                    || MainViewMsg::CloseBuffer.boxed(),
+                    Some(config.keyboard_config.global.close_buffer),
+                )
             ])
         }
 
