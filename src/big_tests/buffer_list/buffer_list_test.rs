@@ -273,7 +273,8 @@ fn purge_buffers_works() {
 }
 
 #[test]
-fn close_buffer_test() {
+fn close_buffer_test_1() {
+    //simple test for closing a buffer
     let mut full_setup = common_start();
 
     full_setup.type_in("sometext");
@@ -305,7 +306,6 @@ fn close_buffer_test() {
 
     assert!(full_setup.wait_for(|full_setup| full_setup.get_first_context_menu().is_none()));
 
-    // now only data33.txt should remain open, as all others were pruned
     {
         full_setup.send_key(full_setup.config().keyboard_config.global.browse_buffers);
         assert!(full_setup.wait_for(|full_setup| { full_setup.get_fuzzy_search().is_some() }));
@@ -320,6 +320,47 @@ fn close_buffer_test() {
             .collect();
 
         full_setup.screenshot();
-        assert_eq!(all, vec!["data33.txt [*]"]);
+        assert_eq!(all, vec!["data11.txt", "data22.txt"]);
     }
+}
+
+#[test]
+fn close_buffer_test_2() {
+    let mut full_setup = common_start();
+
+    fn close_buffer_and_verify(full_setup: &mut FullSetup, expected_items: Vec<&str>, take_screenshot: bool) {
+        full_setup.send_key(full_setup.config().keyboard_config.global.close_buffer);
+        full_setup.send_key(full_setup.config().keyboard_config.global.browse_buffers);
+        assert!(full_setup.wait_for(|fs| fs.get_fuzzy_search().is_some()));
+
+        let all: Vec<String> = full_setup
+            .get_fuzzy_search()
+            .unwrap()
+            .visible_items()
+            .iter()
+            .filter(|item| item.leaf)
+            .map(|item| item.label.clone())
+            .collect();
+
+        if take_screenshot {
+            full_setup.screenshot();
+        }
+
+        assert_eq!(all, expected_items);
+    }
+
+    fn exit_fuzzy_search(full_setup: &mut FullSetup) {
+        full_setup.send_key(Keycode::Esc.to_key());
+        assert!(full_setup.wait_for(|fs| fs.get_fuzzy_search().is_none()));
+    }
+
+    close_buffer_and_verify(&mut full_setup, vec!["data11.txt", "data22.txt"], true);
+    exit_fuzzy_search(&mut full_setup);
+
+    close_buffer_and_verify(&mut full_setup, vec!["data11.txt"], true);
+    exit_fuzzy_search(&mut full_setup);
+
+    full_setup.send_key(full_setup.config().keyboard_config.global.close_buffer);
+    full_setup.screenshot();
+    assert!(full_setup.wait_for(|fs| fs.is_no_editor_opened()));
 }

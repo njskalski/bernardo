@@ -697,6 +697,7 @@ impl Widget for MainView {
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_in_files => MainViewMsg::OpenFindInFiles.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.next_display => MainViewMsg::NextDisplay.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.prev_display => MainViewMsg::PrevDisplay.someboxed(),
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.close_buffer => MainViewMsg::CloseBuffer.someboxed(),
             InputEvent::EverythingBarTrigger => MainViewMsg::OpenContextMenu.someboxed(),
             // InputEvent::KeyInput(key) if key == config.keyboard_config.global.everything_bar => MainViewMsg::OpenContextMenu.someboxed(),
             _ => {
