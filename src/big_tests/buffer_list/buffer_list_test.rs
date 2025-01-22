@@ -319,6 +319,7 @@ fn close_buffer_test() {
             .map(|item| item.label.clone())
             .collect();
 
+        full_setup.screenshot();
         assert_eq!(all, vec!["data33.txt [*]"]);
     }
 }

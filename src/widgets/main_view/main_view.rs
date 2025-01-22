@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use std::fmt::{format, Display};
 use std::sync::Arc;
 
+use jsonrpc_core::futures::SinkExt;
 use log::{debug, error, warn};
 use uuid::Uuid;
 
@@ -621,21 +622,25 @@ impl MainView {
         self.set_focus_to_default();
         true
     }
-    
+
     fn do_close_buffer(&mut self) -> bool {
         let view_opt = self.get_currently_focused_editor_view_mut();
-        let id = if let Some(view) =  view_opt{
+        let id = if let Some(view) = view_opt {
             view.get_buffer_ref().document_identifier().clone()
         } else {
             return true;
         };
+        self.displays.remove(self.display_idx);
+        if !self.do_prev_display() && !self.do_next_display() {
+            self.display_idx = 0;
+        }
         let mut buffer_register = unpack_or_e!(
             self.providers.buffer_register().write().ok(),
             false,
             "failed to lock buffer register"
         );
-        return buffer_register.close_buffer(&id)
 
+        return buffer_register.close_buffer(&id);
     }
 }
 
@@ -906,7 +911,7 @@ impl Widget for MainView {
                     Cow::Borrowed("close buffer"),
                     || MainViewMsg::CloseBuffer.boxed(),
                     Some(config.keyboard_config.global.close_buffer),
-                )
+                ),
             ])
         }
 
