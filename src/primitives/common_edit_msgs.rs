@@ -5,6 +5,7 @@ use log::{error, warn};
 use streaming_iterator::StreamingIterator;
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::app::App;
 use crate::config::config::{CommonEditMsgKeybindings, ConfigRef};
 use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor_set::CursorSet;
@@ -121,6 +122,17 @@ impl CommonEditMsg {
             CommonEditMsg::Tab => true,
             CommonEditMsg::ShiftTab => true,
         }
+    }
+}
+
+pub struct ApplyCemResult<'a> {
+    modified_buffer: Option<&'a mut dyn TextBuffer>,
+    modified_cursors_set: Option<&'a mut CursorSet>
+}
+
+impl<'a> ApplyCemResult<'a> {
+    pub fn default() -> Self{
+        Self { modified_buffer: None, modified_cursors_set: None }
     }
 }
 
@@ -477,12 +489,12 @@ fn remove_from_rope_at_random_place(
 }
 
 // returns whether change occured
-fn handle_backspace_and_delete(
+fn handle_backspace_and_delete<'a>(
     cursor_set: &mut CursorSet,
     other_cursor_sets: &mut Vec<&mut CursorSet>,
     backspace: bool,
     rope: &mut dyn TextBuffer,
-) -> bool {
+) -> ApplyCemResult<'a> {
     let mut res = false;
     let mut modifier: isize = 0;
     for c in cursor_set.iter_mut() {
@@ -550,7 +562,7 @@ fn handle_backspace_and_delete(
 }
 
 /*
-Returns whether an underlying buffer got modified
+Returns references to modified buffer or None and ref to modified CursorSet or None
 
 
 3) observer_cursor_sets - these will be forcibly updated by primary cursor set. Why?
@@ -560,52 +572,56 @@ Returns whether an underlying buffer got modified
                   undo/redo, we would "interrupt flow" of observer. Destroying an invalid cursor
                   is... less destructive than destroying flow.
  */
-pub fn apply_common_edit_message(
+pub fn apply_common_edit_message<'a>(
     cem: CommonEditMsg,
     cursor_set: &mut CursorSet,
     observer_cursor_sets: &mut Vec<&mut CursorSet>,
     rope: &mut dyn TextBuffer,
     page_height: usize,
     clipboard: Option<&ClipboardRef>,
-) -> bool {
-    let res = match cem {
+) -> ApplyCemResult<'a> {
+    let mut res = ApplyCemResult::default();
+    let mut cursor_set_was_modified = false;
+    let mut buffer_was_modified = false;
+    match cem {
         CommonEditMsg::Char(char) => {
             // TODO optimise
-            insert_to_rope(cursor_set, observer_cursor_sets, rope, None, char.to_string().as_str())
+            {insert_to_rope(cursor_set, observer_cursor_sets, rope, None, char.to_string().as_str()); buffer_was_modified = true;}
         }
-        CommonEditMsg::Block(s) => insert_to_rope(cursor_set, observer_cursor_sets, rope, None, &s),
+        CommonEditMsg::Block(s) => {insert_to_rope(cursor_set, observer_cursor_sets, rope, None, &s);
+        buffer_was_modified = true;},
         CommonEditMsg::CursorUp { selecting } => {
             cursor_set.move_vertically_by(rope, -1, selecting);
-            false
+            cursor_set_was_modified = true;
         }
         CommonEditMsg::CursorDown { selecting } => {
             cursor_set.move_vertically_by(rope, 1, selecting);
-            false
+            cursor_set_was_modified = true;
         }
         CommonEditMsg::CursorLeft { selecting } => {
             cursor_set.move_left(selecting);
-            false
+            cursor_set_was_modified = true;
         }
         CommonEditMsg::CursorRight { selecting } => {
             cursor_set.move_right(rope, selecting);
-            false
+            cursor_set_was_modified = true;
         }
-        CommonEditMsg::Backspace => handle_backspace_and_delete(cursor_set, observer_cursor_sets, true, rope),
+        CommonEditMsg::Backspace => {handle_backspace_and_delete(cursor_set, observer_cursor_sets, true, rope);},
         CommonEditMsg::LineBegin { selecting } => {
             cursor_set.move_home(rope, selecting);
-            false
+            cursor_set_was_modified = true;
         }
         CommonEditMsg::LineEnd { selecting } => {
             cursor_set.move_end(rope, selecting);
-            false
+            cursor_set_was_modified = true;
         }
         CommonEditMsg::WordBegin { selecting } => {
             cursor_set.word_begin_default(rope, selecting);
-            false
+            cursor_set_was_modified = true;
         }
         CommonEditMsg::WordEnd { selecting } => {
             cursor_set.word_end_default(rope, selecting);
-            false
+            cursor_set_was_modified = true;
         }
         CommonEditMsg::PageUp { selecting } => {
             if page_height > PAGE_HEIGHT_LIMIT {
@@ -613,7 +629,7 @@ pub fn apply_common_edit_message(
             } else {
                 cursor_set.move_vertically_by(rope, -(page_height as isize), selecting);
             }
-            false
+            cursor_set_was_modified = true;
         }
         CommonEditMsg::PageDown { selecting } => {
             if page_height > PAGE_HEIGHT_LIMIT {
@@ -621,7 +637,7 @@ pub fn apply_common_edit_message(
             } else {
                 cursor_set.move_vertically_by(rope, page_height as isize, selecting);
             }
-            false
+            cursor_set_was_modified = true;
         }
         CommonEditMsg::Delete => handle_backspace_and_delete(cursor_set, observer_cursor_sets, false, rope),
         CommonEditMsg::Copy => {
