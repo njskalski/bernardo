@@ -434,13 +434,14 @@ impl CursorSet {
     // When two anchors collide, keeps the one with longer selection.
     // When anchors are different, but selections overlap, I SHORTEN THE EARLIER SELECTION, because
     // I assume there have been a move LEFT with selection on.
-    pub fn reduce_left(&mut self) {
+    // Returns true if set was modified
+    pub fn reduce_left(&mut self) -> bool {
         if self.set.len() == 1 {
-            return;
+            return false;
         }
-
-        let norm_res = self.normalize_anchor(false);
-        if norm_res {
+        let mut res = false;
+        res = self.normalize_anchor(false);
+        if res {
             warn!("normalizing anchor left had an effect, this is not expected.");
         }
 
@@ -459,11 +460,13 @@ impl CursorSet {
                         (Some(old_sel), Some(new_sel)) => {
                             if old_sel.e < new_sel.e {
                                 new_set.insert(c.a, *c);
+                                res = true;
                             }
                         }
                         // if previous one had no selection, we consider new selection longer.
                         (None, Some(_new_sel)) => {
                             new_set.insert(c.a, *c);
+                            res = true;
                         }
                         _ => {}
                     }
@@ -490,6 +493,7 @@ impl CursorSet {
                         // it's a little easier because I know from above sorts, that curr.a < next.a
                         if curr_s.e > next.a {
                             curr_s.e = next.a;
+                            res = true;
                         }
                     }
                     None => {}
@@ -498,6 +502,7 @@ impl CursorSet {
         }
 
         debug_assert!(!self.set.is_empty());
+        res
     }
 
     // Reduces cursors after a move right.
@@ -505,9 +510,11 @@ impl CursorSet {
     // When two anchors collide, keeps the one with longer selection.
     // When anchors are different, but selections overlap, I SHORTEN THE LATER SELECTION, because
     // I assume there have been a move RIGHT with selection on.
-    pub fn reduce_right(&mut self) {
+    // Return true if set was modified
+    pub fn reduce_right(&mut self) -> bool {
+        let mut res = false;
         if self.set.len() == 1 {
-            return;
+            return res;
         }
 
         let norm_res = self.normalize_anchor(true);
@@ -530,11 +537,13 @@ impl CursorSet {
                         (Some(old_sel), Some(new_sel)) => {
                             if old_sel.b > new_sel.b {
                                 new_set.insert(c.a, *c);
+                                res = true;
                             }
                         }
                         // if previous one had no selection, we consider new selection longer.
                         (None, Some(_new_sel)) => {
                             new_set.insert(c.a, *c);
+                            res = true;
                         }
                         _ => {}
                     }
@@ -560,11 +569,13 @@ impl CursorSet {
                 if curr_s.b < prev_s.e {
                     curr_s.b = prev_s.e;
                     debug_assert!(curr.a == curr_s.e);
+                    res = true;
                 }
             }
         }
 
         debug_assert!(!self.set.is_empty());
+        res
     }
 
     pub fn word_begin(&mut self, buffer: &dyn TextBuffer, selecting: bool, word_determinant: &BackwardWordDeterminant) -> bool {

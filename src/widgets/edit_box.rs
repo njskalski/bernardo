@@ -261,6 +261,7 @@ impl Widget for EditBoxWidget {
                 if self
                     .buffer
                     .apply_common_edit_message(cem.clone(), self.id, 1, self.clipboard_op.as_ref(), false)
+                    .modified_buffer
                 {
                     self.event_changed()
                 } else {
