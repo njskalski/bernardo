@@ -6,12 +6,13 @@ use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::path::SPath;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
-use crate::layout::layout::Layout;
+use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::xy::XY;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widget::any_msg::AnyMsg;
+use crate::widget::combined_widget::CombinedWidget;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
@@ -26,7 +27,7 @@ pub struct CodeResultAvatarWidget {
     editor_view: EditorView,
     label: TextWidget,
 
-    display_state: Option<DisplayState<Self>>,
+    layout_res: Option<LayoutResult<Self>>,
 }
 
 impl CodeResultAvatarWidget {
@@ -43,7 +44,7 @@ impl CodeResultAvatarWidget {
             id: get_new_widget_id(),
             editor_view,
             label: TextWidget::new(Box::new(description)),
-            display_state: None,
+            layout_res: None,
         }
     }
 
@@ -69,7 +70,7 @@ impl Widget for CodeResultAvatarWidget {
     }
 
     fn prelayout(&mut self) {
-        self.complex_prelayout()
+        self.combined_prelayout()
     }
 
     fn size_policy(&self) -> SizePolicy {
@@ -85,7 +86,7 @@ impl Widget for CodeResultAvatarWidget {
     }
 
     fn layout(&mut self, screenspace: Screenspace) {
-        self.complex_layout(screenspace)
+        self.combined_layout(screenspace)
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
@@ -99,7 +100,7 @@ impl Widget for CodeResultAvatarWidget {
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         #[cfg(test)]
         {
-            let size = unpack_unit_e!(self.get_display_state_op().map(|lr| lr.total_size), "render before layout",);
+            let size = unpack_unit_e!(self.get_layout_res().map(|lr| lr.total_size), "render before layout",);
 
             output.emit_metadata(crate::io::output::Metadata {
                 id: self.id(),
@@ -109,7 +110,7 @@ impl Widget for CodeResultAvatarWidget {
             });
         }
 
-        self.complex_render(theme, focused, output)
+        self.combined_render(theme, focused, output)
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {
@@ -121,7 +122,7 @@ impl Widget for CodeResultAvatarWidget {
     }
 }
 
-impl ComplexWidget for CodeResultAvatarWidget {
+impl CombinedWidget for CodeResultAvatarWidget {
     fn get_layout(&self) -> Box<dyn Layout<Self>> {
         SplitLayout::new(SplitDirection::Vertical)
             .with(
@@ -132,19 +133,15 @@ impl ComplexWidget for CodeResultAvatarWidget {
             .boxed()
     }
 
-    fn get_default_focused(&self) -> SubwidgetPointer<Self> {
-        subwidget!(Self.editor_view)
+    fn save_layout_res(&mut self, result: crate::layout::layout::LayoutResult<Self>) {
+        self.layout_res = Some(result);
     }
 
-    fn set_display_state(&mut self, display_state: DisplayState<Self>) {
-        self.display_state = Some(display_state);
+    fn get_layout_res(&self) -> Option<&crate::layout::layout::LayoutResult<Self>> {
+        self.layout_res.as_ref()
     }
 
-    fn get_display_state_op(&self) -> Option<&DisplayState<Self>> {
-        self.display_state.as_ref()
-    }
-
-    fn get_display_state_mut_op(&mut self) -> Option<&mut DisplayState<Self>> {
-        self.display_state.as_mut()
+    fn get_subwidgets_for_input(&self) -> impl Iterator<Item = SubwidgetPointer<Self>> {
+        [subwidget!(Self.editor_view), subwidget!(Self.label)].into_iter()
     }
 }
