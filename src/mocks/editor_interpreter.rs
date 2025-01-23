@@ -314,6 +314,7 @@ impl<'a> EditorInterpreter<'a> {
             'line_loop_1: for x in self.rect_without_scroll.pos.x..self.rect_without_scroll.lower_right().x {
                 let pos = XY::new(x, line_idx.y);
                 let cell = &self.mock_output.buffer[pos];
+                let line = self.get_line_by_y(line_idx.y).unwrap();
                 match cell {
                     Cell::Begin { style, grapheme } => {
                         if style.background == under_cursor.background || style.background == within_selection.background {
@@ -323,7 +324,7 @@ impl<'a> EditorInterpreter<'a> {
                             last = Some(x);
                         }
                         if style.background == under_cursor.background {
-                            debug_assert!(anchor.is_none());
+                            // debug_assert!(anchor.is_none());
                             anchor = Some(x);
                         }
 

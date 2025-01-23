@@ -722,6 +722,7 @@ impl EditorWidget {
 
         let visible_rect = output.visible_rect();
 
+        let tab_length = buffer.tab_width();
         let char_range_op = buffer.get_visible_chars_range(output);
         // highlights are actually just code coloring
         let highlights = buffer.highlight(char_range_op.clone());
@@ -799,6 +800,7 @@ impl EditorWidget {
             {
                 let mut label_it = filtered_labels.iter().peekable();
                 let mut x_offset: usize = 0;
+                let mut tab_leftover = 0;
 
                 for (c_idx, c) in line.graphemes().enumerate() {
                     let text_pos = XY::new(x_offset as u16, line_idx as u16);
@@ -829,11 +831,25 @@ impl EditorWidget {
 
                     // TODO optimise
                     let tr: String;
-                    println!("{:?}", c);
                     if c == "\n" {
                         tr = NEWLINE.to_string();
-                    } else if c == "\t" {
-                        tr = TAB.to_string();
+                    } else if c == " " {
+                        if tab_leftover > 0 {
+                            tab_leftover-=1;
+                            continue;
+                        } else {
+                            let tab_count = count_tabs_starting_at(line, c_idx, tab_length);
+                            if tab_count > 0 {
+                                tr = build_tabs_string(tab_count, tab_length);
+                                tab_leftover = tab_count * tab_length - 1;
+                            } else {
+                                tr = " ".to_string();
+                            }
+                        }
+                    } else if tab_leftover > 0{
+                        assert!(c == " ");
+                        tab_leftover-=1;
+                        continue;
                     } else {
                         tr = c.to_string();
                     }
@@ -852,7 +868,7 @@ impl EditorWidget {
                         focused,
                     );
 
-                    if tr != NEWLINE && tr != TAB{
+                    if tr != NEWLINE && tab_leftover == 0{
                         // TODO cleanup
                         if let Some(item) = highlight_iter.peek() {
                             if let Some(color) = theme.name_to_color(&item.identifier) {
@@ -1300,6 +1316,42 @@ impl EditorWidget {
         }
         .someboxed()
     }
+}
+
+fn build_tabs_string(tab_count: usize, tab_length: usize) -> String {
+    if tab_length == 0 || tab_count == 0 {
+        return String::new();
+    }
+
+    let mut result = String::new();
+    let dots = ".".repeat((tab_count - 1) * tab_length);
+    result.push_str("|..");
+    result.push_str(&dots);
+    result.push('|');
+    result
+}
+
+//Returns number of tabs that ther is starting at this idx.
+//So for instance if we have 10 consecutive spaces and tab lenght is 4, we have 2 tabs
+fn count_tabs_starting_at(line: &str, c_idx: usize, tab_length: usize) -> usize {
+    if tab_length == 0 || c_idx >= line.len() {
+        return 0;
+    }
+
+    let mut count = 0;
+    let mut start = c_idx;
+
+    while start + tab_length <= line.len() {
+        // Check if the next `tab_length` characters are all spaces
+        if line[start..start + tab_length].chars().all(|c| c == ' ') {
+            count += 1;
+            start += tab_length;
+        } else {
+            break;
+        }
+    }
+
+    count
 }
 
 impl Widget for EditorWidget {
