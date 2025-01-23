@@ -18,7 +18,7 @@ use crate::widgets::context_menu::widget::CONTEXT_MENU_WIDGET_NAME;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
-use crate::widgets::editor_widget::editor_widget::EditorWidget;
+use crate::widgets::editor_widget::editor_widget::{EditorWidget, BEYOND, NEWLINE};
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
 
@@ -327,7 +327,7 @@ impl<'a> EditorInterpreter<'a> {
                             anchor = Some(x);
                         }
 
-                        if grapheme == "⏎" {
+                        if grapheme == NEWLINE {
                             break 'line_loop_1;
                         }
                     }
@@ -361,7 +361,7 @@ impl<'a> EditorInterpreter<'a> {
                             result += ")";
                         }
 
-                        if grapheme == "⏎" || grapheme == "⇱" {
+                        if grapheme == NEWLINE || grapheme == BEYOND {
                             break 'line_loop_2;
                         }
                     }

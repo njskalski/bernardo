@@ -55,8 +55,9 @@ use crate::{unpack_or, unpack_or_e, unpack_unit, unpack_unit_e};
 const MIN_EDITOR_SIZE: XY = XY::new(10, 3);
 // const MAX_HOVER_SIZE: XY = XY::new(64, 20);
 
-const NEWLINE: &str = "⏎";
-const BEYOND: &str = "⇱";
+pub const NEWLINE: &str = "⏎";
+pub const BEYOND: &str = "⇱";
+pub const TAB: &str = "|---|";
 
 const DEFAULT_EDITOR_TIMEOUT: Duration = Duration::from_millis(500);
 
@@ -827,7 +828,15 @@ impl EditorWidget {
                     }
 
                     // TODO optimise
-                    let tr = if c == "\n" { NEWLINE.to_string() } else { c.to_string() };
+                    let tr: String;
+                    println!("{:?}", c);
+                    if c == "\n" {
+                        tr = NEWLINE.to_string();
+                    } else if c == "\t" {
+                        tr = TAB.to_string();
+                    } else {
+                        tr = c.to_string();
+                    }
 
                     let is_special_cursor: bool = if let EditorState::DroppingCursor { special_cursor } = &self.state {
                         special_cursor.get_cursor_status_for_char(char_idx) == CursorStatus::UnderCursor
@@ -843,7 +852,7 @@ impl EditorWidget {
                         focused,
                     );
 
-                    if tr != NEWLINE {
+                    if tr != NEWLINE && tr != TAB{
                         // TODO cleanup
                         if let Some(item) = highlight_iter.peek() {
                             if let Some(color) = theme.name_to_color(&item.identifier) {
