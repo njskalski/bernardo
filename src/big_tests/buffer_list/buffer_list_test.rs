@@ -319,7 +319,6 @@ fn close_buffer_test_1() {
             .map(|item| item.label.clone())
             .collect();
 
-        full_setup.screenshot();
         assert_eq!(all, vec!["data11.txt", "data22.txt"]);
     }
 }
@@ -328,7 +327,7 @@ fn close_buffer_test_1() {
 fn close_buffer_test_2() {
     let mut full_setup = common_start();
 
-    fn close_buffer_and_verify(full_setup: &mut FullSetup, expected_items: Vec<&str>, take_screenshot: bool) {
+    fn close_buffer_and_verify(full_setup: &mut FullSetup, expected_items: Vec<&str>) {
         full_setup.send_key(full_setup.config().keyboard_config.global.close_buffer);
         full_setup.send_key(full_setup.config().keyboard_config.global.browse_buffers);
         assert!(full_setup.wait_for(|fs| fs.get_fuzzy_search().is_some()));
@@ -342,10 +341,6 @@ fn close_buffer_test_2() {
             .map(|item| item.label.clone())
             .collect();
 
-        if take_screenshot {
-            full_setup.screenshot();
-        }
-
         assert_eq!(all, expected_items);
     }
 
@@ -354,13 +349,12 @@ fn close_buffer_test_2() {
         assert!(full_setup.wait_for(|fs| fs.get_fuzzy_search().is_none()));
     }
 
-    close_buffer_and_verify(&mut full_setup, vec!["data11.txt", "data22.txt"], true);
+    close_buffer_and_verify(&mut full_setup, vec!["data11.txt", "data22.txt"]);
     exit_fuzzy_search(&mut full_setup);
 
-    close_buffer_and_verify(&mut full_setup, vec!["data11.txt"], true);
+    close_buffer_and_verify(&mut full_setup, vec!["data11.txt"]);
     exit_fuzzy_search(&mut full_setup);
 
     full_setup.send_key(full_setup.config().keyboard_config.global.close_buffer);
-    full_setup.screenshot();
     assert!(full_setup.wait_for(|fs| fs.is_no_editor_opened()));
 }
