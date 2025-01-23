@@ -6,7 +6,7 @@ use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::fs::path::SPath;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
-use crate::layout::layout::Layout;
+use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::xy::XY;
@@ -27,7 +27,7 @@ pub struct CodeResultAvatarWidget {
     editor_view: EditorView,
     label: TextWidget,
 
-    layout_res: Option<crate::layout::layout::LayoutResult<Self>>,
+    layout_res: Option<LayoutResult<Self>>,
 }
 
 impl CodeResultAvatarWidget {

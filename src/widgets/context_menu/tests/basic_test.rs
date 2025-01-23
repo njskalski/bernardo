@@ -60,5 +60,4 @@ fn context_menu_2_letters_filter() {
 
     assert!(testbed.has_items(["menu1", "submenu", "child1", "child2"].into_iter()));
     assert!(testbed.has_none_of_items(["option1", "option2"].into_iter()));
-    testbed.screenshot();
 }
