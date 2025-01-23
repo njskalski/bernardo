@@ -18,7 +18,7 @@ use crate::experiments::filename_to_language::filename_to_language;
 use crate::experiments::regex_search::FindError;
 use crate::fs::path::SPath;
 use crate::io::output::Output;
-use crate::primitives::common_edit_msgs::{apply_common_edit_message, cme_to_direction, CommonEditMsg};
+use crate::primitives::common_edit_msgs::{apply_common_edit_message, cme_to_direction, ApplyCemResult, CommonEditMsg};
 use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::xy::XY;
 use crate::text::contents_and_cursors::ContentsAndCursors;
@@ -85,17 +85,18 @@ impl BufferState {
         page_height: usize,
         clipboard: Option<&ClipboardRef>,
         autoindent: bool,
-    ) -> bool {
+    ) -> ApplyCemResult {
+        let mut result = ApplyCemResult::default();
         if self.subtype == BufferType::SingleLine {
             if page_height != 1 {
                 error!("page_height required to be 1 on SingleLine buffers!");
-                return false;
+                return result;
             }
 
             match cem {
                 CommonEditMsg::Char('\n') => {
                     error!("not adding newline to a single-line buffer");
-                    return false;
+                    return result;
                 }
                 CommonEditMsg::Block(block) => {
                     // TODO not sure if this should be here
@@ -106,7 +107,7 @@ impl BufferState {
             }
         }
 
-        let mut cursors_copy = unpack_or_e!(self.text().get_cursor_set(widget_id), false, "cursor set not found").clone();
+        let mut cursors_copy = unpack_or_e!(self.text().get_cursor_set(widget_id), result, "cursor set not found").clone();
 
         if self.subtype == BufferType::Full {
             if autoindent && cem == CommonEditMsg::Char('\n') {
@@ -151,45 +152,20 @@ impl BufferState {
             _ => self.set_milestone(),
         };
 
-        let any_change = apply_common_edit_message(cem.clone(), &mut cursors_copy, &mut vec![], self, page_height as usize, clipboard);
-        let mut cursor_moved = false;
-        if let Some(_) = cme_to_direction(&cem) {
-            cursor_moved = true;
-
-            #[cfg(debug_assertions)]
-            {
-                let only_cursor_move = match cem {
-                    CommonEditMsg::CursorUp { selecting: _ } => true,
-                    CommonEditMsg::CursorDown { selecting: _ } => true,
-                    CommonEditMsg::CursorLeft { selecting: _ } => true,
-                    CommonEditMsg::CursorRight { selecting: _ } => true,
-                    CommonEditMsg::LineBegin { selecting: _ } => true,
-                    CommonEditMsg::LineEnd { selecting: _ } => true,
-                    CommonEditMsg::WordBegin { selecting: _ } => true,
-                    CommonEditMsg::WordEnd { selecting: _ } => true,
-                    CommonEditMsg::PageUp { selecting: _ } => true,
-                    CommonEditMsg::PageDown { selecting: _ } => true,
-                    _ => false,
-                };
-                assert!(
-                    !(only_cursor_move && any_change),
-                    "buffer modified on cursor move without file modification"
-                );
-            }
-        }
+        result |= apply_common_edit_message(cem.clone(), &mut cursors_copy, &mut vec![], self, page_height as usize, clipboard);
 
         //undo/redo invalidates cursors copy, so I need to watch for those
         match cem {
             CommonEditMsg::Undo | CommonEditMsg::Redo => {}
             _ => {
                 self.text_mut().set_cursor_set(widget_id, cursors_copy);
-                if !any_change && set_milestone && !cursor_moved {
+                if !result.modified_buffer && set_milestone && !result.modified_cursor_set {
                     self.undo_milestone();
                 }
             }
         }
 
-        any_change
+        result
     }
 
     /*
@@ -267,15 +243,18 @@ impl BufferState {
 
         // removing old item
         if stupid_message.stupid_range.0 != stupid_message.stupid_range.1 {
-            if self.apply_common_edit_message(
-                CommonEditMsg::DeleteBlock {
-                    char_range: begin.a..end.a,
-                },
-                widget_id,
-                page_height,
-                None,
-                true,
-            ) {
+            if self
+                .apply_common_edit_message(
+                    CommonEditMsg::DeleteBlock {
+                        char_range: begin.a..end.a,
+                    },
+                    widget_id,
+                    page_height,
+                    None,
+                    true,
+                )
+                .modified_buffer
+            {
                 let rope = self.text().rope().clone(); // shallow copy
                 self.text_mut().parsing_mut().map_or_else(
                     || {
@@ -297,14 +276,17 @@ impl BufferState {
         if !stupid_message.substitute.is_empty() {
             let what = stupid_message.substitute.clone();
             let char_len = what.graphemes(true).count();
-            if self.apply_common_edit_message(
-                // TODO unnecessary clone
-                CommonEditMsg::InsertBlock { char_pos: begin.a, what },
-                widget_id,
-                page_height,
-                None,
-                false,
-            ) {
+            if self
+                .apply_common_edit_message(
+                    // TODO unnecessary clone
+                    CommonEditMsg::InsertBlock { char_pos: begin.a, what },
+                    widget_id,
+                    page_height,
+                    None,
+                    false,
+                )
+                .modified_buffer
+            {
                 let rope = self.text().rope().clone(); // shallow copy
                 self.text_mut().parsing_mut().map_or_else(
                     || {

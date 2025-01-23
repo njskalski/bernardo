@@ -264,9 +264,11 @@ impl Cursor {
     }
 
     // Clears both selection and preferred column.
-    pub fn clear_both(&mut self) {
+    pub fn clear_both(&mut self) -> bool {
+        let res = self.s.is_some() || self.preferred_column.is_some();
         self.s = None;
         self.preferred_column = None;
+        res
     }
 
     pub fn get_cursor_status_for_char(&self, char_idx: usize) -> CursorStatus {

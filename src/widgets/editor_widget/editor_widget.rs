@@ -1408,7 +1408,7 @@ impl Widget for EditorWidget {
                             );
 
                             // TODO this needs to happen only if CONTENTS changed, not if cursor positions changed
-                            if changed {
+                            if changed.modified_buffer {
                                 self.after_content_changed(&buffer);
 
                                 if self.has_completions() {
