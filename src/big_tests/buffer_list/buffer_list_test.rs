@@ -269,4 +269,92 @@ fn purge_buffers_works() {
 
         assert_eq!(all, vec!["data33.txt [*]"]);
     }
+    full_setup.screenshot();
+}
+
+#[test]
+fn close_buffer_test_1() {
+    //simple test for closing a buffer
+    let mut full_setup = common_start();
+
+    full_setup.type_in("sometext");
+    full_setup.wait_for(|full_setup| {
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .get_all_visible_lines()
+            .find(|item| item.contents.text.contains("sometext"))
+            .is_some()
+    });
+
+    full_setup.send_key(full_setup.config().keyboard_config.global.everything_bar);
+
+    assert!(full_setup.wait_for(|full_setup| full_setup.get_first_context_menu().is_some()));
+
+    full_setup.type_in("close");
+    for _ in 0..2 {
+        full_setup.send_key(Keycode::ArrowDown.to_key());
+    }
+
+    assert!(full_setup.wait_for(|full_setup| full_setup
+        .get_first_context_menu()
+        .unwrap()
+        .selected_option()
+        .unwrap()
+        .contains("close")));
+    full_setup.send_key(Keycode::Enter.to_key());
+
+    assert!(full_setup.wait_for(|full_setup| full_setup.get_first_context_menu().is_none()));
+
+    {
+        full_setup.send_key(full_setup.config().keyboard_config.global.browse_buffers);
+        assert!(full_setup.wait_for(|full_setup| { full_setup.get_fuzzy_search().is_some() }));
+
+        let all: Vec<String> = full_setup
+            .get_fuzzy_search()
+            .unwrap()
+            .visible_items()
+            .iter()
+            .filter(|item| item.leaf)
+            .map(|item| item.label.clone())
+            .collect();
+
+        assert_eq!(all, vec!["data11.txt", "data22.txt"]);
+    }
+}
+
+#[test]
+fn close_buffer_test_2() {
+    let mut full_setup = common_start();
+
+    fn close_buffer_and_verify(full_setup: &mut FullSetup, expected_items: Vec<&str>) {
+        full_setup.send_key(full_setup.config().keyboard_config.global.close_buffer);
+        full_setup.send_key(full_setup.config().keyboard_config.global.browse_buffers);
+        assert!(full_setup.wait_for(|fs| fs.get_fuzzy_search().is_some()));
+
+        let all: Vec<String> = full_setup
+            .get_fuzzy_search()
+            .unwrap()
+            .visible_items()
+            .iter()
+            .filter(|item| item.leaf)
+            .map(|item| item.label.clone())
+            .collect();
+
+        assert_eq!(all, expected_items);
+    }
+
+    fn exit_fuzzy_search(full_setup: &mut FullSetup) {
+        full_setup.send_key(Keycode::Esc.to_key());
+        assert!(full_setup.wait_for(|fs| fs.get_fuzzy_search().is_none()));
+    }
+
+    close_buffer_and_verify(&mut full_setup, vec!["data11.txt", "data22.txt"]);
+    exit_fuzzy_search(&mut full_setup);
+
+    close_buffer_and_verify(&mut full_setup, vec!["data11.txt"]);
+    exit_fuzzy_search(&mut full_setup);
+
+    full_setup.send_key(full_setup.config().keyboard_config.global.close_buffer);
+    assert!(full_setup.wait_for(|fs| fs.is_no_editor_opened()));
 }

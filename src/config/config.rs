@@ -71,6 +71,7 @@ pub struct Global {
     pub find_in_files: Key,
     pub fuzzy_file: Key,
     pub new_buffer: Key,
+    pub close_buffer: Key,
     pub make_screenshot: Key,
     pub next_display: Key,
     pub prev_display: Key,
@@ -82,6 +83,7 @@ impl Default for Global {
             close: Keycode::Char('q').to_key().with_ctrl(),
             fuzzy_file: Keycode::Char('j').to_key().with_ctrl(),
             new_buffer: Keycode::Char('n').to_key().with_ctrl(),
+            close_buffer: Keycode::Char('p').to_key().with_ctrl(),
             browse_buffers: Keycode::Char('b').to_key().with_ctrl(),
             // This is the most important feature of them all.
             // In order to support it EVERYWHERE it will need to be converted to InputEvent

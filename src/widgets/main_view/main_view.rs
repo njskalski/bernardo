@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use std::fmt::{format, Display};
 use std::sync::Arc;
 
+use jsonrpc_core::futures::SinkExt;
 use log::{debug, error, warn};
 use uuid::Uuid;
 
@@ -120,6 +121,22 @@ impl DocumentIdentifier {
             Some(sp) => {
                 format!("{}", sp.label())
             }
+        }
+    }
+}
+
+pub struct CloseBufferResult {
+    buffer_closed: bool,
+    no_currently_focused_editor_view: bool,
+    displays_empty: bool,
+}
+
+impl CloseBufferResult {
+    pub fn default() -> Self {
+        Self {
+            buffer_closed: false,
+            no_currently_focused_editor_view: false,
+            displays_empty: false,
         }
     }
 }
@@ -621,6 +638,33 @@ impl MainView {
         self.set_focus_to_default();
         true
     }
+
+    fn do_close_buffer(&mut self) -> CloseBufferResult {
+        let mut result = CloseBufferResult::default();
+        let view_opt = self.get_currently_focused_editor_view_mut();
+        let id = if let Some(view) = view_opt {
+            view.get_buffer_ref().document_identifier().clone()
+        } else {
+            result.no_currently_focused_editor_view = true;
+            return result;
+        };
+        self.displays.remove(self.display_idx);
+        if !self.do_prev_display() && !self.do_next_display() {
+            result.displays_empty = true;
+            self.display_idx = 0;
+        }
+        let mut buffer_register = unpack_or_e!(
+            self.providers.buffer_register().write().ok(),
+            {
+                result.buffer_closed = false;
+                result
+            },
+            "failed to lock buffer register"
+        );
+        result.buffer_closed = buffer_register.close_buffer(&id);
+
+        return result;
+    }
 }
 
 impl Widget for MainView {
@@ -676,6 +720,7 @@ impl Widget for MainView {
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.find_in_files => MainViewMsg::OpenFindInFiles.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.next_display => MainViewMsg::NextDisplay.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.prev_display => MainViewMsg::PrevDisplay.someboxed(),
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.close_buffer => MainViewMsg::CloseBuffer.someboxed(),
             InputEvent::EverythingBarTrigger => MainViewMsg::OpenContextMenu.someboxed(),
             // InputEvent::KeyInput(key) if key == config.keyboard_config.global.everything_bar => MainViewMsg::OpenContextMenu.someboxed(),
             _ => {
@@ -822,6 +867,10 @@ impl Widget for MainView {
                     self.do_prev_display();
                     None
                 }
+                MainViewMsg::CloseBuffer => {
+                    self.do_close_buffer();
+                    None
+                }
 
                 MainViewMsg::QuitGladius => GladiusMsg::Quit.someboxed(),
                 _ => {
@@ -881,6 +930,11 @@ impl Widget for MainView {
                     Cow::Borrowed("prune unchanged buffers"),
                     || MainViewMsg::PruneUnchangedBuffers.boxed(),
                     None,
+                ),
+                ContextBarItem::new_leaf_node(
+                    Cow::Borrowed("close buffer"),
+                    || MainViewMsg::CloseBuffer.boxed(),
+                    Some(config.keyboard_config.global.close_buffer),
                 ),
             ])
         }
