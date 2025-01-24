@@ -1,4 +1,5 @@
 use log::error;
+use lsp_types::TagSupport;
 
 use crate::cursor::cursor::CursorStatus;
 use crate::io::buffer_output::buffer_output_consistent_items_iter::BufferConsistentItemsIter;
@@ -18,7 +19,7 @@ use crate::widgets::context_menu::widget::CONTEXT_MENU_WIDGET_NAME;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
-use crate::widgets::editor_widget::editor_widget::{EditorWidget, BEYOND, NEWLINE};
+use crate::widgets::editor_widget::editor_widget::{count_tabs_starting_at, EditorWidget, BEYOND, NEWLINE, TAB, TAB_LEN};
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
 
@@ -206,9 +207,9 @@ impl<'a> EditorInterpreter<'a> {
             .buffer
             .items_of_style(style)
             .with_rect(self.rect_without_scroll.clone())
-            .map(move |horizontal_iter_item: HorizontalIterItem| {
+            .map(move |mut horizontal_iter_item: HorizontalIterItem| {
                 assert!(horizontal_iter_item.text_style.is_some());
-
+                horizontal_iter_item.text = horizontal_iter_item.text.replace(TAB, &" ".repeat(TAB_LEN));
                 LineIdxTuple {
                     y: horizontal_iter_item.absolute_pos.y,
                     visible_idx: horizontal_iter_item.absolute_pos.y as usize + offset,
@@ -255,6 +256,10 @@ impl<'a> EditorInterpreter<'a> {
             .with_rect(self.rect_without_scroll)
             .skip(screen_pos_y as usize)
             .next()
+            .map(|mut line| {
+                line.text = line.text.replace(TAB, &" ".repeat(TAB_LEN));
+                line
+            })
     }
 
     pub fn get_all_visible_lines(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
@@ -324,7 +329,7 @@ impl<'a> EditorInterpreter<'a> {
                             last = Some(x);
                         }
                         if style.background == under_cursor.background {
-                            // debug_assert!(anchor.is_none());
+                            debug_assert!(anchor.is_none());
                             anchor = Some(x);
                         }
 
@@ -372,7 +377,7 @@ impl<'a> EditorInterpreter<'a> {
 
             // debug!("res [{}]", &result);
 
-            line_idx.contents.text = result;
+            line_idx.contents.text = result.replace(TAB, &" ".repeat(TAB_LEN));
             line_idx
         })
     }

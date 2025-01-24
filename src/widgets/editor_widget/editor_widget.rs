@@ -7,6 +7,7 @@ use std::time::Duration;
 use log::{debug, error, info, warn};
 use matches::debug_assert_matches;
 use streaming_iterator::StreamingIterator;
+use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
@@ -57,7 +58,8 @@ const MIN_EDITOR_SIZE: XY = XY::new(10, 3);
 
 pub const NEWLINE: &str = "⏎";
 pub const BEYOND: &str = "⇱";
-pub const TAB: &str = "|---|";
+pub const TAB: &str = "|--|";
+pub const TAB_LEN: usize = 4;
 
 const DEFAULT_EDITOR_TIMEOUT: Duration = Duration::from_millis(500);
 
@@ -722,7 +724,6 @@ impl EditorWidget {
 
         let visible_rect = output.visible_rect();
 
-        let tab_length = buffer.tab_width();
         let char_range_op = buffer.get_visible_chars_range(output);
         // highlights are actually just code coloring
         let highlights = buffer.highlight(char_range_op.clone());
@@ -835,20 +836,20 @@ impl EditorWidget {
                         tr = NEWLINE.to_string();
                     } else if c == " " {
                         if tab_leftover > 0 {
-                            tab_leftover-=1;
+                            tab_leftover -= 1;
                             continue;
                         } else {
-                            let tab_count = count_tabs_starting_at(line, c_idx, tab_length);
+                            let tab_count = count_tabs_starting_at(line, c_idx);
                             if tab_count > 0 {
-                                tr = build_tabs_string(tab_count, tab_length);
-                                tab_leftover = tab_count * tab_length - 1;
+                                tr = build_tabs_string(tab_count);
+                                tab_leftover = tab_count * TAB_LEN - 1;
                             } else {
                                 tr = " ".to_string();
                             }
                         }
-                    } else if tab_leftover > 0{
+                    } else if tab_leftover > 0 {
                         assert!(c == " ");
-                        tab_leftover-=1;
+                        tab_leftover -= 1;
                         continue;
                     } else {
                         tr = c.to_string();
@@ -868,7 +869,7 @@ impl EditorWidget {
                         focused,
                     );
 
-                    if tr != NEWLINE && tab_leftover == 0{
+                    if tr != NEWLINE && tab_leftover == 0 {
                         // TODO cleanup
                         if let Some(item) = highlight_iter.peek() {
                             if let Some(color) = theme.name_to_color(&item.identifier) {
@@ -1318,34 +1319,29 @@ impl EditorWidget {
     }
 }
 
-fn build_tabs_string(tab_count: usize, tab_length: usize) -> String {
-    if tab_length == 0 || tab_count == 0 {
+pub fn build_tabs_string(tab_count: usize) -> String {
+    if tab_count == 0 {
         return String::new();
     }
 
-    let mut result = String::new();
-    let dots = ".".repeat((tab_count - 1) * tab_length);
-    result.push_str("|..");
-    result.push_str(&dots);
-    result.push('|');
-    result
+    TAB.repeat(tab_count)
 }
-
 //Returns number of tabs that ther is starting at this idx.
 //So for instance if we have 10 consecutive spaces and tab lenght is 4, we have 2 tabs
-fn count_tabs_starting_at(line: &str, c_idx: usize, tab_length: usize) -> usize {
-    if tab_length == 0 || c_idx >= line.len() {
+pub fn count_tabs_starting_at(line: &str, c_idx: usize) -> usize {
+    if c_idx >= line.len() {
         return 0;
     }
 
     let mut count = 0;
     let mut start = c_idx;
 
-    while start + tab_length <= line.len() {
-        // Check if the next `tab_length` characters are all spaces
-        if line[start..start + tab_length].chars().all(|c| c == ' ') {
+    while start < line.len() {
+        //This should be tested because there are some edge cases with graphemes that are not single byte
+        let end = line.char_indices().nth(start + TAB_LEN).map_or(line.len(), |(i, _)| i);
+        if line[start..end].graphemes(true).all(|c| c == " ") {
             count += 1;
-            start += tab_length;
+            start += TAB_LEN;
         } else {
             break;
         }
