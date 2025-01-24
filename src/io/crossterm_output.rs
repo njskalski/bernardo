@@ -104,10 +104,10 @@ impl<W: Write> FinalOutput for CrosstermOutput<W> {
         }
 
         self.stdout.queue(BeginSynchronizedUpdate)?;
-        self.stdout.queue(Clear(ClearType::All))?;
-        self.stdout.queue(SetForegroundColor(Color::Reset))?;
-        self.stdout.queue(SetBackgroundColor(Color::Reset))?;
-        self.stdout.queue(SetAttribute(Attribute::Reset))?;
+        // self.stdout.queue(Clear(ClearType::All))?; // for some reason, this creates tearing.
+        // self.stdout.queue(SetForegroundColor(Color::Reset))?;
+        // self.stdout.queue(SetBackgroundColor(Color::Reset))?;
+        // self.stdout.queue(SetAttribute(Attribute::Reset))?;
 
         let mut last_style: Option<TextStyle> = None;
         let mut curr_pos: XY = XY::ZERO;

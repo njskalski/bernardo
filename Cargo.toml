@@ -57,7 +57,8 @@ coredump = "0.1.1"
 
 [dependencies.crossterm]
 version = "0.28.1"
-features = ["events", "filedescriptor"]
+features = ["events", "bracketed-paste"]
+default-features = false
 
 [dev-dependencies]
 rusty-fork = "0.3.0"
