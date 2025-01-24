@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::process::exit;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
@@ -204,8 +205,15 @@ impl Config {
     pub fn load_from_file(path: &Path) -> Result<Self, LoadError> {
         let b = std::fs::read(path)?;
         let s = std::str::from_utf8(&b)?;
-        let item: Config = ron::from_str(s)?;
-        Ok(item)
+        let item: Result<Config, _> = ron::from_str(s);
+        match item {
+            Ok(config) => return Ok(config),
+            Err(e) => {
+                println!("Failed de-serializing config, perhaps you want to reconfigure?");
+                println!("Full error: {}.", e);
+                exit(1);
+            }
+        }
     }
 
     pub fn save_to_file(&self, path: &Path) -> Result<(), SaveError> {
