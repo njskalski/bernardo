@@ -3,7 +3,7 @@ use std::io::Write;
 
 use crossterm::style::{Attribute, Color, Print, SetAttribute, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::{BeginSynchronizedUpdate, Clear, ClearType, EndSynchronizedUpdate};
-use crossterm::{cursor, style, terminal, QueueableCommand};
+use crossterm::{cursor, style, terminal, ExecutableCommand, QueueableCommand};
 use log::{debug, warn};
 use unicode_width::UnicodeWidthStr;
 
@@ -18,27 +18,18 @@ use crate::primitives::xy::XY;
 pub struct CrosstermOutput<W: Write> {
     stdout: W,
     size: XY,
-    front_buffer: BufferOutput,
-    back_buffer: BufferOutput,
-    current_buffer: bool,
+    buffer: BufferOutput,
 }
 
 impl<W: Write> CrosstermOutput<W> {
     pub fn new(mut stdout: W) -> Self {
-        write!(stdout, "{}", cursor::Hide).unwrap();
+        stdout.execute(cursor::Hide).unwrap();
 
         let size: XY = terminal::size().unwrap().into();
 
-        let front_buffer = BufferOutput::new(size);
-        let back_buffer = BufferOutput::new(size);
+        let buffer = BufferOutput::new(size);
 
-        CrosstermOutput {
-            stdout,
-            size,
-            front_buffer,
-            back_buffer,
-            current_buffer: false,
-        }
+        CrosstermOutput { stdout, size, buffer }
     }
 
     // returns new size or none if no update happened.
@@ -47,8 +38,7 @@ impl<W: Write> CrosstermOutput<W> {
         if new_size != self.size {
             self.size = new_size;
 
-            self.back_buffer = BufferOutput::new(self.size);
-            self.front_buffer = BufferOutput::new(self.size);
+            self.buffer = BufferOutput::new(self.size);
 
             Some(new_size)
         } else {
@@ -63,12 +53,12 @@ impl<W: Write> CrosstermOutput<W> {
             .queue(SetBackgroundColor(Color::Reset))?
             .queue(SetAttribute(Attribute::Reset))?
             .queue(cursor::MoveTo(0, 0))?
-            .queue(cursor::Show)?;
-        Ok(())
+            .queue(cursor::Show)?
+            .flush()
     }
 
     pub fn get_back_buffer(&self) -> &BufferOutput {
-        &self.back_buffer
+        &self.buffer
     }
 }
 
@@ -80,27 +70,12 @@ impl<W: Write> SizedXY for CrosstermOutput<W> {
 
 impl<W: Write> Output for CrosstermOutput<W> {
     fn print_at(&mut self, pos: XY, style: TextStyle, text: &str) {
-        let buffer = if self.current_buffer == false {
-            &mut self.front_buffer
-        } else {
-            &mut self.back_buffer
-        };
-
         // debug!("printing {} at {}", text, pos);
-
-        buffer.print_at(pos, style, text)
+        self.buffer.print_at(pos, style, text)
     }
 
     fn clear(&mut self) -> Result<(), std::io::Error> {
-        self.stdout.queue(Clear(ClearType::All))?;
-
-        self.current_buffer = !self.current_buffer;
-        let buffer = if self.current_buffer == false {
-            &mut self.front_buffer
-        } else {
-            &mut self.back_buffer
-        };
-        buffer.clear()
+        self.buffer.clear()
     }
 
     fn visible_rect(&self) -> Rect {
@@ -119,7 +94,7 @@ impl<W: Write> Output for CrosstermOutput<W> {
 
 impl<W: Write> FinalOutput for CrosstermOutput<W> {
     fn get_front_buffer(&self) -> &BufferOutput {
-        &self.front_buffer
+        &self.buffer
     }
 
     fn end_frame(&mut self) -> Result<(), std::io::Error> {
@@ -128,18 +103,11 @@ impl<W: Write> FinalOutput for CrosstermOutput<W> {
             debug_assert!(self.size == size, "output size different that crossterm size!");
         }
 
-        let (buffer, _other_buffer) = if self.current_buffer == false {
-            (&self.front_buffer, &self.back_buffer)
-        } else {
-            (&self.back_buffer, &self.front_buffer)
-        };
-
-        self.stdout.queue(BeginSynchronizedUpdate);
-        self.stdout
-            .queue(Clear(ClearType::All))?
-            .queue(SetForegroundColor(Color::Reset))?
-            .queue(SetBackgroundColor(Color::Reset))?
-            .queue(SetAttribute(Attribute::Reset))?;
+        self.stdout.queue(BeginSynchronizedUpdate)?;
+        // self.stdout.queue(Clear(ClearType::All))?; // for some reason, this creates tearing.
+        // self.stdout.queue(SetForegroundColor(Color::Reset))?;
+        // self.stdout.queue(SetBackgroundColor(Color::Reset))?;
+        // self.stdout.queue(SetAttribute(Attribute::Reset))?;
 
         let mut last_style: Option<TextStyle> = None;
         let mut curr_pos: XY = XY::ZERO;
@@ -150,7 +118,7 @@ impl<W: Write> FinalOutput for CrosstermOutput<W> {
             for x in 0..self.size.x {
                 let pos = XY::new(x, y);
 
-                let cell = &buffer[pos];
+                let cell = &self.buffer[pos];
                 // let old_cell = &other_buffer[pos];
 
                 if pos != curr_pos {
@@ -214,7 +182,7 @@ impl<W: Write> FinalOutput for CrosstermOutput<W> {
             curr_pos.x = 0;
         }
 
-        self.stdout.queue(EndSynchronizedUpdate);
+        self.stdout.queue(EndSynchronizedUpdate)?;
         self.stdout.flush()
     }
 }
