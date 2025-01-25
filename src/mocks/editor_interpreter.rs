@@ -11,7 +11,9 @@ use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::savefile_interpreter::SaveFileInterpreter;
 use crate::mocks::scroll_interpreter::ScrollInterpreter;
+use crate::primitives::printable::Printable;
 use crate::primitives::rect::Rect;
+use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::widgets::context_menu::widget::CONTEXT_MENU_WIDGET_NAME;
 use crate::widgets::edit_box::EditBoxWidget;
@@ -22,6 +24,7 @@ use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
 use log::{error, warn};
 use lsp_types::TagSupport;
+use unicode_width::UnicodeWidthStr;
 
 pub struct EditorInterpreter<'a> {
     meta: &'a Metadata,
@@ -311,6 +314,42 @@ impl<'a> EditorInterpreter<'a> {
         self.saveas_op.as_ref()
     }
 
+    // checks for presence of uniform-style tab
+    fn has_tab_at(&self, mut pos: XY) -> bool {
+        let mut style_op: Option<TextStyle> = None;
+
+        for g in TAB.graphemes() {
+            if !(pos < self.mock_output.buffer.size()) {
+                return false;
+            }
+
+            let cell = &self.mock_output.buffer[pos];
+
+            match cell {
+                Cell::Begin { style, grapheme } => {
+                    if let Some(old_style) = style_op.as_ref() {
+                        if style != old_style {
+                            return false;
+                        }
+                    } else {
+                        style_op = Some(*style);
+                    }
+
+                    if grapheme != g {
+                        return false;
+                    }
+
+                    pos.x += grapheme.width() as u16;
+                }
+                Cell::Continuation => {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
     /*
     Returns "coded" cursor lines, where cursor is coded as in cursor tests, so:
     # <- this is cursor
@@ -344,9 +383,15 @@ impl<'a> EditorInterpreter<'a> {
             let mut last: Option<u16> = None;
             let mut anchor: Option<u16> = None;
 
-            'line_loop_1: for x in self.rect_without_scroll.pos.x..self.rect_without_scroll.lower_right().x {
+            let mut x = self.rect_without_scroll.pos.x;
+
+            'line_loop_1: while x < self.rect_without_scroll.lower_right().x {
                 let pos = XY::new(x, line_idx.y);
                 let cell = &self.mock_output.buffer[pos];
+                if let Cell::Continuation = cell {
+                    continue;
+                }
+
                 let line = self.get_line_by_y(line_idx.y).unwrap();
                 match cell {
                     Cell::Begin { style, grapheme } => {
@@ -357,8 +402,8 @@ impl<'a> EditorInterpreter<'a> {
                             last = Some(x);
                         }
                         if style.background == under_cursor.background {
-                            let contains_tab = line.text.contains("\t");
-                            debug_assert!((anchor.is_some() && !contains_tab) == false, "Multiple anchors found (in non-tab character) - either many cursors one-next-to-other, or multi-column char cursor. This is not properly supported now. Line = [{:?}]", line);
+                            // let contains_tab = line.text.contains("\t");
+                            // debug_assert!((anchor.is_some() && !contains_tab) == false, "Multiple anchors found (in non-tab character) - either many cursors one-next-to-other, or multi-column char cursor. This is not properly supported now. Line = [{:?}]", line);
                             if anchor.is_none() {
                                 anchor = Some(x);
                             }
@@ -367,16 +412,26 @@ impl<'a> EditorInterpreter<'a> {
                         if grapheme == NEWLINE {
                             break 'line_loop_1;
                         }
+
+                        if self.has_tab_at(pos) {
+                            x += TAB.width() as u16;
+                        } else {
+                            x += grapheme.width() as u16;
+                        }
                     }
-                    Cell::Continuation => {}
+                    Cell::Continuation => {
+                        debug_assert!(false);
+                    }
                 }
             }
 
             debug_assert!(anchor == first || anchor == last);
             let mut result = String::new();
 
-            'line_loop_2: for x in self.rect_without_scroll.pos.x..self.rect_without_scroll.lower_right().x {
+            let mut x = self.rect_without_scroll.pos.x;
+            'line_loop_2: while x < self.rect_without_scroll.lower_right().x {
                 let pos = XY::new(x, line_idx.y);
+                let is_tab = self.has_tab_at(pos);
                 let cell = &self.mock_output.buffer[pos];
                 match cell {
                     Cell::Begin { style: _, grapheme } => {
@@ -392,7 +447,11 @@ impl<'a> EditorInterpreter<'a> {
                             result += "]";
                         }
 
-                        result += grapheme;
+                        if is_tab {
+                            result += "\t";
+                        } else {
+                            result += grapheme;
+                        }
 
                         if first != last && Some(x) == last && Some(x) != anchor {
                             result += ")";
@@ -400,6 +459,12 @@ impl<'a> EditorInterpreter<'a> {
 
                         if grapheme == NEWLINE || grapheme == BEYOND {
                             break 'line_loop_2;
+                        }
+
+                        if is_tab {
+                            x += TAB.width() as u16;
+                        } else {
+                            x += grapheme.width() as u16;
                         }
                     }
                     Cell::Continuation => {}

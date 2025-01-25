@@ -834,23 +834,26 @@ impl EditorWidget {
                     let tr: String;
                     if c == "\n" {
                         tr = NEWLINE.to_string();
-                    } else if c == " " {
-                        if tab_leftover > 0 {
-                            tab_leftover -= 1;
-                            continue;
-                        } else {
-                            let tab_count = count_tabs_starting_at(line, c_idx);
-                            if tab_count > 0 {
-                                tr = build_tabs_string(tab_count);
-                                tab_leftover = tab_count * TAB_LEN - 1;
-                            } else {
-                                tr = " ".to_string();
-                            }
-                        }
-                    } else if tab_leftover > 0 {
-                        assert!(c == " ");
-                        tab_leftover -= 1;
-                        continue;
+                    } else if c == "\t" {
+                        tr = TAB.to_string();
+
+                        // if tab_leftover > 0 {
+                        //     tab_leftover -= 1;
+                        //     continue;
+                        // } else {
+                        //     let tab_count = count_tabs_starting_at(line, c_idx);
+                        //     if tab_count > 0 {
+                        //         tr = build_tabs_string(tab_count);
+                        //         tab_leftover = tab_count * TAB_LEN - 1;
+                        //     } else {
+                        //         tr = " ".to_string();
+                        //     }
+                        // }
+                        // }
+                        // else if tab_leftover > 0 {
+                        //     assert!(c == " ");
+                        //     tab_leftover -= 1;
+                        //     continue;
                     } else {
                         tr = c.to_string();
                     }
