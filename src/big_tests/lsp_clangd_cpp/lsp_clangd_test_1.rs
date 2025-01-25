@@ -16,7 +16,7 @@ fn get_full_setup(file: &str) -> FullSetup {
 
 #[test]
 fn completions_clangd_cpp_completion() {
-    if std::env::var("CI_API_V4_URL").is_ok() {
+    if std::env::var("GITLAB").is_ok() {
         return;
     }
 

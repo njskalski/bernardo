@@ -17,7 +17,7 @@ fn get_full_setup() -> FullSetup {
 
 #[test]
 fn show_usages_integ_test_2() {
-    if std::env::var("CI_API_V4_URL").is_ok() {
+    if std::env::var("GITLAB").is_ok() {
         return;
     }
 
@@ -130,7 +130,7 @@ fn show_usages_integ_test_2() {
 
 #[test]
 fn show_usages_big_list_scroll_test_3() {
-    if std::env::var("CI_API_V4_URL").is_ok() {
+    if std::env::var("GITLAB").is_ok() {
         return;
     }
 
