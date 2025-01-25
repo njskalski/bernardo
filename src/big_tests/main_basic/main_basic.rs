@@ -52,7 +52,7 @@ fn rs_files_autoindent() {
             .next()
             .unwrap();
 
-        error!("{:?}", line);
+        // error!("{:?}", line);
         line.visible_idx == 9 && line.contents.text.starts_with("    #")
     }));
 

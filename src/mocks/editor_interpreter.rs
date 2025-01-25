@@ -1,6 +1,4 @@
-use log::error;
-use lsp_types::TagSupport;
-
+use crate::config::theme::Theme;
 use crate::cursor::cursor::CursorStatus;
 use crate::io::buffer_output::buffer_output_consistent_items_iter::BufferConsistentItemsIter;
 use crate::io::buffer_output::horizontal_iter_item::HorizontalIterItem;
@@ -22,6 +20,8 @@ use crate::widgets::editor_widget::completion::completion_widget::CompletionWidg
 use crate::widgets::editor_widget::editor_widget::{count_tabs_starting_at, EditorWidget, BEYOND, NEWLINE, TAB, TAB_LEN};
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
+use log::{error, warn};
+use lsp_types::TagSupport;
 
 pub struct EditorInterpreter<'a> {
     meta: &'a Metadata,
@@ -209,7 +209,6 @@ impl<'a> EditorInterpreter<'a> {
             .with_rect(self.rect_without_scroll.clone())
             .map(move |mut horizontal_iter_item: HorizontalIterItem| {
                 assert!(horizontal_iter_item.text_style.is_some());
-                horizontal_iter_item.text = horizontal_iter_item.text.replace(TAB, &" ".repeat(TAB_LEN));
                 LineIdxTuple {
                     y: horizontal_iter_item.absolute_pos.y,
                     visible_idx: horizontal_iter_item.absolute_pos.y as usize + offset,
@@ -239,13 +238,44 @@ impl<'a> EditorInterpreter<'a> {
         let offset = self.scroll.lowest_number().unwrap();
         self.get_visible_cursor_cells()
             .map(move |(xy, _)| {
-                self.get_line_by_y(xy.y).map(|line| LineIdxTuple {
-                    y: xy.y,
-                    visible_idx: xy.y as usize + offset,
-                    contents: line,
+                self.get_line_by_y(xy.y).map(|line| {
+                    let item = self.decode_tabs(line);
+                    LineIdxTuple {
+                        y: xy.y,
+                        visible_idx: xy.y as usize + offset,
+                        contents: item,
+                    }
                 })
             })
             .flatten()
+    }
+
+    // converts |..| to \t
+    fn decode_tabs(&self, item: HorizontalIterItem) -> HorizontalIterItem {
+        if let Some(style) = item.text_style.as_ref() {
+            if *style == self.mock_output.theme.default_text(self.meta.focused) {
+                HorizontalIterItem {
+                    text: item.text.replace(TAB, "\t"),
+                    ..item
+                }
+            } else if style.background == self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap() {
+                HorizontalIterItem {
+                    text: item.text.replace(TAB, "\t"),
+                    ..item
+                }
+            } else {
+                item
+            }
+        } else {
+            // TODO this shouldn't be here
+
+            let x = HorizontalIterItem {
+                text: item.text.replace(TAB, "\t"),
+                ..item
+            };
+
+            x
+        }
     }
 
     pub fn get_line_by_y(&self, screen_pos_y: u16) -> Option<HorizontalIterItem> {
@@ -255,11 +285,8 @@ impl<'a> EditorInterpreter<'a> {
             .lines_iter()
             .with_rect(self.rect_without_scroll)
             .skip(screen_pos_y as usize)
+            .map(|item| self.decode_tabs(item))
             .next()
-            .map(|mut line| {
-                line.text = line.text.replace(TAB, &" ".repeat(TAB_LEN));
-                line
-            })
     }
 
     pub fn get_all_visible_lines(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
@@ -268,6 +295,7 @@ impl<'a> EditorInterpreter<'a> {
             .buffer
             .lines_iter()
             .with_rect(self.rect_without_scroll)
+            .map(|item| self.decode_tabs(item))
             .map(move |line| LineIdxTuple {
                 y: line.absolute_pos.y,
                 visible_idx: line.absolute_pos.y as usize + offset,
@@ -329,8 +357,11 @@ impl<'a> EditorInterpreter<'a> {
                             last = Some(x);
                         }
                         if style.background == under_cursor.background {
-                            debug_assert!(anchor.is_none());
-                            anchor = Some(x);
+                            let contains_tab = line.text.contains("\t");
+                            debug_assert!((anchor.is_some() && !contains_tab) == false, "Multiple anchors found (in non-tab character) - either many cursors one-next-to-other, or multi-column char cursor. This is not properly supported now. Line = [{:?}]", line);
+                            if anchor.is_none() {
+                                anchor = Some(x);
+                            }
                         }
 
                         if grapheme == NEWLINE {
@@ -377,7 +408,7 @@ impl<'a> EditorInterpreter<'a> {
 
             // debug!("res [{}]", &result);
 
-            line_idx.contents.text = result.replace(TAB, &" ".repeat(TAB_LEN));
+            line_idx.contents.text = result.replace(TAB, "\t");
             line_idx
         })
     }
