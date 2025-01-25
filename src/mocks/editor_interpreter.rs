@@ -1,5 +1,4 @@
-use log::error;
-
+use crate::config::theme::Theme;
 use crate::cursor::cursor::CursorStatus;
 use crate::io::buffer_output::buffer_output_consistent_items_iter::BufferConsistentItemsIter;
 use crate::io::buffer_output::horizontal_iter_item::HorizontalIterItem;
@@ -12,15 +11,21 @@ use crate::mocks::editbox_interpreter::EditWidgetInterpreter;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::savefile_interpreter::SaveFileInterpreter;
 use crate::mocks::scroll_interpreter::ScrollInterpreter;
+use crate::primitives::printable::Printable;
 use crate::primitives::rect::Rect;
+use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
 use crate::widgets::context_menu::widget::CONTEXT_MENU_WIDGET_NAME;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::editor_widget::completion::completion_widget::CompletionWidget;
-use crate::widgets::editor_widget::editor_widget::EditorWidget;
+use crate::widgets::editor_widget::editor_widget::{count_tabs_starting_at, EditorWidget, BEYOND, NEWLINE, TAB, TAB_LEN};
 use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
+use log::{error, warn};
+use lsp_types::TagSupport;
+use std::collections::HashSet;
+use unicode_width::UnicodeWidthStr;
 
 pub struct EditorInterpreter<'a> {
     meta: &'a Metadata,
@@ -206,9 +211,8 @@ impl<'a> EditorInterpreter<'a> {
             .buffer
             .items_of_style(style)
             .with_rect(self.rect_without_scroll.clone())
-            .map(move |horizontal_iter_item: HorizontalIterItem| {
+            .map(move |mut horizontal_iter_item: HorizontalIterItem| {
                 assert!(horizontal_iter_item.text_style.is_some());
-
                 LineIdxTuple {
                     y: horizontal_iter_item.absolute_pos.y,
                     visible_idx: horizontal_iter_item.absolute_pos.y as usize + offset,
@@ -236,15 +240,55 @@ impl<'a> EditorInterpreter<'a> {
      */
     pub fn get_visible_cursor_lines(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
-        self.get_visible_cursor_cells()
-            .map(move |(xy, _)| {
-                self.get_line_by_y(xy.y).map(|line| LineIdxTuple {
-                    y: xy.y,
-                    visible_idx: xy.y as usize + offset,
-                    contents: line,
+        // let mut result: Vec<LineIdxTuple> = vec![];
+
+        // deduplication, so we don't return several times a line with multi-column cursor
+
+        let cursor_ys: HashSet<u16> = self.get_visible_cursor_cells().map(|item| item.0.y).collect();
+        let mut cursor_ys2: Vec<u16> = cursor_ys.into_iter().collect();
+        cursor_ys2.sort();
+
+        cursor_ys2
+            .into_iter()
+            .map(move |y| {
+                self.get_line_by_y(y).map(|line| {
+                    let item = self.decode_tabs(line);
+                    LineIdxTuple {
+                        y,
+                        visible_idx: y as usize + offset,
+                        contents: item,
+                    }
                 })
             })
             .flatten()
+    }
+
+    // converts |..| to \t
+    fn decode_tabs(&self, item: HorizontalIterItem) -> HorizontalIterItem {
+        if let Some(style) = item.text_style.as_ref() {
+            if *style == self.mock_output.theme.default_text(self.meta.focused) {
+                HorizontalIterItem {
+                    text: item.text.replace(TAB, "\t"),
+                    ..item
+                }
+            } else if style.background == self.mock_output.theme.cursor_background(CursorStatus::UnderCursor).unwrap() {
+                HorizontalIterItem {
+                    text: item.text.replace(TAB, "\t"),
+                    ..item
+                }
+            } else {
+                item
+            }
+        } else {
+            // TODO this shouldn't be here
+
+            let x = HorizontalIterItem {
+                text: item.text.replace(TAB, "\t"),
+                ..item
+            };
+
+            x
+        }
     }
 
     pub fn get_line_by_y(&self, screen_pos_y: u16) -> Option<HorizontalIterItem> {
@@ -254,6 +298,7 @@ impl<'a> EditorInterpreter<'a> {
             .lines_iter()
             .with_rect(self.rect_without_scroll)
             .skip(screen_pos_y as usize)
+            .map(|item| self.decode_tabs(item))
             .next()
     }
 
@@ -263,6 +308,7 @@ impl<'a> EditorInterpreter<'a> {
             .buffer
             .lines_iter()
             .with_rect(self.rect_without_scroll)
+            .map(|item| self.decode_tabs(item))
             .map(move |line| LineIdxTuple {
                 y: line.absolute_pos.y,
                 visible_idx: line.absolute_pos.y as usize + offset,
@@ -276,6 +322,42 @@ impl<'a> EditorInterpreter<'a> {
 
     pub fn save_file_dialog(&self) -> Option<&SaveFileInterpreter<'a>> {
         self.saveas_op.as_ref()
+    }
+
+    // checks for presence of uniform-style tab
+    fn has_tab_at(&self, mut pos: XY) -> bool {
+        let mut style_op: Option<TextStyle> = None;
+
+        for g in TAB.graphemes() {
+            if !(pos < self.mock_output.buffer.size()) {
+                return false;
+            }
+
+            let cell = &self.mock_output.buffer[pos];
+
+            match cell {
+                Cell::Begin { style, grapheme } => {
+                    if let Some(old_style) = style_op.as_ref() {
+                        if style != old_style {
+                            return false;
+                        }
+                    } else {
+                        style_op = Some(*style);
+                    }
+
+                    if grapheme != g {
+                        return false;
+                    }
+
+                    pos.x += grapheme.width() as u16;
+                }
+                Cell::Continuation => {
+                    return false;
+                }
+            }
+        }
+
+        true
     }
 
     /*
@@ -311,9 +393,16 @@ impl<'a> EditorInterpreter<'a> {
             let mut last: Option<u16> = None;
             let mut anchor: Option<u16> = None;
 
-            'line_loop_1: for x in self.rect_without_scroll.pos.x..self.rect_without_scroll.lower_right().x {
+            let mut x = self.rect_without_scroll.pos.x;
+
+            'line_loop_1: while x < self.rect_without_scroll.lower_right().x {
                 let pos = XY::new(x, line_idx.y);
                 let cell = &self.mock_output.buffer[pos];
+                if let Cell::Continuation = cell {
+                    continue;
+                }
+
+                let line = self.get_line_by_y(line_idx.y).unwrap();
                 match cell {
                     Cell::Begin { style, grapheme } => {
                         if style.background == under_cursor.background || style.background == within_selection.background {
@@ -323,23 +412,36 @@ impl<'a> EditorInterpreter<'a> {
                             last = Some(x);
                         }
                         if style.background == under_cursor.background {
-                            debug_assert!(anchor.is_none());
-                            anchor = Some(x);
+                            // let contains_tab = line.text.contains("\t");
+                            // debug_assert!((anchor.is_some() && !contains_tab) == false, "Multiple anchors found (in non-tab character) - either many cursors one-next-to-other, or multi-column char cursor. This is not properly supported now. Line = [{:?}]", line);
+                            if anchor.is_none() {
+                                anchor = Some(x);
+                            }
                         }
 
-                        if grapheme == "⏎" {
+                        if grapheme == NEWLINE {
                             break 'line_loop_1;
                         }
+
+                        if self.has_tab_at(pos) {
+                            x += TAB.width() as u16;
+                        } else {
+                            x += grapheme.width() as u16;
+                        }
                     }
-                    Cell::Continuation => {}
+                    Cell::Continuation => {
+                        debug_assert!(false);
+                    }
                 }
             }
 
             debug_assert!(anchor == first || anchor == last);
             let mut result = String::new();
 
-            'line_loop_2: for x in self.rect_without_scroll.pos.x..self.rect_without_scroll.lower_right().x {
+            let mut x = self.rect_without_scroll.pos.x;
+            'line_loop_2: while x < self.rect_without_scroll.lower_right().x {
                 let pos = XY::new(x, line_idx.y);
+                let is_tab = self.has_tab_at(pos);
                 let cell = &self.mock_output.buffer[pos];
                 match cell {
                     Cell::Begin { style: _, grapheme } => {
@@ -355,14 +457,24 @@ impl<'a> EditorInterpreter<'a> {
                             result += "]";
                         }
 
-                        result += grapheme;
+                        if is_tab {
+                            result += "\t";
+                        } else {
+                            result += grapheme;
+                        }
 
                         if first != last && Some(x) == last && Some(x) != anchor {
                             result += ")";
                         }
 
-                        if grapheme == "⏎" || grapheme == "⇱" {
+                        if grapheme == NEWLINE || grapheme == BEYOND {
                             break 'line_loop_2;
+                        }
+
+                        if is_tab {
+                            x += TAB.width() as u16;
+                        } else {
+                            x += grapheme.width() as u16;
                         }
                     }
                     Cell::Continuation => {}
@@ -371,7 +483,7 @@ impl<'a> EditorInterpreter<'a> {
 
             // debug!("res [{}]", &result);
 
-            line_idx.contents.text = result;
+            line_idx.contents.text = result.replace(TAB, "\t");
             line_idx
         })
     }

@@ -35,6 +35,13 @@ fn single_cursor_backspace() {
 }
 
 #[test]
+fn single_cursor_backspace_block_anchor_on_the_right() {
+    assert_eq!(decode_apply_and_encode_back("[abba)", CommonEditMsg::Backspace, None), "#");
+    assert_eq!(decode_apply_and_encode_back("(abba]", CommonEditMsg::Backspace, None), "#");
+}
+
+
+#[test]
 fn single_cursor_delete() {
     assert_eq!(decode_apply_and_encode_back("ab#da", CommonEditMsg::Delete, None), "ab#a");
     assert_eq!(decode_apply_and_encode_back("abda#", CommonEditMsg::Delete, None), "abda#");

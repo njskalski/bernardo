@@ -7,6 +7,7 @@ use std::time::Duration;
 use log::{debug, error, info, warn};
 use matches::debug_assert_matches;
 use streaming_iterator::StreamingIterator;
+use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::theme::Theme;
@@ -55,8 +56,10 @@ use crate::{unpack_or, unpack_or_e, unpack_unit, unpack_unit_e};
 const MIN_EDITOR_SIZE: XY = XY::new(10, 3);
 // const MAX_HOVER_SIZE: XY = XY::new(64, 20);
 
-const NEWLINE: &str = "⏎";
-const BEYOND: &str = "⇱";
+pub const NEWLINE: &str = "⏎";
+pub const BEYOND: &str = "⇱";
+pub const TAB: &str = "|--|";
+pub const TAB_LEN: usize = 4;
 
 const DEFAULT_EDITOR_TIMEOUT: Duration = Duration::from_millis(500);
 
@@ -798,6 +801,7 @@ impl EditorWidget {
             {
                 let mut label_it = filtered_labels.iter().peekable();
                 let mut x_offset: usize = 0;
+                let mut tab_leftover = 0;
 
                 for (c_idx, c) in line.graphemes().enumerate() {
                     let text_pos = XY::new(x_offset as u16, line_idx as u16);
@@ -827,7 +831,32 @@ impl EditorWidget {
                     }
 
                     // TODO optimise
-                    let tr = if c == "\n" { NEWLINE.to_string() } else { c.to_string() };
+                    let tr: String;
+                    if c == "\n" {
+                        tr = NEWLINE.to_string();
+                    } else if c == "\t" {
+                        tr = TAB.to_string();
+
+                        // if tab_leftover > 0 {
+                        //     tab_leftover -= 1;
+                        //     continue;
+                        // } else {
+                        //     let tab_count = count_tabs_starting_at(line, c_idx);
+                        //     if tab_count > 0 {
+                        //         tr = build_tabs_string(tab_count);
+                        //         tab_leftover = tab_count * TAB_LEN - 1;
+                        //     } else {
+                        //         tr = " ".to_string();
+                        //     }
+                        // }
+                        // }
+                        // else if tab_leftover > 0 {
+                        //     assert!(c == " ");
+                        //     tab_leftover -= 1;
+                        //     continue;
+                    } else {
+                        tr = c.to_string();
+                    }
 
                     let is_special_cursor: bool = if let EditorState::DroppingCursor { special_cursor } = &self.state {
                         special_cursor.get_cursor_status_for_char(char_idx) == CursorStatus::UnderCursor
@@ -843,7 +872,7 @@ impl EditorWidget {
                         focused,
                     );
 
-                    if tr != NEWLINE {
+                    if tr != NEWLINE && tab_leftover == 0 {
                         // TODO cleanup
                         if let Some(item) = highlight_iter.peek() {
                             if let Some(color) = theme.name_to_color(&item.identifier) {
@@ -1291,6 +1320,37 @@ impl EditorWidget {
         }
         .someboxed()
     }
+}
+
+pub fn build_tabs_string(tab_count: usize) -> String {
+    if tab_count == 0 {
+        return String::new();
+    }
+
+    TAB.repeat(tab_count)
+}
+//Returns number of tabs that ther is starting at this idx.
+//So for instance if we have 10 consecutive spaces and tab lenght is 4, we have 2 tabs
+pub fn count_tabs_starting_at(line: &str, c_idx: usize) -> usize {
+    if c_idx >= line.len() {
+        return 0;
+    }
+
+    let mut count = 0;
+    let mut start = c_idx;
+
+    while start < line.len() {
+        //This should be tested because there are some edge cases with graphemes that are not single byte
+        let end = line.char_indices().nth(start + TAB_LEN).map_or(line.len(), |(i, _)| i);
+        if line[start..end].graphemes(true).all(|c| c == " ") {
+            count += 1;
+            start += TAB_LEN;
+        } else {
+            break;
+        }
+    }
+
+    count
 }
 
 impl Widget for EditorWidget {

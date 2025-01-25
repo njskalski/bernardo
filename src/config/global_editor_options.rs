@@ -11,6 +11,9 @@ pub struct GlobalEditorOptions {
     pub rust_lsp_path: Option<PathBuf>,
     pub clangd_lsp_path: Option<PathBuf>,
     pub auto_indent_extensions: Vec<String>,
+
+    // whether to convert tabs to spaces or not
+    pub tabs_to_spaces: Option<usize>,
 }
 
 impl Default for GlobalEditorOptions {
@@ -22,6 +25,7 @@ impl Default for GlobalEditorOptions {
                 .iter()
                 .map(|item| item.to_string())
                 .collect(),
+            tabs_to_spaces: Some(4),
         }
     }
 }

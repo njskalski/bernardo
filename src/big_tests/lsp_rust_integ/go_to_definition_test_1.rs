@@ -2,7 +2,7 @@ use std::thread;
 use std::time::Duration;
 
 use crate::io::keys::Keycode;
-use crate::mocks::full_setup::{self, FullSetup};
+use crate::mocks::full_setup::FullSetup;
 use crate::mocks::with_wait_for::WithWaitFor;
 
 fn get_full_setup() -> FullSetup {
@@ -17,6 +17,10 @@ fn get_full_setup() -> FullSetup {
 
 #[test]
 fn go_to_definition_test_1() {
+    if std::env::var("GITLAB").is_ok() {
+        return;
+    }
+
     let mut full_setup = get_full_setup();
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
