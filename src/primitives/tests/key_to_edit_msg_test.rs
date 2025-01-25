@@ -1,9 +1,9 @@
+use crate::config::config::CommonEditMsgKeybindings;
 use crate::io::keys::Keycode;
 use crate::primitives::common_edit_msgs::{key_to_edit_msg, CommonEditMsg};
 use crate::primitives::tests::test_helpers::{generate_pseudo_random_edit_msgs_config, generate_random_key};
-use crossterm::event::KeyCode;
 use rand::rngs::StdRng;
-use rand::{Rng, SeedableRng};
+use rand::SeedableRng;
 
 #[test]
 fn test_random_keybindings() {
@@ -108,4 +108,35 @@ fn test_random_keybindings() {
             assert_eq!(key_to_edit_msg(key, &keybindings), None);
         }
     }
+}
+
+#[test]
+fn test_default_keybindings() {
+    let default_keybindings = CommonEditMsgKeybindings::default();
+
+    assert_eq!(
+        key_to_edit_msg(Keycode::ArrowUp.to_key().with_shift(), &default_keybindings),
+        Some(CommonEditMsg::CursorUp { selecting: true })
+    );
+    assert_eq!(
+        key_to_edit_msg(Keycode::ArrowDown.to_key().with_shift(), &default_keybindings),
+        Some(CommonEditMsg::CursorDown { selecting: true })
+    );
+    assert_eq!(
+        key_to_edit_msg(Keycode::ArrowLeft.to_key().with_ctrl().with_shift(), &default_keybindings),
+        Some(CommonEditMsg::WordBegin { selecting: true })
+    );
+    assert_eq!(
+        key_to_edit_msg(Keycode::ArrowRight.to_key().with_ctrl().with_shift(), &default_keybindings),
+        Some(CommonEditMsg::WordEnd { selecting: true })
+    );
+
+    assert_eq!(
+        key_to_edit_msg(Keycode::PageUp.to_key().with_shift(), &default_keybindings),
+        Some(CommonEditMsg::PageUp { selecting: true })
+    );
+    assert_eq!(
+        key_to_edit_msg(Keycode::PageDown.to_key().with_shift(), &default_keybindings),
+        Some(CommonEditMsg::PageDown { selecting: true })
+    );
 }

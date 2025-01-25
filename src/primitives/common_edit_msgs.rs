@@ -157,8 +157,11 @@ impl ApplyCemResult {
 }
 
 // This is where the mapping of keys to Msgs is
-pub fn key_to_edit_msg(key: Key, keybindings: &CommonEditMsgKeybindings) -> Option<CommonEditMsg> {
+// TODO one needs to document here, that we treat Shift very specially
+pub fn key_to_edit_msg(mut key: Key, keybindings: &CommonEditMsgKeybindings) -> Option<CommonEditMsg> {
     let modifiers = key.modifiers;
+
+    key.modifiers.shift = false;
 
     if key == keybindings.copy {
         return Some(CommonEditMsg::Copy);
