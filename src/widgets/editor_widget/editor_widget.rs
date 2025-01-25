@@ -1535,6 +1535,7 @@ impl Widget for EditorWidget {
                                 &mut *buffer,
                                 height as usize,
                                 Some(self.providers.clipboard()),
+                                self.providers.config().global.tabs_to_spaces,
                             );
                             self.state = EditorState::DroppingCursor {
                                 special_cursor: set.as_single().unwrap(),

@@ -71,6 +71,8 @@ pub struct BufferState {
     document_identifier: DocumentIdentifier,
 
     drop_notice_sink: Option<Sender<DocumentIdentifier>>,
+
+    tabs_to_spaces: Option<u8>,
 }
 
 impl BufferState {
@@ -152,7 +154,17 @@ impl BufferState {
             _ => self.set_milestone(),
         };
 
-        result |= apply_common_edit_message(cem.clone(), &mut cursors_copy, &mut vec![], self, page_height as usize, clipboard);
+        let tabs_to_space = self.tabs_to_spaces.clone();
+
+        result |= apply_common_edit_message(
+            cem.clone(),
+            &mut cursors_copy,
+            &mut vec![],
+            self,
+            page_height as usize,
+            clipboard,
+            tabs_to_space,
+        );
 
         //undo/redo invalidates cursors copy, so I need to watch for those
         match cem {
@@ -370,6 +382,7 @@ impl BufferState {
         tree_sitter_op: Option<Arc<TreeSitterWrapper>>,
         document_identifier: DocumentIdentifier,
         debug_sink: Option<Sender<DocumentIdentifier>>,
+        tabs_to_spaces: Option<u8>,
     ) -> BufferState {
         let res = BufferState {
             subtype: BufferType::Full,
@@ -380,6 +393,7 @@ impl BufferState {
             lang_id: None,
             document_identifier,
             drop_notice_sink: debug_sink,
+            tabs_to_spaces,
         };
 
         debug_assert!(res.check_invariant());
@@ -597,6 +611,7 @@ impl BufferState {
             lang_id: None,
             document_identifier: doc_id,
             drop_notice_sink: None,
+            tabs_to_spaces: None,
         };
 
         debug_assert!(res.check_invariant());

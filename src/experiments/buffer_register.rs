@@ -69,6 +69,7 @@ impl BufferRegister {
             Some(providers.tree_sitter().clone()),
             doc_id.clone(),
             Some(self.debug_channel.0.clone()),
+            providers.config().global.tabs_to_spaces,
         );
 
         let bsr = BufferSharedRef::new_from_buffer(buffer_state);
@@ -116,6 +117,7 @@ impl BufferRegister {
                 Some(providers.tree_sitter().clone()),
                 doc_id.clone(),
                 Some(self.debug_channel.0.clone()),
+                providers.config().global.tabs_to_spaces,
             )
             .with_text(buffer_str)
             .with_maked_as_saved();

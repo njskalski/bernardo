@@ -12,7 +12,7 @@ pub fn decode_apply_and_encode_back(text: &str, cem: CommonEditMsg, clipboard: O
     let (mut buffer, mut cs) = decode_text_and_cursors(text);
     debug_assert!(cs.check_invariant());
     assert_cursors_are_within_text(&buffer, &cs);
-    apply_common_edit_message(cem, &mut cs, &mut vec![], &mut buffer, 4, clipboard);
+    apply_common_edit_message(cem, &mut cs, &mut vec![], &mut buffer, 4, clipboard, Some(4));
     debug_assert!(cs.check_invariant());
     assert_cursors_are_within_text(&buffer, &cs);
     encode_cursors_and_text(&buffer, &cs)
@@ -62,7 +62,15 @@ pub fn decode_multiple_sets_and_apply_at_selected_cursor_set_and_encode_back(
         }
     }
 
-    apply_common_edit_message(cem, selected_cursor_set.unwrap(), &mut other_cursors, &mut buffer, 4, clipboard);
+    apply_common_edit_message(
+        cem,
+        selected_cursor_set.unwrap(),
+        &mut other_cursors,
+        &mut buffer,
+        4,
+        clipboard,
+        None,
+    );
 
     let mut results: Vec<String> = Vec::new();
 
