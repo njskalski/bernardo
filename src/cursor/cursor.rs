@@ -164,6 +164,10 @@ impl Cursor {
     }
 
     pub fn shift_by(&mut self, shift: isize) -> bool {
+        if shift == 0 {
+            return false;
+        }
+
         if shift < 0 {
             let abs_shift = shift.unsigned_abs();
 

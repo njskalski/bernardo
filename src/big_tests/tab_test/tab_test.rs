@@ -46,9 +46,20 @@ fn tab_test_2() {
             .unwrap()
             .get_visible_cursor_lines_with_coded_cursors()
             .map(|i| i.contents.text)
+            .find(|i| i == "(\ttab]⏎")
+            .is_some()
+    }));
+
+    assert!(f.send_key(Keycode::Backspace.to_key()));
+
+    assert!(f.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines_with_coded_cursors()
+            .map(|i| i.contents.text)
             .find(|i| {
                 println!("{}", i);
-                i == "(\ttab]⏎"
+                i == "#⏎"
             })
             .is_some()
     }));

@@ -556,8 +556,11 @@ fn handle_backspace_and_delete(
             let change = (sel.e - sel.b) as isize;
             modifier -= change;
 
-            if c.anchor_right() {
-                res.modified_cursor_set |= c.shift_by(change);
+            let anchor_right = c.anchor_right();
+            res.modified_cursor_set |= c.clear_both();
+
+            if anchor_right {
+                res.modified_cursor_set |= c.shift_by(-change);
             }
         } else {
             if backspace {
@@ -581,11 +584,13 @@ fn handle_backspace_and_delete(
             }
             modifier -= 1;
 
+            res.modified_cursor_set |= c.clear_both();
+
             if backspace {
                 res.modified_cursor_set |= c.shift_by(-1);
             }
         }
-        res.modified_cursor_set |= c.clear_both();
+
         debug_assert!(c.check_invariant());
     }
 
