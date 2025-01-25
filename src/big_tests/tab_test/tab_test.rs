@@ -1,3 +1,4 @@
+use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::with_wait_for::WithWaitFor;
 
@@ -36,5 +37,19 @@ fn tab_test_2() {
         .collect();
 
     assert_eq!(lines.len(), 1);
-    assert_eq!(lines[0].contents.text.as_str(), "#\ttab⏎")
+    assert_eq!(lines[0].contents.text.as_str(), "#\ttab⏎");
+
+    assert!(f.send_key(Keycode::End.to_key().with_shift()));
+
+    assert!(f.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines_with_coded_cursors()
+            .map(|i| i.contents.text)
+            .find(|i| {
+                println!("{}", i);
+                i == "(\ttab]⏎"
+            })
+            .is_some()
+    }));
 }

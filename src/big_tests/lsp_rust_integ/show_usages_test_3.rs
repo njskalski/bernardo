@@ -17,7 +17,7 @@ fn get_full_setup() -> FullSetup {
 
 #[test]
 fn show_usages_integ_test_3() {
-    if std::env::var("CI").is_ok() {
+    if std::env::var("CI_API_V4_URL").is_ok() {
         return;
     }
 
