@@ -12,8 +12,10 @@ fn common_start() -> FullSetup {
 }
 
 #[test]
-fn find_in_files_opens() {
+fn tab_test_1() {
     let mut f = common_start();
+
+    f.screenshot();
 
     let x: Vec<_> = f
         .get_first_editor()

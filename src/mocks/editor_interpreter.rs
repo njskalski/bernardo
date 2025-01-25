@@ -24,6 +24,7 @@ use crate::widgets::save_file_dialog::save_file_dialog::SaveFileDialogWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
 use log::{error, warn};
 use lsp_types::TagSupport;
+use std::collections::HashSet;
 use unicode_width::UnicodeWidthStr;
 
 pub struct EditorInterpreter<'a> {
@@ -239,13 +240,19 @@ impl<'a> EditorInterpreter<'a> {
      */
     pub fn get_visible_cursor_lines(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
-        self.get_visible_cursor_cells()
-            .map(move |(xy, _)| {
-                self.get_line_by_y(xy.y).map(|line| {
+        // let mut result: Vec<LineIdxTuple> = vec![];
+        let cursor_ys: HashSet<u16> = self.get_visible_cursor_cells().map(|item| item.0.y).collect();
+        let mut cursor_ys2: Vec<u16> = cursor_ys.into_iter().collect();
+        cursor_ys2.sort();
+
+        cursor_ys2
+            .into_iter()
+            .map(move |y| {
+                self.get_line_by_y(y).map(|line| {
                     let item = self.decode_tabs(line);
                     LineIdxTuple {
-                        y: xy.y,
-                        visible_idx: xy.y as usize + offset,
+                        y,
+                        visible_idx: y as usize + offset,
                         contents: item,
                     }
                 })
