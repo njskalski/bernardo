@@ -187,18 +187,18 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
                 };
             }
 
-            // recv(nav_comp_tick_receiver) -> tick => {
-            //
-            //     if providers.is_recording() {
-            //         recorded_input.push(InputEvent::Tick);
-            //     }
-            //
-            //     match tick {
-            //         _ => {
-            //             // warn!("unhandled tick : {:?}", tick)
-            //         }
-            //     }
-            // }
+            recv(nav_comp_tick_receiver) -> tick => {
+
+                if providers.is_recording() {
+                    recorded_input.push(InputEvent::Tick);
+                }
+
+                match tick {
+                    _ => {
+                        // warn!("unhandled tick : {:?}", tick)
+                    }
+                }
+            }
         }
     }
 
