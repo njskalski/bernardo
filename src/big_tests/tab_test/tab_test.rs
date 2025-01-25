@@ -15,13 +15,26 @@ fn common_start() -> FullSetup {
 fn tab_test_1() {
     let mut f = common_start();
 
-    f.screenshot();
-
-    let x: Vec<_> = f
+    let lines: Vec<_> = f
         .get_first_editor()
         .unwrap()
         .get_visible_cursor_lines_with_coded_cursors()
         .collect();
 
-    let x = x;
+    assert_eq!(lines.len(), 1);
+    assert_eq!(lines[0].contents.text.as_str(), "#\ttab⏎")
+}
+
+#[test]
+fn tab_test_2() {
+    let mut f = common_start();
+
+    let lines: Vec<_> = f
+        .get_first_editor()
+        .unwrap()
+        .get_visible_cursor_lines_with_coded_cursors()
+        .collect();
+
+    assert_eq!(lines.len(), 1);
+    assert_eq!(lines[0].contents.text.as_str(), "#\ttab⏎")
 }

@@ -241,6 +241,9 @@ impl<'a> EditorInterpreter<'a> {
     pub fn get_visible_cursor_lines(&self) -> impl Iterator<Item = LineIdxTuple> + '_ {
         let offset = self.scroll.lowest_number().unwrap();
         // let mut result: Vec<LineIdxTuple> = vec![];
+
+        // deduplication, so we don't return several times a line with multi-column cursor
+
         let cursor_ys: HashSet<u16> = self.get_visible_cursor_cells().map(|item| item.0.y).collect();
         let mut cursor_ys2: Vec<u16> = cursor_ys.into_iter().collect();
         cursor_ys2.sort();
