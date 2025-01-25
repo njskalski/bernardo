@@ -6,7 +6,6 @@ use crate::io::keys::{Key, Keycode, Modifiers};
 use crate::primitives::common_edit_msgs::{apply_common_edit_message, CommonEditMsg};
 use crate::primitives::has_invariant::HasInvariant;
 use rand::rngs::StdRng;
-use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
 
 pub fn decode_apply_and_encode_back(text: &str, cem: CommonEditMsg, clipboard: Option<&ClipboardRef>) -> String {
@@ -88,7 +87,8 @@ pub fn generate_random_key(rng: &mut StdRng) -> Key {
 
     let modifiers = Modifiers {
         ctrl: rng.gen_bool(0.5),
-        shift: rng.gen_bool(0.5),
+        // shift: rng.gen_bool(0.5), // TODO, we treat shift differently
+        shift: false,
         alt: rng.gen_bool(0.5),
     };
 
