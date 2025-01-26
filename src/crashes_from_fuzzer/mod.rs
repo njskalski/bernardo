@@ -71,3 +71,34 @@ fn crash2_test() {
     ];
     fuzz_call(inputs);
 }
+
+#[test]
+fn crash3_test() {
+    let inputs = vec![
+        Key {
+            keycode: Char('p'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: true,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: RightAlt,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: true,
+            },
+        },
+        Key {
+            keycode: Char('p'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: true,
+                shift: false,
+            },
+        },
+    ];
+    fuzz_call(inputs);
+}
