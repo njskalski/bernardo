@@ -840,10 +840,9 @@ pub fn apply_common_edit_message(
     };
 
     if !invalidated_cursor_set {
-        debug_assert!(cursor_set.check_invariant());
-
         let rope_len = rope.len_chars();
 
+        debug_assert!(cursor_set.check_invariant());
         for c in cursor_set.iter() {
             debug_assert!(c.get_end() <= rope_len);
         }

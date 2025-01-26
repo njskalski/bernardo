@@ -40,3 +40,34 @@ fn crash1_test() {
     ];
     fuzz_call(inputs);
 }
+
+#[test]
+fn crash2_test() {
+    let inputs = vec![
+        Key {
+            keycode: Char('k'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Char('k'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Backspace,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+    ];
+    fuzz_call(inputs);
+}

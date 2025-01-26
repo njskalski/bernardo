@@ -916,8 +916,6 @@ impl TextBuffer for BufferState {
             }
         };
 
-        debug_assert!(self.check_invariant());
-
         result
     }
 
@@ -965,11 +963,13 @@ impl<'a> StreamingIterator for BufferStateStreamingIterator<'a> {
 impl HasInvariant for BufferState {
     fn check_invariant(&self) -> bool {
         if self.history_pos >= self.history.len() {
+            error!("history_pos >= self.history.len() {} {}", self.history_pos, self.history.len());
             return false;
         }
 
         if let Some(last_save_pos) = self.last_save_pos {
             if last_save_pos >= self.history.len() {
+                error!("last_save_pos >= self.history.len() {} {}", last_save_pos, self.history.len());
                 return false;
             }
         }

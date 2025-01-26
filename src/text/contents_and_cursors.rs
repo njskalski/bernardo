@@ -352,15 +352,18 @@ impl HasInvariant for ContentsAndCursors {
 
         for cs in &self.cursor_sets {
             if cs.1.check_invariant() == false {
+                error!("cs.invariant");
                 return false;
             }
 
             for c in cs.1.iter() {
                 if c.check_invariant() == false {
+                    error!("c.invariant");
                     return false;
                 }
 
                 if c.a > len {
+                    error!("c.a > len {} {}", c.a, len);
                     return false;
                 }
             }
