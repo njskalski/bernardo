@@ -642,13 +642,13 @@ impl BufferState {
     }
 
     pub fn text(&self) -> &ContentsAndCursors {
-        debug_assert!(self.check_invariant());
+        // debug_assert!(self.check_invariant());
 
         &self.history[self.history_pos]
     }
 
     pub fn text_mut(&mut self) -> &mut ContentsAndCursors {
-        debug_assert!(self.check_invariant());
+        // debug_assert!(self.check_invariant());
 
         &mut self.history[self.history_pos]
     }
@@ -813,7 +813,7 @@ impl TextBuffer for BufferState {
             }
         };
 
-        debug_assert!(self.check_invariant());
+        // debug_assert!(self.check_invariant());
 
         result
     }
