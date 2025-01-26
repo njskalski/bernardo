@@ -1,0 +1,1241 @@
+   Compiling bernardo v0.2.0 (/home/andrzej/r/rust/bernardo)
+warning: unused import: `crate::primitives::is_default::IsDefault`
+  --> /home/andrzej/r/rust/bernardo/src/config/config.rs:11:5
+   |
+11 | use crate::primitives::is_default::IsDefault;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `ropey::Rope`
+ --> /home/andrzej/r/rust/bernardo/src/cursor/tests/cursor_set_selection_tests.rs:1:5
+  |
+1 | use ropey::Rope;
+  |     ^^^^^^^^^^^
+  |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+ --> /home/andrzej/r/rust/bernardo/src/cursor/tests/mod.rs:1:1
+  |
+1 | pub mod cursor_set_selection_tests;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::cursor::cursor::Cursor`
+ --> /home/andrzej/r/rust/bernardo/src/cursor/tests/cursor_set_selection_tests.rs:3:5
+  |
+3 | use crate::cursor::cursor::Cursor;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+ --> /home/andrzej/r/rust/bernardo/src/cursor/tests/mod.rs:1:1
+  |
+1 | pub mod cursor_set_selection_tests;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::cursor::cursor::Selection`
+ --> /home/andrzej/r/rust/bernardo/src/cursor/tests/cursor_set_selection_tests.rs:4:5
+  |
+4 | use crate::cursor::cursor::Selection;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+ --> /home/andrzej/r/rust/bernardo/src/cursor/tests/mod.rs:1:1
+  |
+1 | pub mod cursor_set_selection_tests;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `warn`
+ --> /home/andrzej/r/rust/bernardo/src/experiments/buffer_register.rs:7:25
+  |
+7 | use log::{debug, error, warn};
+  |                         ^^^^
+
+warning: unused import: `crate::widgets::editor_widget::label::label::Label`
+  --> /home/andrzej/r/rust/bernardo/src/experiments/buffer_register.rs:15:5
+   |
+15 | use crate::widgets::editor_widget::label::label::Label;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::widgets::editor_widget::label::labels_provider::LabelsProvider`
+  --> /home/andrzej/r/rust/bernardo/src/experiments/buffer_register.rs:16:5
+   |
+16 | use crate::widgets::editor_widget::label::labels_provider::LabelsProvider;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::widgets::main_view::main_view::BufferId`
+  --> /home/andrzej/r/rust/bernardo/src/experiments/buffer_register.rs:17:5
+   |
+17 | use crate::widgets::main_view::main_view::BufferId;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::fmt::Debug`
+ --> /home/andrzej/r/rust/bernardo/src/fs/fsf_async_tree_iter.rs:2:5
+  |
+2 | use std::fmt::Debug;
+  |     ^^^^^^^^^^^^^^^
+
+warning: unused import: `std::hash::Hash`
+ --> /home/andrzej/r/rust/bernardo/src/fs/fsf_async_tree_iter.rs:3:5
+  |
+3 | use std::hash::Hash;
+  |     ^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+ --> /home/andrzej/r/rust/bernardo/src/fs/fsf_async_tree_iter.rs:4:5
+  |
+4 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused imports: `RecvError`, `RecvTimeoutError`, and `SendError`
+ --> /home/andrzej/r/rust/bernardo/src/fs/fsf_async_tree_iter.rs:8:43
+  |
+8 | use crossbeam_channel::{select, Receiver, RecvError, RecvTimeoutError, SendError, TryRecvError};
+  |                                           ^^^^^^^^^  ^^^^^^^^^^^^^^^^  ^^^^^^^^^
+
+warning: unused imports: `TreeItFilter` and `TreeNode`
+  --> /home/andrzej/r/rust/bernardo/src/fs/fsf_async_tree_iter.rs:14:53
+   |
+14 | use crate::primitives::tree::tree_node::{FilterRef, TreeItFilter, TreeNode};
+   |                                                     ^^^^^^^^^^^^  ^^^^^^^^
+
+warning: unused import: `Error`
+ --> /home/andrzej/r/rust/bernardo/src/fs/real_fs.rs:4:15
+  |
+4 | use std::io::{Error, Write};
+  |               ^^^^^
+
+warning: unused import: `io`
+ --> /home/andrzej/r/rust/bernardo/src/gladius/run_gladius.rs:2:15
+  |
+2 | use std::{fs, io};
+  |               ^^
+
+warning: unused imports: `BeginSynchronizedUpdate` and `EndSynchronizedUpdate`
+ --> /home/andrzej/r/rust/bernardo/src/gladius/run_gladius.rs:5:27
+  |
+5 | use crossterm::terminal::{BeginSynchronizedUpdate, EndSynchronizedUpdate};
+  |                           ^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `warn`
+ --> /home/andrzej/r/rust/bernardo/src/gladius/run_gladius.rs:6:25
+  |
+6 | use log::{debug, error, warn};
+  |                         ^^^^
+
+warning: unused import: `crate::io::keys::Keycode`
+  --> /home/andrzej/r/rust/bernardo/src/gladius/run_gladius.rs:14:5
+   |
+14 | use crate::io::keys::Keycode;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::lsp_client::diagnostic::DiagnosticSeverity`
+  --> /home/andrzej/r/rust/bernardo/src/gladius/run_gladius.rs:16:5
+   |
+16 | use crate::lsp_client::diagnostic::DiagnosticSeverity;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::w7e::navcomp_group::NavCompTick`
+  --> /home/andrzej/r/rust/bernardo/src/gladius/run_gladius.rs:20:5
+   |
+20 | use crate::w7e::navcomp_group::NavCompTick;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `LabelPos`, `LabelStyle`, and `Label`
+  --> /home/andrzej/r/rust/bernardo/src/gladius/run_gladius.rs:24:51
+   |
+24 | use crate::widgets::editor_widget::label::label::{Label, LabelPos, LabelStyle};
+   |                                                   ^^^^^  ^^^^^^^^  ^^^^^^^^^^
+
+warning: unused import: `LockResult`
+ --> /home/andrzej/r/rust/bernardo/src/lsp_client/lsp_client.rs:7:22
+  |
+7 | use std::sync::{Arc, LockResult, RwLock};
+  |                      ^^^^^^^^^^
+
+warning: unused import: `Receiver`
+  --> /home/andrzej/r/rust/bernardo/src/lsp_client/lsp_client.rs:12:25
+   |
+12 | use crossbeam_channel::{Receiver, Sender};
+   |                         ^^^^^^^^
+
+warning: unused import: `PublishDiagnosticsParams`
+  --> /home/andrzej/r/rust/bernardo/src/lsp_client/lsp_client.rs:14:23
+   |
+14 | use lsp_types::{self, PublishDiagnosticsParams};
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::lsp_client::diagnostic`
+  --> /home/andrzej/r/rust/bernardo/src/lsp_client/lsp_client.rs:18:5
+   |
+18 | use crate::lsp_client::diagnostic;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::lsp_client::lsp_notification::LspServerNotification`
+  --> /home/andrzej/r/rust/bernardo/src/lsp_client/lsp_client.rs:21:5
+   |
+21 | use crate::lsp_client::lsp_notification::LspServerNotification;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `SendError` and `Sender`
+ --> /home/andrzej/r/rust/bernardo/src/lsp_client/lsp_read.rs:5:25
+  |
+5 | use crossbeam_channel::{SendError, Sender};
+  |                         ^^^^^^^^^  ^^^^^^
+
+warning: unused import: `crate::app::App`
+ --> /home/andrzej/r/rust/bernardo/src/primitives/common_edit_msgs.rs:8:5
+  |
+8 | use crate::app::App;
+  |     ^^^^^^^^^^^^^^^
+
+warning: unused import: `ConfigRef`
+ --> /home/andrzej/r/rust/bernardo/src/primitives/common_edit_msgs.rs:9:55
+  |
+9 | use crate::config::config::{CommonEditMsgKeybindings, ConfigRef};
+  |                                                       ^^^^^^^^^
+
+warning: unused imports: `error` and `warn`
+ --> /home/andrzej/r/rust/bernardo/src/primitives/tree/lazy_tree_it.rs:3:18
+  |
+3 | use log::{debug, error, warn};
+  |                  ^^^^^  ^^^^
+
+warning: unused import: `streaming_iterator::IntoStreamingIterator`
+ --> /home/andrzej/r/rust/bernardo/src/primitives/tree/lazy_tree_it.rs:7:5
+  |
+7 | use streaming_iterator::IntoStreamingIterator;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::any`
+ --> /home/andrzej/r/rust/bernardo/src/text/buffer_state.rs:1:5
+  |
+1 | use std::any;
+  |     ^^^^^^^^
+
+warning: unused import: `SendError`
+ --> /home/andrzej/r/rust/bernardo/src/text/buffer_state.rs:7:25
+  |
+7 | use crossbeam_channel::{SendError, Sender};
+  |                         ^^^^^^^^^
+
+warning: unused import: `cme_to_direction`
+  --> /home/andrzej/r/rust/bernardo/src/text/buffer_state.rs:21:70
+   |
+21 | use crate::primitives::common_edit_msgs::{apply_common_edit_message, cme_to_direction, ApplyCemResult, CommonEditMsg};
+   |                                                                      ^^^^^^^^^^^^^^^^
+
+warning: unused import: `flexi_logger::AdaptiveFormat::Default`
+ --> /home/andrzej/r/rust/bernardo/src/text/contents_and_cursors.rs:1:5
+  |
+1 | use flexi_logger::AdaptiveFormat::Default;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `warn`
+ --> /home/andrzej/r/rust/bernardo/src/text/contents_and_cursors.rs:2:25
+  |
+2 | use log::{debug, error, warn};
+  |                         ^^^^
+
+warning: unused import: `std::ops::Deref`
+ --> /home/andrzej/r/rust/bernardo/src/text/contents_and_cursors.rs:5:5
+  |
+5 | use std::ops::Deref;
+  |     ^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::RwLock`
+ --> /home/andrzej/r/rust/bernardo/src/text/contents_and_cursors.rs:7:5
+  |
+7 | use std::sync::RwLock;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `unpack_or` and `unpack`
+  --> /home/andrzej/r/rust/bernardo/src/text/contents_and_cursors.rs:23:13
+   |
+23 | use crate::{unpack, unpack_or, unpack_or_e};
+   |             ^^^^^^  ^^^^^^^^^
+
+warning: unused import: `QueryError`
+ --> /home/andrzej/r/rust/bernardo/src/tsw/tree_sitter_wrapper.rs:9:75
+  |
+9 | use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor, QueryError};
+  |                                                                           ^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+ --> /home/andrzej/r/rust/bernardo/src/w7e/handler_factory.rs:1:5
+  |
+1 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+ --> /home/andrzej/r/rust/bernardo/src/w7e/navcomp_group.rs:2:5
+  |
+2 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `url::Url`
+ --> /home/andrzej/r/rust/bernardo/src/w7e/navcomp_group.rs:5:5
+  |
+5 | use url::Url;
+  |     ^^^^^^^^
+
+warning: unused import: `crate::lsp_client::diagnostic::Diagnostic`
+ --> /home/andrzej/r/rust/bernardo/src/w7e/navcomp_group.rs:9:5
+  |
+9 | use crate::lsp_client::diagnostic::Diagnostic;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `warn`
+ --> /home/andrzej/r/rust/bernardo/src/w7e/navcomp_provider_lsp.rs:7:25
+  |
+7 | use log::{debug, error, warn};
+  |                         ^^^^
+
+warning: unused import: `RwLockReadGuard`
+ --> /home/andrzej/r/rust/bernardo/src/w7e/navcomp_provider_lsp.rs:9:42
+  |
+9 | use parking_lot::{MappedRwLockReadGuard, RwLockReadGuard};
+  |                                          ^^^^^^^^^^^^^^^
+
+warning: unused import: `url::Url`
+  --> /home/andrzej/r/rust/bernardo/src/w7e/navcomp_provider_lsp.rs:10:5
+   |
+10 | use url::Url;
+   |     ^^^^^^^^
+
+warning: unused import: `crate::lsp_client::diagnostic::Diagnostic`
+  --> /home/andrzej/r/rust/bernardo/src/w7e/navcomp_provider_lsp.rs:13:5
+   |
+13 | use crate::lsp_client::diagnostic::Diagnostic;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `error`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/big_list/big_list_widget.rs:1:18
+  |
+1 | use log::{debug, error, warn};
+  |                  ^^^^^
+
+warning: unused import: `crate::primitives::rect::Rect`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/big_list/big_list_widget.rs:12:5
+   |
+12 | use crate::primitives::rect::Rect;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::process::Output`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/check_box.rs:1:5
+  |
+1 | use std::process::Output;
+  |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `log::error`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/code_result_avatar/widget.rs:1:5
+  |
+1 | use log::error;
+  |     ^^^^^^^^^^
+
+warning: unused import: `crate::fs::path::SPath`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/code_result_avatar/widget.rs:6:5
+  |
+6 | use crate::fs::path::SPath;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `ComplexWidget` and `DisplayState`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/code_result_avatar/widget.rs:16:37
+   |
+16 | use crate::widget::complex_widget::{ComplexWidget, DisplayState};
+   |                                     ^^^^^^^^^^^^^  ^^^^^^^^^^^^
+
+warning: unused import: `crate::widgets::context_menu::widget::CONTEXT_MENU_WIDGET_NAME`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/code_result_avatar/widget.rs:19:5
+   |
+19 | use crate::widgets::context_menu::widget::CONTEXT_MENU_WIDGET_NAME;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `unpack_unit_e`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/code_result_avatar/widget.rs:23:24
+   |
+23 | use crate::{subwidget, unpack_unit_e};
+   |                        ^^^^^^^^^^^^^
+
+warning: unused import: `crate::fs::write_error::WriteError`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/editor_view/editor_view.rs:11:5
+   |
+11 | use crate::fs::write_error::WriteError;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `unpack_or_e`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/editor_view/editor_view.rs:40:35
+   |
+40 | use crate::{subwidget, unpack_or, unpack_or_e};
+   |                                   ^^^^^^^^^^^
+
+warning: unused import: `std::path::Path`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/editor_widget/editor_widget.rs:4:5
+  |
+4 | use std::path::Path;
+  |     ^^^^^^^^^^^^^^^
+
+warning: unused import: `info`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/editor_widget/editor_widget.rs:7:25
+  |
+7 | use log::{debug, error, info, warn};
+  |                         ^^^^
+
+warning: unused import: `cursor_to_xy`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/editor_widget/editor_widget.rs:16:58
+   |
+16 | use crate::cursor::cursor_set_rect::{cursor_set_to_rect, cursor_to_xy, cursor_to_xy_xy};
+   |                                                          ^^^^^^^^^^^^
+
+warning: unused import: `crate::widgets::context_bar::widget::ContextBarWidget`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/editor_widget/editor_widget.rs:46:5
+   |
+46 | use crate::widgets::context_bar::widget::ContextBarWidget;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::widgets::editor_widget::label::labels_provider::LabelsProvider`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/editor_widget/editor_widget.rs:51:5
+   |
+51 | use crate::widgets::editor_widget::label::labels_provider::LabelsProvider;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `LabelHighlighter`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/file_tree_view/file_tree_view.rs:27:44
+   |
+27 | use crate::widgets::tree_view::tree_view::{LabelHighlighter, TreeViewWidget};
+   |                                            ^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::io::style::TextStyle`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/focus_path_widget.rs:7:5
+  |
+7 | use crate::io::style::TextStyle;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::primitives::printable::Printable`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/fuzzy_screens_list_widget.rs:7:5
+  |
+7 | use crate::primitives::printable::Printable;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `format`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:3:16
+  |
+3 | use std::fmt::{format, Display};
+  |                ^^^^^^
+
+warning: unused import: `crate::io::keys::Keycode`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:21:5
+   |
+21 | use crate::io::keys::Keycode;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::primitives::scroll::ScrollDirection`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:29:5
+   |
+29 | use crate::primitives::scroll::ScrollDirection;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `get_focus_path_w`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:49:71
+   |
+49 | use crate::widgets::main_view::main_context_menu::{aggregate_actions, get_focus_path_w, MainContextMenuWidget};
+   |                                                                       ^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::widgets::tree_view::tree_view::TreeViewWidget`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:55:5
+   |
+55 | use crate::widgets::tree_view::tree_view::TreeViewWidget;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::widgets::with_scroll::with_scroll::WithScroll`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:56:5
+   |
+56 | use crate::widgets::with_scroll::with_scroll::WithScroll;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `TreeItFilter`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/spath_tree_view_node.rs:8:53
+  |
+8 | use crate::primitives::tree::tree_node::{FilterRef, TreeItFilter, TreeNode};
+  |                                                     ^^^^^^^^^^^^
+
+warning: unused imports: `BorrowMutError`, `RefCell`, `RefMut`, and `Ref`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tree_view/tree_view.rs:2:17
+  |
+2 | use std::cell::{BorrowMutError, Ref, RefCell, RefMut};
+  |                 ^^^^^^^^^^^^^^  ^^^  ^^^^^^^  ^^^^^^
+
+warning: unused import: `HashMap`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tree_view/tree_view.rs:3:24
+  |
+3 | use std::collections::{HashMap, HashSet};
+  |                        ^^^^^^^
+
+warning: unused import: `std::ops::DerefMut`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tree_view/tree_view.rs:7:5
+  |
+7 | use std::ops::DerefMut;
+  |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Mutex`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tree_view/tree_view.rs:8:22
+  |
+8 | use std::sync::{Arc, Mutex};
+  |                      ^^^^^
+
+warning: unused import: `flexi_logger::AdaptiveFormat::Default`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/tree_view/tree_view.rs:10:5
+   |
+10 | use flexi_logger::AdaptiveFormat::Default;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Key`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/tree_view/tree_view.rs:19:23
+   |
+19 | use crate::io::keys::{Key, Keycode};
+   |                       ^^^
+
+warning: unused import: `crate::primitives::is_default::IsDefault`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/tree_view/tree_view.rs:24:5
+   |
+24 | use crate::primitives::is_default::IsDefault;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::primitives::tree::tree_it::eager_iterator`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/tree_view/tree_view.rs:27:5
+   |
+27 | use crate::primitives::tree::tree_it::eager_iterator;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `unpack`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/tree_view/tree_view.rs:34:13
+   |
+34 | use crate::{unpack, unpack_or_e};
+   |             ^^^^^^
+
+warning: unused import: `error`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/context_menu/widget.rs:5:18
+  |
+5 | use log::{debug, error, warn};
+  |                  ^^^^^
+
+warning: unused import: `crate::primitives::rect::Rect`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/find_in_files_widget/find_in_files_widget.rs:17:5
+   |
+17 | use crate::primitives::rect::Rect;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::io::keys::Keycode`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/find_in_files_widget/tests/find_in_files_widget_tests.rs:3:5
+  |
+3 | use crate::io::keys::Keycode;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+ --> /home/andrzej/r/rust/bernardo/src/widgets/find_in_files_widget/tests/mod.rs:3:1
+  |
+3 | mod find_in_files_widget_tests;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::mocks::with_wait_for::WithWaitFor`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/find_in_files_widget/tests/find_in_files_widget_tests.rs:4:5
+  |
+4 | use crate::mocks::with_wait_for::WithWaitFor;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+ --> /home/andrzej/r/rust/bernardo/src/widgets/find_in_files_widget/tests/mod.rs:3:1
+  |
+3 | mod find_in_files_widget_tests;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::panic`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/check_box_test.rs:1:5
+  |
+1 | use std::panic;
+  |     ^^^^^^^^^^
+  |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/mod.rs:4:1
+  |
+4 | pub mod check_box_test;
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::io::input_event::InputEvent::KeyInput`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/check_box_test.rs:3:5
+  |
+3 | use crate::io::input_event::InputEvent::KeyInput;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/mod.rs:4:1
+  |
+4 | pub mod check_box_test;
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Key`, `Keycode`, and `Modifiers`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/check_box_test.rs:4:23
+  |
+4 | use crate::io::keys::{Key, Keycode, Modifiers};
+  |                       ^^^  ^^^^^^^  ^^^^^^^^^
+  |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/mod.rs:4:1
+  |
+4 | pub mod check_box_test;
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::widget::widget::Widget`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/check_box_test.rs:5:5
+  |
+5 | use crate::widget::widget::Widget;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/mod.rs:4:1
+  |
+4 | pub mod check_box_test;
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::widgets::check_box::CheckBoxWidget`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/check_box_test.rs:6:5
+  |
+6 | use crate::widgets::check_box::CheckBoxWidget;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/mod.rs:4:1
+  |
+4 | pub mod check_box_test;
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `io::input_event::InputEvent` and `widgets::text_widget::TextWidget`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/check_box_test.rs:7:13
+  |
+7 | use crate::{io::input_event::InputEvent, widgets::text_widget::TextWidget};
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/mod.rs:4:1
+  |
+4 | pub mod check_box_test;
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::io::input_event::InputEvent`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/edit_box_test.rs:1:5
+  |
+1 | use crate::io::input_event::InputEvent;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/mod.rs:5:1
+  |
+5 | pub mod edit_box_test;
+  | ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::io::keys::Keycode`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/edit_box_test.rs:2:5
+  |
+2 | use crate::io::keys::Keycode;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+ --> /home/andrzej/r/rust/bernardo/src/widgets/tests/mod.rs:5:1
+  |
+5 | pub mod edit_box_test;
+  | ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::config::theme::Theme`
+ --> /home/andrzej/r/rust/bernardo/src/mocks/editor_interpreter.rs:1:5
+  |
+1 | use crate::config::theme::Theme;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `TAB_LEN` and `count_tabs_starting_at`
+  --> /home/andrzej/r/rust/bernardo/src/mocks/editor_interpreter.rs:22:52
+   |
+22 | use crate::widgets::editor_widget::editor_widget::{count_tabs_starting_at, EditorWidget, BEYOND, NEWLINE, TAB, TAB_LEN};
+   |                                                    ^^^^^^^^^^^^^^^^^^^^^^                                      ^^^^^^^
+
+warning: unused import: `warn`
+  --> /home/andrzej/r/rust/bernardo/src/mocks/editor_interpreter.rs:25:18
+   |
+25 | use log::{error, warn};
+   |                  ^^^^
+
+warning: unused import: `lsp_types::TagSupport`
+  --> /home/andrzej/r/rust/bernardo/src/mocks/editor_interpreter.rs:26:5
+   |
+26 | use lsp_types::TagSupport;
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `url::Url`
+ --> /home/andrzej/r/rust/bernardo/src/mocks/mock_navcomp_provider.rs:8:5
+  |
+8 | use url::Url;
+  |     ^^^^^^^^
+
+warning: unused import: `crate::lsp_client::diagnostic::Diagnostic`
+  --> /home/andrzej/r/rust/bernardo/src/mocks/mock_navcomp_provider.rs:11:5
+   |
+11 | use crate::lsp_client::diagnostic::Diagnostic;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: elided lifetime has a name
+  --> /home/andrzej/r/rust/bernardo/src/mocks/scroll_interpreter.rs:10:65
+   |
+9  | impl<'a> ScrollInterpreter<'a> {
+   |      -- lifetime `'a` declared here
+10 |     pub fn new(rect: Rect, mock_output: &'a MetaOutputFrame) -> ScrollInterpreter {
+   |                                                                 ^^^^^^^^^^^^^^^^^ this elided lifetime gets resolved as `'a`
+   |
+   = note: `#[warn(elided_named_lifetimes)]` on by default
+
+warning: variable does not need to be mutable
+   --> /home/andrzej/r/rust/bernardo/src/widgets/tree_view/tree_view.rs:332:13
+    |
+332 |         let mut iter = LazyTreeIterator::new(self.root_node.clone(), filter_op);
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+   --> /home/andrzej/r/rust/bernardo/src/mocks/editor_interpreter.rs:214:24
+    |
+214 |             .map(move |mut horizontal_iter_item: HorizontalIterItem| {
+    |                        ----^^^^^^^^^^^^^^^^^^^^
+    |                        |
+    |                        help: remove this `mut`
+
+warning: unused variable: `line`
+   --> /home/andrzej/r/rust/bernardo/src/mocks/editor_interpreter.rs:418:21
+    |
+418 |                 let line = self.get_line_by_y(line_idx.y).unwrap();
+    |                     ^^^^ help: if this is intentional, prefix it with an underscore: `_line`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `first_letter_x`
+  --> /home/andrzej/r/rust/bernardo/src/mocks/nested_menu_interpreter.rs:45:21
+   |
+45 |             let mut first_letter_x = rect.upper_left().x;
+   |                     ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_first_letter_x`
+
+warning: unused variable: `style`
+  --> /home/andrzej/r/rust/bernardo/src/mocks/nested_menu_interpreter.rs:59:35
+   |
+59 |                     Cell::Begin { style, grapheme } => {
+   |                                   ^^^^^ help: try ignoring the field: `style: _`
+
+warning: variable does not need to be mutable
+  --> /home/andrzej/r/rust/bernardo/src/mocks/nested_menu_interpreter.rs:45:17
+   |
+45 |             let mut first_letter_x = rect.upper_left().x;
+   |                 ----^^^^^^^^^^^^^^
+   |                 |
+   |                 help: remove this `mut`
+
+error[E0599]: no function or associated item named `new` found for struct `CursorSet` in the current scope
+  --> /home/andrzej/r/rust/bernardo/src/cursor/tests/test_helpers.rs:73:25
+   |
+73 |     let cs = CursorSet::new(cursors);
+   |                         ^^^ function or associated item not found in `CursorSet`
+   |
+  ::: /home/andrzej/r/rust/bernardo/src/cursor/cursor_set.rs:28:1
+   |
+28 | pub struct CursorSet {
+   | -------------------- function or associated item `new` not found for this struct
+   |
+note: if you're trying to build a new `CursorSet` consider using one of the following associated functions:
+      CursorSet::single
+      CursorSet::singleton
+  --> /home/andrzej/r/rust/bernardo/src/cursor/cursor_set.rs:33:5
+   |
+33 |     pub fn single() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+...
+47 |     pub fn singleton(cursor: Cursor) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following trait defines an item `new`, perhaps you need to implement it:
+           candidate #1: `parking_lot_core::thread_parker::ThreadParkerT`
+help: there is a method `ne` with a similar name
+   |
+73 |     let cs = CursorSet::ne(cursors);
+   |                         ~~
+
+warning: unreachable expression
+   --> /home/andrzej/r/rust/bernardo/src/fs/fsf_async_tree_iter.rs:113:25
+    |
+113 |                            return match e {
+    |  __________________________^      -
+    | | ________________________________|
+114 | ||                             TryRecvError::Empty => {
+115 | ||                                 let new_state = StreamingPromiseState::Streaming;
+116 | ||                                 return UpdateResult {
+...   ||
+129 | ||                         }
+    | ||                         ^
+    | ||_________________________|
+    |  |_________________________unreachable expression
+    |                            any code following this `match` expression is unreachable, as all arms diverge
+    |
+    = note: `#[warn(unreachable_code)]` on by default
+
+warning: unused import: `jsonrpc_core::futures::SinkExt`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:6:5
+  |
+6 | use jsonrpc_core::futures::SinkExt;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `unicode_segmentation::UnicodeSegmentation`
+ --> /home/andrzej/r/rust/bernardo/src/widgets/text_widget.rs:4:5
+  |
+4 | use unicode_segmentation::UnicodeSegmentation;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `TreeItFilter`
+ --> /home/andrzej/r/rust/bernardo/src/primitives/tree/tree_it.rs:2:53
+  |
+2 | use crate::primitives::tree::tree_node::{FilterRef, TreeItFilter, TreeNode};
+  |                                                     ^^^^^^^^^^^^
+
+warning: unused import: `TreeItFilter`
+ --> /home/andrzej/r/rust/bernardo/src/primitives/tree/lazy_tree_it.rs:2:53
+  |
+2 | use crate::primitives::tree::tree_node::{FilterRef, TreeItFilter, TreeNode};
+  |                                                     ^^^^^^^^^^^^
+
+warning: value assigned to `res` is never read
+   --> /home/andrzej/r/rust/bernardo/src/cursor/cursor_set.rs:442:17
+    |
+442 |         let mut res = false;
+    |                 ^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` on by default
+
+warning: unused variable: `e`
+  --> /home/andrzej/r/rust/bernardo/src/fs/fsf_async_tree_iter.rs:63:29
+   |
+63 |                         Err(e) => break 'warmup,
+   |                             ^ help: if this is intentional, prefix it with an underscore: `_e`
+
+warning: unused variable: `e`
+  --> /home/andrzej/r/rust/bernardo/src/fs/fsf_async_tree_iter.rs:47:28
+   |
+47 |                 if let Err(e) = sender.send(item) {
+   |                            ^ help: if this is intentional, prefix it with an underscore: `_e`
+
+warning: unused variable: `how_long`
+  --> /home/andrzej/r/rust/bernardo/src/fs/fsf_async_tree_iter.rs:90:25
+   |
+90 |     fn drain(&mut self, how_long: Option<Duration>) -> StreamingPromiseState {
+   |                         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_how_long`
+
+warning: variable `cache_invalid` is assigned to, but never used
+   --> /home/andrzej/r/rust/bernardo/src/fs/fsf_ref.rs:153:17
+    |
+153 |         let mut cache_invalid = false;
+    |                 ^^^^^^^^^^^^^
+    |
+    = note: consider using `_cache_invalid` instead
+
+warning: value assigned to `cache_invalid` is never read
+   --> /home/andrzej/r/rust/bernardo/src/fs/fsf_ref.rs:168:29
+    |
+168 | ...                   cache_invalid = true;
+    |                       ^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: unused variable: `path`
+   --> /home/andrzej/r/rust/bernardo/src/fs/mock_fs.rs:328:24
+    |
+328 |     fn metadata(&self, path: &Path) -> Result<Metadata, ()> {
+    |                        ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+
+warning: unused variable: `prev`
+  --> /home/andrzej/r/rust/bernardo/src/fs/path.rs:40:33
+   |
+40 |             PathCell::Segment { prev, cell, hash } => {
+   |                                 ^^^^ help: try ignoring the field: `prev: _`
+
+warning: unused variable: `cell`
+  --> /home/andrzej/r/rust/bernardo/src/fs/path.rs:40:39
+   |
+40 |             PathCell::Segment { prev, cell, hash } => {
+   |                                       ^^^^ help: try ignoring the field: `cell: _`
+
+warning: variable does not need to be mutable
+   --> /home/andrzej/r/rust/bernardo/src/fs/path.rs:336:17
+    |
+336 |             let mut iter = root.recursive_iter();
+    |                 ----^^^^
+    |                 |
+    |                 help: remove this `mut`
+
+warning: unused variable: `hash`
+   --> /home/andrzej/r/rust/bernardo/src/fs/path.rs:494:47
+    |
+494 |     while let PathCell::Segment { prev, cell, hash } = first.0.as_ref() {
+    |                                               ^^^^ help: try ignoring the field: `hash: _`
+
+warning: unused variable: `hash`
+   --> /home/andrzej/r/rust/bernardo/src/fs/path.rs:499:47
+    |
+499 |     while let PathCell::Segment { prev, cell, hash } = second.0.as_ref() {
+    |                                               ^^^^ help: try ignoring the field: `hash: _`
+
+warning: unused variable: `filter_op`
+  --> /home/andrzej/r/rust/bernardo/src/primitives/tree/tree_node.rs:40:9
+   |
+40 |         filter_op: Option<(FilterRef<Self>, FilterPolicy)>,
+   |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_filter_op`
+
+warning: unused variable: `expanded_op`
+  --> /home/andrzej/r/rust/bernardo/src/primitives/tree/tree_node.rs:41:9
+   |
+41 |         expanded_op: Option<HashSet<Key>>,
+   |         ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_expanded_op`
+
+warning: irrefutable `if let` pattern
+   --> /home/andrzej/r/rust/bernardo/src/text/buffer_state.rs:131:28
+    |
+131 |                         if let (indent_num, indent_type) = self.text().get_indentation_level_dumb(&cursor) {
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this pattern will always match, so the `if let` is useless
+    = help: consider replacing the `if let` with a `let`
+    = note: `#[warn(irrefutable_let_patterns)]` on by default
+
+warning: unused variable: `indent_type`
+   --> /home/andrzej/r/rust/bernardo/src/text/buffer_state.rs:131:45
+    |
+131 |                         if let (indent_num, indent_type) = self.text().get_indentation_level_dumb(&cursor) {
+    |                                             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_indent_type`
+
+warning: unused variable: `query_captures`
+   --> /home/andrzej/r/rust/bernardo/src/tsw/tree_sitter_wrapper.rs:259:13
+    |
+259 |         let query_captures: Vec<_> = QueryCursor::new()
+    |             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_query_captures`
+
+warning: unused variable: `buffer_register_ref`
+  --> /home/andrzej/r/rust/bernardo/src/w7e/handler_factory.rs:24:5
+   |
+24 |     buffer_register_ref: &BufferRegisterRef,
+   |     ^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_buffer_register_ref`
+
+warning: variable does not need to be mutable
+   --> /home/andrzej/r/rust/bernardo/src/w7e/navcomp_provider_lsp.rs:346:13
+    |
+346 |         let mut lsp_wrapper = unpack_or_e!(self.lsp.try_write().ok(), None, "failed acquiring lock on LSP Wrapper");
+    |             ----^^^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `action`
+   --> /home/andrzej/r/rust/bernardo/src/widget/context_bar_item.rs:111:30
+    |
+111 |             NodeType::Leaf { action, key } => key,
+    |                              ^^^^^^ help: try ignoring the field: `action: _`
+
+warning: unused variable: `key`
+   --> /home/andrzej/r/rust/bernardo/src/widget/context_bar_item.rs:137:38
+    |
+137 |             NodeType::Leaf { action, key } => Some(action()),
+    |                                      ^^^ help: try ignoring the field: `key: _`
+
+warning: unused variable: `screenspace`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/check_box.rs:78:26
+   |
+78 |     fn layout(&mut self, screenspace: crate::experiments::screenspace::Screenspace) {}
+   |                          ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_screenspace`
+
+warning: unused variable: `input_event`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/code_result_avatar/widget.rs:92:24
+   |
+92 |     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+   |                        ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_input_event`
+
+warning: unused variable: `msg`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/code_result_avatar/widget.rs:96:26
+   |
+96 |     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+   |                          ^^^ help: if this is intentional, prefix it with an underscore: `_msg`
+
+warning: variable does not need to be mutable
+  --> /home/andrzej/r/rust/bernardo/src/widgets/edit_box.rs:58:13
+   |
+58 |         let mut res = EditBoxWidget {
+   |             ----^^^
+   |             |
+   |             help: remove this `mut`
+
+warning: unused variable: `wid`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/editor_view/editor_view.rs:307:13
+    |
+307 |         let wid = widget.id();
+    |             ^^^ help: if this is intentional, prefix it with an underscore: `_wid`
+
+warning: variable does not need to be mutable
+   --> /home/andrzej/r/rust/bernardo/src/widgets/editor_widget/editor_widget.rs:805:21
+    |
+805 |                 let mut tab_leftover = 0;
+    |                     ----^^^^^^^^^^^^
+    |                     |
+    |                     help: remove this `mut`
+
+warning: irrefutable `if let` pattern
+    --> /home/andrzej/r/rust/bernardo/src/widgets/editor_widget/editor_widget.rs:1202:12
+     |
+1202 |         if let EditorHover::Completion(cw) = hover {
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: this pattern will always match, so the `if let` is useless
+     = help: consider replacing the `if let` with a `let`
+
+warning: irrefutable `if let` pattern
+    --> /home/andrzej/r/rust/bernardo/src/widgets/editor_widget/editor_widget.rs:1218:12
+     |
+1218 |         if let EditorHover::Completion(cw) = hover {
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: this pattern will always match, so the `if let` is useless
+     = help: consider replacing the `if let` with a `let`
+
+warning: unused variable: `input_event`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/focus_path_widget.rs:80:24
+   |
+80 |     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+   |                        ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_input_event`
+
+warning: unused variable: `msg`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/focus_path_widget.rs:84:26
+   |
+84 |     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
+   |                          ^^^ help: if this is intentional, prefix it with an underscore: `_msg`
+
+warning: unused variable: `focused`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/focus_path_widget.rs:88:37
+   |
+88 |     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+   |                                     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_focused`
+
+warning: unused variable: `display_idx`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/fuzzy_screens_list_widget.rs:77:63
+   |
+77 | pub fn get_fuzzy_screen_list(displays: &Vec<MainViewDisplay>, display_idx: usize) -> DisplayRegistryTreeNode {
+   |                                                               ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_display_idx`
+
+warning: unused variable: `filter_op`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:292:77
+    |
+292 |     fn handle_open_find_in_files(&mut self, root_dir: SPath, query: String, filter_op: Option<String>) {
+    |                                                                             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_filter_op`
+
+warning: variable does not need to be mutable
+   --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:369:13
+    |
+369 |         let mut widget = FuzzyFileSearchWidget::new(self.providers.clone(), FileTreeNode::new(self.providers.fsf().root().clone()))
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `anchor`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:406:54
+    |
+406 | ...                   HoverItem::ContextMain { anchor, widget, old_focus } => widget as &dyn Widget,
+    |                                                ^^^^^^ help: try ignoring the field: `anchor: _`
+
+warning: unused variable: `old_focus`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:406:70
+    |
+406 | ...                   HoverItem::ContextMain { anchor, widget, old_focus } => widget as &dyn Widget,
+    |                                                                ^^^^^^^^^ help: try ignoring the field: `old_focus: _`
+
+warning: unused variable: `anchor`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:420:54
+    |
+420 | ...                   HoverItem::ContextMain { anchor, widget, old_focus } => widget as &mut dyn Widget,
+    |                                                ^^^^^^ help: try ignoring the field: `anchor: _`
+
+warning: unused variable: `old_focus`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:420:70
+    |
+420 | ...                   HoverItem::ContextMain { anchor, widget, old_focus } => widget as &mut dyn Widget,
+    |                                                                ^^^^^^^^^ help: try ignoring the field: `old_focus: _`
+
+warning: unused variable: `widget`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:516:55
+    |
+516 |             widget.set_on_shortcut_hit(Box::new(move |widget, item| -> Option<Box<dyn AnyMsg>> {
+    |                                                       ^^^^^^ help: if this is intentional, prefix it with an underscore: `_widget`
+
+warning: unused variable: `anchor`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:758:58
+    |
+758 |                     if let Some(HoverItem::ContextMain { anchor, widget, old_focus }) = self.hover.take() {
+    |                                                          ^^^^^^ help: try ignoring the field: `anchor: _`
+
+warning: unused variable: `widget`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:758:66
+    |
+758 |                     if let Some(HoverItem::ContextMain { anchor, widget, old_focus }) = self.hover.take() {
+    |                                                                  ^^^^^^ help: try ignoring the field: `widget: _`
+
+warning: unused variable: `anchor`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:848:58
+    |
+848 |                     if let Some(HoverItem::ContextMain { anchor, widget, old_focus }) = self.hover.take() {
+    |                                                          ^^^^^^ help: try ignoring the field: `anchor: _`
+
+warning: unused variable: `widget`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/main_view.rs:848:66
+    |
+848 |                     if let Some(HoverItem::ContextMain { anchor, widget, old_focus }) = self.hover.take() {
+    |                                                                  ^^^^^^ help: try ignoring the field: `widget: _`
+
+warning: variable does not need to be mutable
+  --> /home/andrzej/r/rust/bernardo/src/widgets/main_view/util.rs:31:9
+   |
+31 |     let mut rect = unpack_or_e!(Rect::hover_centered_percent(parent_size, 80), None, "failed to get centered rect");
+   |         ----^^^^
+   |         |
+   |         help: remove this `mut`
+
+warning: unused variable: `action_trigger`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/tree_view/tree_view.rs:510:33
+    |
+510 |                     if let Some(action_trigger) = self.on_keyboard_shortcut_hit.as_ref() {
+    |                                 ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_action_trigger`
+
+warning: variable does not need to be mutable
+  --> /home/andrzej/r/rust/bernardo/src/widgets/with_scroll/with_scroll.rs:91:47
+   |
+91 |     pub fn mutate_internal<F: FnOnce(W) -> W>(mut self, mutator: F) -> Self {
+   |                                               ----^^^^
+   |                                               |
+   |                                               help: remove this `mut`
+
+warning: unused variable: `query_buffer`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/nested_menu/widget.rs:91:13
+   |
+91 |         let query_buffer = BufferState::simplified_single_line().into_bsr();
+   |             ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_query_buffer`
+
+warning: unused variable: `providers`
+  --> /home/andrzej/r/rust/bernardo/src/widgets/nested_menu/widget.rs:90:16
+   |
+90 |     pub fn new(providers: Providers, root_node: Item, max_size: XY) -> Self {
+   |                ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_providers`
+
+warning: value assigned to `next` is never read
+   --> /home/andrzej/r/rust/bernardo/src/widgets/nested_menu/widget.rs:117:21
+    |
+117 |             let mut next: Option<Item> = None;
+    |                     ^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: unused variable: `item_expanded`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/nested_menu/widget.rs:328:13
+    |
+328 |         let item_expanded: u16 = 0;
+    |             ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_item_expanded`
+
+warning: unused variable: `expanded_items`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/nested_menu/widget.rs:329:17
+    |
+329 |         let mut expanded_items: u16 = 0;
+    |                 ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_expanded_items`
+
+warning: unused variable: `base_style`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/nested_menu/widget.rs:331:13
+    |
+331 |         let base_style = get_default_style(theme, focused);
+    |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_base_style`
+
+warning: unused variable: `cursor_style`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/nested_menu/widget.rs:332:13
+    |
+332 |         let cursor_style = get_highlighted_style(theme, focused);
+    |             ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_cursor_style`
+
+warning: variable does not need to be mutable
+   --> /home/andrzej/r/rust/bernardo/src/widgets/nested_menu/widget.rs:329:13
+    |
+329 |         let mut expanded_items: u16 = 0;
+    |             ----^^^^^^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `size`
+   --> /home/andrzej/r/rust/bernardo/src/widgets/context_menu/widget.rs:250:13
+    |
+250 |         let size = unpack_unit_e!(self.get_layout_res().map(|lr| lr.total_size), "render before layout",);
+    |             ^^^^ help: if this is intentional, prefix it with an underscore: `_size`
+
+warning: unused variable: `now`
+  --> /home/andrzej/r/rust/bernardo/src/mocks/log_capture.rs:10:21
+   |
+10 |     fn write(&self, now: &mut DeferredNow, record: &Record) -> std::io::Result<()> {
+   |                     ^^^ help: if this is intentional, prefix it with an underscore: `_now`
+
+warning: unused variable: `path_op`
+  --> /home/andrzej/r/rust/bernardo/src/mocks/mock_labels_provider.rs:16:25
+   |
+16 |     fn query_for(&self, path_op: Option<&SPath>) -> Box<dyn Iterator<Item = &Label> + '_> {
+   |                         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_path_op`
+
+warning: unused variable: `buffer_register_ref`
+  --> /home/andrzej/r/rust/bernardo/src/mocks/mock_navcomp_loader.rs:40:9
+   |
+40 |         buffer_register_ref: &BufferRegisterRef,
+   |         ^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_buffer_register_ref`
+
+warning: unused variable: `path`
+   --> /home/andrzej/r/rust/bernardo/src/mocks/mock_navcomp_provider.rs:256:32
+    |
+256 |     fn go_to_definition(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
+    |                                ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+
+warning: unused variable: `cursor`
+   --> /home/andrzej/r/rust/bernardo/src/mocks/mock_navcomp_provider.rs:256:46
+    |
+256 |     fn go_to_definition(&self, path: &SPath, cursor: StupidCursor) -> Option<SymbolUsagesPromise> {
+    |                                              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_cursor`
+
+warning: unused variable: `path`
+   --> /home/andrzej/r/rust/bernardo/src/mocks/mock_navcomp_provider.rs:266:35
+    |
+266 |     fn get_labels_for_file(&self, path: &SPath) -> Option<MappedRwLockReadGuard<Vec<Label>>> {
+    |                                   ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+
+warning: unused variable: `item`
+  --> /home/andrzej/r/rust/bernardo/src/mocks/nested_menu_interpreter.rs:28:21
+   |
+28 |         if let Some(item) = mock_output
+   |                     ^^^^ help: if this is intentional, prefix it with an underscore: `_item`
+
+For more information about this error, try `rustc --explain E0599`.
+warning: `bernardo` (lib) generated 175 warnings
+error: could not compile `bernardo` (lib) due to 1 previous error; 175 warnings emitted
+Error: failed to build fuzz script: ASAN_OPTIONS="detect_odr_violation=0" RUSTFLAGS="-Cpasses=sancov-module -Cllvm-args=-sanitizer-coverage-level=4 -Cllvm-args=-sanitizer-coverage-inline-8bit-counters -Cllvm-args=-sanitizer-coverage-pc-table -Cllvm-args=-sanitizer-coverage-trace-compares --cfg fuzzing -Clink-dead-code -Zsanitizer=address -Cllvm-args=-sanitizer-coverage-stack-depth -Cdebug-assertions -C codegen-units=1" "cargo" "build" "--manifest-path" "/home/andrzej/r/rust/bernardo/fuzz/Cargo.toml" "--target" "x86_64-unknown-linux-gnu" "--release" "--config" "profile.release.debug=true" "--bin" "fuzz_editor"
+
+Stack backtrace:
+   0: anyhow::error::<impl anyhow::Error>::msg
+   1: cargo_fuzz::project::FuzzProject::exec_build
+   2: cargo_fuzz::project::FuzzProject::exec_fuzz
+   3: <cargo_fuzz::options::run::Run as cargo_fuzz::RunCommand>::run_command
+   4: cargo_fuzz::main
+   5: std::sys::backtrace::__rust_begin_short_backtrace
+   6: std::rt::lang_start::{{closure}}
+   7: std::rt::lang_start_internal
+   8: main
+   9: __libc_start_call_main
+             at ./csu/../sysdeps/nptl/libc_start_call_main.h:58:16
+  10: __libc_start_main_impl
+             at ./csu/../csu/libc-start.c:360:3
+  11: _start

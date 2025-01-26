@@ -10,7 +10,7 @@ impl<'a> Arbitrary<'a> for BufferState {
 
         let mut text = u.arbitrary::<String>()?;
         let bf = match subtype {
-            BufferType::Full => BufferState::full(None, document).with_text(text.clone()),
+            BufferType::Full => BufferState::full(None, document, None, None).with_text(text.clone()),
             BufferType::SingleLine => {
                 text = text.replace('\n', "");
                 BufferState::simplified_single_line().with_text(text.clone())

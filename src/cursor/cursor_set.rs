@@ -36,7 +36,6 @@ impl CursorSet {
         }
     }
 
-    #[cfg(test)]
     pub fn new(set: Vec<Cursor>) -> Self {
         CursorSet { set }
     }

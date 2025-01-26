@@ -1,11 +1,7 @@
 #![no_main]
 
-use bernardo::cursor::cursor_set::CursorSet;
-use bernardo::cursor::cursor_set_fuzz;
-use bernardo::cursor::cursor_set_fuzz::*;
 use bernardo::primitives::common_edit_msgs::CommonEditMsg;
 use bernardo::text::buffer_state::BufferState;
-use bernardo::text::buffer_state_fuzz::*;
 use libfuzzer_sys::arbitrary;
 use libfuzzer_sys::fuzz_target;
 
@@ -18,8 +14,10 @@ struct Items {
 fuzz_target!(|items : Items| {
     match items {
         Items { mut buffer_state, cems } => {
+            buffer_state.initialize_for_widget(1, None);
+
             for cem in cems.iter() {
-                buffer_state.apply_cem(cem.clone(), 10, None);
+                buffer_state.apply_common_edit_message(cem.clone(), 1, 10, None, false);
             }
         },
     }

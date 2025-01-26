@@ -26,3 +26,9 @@ name = "cem_and_buf"
 path = "fuzz_targets/common_edit_messages_and_buffers.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "fuzz_editor"
+path = "fuzz_targets/fuzz_editor.rs"
+test = true
+doc = false
