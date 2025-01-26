@@ -11,8 +11,7 @@ default-run = "gladius"
 name = "bernardo"
 
 [dependencies]
-#async-trait = "0.1.57"
-arbitrary = { version = "1", optional = true, features = ["derive"] }
+#arbitrary = { version = "1", optional = true, features = ["derive"] }
 arboard = "3.1.1"
 cargo_toml = "0.15.1" # we need to go deeper.
 clap = { version = "4.1.4", features = ["derive"] }
@@ -54,6 +53,7 @@ uuid = { version = "1.3.0", features = ["arbitrary", "v4"] }
 # upgrading to 6 breaks.
 which = { version = "5.0.0" }
 coredump = "0.1.1"
+
 
 [dependencies.crossterm]
 version = "0.28.1"
