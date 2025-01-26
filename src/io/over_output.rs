@@ -119,7 +119,7 @@ impl Output for OverOutput<'_> {
         // shifted(self.local_to_parent)));
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "fuzztest"))]
     fn emit_metadata(&mut self, mut meta: crate::io::output::Metadata) {
         let original_rect = meta.rect;
         let upper_left = self.visible_rect().upper_left();

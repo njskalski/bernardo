@@ -1607,7 +1607,7 @@ impl Widget for EditorWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "fuzztest"))]
         {
             output.emit_metadata(crate::io::output::Metadata {
                 id: self.wid,

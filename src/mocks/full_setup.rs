@@ -236,9 +236,11 @@ impl FullSetup {
 
     // TODO remove
     pub fn wait_frame(&mut self) -> bool {
+        error!("wait_frame");
         let mut res = false;
         select! {
             recv(self.output_receiver) -> frame_res => {
+                error!("received frame");
                 match frame_res {
                     Ok(frame) => {
                         self.last_frame = Some(frame);

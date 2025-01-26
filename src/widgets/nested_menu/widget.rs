@@ -315,7 +315,7 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Wi
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let size = crate::unpack_unit_e!(self.layout_size, "render before layout",);
 
-        #[cfg(test)]
+        #[cfg(any(test, feature = "fuzztest"))]
         {
             output.emit_metadata(crate::io::output::Metadata {
                 id: self.id(),

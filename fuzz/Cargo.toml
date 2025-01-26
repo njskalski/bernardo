@@ -12,23 +12,10 @@ libfuzzer-sys = "0.4"
 
 [dependencies.bernardo]
 path = ".."
-features = ["arbitrary"]
-
-# Prevent this from interfering with workspaces
-[workspace]
-members = ["."]
-
-[profile.release]
-debug = 1
 
 [[bin]]
-name = "cem_and_buf"
-path = "fuzz_targets/common_edit_messages_and_buffers.rs"
-test = false
+name = "fuzz_target_1"
+path = "fuzz_targets/fuzz_target_1.rs"
+test = false # necessary so metadata is sent
 doc = false
-
-[[bin]]
-name = "fuzz_editor"
-path = "fuzz_targets/fuzz_editor.rs"
-test = true
-doc = false
+bench = false

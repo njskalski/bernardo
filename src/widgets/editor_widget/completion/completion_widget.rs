@@ -221,7 +221,7 @@ impl Widget for CompletionWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "fuzztest"))]
         {
             if let Some(ds) = self.get_display_state_op() {
                 output.emit_metadata(crate::io::output::Metadata {

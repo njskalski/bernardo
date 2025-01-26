@@ -176,7 +176,7 @@ impl Widget for FindInFilesWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "fuzztest"))]
         {
             let size = crate::unpack_unit_e!(self.display_state.as_ref().map(|item| item.total_size), "render before layout",);
 

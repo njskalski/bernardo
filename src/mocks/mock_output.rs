@@ -1,8 +1,6 @@
 use std::fmt::{Debug, Formatter};
 use std::io::Error;
 
-use crossbeam_channel::{Receiver, Sender};
-
 use crate::config::theme::Theme;
 use crate::io::buffer_output::buffer_output::BufferOutput;
 use crate::io::output::{FinalOutput, Metadata, Output};
@@ -11,6 +9,8 @@ use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
+use crossbeam_channel::{Receiver, Sender};
+use log::{debug, error};
 
 pub struct MockOutput {
     buffer_0: BufferOutput,
@@ -25,6 +25,8 @@ pub struct MockOutput {
 
 impl MockOutput {
     pub fn new(size: XY, bounded: bool, theme: Theme) -> (MockOutput, Receiver<MetaOutputFrame>) {
+        error!("making mock output");
+
         let (sender, receiver) = if bounded {
             crossbeam_channel::bounded::<MetaOutputFrame>(1)
         } else {
@@ -106,7 +108,7 @@ impl Output for MockOutput {
         res
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "fuzztest"))]
     fn emit_metadata(&mut self, meta: Metadata) {
         self.metadata.push(meta)
     }
@@ -116,7 +118,7 @@ impl FinalOutput for MockOutput {
     fn end_frame(&mut self) -> Result<(), Error> {
         self.which_front = !self.which_front;
 
-        // debug!("MockOutput.end_frame");
+        error!("MockOutput.end_frame - sending");
 
         let msg = MetaOutputFrame {
             buffer: self.frontbuffer().clone(),

@@ -249,7 +249,7 @@ impl<Key: Hash + Eq + Debug + Clone, Item: TreeNode<Key>> Widget for ContextMenu
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let size = unpack_unit_e!(self.get_layout_res().map(|lr| lr.total_size), "render before layout",);
 
-        #[cfg(test)]
+        #[cfg(any(test, feature = "fuzztest"))]
         {
             output.emit_metadata(crate::io::output::Metadata {
                 id: self.id(),

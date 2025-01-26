@@ -292,7 +292,7 @@ impl<T: Widget> Widget for BigList<T> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "fuzztest"))]
         {
             let total_size = self.display_state.as_ref().unwrap().total_size;
             output.emit_metadata(crate::io::output::Metadata {

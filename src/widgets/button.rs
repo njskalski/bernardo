@@ -81,7 +81,7 @@ impl Widget for ButtonWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "fuzztest"))]
         {
             let size = XY::new(crate::unpack_unit!(self.last_size_x, "render before layout",), 1);
 
