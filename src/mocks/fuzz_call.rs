@@ -7,9 +7,7 @@ fn common_start() -> FullSetup {
     let mut config = Config::default();
     config.global.tabs_to_spaces = None;
 
-    let mut full_setup: FullSetup = FullSetup::new("/home/andrzej/r/rust/bernardo/test_envs/tab_test_1")
-        .with_config(config)
-        .build();
+    let mut full_setup: FullSetup = FullSetup::new("./test_envs/fuzz_test_1").with_config(config).build();
 
     full_setup.send_key(Keycode::Char('n').to_key().with_ctrl());
 
