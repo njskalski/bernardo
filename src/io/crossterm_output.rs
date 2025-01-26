@@ -86,7 +86,7 @@ impl<W: Write> Output for CrosstermOutput<W> {
         res
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "fuzztest"))]
     fn emit_metadata(&mut self, _meta: crate::io::output::Metadata) {
         debug_assert!(false, "you should not be emmiting metadata to an actual output");
     }

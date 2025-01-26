@@ -405,10 +405,19 @@ impl EditorWidget {
         // TODO there was something called "supercursor" that seems to be useful here
         let cursors = unpack_unit_e!(buffer.text().get_cursor_set(self.wid), "failed getting cursor set",);
         self.state = EditorState::DroppingCursor {
-            special_cursor: cursors.iter().next().copied().unwrap_or_else(|| {
-                warn!("empty cursor set!");
-                Cursor::single()
-            }),
+            special_cursor: cursors
+                .iter()
+                .next()
+                .copied()
+                .map(|mut c| {
+                    // special cursor cannot have selection
+                    c.clear_selection();
+                    c
+                })
+                .unwrap_or_else(|| {
+                    warn!("empty cursor set!");
+                    Cursor::single()
+                }),
         };
     }
 
@@ -1430,7 +1439,9 @@ impl Widget for EditorWidget {
             (&EditorState::DroppingCursor { .. }, None, InputEvent::KeyInput(key))
                 if key_to_edit_msg(key, edit_msgs_keybindings).is_some() =>
             {
-                let cem = key_to_edit_msg(key, edit_msgs_keybindings).unwrap();
+                let mut cem = key_to_edit_msg(key, edit_msgs_keybindings).unwrap();
+                cem = cem.without_selection();
+
                 if !cem.is_editing() {
                     EditorWidgetMsg::DropCursorMove { cem }.someboxed()
                 } else {
@@ -1607,7 +1618,7 @@ impl Widget for EditorWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "fuzztest"))]
         {
             output.emit_metadata(crate::io::output::Metadata {
                 id: self.wid,

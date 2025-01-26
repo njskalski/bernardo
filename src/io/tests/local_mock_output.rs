@@ -38,6 +38,7 @@ impl Output for LocalMockOutput {
         self.visible_rect
     }
 
+    #[cfg(any(test, feature = "fuzztest"))]
     fn emit_metadata(&mut self, _meta: Metadata) {
         unimplemented!()
     }

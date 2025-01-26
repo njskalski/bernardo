@@ -71,7 +71,7 @@ impl Widget for NoEditorWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "fuzztest"))]
         {
             let size = crate::unpack_unit!(self.last_size, "render before layout",);
             output.emit_metadata(crate::io::output::Metadata {

@@ -25,7 +25,7 @@ pub trait Output: SizedXY + Debug {
     // fn size(&self) -> XY;
     fn visible_rect(&self) -> Rect;
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "fuzztest"))]
     fn emit_metadata(&mut self, meta: Metadata);
 }
 

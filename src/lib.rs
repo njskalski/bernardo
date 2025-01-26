@@ -21,4 +21,5 @@ pub mod widgets;
 pub mod big_tests;
 
 #[cfg(test)]
+mod crashes_from_fuzzer;
 pub mod mocks;

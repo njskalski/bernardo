@@ -12,6 +12,7 @@ use crate::cursor::cursor::Cursor;
 use crate::cursor::cursor::Selection;
 use crate::cursor::cursor_set::CursorSet;
 use crate::experiments::regex_search::{regex_find, FindError};
+use crate::primitives::has_invariant::HasInvariant;
 use crate::primitives::search_pattern::SearchPattern;
 use crate::text::ident_type::IndentType;
 use crate::tsw::lang_id::LangId;
@@ -342,5 +343,32 @@ impl ContentsAndCursors {
 impl ToString for ContentsAndCursors {
     fn to_string(&self) -> String {
         self.rope.to_string()
+    }
+}
+
+impl HasInvariant for ContentsAndCursors {
+    fn check_invariant(&self) -> bool {
+        let len = self.rope.len_chars();
+
+        for cs in &self.cursor_sets {
+            if cs.1.check_invariant() == false {
+                error!("cs.invariant");
+                return false;
+            }
+
+            for c in cs.1.iter() {
+                if c.check_invariant() == false {
+                    error!("c.invariant");
+                    return false;
+                }
+
+                if c.a > len {
+                    error!("c.a > len {} {}", c.a, len);
+                    return false;
+                }
+            }
+        }
+
+        true
     }
 }

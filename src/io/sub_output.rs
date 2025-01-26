@@ -108,7 +108,7 @@ impl Output for SubOutput<'_> {
     //     }
     // }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "fuzztest"))]
     fn emit_metadata(&mut self, mut meta: crate::io::output::Metadata) {
         let original_rect = meta.rect;
         meta.rect.pos = meta.rect.pos + self.frame_in_parent_space.pos;

@@ -456,7 +456,7 @@ impl Widget for EditorView {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "fuzztest"))]
         {
             let total_size = crate::unpack_unit_e!(self.display_state.as_ref().map(|ds| ds.total_size), "render before layout",);
             output.emit_metadata(crate::io::output::Metadata {

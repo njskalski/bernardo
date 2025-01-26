@@ -426,7 +426,7 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "fuzztest"))]
         {
             let size = crate::unpack_unit_e!(self.display_state.as_ref(), "render before layout",).total_size;
 

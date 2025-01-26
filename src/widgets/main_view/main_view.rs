@@ -469,7 +469,7 @@ impl MainView {
 
     fn get_currently_focused_editor_view_mut(&mut self) -> Option<&mut EditorView> {
         // let picker = unpack_or_e!(self.get_focused_mut(), None, "get_focused_mut() == None");
-        debug_assert!(self.display_idx < self.displays.len());
+        debug_assert!(self.displays.is_empty() || self.display_idx < self.displays.len());
 
         self.displays.get_mut(self.display_idx).map(|item| item.as_editor_mut()).flatten()
     }

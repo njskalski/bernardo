@@ -531,6 +531,10 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
             return None;
         }
 
+        if let Some(promise) = self.promise.as_mut() {
+            promise.update();
+        }
+
         return match our_msg.unwrap() {
             TreeViewMsg::Arrow(arrow) => match arrow {
                 Arrow::Up => {

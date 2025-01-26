@@ -78,7 +78,7 @@ impl Output for BufferOutput {
         res
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "fuzztest"))]
     fn emit_metadata(&mut self, _meta: crate::io::output::Metadata) {}
 }
 

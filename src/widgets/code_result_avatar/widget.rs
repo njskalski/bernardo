@@ -98,7 +98,7 @@ impl Widget for CodeResultAvatarWidget {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "fuzztest"))]
         {
             let size = unpack_unit_e!(self.get_layout_res().map(|lr| lr.total_size), "render before layout",);
 

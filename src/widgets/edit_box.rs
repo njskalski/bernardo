@@ -273,13 +273,15 @@ impl Widget for EditBoxWidget {
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
         let size = XY::new(unpack_unit_e!(self.last_size_x, "render before layout",), 1);
-        #[cfg(test)]
-        output.emit_metadata(crate::io::output::Metadata {
-            id: self.id(),
-            typename: self.typename().to_string(),
-            rect: crate::primitives::rect::Rect::from_zero(size),
-            focused,
-        });
+        #[cfg(any(test, feature = "fuzztest"))]
+        {
+            output.emit_metadata(crate::io::output::Metadata {
+                id: self.id(),
+                typename: self.typename().to_string(),
+                rect: crate::primitives::rect::Rect::from_zero(size),
+                focused,
+            });
+        }
 
         let primary_style = theme.highlighted(focused);
         helpers::fill_output(primary_style.background, output);

@@ -410,7 +410,7 @@ impl<Item: ListWidgetItem + 'static> Widget for ListWidget<Item> {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "fuzztest"))]
         {
             let size = crate::unpack_unit_e!(self.last_size, "render before layout",);
 
