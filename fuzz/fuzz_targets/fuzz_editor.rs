@@ -93,7 +93,7 @@ fuzz_target!(|data: &[u8]| {
         let idx = (*char as usize) % oplen;
         let key = &options[idx].clone();
 
-        f.send_key(key);
+        f.send_key(*key);
         f.wait_frame();
     }
 });
