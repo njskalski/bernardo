@@ -308,7 +308,7 @@ impl Cursor {
         } else {
             self.a = new_pos;
             if selecting {
-                self.update_select(new_pos, old_pos);
+                self.update_select(old_pos, new_pos);
             } else {
                 self.clear_selection();
             }
