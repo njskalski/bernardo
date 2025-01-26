@@ -2,43 +2,28 @@
 #[macro_use]
 extern crate libfuzzer_sys;
 
-use bernardo::config::config::{Config, KeyboardConfig};
+use bernardo::config::config::KeyboardConfig;
 use bernardo::io::keys::{Key, Keycode};
-use bernardo::mocks::full_setup::FullSetup;
-use bernardo::mocks::with_wait_for::WithWaitFor;
+use bernardo::mocks::fuzz_call::fuzz_call;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
     println!("fuzz1: len {}", data.len());
-    let mut f = common_start();
     let options = key_list();
     let oplen = options.len();
 
-    for char in data {
-        let idx = (*char as usize) % oplen;
+    let inputs : Vec<Key> = data.iter().map(move |byte| {
+        let idx = (*byte as usize) % oplen;
         let key = &options[idx].clone();
+        key.clone()
+    }).collect();
 
-        f.send_key(*key);
-        // f.wait_frame();
-    }
+    println!("will use input : {:?}", inputs);
+
+    fuzz_call(inputs);
 });
 
 
-fn common_start() -> FullSetup {
-    let mut config = Config::default();
-    config.global.tabs_to_spaces = None;
-
-    let mut full_setup: FullSetup = FullSetup::new("/home/andrzej/r/rust/bernardo/test_envs/tab_test_1")
-        .with_config(config)
-        .build();
-
-    full_setup.send_key(Keycode::Char('n').to_key().with_ctrl());
-
-    assert!(full_setup.wait_for(|f| f.is_editor_opened()));
-    assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().is_editor_focused()));
-
-    full_setup
-}
 
 fn key_list() -> Vec<Key> {
     let mut result: Vec<Key> = vec![];

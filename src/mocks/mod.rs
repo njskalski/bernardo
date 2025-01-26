@@ -13,6 +13,7 @@ pub mod context_menu_interpreter;
 pub mod editbox_interpreter;
 pub mod editor_interpreter;
 pub mod full_setup;
+pub mod fuzz_call;
 pub mod listview_interpreter;
 pub mod log_capture;
 pub mod meta_frame;
