@@ -169,14 +169,6 @@ fn tab_test_4() {
 
     f.send_key(Keycode::Tab.to_key());
 
-    f.wait_frame();
-    let x: Vec<_> = f
-        .get_first_editor()
-        .unwrap()
-        .get_all_visible_lines_raw()
-        .filter(|i| !i.contents.text.is_empty())
-        .collect();
-
     assert!(f.wait_for(|f| {
         f.get_first_editor()
             .unwrap()

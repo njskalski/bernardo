@@ -938,11 +938,7 @@ impl EditorWidget {
         let one_beyond_limit = buffer.len_chars();
         let last_line = buffer.char_to_line(one_beyond_limit).unwrap(); //TODO
 
-        let x = if last_line + 1 == line_idx {
-            last_x_offset
-        } else {
-            0
-        };
+        let x = if last_line + 1 == line_idx { last_x_offset } else { 0 };
 
         // let x_beyond_last = one_beyond_limit - buffer.line_to_char(last_line).unwrap(); //TODO
 
@@ -1282,7 +1278,7 @@ impl EditorWidget {
         MainViewMsg::FindReferences {
             promise_op: Some(wrapped_promise),
         }
-            .someboxed()
+        .someboxed()
     }
 
     /*
@@ -1327,7 +1323,7 @@ impl EditorWidget {
                 promise,
             )),
         }
-            .someboxed()
+        .someboxed()
     }
 }
 
@@ -1432,15 +1428,15 @@ impl Widget for EditorWidget {
             }
             // TODO change to if let Some() when it's stabilized
             (&EditorState::DroppingCursor { .. }, None, InputEvent::KeyInput(key))
-            if key_to_edit_msg(key, edit_msgs_keybindings).is_some() =>
-                {
-                    let cem = key_to_edit_msg(key, edit_msgs_keybindings).unwrap();
-                    if !cem.is_editing() {
-                        EditorWidgetMsg::DropCursorMove { cem }.someboxed()
-                    } else {
-                        None
-                    }
+                if key_to_edit_msg(key, edit_msgs_keybindings).is_some() =>
+            {
+                let cem = key_to_edit_msg(key, edit_msgs_keybindings).unwrap();
+                if !cem.is_editing() {
+                    EditorWidgetMsg::DropCursorMove { cem }.someboxed()
+                } else {
+                    None
                 }
+            }
             // TODO disabling local context bar
             // (&EditorState::Editing, None, InputEvent::EverythingBarTrigger) => EditorWidgetMsg::RequestContextBar.someboxed(),
             (&EditorState::Editing, None, InputEvent::KeyInput(key)) if key_to_edit_msg(key, edit_msgs_keybindings).is_some() => {
