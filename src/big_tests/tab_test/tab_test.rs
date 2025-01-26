@@ -1,9 +1,14 @@
+use crate::config::config::Config;
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::with_wait_for::WithWaitFor;
 
 fn common_start() -> FullSetup {
+    let mut config = Config::default();
+    config.global.tabs_to_spaces = None;
+
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/tab_test_1")
+        .with_config(config)
         .with_files(["file_with_tabs.txt"].iter())
         .build();
 
@@ -61,6 +66,124 @@ fn tab_test_2() {
                 println!("{}", i);
                 i == "#⏎"
             })
+            .is_some()
+    }));
+}
+
+#[test]
+fn tab_test_3() {
+    let mut f = common_start();
+
+    assert!(f.send_key(Keycode::End.to_key()));
+    assert!(f.send_key(Keycode::Enter.to_key()));
+
+    assert!(f.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines_with_coded_cursors()
+            .find(|i| i.visible_idx == 2)
+            .is_some()
+    }));
+
+    let x: Vec<_> = f
+        .get_first_editor()
+        .unwrap()
+        .get_all_visible_lines()
+        .filter(|i| !i.contents.text.is_empty())
+        .collect();
+
+    f.send_key(Keycode::Tab.to_key());
+
+    assert!(f.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines_with_coded_cursors()
+            .find(|i| i.visible_idx == 2 && i.contents.text.as_str() == "\t#⏎")
+            .is_some()
+    }));
+
+    f.send_key(Keycode::Tab.to_key());
+
+    assert!(f.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines_with_coded_cursors()
+            .find(|i| i.visible_idx == 2 && i.contents.text.as_str() == "\t\t#⏎")
+            .is_some()
+    }));
+
+    f.send_key(Keycode::Tab.to_key());
+
+    assert!(f.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines_with_coded_cursors()
+            .find(|i| i.visible_idx == 2 && i.contents.text.as_str() == "\t\t\t#⏎")
+            .is_some()
+    }));
+
+    f.send_key(Keycode::ArrowLeft.to_key());
+
+    assert!(f.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines_with_coded_cursors()
+            .find(|i| i.visible_idx == 2 && i.contents.text.as_str() == "\t\t#\t⏎")
+            .is_some()
+    }));
+
+    f.send_key(Keycode::ArrowLeft.to_key());
+
+    assert!(f.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines_with_coded_cursors()
+            .find(|i| i.visible_idx == 2 && i.contents.text.as_str() == "\t#\t\t⏎")
+            .is_some()
+    }));
+
+    f.send_key(Keycode::Tab.to_key());
+
+    assert!(f.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines_with_coded_cursors()
+            .find(|i| i.visible_idx == 2 && i.contents.text.as_str() == "\t\t#\t\t⏎")
+            .is_some()
+    }));
+}
+
+#[test]
+fn tab_test_4() {
+    let mut f = common_start();
+
+    f.send_key(Keycode::Char('n').to_key().with_ctrl());
+
+    assert!(f.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines_with_coded_cursors()
+            .find(|i| i.visible_idx == 1 && i.contents.text.contains("⇱"))
+            .is_some()
+    }));
+
+    f.send_key(Keycode::Tab.to_key());
+
+    assert!(f.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_all_visible_lines_raw()
+            .find(|i| i.visible_idx == 1 && i.contents.text.as_str().trim() == "|--|⇱")
+            .is_some()
+    }));
+
+    f.send_key(Keycode::Tab.to_key());
+
+    assert!(f.wait_for(|f| {
+        f.get_first_editor()
+            .unwrap()
+            .get_all_visible_lines_raw()
+            .find(|i| i.visible_idx == 1 && i.contents.text.as_str().trim() == "|--||--|⇱")
             .is_some()
     }));
 }

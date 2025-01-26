@@ -13,9 +13,9 @@ pub struct BufferSharedRef {
 }
 
 impl BufferSharedRef {
-    pub fn new_empty(tree_sitter_op: Option<Arc<TreeSitterWrapper>>) -> BufferSharedRef {
+    pub fn new_empty(tree_sitter_op: Option<Arc<TreeSitterWrapper>>, tabs_to_spaces: Option<u8>) -> BufferSharedRef {
         let id = DocumentIdentifier::new_unique();
-        let buffer_state = BufferState::full(tree_sitter_op, id.clone(), None);
+        let buffer_state = BufferState::full(tree_sitter_op, id.clone(), None, tabs_to_spaces);
         BufferSharedRef {
             buffer: Arc::new(RwLock::new(buffer_state)),
             identifier: id,

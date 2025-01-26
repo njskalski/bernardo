@@ -13,7 +13,7 @@ pub struct GlobalEditorOptions {
     pub auto_indent_extensions: Vec<String>,
 
     // whether to convert tabs to spaces or not
-    pub tabs_to_spaces: Option<usize>,
+    pub tabs_to_spaces: Option<u8>,
 }
 
 impl Default for GlobalEditorOptions {

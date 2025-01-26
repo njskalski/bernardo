@@ -161,7 +161,9 @@ impl ApplyCemResult {
 pub fn key_to_edit_msg(mut key: Key, keybindings: &CommonEditMsgKeybindings) -> Option<CommonEditMsg> {
     let modifiers = key.modifiers;
 
-    key.modifiers.shift = false;
+    if key != keybindings.shift_tab {
+        key.modifiers.shift = false;
+    }
 
     if key == keybindings.copy {
         return Some(CommonEditMsg::Copy);
@@ -617,6 +619,7 @@ pub fn apply_common_edit_message(
     rope: &mut dyn TextBuffer,
     page_height: usize,
     clipboard: Option<&ClipboardRef>,
+    tabs_to_spaces: Option<u8>,
 ) -> ApplyCemResult {
     let mut res = ApplyCemResult::default();
     match cem {
@@ -724,11 +727,16 @@ pub fn apply_common_edit_message(
             res |= insert_to_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_pos, &what);
         }
         CommonEditMsg::Tab => {
-            let mut tab: String = String::new();
-            for _ in 0..rope.tab_width() {
-                tab.push(' ');
-            }
-            let tab = tab;
+            let tab = match tabs_to_spaces {
+                None => "\t".to_string(),
+                Some(i) => {
+                    let mut tab: String = String::new();
+                    for _ in 0..i {
+                        tab.push(' ');
+                    }
+                    tab
+                }
+            };
 
             // if they are simple, we just add spaces
             if cursor_set.are_simple() {
@@ -767,7 +775,12 @@ pub fn apply_common_edit_message(
                     if charat == '\t' {
                         how_many_chars_to_eat = 1;
                     } else {
-                        'dig_prefix: for offset in 0..rope.tab_width() {
+                        let tab_width = match tabs_to_spaces {
+                            None => 1,
+                            Some(i) => i,
+                        } as usize;
+
+                        'dig_prefix: for offset in 0..tab_width {
                             // I ignore the '\t' characters.
                             let new_charat = match rope.char_at(char_begin_idx + offset) {
                                 Some(c) => c,

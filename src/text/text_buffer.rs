@@ -55,9 +55,6 @@ pub trait TextBuffer: ToString {
         false
     }
     fn remove(&mut self, char_idx_begin: usize, char_idx_end: usize) -> bool;
-    fn tab_width(&self) -> usize {
-        4
-    }
     fn try_parse(&mut self, _lang_id: LangId) -> bool {
         false
     }

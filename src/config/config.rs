@@ -17,7 +17,7 @@ pub struct Config {
     #[serde(skip)]
     pub config_dir: PathBuf,
 
-    #[serde(default, skip_serializing_if = "GlobalEditorOptions::is_default")]
+    #[serde(default)]
     pub global: GlobalEditorOptions,
 
     pub learning_mode: bool,

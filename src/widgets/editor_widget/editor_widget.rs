@@ -739,6 +739,7 @@ impl EditorWidget {
         // Right now labels "chain" one after another. Provided priority does not change, they should not
         // glitter.
         let mut labels: BTreeMap<XY, Label> = BTreeMap::new();
+        let mut last_x_offset = 0;
 
         // if we don't have a char_range, that means the "visible rect" is empty, so we don't draw anything
         if let Some(char_range) = char_range_op {
@@ -924,6 +925,7 @@ impl EditorWidget {
                 output.print_at(pos, *style, grapheme);
                 x_offset += grapheme.width();
             }
+            last_x_offset = x_offset;
 
             line_idx += 1;
             // TODO u16 overflow
@@ -935,9 +937,12 @@ impl EditorWidget {
 
         let one_beyond_limit = buffer.len_chars();
         let last_line = buffer.char_to_line(one_beyond_limit).unwrap(); //TODO
-        let x_beyond_last = one_beyond_limit - buffer.line_to_char(last_line).unwrap(); //TODO
 
-        let one_beyond_last_pos = XY::new(x_beyond_last as u16, last_line as u16);
+        let x = if last_line + 1 == line_idx { last_x_offset } else { 0 };
+
+        // let x_beyond_last = one_beyond_limit - buffer.line_to_char(last_line).unwrap(); //TODO
+
+        let one_beyond_last_pos = XY::new(x as u16, last_line as u16);
 
         if one_beyond_last_pos < visible_rect.lower_right() {
             let cursor_status = cursor_set_copy.get_cursor_status_for_char(one_beyond_limit);
@@ -1535,6 +1540,7 @@ impl Widget for EditorWidget {
                                 &mut *buffer,
                                 height as usize,
                                 Some(self.providers.clipboard()),
+                                self.providers.config().global.tabs_to_spaces,
                             );
                             self.state = EditorState::DroppingCursor {
                                 special_cursor: set.as_single().unwrap(),
