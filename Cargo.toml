@@ -70,7 +70,7 @@ rusty-fork = "0.3.0"
 opt-level = 0
 debug = true
 lto = false
-#features = ["test"]
+features = ["test", "fuzztest"]
 
 [profile.release]
 opt-level = 3
