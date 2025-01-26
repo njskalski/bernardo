@@ -12,10 +12,11 @@ libfuzzer-sys = "0.4"
 
 [dependencies.bernardo]
 path = ".."
+features = ["fuzztest"]
 
 [[bin]]
 name = "fuzz_target_1"
 path = "fuzz_targets/fuzz_target_1.rs"
-test = false # necessary so metadata is sent
+test = false
 doc = false
 bench = false

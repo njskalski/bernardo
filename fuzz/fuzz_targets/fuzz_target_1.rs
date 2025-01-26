@@ -6,16 +6,31 @@ use bernardo::config::config::Config;
 use bernardo::io::keys::{Key, Keycode};
 use bernardo::mocks::full_setup::FullSetup;
 use bernardo::mocks::with_wait_for::WithWaitFor;
+use libfuzzer_sys::fuzz_target;
 
-fn common_start() -> bernardo::mocks::full_setup::FullSetup {
+fuzz_target!(|data: &[u8]| {
+    println!("fuzz1: len {}", data.len());
+    let mut f = common_start();
+    let options = key_list();
+    let oplen = options.len();
+
+    for char in data {
+        let idx = (*char as usize) % oplen;
+        let key = &options[idx].clone();
+
+        f.send_key(*key);
+        // f.wait_frame();
+    }
+});
+
+
+fn common_start() -> FullSetup {
     let mut config = Config::default();
     config.global.tabs_to_spaces = None;
 
-    let mut full_setup: FullSetup = FullSetup::new("./test_envs/tab_test_1")
-        .with_config(config)
-        .build();
+    let mut full_setup: FullSetup = FullSetup::new("/home/andrzej/r/rust/bernardo/test_envs/tab_test_1").build();
 
-    full_setup.send_key(Keycode::Char('n').to_key());
+    full_setup.send_key(Keycode::Char('n').to_key().with_ctrl());
 
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
     assert!(full_setup.wait_for(|f| f.get_first_editor().unwrap().is_editor_focused()));
@@ -82,18 +97,3 @@ fn key_list() -> Vec<Key> {
 
     result
 }
-
-
-fuzz_target!(|data: &[u8]| {
-    let mut f = common_start();
-    let options = key_list();
-    let oplen = options.len();
-
-    for char in data {
-        let idx = (*char as usize) % oplen;
-        let key = &options[idx].clone();
-
-        f.send_key(*key);
-        f.wait_frame();
-    }
-});

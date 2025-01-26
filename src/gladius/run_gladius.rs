@@ -26,7 +26,7 @@ use crate::widgets::main_view::main_view::MainView;
 
 pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut output: O, files: Vec<PathBuf>) {
     // Loading / Building workspace file
-    error!("hello");
+    // error!("hello");
     let workspace_dir = providers.fsf().root();
     let (workspace_op, _scope_errors): (Option<Workspace>, ScopeLoadErrors) = match Workspace::try_load(workspace_dir.clone()) {
         Ok(res) => (Some(res.0), res.1),
@@ -43,7 +43,7 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
         },
     };
 
-    error!("a");
+    // error!("a");
 
     // TODO add option to NOT *save* workspace after creation?
     let mut workspace: Workspace = match workspace_op {
@@ -94,7 +94,7 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
         }
     };
 
-    error!("b");
+    // error!("b");
 
     // At this point it is guaranteed that we have a Workspace present, though it might be not saved!
 
@@ -111,7 +111,7 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
         debug!("{} handlers failed to load, details : {:?}", scope_errors.len(), scope_errors);
     }
 
-    error!("c");
+    // error!("c");
 
     let mut main_view = MainView::new(providers.clone());
     for f in files.iter() {
@@ -125,7 +125,7 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
         }
     }
 
-    error!("d");
+    // error!("d");
 
     let mut recorded_input: Vec<InputEvent> = Vec::new();
 
@@ -133,7 +133,7 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
 
     // Genesis
     'main: loop {
-        error!("e");
+        // error!("e");
         match output.clear() {
             Ok(_) => {}
             Err(e) => {
@@ -144,12 +144,12 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
         main_view.prelayout();
         let output_size = output.size();
 
-        error!("f");
+        // error!("f");
 
         main_view.layout(Screenspace::full_output(output_size));
         main_view.render(providers.theme(), true, &mut output);
 
-        error!("g");
+        // error!("g");
         match output.end_frame() {
             Ok(_) => {}
             Err(e) => {
@@ -158,11 +158,11 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
             }
         }
 
-        error!("h");
+        // error!("h");
         select! {
             recv(input.source()) -> msg => {
 
-                error!("processing input: {:?}", msg);
+                debug!("processing input: {:?}", msg);
                 match msg {
                     Ok(mut ie) => {
                         debug!("msg ie {:?}", ie);
@@ -198,13 +198,14 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
                         }
                     },
                     Err(e) => {
-                        error!("failed receiving input: {}", e);
+                        error!("failed receiving input: {}, breaking", e);
+                        break 'main;
                     }
                 };
             }
 
             recv(nav_comp_tick_receiver) -> tick => {
-                error!("j");
+                // error!("j");
                 if providers.is_recording() {
                     recorded_input.push(InputEvent::Tick);
                 }
@@ -218,7 +219,7 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
         }
     }
 
-    error!("k");
+    // error!("k");
 
     if providers.is_recording() {
         let bytes = match ron::to_string(&recorded_input) {

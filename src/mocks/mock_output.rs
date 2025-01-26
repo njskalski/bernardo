@@ -9,7 +9,7 @@ use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::primitives::rect::Rect;
 use crate::primitives::sized_xy::SizedXY;
 use crate::primitives::xy::XY;
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::{Receiver, SendError, Sender};
 use log::{debug, error};
 
 pub struct MockOutput {
@@ -110,6 +110,7 @@ impl Output for MockOutput {
 
     #[cfg(any(test, feature = "fuzztest"))]
     fn emit_metadata(&mut self, meta: Metadata) {
+        debug!("metadata called with {:?}", meta);
         self.metadata.push(meta)
     }
 }
@@ -118,7 +119,7 @@ impl FinalOutput for MockOutput {
     fn end_frame(&mut self) -> Result<(), Error> {
         self.which_front = !self.which_front;
 
-        error!("MockOutput.end_frame - sending");
+        debug!("MockOutput.end_frame - sending. Metadata: {:?}", self.metadata);
 
         let msg = MetaOutputFrame {
             buffer: self.frontbuffer().clone(),
@@ -126,7 +127,12 @@ impl FinalOutput for MockOutput {
             theme: self.theme.clone(),
         };
 
-        self.sender.send(msg).unwrap();
+        if let Err(e) = self.sender.send(msg) {
+            error!(
+                "failed sending Mock Output frame with Metadata {:?}, because {:?}",
+                self.metadata, e
+            );
+        };
 
         Ok(())
     }
