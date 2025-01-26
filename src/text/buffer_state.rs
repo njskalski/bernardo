@@ -177,6 +177,8 @@ impl BufferState {
             }
         }
 
+        debug_assert!(self.check_invariant());
+
         result
     }
 
@@ -968,6 +970,12 @@ impl HasInvariant for BufferState {
 
         if let Some(last_save_pos) = self.last_save_pos {
             if last_save_pos >= self.history.len() {
+                return false;
+            }
+        }
+
+        for i in self.history.iter() {
+            if i.check_invariant() == false {
                 return false;
             }
         }

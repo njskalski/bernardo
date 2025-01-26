@@ -622,6 +622,8 @@ pub fn apply_common_edit_message(
     tabs_to_spaces: Option<u8>,
 ) -> ApplyCemResult {
     let mut res = ApplyCemResult::default();
+
+    let mut invalidated_cursor_set = false;
     match cem {
         CommonEditMsg::Char(char) => {
             // TODO optimise
@@ -718,8 +720,18 @@ pub fn apply_common_edit_message(
                 warn!("paste without a clipboard, ignoring");
             }
         }
-        CommonEditMsg::Undo => res.modified_buffer |= rope.undo(),
-        CommonEditMsg::Redo => res.modified_buffer |= rope.redo(),
+        CommonEditMsg::Undo => {
+            if rope.undo() {
+                res.modified_buffer |= true;
+                invalidated_cursor_set = true;
+            }
+        }
+        CommonEditMsg::Redo => {
+            if rope.redo() {
+                res.modified_buffer |= true;
+                invalidated_cursor_set = true;
+            }
+        }
         CommonEditMsg::DeleteBlock { char_range } => {
             res |= remove_from_rope_at_random_place(cursor_set, observer_cursor_sets, rope, char_range)
         }
@@ -827,10 +839,14 @@ pub fn apply_common_edit_message(
         }
     };
 
-    debug_assert!(cursor_set.check_invariant());
+    if !invalidated_cursor_set {
+        debug_assert!(cursor_set.check_invariant());
 
-    for c in cursor_set.iter() {
-        debug_assert!(c.get_end() <= rope.len_chars());
+        let rope_len = rope.len_chars();
+
+        for c in cursor_set.iter() {
+            debug_assert!(c.get_end() <= rope_len);
+        }
     }
 
     res
