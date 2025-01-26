@@ -2,7 +2,7 @@
 #[macro_use]
 extern crate libfuzzer_sys;
 
-use bernardo::config::config::Config;
+use bernardo::config::config::{Config, KeyboardConfig};
 use bernardo::io::keys::{Key, Keycode};
 use bernardo::mocks::full_setup::FullSetup;
 use bernardo::mocks::with_wait_for::WithWaitFor;
@@ -28,7 +28,9 @@ fn common_start() -> FullSetup {
     let mut config = Config::default();
     config.global.tabs_to_spaces = None;
 
-    let mut full_setup: FullSetup = FullSetup::new("/home/andrzej/r/rust/bernardo/test_envs/tab_test_1").build();
+    let mut full_setup: FullSetup = FullSetup::new("/home/andrzej/r/rust/bernardo/test_envs/tab_test_1")
+        .with_config(config)
+        .build();
 
     full_setup.send_key(Keycode::Char('n').to_key().with_ctrl());
 
@@ -46,6 +48,8 @@ fn key_list() -> Vec<Key> {
         let k = Keycode::Char(char);
         result.push(k.to_key());
     }
+
+    let config = KeyboardConfig::default();
 
     let mut x = vec![
         Keycode::ArrowUp.to_key(),
@@ -89,6 +93,36 @@ fn key_list() -> Vec<Key> {
         // Keycode::Null.to_key().with_shift(),
         Keycode::Esc.to_key(),
         Keycode::Esc.to_key().with_shift(),
+        config.global.close,
+        config.global.fuzzy_file,
+        config.global.new_buffer,
+        config.global.close_buffer,
+        config.global.browse_buffers,
+        config.global.everything_bar,
+        config.global.find_in_files,
+        config.global.close_context_menu,
+        config.global.next_display,
+        config.global.prev_display,
+        config.editor.save,
+        config.editor.save_as,
+        config.editor.enter_cursor_drop_mode,
+        config.editor.find,
+        config.editor.close_find_replace,
+        config.editor.request_completions,
+        config.editor.reformat,
+        config.file_tree.toggle_hidden_files,
+        config.edit_msgs.tab,
+        config.edit_msgs.shift_tab,
+        config.edit_msgs.backspace,
+        config.edit_msgs.line_begin,
+        config.edit_msgs.line_end,
+        config.edit_msgs.word_begin,
+        config.edit_msgs.word_end,
+        config.edit_msgs.copy,
+        config.edit_msgs.paste,
+        config.edit_msgs.undo,
+        config.edit_msgs.redo,
+        config.edit_msgs.home,
     ];
 
     result.append(&mut x);
