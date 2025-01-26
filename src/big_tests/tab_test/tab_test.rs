@@ -181,7 +181,7 @@ fn tab_test_4() {
         f.get_first_editor()
             .unwrap()
             .get_all_visible_lines_raw()
-            .find(|i| i.visible_idx == 2 && i.contents.text.as_str().trim() == "|--|⏎")
+            .find(|i| i.visible_idx == 1 && i.contents.text.as_str().trim() == "|--|⇱")
             .is_some()
     }));
 
@@ -191,7 +191,7 @@ fn tab_test_4() {
         f.get_first_editor()
             .unwrap()
             .get_all_visible_lines_raw()
-            .find(|i| i.visible_idx == 2 && i.contents.text.as_str().trim() == "|--||--|⏎")
+            .find(|i| i.visible_idx == 1 && i.contents.text.as_str().trim() == "|--||--|⇱")
             .is_some()
     }));
 }
