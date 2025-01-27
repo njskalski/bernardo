@@ -346,7 +346,7 @@ impl SPath {
                         error!("failed reading file {} because {}, continuing.", &item, e);
                     }
                     Ok(string) => {
-                        error!("file {}, contents length {}", item, string.len());
+                        debug!("file {}, contents length {}", item, string.len());
                         for hit in string.match_indices(&simple_query) {
                             if hit.1.is_empty() {
                                 error!("malformed selection, skipping result at {}", hit.0);

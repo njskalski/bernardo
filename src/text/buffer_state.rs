@@ -568,7 +568,7 @@ impl BufferState {
             Some(li) => li,
             None => match self.get_path().map(filename_to_language).flatten() {
                 None => {
-                    info!("couldn't determine language: path = {:?}", self.get_path());
+                    debug!("couldn't determine language: path = {:?}", self.get_path());
                     return false;
                 }
                 Some(lang_id) => lang_id,

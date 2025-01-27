@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use crossbeam_channel::{select, Receiver, Sender};
 use flexi_logger::writers::LogWriter;
-use log::error;
+use log::{debug, error};
 
 use crate::config::config::{Config, ConfigRef};
 use crate::config::theme::Theme;
@@ -236,11 +236,11 @@ impl FullSetup {
 
     // TODO remove
     pub fn wait_frame(&mut self) -> bool {
-        error!("wait_frame");
+        debug!("wait_frame");
         let mut res = false;
         select! {
             recv(self.output_receiver) -> frame_res => {
-                error!("received frame");
+                debug!("received frame");
                 match frame_res {
                     Ok(frame) => {
                         self.last_frame = Some(frame);

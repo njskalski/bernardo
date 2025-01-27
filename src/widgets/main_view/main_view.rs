@@ -407,6 +407,7 @@ impl MainView {
                         }
                     } else {
                         error!("no hover found, this subwidget pointer should have been overriden by now.");
+                        // debug_assert!(false, "no hover found, this subwidget pointer should have been overriden by now.");
                         let sw = mv.get_default_focused().clone();
                         sw.get(mv)
                     }
@@ -421,6 +422,7 @@ impl MainView {
                         }
                     } else {
                         error!("no hover found, this subwidget pointer should have been overriden by now.");
+                        // debug_assert!(false, "no hover found, this subwidget pointer should have been overriden by now.");
                         let sw = mv.get_default_focused().clone();
                         sw.get_mut(mv)
                     }

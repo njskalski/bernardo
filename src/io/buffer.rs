@@ -16,7 +16,9 @@ pub struct Buffer<T: Default + Clone> {
 
 impl<T: Default + Clone> Buffer<T> {
     pub fn new(size: XY) -> Self {
-        let cells = vec![T::default(); (size.x * size.y) as usize];
+        let mult_size = size.x as usize * size.y as usize;
+
+        let cells = vec![T::default(); mult_size];
 
         Buffer { size, cells }
     }
@@ -25,7 +27,7 @@ impl<T: Default + Clone> Buffer<T> {
         assert!(index.x < self.size.x, "{}, {}", index, self.size);
         assert!(index.y < self.size.y, "{}, {}", index, self.size);
 
-        (index.y * self.size.x + index.x) as usize
+        (index.y as usize) * (self.size.x as usize) + (index.x as usize)
     }
 
     fn unflatten_index(&self, index: usize) -> XY {
