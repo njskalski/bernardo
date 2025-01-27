@@ -422,6 +422,8 @@ fn update_cursors_after_removal(cs: &mut CursorSet, char_range: Range<usize>) ->
             if char_range.start < c.get_begin() && c.get_end() <= char_range.end {
                 to_remove.push(c.a);
             }
+
+            debug_assert!(c.check_invariant());
         }
 
         for ca in to_remove.into_iter() {
@@ -434,6 +436,8 @@ fn update_cursors_after_removal(cs: &mut CursorSet, char_range: Range<usize>) ->
     // second, cutting cursors overlapping with block
     {
         for c in cs.iter_mut() {
+            debug_assert!(c.check_invariant());
+
             if !c.is_simple() && c.intersects(&char_range) {
                 // end inside
                 if char_range.contains(&c.get_end()) {
@@ -448,6 +452,7 @@ fn update_cursors_after_removal(cs: &mut CursorSet, char_range: Range<usize>) ->
                         }
                         res |= true;
                     }
+                    debug_assert!(c.check_invariant());
                     continue;
                 }
 
@@ -460,8 +465,14 @@ fn update_cursors_after_removal(cs: &mut CursorSet, char_range: Range<usize>) ->
                         } else {
                             sel.b = char_range.end;
                         }
+
+                        if sel.b == sel.e {
+                            c.s = None;
+                        }
+
                         res |= true;
                     }
+                    debug_assert!(c.check_invariant());
                     continue;
                 }
 
@@ -477,11 +488,13 @@ fn update_cursors_after_removal(cs: &mut CursorSet, char_range: Range<usize>) ->
                     } else {
                         sel.e -= stride;
                     }
+
                     res |= true;
+                    debug_assert!(c.check_invariant());
                     continue;
                 }
 
-                debug_assert!(false);
+                debug_assert!(false, "should be unreachable");
             }
         }
     }

@@ -165,6 +165,8 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
 
     // This re-sets highlighter to first item matching filter.
     fn after_filter_set(&mut self) {
+        self.reset_promise();
+
         if let Some(filter) = &self.filter_op {
             let mut new_highlighted: Option<usize> = None;
 
@@ -178,12 +180,12 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
 
             if let Some(highlighted) = new_highlighted {
                 self.highlighted = highlighted;
+            } else {
+                self.highlighted = 0;
             }
         } else {
             self.highlighted = 0;
         }
-
-        self.reset_promise();
     }
 
     fn reset_promise(&mut self) {
@@ -481,7 +483,11 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
     }
 
     fn full_size(&self) -> XY {
-        Self::size_from_items(self.items())
+        let size = Self::size_from_items(self.items());
+
+        debug_assert!(size.y > self.highlighted as u16);
+
+        size
     }
 
     fn size_policy(&self) -> SizePolicy {

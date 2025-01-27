@@ -25,8 +25,6 @@ pub struct MockOutput {
 
 impl MockOutput {
     pub fn new(size: XY, bounded: bool, theme: Theme) -> (MockOutput, Receiver<MetaOutputFrame>) {
-        error!("making mock output");
-
         let (sender, receiver) = if bounded {
             crossbeam_channel::bounded::<MetaOutputFrame>(1)
         } else {

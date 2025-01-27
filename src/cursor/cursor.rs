@@ -164,6 +164,8 @@ impl Cursor {
     }
 
     pub fn shift_by(&mut self, shift: isize) -> bool {
+        debug_assert!(self.check_invariant());
+
         if shift == 0 {
             return false;
         }
@@ -182,11 +184,15 @@ impl Cursor {
             self.s = Some(Selection::new((shift + sel.b as isize) as usize, (shift + sel.e as isize) as usize));
         }
 
+        debug_assert!(self.check_invariant());
+
         true
     }
 
     pub fn advance_and_clear(&mut self, advance_by: isize) -> bool {
-        if advance_by < 0 && self.a < advance_by.unsigned_abs() {
+        debug_assert!(self.check_invariant());
+
+        let result = if advance_by < 0 && self.a < advance_by.unsigned_abs() {
             error!("attempted to substract {} from {}, using 0 as failsafe.", advance_by, self.a);
             self.a = 0;
             self.clear_both();
@@ -196,7 +202,10 @@ impl Cursor {
             self.a = (advance_by + self.a as isize) as usize;
             self.clear_both();
             true
-        }
+        };
+
+        debug_assert!(self.check_invariant());
+        result
     }
 
     // Updates selection, had it changed.
@@ -205,13 +214,6 @@ impl Cursor {
     // if there is no selection, I behave as if 0-length selection at old_pos was present, so
     //      it gets expanded towards new_pos.
     pub fn update_select(&mut self, old_pos: usize, new_pos: usize) {
-        match self.s {
-            None => {}
-            Some(s) => {
-                debug_assert!(s.b == old_pos || s.e == old_pos);
-            }
-        }
-
         if old_pos == new_pos {
             return;
         }
@@ -242,29 +244,29 @@ impl Cursor {
                     } else {
                         self.s = None;
                     }
-
-                    return;
-                }
-                if sel.e == old_pos {
+                } else if sel.e == old_pos {
                     if sel.b != new_pos {
                         self.s = Some(Selection::new(usize::min(new_pos, sel.b), usize::max(new_pos, sel.b)));
                     } else {
                         self.s = None;
                     }
-
-                    return;
+                } else {
+                    error!("invariant that selection begins or ends with anchor broken. Not crashing, but fix it.");
                 }
-                error!("invariant that selection begins or ends with anchor broken. Not crashing, but fix it.");
             }
-        }
+        };
+
+        debug_assert!(self.check_invariant());
     }
 
     pub fn clear_selection(&mut self) {
         self.s = None;
+        debug_assert!(self.check_invariant());
     }
 
     pub fn clear_pc(&mut self) {
         self.preferred_column = None;
+        debug_assert!(self.check_invariant());
     }
 
     // Clears both selection and preferred column.
@@ -272,6 +274,9 @@ impl Cursor {
         let res = self.s.is_some() || self.preferred_column.is_some();
         self.s = None;
         self.preferred_column = None;
+
+        debug_assert!(self.check_invariant());
+
         res
     }
 
@@ -289,13 +294,15 @@ impl Cursor {
 
     // Returns FALSE if noop.
     pub fn move_home(&mut self, rope: &dyn TextBuffer, selecting: bool) -> bool {
+        debug_assert!(self.check_invariant());
+
         let old_pos = self.a;
         let line = rope.char_to_line(self.a).unwrap(); //TODO
         let new_pos = rope.line_to_char(line).unwrap(); //TODO
 
         debug_assert!(new_pos <= old_pos);
 
-        if new_pos == self.a {
+        let result = if new_pos == self.a {
             // in this variant we are just clearing the preferred column. Any selection is not
             // important.
             if self.preferred_column.is_some() {
@@ -316,11 +323,17 @@ impl Cursor {
             self.preferred_column = None;
 
             true
-        }
+        };
+
+        debug_assert!(self.check_invariant());
+
+        result
     }
 
     // Returns FALSE if noop.
     pub fn move_end(&mut self, rope: &dyn TextBuffer, selecting: bool) -> bool {
+        debug_assert!(self.check_invariant());
+
         let old_pos = self.a;
         let next_line = rope.char_to_line(self.a).unwrap() + 1; // TODO
 
@@ -362,6 +375,8 @@ impl Cursor {
     // Returns FALSE on noop.
     // word_determinant should return FALSE when word ends, and TRUE while it continues.
     pub(crate) fn word_begin(&mut self, buffer: &dyn TextBuffer, selecting: bool, word_determinant: &BackwardWordDeterminant) -> bool {
+        debug_assert!(self.check_invariant());
+
         if self.a == 0 {
             return false;
         }
@@ -390,6 +405,7 @@ impl Cursor {
         }
 
         debug_assert!(old_pos >= self.a);
+        debug_assert!(self.check_invariant());
 
         old_pos != self.a
     }
@@ -419,6 +435,7 @@ impl Cursor {
         }
 
         debug_assert!(old_pos <= self.a);
+        debug_assert!(self.check_invariant());
 
         old_pos != self.a
     }
@@ -437,6 +454,8 @@ impl Cursor {
             self.s = None;
             res = true;
         }
+
+        debug_assert!(self.check_invariant());
 
         res
     }
@@ -466,6 +485,8 @@ impl Cursor {
 
     // TODO tests
     pub fn intersects(&self, char_range: &Range<usize>) -> bool {
+        debug_assert!(self.check_invariant());
+
         if self.is_simple() {
             return char_range.start <= self.a && self.a < char_range.end;
         }
