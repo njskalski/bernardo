@@ -1259,3 +1259,210 @@ fn crash14_test() {
     ];
     fuzz_call(inputs);
 }
+
+#[test]
+fn crash15_test() {
+    let inputs = vec![
+        Key {
+            keycode: Enter,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Char('b'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: RightCtrl,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: true,
+            },
+        },
+        Key {
+            keycode: Char('y'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Char('s'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: true,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Char('b'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Enter,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Enter,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Enter,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Enter,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Char('b'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: RightCtrl,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: true,
+            },
+        },
+        Key {
+            keycode: Char('y'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Char('s'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: true,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Char('b'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Enter,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Enter,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Enter,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Char('q'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Enter,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Char('q'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Enter,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Char('q'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: Char('b'),
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: false,
+            },
+        },
+        Key {
+            keycode: RightCtrl,
+            modifiers: Modifiers {
+                alt: false,
+                ctrl: false,
+                shift: true,
+            },
+        },
+    ];
+    fuzz_call(inputs);
+}

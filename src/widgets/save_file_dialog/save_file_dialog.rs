@@ -281,8 +281,26 @@ impl SaveFileDialogWidget {
     fn get_hover_pointer(&mut self) -> Option<SubwidgetPointer<Self>> {
         if self.hover_dialog.is_some() {
             Some(SubwidgetPointer::new(
-                Box::new(|s: &Self| s.hover_dialog.as_ref().unwrap()),
-                Box::new(|s: &mut Self| s.hover_dialog.as_mut().unwrap()),
+                Box::new(|s: &Self| {
+                    if s.hover_dialog.is_some() {
+                        s.hover_dialog.as_ref().unwrap()
+                    } else {
+                        error!("no hover found in save_file_dialog, this subwidget pointer should have been overriden by now.");
+                        // debug_assert!(false, "no hover found, this subwidget pointer should have been overriden by now.");
+                        let sw = s.get_default_focused().clone();
+                        sw.get(s)
+                    }
+                }),
+                Box::new(|s: &mut Self| {
+                    if s.hover_dialog.is_some() {
+                        s.hover_dialog.as_mut().unwrap()
+                    } else {
+                        error!("no hover found in save_file_dialog, this subwidget pointer should have been overriden by now.");
+                        // debug_assert!(false, "no hover found, this subwidget pointer should have been overriden by now.");
+                        let sw = s.get_default_focused().clone();
+                        sw.get_mut(s)
+                    }
+                }),
             ))
         } else {
             None
