@@ -2,6 +2,7 @@
 
 pub mod buffer_state_shared_ref;
 mod cpp;
+pub mod golang;
 pub mod handler;
 pub mod handler_factory;
 pub mod handler_load_error;

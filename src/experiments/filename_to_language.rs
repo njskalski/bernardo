@@ -26,6 +26,7 @@ lazy_static! {
         // back to normal languages
         "elm" => LangId::ELM,
         "rs" => LangId::RUST,
+        "go" => LangId::GO,
     };
 }
 
