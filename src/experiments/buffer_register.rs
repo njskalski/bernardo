@@ -119,8 +119,8 @@ impl BufferRegister {
                 Some(self.debug_channel.0.clone()),
                 providers.config().global.tabs_to_spaces,
             )
-                .with_text(buffer_str)
-                .with_maked_as_saved();
+            .with_text(buffer_str)
+            .with_maked_as_saved();
 
             if providers.config().global.guess_indent {
                 buffer_state.guess_formatting_whitespace();
@@ -179,7 +179,7 @@ impl BufferRegister {
         }
     }
 
-    pub fn iter(&self) -> impl Iterator<Item=(&'_ DocumentIdentifier, &'_ BufferSharedRef)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&'_ DocumentIdentifier, &'_ BufferSharedRef)> {
         self.buffers.iter()
     }
 }
