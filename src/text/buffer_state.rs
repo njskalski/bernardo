@@ -20,6 +20,7 @@ use crate::fs::path::SPath;
 use crate::io::output::Output;
 use crate::primitives::common_edit_msgs::{apply_common_edit_message, cme_to_direction, ApplyCemResult, CommonEditMsg};
 use crate::primitives::has_invariant::HasInvariant;
+use crate::primitives::printable::Printable;
 use crate::primitives::xy::XY;
 use crate::text::contents_and_cursors::ContentsAndCursors;
 use crate::text::ident_type::IndentType;
@@ -31,7 +32,6 @@ use crate::w7e::navcomp_provider::StupidSubstituteMessage;
 use crate::widget::widget::WID;
 use crate::widgets::main_view::main_view::DocumentIdentifier;
 use crate::{unpack_or, unpack_or_e};
-
 /*
 Ok, so I'd like to have multiple views of the same file. We can for a second even think that they
 each have separate set of cursors. They definitely should share history of edits, at least until
@@ -72,6 +72,7 @@ pub struct BufferState {
 
     drop_notice_sink: Option<Sender<DocumentIdentifier>>,
 
+    indent_type: IndentType,
     tabs_to_spaces: Option<u8>,
 }
 
@@ -289,7 +290,7 @@ impl BufferState {
 
         if !stupid_message.substitute.is_empty() {
             let what = stupid_message.substitute.clone();
-            let char_len = what.graphemes(true).count();
+            let char_len = what.graphemes().count();
             if self
                 .apply_common_edit_message(
                     // TODO unnecessary clone
@@ -395,6 +396,7 @@ impl BufferState {
             lang_id: None,
             document_identifier,
             drop_notice_sink: debug_sink,
+            indent_type: IndentType::Spaces,
             tabs_to_spaces,
         };
 
@@ -613,6 +615,7 @@ impl BufferState {
             lang_id: None,
             document_identifier: doc_id,
             drop_notice_sink: None,
+            indent_type: IndentType::Spaces,
             tabs_to_spaces: None,
         };
 
@@ -684,6 +687,44 @@ impl BufferState {
         debug_assert!(self.check_invariant());
 
         self
+    }
+
+    pub fn guess_formatting_whitespace(&self) -> Option<IndentType> {
+        let mut num_lines_prefixed_with_tabs: usize = 0;
+        let mut num_lines_prefixed_with_spaces: usize = 0;
+        let mut num_all_lines: usize = 0;
+
+        let mut iter = self.lines();
+        while let Some(line) = iter.next() {
+            num_all_lines += 1;
+
+            if line.starts_with(" ") {
+                num_lines_prefixed_with_spaces += 1;
+            } else if line.starts_with("\t") {
+                num_lines_prefixed_with_tabs += 1;
+            }
+
+            if num_all_lines > 100 {
+                break;
+            }
+        }
+
+        if num_lines_prefixed_with_tabs * 4 < num_lines_prefixed_with_spaces {
+            Some(IndentType::Spaces)
+        } else if num_lines_prefixed_with_tabs > num_lines_prefixed_with_spaces * 4 {
+            Some(IndentType::Tabs)
+        } else {
+            None
+        }
+    }
+
+    pub fn set_indent_type_from_guess(&mut self) -> bool {
+        if let Some(guess) = self.guess_formatting_whitespace() {
+            self.indent_type = guess;
+            true
+        } else {
+            false
+        }
     }
 
     pub fn with_text<T: AsRef<str>>(mut self, text: T) -> Self {

@@ -16,6 +16,7 @@ pub struct GlobalEditorOptions {
 
     // whether to convert tabs to spaces or not
     pub tabs_to_spaces: Option<u8>,
+    pub guess_indent: bool,
 }
 
 impl Default for GlobalEditorOptions {
@@ -29,6 +30,7 @@ impl Default for GlobalEditorOptions {
                 .map(|item| item.to_string())
                 .collect(),
             tabs_to_spaces: Some(4),
+            guess_indent: true,
         }
     }
 }
