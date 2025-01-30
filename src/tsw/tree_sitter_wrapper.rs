@@ -142,7 +142,8 @@ impl TreeSitterWrapper {
             LangId::C => Some(tree_sitter_c::HIGHLIGHT_QUERY),
             LangId::CPP => Some(TREE_SITTER_CPP_HIGHLIGHT_QUERY.as_str()),
             LangId::HTML => Some(tree_sitter_html::HIGHLIGHTS_QUERY),
-            LangId::GO => Some(TREE_SITTER_GOLANG_HIGHLIGHT_QUERY.as_ref()),
+            LangId::GO => Some(&TREE_SITTER_GOLANG_HIGHLIGHT_QUERY),
+            LangId::PYTHON3 => Some(tree_sitter_python::HIGHLIGHTS_QUERY),
             LangId::RUST => Some(tree_sitter_rust::HIGHLIGHTS_QUERY),
             _ => None,
         }
