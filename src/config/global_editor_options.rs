@@ -11,6 +11,7 @@ pub struct GlobalEditorOptions {
     pub rust_lsp_path: Option<PathBuf>,
     pub clangd_lsp_path: Option<PathBuf>,
     pub golang_lsp_path: Option<PathBuf>,
+    pub python_lsp_path: Option<PathBuf>,
 
     pub auto_indent_extensions: Vec<String>,
 
@@ -25,7 +26,8 @@ impl Default for GlobalEditorOptions {
             rust_lsp_path: None,
             clangd_lsp_path: None,
             golang_lsp_path: None,
-            auto_indent_extensions: vec!["py", "rs", "yaml", "cpp", "cxx", "c", "h", "hpp", "hxx", "go"]
+            python_lsp_path: None,
+            auto_indent_extensions: vec!["py", "rs", "yaml", "cpp", "cxx", "c", "h", "hpp", "hxx", "go", "py"]
                 .iter()
                 .map(|item| item.to_string())
                 .collect(),
@@ -102,6 +104,29 @@ impl GlobalEditorOptions {
             let first_path = unpack_or_e!(paths.into_iter().next(), None, "failed to find any instance of gopls");
 
             warn!("using gopls from {:?}", &first_path);
+
+            Some(first_path)
+        })
+    }
+
+    pub fn get_python_lsp_path(&self) -> Option<PathBuf> {
+        self.golang_lsp_path.clone().or_else(|| {
+            debug!("discovering location of pylsp (python-lsp-server)");
+
+            let paths_iter = unpack_or_e!(which::which_all("pylsp").ok(), None, "failed to find pylsp");
+            let paths: Vec<PathBuf> = paths_iter.collect();
+
+            if paths.len() > 1 {
+                warn!(
+                    "multiple paths to pylsp found, will default to first one [{:?}] from [{:?}]",
+                    paths.first().unwrap(),
+                    paths
+                );
+            }
+
+            let first_path = unpack_or_e!(paths.into_iter().next(), None, "failed to find any instance of pylsp");
+
+            warn!("using pylsp from {:?}", &first_path);
 
             Some(first_path)
         })
