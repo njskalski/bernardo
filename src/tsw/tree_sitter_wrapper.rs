@@ -27,9 +27,11 @@ lazy_static! {
     static ref TREE_SITTER_RUST_INDENT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/rust/indents.scm")
         .to_owned();
 
-    static ref OLD_TREE_SITTER_GOLANG_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_go::HIGHLIGHT_QUERY;
+    static ref OLD_TREE_SITTER_GOLANG_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_go::HIGHLIGHTS_QUERY;
 
     static ref TREE_SITTER_GOLANG_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/go/highlights.scm").to_owned();
+
+    static ref TREE_SITTER_PYTHON_HIGHLIGHT_QUERY_STUPID_LINKER: &'static str = tree_sitter_python::HIGHLIGHTS_QUERY;
 }
 
 pub fn byte_offset_to_point(rope: &Rope, byte_offset: usize) -> Option<Point> {
@@ -86,9 +88,10 @@ extern "C" {
     fn tree_sitter_c() -> Language;
     fn tree_sitter_cpp() -> Language;
     fn tree_sitter_html() -> Language;
-    fn tree_sitter_elm() -> Language;
     fn tree_sitter_go() -> Language;
     fn tree_sitter_rust() -> Language;
+
+    fn tree_sitter_python() -> Language;
 }
 
 #[derive(Debug)]
@@ -115,9 +118,9 @@ impl TreeSitterWrapper {
             languages.insert(LangId::HTML, language_html);
         }
 
-        if ls.elm {
-            let language_elm = unsafe { tree_sitter_elm() };
-            languages.insert(LangId::ELM, language_elm);
+        if ls.python3 {
+            let language_python3 = unsafe { tree_sitter_python() };
+            languages.insert(LangId::PYTHON3, language_python3);
         }
 
         if ls.go {
@@ -139,9 +142,8 @@ impl TreeSitterWrapper {
             LangId::C => Some(tree_sitter_c::HIGHLIGHT_QUERY),
             LangId::CPP => Some(TREE_SITTER_CPP_HIGHLIGHT_QUERY.as_str()),
             LangId::HTML => Some(tree_sitter_html::HIGHLIGHTS_QUERY),
-            LangId::ELM => Some(tree_sitter_elm::HIGHLIGHTS_QUERY),
             LangId::GO => Some(TREE_SITTER_GOLANG_HIGHLIGHT_QUERY.as_ref()),
-            LangId::RUST => Some(tree_sitter_rust::HIGHLIGHT_QUERY),
+            LangId::RUST => Some(tree_sitter_rust::HIGHLIGHTS_QUERY),
             _ => None,
         }
     }
@@ -159,7 +161,7 @@ impl TreeSitterWrapper {
         let language = self.languages.get(&lang_id)?;
         let highlight_query_str = self.highlight_query(lang_id)?;
         let mut parser = Parser::new();
-        match parser.set_language(language.clone()) {
+        match parser.set_language(language) {
             Ok(_) => {}
             Err(e) => {
                 error!("failed setting language: {}", e);
@@ -168,14 +170,14 @@ impl TreeSitterWrapper {
         };
 
         let highlight_query = unpack_or_e!(
-            Query::new(*language, highlight_query_str).ok(),
+            Query::new(language, highlight_query_str).ok(),
             None,
             "failed to compile highlight query"
         );
 
         let indent_query = match self.indent_query(lang_id) {
             None => None,
-            Some(query_string) => match Query::new(*language, query_string) {
+            Some(query_string) => match Query::new(language, query_string) {
                 Ok(q) => Some(q),
                 Err(e) => {
                     error!("failed compiling indent query: {}", e);
@@ -184,7 +186,7 @@ impl TreeSitterWrapper {
             },
         };
 
-        let id_to_name: Vec<Arc<String>> = highlight_query.capture_names().iter().map(|cn| Arc::new(cn.to_owned())).collect();
+        let id_to_name: Vec<Arc<String>> = highlight_query.capture_names().iter().map(|cn| Arc::new(cn.to_string())).collect();
 
         Some(ParsingTuple {
             tree: None,

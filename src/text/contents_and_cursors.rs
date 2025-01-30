@@ -269,12 +269,12 @@ impl ContentsAndCursors {
                 //     continue;
                 // }
 
-                let capture_name = &query.capture_names()[capture.index as usize];
+                let capture_name = query.capture_names()[capture.index as usize];
 
                 if let Some(value) = name_to_num.get_mut(capture_name) {
                     *value += 1;
                 } else {
-                    name_to_num.insert(capture_name.clone(), 1);
+                    name_to_num.insert(capture_name.to_string(), 1);
                 }
 
                 result.push(capture_name);
