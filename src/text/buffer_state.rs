@@ -155,7 +155,11 @@ impl BufferState {
             _ => self.set_milestone(),
         };
 
-        let tabs_to_space = self.tabs_to_spaces.clone();
+        let tabs_to_space = if self.indent_type == IndentType::Spaces {
+            self.tabs_to_spaces.clone()
+        } else {
+            None
+        };
 
         result |= apply_common_edit_message(
             cem.clone(),
@@ -981,6 +985,10 @@ impl TextBuffer for BufferState {
 
     fn is_saved(&self) -> bool {
         self.last_save_pos == Some(self.history_pos)
+    }
+
+    fn get_tab_width(&self) -> Option<u8> {
+        self.tabs_to_spaces
     }
 }
 

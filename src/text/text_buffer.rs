@@ -130,6 +130,24 @@ pub trait TextBuffer: ToString {
         let begin_line_char_idx = unpack_or_e!(self.line_to_char(line_idx), None, "failed to get char idx for line idx");
         Some(begin_line_char_idx)
     }
+
+    fn get_tab_width(&self) -> Option<u8> {
+        None
+    }
+
+    fn get_tabs_expansion_for_line(&self, line_no_0b: usize) -> u16 {
+        let mut added_from_tabs: u16 = 0;
+        if let Some(tabs_to_spaces) = self.get_tab_width() {
+            if let Some(line) = self.get_line(line_no_0b) {
+                for char in line.chars() {
+                    if char == '\t' {
+                        added_from_tabs += tabs_to_spaces as u16;
+                    }
+                }
+            }
+        }
+        added_from_tabs
+    }
 }
 
 pub struct LinesIter<'a> {

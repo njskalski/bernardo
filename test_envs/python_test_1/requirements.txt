@@ -1,0 +1,2 @@
+# Basic dependencies
+python-lsp-server==1.12.0

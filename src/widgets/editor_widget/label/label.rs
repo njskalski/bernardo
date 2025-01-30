@@ -57,15 +57,20 @@ impl LabelPos {
                     let line_begin_char_idx_0b = text_buffer.line_to_char(line_no_0b)?;
                     let in_line_char_idx = char_idx - line_begin_char_idx_0b;
 
+                    let added_from_tabs = text_buffer.get_tabs_expansion_for_line(line_no_0b);
+
                     debug_assert!(line_no_0b <= u16::MAX as usize);
                     debug_assert!(in_line_char_idx <= u16::MAX as usize);
 
-                    Some(XY::new(in_line_char_idx as u16, line_no_0b as u16))
+                    Some(XY::new(in_line_char_idx as u16 + added_from_tabs, line_no_0b as u16))
                 } else {
                     None
                 }
             }
-            LabelPos::InlineStupid { stupid_cursor } => stupid_cursor.to_xy(text_buffer),
+            LabelPos::InlineStupid { stupid_cursor } => {
+                // TODO add get_tabs_expansion_for_line
+                stupid_cursor.to_xy(text_buffer)
+            }
             LabelPos::LineAfter { line_no_1b } => {
                 debug_assert!(*line_no_1b >= 1);
                 if text_buffer.len_lines() + 1 > *line_no_1b {
@@ -76,9 +81,10 @@ impl LabelPos {
                     }
 
                     let line = text_buffer.get_line(line_no_0b)?;
+                    let added_from_tabs = text_buffer.get_tabs_expansion_for_line(line_no_0b);
 
                     // I add NEWLINE_WIDTH to cover the "⏎" char
-                    Some(XY::new(line.screen_width() + NEWLINE_WIDTH, line_no_0b as u16))
+                    Some(XY::new(line.screen_width() + NEWLINE_WIDTH + added_from_tabs, line_no_0b as u16))
                 } else {
                     None
                 }
