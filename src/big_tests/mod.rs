@@ -17,4 +17,5 @@ mod show_usages;
 mod syntax_highlighting;
 mod test_utils;
 
+mod golang;
 mod tab_test;

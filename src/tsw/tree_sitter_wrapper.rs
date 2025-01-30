@@ -26,6 +26,10 @@ lazy_static! {
 
     static ref TREE_SITTER_RUST_INDENT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/rust/indents.scm")
         .to_owned();
+
+    static ref OLD_TREE_SITTER_GOLANG_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_go::HIGHLIGHT_QUERY;
+
+    static ref TREE_SITTER_GOLANG_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/go/highlights.scm").to_owned();
 }
 
 pub fn byte_offset_to_point(rope: &Rope, byte_offset: usize) -> Option<Point> {
@@ -136,7 +140,7 @@ impl TreeSitterWrapper {
             LangId::CPP => Some(TREE_SITTER_CPP_HIGHLIGHT_QUERY.as_str()),
             LangId::HTML => Some(tree_sitter_html::HIGHLIGHTS_QUERY),
             LangId::ELM => Some(tree_sitter_elm::HIGHLIGHTS_QUERY),
-            LangId::GO => Some(tree_sitter_go::HIGHLIGHT_QUERY),
+            LangId::GO => Some(TREE_SITTER_GOLANG_HIGHLIGHT_QUERY.as_ref()),
             LangId::RUST => Some(tree_sitter_rust::HIGHLIGHT_QUERY),
             _ => None,
         }

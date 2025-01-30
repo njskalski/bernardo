@@ -10,18 +10,38 @@ jobs:
       - name: install prerequisites
         run: |
           apt-get update
-          apt-get install -y curl build-essential gcc make clangd clang nodejs
-          rustup component add rustfmt
-          rustup component add rust-analyzer      
-          curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - name: check versions
+          apt-get install -y curl build-essential gcc make clangd clang nodejs python3-pip python3-venv
+      - name: install rustfmt and rust-analyzer and nextest
         run: |
-          cargo --version
-          which rust-analyzer
+          rustup component add rustfmt
+          rustup component add rust-analyzer
+          curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+            - name: install golang
+              run: |
+                wget https://go.dev/dl/go1.23.5.linux-amd64.tar.gz
+                rm -rf /usr/local/go && tar -C /usr/local -xzf go1.23.5.linux-amd64.tar.gz
+                echo "/usr/local/go/bin" >> $GITHUB_PATH
+            - name: install gopls
+              run: |
+                go install golang.org/x/tools/gopls@latest
+                echo "$HOME/go/bin" >> $GITHUB_PATH
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
           submodules: 'true'
+      - name: install python-language-server
+        run: |
+          cd test_envs/python_test_1
+          python3 -m venv .venv         
+          .venv/bin/pip install -r requirements.txt
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
+      - name: check versions
+        run: |
+          cargo --version
+          which rust-analyzer
+          which pylsp
+          which gopls
+          gopls version
       - name: build
         run: cargo build
       - name: test

@@ -7,6 +7,7 @@ use crate::experiments::buffer_register::BufferRegisterRef;
 use crate::fs::path::SPath;
 use crate::tsw::lang_id::LangId;
 use crate::w7e::cpp::handler_cpp::CppHandler;
+use crate::w7e::golang::handler_golang::GolangHandler;
 use crate::w7e::handler::{Handler, NavCompRef};
 use crate::w7e::handler_load_error::HandlerLoadError;
 use crate::w7e::navcomp_group::NavCompTickSender;
@@ -57,6 +58,21 @@ pub fn handler_factory(
             }
 
             match CppHandler::load(config, ff, navcomp_op) {
+                Ok(o) => Ok(Box::new(o)),
+                Err(e) => Err(e),
+            }
+        }
+        "go" => {
+            let lsp_path = config.global.get_golang_lsp_path().ok_or(HandlerLoadError::LspNotFound)?;
+            let workspace_root = ff.absolute_path();
+            let mut navcomp_op: Option<NavCompRef> = None;
+            if let Some(navcomp_lsp) = NavCompProviderLsp::new(lsp_path, workspace_root, LangId::GO, navcomp_tick_sender) {
+                navcomp_op = Some(NavCompRef::new(Box::new(navcomp_lsp)));
+            } else {
+                error!("LspWrapper construction failed.")
+            }
+
+            match GolangHandler::load(config, ff, navcomp_op) {
                 Ok(o) => Ok(Box::new(o)),
                 Err(e) => Err(e),
             }

@@ -811,7 +811,6 @@ impl EditorWidget {
             {
                 let mut label_it = filtered_labels.iter().peekable();
                 let mut x_offset: usize = 0;
-                let mut tab_leftover = 0;
 
                 for (c_idx, c) in line.graphemes().enumerate() {
                     let text_pos = XY::new(x_offset as u16, line_idx as u16);
@@ -842,30 +841,19 @@ impl EditorWidget {
 
                     // TODO optimise
                     let tr: String;
+                    let whitespace: bool;
                     if c == "\n" {
                         tr = NEWLINE.to_string();
+                        whitespace = true;
                     } else if c == "\t" {
                         tr = TAB.to_string();
-
-                        // if tab_leftover > 0 {
-                        //     tab_leftover -= 1;
-                        //     continue;
-                        // } else {
-                        //     let tab_count = count_tabs_starting_at(line, c_idx);
-                        //     if tab_count > 0 {
-                        //         tr = build_tabs_string(tab_count);
-                        //         tab_leftover = tab_count * TAB_LEN - 1;
-                        //     } else {
-                        //         tr = " ".to_string();
-                        //     }
-                        // }
-                        // }
-                        // else if tab_leftover > 0 {
-                        //     assert!(c == " ");
-                        //     tab_leftover -= 1;
-                        //     continue;
+                        whitespace = true;
+                    } else if c == " " {
+                        tr = c.to_string();
+                        whitespace = true;
                     } else {
                         tr = c.to_string();
+                        whitespace = false;
                     }
 
                     let is_special_cursor: bool = if let EditorState::DroppingCursor { special_cursor } = &self.state {
@@ -882,7 +870,7 @@ impl EditorWidget {
                         focused,
                     );
 
-                    if tr != NEWLINE && tab_leftover == 0 {
+                    if !whitespace {
                         // TODO cleanup
                         if let Some(item) = highlight_iter.peek() {
                             if let Some(color) = theme.name_to_color(&item.identifier) {
