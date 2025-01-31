@@ -2,24 +2,20 @@ use crate::fs::path::SPath;
 use crate::tsw::lang_id::LangId;
 use crate::w7e::inspector::LangInspector;
 
-pub struct CppLangInspector {}
+pub struct GoLangInspector {}
 
-impl LangInspector for CppLangInspector {
+impl LangInspector for GoLangInspector {
     fn lang_id(&self) -> LangId {
-        LangId::CPP
+        LangId::GO
     }
 
     fn is_project_dir(&self, ff: &SPath) -> bool {
-        ff.is_dir()
-            && ff
-                .descendant_checked("compile_commands.json")
-                .map(|desc| desc.is_file())
-                .unwrap_or(false)
+        ff.is_dir() && ff.descendant_checked("go.mod").map(|desc| desc.is_file()).unwrap_or(false)
     }
 }
 
-impl CppLangInspector {
+impl GoLangInspector {
     pub fn new() -> Self {
-        CppLangInspector {}
+        GoLangInspector {}
     }
 }

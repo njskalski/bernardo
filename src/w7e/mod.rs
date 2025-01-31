@@ -12,5 +12,6 @@ pub mod navcomp_provider;
 pub mod navcomp_provider_lsp;
 pub mod project_scope;
 pub mod rust;
-pub mod suggestions_provider;
+
+pub mod python;
 pub mod workspace;

@@ -23,8 +23,9 @@ lazy_static! {
         "hpp" => LangId::CPP,
         "ixx" => LangId::CPP, // and this is just pure bs.
 
+        "py" => LangId::PYTHON3,
+
         // back to normal languages
-        "elm" => LangId::ELM,
         "rs" => LangId::RUST,
         "go" => LangId::GO,
     };

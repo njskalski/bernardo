@@ -7,8 +7,8 @@ pub enum LangId {
     C,
     CPP,
     HTML,
-    ELM,
     GO,
+    PYTHON3,
     RUST,
 }
 
@@ -18,8 +18,8 @@ impl LangId {
             LangId::C => "c",
             LangId::CPP => "c++",
             LangId::HTML => "html",
-            LangId::ELM => "elm",
             LangId::GO => "go",
+            LangId::PYTHON3 => "python3",
             LangId::RUST => "rust",
         }
     }
