@@ -13,5 +13,5 @@ pub mod navcomp_provider_lsp;
 pub mod project_scope;
 pub mod rust;
 
-pub mod workspace;
 pub mod python;
+pub mod workspace;

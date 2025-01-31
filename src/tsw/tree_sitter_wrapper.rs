@@ -32,6 +32,8 @@ lazy_static! {
     static ref TREE_SITTER_GOLANG_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/go/highlights.scm").to_owned();
 
     static ref TREE_SITTER_PYTHON_HIGHLIGHT_QUERY_STUPID_LINKER: &'static str = tree_sitter_python::HIGHLIGHTS_QUERY;
+
+    static ref TREE_SITTER_PYTHON_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/python/highlights.scm").to_owned();
 }
 
 pub fn byte_offset_to_point(rope: &Rope, byte_offset: usize) -> Option<Point> {
@@ -143,7 +145,7 @@ impl TreeSitterWrapper {
             LangId::CPP => Some(TREE_SITTER_CPP_HIGHLIGHT_QUERY.as_str()),
             LangId::HTML => Some(tree_sitter_html::HIGHLIGHTS_QUERY),
             LangId::GO => Some(&TREE_SITTER_GOLANG_HIGHLIGHT_QUERY),
-            LangId::PYTHON3 => Some(tree_sitter_python::HIGHLIGHTS_QUERY),
+            LangId::PYTHON3 => Some(&TREE_SITTER_PYTHON_HIGHLIGHT_QUERY),
             LangId::RUST => Some(tree_sitter_rust::HIGHLIGHTS_QUERY),
             _ => None,
         }

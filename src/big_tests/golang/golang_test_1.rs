@@ -27,7 +27,7 @@ fn golang_is_highlighted() {
     assert_eq!(
         vec.iter()
             .find(|item| item.text.contains("main"))
-            .expect("no includes found")
+            .expect("no main found")
             .text_style
             .foreground,
         full_setup.get_theme().name_to_color("identifier").unwrap()
@@ -36,7 +36,7 @@ fn golang_is_highlighted() {
     assert_eq!(
         vec.iter()
             .find(|item| item.text.contains("import"))
-            .expect("no includes found")
+            .expect("no import found")
             .text_style
             .foreground,
         full_setup.get_theme().name_to_color("keyword").unwrap()
@@ -45,7 +45,7 @@ fn golang_is_highlighted() {
     assert_eq!(
         vec.iter()
             .find(|item| item.text.contains("func"))
-            .expect("no includes found")
+            .expect("no func found")
             .text_style
             .foreground,
         full_setup.get_theme().name_to_color("keyword").unwrap()

@@ -10,11 +10,7 @@ impl LangInspector for GoLangInspector {
     }
 
     fn is_project_dir(&self, ff: &SPath) -> bool {
-        ff.is_dir()
-            && ff
-            .descendant_checked("go.mod")
-            .map(|desc| desc.is_file())
-            .unwrap_or(false)
+        ff.is_dir() && ff.descendant_checked("go.mod").map(|desc| desc.is_file()).unwrap_or(false)
     }
 }
 
