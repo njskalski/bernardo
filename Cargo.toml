@@ -70,8 +70,8 @@ default-features = false
 
 [dependencies.arbitrary]
 version = "1.4"
-features = ["derive"]
-default-features = false
+features = ["derive", "derive_arbitrary"]
+default-features = true
 
 [dev-dependencies]
 rusty-fork = "0.3.0"

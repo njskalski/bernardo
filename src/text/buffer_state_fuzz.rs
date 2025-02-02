@@ -12,8 +12,12 @@ impl<'a> Arbitrary<'a> for BufferState {
     }
 }
 
-pub fn fuzz_call(mut buffer_state: BufferState, msgs: Vec<CommonEditMsg>) {
+pub fn fuzz_call(text: String, msgs: Vec<CommonEditMsg>) {
+    let docid = DocumentIdentifier::new_unique();
+    let mut bf = BufferState::full(None, docid, None, None).with_text(text);
+    bf.initialize_for_widget(1, None);
+
     for msg in msgs {
-        buffer_state.apply_common_edit_message(msg, 1, 3, None, true);
+        bf.apply_common_edit_message(msg, 1, 3, None, true);
     }
 }

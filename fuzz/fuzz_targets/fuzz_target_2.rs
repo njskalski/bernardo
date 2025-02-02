@@ -8,29 +8,36 @@ use bernardo::primitives::common_edit_msgs::CommonEditMsg;
 use bernardo::text::buffer_state::BufferState;
 use bernardo::text::buffer_state_fuzz::fuzz_call;
 use bernardo::widget::widget::WID;
+use bernardo::widgets::main_view::main_view::DocumentIdentifier;
+use libfuzzer_sys::arbitrary::Arbitrary;
 use libfuzzer_sys::arbitrary::Unstructured;
 use libfuzzer_sys::fuzz_target;
 use log::{error, info};
 
 fuzz_target!(|data: &[u8]| {
-    println!("fuzz2: len {}", data.len());
+    // println!("fuzz2: len {}", data.len());
 
     let mut unstructured = Unstructured::new(data);
 
-    fn generate_data(unstructured : &mut Unstructured) -> Option<(BufferState, Vec<CommonEditMsg>)>> {
-        let mut bf = BufferState::arbitrary(&mut unstructured).ok()?;
-        bf.initialize_for_widget(1, None);
+    fn generate_data(unstructured: &mut Unstructured) -> Option<(String, Vec<CommonEditMsg>)> {
+        let bf = String::arbitrary(unstructured).ok()?;
 
         let mut msgs = Vec::new();
-        while let Some(msg) = CommonEditMsg::arbitrary(&mut unstructured).ok() {
+        while let Some(msg) = CommonEditMsg::arbitrary(unstructured).ok() {
             msgs.push(msg);
+
+            if unstructured.len() == 0 {
+                break;
+            }
         }
 
         Some((bf, msgs))
     }
 
     if let Some((bf, msgs)) = generate_data(&mut unstructured) {
-        info!("using buffer state of length {} and {} messages", bf.text().rope().len_chars(), msgs.len());
+        println!("using buffer state of length {} and {} messages", &bf, msgs.len());
+        println!("calling with buffer state [{:?}] and {:?} messages", &bf, msgs);
+        
         fuzz_call(bf, msgs);
     } else {
         error!("not enough data to generate buffer state and edit messages, skipping fuzzing");

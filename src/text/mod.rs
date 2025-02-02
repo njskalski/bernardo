@@ -7,6 +7,5 @@ mod contents_and_cursors;
 #[cfg(test)]
 mod rope_tests;
 
-#[cfg(feature = "arbitrary")]
 pub mod buffer_state_fuzz;
 mod ident_type;
