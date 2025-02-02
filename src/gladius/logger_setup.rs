@@ -18,11 +18,11 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     ("context_matrix", log::LevelFilter::Info),
     ("mio::poll", log::LevelFilter::Error),
     ("bernardo", log::LevelFilter::Info),
-    ("bernardo::primitives::tmtheme", log::LevelFilter::Debug),
+    ("bernardo::primitives::tmtheme", log::LevelFilter::Info),
     ("bernardo::fs::local_filesystem_front", log::LevelFilter::Error),
     ("bernardo::gladius::run_gladius", log::LevelFilter::Info),
     ("bernardo::io::over_output", log::LevelFilter::Info),
-    ("bernardo::mocks", log::LevelFilter::Debug),
+    ("bernardo::mocks", log::LevelFilter::Info),
     ("bernardo::text::buffer_state", log::LevelFilter::Info),
     ("bernardo::tsw::tree_sitter_wrapper", log::LevelFilter::Error), // I have a warning I did not address there
     ("bernardo::widget", log::LevelFilter::Info),                    // ComplexWidget lives here

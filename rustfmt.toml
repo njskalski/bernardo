@@ -1,1 +1,5 @@
 max_width = 140
+
+ignore = [
+    "test_envs/lsp_rust_integ_format_1/src/main.rs"
+]

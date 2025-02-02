@@ -524,10 +524,6 @@ impl EditorWidget {
         let single_cursor = cursor_set.as_single();
         let stupid_cursor_op = single_cursor.and_then(|c| StupidCursor::from_real_cursor(buffer, c).ok());
 
-        // let lsp_symbol_op = self.navcomp_symbol.as_ref().map(|ncsp| {
-        //     ncsp.read().map(|c| c.as_ref())
-        // }).flatten().flatten();
-
         let char_range_op = single_cursor.map(|a| match a.s {
             None => a.a..a.a + 1,
             Some(sel) => sel.b..sel.e,
@@ -543,6 +539,8 @@ impl EditorWidget {
             })
             .map(|highlight_item| highlight_item.identifier);
 
+        let can_reformat = self.navcomp.as_ref().map(|navcomp| navcomp.can_reformat()).unwrap_or(false);
+
         let items = get_context_options(
             &self.state,
             single_cursor,
@@ -550,6 +548,7 @@ impl EditorWidget {
             stupid_cursor_op,
             self.navcomp.is_some(),
             None,
+            can_reformat,
             tree_sitter_highlight.as_ref().map(|c| c.as_str()),
         );
 
@@ -1565,11 +1564,6 @@ impl Widget for EditorWidget {
                             self.apply_completion_action(&mut buffer, completion);
                             None
                         }
-                        // DISABLED, functionality moved to ContextMenu
-                        // (&EditorState::Editing, EditorWidgetMsg::RequestContextBar) => {
-                        //     self.todo_request_context_bar(&buffer);
-                        //     None
-                        // }
                         (&EditorState::Editing, EditorWidgetMsg::Reformat) => {
                             self.reformat(&mut buffer);
                             None

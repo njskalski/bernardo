@@ -18,6 +18,7 @@ pub fn get_context_options(
     single_stupid_cursor: Option<StupidCursor>,
     lsp_available: bool,
     lsp_symbol: Option<&NavCompSymbol>,
+    can_reformat: bool,
     tree_sitter_symbol: Option<&str>,
 ) -> Vec<ContextBarItem> {
     let mut code_results: Vec<ContextBarItem> = Vec::new();
@@ -52,18 +53,8 @@ pub fn get_context_options(
         _ => {}
     }
 
-    match (
-        state,
-        single_cursor,
-        multiple_cursors,
-        single_stupid_cursor,
-        lsp_symbol,
-        tree_sitter_symbol,
-    ) {
-        (_, _, _, _, Some(_), _) => {
-            code_results.push(ContextBarItem::REFORMAT_FILE);
-        }
-        _ => {}
+    if can_reformat {
+        code_results.push(ContextBarItem::REFORMAT_FILE);
     }
 
     debug!("get_context_options: [{:?}]", &code_results);
