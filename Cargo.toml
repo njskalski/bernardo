@@ -12,9 +12,9 @@ name = "bernardo"
 
 [features]
 fuzztest = []
+arbitrary = []
 
 [dependencies]
-#arbitrary = { version = "1", optional = true, features = ["derive"] }
 arboard = "3.1.1"
 cargo_toml = "0.15.1" # we need to go deeper.
 clap = { version = "4.1.4", features = ["derive"] }
@@ -66,6 +66,11 @@ coredump = "0.1.1"
 [dependencies.crossterm]
 version = "0.28.1"
 features = ["events", "bracketed-paste"]
+default-features = false
+
+[dependencies.arbitrary]
+version = "1.4"
+features = ["derive"]
 default-features = false
 
 [dev-dependencies]

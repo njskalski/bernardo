@@ -8,5 +8,5 @@ mod contents_and_cursors;
 mod rope_tests;
 
 #[cfg(feature = "arbitrary")]
-mod buffer_state_fuzz;
+pub mod buffer_state_fuzz;
 mod ident_type;
