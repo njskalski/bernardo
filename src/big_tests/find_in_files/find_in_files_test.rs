@@ -103,3 +103,61 @@ fn find_in_files_hit_on_empty_res() {
 
     assert!(result.is_ok(), "Test panicked");
 }
+
+#[test]
+fn find_in_files_nonempty_filter() {
+    let mut f = common_start();
+
+    assert!(f.send_key(f.config().keyboard_config.global.find_in_files));
+    assert!(f.wait_for(|f| f.get_find_in_files().is_some()));
+    assert!(f.get_find_in_files().unwrap().is_focused());
+
+    f.type_in("min");
+
+    assert!(f.wait_for(|f| { f.get_find_in_files().unwrap().query_box().contents().contains("min") }));
+
+    f.send_input(Keycode::ArrowDown.to_key().with_alt().to_input_event());
+
+    assert!(f.wait_for(|f| { f.get_find_in_files().unwrap().filter_box().is_focused() }));
+
+    // assert!(f.wait_for(|f| { f.get_code_results_view().is_some() }));
+    //
+    // // TODO remove tick
+    // sleep(Duration::from_secs(1));
+    // f.send_input(InputEvent::Tick);
+    //
+    // // displays
+    // assert!(f.wait_for(|f| { f.get_code_results_view().unwrap().editors().len() == 3 }));
+    //
+    // f.screenshot();
+    //
+    // assert!(f.wait_for(|f| {
+    //     f.get_code_results_view()
+    //         .unwrap()
+    //         .editors()
+    //         .first()
+    //         .map(|editor| {
+    //             editor
+    //                 .get_visible_cursor_lines()
+    //                 .find(|line| line.contents.text.starts_with("distinctio. Nam libero tempore"))
+    //                 .is_some()
+    //         })
+    //         .unwrap_or(false)
+    // }));
+    //
+    // f.send_input(Keycode::Enter.to_key().to_input_event());
+    //
+    // assert!(f.wait_for(|f| f.get_code_results_view().is_none()));
+    // assert!(f.wait_for(|f| { f.get_first_editor().is_some() }));
+    //
+    // let lines: Vec<LineIdxTuple> = f.get_first_editor().unwrap().get_all_visible_lines().collect();
+    //
+    // assert!(lines[0]
+    //     .contents
+    //     .text
+    //     .starts_with("\"At vero eos et accusamus et iusto odio dignissimos"));
+    // assert!(lines[4]
+    //     .contents
+    //     .text
+    //     .starts_with("placeat facere possimus, omnis voluptas assumenda"));
+}

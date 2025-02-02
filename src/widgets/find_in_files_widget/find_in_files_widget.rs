@@ -1,4 +1,4 @@
-use log::{debug, warn};
+use log::{debug, error, warn};
 
 use crate::config::config::ConfigRef;
 use crate::config::theme::Theme;
@@ -24,6 +24,7 @@ use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WID};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
 use crate::widgets::find_in_files_widget::msg::Msg;
+use crate::widgets::save_file_dialog::save_file_dialog_msg::SaveFileDialogMsg;
 use crate::widgets::text_widget::TextWidget;
 
 const FIND_IN_FILES_WIDGET_NAME: &'static str = "find_in_files_widget";
@@ -155,8 +156,33 @@ impl Widget for FindInFilesWidget {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
+        debug!("find_in_files.on_input {:?}", input_event);
+
         match input_event {
             InputEvent::KeyInput(key) if key == Keycode::Esc.to_key() => Msg::Cancel.someboxed(),
+            InputEvent::KeyInput(key) if key.keycode.is_arrow() => {
+                if let (Some(fu), Some(ds)) = (key.as_focus_update(), &self.display_state) {
+                    if ds.focus_group.can_update_focus(fu) {
+                        Msg::FocusUpdate(fu).someboxed()
+                    } else {
+                        None
+                    }
+                } else {
+                    error!("failed to cast arrow to focus update");
+                    None
+                }
+            }
+            InputEvent::FocusUpdate(fu) => {
+                if let Some(ds) = &self.display_state {
+                    if ds.focus_group.can_update_focus(fu) {
+                        Msg::FocusUpdate(fu).someboxed()
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
             _ => None,
         }
     }
@@ -171,6 +197,10 @@ impl Widget for FindInFilesWidget {
             Some(msg) => match msg {
                 Msg::Hit => self.on_hit.as_ref().map(|f| f(self)).flatten(),
                 Msg::Cancel => self.on_cancel.as_ref().map(|f| f(self)).flatten(),
+                Msg::FocusUpdate(fu) => {
+                    self.update_focus(*fu);
+                    None
+                }
             },
         };
     }

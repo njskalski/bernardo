@@ -352,7 +352,7 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        // debug!("save_file_dialog.on_input {:?}", input_event);
+        debug!("save_file_dialog.on_input {:?}", input_event);
 
         return match input_event {
             InputEvent::KeyInput(key) => match key.keycode {
@@ -502,13 +502,13 @@ impl ComplexWidget for SaveFileDialogWidget {
                 Box::new(|x: &Self| x.hover_dialog.as_ref().unwrap()),
                 Box::new(|x: &mut Self| x.hover_dialog.as_mut().unwrap()),
             ))
-            .boxed();
+                .boxed();
 
             FrameLayout::new(
                 HoverLayout::new(layout, dialog_layout, Box::new(Self::get_child_hover_rect), true).boxed(),
                 frame,
             )
-            .boxed()
+                .boxed()
         }
     }
 

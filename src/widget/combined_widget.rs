@@ -37,7 +37,7 @@ pub trait CombinedWidget: Widget + Sized {
     fn save_layout_res(&mut self, result: LayoutResult<Self>);
     fn get_layout_res(&self) -> Option<&LayoutResult<Self>>;
 
-    fn get_subwidgets_for_input(&self) -> impl Iterator<Item = SubwidgetPointer<Self>>;
+    fn get_subwidgets_for_input(&self) -> impl Iterator<Item=SubwidgetPointer<Self>>;
     fn combined_layout(&mut self, screenspace: Screenspace) {
         let layout = self.get_layout();
         let layout_res = layout.layout(self, screenspace);
@@ -80,40 +80,40 @@ pub trait CombinedWidget: Widget + Sized {
         }
     }
 
-    fn combined_act_on(&mut self, input_event: InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
-        let desc = self.desc();
-
-        debug!(target: "act_on", "combined 1: {} consumed considering {:?}", &desc, &input_event);
-        let children_ptrs: Vec<SubwidgetPointer<Self>> = self.get_subwidgets_for_input().collect();
-        for child_ptr in children_ptrs {
-            let child = child_ptr.get_mut(self);
-            let child_desc = child.desc();
-
-            debug!(target: "act_on", "combined 2: {} offering {:?} to {}", &desc, &input_event, &child_desc);
-            let (consumed, message_to_child_self_op) = child.act_on(input_event);
-            debug!(target: "act_on", "combined 3: {}'s child {} consumed ({}), offered message_to_self {:?}", &desc, &child_desc, consumed, &message_to_child_self_op);
-
-            if consumed {
-                if let Some(message_to_child_self) = message_to_child_self_op {
-                    let message_to_self_op = child.update(message_to_child_self);
-                    debug!(target: "act_on", "combined 4: {}'s child {} produced {:?}", &desc, &child_desc, &message_to_self_op);
-
-                    if let Some(message_to_self) = message_to_self_op {
-                        let message_to_parent = self.update(message_to_self);
-                        debug!(target: "act_on", "combined 5: {} produced message_to_parent {:?} ", &desc, &message_to_parent);
-                        return (true, message_to_parent);
-                    } else {
-                        debug!(target: "act_on", "combined 5: {} produced NO message_to_parent", &desc);
-                        return (true, None);
-                    }
-                } else {
-                    return (true, None);
-                }
-            } else {
-                continue;
-            }
-        }
-
-        (false, None)
-    }
+    // fn combined_act_on(&mut self, input_event: InputEvent) -> (bool, Option<Box<dyn AnyMsg>>) {
+    //     let desc = self.desc();
+    //
+    //     debug!(target: "act_on", "combined 1: {} consumed considering {:?}", &desc, &input_event);
+    //     let children_ptrs: Vec<SubwidgetPointer<Self>> = self.get_subwidgets_for_input().collect();
+    //     for child_ptr in children_ptrs {
+    //         let child = child_ptr.get_mut(self);
+    //         let child_desc = child.desc();
+    //
+    //         debug!(target: "act_on", "combined 2: {} offering {:?} to {}", &desc, &input_event, &child_desc);
+    //         let (consumed, message_to_child_self_op) = child.act_on(input_event);
+    //         debug!(target: "act_on", "combined 3: {}'s child {} consumed ({}), offered message_to_self {:?}", &desc, &child_desc, consumed, &message_to_child_self_op);
+    //
+    //         if consumed {
+    //             if let Some(message_to_child_self) = message_to_child_self_op {
+    //                 let message_to_self_op = child.update(message_to_child_self);
+    //                 debug!(target: "act_on", "combined 4: {}'s child {} produced {:?}", &desc, &child_desc, &message_to_self_op);
+    //
+    //                 if let Some(message_to_self) = message_to_self_op {
+    //                     let message_to_parent = self.update(message_to_self);
+    //                     debug!(target: "act_on", "combined 5: {} produced message_to_parent {:?} ", &desc, &message_to_parent);
+    //                     return (true, message_to_parent);
+    //                 } else {
+    //                     debug!(target: "act_on", "combined 5: {} produced NO message_to_parent", &desc);
+    //                     return (true, None);
+    //                 }
+    //             } else {
+    //                 return (true, None);
+    //             }
+    //         } else {
+    //             continue;
+    //         }
+    //     }
+    //
+    //     (false, None)
+    // }
 }
