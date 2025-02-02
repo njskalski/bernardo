@@ -26,3 +26,4 @@ mod python;
 mod haskell;
 
 mod javascript;
+mod typescript;

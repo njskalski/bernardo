@@ -1,4 +1,4 @@
-// hello.ts
+// This is a comment
 
 function sayHello(): void {
     console.log("Hello, World!");
