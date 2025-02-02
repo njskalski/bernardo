@@ -24,6 +24,13 @@ lazy_static! {
         "hpp" => LangId::CPP,
         "ixx" => LangId::CPP, // and this is just pure bs.
 
+        "hs" => LangId::HASKELL,
+
+        "cjs" => LangId::JAVASCRIPT,
+        "js" => LangId::JAVASCRIPT,
+        "mjs" => LangId::JAVASCRIPT,
+        "ts" => LangId::TYPESCRIPT,
+
         "py" => LangId::PYTHON3,
 
         // back to normal languages

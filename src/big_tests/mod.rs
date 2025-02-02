@@ -22,3 +22,5 @@ mod tab_test;
 
 mod bash;
 mod python;
+
+mod haskell;
