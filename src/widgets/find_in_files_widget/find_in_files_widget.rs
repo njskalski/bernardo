@@ -63,7 +63,9 @@ impl FindInFilesWidget {
                 .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
                 .with_on_hit(Box::new(|_| Msg::Hit.someboxed())),
             filter_box_label: TextWidget::new(Box::new("Where:")),
-            filter_box: EditBoxWidget::new(config).with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH),
+            filter_box: EditBoxWidget::new(config)
+                .with_size_policy(SizePolicy::MATCH_LAYOUTS_WIDTH)
+                .with_on_hit(Box::new(|_| Msg::Hit.someboxed())),
             search_button: ButtonWidget::new(Box::new("Search")).with_on_hit(Box::new(|_| Msg::Hit.someboxed())),
             cancel_button: ButtonWidget::new(Box::new("Cancel")).with_on_hit(Box::new(|_| Msg::Cancel.someboxed())),
             display_state: None,

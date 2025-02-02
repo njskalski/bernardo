@@ -293,8 +293,10 @@ impl MainView {
         self.hover = None;
         let desc = format!("full text search of '{}' ", query);
 
+        let filter_op = filter_op.map(|s| CommonQuery::new_interpreting_wildcards(&s)).flatten();
+
         let promise: Box<dyn StreamingPromise<SymbolUsage>> = unpack_or_e!(
-            root_dir.start_full_text_search(CommonQuery::String(query), true).ok(),
+            root_dir.start_full_text_search(CommonQuery::String(query), true, filter_op).ok(),
             (),
             "failed to start full text search"
         );

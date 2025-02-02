@@ -10,7 +10,7 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     // this is for git ignore
     ("globset", log::LevelFilter::Info),
     // this is heart and mind of gladius
-    ("act_on", log::LevelFilter::Debug),
+    ("act_on", log::LevelFilter::Info),
     // ("lazy_tree_iter", log::LevelFilter::Debug),
     // ("fsf_ref", log::LevelFilter::Debug),
     // ("fsf", log::LevelFilter::Debug),
@@ -20,7 +20,7 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     ("bernardo", log::LevelFilter::Info),
     ("bernardo::primitives::tmtheme", log::LevelFilter::Info),
     ("bernardo::fs::local_filesystem_front", log::LevelFilter::Error),
-    ("bernardo::gladius::run_gladius", log::LevelFilter::Debug),
+    ("bernardo::gladius::run_gladius", log::LevelFilter::Info),
     ("bernardo::io::over_output", log::LevelFilter::Info),
     ("bernardo::mocks", log::LevelFilter::Info),
     ("bernardo::text::buffer_state", log::LevelFilter::Info),

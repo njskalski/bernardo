@@ -297,12 +297,12 @@ impl SPath {
     }
 
     // TODO this is "muscle" part of editor, perhaps it's worth to move it to a separate file?
-    // TODO I would prefer this algorithm to work with BFS as opposed to DFS.
-    // TODO add REGEX
+    // TODO this should be integrated with lazy_tree_iter or fsf_async_iter
     pub fn start_full_text_search(
         &self,
         query: CommonQuery,
         _ignore_git: bool,
+        filter_op: Option<CommonQuery>,
     ) -> Result<Box<dyn StreamingPromise<SymbolUsage>>, SearchError> {
         let simple_query = match query {
             CommonQuery::Epsilon => {
@@ -339,6 +339,12 @@ impl SPath {
 
                 if !item.is_file() {
                     continue;
+                }
+
+                if let Some(filter) = filter_op.as_ref() {
+                    if !filter.matches(item.label().as_ref()) {
+                        continue;
+                    }
                 }
 
                 match item.read_entire_file_to_string() {
