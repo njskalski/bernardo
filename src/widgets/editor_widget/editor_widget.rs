@@ -524,9 +524,6 @@ impl EditorWidget {
         let single_cursor = cursor_set.as_single();
         let stupid_cursor_op = single_cursor.and_then(|c| StupidCursor::from_real_cursor(buffer, c).ok());
 
-        // let lsp_symbol_op = self.navcomp_symbol.as_ref().map(|ncsp| {
-        //     ncsp.read().map(|c| c.as_ref())
-        // }).flatten().flatten();
 
         let char_range_op = single_cursor.map(|a| match a.s {
             None => a.a..a.a + 1,
@@ -543,6 +540,10 @@ impl EditorWidget {
             })
             .map(|highlight_item| highlight_item.identifier);
 
+        let can_reformat = self.navcomp.as_ref().map(|navcomp| {
+            navcomp.can_reformat()
+        }).unwrap_or(false);
+
         let items = get_context_options(
             &self.state,
             single_cursor,
@@ -550,6 +551,7 @@ impl EditorWidget {
             stupid_cursor_op,
             self.navcomp.is_some(),
             None,
+            can_reformat,
             tree_sitter_highlight.as_ref().map(|c| c.as_str()),
         );
 
@@ -1275,7 +1277,7 @@ impl EditorWidget {
         MainViewMsg::FindReferences {
             promise_op: Some(wrapped_promise),
         }
-        .someboxed()
+            .someboxed()
     }
 
     /*
@@ -1320,7 +1322,7 @@ impl EditorWidget {
                 promise,
             )),
         }
-        .someboxed()
+            .someboxed()
     }
 }
 
@@ -1425,17 +1427,17 @@ impl Widget for EditorWidget {
             }
             // TODO change to if let Some() when it's stabilized
             (&EditorState::DroppingCursor { .. }, None, InputEvent::KeyInput(key))
-                if key_to_edit_msg(key, edit_msgs_keybindings).is_some() =>
-            {
-                let mut cem = key_to_edit_msg(key, edit_msgs_keybindings).unwrap();
-                cem = cem.without_selection();
+            if key_to_edit_msg(key, edit_msgs_keybindings).is_some() =>
+                {
+                    let mut cem = key_to_edit_msg(key, edit_msgs_keybindings).unwrap();
+                    cem = cem.without_selection();
 
-                if !cem.is_editing() {
-                    EditorWidgetMsg::DropCursorMove { cem }.someboxed()
-                } else {
-                    None
+                    if !cem.is_editing() {
+                        EditorWidgetMsg::DropCursorMove { cem }.someboxed()
+                    } else {
+                        None
+                    }
                 }
-            }
             // TODO disabling local context bar
             // (&EditorState::Editing, None, InputEvent::EverythingBarTrigger) => EditorWidgetMsg::RequestContextBar.someboxed(),
             (&EditorState::Editing, None, InputEvent::KeyInput(key)) if key_to_edit_msg(key, edit_msgs_keybindings).is_some() => {

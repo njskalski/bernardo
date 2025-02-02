@@ -1,6 +1,6 @@
-use std::fmt::Debug;
-
+use log::warn;
 use parking_lot::MappedRwLockReadGuard;
+use std::fmt::Debug;
 
 use crate::fs::path::SPath;
 use crate::primitives::stupid_cursor::StupidCursor;
@@ -145,4 +145,9 @@ pub trait NavCompProvider: Debug + Send + Sync {
     fn todo_navcomp_sender(&self) -> &NavCompTickSender;
 
     fn todo_is_healthy(&self) -> bool;
+
+    fn can_reformat(&self) -> bool {
+        warn!("mock implementation of can_reformat() always returns true");
+        true
+    }
 }

@@ -27,3 +27,5 @@ mod haskell;
 
 mod javascript;
 mod typescript;
+
+mod lsp_rust_integ_format;
