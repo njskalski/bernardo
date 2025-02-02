@@ -18,7 +18,7 @@ const DEBUG_PARAMS: &[(&str, log::LevelFilter)] = &[
     ("context_matrix", log::LevelFilter::Info),
     ("mio::poll", log::LevelFilter::Error),
     ("bernardo", log::LevelFilter::Info),
-    ("bernardo::primitives::tmtheme", log::LevelFilter::Info),
+    ("bernardo::primitives::tmtheme", log::LevelFilter::Debug),
     ("bernardo::fs::local_filesystem_front", log::LevelFilter::Error),
     ("bernardo::gladius::run_gladius", log::LevelFilter::Info),
     ("bernardo::io::over_output", log::LevelFilter::Info),

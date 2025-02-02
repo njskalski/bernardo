@@ -21,6 +21,8 @@ pub struct TmTheme {
 
 impl TmTheme {
     pub fn name_to_color(&self, name: &str) -> Option<Color> {
+        debug!("name_to_color({})", name);
+
         match self.cache.try_read() {
             Ok(cache) => {
                 if let Some(color) = cache.get(&*name) {
@@ -52,6 +54,13 @@ impl TmTheme {
         }
 
         Some(color.into())
+    }
+
+    pub fn get_cache(&self) -> Option<HashMap<String, Color>> {
+        self.cache.read().ok().map(|lock| {
+            let clone: HashMap<String, Color> = lock.clone();
+            clone
+        })
     }
 }
 

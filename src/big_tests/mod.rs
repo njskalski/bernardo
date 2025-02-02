@@ -20,4 +20,10 @@ mod test_utils;
 mod golang;
 mod tab_test;
 
+mod bash;
 mod python;
+
+mod haskell;
+
+mod javascript;
+mod typescript;

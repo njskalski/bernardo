@@ -19,6 +19,9 @@ use crate::unpack_or_e;
 static EMPTY_SLICE: [u8; 0] = [0; 0];
 
 lazy_static! {
+    static ref TREE_SITTER_BASH_HIGHLIGHT_QUERY : &'static str = tree_sitter_bash::HIGHLIGHT_QUERY;
+
+
     // I have no idea how I came up with this
     static ref TREE_SITTER_CPP_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/c/highlights.scm")
         .to_owned()
@@ -34,6 +37,15 @@ lazy_static! {
     static ref TREE_SITTER_PYTHON_HIGHLIGHT_QUERY_STUPID_LINKER: &'static str = tree_sitter_python::HIGHLIGHTS_QUERY;
 
     static ref TREE_SITTER_PYTHON_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/python/highlights.scm").to_owned();
+
+    static ref OLD_TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_typescript::HIGHLIGHTS_QUERY;
+    static ref TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/ecma/highlights.scm")
+        .to_owned()
+        + include_str!("../../third-party/nvim-treesitter/queries/typescript/highlights.scm");
+
+    static ref OLD_TREE_SITTER_HASKELL_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_haskell::HIGHLIGHTS_QUERY;
+    static ref TREE_SITTER_HASKELL_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/haskell/highlights.scm").to_owned();
+
 }
 
 pub fn byte_offset_to_point(rope: &Rope, byte_offset: usize) -> Option<Point> {
@@ -87,9 +99,17 @@ pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point
 }
 
 extern "C" {
+    fn tree_sitter_bash() -> Language;
+
     fn tree_sitter_c() -> Language;
     fn tree_sitter_cpp() -> Language;
+
+    fn tree_sitter_haskell() -> Language;
     fn tree_sitter_html() -> Language;
+
+    fn tree_sitter_javascript() -> Language;
+
+    fn tree_sitter_typescript() -> Language;
     fn tree_sitter_go() -> Language;
     fn tree_sitter_rust() -> Language;
 
@@ -105,6 +125,11 @@ impl TreeSitterWrapper {
     pub fn new(ls: LanguageSet) -> TreeSitterWrapper {
         let mut languages = HashMap::<LangId, Language>::new();
 
+        if ls.bash {
+            let language_bash = unsafe { tree_sitter_bash() };
+            languages.insert(LangId::BASH, language_bash);
+        }
+
         if ls.c {
             let language_c = unsafe { tree_sitter_c() };
             languages.insert(LangId::C, language_c);
@@ -115,9 +140,19 @@ impl TreeSitterWrapper {
             languages.insert(LangId::CPP, language_cpp);
         }
 
+        if ls.haskell {
+            let language_haskell = unsafe { tree_sitter_haskell() };
+            languages.insert(LangId::HASKELL, language_haskell);
+        }
+
         if ls.html {
             let language_html = unsafe { tree_sitter_html() };
             languages.insert(LangId::HTML, language_html);
+        }
+
+        if ls.javascript {
+            let language_javascript = unsafe { tree_sitter_javascript() };
+            languages.insert(LangId::JAVASCRIPT, language_javascript);
         }
 
         if ls.python3 {
@@ -135,18 +170,27 @@ impl TreeSitterWrapper {
             languages.insert(LangId::RUST, language_rust);
         }
 
+        if ls.typescript {
+            let language_typescript = unsafe { tree_sitter_typescript() };
+            languages.insert(LangId::TYPESCRIPT, language_typescript);
+        }
+
         TreeSitterWrapper { languages }
     }
 
     pub fn highlight_query(&self, lang_id: LangId) -> Option<&str> {
         #[allow(unreachable_patterns)]
         match lang_id {
+            LangId::BASH => Some(tree_sitter_bash::HIGHLIGHT_QUERY),
             LangId::C => Some(tree_sitter_c::HIGHLIGHT_QUERY),
             LangId::CPP => Some(TREE_SITTER_CPP_HIGHLIGHT_QUERY.as_str()),
             LangId::HTML => Some(tree_sitter_html::HIGHLIGHTS_QUERY),
+            LangId::HASKELL => Some(tree_sitter_haskell::HIGHLIGHTS_QUERY),
+            LangId::JAVASCRIPT => Some(tree_sitter_javascript::HIGHLIGHT_QUERY),
             LangId::GO => Some(&TREE_SITTER_GOLANG_HIGHLIGHT_QUERY),
             LangId::PYTHON3 => Some(&TREE_SITTER_PYTHON_HIGHLIGHT_QUERY),
             LangId::RUST => Some(tree_sitter_rust::HIGHLIGHTS_QUERY),
+            LangId::TYPESCRIPT => Some(&TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY),
             _ => None,
         }
     }
