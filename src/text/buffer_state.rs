@@ -235,13 +235,15 @@ impl BufferState {
         stupid_message: &StupidSubstituteMessage,
         page_height: usize,
     ) -> bool {
+        debug!("will apply StupidSubstituteMessage {:?}", stupid_message);
+
         {
             let cursor_set = unpack_or!(
                 self.text().get_cursor_set(widget_id),
                 false,
                 "failed _apply_stupid_substitute_message - WID not found"
             );
-            if cursor_set.are_simple() {
+            if !cursor_set.are_simple() {
                 error!("refuse to apply stupid_edit_to_cem: cursors are not simple");
                 return false;
             }
@@ -274,6 +276,8 @@ impl BufferState {
                 )
                 .modified_buffer
             {
+                debug!("applied");
+
                 let rope = self.text().rope().clone(); // shallow copy
                 self.text_mut().parsing_mut().map_or_else(
                     || {
@@ -306,6 +310,7 @@ impl BufferState {
                 )
                 .modified_buffer
             {
+                debug!("applied");
                 let rope = self.text().rope().clone(); // shallow copy
                 self.text_mut().parsing_mut().map_or_else(
                     || {

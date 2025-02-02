@@ -1564,11 +1564,6 @@ impl Widget for EditorWidget {
                             self.apply_completion_action(&mut buffer, completion);
                             None
                         }
-                        // DISABLED, functionality moved to ContextMenu
-                        // (&EditorState::Editing, EditorWidgetMsg::RequestContextBar) => {
-                        //     self.todo_request_context_bar(&buffer);
-                        //     None
-                        // }
                         (&EditorState::Editing, EditorWidgetMsg::Reformat) => {
                             self.reformat(&mut buffer);
                             None
