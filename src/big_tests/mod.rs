@@ -24,3 +24,5 @@ mod bash;
 mod python;
 
 mod haskell;
+
+mod javascript;

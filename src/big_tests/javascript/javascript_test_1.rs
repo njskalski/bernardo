@@ -4,7 +4,7 @@ use crate::mocks::with_wait_for::WithWaitFor;
 use std::time::Duration;
 
 fn get_full_setup(file: &str) -> FullSetup {
-    let full_setup: FullSetup = FullSetup::new("./test_envs/haskell_test_1")
+    let full_setup: FullSetup = FullSetup::new("./test_envs/javascript_test_1")
         .with_files([file])
         .with_mock_navcomp(false)
         .with_timeout(Duration::from_secs(20))
@@ -14,29 +14,33 @@ fn get_full_setup(file: &str) -> FullSetup {
 }
 
 #[test]
-fn haskell_is_highlighted() {
+fn javascript_is_highlighted() {
     if std::env::var("GITLAB").is_ok() {
         return;
     }
 
-    let mut full_setup = get_full_setup("main.hs");
+    let mut full_setup = get_full_setup("hello_world.js");
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
 
     assert!(all_items_of_named_color(
         &mut full_setup,
         "keyword",
-        vec!["module", "where", "import", "do", "let", "if", "then", "else"]
+        vec!["function", "return", "const"]
     ));
-    assert!(all_items_of_named_color(&mut full_setup, "variable", vec!["name", "args"]));
+    assert!(all_items_of_named_color(
+        &mut full_setup,
+        "variable",
+        vec!["name", "message", "console"]
+    ));
     assert!(all_items_of_named_color(
         &mut full_setup,
         "function",
-        vec!["Main", "greet", "main", "putStrLn"]
+        vec!["getGreeting", "main", "getGreeting"]
     ));
     assert!(all_items_of_named_color(
         &mut full_setup,
         "comment",
-        vec!["Function", "to", "generate", "message"]
+        vec!["function", "to", "return", "a", "greeting", "message"]
     ));
 
     // against false postitives
