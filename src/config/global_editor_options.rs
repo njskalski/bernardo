@@ -27,10 +27,12 @@ impl Default for GlobalEditorOptions {
             clangd_lsp_path: None,
             golang_lsp_path: None,
             python_lsp_path: None,
-            auto_indent_extensions: vec!["py", "rs", "yaml", "cpp", "cxx", "c", "h", "hpp", "hxx", "go", "py", "js", "hs", "ts"]
-                .iter()
-                .map(|item| item.to_string())
-                .collect(),
+            auto_indent_extensions: vec![
+                "py", "rs", "yaml", "cpp", "cxx", "c", "h", "hpp", "hxx", "go", "py", "js", "hs", "ts",
+            ]
+            .iter()
+            .map(|item| item.to_string())
+            .collect(),
             tabs_to_spaces: Some(4),
             guess_indent: true,
         }

@@ -502,13 +502,13 @@ impl ComplexWidget for SaveFileDialogWidget {
                 Box::new(|x: &Self| x.hover_dialog.as_ref().unwrap()),
                 Box::new(|x: &mut Self| x.hover_dialog.as_mut().unwrap()),
             ))
-                .boxed();
+            .boxed();
 
             FrameLayout::new(
                 HoverLayout::new(layout, dialog_layout, Box::new(Self::get_child_hover_rect), true).boxed(),
                 frame,
             )
-                .boxed()
+            .boxed()
         }
     }
 

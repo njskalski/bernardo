@@ -37,7 +37,7 @@ pub trait CombinedWidget: Widget + Sized {
     fn save_layout_res(&mut self, result: LayoutResult<Self>);
     fn get_layout_res(&self) -> Option<&LayoutResult<Self>>;
 
-    fn get_subwidgets_for_input(&self) -> impl Iterator<Item=SubwidgetPointer<Self>>;
+    fn get_subwidgets_for_input(&self) -> impl Iterator<Item = SubwidgetPointer<Self>>;
     fn combined_layout(&mut self, screenspace: Screenspace) {
         let layout = self.get_layout();
         let layout_res = layout.layout(self, screenspace);
