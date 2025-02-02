@@ -1,5 +1,6 @@
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct LanguageSet {
+    pub bash: bool,
     pub c: bool,
     pub cpp: bool,
     pub go: bool,
@@ -11,6 +12,7 @@ pub struct LanguageSet {
 impl LanguageSet {
     pub fn full() -> Self {
         LanguageSet {
+            bash: true,
             c: true,
             cpp: true,
             go: true,

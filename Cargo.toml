@@ -43,6 +43,7 @@ streaming-iterator = "0.1.9"
 syntect = { version = "5.2.0", default-features = false, features = ["default-themes"] }
 thiserror = "1.0.65"
 tree-sitter = "0.23"
+tree-sitter-bash = "0.23"
 tree-sitter-c = "0.23"
 tree-sitter-cpp = "0.23"
 tree-sitter-go = "0.23"

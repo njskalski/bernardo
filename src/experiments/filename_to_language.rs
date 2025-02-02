@@ -8,6 +8,7 @@ use crate::tsw::lang_id::LangId;
 
 lazy_static! {
     static ref EXT_TO_LANGUAGE : HashMap<&'static str, LangId> = hashmap! {
+        "sh" => LangId::BASH,
         "htm" => LangId::HTML,
         "html" => LangId::HTML,
         "c" => LangId::C,

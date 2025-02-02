@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum LangId {
+    BASH,
     C,
     CPP,
     HTML,
@@ -15,6 +16,7 @@ pub enum LangId {
 impl LangId {
     pub fn to_lsp_lang_id_string(&self) -> &'static str {
         match self {
+            LangId::BASH => "bash",
             LangId::C => "c",
             LangId::CPP => "c++",
             LangId::HTML => "html",
