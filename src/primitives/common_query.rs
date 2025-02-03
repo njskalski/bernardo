@@ -1,5 +1,6 @@
+use log::error;
+use regex::Regex;
 use std::iter::empty;
-
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Clone, Debug)]
@@ -87,8 +88,24 @@ impl CommonQuery {
                 Box::new(empty())
             }
             CommonQuery::Regex(_r) => {
+                error!("highlighting of regex matching indices not implemented yet, returning empty iterator");
                 // TODO regex indices?
                 Box::new(empty())
+            }
+        }
+    }
+
+    pub fn new_interpreting_wildcards(pattern: &str) -> Option<CommonQuery> {
+        if pattern.contains("*") || pattern.contains("?") {
+            let regex_pattern = format!("^{}$", pattern.replace(".", r"\.").replace("*", ".*").replace("?", "."));
+
+            let regex = Regex::new(&regex_pattern).ok()?;
+
+            Some(CommonQuery::Regex(regex))
+        } else {
+            match pattern {
+                "" => Some(CommonQuery::Epsilon),
+                _ => Some(CommonQuery::String(pattern.to_string())),
             }
         }
     }

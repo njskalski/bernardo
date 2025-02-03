@@ -43,6 +43,7 @@ pub enum CursorStatus {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /*
    Describes a selection of text.
    Invariant: anchor is at begin OR end, never in between.

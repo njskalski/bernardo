@@ -4,6 +4,7 @@ use std::fmt::Debug;
 
 use crate::fs::fsf_async_tree_iter::FsAsyncTreeIt;
 use crate::fs::path::SPath;
+use crate::primitives::common_query::CommonQuery;
 use crate::primitives::tree::filter_policy::FilterPolicy;
 use crate::primitives::tree::tree_node::{FilterRef, TreeItFilter, TreeNode};
 use crate::promise::streaming_promise::StreamingPromise;
@@ -101,5 +102,19 @@ impl TreeNode<SPath> for DirTreeNode {
 
     fn is_complete(&self) -> bool {
         true //TODO
+    }
+}
+
+impl TreeItFilter<FileTreeNode> for CommonQuery {
+    fn call(&self, node: &FileTreeNode) -> bool {
+        let label = node.sp.label();
+        self.matches(label.as_ref())
+    }
+}
+
+impl TreeItFilter<DirTreeNode> for CommonQuery {
+    fn call(&self, node: &DirTreeNode) -> bool {
+        let label = node.sp.label();
+        self.matches(label.as_ref())
     }
 }

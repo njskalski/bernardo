@@ -352,7 +352,7 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
-        // debug!("save_file_dialog.on_input {:?}", input_event);
+        debug!("save_file_dialog.on_input {:?}", input_event);
 
         return match input_event {
             InputEvent::KeyInput(key) => match key.keycode {

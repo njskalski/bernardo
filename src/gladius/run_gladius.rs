@@ -172,10 +172,12 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
 
                         match ie {
                             InputEvent::KeyInput(key) if key.as_focus_update().is_some() && key.modifiers.alt => {
-                                ie = InputEvent::FocusUpdate(key.as_focus_update().unwrap());
+                                ie = InputEvent::FocusUpdate(key.clone().as_focus_update().unwrap());
+                                debug!("converting {:?} to {:?}", key, &ie);
                             },
                             InputEvent::KeyInput(key) if key == providers.config().keyboard_config.global.everything_bar => {
                                 ie = InputEvent::EverythingBarTrigger;
+                                debug!("converting {:?} to everything_bar", key);
                             }
                             _ => {}
                         }
