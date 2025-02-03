@@ -36,3 +36,28 @@ fn crash_2() {
 
     fuzz_call(text, msgs);
 }
+
+#[test]
+fn crash_3() {
+    let text = ">\u{10}\u{10}\u{10}\u{10}s\u{12}\r\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0".to_string();
+    let msgs: Vec<CommonEditMsg> = vec![
+        Char('\u{d0074}'),
+        SubstituteBlock {
+            char_range: 1159958379026310886..1329697743718449151,
+            with_what: "\"\r\r".to_string(),
+        },
+        Char('ԙ'),
+        CursorUp { selecting: true },
+        SubstituteBlock {
+            char_range: 281470951821337..1808504320951916800,
+            with_what: "".to_string(),
+        },
+        ShiftTab,
+        SubstituteBlock {
+            char_range: 0..25,
+            with_what: "".to_string(),
+        },
+    ];
+
+    fuzz_call(text, msgs);
+}

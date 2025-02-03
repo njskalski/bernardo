@@ -63,11 +63,8 @@ fn completions_clangd_cpp_completion() {
 
     let expected_highlight = "assign(";
 
-    let items: Vec<_> = full_setup.get_first_editor().unwrap().completions().unwrap().items().collect();
-
+    // let items: Vec<_> = full_setup.get_first_editor().unwrap().completions().unwrap().items().collect();
     // error!("items = [{:?}]", items);
-
-    full_setup.screenshot();
 
     assert!(full_setup
         .get_first_editor()

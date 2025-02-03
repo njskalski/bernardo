@@ -177,5 +177,4 @@ fn context_kite_and_scroll_test_3() {
         }
         false
     }));
-    full_setup.screenshot();
 }

@@ -41,8 +41,6 @@ fn find_in_files_opens() {
     // displays
     assert!(f.wait_for(|f| { f.get_code_results_view().unwrap().editors().len() == 3 }));
 
-    f.screenshot();
-
     assert!(f.wait_for(|f| {
         f.get_code_results_view()
             .unwrap()
@@ -86,7 +84,6 @@ fn find_in_files_hit_on_empty_res() {
         f.type_in("rzeszów");
         f.send_input(Keycode::Enter.to_key().to_input_event());
         assert!(f.wait_for(|f| f.get_code_results_view().is_some()));
-        f.screenshot();
         //Below input triggers panic, but in different thread and it's not properly propagated
         //Issue is that big list doesnt handle hit on empty
         f.send_input(Keycode::Enter.to_key().to_input_event());
