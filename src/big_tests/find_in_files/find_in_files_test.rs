@@ -41,8 +41,6 @@ fn find_in_files_opens() {
     // displays
     assert!(f.wait_for(|f| { f.get_code_results_view().unwrap().editors().len() == 3 }));
 
-    f.screenshot();
-
     assert!(f.wait_for(|f| {
         f.get_code_results_view()
             .unwrap()
@@ -85,8 +83,12 @@ fn find_in_files_hit_on_empty_res() {
 
         f.type_in("rzeszów");
         f.send_input(Keycode::Enter.to_key().to_input_event());
+
+        // TODO remove tick
+        sleep(Duration::from_secs(1));
+        f.send_input(InputEvent::Tick);
+
         assert!(f.wait_for(|f| f.get_code_results_view().is_some()));
-        f.screenshot();
         //Below input triggers panic, but in different thread and it's not properly propagated
         //Issue is that big list doesnt handle hit on empty
         f.send_input(Keycode::Enter.to_key().to_input_event());
@@ -99,6 +101,11 @@ fn find_in_files_hit_on_empty_res() {
 
         f.type_in("rzeszów");
         f.send_input(Keycode::Enter.to_key().to_input_event());
+
+        // TODO remove tick
+        sleep(Duration::from_secs(1));
+        f.send_input(InputEvent::Tick);
+
         assert!(f.wait_for(|f| f.get_code_results_view().is_some()));
     });
 
@@ -126,6 +133,10 @@ fn find_in_files_nonempty_filter() {
     assert!(f.wait_for(|f| { f.get_find_in_files().unwrap().filter_box().contents().contains("*.txt") }));
 
     f.send_input(Keycode::Enter.to_key().to_input_event());
+
+    // TODO remove tick
+    sleep(Duration::from_secs(1));
+    f.send_input(InputEvent::Tick);
 
     assert!(f.wait_for(|f| { f.get_find_in_files().is_none() }));
     assert!(f.wait_for(|f| { f.get_code_results_view().is_some() }));

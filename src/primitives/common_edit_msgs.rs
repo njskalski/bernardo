@@ -451,13 +451,18 @@ fn update_cursors_after_removal(cs: &mut CursorSet, char_range: Range<usize>) ->
                             sel.e = char_range.start;
                         }
                         res |= true;
+
+                        if sel.b == sel.e {
+                            c.s = None;
+                        }
                     }
+
                     debug_assert!(c.check_invariant());
                     continue;
                 }
 
                 // begin inside
-                if char_range.contains(&c.a) {
+                if char_range.contains(&c.get_begin()) {
                     if let Some(sel) = c.s.as_mut() {
                         if c.a == sel.b {
                             sel.b = char_range.end;

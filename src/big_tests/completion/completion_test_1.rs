@@ -87,8 +87,6 @@ fn completion_test_1() {
 
     assert!(full_setup.send_key(Keycode::ArrowDown.to_key()));
 
-    // full_setup.screenshot();
-
     assert!(full_setup.wait_for(|full_setup| {
         full_setup
             .get_first_editor()

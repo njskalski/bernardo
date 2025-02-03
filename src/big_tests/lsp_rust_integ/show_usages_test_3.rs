@@ -91,7 +91,6 @@ fn show_usages_integ_test_3() {
     assert!(full_setup.wait_for(|full_setup| { full_setup.get_code_results_view().unwrap().editors().len() == 4 }));
 
     {
-        // full_setup.screenshot();
         let results_view = full_setup.get_code_results_view().unwrap();
         let editors = results_view.editors();
 

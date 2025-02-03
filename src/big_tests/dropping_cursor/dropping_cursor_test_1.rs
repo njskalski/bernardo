@@ -1,5 +1,3 @@
-use std::os::unix::thread;
-
 use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
 use crate::mocks::with_wait_for::WithWaitFor;
@@ -82,8 +80,6 @@ fn dropping_cursor_test_1() {
         lines == vec!["[some line )no1⏎", "[some line )no2⏎", "[some line )no3⏎", "[some line )no4⇱"]
     }));
 
-    // full_setup.screenshot();
-
     full_setup.type_in("ugabuga!");
 
     assert!(full_setup.wait_for(|full_setup| -> bool {
@@ -129,7 +125,6 @@ fn dropping_cursor_scroll_test_2() {
         full_setup.send_key(Keycode::ArrowDown.to_key());
     }
 
-    full_setup.screenshot();
     assert!(full_setup.wait_for(|f| {
         f.get_first_editor()
             .unwrap()
@@ -138,5 +133,4 @@ fn dropping_cursor_scroll_test_2() {
             .next()
             .is_some()
     }));
-    full_setup.screenshot();
 }

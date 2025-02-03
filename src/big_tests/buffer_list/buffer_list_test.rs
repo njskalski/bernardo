@@ -269,7 +269,6 @@ fn purge_buffers_works() {
 
         assert_eq!(all, vec!["data33.txt [*]"]);
     }
-    full_setup.screenshot();
 }
 
 #[test]
