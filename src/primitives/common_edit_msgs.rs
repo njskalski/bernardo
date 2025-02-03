@@ -489,6 +489,10 @@ fn update_cursors_after_removal(cs: &mut CursorSet, char_range: Range<usize>) ->
                         sel.e -= stride;
                     }
 
+                    if sel.b == sel.e {
+                        c.s = None;
+                    }
+
                     res |= true;
                     debug_assert!(c.check_invariant());
                     continue;
