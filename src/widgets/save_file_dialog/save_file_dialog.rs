@@ -37,6 +37,7 @@ use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WidgetAction, WidgetActionParam, WID};
 use crate::widgets::button::ButtonWidget;
 use crate::widgets::edit_box::EditBoxWidget;
+use crate::widgets::frame_widget::FrameWidget;
 use crate::widgets::generic_dialog::generic_dialog::GenericDialog;
 use crate::widgets::list_widget::list_widget::ListWidget;
 use crate::widgets::save_file_dialog::dialogs::override_dialog;
@@ -44,8 +45,6 @@ use crate::widgets::save_file_dialog::save_file_dialog_msg::SaveFileDialogMsg;
 use crate::widgets::spath_tree_view_node::DirTreeNode;
 use crate::widgets::tree_view::tree_view::TreeViewWidget;
 use crate::widgets::with_scroll::with_scroll::WithScroll;
-
-// TODO now it displays both files and directories in tree view, it should only directories
 
 pub struct SaveFileDialogWidget {
     id: WID,
@@ -56,6 +55,8 @@ pub struct SaveFileDialogWidget {
     tree_widget: WithScroll<TreeViewWidget<SPath, DirTreeNode>>,
     list_widget: ListWidget<SPath>,
     edit_box: EditBoxWidget,
+
+    edit_box_frame: FrameWidget,
 
     ok_button: ButtonWidget,
     cancel_button: ButtonWidget,
@@ -72,6 +73,8 @@ impl SaveFileDialogWidget {
     pub const TYPENAME: &'static str = "save_file_dialog";
     pub const OK_LABEL: &'static str = "OK";
     pub const CANCEL_LABEL: &'static str = "CANCEL";
+
+    pub const SIZE: XY = XY::new(80, 30);
 
     pub fn new(fsf: FsfRef, config: ConfigRef) -> Self {
         let root = fsf.root();
@@ -105,6 +108,9 @@ impl SaveFileDialogWidget {
             .with_size_policy(SizePolicy::MATCH_LAYOUT)
             .with_enabled(true)
             .with_on_hit(Box::new(|_| SaveFileDialogMsg::EditBoxHit.someboxed()));
+
+        let edit_box_frame = FrameWidget::new(SINGLE_BORDER_STYLE.clone(), Some(" filename: ".to_string()));
+
         let ok_button = ButtonWidget::new(Box::new(Self::OK_LABEL)).with_on_hit(Box::new(|_| SaveFileDialogMsg::Save.someboxed()));
         let cancel_button =
             ButtonWidget::new(Box::new(Self::CANCEL_LABEL)).with_on_hit(Box::new(|_| SaveFileDialogMsg::Cancel.someboxed()));
@@ -117,6 +123,7 @@ impl SaveFileDialogWidget {
             tree_widget: scroll_tree_widget,
             list_widget,
             edit_box,
+            edit_box_frame,
             ok_button,
             cancel_button,
             on_save: None,
@@ -340,11 +347,11 @@ impl Widget for SaveFileDialogWidget {
     }
 
     fn full_size(&self) -> XY {
-        XY::new(4, 4)
+        Self::SIZE
     }
 
     fn size_policy(&self) -> SizePolicy {
-        SizePolicy::MATCH_LAYOUT
+        SizePolicy::SELF_DETERMINED
     }
 
     fn layout(&mut self, screenspace: Screenspace) {
@@ -354,7 +361,7 @@ impl Widget for SaveFileDialogWidget {
     fn on_input(&self, input_event: InputEvent) -> Option<Box<dyn AnyMsg>> {
         debug!("save_file_dialog.on_input {:?}", input_event);
 
-        return match input_event {
+        match input_event {
             InputEvent::KeyInput(key) => match key.keycode {
                 Keycode::Esc => SaveFileDialogMsg::Cancel.someboxed(),
                 keycode if keycode.is_arrow() => {
@@ -371,8 +378,17 @@ impl Widget for SaveFileDialogWidget {
                 }
                 _ => None,
             },
+            InputEvent::FocusUpdate(fu)
+                if self
+                    .display_state
+                    .as_ref()
+                    .map(|ds| ds.focus_group.can_update_focus(fu))
+                    .unwrap_or(false) =>
+            {
+                SaveFileDialogMsg::FocusUpdateMsg(fu).someboxed()
+            }
             _ => None,
-        };
+        }
     }
 
     fn update(&mut self, msg: Box<dyn AnyMsg>) -> Option<Box<dyn AnyMsg>> {
@@ -457,7 +473,7 @@ impl Widget for SaveFileDialogWidget {
         }
 
         self.complex_render(theme, focused, output);
-        SINGLE_BORDER_STYLE.draw_edges(theme.default_text(focused), output);
+        SINGLE_BORDER_STYLE.draw_output_edges(theme.default_text(focused), output, Some(" save file as "));
     }
 }
 
@@ -481,9 +497,14 @@ impl ComplexWidget for SaveFileDialogWidget {
 
         let list = LeafLayout::new(subwidget!(Self.list_widget)).boxed();
         let edit = LeafLayout::new(subwidget!(Self.edit_box)).boxed();
+
+        let framed_edit_box = FrameLayout::new(edit, XY::new(1, 1))
+            .with_frame(subwidget!(Self.edit_box_frame))
+            .boxed();
+
         let right_column = SplitLayout::new(SplitDirection::Vertical)
             .with(SplitRule::Proportional(1.0), list)
-            .with(SplitRule::Fixed(1), edit)
+            .with(SplitRule::Fixed(3), framed_edit_box)
             .with(SplitRule::Fixed(1), button_bar)
             .boxed();
 

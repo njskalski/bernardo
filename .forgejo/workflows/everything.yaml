@@ -35,6 +35,13 @@ jobs:
           python3 -m venv .venv         
           .venv/bin/pip install -r requirements.txt
           echo "$PWD/.venv/bin" >> $GITHUB_PATH
+      # this was taking too long
+      #      - name: install haskell and it's language-server
+      #        run: |
+      #          apt install -y build-essential curl libffi-dev libffi8 libgmp-dev libgmp10 libncurses-dev libncurses5 libtinfo5 pkg-config
+      #          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org -o get-ghcup.sh
+      #          chmod +x get-ghcup.sh
+      #          BOOTSTRAP_HASKELL_NONINTERACTIVE=1 ./get-ghcup.sh
       - name: check versions
         run: |
           cargo --version

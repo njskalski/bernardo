@@ -325,8 +325,12 @@ impl FilesystemFront for MockFS {
         }
     }
 
-    fn metadata(&self, path: &Path) -> Result<Metadata, ()> {
-        Err(())
+    fn metadata(&self, path: &Path) -> Result<Metadata, ReadError> {
+        Err(ReadError::UnmappedError("not imlpemented".to_string()))
+    }
+
+    fn file_size(&self, path: &Path) -> Result<u64, ReadError> {
+        self.blocking_read_entire_file(path).map(|b| b.len() as u64)
     }
 
     fn exists(&self, path: &Path) -> bool {

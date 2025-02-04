@@ -210,6 +210,11 @@ impl FsfRef {
         let path = spath.relative_path();
         self.fs.fs.is_file(&path)
     }
+
+    pub fn get_file_size(&self, spath: &SPath) -> Result<u64, ReadError> {
+        let path = spath.relative_path();
+        self.fs.fs.file_size(&path)
+    }
 }
 
 #[macro_export]

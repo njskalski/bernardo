@@ -221,7 +221,7 @@ impl Widget for FindInFilesWidget {
         }
 
         self.complex_render(theme, focused, output);
-        SINGLE_BORDER_STYLE.draw_edges(theme.default_text(focused), output);
+        SINGLE_BORDER_STYLE.draw_output_edges(theme.default_text(focused), output, Some(" find in files "));
     }
 
     fn get_focused(&self) -> Option<&dyn Widget> {

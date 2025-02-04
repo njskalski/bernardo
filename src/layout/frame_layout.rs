@@ -1,20 +1,27 @@
 use log::error;
 
 use crate::experiments::screenspace::Screenspace;
+use crate::experiments::subwidget_pointer::SubwidgetPointer;
 use crate::layout::layout::{Layout, LayoutResult};
 use crate::layout::widget_with_rect::WidgetWithRect;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::widget::Widget;
+use crate::widgets::frame_widget::FrameWidget;
 
 pub struct FrameLayout<W: Widget> {
     layout: Box<dyn Layout<W>>,
     margins: XY,
+    frame: Option<SubwidgetPointer<W>>,
 }
 
 impl<W: Widget> FrameLayout<W> {
     pub fn new(layout: Box<dyn Layout<W>>, margins: XY) -> Self {
-        Self { layout, margins }
+        Self {
+            layout,
+            margins,
+            frame: None,
+        }
     }
 
     pub fn sub_rect(&self, size: XY) -> Option<Rect> {
@@ -22,6 +29,13 @@ impl<W: Widget> FrameLayout<W> {
             Some(Rect::new(self.margins, size - (self.margins * 2)))
         } else {
             None
+        }
+    }
+
+    pub fn with_frame(self, frame: SubwidgetPointer<W>) -> Self {
+        Self {
+            frame: Some(frame),
+            ..self
         }
     }
 }
@@ -54,7 +68,16 @@ impl<W: Widget> Layout<W> for FrameLayout<W> {
             let new_output_size = sub_rect.size;
             let subresp = self.layout.layout(root, Screenspace::new(new_output_size, new_visible_rect));
 
-            let wwrs: Vec<WidgetWithRect<W>> = subresp.wwrs.into_iter().map(|wir| wir.shifted(sub_rect.pos)).collect();
+            let mut wwrs: Vec<WidgetWithRect<W>> = subresp.wwrs.into_iter().map(|wir| wir.shifted(sub_rect.pos)).collect();
+
+            if let Some(frame) = self.frame.clone() {
+                let frame_widget = frame.get_mut(root);
+                frame_widget.layout(screenspace.clone());
+                wwrs.insert(
+                    0,
+                    WidgetWithRect::new(frame, Rect::from_zero(screenspace.output_size()), frame_widget.is_focusable()),
+                );
+            }
 
             LayoutResult::new(wwrs, subresp.total_size + self.margins * 2)
         } else {

@@ -170,6 +170,11 @@ impl SPath {
         }
     }
 
+    pub fn get_size(&self) -> Result<u64, ReadError> {
+        let fsf = self.fsf();
+        fsf.get_file_size(&self)
+    }
+
     // returns owned PathBuf relative to FS root.
     pub fn relative_path(&self) -> PathBuf {
         self.0.relative_path()

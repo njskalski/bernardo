@@ -170,8 +170,8 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         if let Some(filter) = &self.filter_op {
             let mut new_highlighted: Option<usize> = None;
 
-            for (idx, (_, item)) in self.items().enumerate() {
-                if filter.call(&item) {
+            for (idx, cow) in self.items().enumerate() {
+                if filter.call(&cow.1) {
                     // self.highlighted = idx;
                     new_highlighted = Some(idx);
                     break;
@@ -226,8 +226,8 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
     pub fn set_selected(&mut self, k: &Key) -> bool {
         let mut new_highlighted: Option<usize> = None;
 
-        for (pos, (_, item)) in self.items().enumerate() {
-            if item.id() == k {
+        for (pos, cow) in self.items().enumerate() {
+            if cow.1.id() == k {
                 // self.highlighted = pos;
                 new_highlighted = Some(pos);
             }
@@ -242,10 +242,10 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         }
     }
 
-    fn size_from_items<I: Iterator<Item = (u16, Item)>>(items: I) -> XY {
+    fn size_from_items(&self) -> XY {
         let mut size = XY::ONE;
 
-        for item in items {
+        for item in self.items() {
             size = XY::new(
                 // depth * 2 + 2 + label_length. The +2 comes from the fact, that even at 0 depth, we add a triangle AND a space before the
                 // label.
@@ -340,12 +340,11 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         }
     }
 
-    pub fn items(&self) -> Box<dyn Iterator<Item = (u16, Item)> + '_> {
+    pub fn items(&self) -> Box<dyn Iterator<Item = Cow<'_, (u16, Item)>> + '_> {
         if let Some(promise) = self.promise.as_ref() {
-            // TODO expensive clone
-            Box::new(promise.read().iter().cloned())
+            Box::new(promise.read().iter().map(|a| Cow::Borrowed(a)))
         } else {
-            Box::new(self.immediate_iterator())
+            Box::new(self.immediate_iterator().map(|a| Cow::Owned(a)))
         }
     }
 
@@ -357,8 +356,8 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
             self.highlighted
         );
 
-        if let Some(item) = self.items().nth(self.highlighted).clone() {
-            item
+        if let Some(item) = self.items().nth(self.highlighted) {
+            item.into_owned()
         } else {
             error!("this is a crazy violation of TreeView invariant, highlighted item {} is not available. Returning safe default (that is invalid)", self.highlighted);
             (0, self.root_node.clone())
@@ -400,7 +399,7 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
 
     // Idx, depth, item
     // TODO I think there is a bug there
-    pub fn get_visible_items(&self) -> Box<dyn Iterator<Item = (usize, (u16, Item))> + '_> {
+    pub fn get_visible_items(&self) -> Box<dyn Iterator<Item = (usize, Cow<'_, (u16, Item)>)> + '_> {
         let screenspace = unpack_or_e!(
             self.last_size,
             Box::new(iter::empty()),
@@ -425,8 +424,8 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
         Box::new(
             self.items()
                 .enumerate()
-                .filter(|(_, (_, item))| item.keyboard_shortcut().is_some())
-                .map(|(idx, (_, item))| (idx, item.id().clone(), item.keyboard_shortcut().unwrap())),
+                .filter(|item| item.1 .1.keyboard_shortcut().is_some())
+                .map(|(idx, cow)| (idx, cow.1.id().clone(), cow.1.keyboard_shortcut().unwrap())),
         )
     }
 
@@ -483,7 +482,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
     }
 
     fn full_size(&self) -> XY {
-        let size = Self::size_from_items(self.items());
+        let size = self.size_from_items();
 
         debug_assert!(size.y > self.highlighted as u16);
 
@@ -570,7 +569,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
                         warn!("TreeViewWidget #{} highlighted non-existent node {}!", self.id(), self.highlighted);
                         return None;
                     }
-                    let (_, highlighted_node) = highlighted_pair.unwrap();
+                    let highlighted_node = highlighted_pair.unwrap().1.clone();
                     highlighted_node
                 };
 
@@ -586,7 +585,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
                     for item in self.items() {
                         if let Some(shortcut) = item.1.keyboard_shortcut() {
                             if *key == shortcut {
-                                return action_trigger(self, item.1);
+                                return action_trigger(self, item.1.clone());
                             }
                         }
                     }
@@ -616,12 +615,14 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
         helpers::fill_output(primary_style.background, output);
         let cursor_style = theme.highlighted(focused);
 
-        for (item_idx, (depth, node)) in self
+        for (item_idx, cow) in self
             .items()
             .enumerate()
             // skipping lines that cannot be visible, because they are before hint()
             .skip(visible_rect.upper_left().y as usize)
         {
+            let (depth, node) = cow.as_ref();
+
             // skipping lines that cannot be visible, because larger than the hint()
             if item_idx >= visible_rect.lower_right().y as usize {
                 break;
@@ -669,7 +670,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
 
             let mut x_offset: usize = 0;
             for (grapheme_idx, g) in text.graphemes(true).enumerate() {
-                let desired_pos_x: usize = depth as usize * 2 + x_offset;
+                let desired_pos_x: usize = *depth as usize * 2 + x_offset;
                 if desired_pos_x > u16::MAX as usize {
                     error!("skipping drawing beyond x = u16::MAX");
                     break;
@@ -702,7 +703,7 @@ impl<K: Hash + Eq + Debug + Clone + 'static, I: TreeNode<K> + 'static> Widget fo
                 let label = key.to_string();
 
                 for g in label.graphemes(true) {
-                    let desired_pos_x: usize = depth as usize * 2 + x_offset;
+                    let desired_pos_x: usize = *depth as usize * 2 + x_offset;
                     if desired_pos_x > u16::MAX as usize {
                         error!("skipping drawing beyond x = u16::MAX");
                         break;

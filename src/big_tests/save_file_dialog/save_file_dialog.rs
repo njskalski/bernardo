@@ -1,17 +1,18 @@
-use log::debug;
-
 use crate::experiments::focus_group::FocusUpdate;
-use crate::experiments::screen_shot::screenshot;
 use crate::io::input_event::InputEvent;
-use crate::io::keys::{Key, Keycode};
+use crate::io::keys::Keycode;
 use crate::mocks::full_setup::FullSetup;
-use crate::mocks::treeview_interpreter::{TreeViewInterpreter, TreeViewInterpreterItem};
+use crate::mocks::treeview_interpreter::TreeViewInterpreterItem;
 use crate::mocks::with_wait_for::WithWaitFor;
+use crate::primitives::xy::XY;
 use crate::spath;
+
+pub const LARGER_SIZE: XY = XY::new(240, 60);
 
 fn common_start() -> FullSetup {
     let mut full_setup: FullSetup = FullSetup::new("./test_envs/save_file_dialog_test_1")
         .with_files(["src/main.rs"])
+        .with_size(LARGER_SIZE)
         .build();
 
     assert!(full_setup.wait_for(|f| f.is_editor_opened()));
@@ -41,6 +42,80 @@ fn tree_items(full_setup: &FullSetup) -> Vec<TreeViewInterpreterItem> {
         .unwrap()
         .tree_view()
         .items()
+}
+
+#[test]
+fn alt_arrow_works() {
+    let mut full_setup = common_start();
+
+    assert!(full_setup
+        .get_first_editor()
+        .unwrap()
+        .save_file_dialog()
+        .unwrap()
+        .tree_view()
+        .is_focused());
+
+    full_setup.send_key(Keycode::ArrowRight.to_key().with_alt());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .list_view()
+            .is_focused()
+    }));
+
+    full_setup.send_key(Keycode::ArrowDown.to_key().with_alt());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .edit_widget()
+            .is_focused()
+    }));
+
+    full_setup.send_key(Keycode::ArrowDown.to_key().with_alt());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .cancel_button()
+            .is_focused()
+    }));
+
+    full_setup.send_key(Keycode::ArrowRight.to_key().with_alt());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .ok_button()
+            .is_focused()
+    }));
+
+    full_setup.send_key(Keycode::ArrowLeft.to_key().with_alt());
+    full_setup.send_key(Keycode::ArrowLeft.to_key().with_alt());
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .save_file_dialog()
+            .unwrap()
+            .tree_view()
+            .is_focused()
+    }));
 }
 
 #[test]
@@ -348,7 +423,7 @@ fn cancel_cancels() {
 
 #[test]
 fn save_empty_file_doesnt_leak_focus() {
-    let mut full_setup: FullSetup = FullSetup::new("./test_envs/save_file_dialog_test_1").build();
+    let mut full_setup: FullSetup = FullSetup::new("./test_envs/save_file_dialog_test_1").with_size(LARGER_SIZE).build();
 
     assert!(full_setup.send_key(full_setup.config().keyboard_config.global.new_buffer));
     assert!(full_setup.wait_for(|full_setup| full_setup.get_first_editor().is_some()));

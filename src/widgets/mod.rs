@@ -28,4 +28,5 @@ mod context_bar;
 pub mod context_menu;
 pub mod find_in_files_widget;
 
+pub mod frame_widget;
 pub mod tests;

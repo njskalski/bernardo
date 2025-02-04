@@ -185,6 +185,13 @@ impl EditorView {
             }
         }
 
+        if let Some(ds) = self.display_state.as_ref() {
+            if !(ds.total_size > SaveFileDialogWidget::SIZE) {
+                error!("not enough space for save_file_dialog, ignoring");
+                return;
+            }
+        }
+
         let save_file_dialog = SaveFileDialogWidget::new(self.providers.fsf().clone(), self.providers.config().clone())
             .with_on_cancel(Box::new(|_| EditorViewMsg::OnSaveAsCancel.someboxed()))
             .with_on_save(Box::new(|_, ff| EditorViewMsg::OnSaveAsHit { ff }.someboxed()))

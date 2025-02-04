@@ -89,16 +89,20 @@ impl FilesystemFront for RealFS {
         Ok(items)
     }
 
-    fn metadata(&self, path: &Path) -> Result<Metadata, ()> {
+    fn metadata(&self, path: &Path) -> Result<Metadata, ReadError> {
         let fullpath: PathBuf = self.root_path.join(path);
 
         match std::fs::metadata(&fullpath) {
             Ok(meta) => Ok(meta),
             Err(e) => {
                 info!(target: "fsf", "failed reading metadata for {:?}, because {}", fullpath, e);
-                Err(())
+                Err(ReadError::UnmappedError(e.to_string()))
             }
         }
+    }
+
+    fn file_size(&self, path: &Path) -> Result<u64, ReadError> {
+        self.metadata(path).map(|meta| meta.len())
     }
 
     fn exists(&self, path: &Path) -> bool {
