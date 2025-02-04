@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 use std::fs::Metadata;
 use std::path::{Path, PathBuf};
-
 use streaming_iterator::StreamingIterator;
 
 use crate::fs::dir_entry::DirEntry;
@@ -34,7 +33,9 @@ pub trait FilesystemFront: Debug + Send + Sync {
 
     fn blocking_list(&self, path: &Path) -> Result<Vec<DirEntry>, ListError>;
 
-    fn metadata(&self, path: &Path) -> Result<Metadata, ()>;
+    fn metadata(&self, path: &Path) -> Result<Metadata, ReadError>;
+
+    fn file_size(&self, path: &Path) -> Result<u64, ReadError>;
 
     fn exists(&self, path: &Path) -> bool;
 

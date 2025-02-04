@@ -1,4 +1,4 @@
-use log::debug;
+use log::{debug, error};
 
 use crate::experiments::screenspace::Screenspace;
 use crate::experiments::subwidget_pointer::SubwidgetPointer;
@@ -59,6 +59,12 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
         };
 
         let widget_output_size = self.exact_size(root, screenspace.output_size());
+
+        if !(widget_output_size <= screenspace.output_size()) {
+            error!("not enough space to draw widget {}", _widget_desc);
+            return LayoutResult::new(vec![], XY::ZERO);
+        }
+
         debug_assert!(widget_output_size <= screenspace.output_size());
 
         let widget = self.widget.get_mut(root);
@@ -78,6 +84,7 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
 
         if let Some(widget_visible_rect) = screenspace.visible_rect().capped_at(widget_output_size) {
             widget.layout(Screenspace::new(widget_output_size, widget_visible_rect));
+            let is_focusable = widget.is_focusable();
 
             debug!("leaf layout for {}, returning {}", &widget_desc, widget_output_size);
 
@@ -85,7 +92,7 @@ impl<W: Widget> Layout<W> for LeafLayout<W> {
                 vec![WidgetWithRect::new(
                     self.widget.clone(),
                     Rect::new(XY::ZERO, widget_output_size),
-                    true,
+                    is_focusable,
                 )],
                 widget_output_size,
             )
