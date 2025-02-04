@@ -42,6 +42,78 @@ fn common_start() -> FullSetup {
 }
 
 #[test]
+fn new_buffer_is_considered_saved_when_empty() {
+    let mut full_setup: FullSetup = FullSetup::new("./test_envs/buffer_list_test_1").build();
+
+    assert!(full_setup.wait_for(|f| f.is_no_editor_opened()));
+
+    full_setup.send_key(full_setup.config().keyboard_config.global.new_buffer);
+
+    assert!(full_setup.wait_for(|f| f.is_editor_opened()));
+
+    full_setup.send_key(full_setup.config().keyboard_config.global.browse_buffers);
+
+    assert!(full_setup.wait_for(|full_setup| { full_setup.get_fuzzy_search().is_some() }));
+
+    let all: Vec<String> = full_setup
+        .get_fuzzy_search()
+        .unwrap()
+        .visible_items()
+        .iter()
+        .filter(|item| item.leaf)
+        .map(|item| item.label.clone())
+        .collect();
+
+    assert_eq!(all.len(), 1);
+
+    assert_eq!(all[0].contains("[*]"), false);
+}
+
+#[test]
+fn new_buffer_is_unsaved_when_non_empty() {
+    let mut full_setup: FullSetup = FullSetup::new("./test_envs/buffer_list_test_1").build();
+
+    assert!(full_setup.wait_for(|f| f.is_no_editor_opened()));
+
+    full_setup.send_key(full_setup.config().keyboard_config.global.new_buffer);
+
+    assert!(full_setup.wait_for(|f| f.is_editor_opened()));
+
+    assert!(full_setup.wait_for(|full_setup| { full_setup.get_first_editor().unwrap().is_editor_focused() }));
+
+    full_setup.type_in("hello");
+
+    assert!(full_setup.wait_for(|full_setup| {
+        full_setup
+            .get_first_editor()
+            .unwrap()
+            .get_visible_cursor_lines()
+            .find(|line| line.contents.text.contains("hello"))
+            .is_some()
+    }));
+
+    full_setup.send_key(full_setup.config().keyboard_config.global.browse_buffers);
+
+    assert!(full_setup.wait_for(|full_setup| { full_setup.get_fuzzy_search().is_some() }));
+    assert!(full_setup.wait_for(|full_setup| { full_setup.get_fuzzy_search().unwrap().is_focused() }));
+
+    {
+        let all: Vec<String> = full_setup
+            .get_fuzzy_search()
+            .unwrap()
+            .visible_items()
+            .iter()
+            .filter(|item| item.leaf)
+            .map(|item| item.label.clone())
+            .collect();
+
+        assert_eq!(all.len(), 1);
+
+        assert_eq!(all[0].contains("[*]"), true);
+    }
+}
+
+#[test]
 fn buffer_list_hit_opens_file_and_closes_the_list() {
     let mut full_setup = common_start();
 

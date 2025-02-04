@@ -989,7 +989,15 @@ impl TextBuffer for BufferState {
     }
 
     fn is_saved(&self) -> bool {
-        self.last_save_pos == Some(self.history_pos)
+        if let Some(last_save_pos) = self.last_save_pos {
+            let saved_version = self.history[last_save_pos].rope();
+            let current_version = self.history[self.history_pos].rope();
+
+            saved_version == current_version
+        } else {
+            // if it's not saved, but is empty, we say it's saved
+            self.len_chars() == 0
+        }
     }
 
     fn get_tab_width(&self) -> Option<u8> {
