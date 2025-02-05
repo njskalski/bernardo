@@ -9,6 +9,7 @@ use crate::experiments::screenspace::Screenspace;
 use crate::io::input_event::InputEvent;
 use crate::io::output::Output;
 use crate::primitives::printable::Printable;
+use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::fill_policy::SizePolicy;
@@ -99,6 +100,8 @@ impl Widget for TextWidget {
         let mut x_offset;
         let visible_rect = output.visible_rect();
 
+        let mut used_rect: Rect = Rect::from_zero(XY::new(0, 0));
+
         while let Some(line) = line_it.next() {
             if line_idx > u16::MAX as usize {
                 error!("skipping drawing beyond y = u16::MAX");
@@ -120,7 +123,25 @@ impl Widget for TextWidget {
                 output.print_at(XY::new(x_offset as u16, line_idx as u16), text, g);
                 x_offset += g.width();
             }
+
+            if (used_rect.pos.x as usize) < x_offset {
+                used_rect.pos.x = x_offset as u16;
+            }
+            if used_rect.pos.y < line_idx as u16 {
+                used_rect.pos.y = line_idx as u16;
+            }
+
             line_idx += 1;
+        }
+
+        #[cfg(any(test, feature = "fuzztest"))]
+        {
+            output.emit_metadata(crate::io::output::Metadata {
+                id: self.id(),
+                typename: self.typename().to_string(),
+                rect: used_rect,
+                focused,
+            });
         }
     }
 }

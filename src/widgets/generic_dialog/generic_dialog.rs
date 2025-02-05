@@ -16,6 +16,7 @@ use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
 use crate::primitives::border::BorderStyle;
 use crate::primitives::printable::Printable;
+use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
 use crate::subwidget;
 use crate::widget::any_msg::AnyMsg;
@@ -196,6 +197,18 @@ impl Widget for GenericDialog {
     }
 
     fn render(&self, theme: &Theme, focused: bool, output: &mut dyn Output) {
+        #[cfg(any(test, feature = "fuzztest"))]
+        {
+            let size = crate::unpack_unit_e!(self.display_state.as_ref(), "render before layout",).total_size;
+
+            output.emit_metadata(crate::io::output::Metadata {
+                id: self.id(),
+                typename: self.typename().to_string(),
+                rect: Rect::from_zero(size),
+                focused,
+            });
+        }
+
         self.complex_render(theme, focused, output)
     }
 

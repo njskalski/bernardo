@@ -11,6 +11,7 @@ use crate::fs::read_error::ReadError;
 use crate::gladius::providers::Providers;
 use crate::primitives::has_invariant::HasInvariant;
 use crate::text::buffer_state::BufferState;
+use crate::text::text_buffer::TextBuffer;
 use crate::w7e::buffer_state_shared_ref::BufferSharedRef;
 use crate::widgets::editor_widget::label::label::Label;
 use crate::widgets::editor_widget::label::labels_provider::LabelsProvider;
@@ -78,6 +79,18 @@ impl BufferRegister {
 
         self.buffers.insert(doc_id, bsr.clone());
         bsr
+    }
+
+    pub fn are_any_buffers_unsaved(&self) -> bool {
+        for (_, bsr) in self.buffers.iter() {
+            if let Some(lock) = bsr.lock() {
+                if lock.is_saved() == false {
+                    return true;
+                }
+            }
+        }
+
+        false
     }
 
     // TODO document

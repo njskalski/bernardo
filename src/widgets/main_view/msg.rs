@@ -82,6 +82,7 @@ pub enum MainViewMsg {
     PruneUnchangedBuffers,
 
     QuitGladius,
+    QuitGladiusConfirmed,
 }
 
 impl AnyMsg for MainViewMsg {}

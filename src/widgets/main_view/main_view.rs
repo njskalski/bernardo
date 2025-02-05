@@ -24,6 +24,7 @@ use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
 use crate::layout::leaf_layout::LeafLayout;
 use crate::layout::split_layout::{SplitDirection, SplitLayout, SplitRule};
+use crate::primitives::border::SINGLE_BORDER_STYLE;
 use crate::primitives::common_query::CommonQuery;
 use crate::primitives::rect::Rect;
 use crate::primitives::scroll::ScrollDirection;
@@ -36,12 +37,14 @@ use crate::widget::any_msg::{AnyMsg, AsAny};
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::context_bar_item::ContextBarItem;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
+use crate::widgets::button::ButtonWidget;
 use crate::widgets::code_results_view::code_results_provider::CodeResultsProvider;
 use crate::widgets::code_results_view::code_results_widget::CodeResultsView;
 use crate::widgets::code_results_view::full_text_search_code_results_provider::FullTextSearchCodeResultsProvider;
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::file_tree_view::file_tree_view::FileTreeViewWidget;
 use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
+use crate::widgets::generic_dialog::generic_dialog::GenericDialog;
 use crate::widgets::main_view::display::MainViewDisplay;
 use crate::widgets::main_view::focus_path_widget::FocusPathWidget;
 use crate::widgets::main_view::fuzzy_file_search_widget::FuzzyFileSearchWidget;
@@ -66,6 +69,9 @@ pub enum HoverItem {
 
     // search in files
     SearchInFiles(FindInFilesWidget),
+
+    //
+    QuitUnsavedWarning(GenericDialog),
 
     // Context menu
     ContextMain {
@@ -406,6 +412,7 @@ impl MainView {
                             HoverItem::FuzzySearch2(fs) => fs as &dyn Widget,
                             HoverItem::SearchInFiles(fs) => fs as &dyn Widget,
                             HoverItem::ContextMain { anchor, widget, old_focus } => widget as &dyn Widget,
+                            HoverItem::QuitUnsavedWarning(gd) => gd as &dyn Widget,
                         }
                     } else {
                         error!("no hover found, this subwidget pointer should have been overriden by now.");
@@ -421,6 +428,7 @@ impl MainView {
                             HoverItem::FuzzySearch2(fs) => fs as &mut dyn Widget,
                             HoverItem::SearchInFiles(fs) => fs as &mut dyn Widget,
                             HoverItem::ContextMain { anchor, widget, old_focus } => widget as &mut dyn Widget,
+                            HoverItem::QuitUnsavedWarning(gd) => gd as &mut dyn Widget,
                         }
                     } else {
                         error!("no hover found, this subwidget pointer should have been overriden by now.");
@@ -469,6 +477,26 @@ impl MainView {
         }
 
         true
+    }
+
+    fn open_unsaved_warning_and_focus(&mut self) {
+        if self.hover.is_some() {
+            warn!("closing old hover to put new one on top");
+            self.hover = None;
+        }
+
+        let qu = GenericDialog::new(Box::new(
+            "You have unsaved buffers. Do you want do discard them and quit the Gladius?",
+        ))
+        .with_option(ButtonWidget::new(Box::new("Go back")).with_on_hit(Box::new(|_| MainViewMsg::CloseHover.someboxed())))
+        .with_option(
+            ButtonWidget::new(Box::new("Discard and quit")).with_on_hit(Box::new(|_| MainViewMsg::QuitGladiusConfirmed.someboxed())),
+        )
+        .with_border(&SINGLE_BORDER_STYLE);
+
+        self.hover = Some(HoverItem::QuitUnsavedWarning(qu));
+
+        self.set_focus_to_hover();
     }
 
     fn get_currently_focused_editor_view_mut(&mut self) -> Option<&mut EditorView> {
@@ -875,8 +903,22 @@ impl Widget for MainView {
                     self.do_close_buffer();
                     None
                 }
+                MainViewMsg::QuitGladius => {
+                    // TODO I should perhaps NOT close, if I cannot confirm that all files are saved? super unlikely
+                    let unsaved = if let Some(br) = self.providers.buffer_register().try_read().ok() {
+                        br.are_any_buffers_unsaved()
+                    } else {
+                        false
+                    };
 
-                MainViewMsg::QuitGladius => GladiusMsg::Quit.someboxed(),
+                    if unsaved {
+                        self.open_unsaved_warning_and_focus();
+                        None
+                    } else {
+                        GladiusMsg::Quit.someboxed()
+                    }
+                }
+                MainViewMsg::QuitGladiusConfirmed => GladiusMsg::Quit.someboxed(),
                 _ => {
                     warn!("unprocessed event {:?}", main_view_msg);
                     None
