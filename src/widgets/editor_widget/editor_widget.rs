@@ -749,25 +749,28 @@ impl EditorWidget {
         let mut labels: BTreeMap<XY, Label> = BTreeMap::new();
         let mut last_x_offset = 0;
 
-        // if we don't have a char_range, that means the "visible rect" is empty, so we don't draw anything
-        if let Some(char_range) = char_range_op {
-            for label in self.providers.todo_get_aggegated_labels(buffer.get_path()) {
-                if label
-                    .pos
-                    .maybe_should_draw(char_range.clone(), lines_to_skip..visible_rect.lower_right().y as usize)
-                {
-                    if let Some(xy) = label.pos.into_position(&*buffer) {
-                        if (xy.y as usize) < lines_to_skip {
-                            continue;
-                        }
+        // TODO add test
+        if self.providers.config().global.inline_warnings_and_errors {
+            // if we don't have a char_range, that means the "visible rect" is empty, so we don't draw anything
+            if let Some(char_range) = char_range_op {
+                for label in self.providers.todo_get_aggegated_labels(buffer.get_path()) {
+                    if label
+                        .pos
+                        .maybe_should_draw(char_range.clone(), lines_to_skip..visible_rect.lower_right().y as usize)
+                    {
+                        if let Some(xy) = label.pos.into_position(&*buffer) {
+                            if (xy.y as usize) < lines_to_skip {
+                                continue;
+                            }
 
-                        if let Some((_collision_xy, old_label)) = Self::can_add_label(&mut labels, (xy, &label)) {
-                            warn!(
-                                "Discarding a label because of collision. Discarded label [{:?}], colliding label [{:?}]",
-                                label, old_label
-                            );
-                        } else {
-                            labels.insert(xy, label.clone());
+                            if let Some((_collision_xy, old_label)) = Self::can_add_label(&mut labels, (xy, &label)) {
+                                warn!(
+                                    "Discarding a label because of collision. Discarded label [{:?}], colliding label [{:?}]",
+                                    label, old_label
+                                );
+                            } else {
+                                labels.insert(xy, label.clone());
+                            }
                         }
                     }
                 }

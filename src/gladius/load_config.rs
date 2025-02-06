@@ -10,12 +10,16 @@ use log::error;
 use crate::config::config::{Config, ConfigRef};
 use crate::gladius::constants::{CONFIG_FILE_NAME, PROGRAM_NAME};
 
-pub fn load_config(reconfigure: bool) -> ConfigRef {
+pub fn get_config_dir() -> PathBuf {
     let config_dir_base = dirs::config_dir().unwrap_or_else(|| {
         error!("failed retrieving xdg config dir, using \"~/.config\" as default");
         PathBuf::from("~/.config")
     });
-    let config_dir = config_dir_base.join(PROGRAM_NAME);
+    config_dir_base.join(PROGRAM_NAME)
+}
+
+pub fn load_config(reconfigure: bool) -> ConfigRef {
+    let config_dir = get_config_dir();
     let config_file_path = config_dir.join(CONFIG_FILE_NAME);
     let config_exists = config_file_path.exists();
 

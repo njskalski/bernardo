@@ -24,4 +24,6 @@ pub fn fuzz_call(inputs: Vec<Key>) {
         f.send_key(key);
         f.wait_frame();
     }
+
+    // f.finish();
 }

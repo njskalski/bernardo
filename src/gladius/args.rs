@@ -16,6 +16,7 @@ pub struct Args {
     #[clap(short = 'f', long = "log_to_file", default_value = None, value_name = "FILE")]
     pub file_log: Option<PathBuf>,
 
+    /// When set, current config will be renamed to 'config.ron.old.<timestamp>' and a fresh, default config will be written to default location prior to run. Useful when a new version is released.
     #[clap(short = 'r', long = "reconfigure")]
     pub reconfigure: bool,
 

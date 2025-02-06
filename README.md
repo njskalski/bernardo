@@ -6,7 +6,7 @@ This is a repository currently hosting two projects:
 
 - [Gladius](docs/gladius/index.md) is a code editor.
 
-Click in one of them to jump to specific documentation. 
+Click in one of them to jump to specific documentation.
 
 ## Status
 
@@ -14,13 +14,42 @@ Both projects are in beta state, they *will* crash, save often.
 
 Beta means "all key functions are implemented, but they are not of their final quality".
 
-The project turned out to be around 5x larger than originally estimated. Therefore a lot of code is of "power through" quality: I implemented something "quick and dirty" that works + a test that it does not break tomorrow.
+The project turned out to be around 5x larger than originally estimated. Therefore a lot of code is of "power through"
+quality: I implemented something "quick and dirty" that works + a test that it does not break tomorrow.
 
-Only when the project is "complete enough" I will start targeted optimizations. A targeted optimisation is one informed by a proper profiling (flamegraph), preferrably of an automated test run on loop ~1000 times. Any optimisation absent of such experimental information is considered "spray and pray" and I really have no time to even discuss that.
+Only when the project is "complete enough" I will start targeted optimizations. A targeted optimisation is one informed
+by a proper profiling (flamegraph), preferrably of an automated test run on loop ~1000 times. Any optimisation absent of
+such experimental information is considered "spray and pray" and I really have no time to even discuss that.
+
+## How to build it
+
+```bash
+apt-get install curl build-essential gcc make clangd clang nodejs python3-pip python3-venv
+git submodule init
+git submodule update
+cargo build --release
+```
+
+To get Rust Language Server protocol:
+
+```bash
+rustup component add rust-analyzer
+```
+
+To get othe LSPs, check [pipelines](.forgejo/workflows/everything.yaml)
+
+## Primary repository
+
+The project used to be developed at [Gitlab](https://gitlab.com/njskalski/bernardo), but I am in the process of
+migrating it to
+[Codeberg](https://gitlab.com/njskalski/bernardo) due to "being able to run the runners locally".
+
+There are out-of-date copies at Gitlab, sr.ht and other services that I evaluated.
 
 ## License
 
-Licenses: [GPLv3](COPYRIGHT), with a target to re-release Widget Library of Bernardo as [LGPLv3](https://www.gnu.org/licenses/lgpl-3.0.en.html) at
+Licenses: [GPLv3](COPYRIGHT), with a target to re-release Widget Library of Bernardo
+as [LGPLv3](https://www.gnu.org/licenses/lgpl-3.0.en.html) at
 later date.
 If you decide to contribute, be sure you are OK with that. That's the only "CLA" required.
 However, the text editor widget will remain GPLv3 without 'L'.
@@ -29,4 +58,5 @@ Here is a website describing reasoning behind the projects: [Triarii](https://nj
 
 ## Contributing guide
 
-You want to contribute? Amazing! I wish I've met you earlier. To help you start, I wrote a [guide](docs/contributing_guide.md).
+You want to contribute? Amazing! I wish I've met you earlier. To help you start, I wrote
+a [guide](docs/contributing_guide.md).

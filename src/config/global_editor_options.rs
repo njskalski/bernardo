@@ -13,6 +13,8 @@ pub struct GlobalEditorOptions {
     pub golang_lsp_path: Option<PathBuf>,
     pub python_lsp_path: Option<PathBuf>,
 
+    pub inline_warnings_and_errors: bool,
+
     pub auto_indent_extensions: Vec<String>,
 
     // whether to convert tabs to spaces or not
@@ -27,6 +29,7 @@ impl Default for GlobalEditorOptions {
             clangd_lsp_path: None,
             golang_lsp_path: None,
             python_lsp_path: None,
+            inline_warnings_and_errors: true,
             auto_indent_extensions: vec![
                 "py", "rs", "yaml", "cpp", "cxx", "c", "h", "hpp", "hxx", "go", "py", "js", "hs", "ts",
             ]
