@@ -1,16 +1,18 @@
 use std::fs;
-use std::path::Path;
-
-use lazy_static::lazy_static;
-use log::{error, warn};
-use serde::{Deserialize, Serialize};
+use std::path::{Path, PathBuf};
 
 use crate::config::load_error::LoadError;
 use crate::config::save_error::SaveError;
 use crate::cursor::cursor::CursorStatus;
+use crate::gladius::load_config::get_config_dir;
 use crate::io::style::{Effect, TextStyle};
 use crate::primitives::color::Color;
 use crate::primitives::tmtheme::TmTheme;
+use lazy_static::lazy_static;
+use log::{error, warn};
+use serde::{Deserialize, Serialize};
+use syntect::highlighting::ThemeSet;
+use syntect::LoadingError;
 
 // TODO get rid of clone (in mock output we need Rc/Arc)
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -20,6 +22,8 @@ pub struct Theme {
     // I do not serialize this, use the default value and always say "true" in comparison operator.
     #[serde(default, skip)]
     pub tm: TmTheme,
+
+    pub tm_theme_name: Option<String>,
 }
 
 impl Theme {
@@ -192,6 +196,13 @@ pub struct CursorsSettings {
 const DEFAULT_THEME_PATH: &str = "themes/default.ron";
 
 impl Theme {
+    const DEFAULT_TM_THEME_FOLDER: &'static str = "tm_themes";
+
+    pub fn get_theme_dir() -> PathBuf {
+        let config_dir = get_config_dir();
+        config_dir.join(Self::DEFAULT_TM_THEME_FOLDER)
+    }
+
     /*
     uses default filesystem (std). It is actually needed, the config might need to be initialized before filesystem AND it's most likely
     not local to any workspace.
@@ -199,7 +210,29 @@ impl Theme {
     pub fn load_from_file(path: &Path) -> Result<Self, LoadError> {
         let b = std::fs::read(path)?;
         let s = std::str::from_utf8(&b)?;
-        let item = ron::from_str(s)?;
+        let mut item: Theme = ron::from_str(s)?;
+
+        if let Some(name) = item.tm_theme_name.as_ref() {
+            let mut theme_set = ThemeSet::load_defaults();
+            let themes_dir = Self::get_theme_dir();
+            if themes_dir.exists() {
+                match theme_set.add_from_folder(&themes_dir) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        error!("failed loading themes from {}: {}", Self::DEFAULT_TM_THEME_FOLDER, e);
+                    }
+                }
+            } else {
+                warn!("tm themes dir [{:?}] does not exist", &themes_dir);
+            }
+
+            if let Some(theme) = theme_set.themes.get(name) {
+                item.tm = TmTheme::new(theme.clone());
+            } else {
+                error!("did not find theme {}. Available themes: {:?}", name, theme_set.themes.keys());
+            }
+        }
+
         Ok(item)
     }
 

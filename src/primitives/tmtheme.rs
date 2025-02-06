@@ -62,6 +62,13 @@ impl TmTheme {
             clone
         })
     }
+
+    pub fn new(syntect_theme: syntect::highlighting::Theme) -> TmTheme {
+        TmTheme {
+            theme: syntect_theme,
+            cache: Default::default(),
+        }
+    }
 }
 
 impl PartialEq for TmTheme {
