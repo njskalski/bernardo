@@ -58,7 +58,8 @@ impl<'a> GenericDialogWidgetInterpreter<'a> {
 
     pub fn get_button_by_text(&self, text: &str) -> Option<&ButtonWidgetInterpreter<'a>> {
         for item in self.buttons.iter() {
-            if item.contents().contains(text) {
+            let contents = item.contents();
+            if contents.contains(text) {
                 return Some(item);
             }
         }

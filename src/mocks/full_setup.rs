@@ -293,7 +293,7 @@ impl FullSetup {
 
     pub fn finish(mut self) -> FinishedFullSetupRun {
         self.input_sender
-            .send(InputEvent::KeyInput(self.config.keyboard_config.global.close))
+            .send(InputEvent::KeyInput(self.config.keyboard_config.global.quit))
             .unwrap();
 
         if self.wait_for(|item| item.get_first_generic_dialog().is_some()) {

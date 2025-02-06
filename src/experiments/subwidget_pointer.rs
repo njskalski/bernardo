@@ -139,6 +139,16 @@ macro_rules! subwidget {
 }
 
 #[macro_export]
+macro_rules! todosubwidgetunwrap {
+    ($parent: ident.$ child: ident) => {
+        $crate::experiments::subwidget_pointer::SubwidgetPointer::new(
+            Box::new(|p: &$parent| p.$child.as_ref().unwrap()),
+            Box::new(|p: &mut $parent| p.$child.as_mut().unwrap()),
+        )
+    };
+}
+
+#[macro_export]
 macro_rules! selfwidget {
     ($parent: ident) => {
         $crate::experiments::subwidget_pointer::SubwidgetPointer::new(

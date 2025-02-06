@@ -18,7 +18,7 @@ use crate::fs::read_error::ReadError;
 use crate::gladius::msg::GladiusMsg;
 use crate::gladius::providers::Providers;
 use crate::io::input_event::InputEvent;
-use crate::io::keys::Keycode;
+use crate::io::keys::{Key, Keycode};
 use crate::io::output::Output;
 use crate::layout::hover_layout::HoverLayout;
 use crate::layout::layout::Layout;
@@ -485,14 +485,20 @@ impl MainView {
             self.hover = None;
         }
 
-        let qu = GenericDialog::new(Box::new(
-            "You have unsaved buffers. Do you want do discard them and quit the Gladius?",
-        ))
-        .with_option(ButtonWidget::new(Box::new("Go back")).with_on_hit(Box::new(|_| MainViewMsg::CloseHover.someboxed())))
-        .with_option(
-            ButtonWidget::new(Box::new("Discard and quit")).with_on_hit(Box::new(|_| MainViewMsg::QuitGladiusConfirmed.someboxed())),
-        )
-        .with_border(&SINGLE_BORDER_STYLE);
+        let qu = GenericDialog::new(Box::new("You have unsaved buffers.\nDo you want do discard them and quit Gladius?"))
+            .with_option(ButtonWidget::new(Box::new("Go back")).with_on_hit(Box::new(|_| MainViewMsg::CloseHover.someboxed())))
+            .with_option(
+                ButtonWidget::new(Box::new("Discard and quit")).with_on_hit(Box::new(|_| MainViewMsg::QuitGladiusConfirmed.someboxed())),
+            )
+            .with_border(&SINGLE_BORDER_STYLE, Some(" Are you sure? ".to_string()))
+            .with_arrows_as_focus_updates()
+            .with_keystroke(Box::new(|keycode: Key| {
+                if keycode.keycode == Keycode::Esc && keycode.no_modifiers() {
+                    MainViewMsg::CloseHover.someboxed()
+                } else {
+                    None
+                }
+            }));
 
         self.hover = Some(HoverItem::QuitUnsavedWarning(qu));
 
@@ -738,7 +744,7 @@ impl Widget for MainView {
             InputEvent::FocusUpdate(focus_update) if self.will_accept_focus_update(focus_update) => {
                 MainViewMsg::FocusUpdateMsg(focus_update).someboxed()
             }
-            InputEvent::KeyInput(key) if key == config.keyboard_config.global.close => MainViewMsg::QuitGladius.someboxed(),
+            InputEvent::KeyInput(key) if key == config.keyboard_config.global.quit => MainViewMsg::QuitGladius.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.new_buffer => MainViewMsg::OpenNewFile.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.fuzzy_file => MainViewMsg::OpenFuzzyFiles.someboxed(),
             InputEvent::KeyInput(key) if key == config.keyboard_config.global.browse_buffers => {
@@ -952,7 +958,7 @@ impl Widget for MainView {
         let mut options: Vec<ContextBarItem> = vec![ContextBarItem::new_leaf_node(
             Cow::Borrowed("quit"),
             || MainViewMsg::QuitGladius.boxed(),
-            Some(config.keyboard_config.global.close),
+            Some(config.keyboard_config.global.quit),
         )];
 
         if !self.displays.is_empty() {

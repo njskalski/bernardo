@@ -18,17 +18,16 @@ use crate::primitives::border::BorderStyle;
 use crate::primitives::printable::Printable;
 use crate::primitives::rect::Rect;
 use crate::primitives::xy::XY;
-use crate::subwidget;
 use crate::widget::any_msg::AnyMsg;
 use crate::widget::complex_widget::{ComplexWidget, DisplayState};
 use crate::widget::fill_policy::SizePolicy;
 use crate::widget::widget::{get_new_widget_id, Widget, WID};
 use crate::widgets::button::ButtonWidget;
+use crate::widgets::frame_widget::FrameWidget;
 use crate::widgets::text_widget::TextWidget;
+use crate::{subwidget, todosubwidgetunwrap};
 
 // TODO handle too small displays
-
-pub trait KeyToMsg: Fn(&Key) -> Option<Box<dyn AnyMsg>> {}
 
 const DEFAULT_INTERVAL: u16 = 2;
 const CANCEL_LABEL: &str = "Cancel";
@@ -38,12 +37,15 @@ pub struct GenericDialog {
 
     display_state: Option<DisplayState<GenericDialog>>,
 
+    label_op: Option<String>,
     text_widget: TextWidget,
 
-    with_border: Option<&'static BorderStyle>,
+    border_op: Option<FrameWidget>,
 
     buttons: Vec<ButtonWidget>,
-    keystroke: Option<Box<dyn KeyToMsg>>,
+    keystroke: Option<Box<dyn Fn(Key) -> Option<Box<dyn AnyMsg>>>>,
+
+    enable_arrows: bool,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -60,10 +62,26 @@ impl GenericDialog {
         Self {
             wid: get_new_widget_id(),
             display_state: None,
+            label_op: None,
             text_widget: TextWidget::new(text).with_size_policy(SizePolicy::MATCH_LAYOUT),
-            with_border: None,
+            border_op: None,
             buttons: vec![],
             keystroke: None,
+            enable_arrows: false,
+        }
+    }
+
+    pub fn with_arrows_as_focus_updates(self) -> Self {
+        Self {
+            enable_arrows: true,
+            ..self
+        }
+    }
+
+    pub fn with_label(self, label: String) -> Self {
+        Self {
+            label_op: Some(label),
+            ..self
         }
     }
 
@@ -85,9 +103,9 @@ impl GenericDialog {
         &mut self.buttons
     }
 
-    pub fn with_border(self, border_style: &'static BorderStyle) -> Self {
+    pub fn with_border(self, border_style: &'static BorderStyle, label_op: Option<String>) -> Self {
         Self {
-            with_border: Some(border_style),
+            border_op: Some(FrameWidget::new(border_style.clone(), label_op)),
             ..self
         }
     }
@@ -108,14 +126,14 @@ impl GenericDialog {
         }
     }
 
-    pub fn with_keystroke(self, keystroke: Box<dyn KeyToMsg>) -> Self {
+    pub fn with_keystroke(self, keystroke: Box<dyn Fn(Key) -> Option<Box<dyn AnyMsg>>>) -> Self {
         Self {
             keystroke: Some(keystroke),
             ..self
         }
     }
 
-    pub fn set_keystroke(&mut self, keystroke: Box<dyn KeyToMsg>) {
+    pub fn set_keystroke(&mut self, keystroke: Box<dyn Fn(Key) -> Option<Box<dyn AnyMsg>>>) {
         self.keystroke = Some(keystroke);
     }
 }
@@ -150,7 +168,7 @@ impl Widget for GenericDialog {
             }
         }
 
-        total_size + if self.with_border.is_some() { XY::new(2, 2) } else { XY::ZERO }
+        total_size + if self.border_op.is_some() { XY::new(2, 2) } else { XY::ZERO }
     }
 
     fn layout(&mut self, screenspace: Screenspace) {
@@ -167,6 +185,18 @@ impl Widget for GenericDialog {
                 } else {
                     None
                 }
+            }
+            InputEvent::KeyInput(key) if self.enable_arrows && key.as_focus_update().is_some() => {
+                let focus_update = key.as_focus_update().unwrap();
+                if self.will_accept_focus_update(focus_update) {
+                    Some(Box::new(GenericDialogMsg::FocusUpdate(focus_update)))
+                } else {
+                    None
+                }
+            }
+            InputEvent::KeyInput(key) if self.keystroke.is_some() => {
+                let ks = self.keystroke.as_ref().unwrap();
+                ks(key)
             }
             _ => None,
         };
@@ -250,7 +280,13 @@ impl ComplexWidget for GenericDialog {
             .with(SplitRule::Fixed(1), button_layout)
             .boxed();
 
-        let frame_layout = FrameLayout::new(total_layout, XY::new(2, 2)).boxed();
+        let mut frame_layout = FrameLayout::new(total_layout, XY::new(1, 1));
+
+        if self.border_op.is_some() {
+            frame_layout = frame_layout.with_frame(todosubwidgetunwrap!(Self.border_op));
+        }
+
+        let frame_layout = frame_layout.boxed();
 
         frame_layout
     }

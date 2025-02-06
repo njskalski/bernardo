@@ -124,14 +124,14 @@ impl Widget for TextWidget {
                 x_offset += g.width();
             }
 
-            if (used_rect.pos.x as usize) < x_offset {
-                used_rect.pos.x = x_offset as u16;
-            }
-            if used_rect.pos.y < line_idx as u16 {
-                used_rect.pos.y = line_idx as u16;
-            }
-
             line_idx += 1;
+
+            if (used_rect.size.x as usize) < x_offset {
+                used_rect.size.x = x_offset as u16;
+            }
+            if used_rect.size.y < line_idx as u16 {
+                used_rect.size.y = line_idx as u16;
+            }
         }
 
         #[cfg(any(test, feature = "fuzztest"))]
