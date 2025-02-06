@@ -5,6 +5,7 @@ use crate::io::output::Metadata;
 use crate::mocks::code_results_interpreter::CodeResultsViewInterpreter;
 use crate::mocks::context_menu_interpreter::ContextMenuInterpreter;
 use crate::mocks::editor_interpreter::EditorInterpreter;
+use crate::mocks::generic_dialog_interpreter::GenericDialogWidgetInterpreter;
 use crate::mocks::nested_menu_interpreter::NestedMenuInterpreter;
 use crate::mocks::no_editor_interpreter::NoEditorInterpreter;
 use crate::mocks::with_scroll_interpreter::WithScrollWidgetInterpreter;
@@ -14,6 +15,7 @@ use crate::widgets::context_menu::widget::{ContextMenuWidget, CONTEXT_MENU_WIDGE
 use crate::widgets::editor_view::editor_view::EditorView;
 use crate::widgets::find_in_files_widget::find_in_files_widget::FindInFilesWidget;
 use crate::widgets::find_in_files_widget::tests::find_in_files_widget_interpreter::FindInFilesWidgetInterpreter;
+use crate::widgets::generic_dialog::generic_dialog::GenericDialog;
 use crate::widgets::nested_menu::widget::NESTED_MENU_TYPENAME;
 use crate::widgets::no_editor::NoEditorWidget;
 use crate::widgets::spath_tree_view_node::FileTreeNode;
@@ -50,6 +52,12 @@ impl MetaOutputFrame {
     pub fn get_context_menus(&self) -> impl Iterator<Item = ContextMenuInterpreter> {
         self.get_meta_by_type(CONTEXT_MENU_WIDGET_NAME)
             .map(|meta| ContextMenuInterpreter::new(self, meta))
+    }
+
+    pub fn get_first_generic_dialogs(&self) -> Option<GenericDialogWidgetInterpreter<'_>> {
+        self.get_meta_by_type(GenericDialog::TYPENAME)
+            .map(|meta| GenericDialogWidgetInterpreter::new(meta, self))
+            .next()
     }
 
     pub fn get_scroll<T: Widget>(&self) -> impl Iterator<Item = WithScrollWidgetInterpreter<T>> {

@@ -29,3 +29,5 @@ mod javascript;
 mod typescript;
 
 mod lsp_rust_integ_format;
+
+mod quit_unsaved_dialog;

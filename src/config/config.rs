@@ -66,7 +66,7 @@ pub struct KeyboardConfig {
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Global {
     pub browse_buffers: Key,
-    pub close: Key,
+    pub quit: Key,
     pub close_context_menu: Key,
     pub everything_bar: Key,
     pub find_in_files: Key,
@@ -81,7 +81,7 @@ pub struct Global {
 impl Default for Global {
     fn default() -> Self {
         Global {
-            close: Keycode::Char('q').to_key().with_ctrl(),
+            quit: Keycode::Char('q').to_key().with_ctrl(),
             fuzzy_file: Keycode::Char('j').to_key().with_ctrl(),
             new_buffer: Keycode::Char('n').to_key().with_ctrl(),
             close_buffer: Keycode::Char('p').to_key().with_ctrl(),

@@ -78,7 +78,7 @@ fn key_list() -> Vec<Key> {
         // Keycode::Null.to_key().with_shift(),
         Keycode::Esc.to_key(),
         Keycode::Esc.to_key().with_shift(),
-        config.global.close,
+        config.global.quit,
         config.global.fuzzy_file,
         config.global.new_buffer,
         config.global.close_buffer,

@@ -22,10 +22,12 @@ use crate::gladius::providers::Providers;
 use crate::gladius::real_navcomp_loader::RealNavCompLoader;
 use crate::gladius::run_gladius::run_gladius;
 use crate::io::input_event::InputEvent;
+use crate::io::input_event::InputEvent::KeyInput;
 use crate::io::keys::{Key, Keycode};
 use crate::mocks::code_results_interpreter::CodeResultsViewInterpreter;
 use crate::mocks::context_menu_interpreter::ContextMenuInterpreter;
 use crate::mocks::editor_interpreter::EditorInterpreter;
+use crate::mocks::generic_dialog_interpreter::GenericDialogWidgetInterpreter;
 use crate::mocks::log_capture::CapturingLogger;
 use crate::mocks::meta_frame::MetaOutputFrame;
 use crate::mocks::mock_clipboard::MockClipboard;
@@ -289,10 +291,23 @@ impl FullSetup {
      */
     // pub fn get_cursor_lines(&self) {}
 
-    pub fn finish(self) -> FinishedFullSetupRun {
+    pub fn finish(mut self) -> FinishedFullSetupRun {
         self.input_sender
-            .send(InputEvent::KeyInput(self.config.keyboard_config.global.close))
+            .send(InputEvent::KeyInput(self.config.keyboard_config.global.quit))
             .unwrap();
+
+        if self.wait_for(|item| item.get_first_generic_dialog().is_some()) {
+            let _ = self.input_sender.send(Keycode::ArrowRight.to_key().to_input_event());
+
+            assert!(self.wait_for(|item| item
+                .get_first_generic_dialog()
+                .unwrap()
+                .get_button_by_text("uit")
+                .unwrap()
+                .is_focused()));
+            let _ = self.input_sender.send(Keycode::Enter.to_key().to_input_event());
+        }
+
         self.gladius_thread_handle.join().unwrap();
 
         FinishedFullSetupRun {
@@ -333,6 +348,10 @@ impl FullSetup {
 
     pub fn get_first_context_menu(&self) -> Option<ContextMenuInterpreter<'_>> {
         self.last_frame.as_ref().map(|frame| frame.get_context_menus().next()).flatten()
+    }
+
+    pub fn get_first_generic_dialog(&self) -> Option<GenericDialogWidgetInterpreter<'_>> {
+        self.last_frame.as_ref().map(|frame| frame.get_first_generic_dialogs()).flatten()
     }
 
     pub fn send_input(&self, ie: InputEvent) -> bool {
