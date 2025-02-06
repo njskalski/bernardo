@@ -10,7 +10,7 @@ I will showcase the features assuming default key bindings.
 
 ### Everything Bar
 
-Whenever you are, you can always press ```CTRL+E``` - the Everything Bar. It's something between Context Menu of
+Wherever you are, you can always press ```CTRL+E``` - the Everything Bar. It's something between Context Menu of
 whatever you have cursor over and Rofi or Sublime Text's "quick open".
 
 ![Everything Bar Gif](gifs/1_ctrl_e.gif)
@@ -44,17 +44,18 @@ want to put your cursors in.
 Just press ```CTRL+W``` to enter "cursor dropping mode", indicated by different background.
 Now just move your highligthed cursor (with arrows!) over the positions you want and hit ```Enter``` to add or remove
 cursors.
-Press ```Esc``` to get back to default mode and enjoy your multicursor.
+Press ```Esc``` to get back to default mode and enjoy your multicursor. All basic text operations are supported,
+including highlighting, jumping words, copying, pasting etc.
 
 ![Multicursor Gif](gifs/2_multicursor.gif)
 
 ### Fuzzy files
 
 ```CTRL+J``` opens "fuzzy file finder". Just type anything, and Gladius will dive into subdirectories and find you any
-files that start contain the typed characters as (non-consecutive) substring.
+files that start contain the typed characters as (non-strict) substring.
 
 The window will immediately contain all files that was found in 50 ms or less, but in case that's not enough, the search
-will continue in a separate thread. However I did not implement auto-refresh, so just use arrows to get most up-to-date
+will continue in a separate thread. However, I did not implement auto-refresh, so just use arrows to get most up-to-date
 result.
 
 ![Fuzzy File Search Gif](gifs/3_fuzzy_file_search.gif)
