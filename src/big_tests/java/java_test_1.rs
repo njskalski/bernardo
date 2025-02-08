@@ -24,14 +24,14 @@ fn java_is_highlighted() {
 
     assert!(all_items_of_named_color(
         &mut full_setup,
-        "property",
-        vec!["server", "host", "port", "database", "type", "host"]
+        "identifier",
+        vec!["HelloWorld", "void", "main", "String", "System", "println"]
     ));
-    assert!(all_items_of_named_color(&mut full_setup, "comment", vec!["#", "Sample", "TOML", "Configuration", "File", "Database", "postgresql"]));
+    assert!(all_items_of_named_color(&mut full_setup, "comment", vec!["comment", "another"]));
     assert!(all_items_of_named_color(
         &mut full_setup,
         "string",
-        vec!["\"127.0.0.1\"", "\"postgresql\"", "\"example_db\"", "\"logs/app.log\""]
+        vec!["Hello", "World!"]
     ));
 
     // against false postitives
