@@ -39,7 +39,7 @@ pub fn all_items_of_named_color(full_setup: &FullSetup, color_name: &str, requir
 
     for e in required_items {
         if !found_items.iter().any(|item| item.contains(e)) {
-            error!(
+            println!(
                 "did not find expected item '{}' of color '{}' among {:?}",
                 e, color_name, found_items
             );

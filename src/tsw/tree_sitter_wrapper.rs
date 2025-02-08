@@ -46,6 +46,12 @@ lazy_static! {
     static ref OLD_TREE_SITTER_HASKELL_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_haskell::HIGHLIGHTS_QUERY;
     static ref TREE_SITTER_HASKELL_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/haskell/highlights.scm").to_owned();
 
+    static ref OLD_TREE_SITTER_TOML_HIGHLIGHT_QUERY : &'static str = tree_sitter_toml_ng::HIGHLIGHTS_QUERY;
+
+    static ref TREE_SITTER_TOML_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/toml/highlights.scm").to_owned();
+
+    static ref OLD_TREE_SITTER_JAVA_HIGHLIGHT_QUERY : &'static str = tree_sitter_java::HIGHLIGHTS_QUERY;
+    static ref TREE_SITTER_JAVA_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/java/highlights.scm").to_owned();
 }
 
 pub fn byte_offset_to_point(rope: &Rope, byte_offset: usize) -> Option<Point> {
@@ -107,13 +113,16 @@ extern "C" {
     fn tree_sitter_haskell() -> Language;
     fn tree_sitter_html() -> Language;
 
+    fn tree_sitter_java() -> Language;
     fn tree_sitter_javascript() -> Language;
 
     fn tree_sitter_typescript() -> Language;
     fn tree_sitter_go() -> Language;
-    fn tree_sitter_rust() -> Language;
 
     fn tree_sitter_python() -> Language;
+    fn tree_sitter_rust() -> Language;
+
+    fn tree_sitter_toml() -> Language;
 }
 
 #[derive(Debug)]
@@ -145,9 +154,14 @@ impl TreeSitterWrapper {
             languages.insert(LangId::HASKELL, language_haskell);
         }
 
-        if ls.html {
-            let language_html = unsafe { tree_sitter_html() };
-            languages.insert(LangId::HTML, language_html);
+        // if ls.html {
+        //     let language_html = unsafe { tree_sitter_html() };
+        //     languages.insert(LangId::HTML, language_html);
+        // }
+
+        if ls.java {
+            let language_java = unsafe { tree_sitter_java() };
+            languages.insert(LangId::JAVA, language_java);
         }
 
         if ls.javascript {
@@ -170,6 +184,11 @@ impl TreeSitterWrapper {
             languages.insert(LangId::RUST, language_rust);
         }
 
+        if ls.toml {
+            let language_toml = unsafe { tree_sitter_toml() };
+            languages.insert(LangId::TOML, language_toml);
+        }
+
         if ls.typescript {
             let language_typescript = unsafe { tree_sitter_typescript() };
             languages.insert(LangId::TYPESCRIPT, language_typescript);
@@ -183,13 +202,14 @@ impl TreeSitterWrapper {
         match lang_id {
             LangId::BASH => Some(tree_sitter_bash::HIGHLIGHT_QUERY),
             LangId::C => Some(tree_sitter_c::HIGHLIGHT_QUERY),
-            LangId::CPP => Some(TREE_SITTER_CPP_HIGHLIGHT_QUERY.as_str()),
-            LangId::HTML => Some(tree_sitter_html::HIGHLIGHTS_QUERY),
+            LangId::CPP => Some(&TREE_SITTER_CPP_HIGHLIGHT_QUERY),
             LangId::HASKELL => Some(tree_sitter_haskell::HIGHLIGHTS_QUERY),
+            LangId::JAVA => Some(&TREE_SITTER_JAVA_HIGHLIGHT_QUERY),
             LangId::JAVASCRIPT => Some(tree_sitter_javascript::HIGHLIGHT_QUERY),
             LangId::GO => Some(&TREE_SITTER_GOLANG_HIGHLIGHT_QUERY),
             LangId::PYTHON3 => Some(&TREE_SITTER_PYTHON_HIGHLIGHT_QUERY),
             LangId::RUST => Some(tree_sitter_rust::HIGHLIGHTS_QUERY),
+            LangId::TOML => Some(&TREE_SITTER_TOML_HIGHLIGHT_QUERY),
             LangId::TYPESCRIPT => Some(&TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY),
             _ => None,
         }

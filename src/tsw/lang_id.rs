@@ -8,11 +8,12 @@ pub enum LangId {
     C,
     CPP,
     HASKELL,
-    HTML,
     GO,
+    JAVA,
     JAVASCRIPT,
     PYTHON3,
     RUST,
+    TOML,
     TYPESCRIPT,
 }
 
@@ -23,11 +24,12 @@ impl LangId {
             LangId::C => "c",
             LangId::CPP => "c++",
             LangId::HASKELL => "haskell",
-            LangId::HTML => "html",
+            LangId::JAVA => "java",
             LangId::JAVASCRIPT => "javascript",
             LangId::GO => "go",
             LangId::PYTHON3 => "python3",
             LangId::RUST => "rust",
+            LangId::TOML => "toml",
             LangId::TYPESCRIPT => "typescript",
         }
     }
