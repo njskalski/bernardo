@@ -127,7 +127,7 @@ Just hover over a symbol, press ```CTRL+E``` (Everything Bar), and select "Find 
 
 On first run, Gladius will create ```~/.config/gladius/config.ron``` and ```~/.config/gladius/themes/default.ron```.
 They are quite self-explanatory. I use [ron](https://docs.rs/ron/latest/ron/) to
-Serialize [config.rs](../../src/config/config.rs) and [config.rs](../../src/config/theme.rs).
+Serialize [config.rs](../../src/config/config.rs) and [theme.rs](../../src/config/theme.rs).
 
 ### UI Themes
 

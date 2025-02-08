@@ -1030,6 +1030,11 @@ impl EditorWidget {
             (Some(promise), Some(hover_settings)) => {
                 let max_size = unpack_unit_e!(hover_settings.get_max_hover_size(&visible_rect), "failed spacing hover");
                 let comp = CompletionWidget::new(promise, max_size).with_fuzzy(true);
+                if !comp.full_size().has_non_zero_area() {
+                    warn!("discarding empty completion of size {}", comp.full_size());
+                    return;
+                }
+
                 debug!("created completion: settings [{:?}]", &hover_settings);
                 self.requested_hover = Some((hover_settings, EditorHover::Completion(comp)));
             }
@@ -1216,8 +1221,8 @@ impl EditorWidget {
         let mut hover_size = unpack_unit_e!(hover_settings.get_max_hover_size(&visible_rect), "failed get max hover size");
         if let EditorHover::Completion(cw) = hover {
             let full_size = cw.full_size();
-            hover_size.x = min(hover_size.x, full_size.x);
-            hover_size.y = min(hover_size.y, full_size.y);
+            hover_size.x = max(10, min(hover_size.x, full_size.x));
+            hover_size.y = max(1, min(hover_size.y, full_size.y));
         };
 
         let mut rect_assuming_below = Rect::new(visible_rect.pos + hover_settings.anchor_in_visible_rect + (0, 1), hover_size);

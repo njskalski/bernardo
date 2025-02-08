@@ -97,7 +97,12 @@ impl CompletionWidget {
     }
 
     fn has_completions(&self) -> bool {
-        self.completions_promise.is_none()
+        /*
+        I store the promise until it's resolved, and then either keep broken promise OR move it's
+        contents to list_widget. If promise got broken, I expect EditorWidget to throw away entire
+        CompletionWidget in it's update_and_layout() and log error.
+        */
+        self.completions_promise.is_none() && self.list_widget.internal().items().next().is_some()
     }
 
     /*
