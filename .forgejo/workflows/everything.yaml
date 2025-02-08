@@ -93,7 +93,7 @@ jobs:
         TAG_NAME: "${GITHUB_REF#refs/tags/}"
         with:
           direction: upload
-          repo: "njs5i/bernardo"
+          repo: "njskalski/bernardo"
           tag: "${{ github.ref_name }}"
           sha: "${{ github.sha }}"
           token: ${{ secrets.GITEA_TOKEN }}
