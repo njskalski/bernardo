@@ -1,0 +1,21 @@
+# Sample TOML Configuration File
+
+[server]
+host = "127.0.0.1"       # The server hostname or IP
+port = 8080             # Port number for the server
+
+[database]
+type = "postgresql"     # Database type, e.g., postgresql, mysql
+host = "localhost"      # Database host
+port = 5432             # Database port
+username = "user"       # Database username
+password = "password"   # Database password (use a secure method in production)
+database_name = "example_db" # Name of the database
+
+[logging]
+level = "info"          # Log level: error, warn, info, debug, trace
+output = "logs/app.log" # Path to the log file
+
+[features]
+enable_feature_x = true # Toggle for enabling/disabling feature X
+enable_feature_y = false

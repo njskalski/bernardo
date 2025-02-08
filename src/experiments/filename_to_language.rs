@@ -9,8 +9,7 @@ use crate::tsw::lang_id::LangId;
 lazy_static! {
     static ref EXT_TO_LANGUAGE : HashMap<&'static str, LangId> = hashmap! {
         "sh" => LangId::BASH,
-        "htm" => LangId::HTML,
-        "html" => LangId::HTML,
+
         "c" => LangId::C,
         "h" => LangId::C,
         // yeah, so C++ is such a mess, that even the filenames are not so simple.
@@ -24,18 +23,26 @@ lazy_static! {
         "hpp" => LangId::CPP,
         "ixx" => LangId::CPP, // and this is just pure bs.
 
+        "go" => LangId::GO,
+
         "hs" => LangId::HASKELL,
+
+        // "htm" => LangId::HTML,
+        // "html" => LangId::HTML,
+
+        "java" => LangId::JAVA,
 
         "cjs" => LangId::JAVASCRIPT,
         "js" => LangId::JAVASCRIPT,
         "mjs" => LangId::JAVASCRIPT,
+
+        "toml" => LangId::TOML,
+
         "ts" => LangId::TYPESCRIPT,
 
         "py" => LangId::PYTHON3,
 
-        // back to normal languages
         "rs" => LangId::RUST,
-        "go" => LangId::GO,
     };
 }
 
