@@ -31,17 +31,7 @@ impl Default for GlobalEditorOptions {
             python_lsp_path: None,
             inline_warnings_and_errors: true,
             auto_indent_extensions: vec![
-                "sh",
-                "c", "h",
-                "cpp", "cxx", "hpp", "hxx",
-                "go",
-                "hs",
-                "js",
-                "py",
-                "rs",
-                "toml",
-                "ts",
-                "yaml",
+                "sh", "c", "h", "cpp", "cxx", "hpp", "hxx", "go", "hs", "js", "py", "rs", "toml", "ts", "yaml",
             ]
             .iter()
             .map(|item| item.to_string())

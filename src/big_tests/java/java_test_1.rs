@@ -28,11 +28,7 @@ fn java_is_highlighted() {
         vec!["HelloWorld", "void", "main", "String", "System", "println"]
     ));
     assert!(all_items_of_named_color(&mut full_setup, "comment", vec!["comment", "another"]));
-    assert!(all_items_of_named_color(
-        &mut full_setup,
-        "string",
-        vec!["Hello", "World!"]
-    ));
+    assert!(all_items_of_named_color(&mut full_setup, "string", vec!["Hello", "World!"]));
 
     // against false postitives
     assert!(full_setup.get_theme().tm.name_to_color("comment") != full_setup.get_theme().tm.name_to_color("function"));

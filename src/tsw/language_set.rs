@@ -10,7 +10,7 @@ pub struct LanguageSet {
     pub javascript: bool,
     pub python3: bool,
     pub rust: bool,
-    pub toml : bool,
+    pub toml: bool,
     pub typescript: bool,
 }
 

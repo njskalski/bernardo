@@ -27,7 +27,11 @@ fn toml_is_highlighted() {
         "property",
         vec!["server", "host", "port", "database", "type", "host"]
     ));
-    assert!(all_items_of_named_color(&mut full_setup, "comment", vec!["#", "Sample", "TOML", "Configuration", "File", "Database", "postgresql"]));
+    assert!(all_items_of_named_color(
+        &mut full_setup,
+        "comment",
+        vec!["#", "Sample", "TOML", "Configuration", "File", "Database", "postgresql"]
+    ));
     assert!(all_items_of_named_color(
         &mut full_setup,
         "string",
