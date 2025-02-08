@@ -17,14 +17,14 @@ jobs:
         with:
           submodules: 'true'
 
-      - name: check-fmt
-        run: cargo fmt --check
-
       - name: install rustfmt and rust-analyzer and nextest
         run: |
           rustup component add rustfmt
           rustup component add rust-analyzer
           curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+          
+      - name: check-fmt
+        run: cargo fmt --check
 
       - name: install golang
         run: |
