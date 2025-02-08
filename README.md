@@ -42,7 +42,7 @@ To get othe LSPs, check [pipelines](.forgejo/workflows/everything.yaml)
 
 The project used to be developed at [Gitlab](https://gitlab.com/njskalski/bernardo), but I am in the process of
 migrating it to
-[Codeberg](https://gitlab.com/njskalski/bernardo) due to "being able to run the runners locally".
+[Codeberg](https://codeberg.org/njskalski/bernardo) due to "being able to run the runners locally".
 
 There are out-of-date copies at Gitlab, sr.ht and other services that I evaluated.
 
