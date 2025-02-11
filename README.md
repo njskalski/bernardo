@@ -38,6 +38,49 @@ rustup component add rust-analyzer
 
 To get othe LSPs, check [pipelines](.forgejo/workflows/everything.yaml)
 
+## FAQ
+### Code completion doesn't work
+Most likely it's an issue in .gladius_workspace.ron file. It should specify which LSPs should be used.
+So first, navigate to .gladius_workspace.ron file in you project. It'll be generated after first run of gladius on your project. If autocompletion doesn't work, likely it's gonna look like this:  
+```
+(
+    scopes: [],
+)
+```
+It means, that inspectors didn't manage to capture which languages should be supported.  
+So assume your project is written in Rust. Your .gladius_workspace.ron file should look like this:
+```
+(
+    scopes: [
+        (
+            lang_id: RUST,
+            path: "",
+            handler_id_op: Some("rust"),
+        ),
+    ],
+)
+```
+You can run gladius with -r flag to reconfigure after this change.  
+That should fix the problem. You can see in [test_envs](test_envs/) more .gladius_workspace.ron files for other languages.  
+
+### X stopped working after modification/pull.
+Simply building project after modification may not be enough, especially if key bindings have changed. Remember to reconfigure gladius by running it with -r or --reconfigure flag. It will create a new config and rename previous one to "old" version. You can inspect them in ~/.config/gladius/
+
+### How to run tests locally?
+First install forgejo-runner. [helpful link](https://docs.codeberg.org/ci/actions/)  
+Then run 
+```
+./forgejo-runner exec
+```  
+Alternatively you can call
+```
+cargo nextest run --no-fail-fast --retries 4
+```  
+but the first method is recommended.
+
+### Missing dependecies
+If you encounter a bug and you suspect you're missing a dependency (like missing LSP), for now inspect [this config](.forgejo/workflows/everything.yaml)
+
 ## Primary repository
 
 The project used to be developed at [Gitlab](https://gitlab.com/njskalski/bernardo), but I am in the process of
