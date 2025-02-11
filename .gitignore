@@ -4,3 +4,6 @@
 .fleet
 .idea
 *.log
+forgejo-runner
+*.data
+*.svg

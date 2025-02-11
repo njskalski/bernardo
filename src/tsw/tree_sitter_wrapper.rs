@@ -329,24 +329,27 @@ impl ParsingTuple {
 
         self.tree = Some(tree);
 
-        let query_captures: Vec<_> = QueryCursor::new()
-            .captures(&self.highlight_query, self.tree.as_ref().unwrap().root_node(), RopeWrapper(&rope))
-            .collect();
-
-        for (_idx, m) in QueryCursor::new()
-            .matches(&self.highlight_query, self.tree.as_ref().unwrap().root_node(), RopeWrapper(&rope))
-            .enumerate()
+        #[cfg(debug_assertions)]
         {
-            for (_cidx, c) in m.captures.iter().enumerate() {
-                let name = &self.id_to_name[c.index as usize];
-                debug!(
-                    "m[{}]c[{}] : [{}:{}) = {}",
-                    _idx,
-                    _cidx,
-                    c.node.start_byte(),
-                    c.node.end_byte(),
-                    name,
-                );
+            let query_captures: Vec<_> = QueryCursor::new()
+                .captures(&self.highlight_query, self.tree.as_ref().unwrap().root_node(), RopeWrapper(&rope))
+                .collect();
+
+            for (_idx, m) in QueryCursor::new()
+                .matches(&self.highlight_query, self.tree.as_ref().unwrap().root_node(), RopeWrapper(&rope))
+                .enumerate()
+            {
+                for (_cidx, c) in m.captures.iter().enumerate() {
+                    let name = &self.id_to_name[c.index as usize];
+                    debug!(
+                        "m[{}]c[{}] : [{}:{}) = {}",
+                        _idx,
+                        _cidx,
+                        c.node.start_byte(),
+                        c.node.end_byte(),
+                        name,
+                    );
+                }
             }
         }
 
