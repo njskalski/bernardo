@@ -124,15 +124,12 @@ impl FilesystemFront for RealFS {
         let mut bytes_written: usize = 0;
         while let Some(bytes) = stream.next() {
             let num_bytes = match file.write(bytes) {
-                Ok(num_bytes) => {
-                    num_bytes
-                },
+                Ok(num_bytes) => num_bytes,
                 Err(e) => {
                     error!("failed to write to file {} because {}", path.to_string_lossy(), e);
                     return Err(WriteError::UnmappedError(e.to_string()));
                 }
             };
-
 
             if num_bytes != bytes.len() {
                 error!("unexpected number of bytes written");
