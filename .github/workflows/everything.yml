@@ -81,22 +81,10 @@ jobs:
           cargo build --release
           mkdir -p release_dir
           cp target/release/gladius release_dir/gladius
-      #      - name: mock
-      #        run: |
-      #          mkdir -p target/release
-      #          echo "x" > target/release/gladius
       - name: Release
-        uses: https://code.forgejo.org/actions/forgejo-release@v2.5.0
+        uses: softprops/action-gh-release@v2
         env:
-        GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
-        GITEA_SERVER_TOKEN: ${{ secrets.GITEA_TOKEN }}
-        TAG_NAME: "${GITHUB_REF#refs/tags/}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          direction: upload
-          repo: "njskalski/bernardo"
-          tag: "${{ github.ref_name }}"
-          sha: "${{ github.sha }}"
-          token: ${{ secrets.GITEA_TOKEN }}
-          verbose: true
-          release-dir: release_dir
-          override: true
+          tag_name: "${{ github.ref_name }}"
+          files: release_dir/*
