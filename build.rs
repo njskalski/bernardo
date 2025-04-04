@@ -20,7 +20,7 @@ fn main() {
         ("html", "third-party/tree-sitter-html", ""),
         ("java", "third-party/tree-sitter-java", ""),
         ("javascript", "third-party/tree-sitter-javascript", ""),
-        ("typescript", "third-party/tree-sitter-typescript", ""),
+        ("typescript", "third-party/tree-sitter-typescript", "typescript"),
         ("go", "third-party/tree-sitter-go", ""),
         ("python", "third-party/tree-sitter-python", ""),
         ("rust", "third-party/tree-sitter-rust", ""),
@@ -29,8 +29,12 @@ fn main() {
 
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());;
 
-    for (name, path, _) in grammars {
-        let path = manifest_dir.join(path);
+    for (name, path, suffix) in grammars {
+        let mut path = manifest_dir.join(path);
+        if !suffix.is_empty() {
+            path = path.join(suffix);
+        }
+
         compile_tree_sitter_parser(&path, name.to_string());
     }
 }
@@ -41,15 +45,17 @@ fn compile_tree_sitter_parser(path: &Path, name : String) {
 
     println!("Compiling parser in: {:?}", path);
 
-    // Example using tree_sitter_loader - adapt this to how you're actually using it
-    let loader = tree_sitter_loader::Loader::new().unwrap();
+    let src_dir = path.join("src");
+    let mut c_config = cc::Build::new();
+    c_config.std("c11").include(&src_dir);
 
-    let lib_name = format!("tree-sitter-{}", name);
-    let target_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let parser_path = src_dir.join("parser.c");
+    c_config.file(&parser_path);
+    println!("cargo:rerun-if-changed={}", parser_path.to_str().unwrap());
 
-    loader.compile_parser_at_path(path, target_path.clone(), &[]).unwrap();
+    let libname = format!("tree-sitter-{}", name);
 
-    // Tell Cargo to link with the generated object file
-    println!("cargo:rustc-link-lib=static={}", lib_name );
-    println!("cargo:libdir={}", target_path.to_str().unwrap());
+    c_config.compile(&libname);
+
+    println!("cargo:rustc-link-lib=static={}", &libname);
 }
