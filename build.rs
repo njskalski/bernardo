@@ -50,7 +50,14 @@ fn compile_tree_sitter_parser(path: &Path, name : String) {
     c_config.std("c11").include(&src_dir);
 
     let parser_path = src_dir.join("parser.c");
-    c_config.file(&parser_path);
+    if parser_path.exists() {
+        c_config.file(&parser_path);
+    }
+    let scanner_path = src_dir.join("scanner.c");
+    if scanner_path.exists() {
+        c_config.file(&scanner_path);
+    }
+
     println!("cargo:rerun-if-changed={}", parser_path.to_str().unwrap());
 
     let libname = format!("tree-sitter-{}", name);
