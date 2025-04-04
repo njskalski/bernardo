@@ -15,6 +15,7 @@ pub enum LangId {
     RUST,
     TOML,
     TYPESCRIPT,
+    HTML,
 }
 
 impl LangId {
@@ -31,6 +32,7 @@ impl LangId {
             LangId::RUST => "rust",
             LangId::TOML => "toml",
             LangId::TYPESCRIPT => "typescript",
+            LangId::HTML => "html",
         }
     }
 }

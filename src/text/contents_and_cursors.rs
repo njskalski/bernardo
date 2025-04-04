@@ -5,6 +5,7 @@ use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::sync::Arc;
 use std::sync::RwLock;
+use streaming_iterator::StreamingIterator;
 use tree_sitter::{Node, QueryCursor};
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -256,11 +257,12 @@ impl ContentsAndCursors {
         }
 
         // let query_matches = cursor.matches(&query, node, RopeWrapper(&self.rope));
-        let query_captures = cursor.captures(&query, node, RopeWrapper(&self.rope));
+        let mut query_captures = cursor.captures(&query, node, RopeWrapper(&self.rope));
 
         let mut name_to_num: HashMap<String, usize> = HashMap::new();
         let mut bs: Vec<_> = vec![];
-        for (query_match, _) in query_captures {
+
+        while let Some((query_match, _)) = query_captures.next() {
             let mut result: Vec<_> = vec![];
 
             for capture in query_match.captures {

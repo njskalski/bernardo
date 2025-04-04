@@ -1,14 +1,19 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::ops::Range;
+use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 use lazy_static::lazy_static;
 use log::{debug, error, warn};
 use ropey::Rope;
+use streaming_iterator::StreamingIterator;
 use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor, QueryError};
-#[allow(unused_imports)]
-use tree_sitter_cpp::*;
+use tree_sitter_language::LanguageFn;
+use tree_sitter_loader::{CompileConfig, Config};
+use crate::primitives::printable::Printable;
+// #[allow(unused_imports)]
+// use tree_sitter_cpp::*;
 
 use crate::tsw::lang_id::LangId;
 use crate::tsw::language_set::LanguageSet;
@@ -19,8 +24,9 @@ use crate::unpack_or_e;
 static EMPTY_SLICE: [u8; 0] = [0; 0];
 
 lazy_static! {
-    static ref TREE_SITTER_BASH_HIGHLIGHT_QUERY : &'static str = tree_sitter_bash::HIGHLIGHT_QUERY;
+    static ref TREE_SITTER_BASH_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/bash/highlights.scm").to_owned();
 
+    static ref TREE_SITTER_C_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/c/highlights.scm").to_owned();
 
     // I have no idea how I came up with this
     static ref TREE_SITTER_CPP_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/c/highlights.scm")
@@ -30,27 +36,18 @@ lazy_static! {
     static ref TREE_SITTER_RUST_INDENT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/rust/indents.scm")
         .to_owned();
 
-    static ref OLD_TREE_SITTER_GOLANG_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_go::HIGHLIGHTS_QUERY;
-
     static ref TREE_SITTER_GOLANG_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/go/highlights.scm").to_owned();
-
-    static ref TREE_SITTER_PYTHON_HIGHLIGHT_QUERY_STUPID_LINKER: &'static str = tree_sitter_python::HIGHLIGHTS_QUERY;
 
     static ref TREE_SITTER_PYTHON_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/python/highlights.scm").to_owned();
 
-    static ref OLD_TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_typescript::HIGHLIGHTS_QUERY;
     static ref TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/ecma/highlights.scm")
         .to_owned()
         + include_str!("../../third-party/nvim-treesitter/queries/typescript/highlights.scm");
 
-    static ref OLD_TREE_SITTER_HASKELL_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_haskell::HIGHLIGHTS_QUERY;
     static ref TREE_SITTER_HASKELL_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/haskell/highlights.scm").to_owned();
-
-    static ref OLD_TREE_SITTER_TOML_HIGHLIGHT_QUERY : &'static str = tree_sitter_toml_ng::HIGHLIGHTS_QUERY;
 
     static ref TREE_SITTER_TOML_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/toml/highlights.scm").to_owned();
 
-    static ref OLD_TREE_SITTER_JAVA_HIGHLIGHT_QUERY : &'static str = tree_sitter_java::HIGHLIGHTS_QUERY;
     static ref TREE_SITTER_JAVA_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/java/highlights.scm").to_owned();
 }
 
@@ -104,25 +101,44 @@ pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point
     });
 }
 
-extern "C" {
-    fn tree_sitter_bash() -> Language;
 
-    fn tree_sitter_c() -> Language;
-    fn tree_sitter_cpp() -> Language;
+pub struct TreeSitterTuple {
+    pub lang_id: LangId,
+    pub language: Language,
+    // pub highlighter_query:
+}
 
-    fn tree_sitter_haskell() -> Language;
-    fn tree_sitter_html() -> Language;
+fn load_languages_from_submodules() -> HashMap<LangId, TreeSitterTuple> {
+    let language_to_paths : Vec<(LangId, &'static str, Language)> = vec![
+        (LangId::BASH, "../../third-party/tree_sitter_bash", LANGUAGE_CPP.into()),
+        (LangId::C, "../../third-party/tree_sitter_c", LANGUAGE_C.into()),
+        (LangId::CPP, "../../third-party/tree_sitter_cpp", LANGUAGE_CPP.into()),
+        (LangId::HASKELL, "../../third-party/tree_sitter_haskell", LANGUAGE_HASKELL.into()),
+        (LangId::HTML, "../../third-party/tree_sitter_html", LANGUAGE_HTML.into()),
+        (LangId::JAVA, "../../third-party/tree_sitter_java", LANGUAGE_JAVA.into()),
+        (LangId::JAVASCRIPT, "../../third-party/tree_sitter_javascript", LANGUAGE_JAVASCRIPT.into() ),
+        (LangId::TYPESCRIPT, "../../third-party/tree_sitter_typescript", LANGUAGE_TYPESCRIPT.into() ),
+        (LangId::GO, "../../third-party/tree_sitter_go", LANGUAGE_GO.into() ),
+        (LangId::PYTHON3, "../../third-party/tree_sitter_python", LANGUAGE_PYTHON.into() ),
+        (LangId::RUST, "../../third-party/tree_sitter_rust", LANGUAGE_RUST.into() ),
+        (LangId::TOML, "../../third-party/tree_sitter_toml", LANGUAGE_TOML.into()),
+    ];
 
-    fn tree_sitter_java() -> Language;
-    fn tree_sitter_javascript() -> Language;
+    let mut result = HashMap::<LangId, TreeSitterTuple>::new();
 
-    fn tree_sitter_typescript() -> Language;
-    fn tree_sitter_go() -> Language;
+    for (lang_id, _, language) in language_to_paths {
 
-    fn tree_sitter_python() -> Language;
-    fn tree_sitter_rust() -> Language;
+        debug_assert!(result.contains_key(&lang_id) == false, "duplicate language id: {}", lang_id);
 
-    fn tree_sitter_toml() -> Language;
+        let tuple = TreeSitterTuple {
+            lang_id,
+            language,
+        };
+
+        result.insert(lang_id, tuple);
+    }
+
+    result
 }
 
 #[derive(Debug)]
@@ -130,69 +146,108 @@ pub struct TreeSitterWrapper {
     languages: HashMap<LangId, Language>,
 }
 
+extern "C" {
+    fn tree_sitter_bash() -> *const ();
+    fn tree_sitter_c() -> *const ();
+    fn tree_sitter_cpp() -> *const ();
+
+    fn tree_sitter_haskell() -> *const ();
+    fn tree_sitter_html() -> *const ();
+
+    fn tree_sitter_java() -> *const ();
+    fn tree_sitter_javascript() -> *const ();
+
+    fn tree_sitter_typescript() -> *const ();
+    fn tree_sitter_go() -> *const ();
+
+    fn tree_sitter_python() -> *const ();
+    fn tree_sitter_rust() -> *const ();
+    fn tree_sitter_toml() -> *const ();
+}
+
+pub const LANGUAGE_BASH: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_cpp) };
+pub const LANGUAGE_C: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_c) };
+pub const LANGUAGE_CPP: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_cpp) };
+
+pub const LANGUAGE_HASKELL: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_haskell) };
+pub const LANGUAGE_HTML: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_html) };
+pub const LANGUAGE_JAVA: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_java) };
+pub const LANGUAGE_JAVASCRIPT: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_javascript) };
+pub const LANGUAGE_TYPESCRIPT: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_typescript) };
+pub const LANGUAGE_GO: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_go) };
+pub const LANGUAGE_PYTHON: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_python) };
+pub const LANGUAGE_RUST: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_rust) };
+pub const LANGUAGE_TOML: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_toml) };
+
 impl TreeSitterWrapper {
     pub fn new(ls: LanguageSet) -> TreeSitterWrapper {
         let mut languages = HashMap::<LangId, Language>::new();
 
-        if ls.bash {
-            let language_bash = unsafe { tree_sitter_bash() };
-            languages.insert(LangId::BASH, language_bash);
-        }
+        let loaded_languages = load_languages_from_submodules();
 
-        if ls.c {
-            let language_c = unsafe { tree_sitter_c() };
-            languages.insert(LangId::C, language_c);
-        }
 
-        if ls.cpp {
-            let language_cpp = unsafe { tree_sitter_cpp() };
-            languages.insert(LangId::CPP, language_cpp);
-        }
 
-        if ls.haskell {
-            let language_haskell = unsafe { tree_sitter_haskell() };
-            languages.insert(LangId::HASKELL, language_haskell);
-        }
-
-        // if ls.html {
-        //     let language_html = unsafe { tree_sitter_html() };
-        //     languages.insert(LangId::HTML, language_html);
+        // if ls.bash {
+        //
+        //
+        //     let language_bash = unsafe { tree_sitter_bash() };
+        //     languages.insert(LangId::BASH, language_bash);
         // }
-
-        if ls.java {
-            let language_java = unsafe { tree_sitter_java() };
-            languages.insert(LangId::JAVA, language_java);
-        }
-
-        if ls.javascript {
-            let language_javascript = unsafe { tree_sitter_javascript() };
-            languages.insert(LangId::JAVASCRIPT, language_javascript);
-        }
-
-        if ls.python3 {
-            let language_python3 = unsafe { tree_sitter_python() };
-            languages.insert(LangId::PYTHON3, language_python3);
-        }
-
-        if ls.go {
-            let language_go = unsafe { tree_sitter_go() };
-            languages.insert(LangId::GO, language_go);
-        }
-
-        if ls.rust {
-            let language_rust = unsafe { tree_sitter_rust() };
-            languages.insert(LangId::RUST, language_rust);
-        }
-
-        if ls.toml {
-            let language_toml = unsafe { tree_sitter_toml() };
-            languages.insert(LangId::TOML, language_toml);
-        }
-
-        if ls.typescript {
-            let language_typescript = unsafe { tree_sitter_typescript() };
-            languages.insert(LangId::TYPESCRIPT, language_typescript);
-        }
+        //
+        // if ls.c {
+        //     let language_c = unsafe { tree_sitter_c() };
+        //     languages.insert(LangId::C, language_c);
+        // }
+        //
+        // if ls.cpp {
+        //     let language_cpp = unsafe { tree_sitter_cpp() };
+        //     languages.insert(LangId::CPP, language_cpp);
+        // }
+        //
+        // if ls.haskell {
+        //     let language_haskell = unsafe { tree_sitter_haskell() };
+        //     languages.insert(LangId::HASKELL, language_haskell);
+        // }
+        //
+        // // if ls.html {
+        // //     let language_html = unsafe { tree_sitter_html() };
+        // //     languages.insert(LangId::HTML, language_html);
+        // // }
+        //
+        // if ls.java {
+        //     let language_java = unsafe { tree_sitter_java() };
+        //     languages.insert(LangId::JAVA, language_java);
+        // }
+        //
+        // if ls.javascript {
+        //     let language_javascript = unsafe { tree_sitter_javascript() };
+        //     languages.insert(LangId::JAVASCRIPT, language_javascript);
+        // }
+        //
+        // if ls.python3 {
+        //     let language_python3 = unsafe { tree_sitter_python() };
+        //     languages.insert(LangId::PYTHON3, language_python3);
+        // }
+        //
+        // if ls.go {
+        //     let language_go = unsafe { tree_sitter_go() };
+        //     languages.insert(LangId::GO, language_go);
+        // }
+        //
+        // if ls.rust {
+        //     let language_rust = unsafe { tree_sitter_rust() };
+        //     languages.insert(LangId::RUST, language_rust);
+        // }
+        //
+        // if ls.toml {
+        //     let language_toml = unsafe { tree_sitter_toml() };
+        //     languages.insert(LangId::TOML, language_toml);
+        // }
+        //
+        // if ls.typescript {
+        //     let language_typescript = unsafe { tree_sitter_typescript() };
+        //     languages.insert(LangId::TYPESCRIPT, language_typescript);
+        // }
 
         TreeSitterWrapper { languages }
     }
@@ -200,15 +255,15 @@ impl TreeSitterWrapper {
     pub fn highlight_query(&self, lang_id: LangId) -> Option<&str> {
         #[allow(unreachable_patterns)]
         match lang_id {
-            LangId::BASH => Some(tree_sitter_bash::HIGHLIGHT_QUERY),
-            LangId::C => Some(tree_sitter_c::HIGHLIGHT_QUERY),
+            LangId::BASH => Some(&TREE_SITTER_BASH_HIGHLIGHT_QUERY),
+            LangId::C => Some(&TREE_SITTER_CPP_HIGHLIGHT_QUERY),
             LangId::CPP => Some(&TREE_SITTER_CPP_HIGHLIGHT_QUERY),
-            LangId::HASKELL => Some(tree_sitter_haskell::HIGHLIGHTS_QUERY),
+            LangId::HASKELL => Some(&TREE_SITTER_HASKELL_HIGHLIGHT_QUERY),
             LangId::JAVA => Some(&TREE_SITTER_JAVA_HIGHLIGHT_QUERY),
-            LangId::JAVASCRIPT => Some(tree_sitter_javascript::HIGHLIGHT_QUERY),
+            LangId::JAVASCRIPT => Some(&TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY),
             LangId::GO => Some(&TREE_SITTER_GOLANG_HIGHLIGHT_QUERY),
             LangId::PYTHON3 => Some(&TREE_SITTER_PYTHON_HIGHLIGHT_QUERY),
-            LangId::RUST => Some(tree_sitter_rust::HIGHLIGHTS_QUERY),
+            LangId::RUST => Some(&TREE_SITTER_RUST_INDENT_QUERY),
             LangId::TOML => Some(&TREE_SITTER_TOML_HIGHLIGHT_QUERY),
             LangId::TYPESCRIPT => Some(&TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY),
             _ => None,
@@ -290,13 +345,16 @@ impl ParsingTuple {
             cursor.set_byte_range(begin_byte..end_byte);
         };
 
-        let _query_captures: Vec<_> = cursor
-            .captures(&self.highlight_query, self.tree.as_ref()?.root_node(), RopeWrapper(&rope))
-            .collect();
-        let query_matches = cursor.matches(&self.highlight_query, self.tree.as_ref()?.root_node(), RopeWrapper(&rope));
+        // let _query_captures: Vec<_> = cursor
+        //     .captures(&self.highlight_query, self.tree.as_ref()?.root_node(), RopeWrapper(&rope));
+        //
+
+        let mut query_matches = cursor.matches(&self.highlight_query, self.tree.as_ref()?.root_node(), RopeWrapper(&rope));
 
         let mut results: Vec<HighlightItem> = vec![];
-        for m in query_matches {
+
+        while let Some(m) = query_matches.next() {
+
             if m.captures.len() != 1 {
                 warn!("unexpected number of captures (expected 1, got {})", m.captures.len());
             }
@@ -329,29 +387,29 @@ impl ParsingTuple {
 
         self.tree = Some(tree);
 
-        #[cfg(debug_assertions)]
-        {
-            let query_captures: Vec<_> = QueryCursor::new()
-                .captures(&self.highlight_query, self.tree.as_ref().unwrap().root_node(), RopeWrapper(&rope))
-                .collect();
-
-            for (_idx, m) in QueryCursor::new()
-                .matches(&self.highlight_query, self.tree.as_ref().unwrap().root_node(), RopeWrapper(&rope))
-                .enumerate()
-            {
-                for (_cidx, c) in m.captures.iter().enumerate() {
-                    let name = &self.id_to_name[c.index as usize];
-                    debug!(
-                        "m[{}]c[{}] : [{}:{}) = {}",
-                        _idx,
-                        _cidx,
-                        c.node.start_byte(),
-                        c.node.end_byte(),
-                        name,
-                    );
-                }
-            }
-        }
+        // #[cfg(debug_assertions)]
+        // {
+        //     let mut cursor = QueryCursor::new()
+        //         .matches(&self.highlight_query, self.tree.as_ref().unwrap().root_node(), RopeWrapper(&rope));
+        //
+        //     let mut idx: usize = 0;
+        //
+        //     while let Some(m) = &cursor.next() {
+        //         for (_cidx, c) in m.captures.iter().enumerate() {
+        //             let name = &self.id_to_name[c.index as usize];
+        //             debug!(
+        //                 "m[{}]c[{}] : [{}:{}) = {}",
+        //                 idx,
+        //                 _cidx,
+        //                 c.node.start_byte(),
+        //                 c.node.end_byte(),
+        //                 name,
+        //             );
+        //         }
+        //
+        //         idx += 1;
+        //     }
+        // }
 
         true
     }
