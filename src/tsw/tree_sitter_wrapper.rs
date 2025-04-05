@@ -24,30 +24,65 @@ use crate::unpack_or_e;
 static EMPTY_SLICE: [u8; 0] = [0; 0];
 
 lazy_static! {
-    static ref TREE_SITTER_BASH_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/bash/highlights.scm").to_owned();
+    // static ref TREE_SITTER_BASH_HIGHLIGHT_QUERY : String = include_str!("../../third-party/tree-sitter-bash/queries/highlights.scm").to_owned();
+    //
+    // static ref TREE_SITTER_C_HIGHLIGHT_QUERY: String = include_str!("../../third-party/tree-sitter-c/queries/highlights.scm").to_owned();
+    //
+    // // I have no idea how I came up with this
+    // static ref TREE_SITTER_CPP_HIGHLIGHT_QUERY: String = include_str!("../../third-party/tree-sitter-cpp/queries/highlights.scm")
+    //     .to_owned();
+    //     // + include_str!("../../third-party/nvim-treesitter/queries/cpp/highlights.scm");
+    // //
+    // static ref TREE_SITTER_RUST_HIGHLIGHT_QUERY: String = include_str!("../../third-party/tree-sitter-rust/queries/highlights.scm")
+    //     .to_owned();
+    //
+    // static ref TREE_SITTER_GOLANG_HIGHLIGHT_QUERY: String = include_str!("../../third-party/tree-sitter-go/queries/highlights.scm").to_owned();
+    //
+    // static ref TREE_SITTER_PYTHON_HIGHLIGHT_QUERY: String = include_str!("../../third-party/tree-sitter-python/queries/highlights.scm").to_owned();
+    //
+    // static ref TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY: String = include_str!("../../third-party/tree-sitter-typescript/queries/highlights.scm")
+    //     .to_owned()
+    //     + include_str!("../../third-party/tree-sitter-typescript/queries/locals.scm")
+    //     + include_str!("../../third-party/tree-sitter-typescript/queries/tags.scm");
+    //
+    // static ref TREE_SITTER_HASKELL_HIGHLIGHT_QUERY: String = include_str!("../../third-party/tree-sitter-haskell/queries/highlights.scm").to_owned();
+    //
+    // static ref TREE_SITTER_TOML_HIGHLIGHT_QUERY : String = include_str!("../../third-party/tree-sitter-toml/queries/highlights.scm").to_owned();
+    //
+    // static ref TREE_SITTER_JAVA_HIGHLIGHT_QUERY : String = include_str!("../../third-party/tree-sitter-java/queries/highlights.scm").to_owned();
 
-    static ref TREE_SITTER_C_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/c/highlights.scm").to_owned();
+   static ref TREE_SITTER_BASH_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/bash/highlights.scm")
+        .to_owned();
 
     // I have no idea how I came up with this
     static ref TREE_SITTER_CPP_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/c/highlights.scm")
         .to_owned()
         + include_str!("../../third-party/nvim-treesitter/queries/cpp/highlights.scm");
 
-    static ref TREE_SITTER_RUST_INDENT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/rust/indents.scm")
+    static ref TREE_SITTER_RUST_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/rust/highlights.scm")
         .to_owned();
+
+    // static ref OLD_TREE_SITTER_GOLANG_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_go::HIGHLIGHTS_QUERY;
 
     static ref TREE_SITTER_GOLANG_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/go/highlights.scm").to_owned();
 
+    // static ref TREE_SITTER_PYTHON_HIGHLIGHT_QUERY_STUPID_LINKER: &'static str = tree_sitter_python::HIGHLIGHTS_QUERY;
+
     static ref TREE_SITTER_PYTHON_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/python/highlights.scm").to_owned();
 
+    // static ref OLD_TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_typescript::HIGHLIGHTS_QUERY;
     static ref TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/ecma/highlights.scm")
         .to_owned()
         + include_str!("../../third-party/nvim-treesitter/queries/typescript/highlights.scm");
 
+    // static ref OLD_TREE_SITTER_HASKELL_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_haskell::HIGHLIGHTS_QUERY;
     static ref TREE_SITTER_HASKELL_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/haskell/highlights.scm").to_owned();
+
+    // static ref OLD_TREE_SITTER_TOML_HIGHLIGHT_QUERY : &'static str = tree_sitter_toml_ng::HIGHLIGHTS_QUERY;
 
     static ref TREE_SITTER_TOML_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/toml/highlights.scm").to_owned();
 
+    // static ref OLD_TREE_SITTER_JAVA_HIGHLIGHT_QUERY : &'static str = tree_sitter_java::HIGHLIGHTS_QUERY;
     static ref TREE_SITTER_JAVA_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/java/highlights.scm").to_owned();
 }
 
@@ -102,6 +137,7 @@ pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point
 }
 
 
+#[derive(Debug)]
 pub struct TreeSitterTuple {
     pub lang_id: LangId,
     pub language: Language,
@@ -110,7 +146,7 @@ pub struct TreeSitterTuple {
 
 fn load_languages_from_submodules() -> HashMap<LangId, TreeSitterTuple> {
     let language_to_paths : Vec<(LangId, &'static str, Language)> = vec![
-        (LangId::BASH, "../../third-party/tree_sitter_bash", LANGUAGE_CPP.into()),
+        (LangId::BASH, "../../third-party/tree_sitter_bash", LANGUAGE_BASH.into()),
         (LangId::C, "../../third-party/tree_sitter_c", LANGUAGE_C.into()),
         (LangId::CPP, "../../third-party/tree_sitter_cpp", LANGUAGE_CPP.into()),
         (LangId::HASKELL, "../../third-party/tree_sitter_haskell", LANGUAGE_HASKELL.into()),
@@ -143,7 +179,7 @@ fn load_languages_from_submodules() -> HashMap<LangId, TreeSitterTuple> {
 
 #[derive(Debug)]
 pub struct TreeSitterWrapper {
-    languages: HashMap<LangId, Language>,
+    languages: HashMap<LangId, TreeSitterTuple>,
 }
 
 extern "C" {
@@ -165,7 +201,7 @@ extern "C" {
     fn tree_sitter_toml() -> *const ();
 }
 
-pub const LANGUAGE_BASH: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_cpp) };
+pub const LANGUAGE_BASH: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_bash) };
 pub const LANGUAGE_C: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_c) };
 pub const LANGUAGE_CPP: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_cpp) };
 
@@ -181,75 +217,8 @@ pub const LANGUAGE_TOML: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_
 
 impl TreeSitterWrapper {
     pub fn new(ls: LanguageSet) -> TreeSitterWrapper {
-        let mut languages = HashMap::<LangId, Language>::new();
-
         let loaded_languages = load_languages_from_submodules();
-
-
-
-        // if ls.bash {
-        //
-        //
-        //     let language_bash = unsafe { tree_sitter_bash() };
-        //     languages.insert(LangId::BASH, language_bash);
-        // }
-        //
-        // if ls.c {
-        //     let language_c = unsafe { tree_sitter_c() };
-        //     languages.insert(LangId::C, language_c);
-        // }
-        //
-        // if ls.cpp {
-        //     let language_cpp = unsafe { tree_sitter_cpp() };
-        //     languages.insert(LangId::CPP, language_cpp);
-        // }
-        //
-        // if ls.haskell {
-        //     let language_haskell = unsafe { tree_sitter_haskell() };
-        //     languages.insert(LangId::HASKELL, language_haskell);
-        // }
-        //
-        // // if ls.html {
-        // //     let language_html = unsafe { tree_sitter_html() };
-        // //     languages.insert(LangId::HTML, language_html);
-        // // }
-        //
-        // if ls.java {
-        //     let language_java = unsafe { tree_sitter_java() };
-        //     languages.insert(LangId::JAVA, language_java);
-        // }
-        //
-        // if ls.javascript {
-        //     let language_javascript = unsafe { tree_sitter_javascript() };
-        //     languages.insert(LangId::JAVASCRIPT, language_javascript);
-        // }
-        //
-        // if ls.python3 {
-        //     let language_python3 = unsafe { tree_sitter_python() };
-        //     languages.insert(LangId::PYTHON3, language_python3);
-        // }
-        //
-        // if ls.go {
-        //     let language_go = unsafe { tree_sitter_go() };
-        //     languages.insert(LangId::GO, language_go);
-        // }
-        //
-        // if ls.rust {
-        //     let language_rust = unsafe { tree_sitter_rust() };
-        //     languages.insert(LangId::RUST, language_rust);
-        // }
-        //
-        // if ls.toml {
-        //     let language_toml = unsafe { tree_sitter_toml() };
-        //     languages.insert(LangId::TOML, language_toml);
-        // }
-        //
-        // if ls.typescript {
-        //     let language_typescript = unsafe { tree_sitter_typescript() };
-        //     languages.insert(LangId::TYPESCRIPT, language_typescript);
-        // }
-
-        TreeSitterWrapper { languages }
+        TreeSitterWrapper { languages: loaded_languages }
     }
 
     pub fn highlight_query(&self, lang_id: LangId) -> Option<&str> {
@@ -263,7 +232,7 @@ impl TreeSitterWrapper {
             LangId::JAVASCRIPT => Some(&TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY),
             LangId::GO => Some(&TREE_SITTER_GOLANG_HIGHLIGHT_QUERY),
             LangId::PYTHON3 => Some(&TREE_SITTER_PYTHON_HIGHLIGHT_QUERY),
-            LangId::RUST => Some(&TREE_SITTER_RUST_INDENT_QUERY),
+            LangId::RUST => Some(&TREE_SITTER_RUST_HIGHLIGHT_QUERY),
             LangId::TOML => Some(&TREE_SITTER_TOML_HIGHLIGHT_QUERY),
             LangId::TYPESCRIPT => Some(&TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY),
             _ => None,
@@ -273,17 +242,17 @@ impl TreeSitterWrapper {
     pub fn indent_query(&self, lang_id: LangId) -> Option<&str> {
         #[allow(unreachable_patterns)]
         match lang_id {
-            LangId::RUST => Some(TREE_SITTER_RUST_INDENT_QUERY.as_str()),
+            LangId::RUST => Some(TREE_SITTER_RUST_HIGHLIGHT_QUERY.as_str()),
             _ => None,
         }
     }
 
     // This should be called on loading a file. On update, ParserAndTree struct should be used.
     pub fn new_parse(&self, lang_id: LangId) -> Option<ParsingTuple> {
-        let language = self.languages.get(&lang_id)?;
+        let tuple = self.languages.get(&lang_id)?;
         let highlight_query_str = self.highlight_query(lang_id)?;
         let mut parser = Parser::new();
-        match parser.set_language(language) {
+        match parser.set_language(&tuple.language) {
             Ok(_) => {}
             Err(e) => {
                 error!("failed setting language: {}", e);
@@ -291,15 +260,18 @@ impl TreeSitterWrapper {
             }
         };
 
-        let highlight_query = unpack_or_e!(
-            Query::new(language, highlight_query_str).ok(),
-            None,
-            "failed to compile highlight query"
-        );
+        let highlight_query = match Query::new(&tuple.language, highlight_query_str) {
+            Ok(q) => q,
+            Err(e) => {
+                error!("failed compiling highlight query: {}", e);
+                return None;
+            }
+        };
+
 
         let indent_query = match self.indent_query(lang_id) {
             None => None,
-            Some(query_string) => match Query::new(language, query_string) {
+            Some(query_string) => match Query::new(&tuple.language, query_string) {
                 Ok(q) => Some(q),
                 Err(e) => {
                     error!("failed compiling indent query: {}", e);
@@ -314,7 +286,7 @@ impl TreeSitterWrapper {
             tree: None,
             lang_id,
             parser: Arc::new(RwLock::new(parser)),
-            language: language.clone(),
+            language: tuple.language.clone(),
             highlight_query: Arc::new(highlight_query),
             indent_query: indent_query.map(Arc::new),
             id_to_name: Arc::new(id_to_name),
