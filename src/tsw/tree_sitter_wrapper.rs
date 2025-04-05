@@ -24,32 +24,10 @@ use crate::unpack_or_e;
 static EMPTY_SLICE: [u8; 0] = [0; 0];
 
 lazy_static! {
-    // static ref TREE_SITTER_BASH_HIGHLIGHT_QUERY : String = include_str!("../../third-party/tree-sitter-bash/queries/highlights.scm").to_owned();
-    //
-    // static ref TREE_SITTER_C_HIGHLIGHT_QUERY: String = include_str!("../../third-party/tree-sitter-c/queries/highlights.scm").to_owned();
-    //
-    // // I have no idea how I came up with this
-    // static ref TREE_SITTER_CPP_HIGHLIGHT_QUERY: String = include_str!("../../third-party/tree-sitter-cpp/queries/highlights.scm")
-    //     .to_owned();
-    //     // + include_str!("../../third-party/nvim-treesitter/queries/cpp/highlights.scm");
-    // //
-    // static ref TREE_SITTER_RUST_HIGHLIGHT_QUERY: String = include_str!("../../third-party/tree-sitter-rust/queries/highlights.scm")
-    //     .to_owned();
-    //
-    // static ref TREE_SITTER_GOLANG_HIGHLIGHT_QUERY: String = include_str!("../../third-party/tree-sitter-go/queries/highlights.scm").to_owned();
-    //
-    // static ref TREE_SITTER_PYTHON_HIGHLIGHT_QUERY: String = include_str!("../../third-party/tree-sitter-python/queries/highlights.scm").to_owned();
-    //
     // static ref TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY: String = include_str!("../../third-party/tree-sitter-typescript/queries/highlights.scm")
     //     .to_owned()
     //     + include_str!("../../third-party/tree-sitter-typescript/queries/locals.scm")
     //     + include_str!("../../third-party/tree-sitter-typescript/queries/tags.scm");
-    //
-    // static ref TREE_SITTER_HASKELL_HIGHLIGHT_QUERY: String = include_str!("../../third-party/tree-sitter-haskell/queries/highlights.scm").to_owned();
-    //
-    // static ref TREE_SITTER_TOML_HIGHLIGHT_QUERY : String = include_str!("../../third-party/tree-sitter-toml/queries/highlights.scm").to_owned();
-    //
-    // static ref TREE_SITTER_JAVA_HIGHLIGHT_QUERY : String = include_str!("../../third-party/tree-sitter-java/queries/highlights.scm").to_owned();
 
    static ref TREE_SITTER_BASH_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/bash/highlights.scm")
         .to_owned();
@@ -62,27 +40,19 @@ lazy_static! {
     static ref TREE_SITTER_RUST_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/rust/highlights.scm")
         .to_owned();
 
-    // static ref OLD_TREE_SITTER_GOLANG_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_go::HIGHLIGHTS_QUERY;
-
     static ref TREE_SITTER_GOLANG_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/go/highlights.scm").to_owned();
-
-    // static ref TREE_SITTER_PYTHON_HIGHLIGHT_QUERY_STUPID_LINKER: &'static str = tree_sitter_python::HIGHLIGHTS_QUERY;
 
     static ref TREE_SITTER_PYTHON_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/python/highlights.scm").to_owned();
 
-    // static ref OLD_TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_typescript::HIGHLIGHTS_QUERY;
     static ref TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/ecma/highlights.scm")
-        .to_owned()
-        + include_str!("../../third-party/nvim-treesitter/queries/typescript/highlights.scm");
+        .to_owned();
+        // + include_str!("../../third-party/nvim-treesitter/queries/typescript/highlights.scm")
+        // + include_str!("../../third-party/nvim-treesitter/queries/jsx/highlights.scm");
 
-    // static ref OLD_TREE_SITTER_HASKELL_HIGHLIGHT_QUERY_STUPID_LINKER :&'static str = tree_sitter_haskell::HIGHLIGHTS_QUERY;
     static ref TREE_SITTER_HASKELL_HIGHLIGHT_QUERY: String = include_str!("../../third-party/nvim-treesitter/queries/haskell/highlights.scm").to_owned();
-
-    // static ref OLD_TREE_SITTER_TOML_HIGHLIGHT_QUERY : &'static str = tree_sitter_toml_ng::HIGHLIGHTS_QUERY;
 
     static ref TREE_SITTER_TOML_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/toml/highlights.scm").to_owned();
 
-    // static ref OLD_TREE_SITTER_JAVA_HIGHLIGHT_QUERY : &'static str = tree_sitter_java::HIGHLIGHTS_QUERY;
     static ref TREE_SITTER_JAVA_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/java/highlights.scm").to_owned();
 }
 
