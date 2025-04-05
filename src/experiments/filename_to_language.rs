@@ -43,7 +43,7 @@ lazy_static! {
         "py" => LangId::PYTHON3,
 
         "rs" => LangId::RUST,
-        
+
         "yaml" => LangId::YAML,
         "yml" => LangId::YAML,
     };

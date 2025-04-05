@@ -1,18 +1,11 @@
-use std::{
-    env,
-    fs,
-    path::Path,
-    path::PathBuf,
-
-};
-
+use std::{env, fs, path::Path, path::PathBuf};
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     // Tell Cargo to rerun the build script if anything in the "third-party" directory changes
     println!("cargo:rerun-if-changed=third-party");
 
-    let grammars : Vec<(&'static str, &'static str, &'static str)> = vec![
+    let grammars: Vec<(&'static str, &'static str, &'static str)> = vec![
         ("bash", "third-party/tree-sitter-bash", ""),
         ("c", "third-party/tree-sitter-c", ""),
         ("cpp", "third-party/tree-sitter-cpp", ""),
@@ -25,10 +18,10 @@ fn main() {
         ("python", "third-party/tree-sitter-python", ""),
         ("rust", "third-party/tree-sitter-rust", ""),
         ("toml", "third-party/tree-sitter-toml", ""),
-        ("yaml", "third-party/tree-sitter-yaml", "")
+        ("yaml", "third-party/tree-sitter-yaml", ""),
     ];
 
-    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());;
+    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
 
     for (name, path, suffix) in grammars {
         let mut path = manifest_dir.join(path);
@@ -40,10 +33,8 @@ fn main() {
     }
 }
 
-
 /// Compile the tree-sitter parser at the given path
-fn compile_tree_sitter_parser(path: &Path, name : String) {
-
+fn compile_tree_sitter_parser(path: &Path, name: String) {
     println!("Compiling parser in: {:?}", path);
 
     let src_dir = path.join("src");

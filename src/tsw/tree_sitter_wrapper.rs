@@ -4,6 +4,7 @@ use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
+use crate::primitives::printable::Printable;
 use lazy_static::lazy_static;
 use log::{debug, error, warn};
 use ropey::Rope;
@@ -11,7 +12,6 @@ use streaming_iterator::StreamingIterator;
 use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor, QueryError};
 use tree_sitter_language::LanguageFn;
 use tree_sitter_loader::{CompileConfig, Config};
-use crate::primitives::printable::Printable;
 // #[allow(unused_imports)]
 // use tree_sitter_cpp::*;
 
@@ -110,7 +110,6 @@ pub fn pack_rope_with_callback<'a>(rope: &'a Rope) -> Box<dyn FnMut(usize, Point
     });
 }
 
-
 #[derive(Debug)]
 pub struct TreeSitterTuple {
     pub lang_id: LangId,
@@ -119,18 +118,26 @@ pub struct TreeSitterTuple {
 }
 
 fn load_languages_from_submodules() -> HashMap<LangId, TreeSitterTuple> {
-    let language_to_paths : Vec<(LangId, &'static str, Language)> = vec![
+    let language_to_paths: Vec<(LangId, &'static str, Language)> = vec![
         (LangId::BASH, "../../third-party/tree_sitter_bash", LANGUAGE_BASH.into()),
         (LangId::C, "../../third-party/tree_sitter_c", LANGUAGE_C.into()),
         (LangId::CPP, "../../third-party/tree_sitter_cpp", LANGUAGE_CPP.into()),
         (LangId::HASKELL, "../../third-party/tree_sitter_haskell", LANGUAGE_HASKELL.into()),
         (LangId::HTML, "../../third-party/tree_sitter_html", LANGUAGE_HTML.into()),
         (LangId::JAVA, "../../third-party/tree_sitter_java", LANGUAGE_JAVA.into()),
-        (LangId::JAVASCRIPT, "../../third-party/tree_sitter_javascript", LANGUAGE_JAVASCRIPT.into() ),
-        (LangId::TYPESCRIPT, "../../third-party/tree_sitter_typescript", LANGUAGE_TYPESCRIPT.into() ),
-        (LangId::GO, "../../third-party/tree_sitter_go", LANGUAGE_GO.into() ),
-        (LangId::PYTHON3, "../../third-party/tree_sitter_python", LANGUAGE_PYTHON.into() ),
-        (LangId::RUST, "../../third-party/tree_sitter_rust", LANGUAGE_RUST.into() ),
+        (
+            LangId::JAVASCRIPT,
+            "../../third-party/tree_sitter_javascript",
+            LANGUAGE_JAVASCRIPT.into(),
+        ),
+        (
+            LangId::TYPESCRIPT,
+            "../../third-party/tree_sitter_typescript",
+            LANGUAGE_TYPESCRIPT.into(),
+        ),
+        (LangId::GO, "../../third-party/tree_sitter_go", LANGUAGE_GO.into()),
+        (LangId::PYTHON3, "../../third-party/tree_sitter_python", LANGUAGE_PYTHON.into()),
+        (LangId::RUST, "../../third-party/tree_sitter_rust", LANGUAGE_RUST.into()),
         (LangId::TOML, "../../third-party/tree_sitter_toml", LANGUAGE_TOML.into()),
         (LangId::YAML, "../../third-party/tree-sitter-yaml", LANGUAGE_YAML.into()),
     ];
@@ -138,13 +145,9 @@ fn load_languages_from_submodules() -> HashMap<LangId, TreeSitterTuple> {
     let mut result = HashMap::<LangId, TreeSitterTuple>::new();
 
     for (lang_id, _, language) in language_to_paths {
-
         debug_assert!(result.contains_key(&lang_id) == false, "duplicate language id: {}", lang_id);
 
-        let tuple = TreeSitterTuple {
-            lang_id,
-            language,
-        };
+        let tuple = TreeSitterTuple { lang_id, language };
 
         result.insert(lang_id, tuple);
     }
@@ -197,7 +200,9 @@ pub const LANGUAGE_YAML: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_
 impl TreeSitterWrapper {
     pub fn new(ls: LanguageSet) -> TreeSitterWrapper {
         let loaded_languages = load_languages_from_submodules();
-        TreeSitterWrapper { languages: loaded_languages }
+        TreeSitterWrapper {
+            languages: loaded_languages,
+        }
     }
 
     pub fn highlight_query(&self, lang_id: LangId) -> Option<&str> {
@@ -248,7 +253,6 @@ impl TreeSitterWrapper {
                 return None;
             }
         };
-
 
         let indent_query = match self.indent_query(lang_id) {
             None => None,
@@ -307,7 +311,6 @@ impl ParsingTuple {
         let mut results: Vec<HighlightItem> = vec![];
 
         while let Some(m) = query_matches.next() {
-
             if m.captures.len() != 1 {
                 warn!("unexpected number of captures (expected 1, got {})", m.captures.len());
             }

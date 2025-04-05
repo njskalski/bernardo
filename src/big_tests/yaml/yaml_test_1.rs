@@ -42,11 +42,7 @@ fn yaml_is_highlighted() {
         "number",
         vec!["8080", "5432", "100", "5"]
     ));
-    assert!(all_items_of_named_color(
-        &mut full_setup,
-        "boolean",
-        vec!["true", "false"]
-    ));
+    assert!(all_items_of_named_color(&mut full_setup, "boolean", vec!["true", "false"]));
 
     // against false positives
     assert!(full_setup.get_theme().tm.name_to_color("comment") != full_setup.get_theme().tm.name_to_color("string"));
