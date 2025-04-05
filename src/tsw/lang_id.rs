@@ -16,6 +16,7 @@ pub enum LangId {
     TOML,
     TYPESCRIPT,
     HTML,
+    YAML,
 }
 
 impl LangId {
@@ -33,6 +34,7 @@ impl LangId {
             LangId::TOML => "toml",
             LangId::TYPESCRIPT => "typescript",
             LangId::HTML => "html",
+            LangId::YAML => "yaml",
         }
     }
 }

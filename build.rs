@@ -24,7 +24,8 @@ fn main() {
         ("go", "third-party/tree-sitter-go", ""),
         ("python", "third-party/tree-sitter-python", ""),
         ("rust", "third-party/tree-sitter-rust", ""),
-        ("toml", "third-party/tree-sitter-toml", "")
+        ("toml", "third-party/tree-sitter-toml", ""),
+        ("yaml", "third-party/tree-sitter-yaml", "")
     ];
 
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());;

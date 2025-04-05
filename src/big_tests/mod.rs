@@ -33,3 +33,4 @@ mod lsp_rust_integ_format;
 mod java;
 mod quit_unsaved_dialog;
 mod toml;
+mod yaml;

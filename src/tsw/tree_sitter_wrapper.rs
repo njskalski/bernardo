@@ -54,6 +54,10 @@ lazy_static! {
     static ref TREE_SITTER_TOML_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/toml/highlights.scm").to_owned();
 
     static ref TREE_SITTER_JAVA_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/java/highlights.scm").to_owned();
+
+    static ref TREE_SITTER_HTML_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/html/highlights.scm").to_owned();
+
+    static ref TREE_SITTER_YAML_HIGHLIGHT_QUERY : String = include_str!("../../third-party/nvim-treesitter/queries/yaml/highlights.scm").to_owned();
 }
 
 pub fn byte_offset_to_point(rope: &Rope, byte_offset: usize) -> Option<Point> {
@@ -128,6 +132,7 @@ fn load_languages_from_submodules() -> HashMap<LangId, TreeSitterTuple> {
         (LangId::PYTHON3, "../../third-party/tree_sitter_python", LANGUAGE_PYTHON.into() ),
         (LangId::RUST, "../../third-party/tree_sitter_rust", LANGUAGE_RUST.into() ),
         (LangId::TOML, "../../third-party/tree_sitter_toml", LANGUAGE_TOML.into()),
+        (LangId::YAML, "../../third-party/tree-sitter-yaml", LANGUAGE_YAML.into()),
     ];
 
     let mut result = HashMap::<LangId, TreeSitterTuple>::new();
@@ -169,6 +174,8 @@ extern "C" {
     fn tree_sitter_python() -> *const ();
     fn tree_sitter_rust() -> *const ();
     fn tree_sitter_toml() -> *const ();
+
+    fn tree_sitter_yaml() -> *const ();
 }
 
 pub const LANGUAGE_BASH: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_bash) };
@@ -184,6 +191,8 @@ pub const LANGUAGE_GO: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_go
 pub const LANGUAGE_PYTHON: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_python) };
 pub const LANGUAGE_RUST: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_rust) };
 pub const LANGUAGE_TOML: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_toml) };
+
+pub const LANGUAGE_YAML: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_yaml) };
 
 impl TreeSitterWrapper {
     pub fn new(ls: LanguageSet) -> TreeSitterWrapper {
@@ -205,6 +214,8 @@ impl TreeSitterWrapper {
             LangId::RUST => Some(&TREE_SITTER_RUST_HIGHLIGHT_QUERY),
             LangId::TOML => Some(&TREE_SITTER_TOML_HIGHLIGHT_QUERY),
             LangId::TYPESCRIPT => Some(&TREE_SITTER_TYPESCRIPT_HIGHLIGHT_QUERY),
+            LangId::HTML => Some(&TREE_SITTER_HTML_HIGHLIGHT_QUERY),
+            LangId::YAML => Some(&TREE_SITTER_YAML_HIGHLIGHT_QUERY),
             _ => None,
         }
     }
