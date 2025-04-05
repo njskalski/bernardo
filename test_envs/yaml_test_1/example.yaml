@@ -1,0 +1,42 @@
+# Sample YAML Configuration
+---
+server:
+  host: "example.com"
+  port: 8080
+  enabled: true
+
+# Database settings
+database:
+  type: "postgresql"
+  host: "db.example.com"
+  port: 5432
+  credentials:
+    username: "admin"
+    password: "secure_password"  # This should be in env vars
+
+logging:
+  level: "info"
+  file: "logs/app.log"
+  rotation:
+    max_size: 100  # Size in MB
+    max_files: 5
+
+features:
+  - name: "authentication"
+    enabled: true
+  - name: "reporting"
+    enabled: false
+  - name: "notifications"
+    enabled: true
+    config:
+      email: true
+      sms: false
+      
+environments:
+  development:
+    debug: true
+  staging:
+    debug: false
+  production:
+    debug: false
+    monitoring: true

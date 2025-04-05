@@ -80,14 +80,18 @@ pub fn run_gladius<I: Input, O: FinalOutput>(providers: Providers, input: I, mut
                         scopes.len()
                     );
                     let workspace = Workspace::new(workspace_dir, scopes);
-                    match workspace.save() {
-                        Ok(_) => {
-                            debug!("saved successfully");
-                        }
-                        Err(e) => {
-                            error!("failed writing workspace file: {:?}", e);
+
+                    if providers.config().auto_create_workspace {
+                        match workspace.save() {
+                            Ok(_) => {
+                                debug!("saved successfully");
+                            }
+                            Err(e) => {
+                                error!("failed writing workspace file: {:?}", e);
+                            }
                         }
                     }
+
                     workspace
                 }
             }

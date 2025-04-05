@@ -27,6 +27,8 @@ pub struct Config {
 
     #[serde(default)]
     pub fuzzy_file_search_options: FuzzyFileSearchOptions,
+
+    pub auto_create_workspace: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]

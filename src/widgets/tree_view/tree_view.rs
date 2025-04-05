@@ -399,22 +399,22 @@ impl<Key: Hash + Eq + Debug + Clone + 'static, Item: TreeNode<Key> + 'static> Tr
 
     // Idx, depth, item
     // TODO I think there is a bug there
-    pub fn get_visible_items(&self) -> Box<dyn Iterator<Item = (usize, Cow<'_, (u16, Item)>)> + '_> {
-        let screenspace = unpack_or_e!(
-            self.last_size,
-            Box::new(iter::empty()),
-            "can't decide visible items without last_size"
-        );
-        let visible_rect = screenspace.visible_rect();
-
-        Box::new(
-            self.items()
-                .enumerate()
-                // skipping lines that cannot be visible, because they are before hint()
-                .skip(visible_rect.upper_left().y as usize)
-                .take(visible_rect.size.y as usize),
-        )
-    }
+    // pub fn get_visible_items(&self) -> Box<dyn Iterator<Item = (usize, Cow<'_, (u16, Item)>)> + '_> {
+    //     let screenspace = unpack_or_e!(
+    //         self.last_size,
+    //         Box::new(iter::empty()),
+    //         "can't decide visible items without last_size"
+    //     );
+    //     let visible_rect = screenspace.visible_rect();
+    //
+    //     Box::new(
+    //         self.items()
+    //             .enumerate()
+    //             // skipping lines that cannot be visible, because they are before hint()
+    //             .skip(visible_rect.upper_left().y as usize)
+    //             .take(visible_rect.size.y as usize),
+    //     )
+    // }
 
     pub fn are_shortcuts_enabled(&self) -> bool {
         self.on_keyboard_shortcut_hit.is_some()

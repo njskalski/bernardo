@@ -1,3 +1,42 @@
 [submodule "third-party/nvim-treesitter"]
 	path = third-party/nvim-treesitter
 	url = https://github.com/nvim-treesitter/nvim-treesitter
+[submodule "third-party/tree-sitter-c"]
+	path = third-party/tree-sitter-c
+	url = https://github.com/tree-sitter/tree-sitter-c
+[submodule "third-party/tree-sitter-bash"]
+	path = third-party/tree-sitter-bash
+	url = https://github.com/tree-sitter/tree-sitter-bash
+[submodule "third-party/tree-sitter-cpp"]
+	path = third-party/tree-sitter-cpp
+	url = https://github.com/tree-sitter/tree-sitter-cpp
+[submodule "third-party/tree-sitter-haskell"]
+	path = third-party/tree-sitter-haskell
+	url = https://github.com/tree-sitter/tree-sitter-haskell
+[submodule "third-party/tree-sitter-html"]
+	path = third-party/tree-sitter-html
+	url = https://github.com/tree-sitter/tree-sitter-html
+[submodule "third-party/tree-sitter-java"]
+	path = third-party/tree-sitter-java
+	url = https://github.com/tree-sitter/tree-sitter-java
+[submodule "third-party/tree-sitter-javascript"]
+	path = third-party/tree-sitter-javascript
+	url = https://github.com/tree-sitter/tree-sitter-javascript
+[submodule "third-party/tree-sitter-typescript"]
+	path = third-party/tree-sitter-typescript
+	url = https://github.com/tree-sitter/tree-sitter-typescript
+[submodule "third-party/tree-sitter-go"]
+	path = third-party/tree-sitter-go
+	url = https://github.com/tree-sitter/tree-sitter-go
+[submodule "third-party/tree-sitter-python"]
+	path = third-party/tree-sitter-python
+	url = https://github.com/tree-sitter/tree-sitter-python
+[submodule "third-party/tree-sitter-rust"]
+	path = third-party/tree-sitter-rust
+	url = https://github.com/tree-sitter/tree-sitter-rust
+[submodule "third-party/tree-sitter-toml"]
+	path = third-party/tree-sitter-toml
+	url = https://github.com/tree-sitter/tree-sitter-toml
+[submodule "third-party/tree-sitter-yaml"]
+	path = third-party/tree-sitter-yaml
+	url = https://github.com/tree-sitter-grammars/tree-sitter-yaml.git
